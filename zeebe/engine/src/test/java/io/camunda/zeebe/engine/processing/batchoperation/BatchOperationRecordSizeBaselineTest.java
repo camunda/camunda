@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 import io.camunda.zeebe.engine.util.RecordSizeBaseline;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -32,13 +33,16 @@ public final class BatchOperationRecordSizeBaselineTest extends AbstractBatchOpe
                 .done())
         .deploy();
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId("process").create();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    final var claims = RecordSizeBaseline.oidcClaims(DEFAULT_USER.getUsername());
     final var startPositions = RecordSizeBaseline.lastPositions(engine);
 
     // when
     final long batchOperationKey =
         createNewCancelProcessInstanceBatchOperation(
-            Set.of(processInstanceKey),
-            RecordSizeBaseline.oidcClaims(DEFAULT_USER.getUsername()).toClaimsMap());
+            Set.of(processInstanceKey), claims.toClaimsMap(), claims);
     RecordingExporter.batchOperationLifecycleRecords(BatchOperationIntent.COMPLETED)
         .withBatchOperationKey(batchOperationKey)
         .await();
