@@ -44,11 +44,10 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
    * must always be non-blocking. On top of that, the scheduler distinguishes
    *
    * <ul>
-   *   <li>CPU-bound actors: actors which perform no or very little blocking I/O. It is possible to
-   *       specify a priority.
+   *   <li>CPU-bound actors: actors which perform no or very little blocking I/O. They run on the
+   *       CPU-bound threads, which are shared by all CPU-bound actors without any prioritization.
    *   <li>I/O-bound actors: actors where the runtime is dominated by performing <strong>blocking
-   *       I/O</strong> (usually filesystem writes). It is possible to specify the I/O device used
-   *       by the actor.
+   *       I/O</strong> (usually filesystem writes). They run on the I/O-bound threads.
    * </ul>
    *
    * Scheduling hints can be created using the {@link SchedulingHints} class.
