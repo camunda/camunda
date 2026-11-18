@@ -423,7 +423,7 @@ paths:
               $ref: '#/components/schemas/ProcessDefinitionSuspensionInstruction'
       responses:
         "200":
-          description: The process definitions are suspended.
+          description: The suspension request was accepted.
           content:
             application/json:
               schema:
@@ -442,10 +442,8 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "409":
           description: |
-            The selected process definition version has the state `DRAINING`: it was deleted and is
-            only kept until its running process instances finish, so it cannot be suspended. This only
-            applies when a single version is selected, either with `processDefinitionKey` or with
-            `processDefinitionId` and `processDefinitionVersion`.
+            The request conflicts with the current state of the process definition, likely because
+            the process definition is in a state that cannot be suspended.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -485,7 +483,7 @@ paths:
               $ref: '#/components/schemas/ProcessDefinitionResumptionInstruction'
       responses:
         "200":
-          description: The process definitions are resumed.
+          description: The resumption request was accepted.
           content:
             application/json:
               schema:
@@ -504,10 +502,8 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "409":
           description: |
-            The selected process definition version has the state `DRAINING`: it was deleted and is
-            only kept until its running process instances finish, so it cannot be resumed. This only
-            applies when a single version is selected, either with `processDefinitionKey` or with
-            `processDefinitionId` and `processDefinitionVersion`.
+            The request conflicts with the current state of the process definition, likely because
+            the process definition is in a state that cannot be resumed.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -548,6 +544,7 @@ components:
             Whether to also suspend the process instances of the affected
             process definition versions. The instances are changed by a batch operation.
           type: boolean
+          default: false
 
     ProcessDefinitionSuspensionInstructionById:
       type: object
@@ -578,6 +575,7 @@ components:
             Whether to also suspend the process instances of the affected
             process definition versions. The instances are changed by a batch operation.
           type: boolean
+          default: false
 
     ProcessDefinitionSuspensionResult:
       type: object
@@ -615,8 +613,11 @@ components:
           format: int32
         outcome:
           description: |
-            `SUSPENDED` if the version was suspended by this request,
-            `ALREADY_SUSPENDED` if it already was in the requested state,
+            `SUSPENDED` if the version was active and is now suspended. The suspension applies to
+            all partitions shortly after the response.
+            `ALREADY_SUSPENDED` if the version was already suspended, so its state is unchanged.
+            With `includeProcessInstances`, its process instances are still suspended by the
+            batch operation.
             `DRAINING` if it is being deleted and is left unchanged. This only occurs when the
             request selects by ID without a version; selecting a single draining version is rejected
             with 409.
@@ -650,6 +651,7 @@ components:
             Whether to also resume the process instances of the affected
             process definition versions. The instances are changed by a batch operation.
           type: boolean
+          default: false
 
     ProcessDefinitionResumptionInstructionById:
       type: object
@@ -680,6 +682,7 @@ components:
             Whether to also resume the process instances of the affected
             process definition versions. The instances are changed by a batch operation.
           type: boolean
+          default: false
 
     ProcessDefinitionResumptionResult:
       type: object
@@ -717,8 +720,11 @@ components:
           format: int32
         outcome:
           description: |
-            `RESUMED` if the version was resumed by this request,
-            `ALREADY_RESUMED` if it already was in the requested state,
+            `RESUMED` if the version was suspended and is now active again. The resumption applies
+            to all partitions shortly after the response.
+            `ALREADY_RESUMED` if the version was already active, so its state is unchanged.
+            With `includeProcessInstances`, its suspended process instances are still resumed by
+            the batch operation.
             `DRAINING` if it is being deleted and is left unchanged. This only occurs when the
             request selects by ID without a version; selecting a single draining version is rejected
             with 409.

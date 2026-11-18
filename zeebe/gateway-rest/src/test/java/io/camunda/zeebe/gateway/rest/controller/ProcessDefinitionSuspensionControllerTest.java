@@ -160,24 +160,6 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
   }
 
   @Test
-  void shouldAcceptSuspensionRequestWithoutContentType() {
-    // given
-    when(processDefinitionServices.suspendProcessDefinitions(any(), any()))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                record(11L, 1, ProcessDefinitionSuspensionOutcome.SUSPENDED)));
-
-    // when / then: consumes = {} must not turn a request without content type into a 415
-    webClient
-        .post()
-        .uri(SUSPENSION_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .value(status -> assertThat(status).isNotEqualTo(415));
-  }
-
-  @Test
   void shouldResumeProcessDefinitionByKey() {
     // given
     when(processDefinitionServices.resumeProcessDefinitions(any(), any()))

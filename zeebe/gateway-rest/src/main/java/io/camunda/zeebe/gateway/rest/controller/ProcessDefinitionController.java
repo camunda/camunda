@@ -226,9 +226,7 @@ public class ProcessDefinitionController {
             q -> searchProcessDefinitionInstanceVersionStatistics(physicalTenantId, q));
   }
 
-  @CamundaPostMapping(
-      path = "/suspension",
-      consumes = {})
+  @CamundaPostMapping(path = "/suspension")
   public CompletableFuture<ResponseEntity<Object>> suspendProcessDefinitions(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessDefinitionSuspensionInstruction request) {
@@ -239,9 +237,7 @@ public class ProcessDefinitionController {
             mapped -> suspendProcessDefinitions(physicalTenantId, mapped));
   }
 
-  @CamundaPostMapping(
-      path = "/resumption",
-      consumes = {})
+  @CamundaPostMapping(path = "/resumption")
   public CompletableFuture<ResponseEntity<Object>> resumeProcessDefinitions(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessDefinitionResumptionInstruction request) {

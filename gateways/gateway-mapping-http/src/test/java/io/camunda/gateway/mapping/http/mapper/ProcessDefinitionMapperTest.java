@@ -8,7 +8,6 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.gateway.protocol.model.ProcessDefinitionResumptionInstructionById;
 import io.camunda.gateway.protocol.model.ProcessDefinitionResumptionInstructionByKey;
@@ -22,6 +21,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefi
 import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
 import io.camunda.zeebe.util.Either;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.http.ProblemDetail;
 
 class ProcessDefinitionMapperTest {
@@ -263,25 +264,13 @@ class ProcessDefinitionMapperTest {
                 new ProcessDefinitionSuspensionResolvedVersion()
                     .setProcessDefinitionKey(11L)
                     .setVersion(1)
-                    .setOutcome(ProcessDefinitionSuspensionOutcome.SUSPENDED))
-            .addResolvedVersion(
-                new ProcessDefinitionSuspensionResolvedVersion()
-                    .setProcessDefinitionKey(12L)
-                    .setVersion(2)
-                    .setOutcome(ProcessDefinitionSuspensionOutcome.ALREADY_SUSPENDED));
+                    .setOutcome(ProcessDefinitionSuspensionOutcome.SUSPENDED));
 
     // when
     final var result = mapper.toSuspensionResult(record);
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo("77");
-    assertThat(result.getProcessDefinitions())
-        .extracting(
-            v -> v.getProcessDefinitionKey(),
-            v -> v.getProcessDefinitionVersion(),
-            v -> v.getOutcome())
-        .containsExactly(
-            tuple("11", 1, OutcomeEnum.SUSPENDED), tuple("12", 2, OutcomeEnum.ALREADY_SUSPENDED));
   }
 
   @Test
@@ -300,12 +289,33 @@ class ProcessDefinitionMapperTest {
 
     // then
     assertThat(result.getBatchOperationKey()).isNull();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ProcessDefinitionSuspensionOutcome.class,
+      names = {"SUSPENDED", "ALREADY_SUSPENDED", "DRAINING"})
+  void shouldMapSuspensionOutcome(final ProcessDefinitionSuspensionOutcome outcome) {
+    // given
+    final var record =
+        new ProcessDefinitionSuspensionRecord()
+            .addResolvedVersion(
+                new ProcessDefinitionSuspensionResolvedVersion()
+                    .setProcessDefinitionKey(11L)
+                    .setVersion(1)
+                    .setOutcome(outcome));
+
+    // when
+    final var result = mapper.toSuspensionResult(record);
+
+    // then
     assertThat(result.getProcessDefinitions())
         .singleElement()
         .satisfies(
             v -> {
               assertThat(v.getProcessDefinitionKey()).isEqualTo("11");
-              assertThat(v.getOutcome()).isEqualTo(OutcomeEnum.SUSPENDED);
+              assertThat(v.getProcessDefinitionVersion()).isEqualTo(1);
+              assertThat(v.getOutcome()).isEqualTo(OutcomeEnum.fromValue(outcome.name()));
             });
   }
 
@@ -319,26 +329,13 @@ class ProcessDefinitionMapperTest {
                 new ProcessDefinitionSuspensionResolvedVersion()
                     .setProcessDefinitionKey(11L)
                     .setVersion(1)
-                    .setOutcome(ProcessDefinitionSuspensionOutcome.RESUMED))
-            .addResolvedVersion(
-                new ProcessDefinitionSuspensionResolvedVersion()
-                    .setProcessDefinitionKey(12L)
-                    .setVersion(2)
-                    .setOutcome(ProcessDefinitionSuspensionOutcome.ALREADY_RESUMED));
+                    .setOutcome(ProcessDefinitionSuspensionOutcome.RESUMED));
 
     // when
     final var result = mapper.toResumptionResult(record);
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo("78");
-    assertThat(result.getProcessDefinitions())
-        .extracting(
-            v -> v.getProcessDefinitionKey(),
-            v -> v.getProcessDefinitionVersion(),
-            v -> v.getOutcome())
-        .containsExactly(
-            tuple("11", 1, ProcessDefinitionResumptionVersionResult.OutcomeEnum.RESUMED),
-            tuple("12", 2, ProcessDefinitionResumptionVersionResult.OutcomeEnum.ALREADY_RESUMED));
   }
 
   @Test
@@ -357,13 +354,36 @@ class ProcessDefinitionMapperTest {
 
     // then
     assertThat(result.getBatchOperationKey()).isNull();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ProcessDefinitionSuspensionOutcome.class,
+      names = {"RESUMED", "ALREADY_RESUMED", "DRAINING"})
+  void shouldMapResumptionOutcome(final ProcessDefinitionSuspensionOutcome outcome) {
+    // given
+    final var record =
+        new ProcessDefinitionSuspensionRecord()
+            .addResolvedVersion(
+                new ProcessDefinitionSuspensionResolvedVersion()
+                    .setProcessDefinitionKey(11L)
+                    .setVersion(1)
+                    .setOutcome(outcome));
+
+    // when
+    final var result = mapper.toResumptionResult(record);
+
+    // then
     assertThat(result.getProcessDefinitions())
         .singleElement()
         .satisfies(
             v -> {
               assertThat(v.getProcessDefinitionKey()).isEqualTo("11");
+              assertThat(v.getProcessDefinitionVersion()).isEqualTo(1);
               assertThat(v.getOutcome())
-                  .isEqualTo(ProcessDefinitionResumptionVersionResult.OutcomeEnum.RESUMED);
+                  .isEqualTo(
+                      ProcessDefinitionResumptionVersionResult.OutcomeEnum.fromValue(
+                          outcome.name()));
             });
   }
 
