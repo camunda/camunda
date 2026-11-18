@@ -118,7 +118,7 @@ public final class RecordSizeBaseline {
     claims.put(Authorization.AUTHORIZED_USERNAME, username);
     claims.put(Authorization.USER_GROUPS_CLAIMS, groups());
     claims.put(Authorization.USER_TOKEN_CLAIMS, tokenClaims);
-    return AuthInfo.ofClaims(claims);
+    return new AuthInfo().setClaims(claims);
   }
 
   private static List<String> groups() {

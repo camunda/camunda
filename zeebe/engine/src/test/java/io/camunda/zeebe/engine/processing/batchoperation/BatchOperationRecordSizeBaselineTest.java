@@ -28,7 +28,7 @@ public final class BatchOperationRecordSizeBaselineTest extends AbstractBatchOpe
         .withXmlResource(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType(DEFAULT_JOB_TYPE))
+                .serviceTask("task", t -> t.zeebeJobType("task"))
                 .endEvent()
                 .done())
         .deploy();
@@ -42,7 +42,7 @@ public final class BatchOperationRecordSizeBaselineTest extends AbstractBatchOpe
     // when
     final long batchOperationKey =
         createNewCancelProcessInstanceBatchOperation(
-            Set.of(processInstanceKey), claims.toClaimsMap(), claims);
+            Set.of(processInstanceKey), claims.getClaims(), claims);
     RecordingExporter.batchOperationLifecycleRecords(BatchOperationIntent.COMPLETED)
         .withBatchOperationKey(batchOperationKey)
         .await();
