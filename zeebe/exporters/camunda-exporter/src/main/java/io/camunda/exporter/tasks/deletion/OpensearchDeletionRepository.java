@@ -7,15 +7,14 @@
  */
 package io.camunda.exporter.tasks.deletion;
 
-import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
+import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.exporter.tasks.util.SearchAfter;
 import io.camunda.exporter.tasks.util.SearchAfterOS;
-import io.camunda.search.schema.config.DeleterConfiguration;
-import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -25,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
+import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOptions;
@@ -41,29 +41,24 @@ import org.slf4j.Logger;
 public class OpensearchDeletionRepository extends OpensearchRepository
     implements DeletionRepository {
   private final DeleteByIdPipeline pipeline;
-  private final DeleterConfiguration config;
-  private final RetentionConfiguration retention;
-  private final ProcessInstanceRetentionMode retentionMode;
   private final int partitionId;
+  private final HistoryConfiguration config;
   private final IndexTemplateDescriptor listViewTemplate;
 
   public OpensearchDeletionRepository(
-      final DeleterConfiguration config,
-      final RetentionConfiguration retention,
-      final ProcessInstanceRetentionMode retentionMode,
       final int partitionId,
-      final IndexTemplateDescriptor listViewTemplate,
-      final OpenSearchAsyncClient client,
+      final HistoryConfiguration config,
+      final ExporterResourceProvider resourceProvider,
+      @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
     super(client, executor, logger);
-    this.config = config;
-    this.retention = retention;
-    this.retentionMode = retentionMode;
     this.partitionId = partitionId;
-    this.listViewTemplate = listViewTemplate;
-    pipeline = new DeleteByIdPipeline(config, this, metrics, logger);
+    this.config = config;
+    listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+    pipeline = new DeleteByIdPipeline(config.getRetention().getDeleter(), this, metrics, logger);
   }
 
   @Override
@@ -77,8 +72,10 @@ public class OpensearchDeletionRepository extends OpensearchRepository
             .ignoreUnavailable(true)
             .query(
                 finishedProcessInstancesQuery(
-                    "now-" + retention.getMinimumAge(), partitionId, retentionMode))
-            .size(config.getEntityBatchSize())
+                    "now-" + config.getRetention().getMinimumAge(),
+                    partitionId,
+                    config.getProcessInstanceRetentionMode()))
+            .size(config.getRetention().getDeleter().getEntityBatchSize())
             .source(
                 s ->
                     s.filter(
@@ -111,7 +108,8 @@ public class OpensearchDeletionRepository extends OpensearchRepository
           .thenApplyAsync(
               response ->
                   ProcessInstanceDeletionBatch.from(
-                      response.hits().hits().stream().map(Hit::source).toList(), retentionMode),
+                      response.hits().hits().stream().map(Hit::source).toList(),
+                      config.getProcessInstanceRetentionMode()),
               executor);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);

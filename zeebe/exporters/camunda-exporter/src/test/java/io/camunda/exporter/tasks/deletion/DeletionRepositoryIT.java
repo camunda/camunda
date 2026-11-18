@@ -10,14 +10,14 @@ package io.camunda.exporter.tasks.deletion;
 import static io.camunda.search.test.utils.SearchDBExtension.create;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
+import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.schema.SearchEngineClient;
-import io.camunda.search.schema.config.DeleterConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
-import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchClientAdapter;
@@ -46,15 +46,13 @@ abstract class DeletionRepositoryIT {
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
   protected final ExporterConfiguration config;
-  protected final DeleterConfiguration deleterConfig = new DeleterConfiguration();
-  protected final RetentionConfiguration retentionConfig = new RetentionConfiguration();
-  protected ProcessInstanceRetentionMode retentionMode = ProcessInstanceRetentionMode.PI;
   protected final CamundaExporterMetrics metrics =
       new CamundaExporterMetrics(new SimpleMeterRegistry());
   protected final SearchEngineClient engineClient;
   protected final SearchClientAdapter searchClientAdapter;
   protected final OperationTemplate operationTemplate;
-  protected final ListViewTemplate listViewTemplate;
+  protected final ExporterResourceProvider resourceProvider;
+  protected final IndexTemplateDescriptor listViewTemplate;
 
   protected DeletionRepositoryIT(final String databaseUrl, final boolean isElastic) {
     final var indexPrefix =
@@ -75,8 +73,10 @@ abstract class DeletionRepositoryIT {
     }
 
     operationTemplate = new OperationTemplate(indexPrefix, isElastic);
-    listViewTemplate = new ListViewTemplate(indexPrefix, isElastic);
-    retentionConfig.setMinimumAge("1h");
+    resourceProvider = new TestExporterResourceProvider(indexPrefix, isElastic);
+    listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    config.getHistory().getRetention().setMinimumAge("1h");
+    config.getHistory().setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI);
   }
 
   protected abstract DeletionRepository createRepository();
@@ -159,7 +159,7 @@ abstract class DeletionRepositoryIT {
   @Test
   void shouldLimitBatchToEntityBatchSizeReturningOldestFirst() throws IOException {
     // given
-    deleterConfig.setEntityBatchSize(2);
+    config.getHistory().getRetention().getDeleter().setEntityBatchSize(2);
     final var now = OffsetDateTime.now();
     indexProcessInstance(1, 1L, PARTITION_ID, now.minusHours(3));
     indexProcessInstance(1, 2L, PARTITION_ID, now.minusHours(5));
@@ -242,7 +242,7 @@ abstract class DeletionRepositoryIT {
   @Test
   void shouldSplitRootAndLegacyProcessInstancesInHierarchyMode() throws IOException {
     // given
-    retentionMode = ProcessInstanceRetentionMode.PI_HIERARCHY;
+    config.getHistory().setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI_HIERARCHY);
     final var expired = OffsetDateTime.now().minusHours(2);
     final var root = processInstance(1L, PARTITION_ID, expired).setRootProcessInstanceKey(1L);
     final var child =
