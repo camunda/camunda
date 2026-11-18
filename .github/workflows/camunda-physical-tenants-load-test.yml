@@ -42,9 +42,9 @@ on:
         default: 1.2
         required: false
       quiet-multiplier:
-        description: 'Load of each quiet tenant (and the default tenant), as a multiple of its allowance (0.2 = 20%)'
+        description: 'Load of each quiet tenant (and the default tenant), as a multiple of its allowance. 0.85 keeps them close to their fair share, so interference is visible'
         type: number
-        default: 0.2
+        default: 0.85
         required: false
       worker-replicas-per-100-pi:
         description: 'Worker replicas per 100 PI/s of a tenant, scaled linearly and rounded up (at least 1). The default is 3 workers for 800 PI/s, with some margin'
