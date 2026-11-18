@@ -1708,6 +1708,56 @@ public class CamundaProcessTestExtensionIT {
       assertThatProcessInstance(processInstanceEvent).isCompleted();
       assertThatProcessInstance(processInstanceEvent).hasVariable("result", "mocked-output");
     }
+
+    @Test
+    void shouldMockDmnDecisionWithDifferentVersionTags() {
+      // given
+      final long processDefinitionKey =
+          deployProcessModel(
+              Bpmn.createExecutableProcess("process-with-two-version-tag-decisions")
+                  .startEvent()
+                  .businessRuleTask(
+                      "call-decision-1.2.0",
+                      task ->
+                          task.zeebeCalledDecisionId("two-version-tags-decision")
+                              .zeebeBindingType(ZeebeBindingType.versionTag)
+                              .zeebeVersionTag("1.2.0")
+                              .zeebeResultVariable("result120"))
+                  .businessRuleTask(
+                      "call-decision-1.3.0",
+                      task ->
+                          task.zeebeCalledDecisionId("two-version-tags-decision")
+                              .zeebeBindingType(ZeebeBindingType.versionTag)
+                              .zeebeVersionTag("1.3.0")
+                              .zeebeResultVariable("result130"))
+                  .endEvent()
+                  .done());
+
+      processTestContext
+          .mockDmnDecision()
+          .withDecisionId("two-version-tags-decision")
+          .withVersionTag("1.2.0")
+          .thenReturn("output-of-1.2.0");
+      processTestContext
+          .mockDmnDecision()
+          .withDecisionId("two-version-tags-decision")
+          .withVersionTag("1.3.0")
+          .thenReturn("output-of-1.3.0");
+
+      // when
+      final ProcessInstanceEvent processInstanceEvent =
+          client
+              .newCreateInstanceCommand()
+              .processDefinitionKey(processDefinitionKey)
+              .send()
+              .join();
+
+      // then
+      assertThatProcessInstance(processInstanceEvent).isCompleted();
+      assertThatProcessInstance(processInstanceEvent)
+          .hasVariable("result120", "output-of-1.2.0")
+          .hasVariable("result130", "output-of-1.3.0");
+    }
   }
 
   @Nested
