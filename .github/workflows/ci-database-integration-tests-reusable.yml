@@ -269,9 +269,14 @@ jobs:
       contents: read
       actions: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
       - name: Import secrets from Vault
         id: secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        uses: ./.github/actions/vault-action-with-retry
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -282,7 +287,7 @@ jobs:
       - name: Send notification
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
-          webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+          webhook: ${{ fromJSON(steps.secrets.outputs.secrets).DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
           webhook-type: webhook-trigger
           # For posting a rich message using Block Kit
           payload: |
@@ -293,11 +298,6 @@ jobs:
                   type: "mrkdwn"
                   text: "Scheduled Database Integration Tests for **${{inputs.database-name}}** on **${{ github.ref_name }}** FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       # Send metrics about CI health
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          sparse-checkout: .github
-          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true
