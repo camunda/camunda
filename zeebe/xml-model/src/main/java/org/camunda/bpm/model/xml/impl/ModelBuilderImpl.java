@@ -23,7 +23,6 @@ import java.util.List;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
-import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.impl.type.ModelElementTypeBuilderImpl;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
@@ -36,8 +35,7 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class ModelBuilderImpl extends ModelBuilder {
 
-  private final List<ModelElementTypeBuilderImpl> unbuiltTypeBuilders =
-      new ArrayList<ModelElementTypeBuilderImpl>();
+  private final List<ModelElementTypeBuilderImpl> unbuiltTypeBuilders = new ArrayList<>();
   private final ModelImpl model;
 
   public ModelBuilderImpl(final String modelName) {
@@ -65,13 +63,7 @@ public class ModelBuilderImpl extends ModelBuilder {
         defineType(ModelElementInstance.class, typeName)
             .namespaceUri(typeNamespaceUri)
             .instanceProvider(
-                new ModelTypeInstanceProvider<ModelElementInstance>() {
-                  @Override
-                  public ModelElementInstance newInstance(
-                      final ModelTypeInstanceContext instanceContext) {
-                    return new ModelElementInstanceImpl(instanceContext);
-                  }
-                });
+                (ModelTypeInstanceProvider<ModelElementInstance>) ModelElementInstanceImpl::new);
 
     return typeBuilder.build();
   }
