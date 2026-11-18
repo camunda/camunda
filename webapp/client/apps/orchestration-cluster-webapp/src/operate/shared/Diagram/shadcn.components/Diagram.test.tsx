@@ -8,7 +8,7 @@
 
 import '#/shared/theme/tailwind.css';
 import {render} from 'vitest-browser-react';
-import {describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {useContext, useEffect, useState} from 'react';
@@ -682,5 +682,50 @@ describe('<Diagram />', () => {
 		await userEvent.keyboard('{Shift>}{Enter}{/Shift}');
 
 		expect(onElementDoubleClick).not.toHaveBeenCalled();
+	});
+
+	describe('resize', () => {
+		afterEach(() => {
+			vi.unstubAllGlobals();
+		});
+
+		it('should re-centre the diagram when the first resize notification reports a new size', async () => {
+			const resizeCallbacks: ResizeObserverCallback[] = [];
+			vi.stubGlobal(
+				'ResizeObserver',
+				class {
+					constructor(callback: ResizeObserverCallback) {
+						resizeCallbacks.push(callback);
+					}
+					observe() {}
+					unobserve() {}
+					disconnect() {}
+				},
+			);
+			const screen = await render(
+				<div style={{position: 'relative', width: 800, height: 600}}>
+					<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />
+				</div>,
+			);
+			await expect.element(screen.getByRole('img', {name: 'end event', exact: true})).toBeInTheDocument();
+			const canvas = screen.getByRole('region', {name: 'Diagram'}).element();
+			const startEvent = screen.getByRole('button', {name: 'start event', exact: true}).element();
+			const endEvent = screen.getByRole('img', {name: 'end event', exact: true}).element();
+
+			canvas.parentElement!.style.height = '300px';
+			const {width, height} = canvas.getBoundingClientRect();
+			resizeCallbacks.forEach((callback) =>
+				callback([{contentRect: {width, height}} as ResizeObserverEntry], {} as ResizeObserver),
+			);
+
+			await expect
+				.poll(() => {
+					const canvasRect = canvas.getBoundingClientRect();
+					const start = startEvent.getBoundingClientRect();
+					const end = endEvent.getBoundingClientRect();
+					return Math.abs((start.top + end.bottom) / 2 - (canvasRect.top + canvasRect.bottom) / 2);
+				})
+				.toBeLessThan(1);
+		});
 	});
 });
