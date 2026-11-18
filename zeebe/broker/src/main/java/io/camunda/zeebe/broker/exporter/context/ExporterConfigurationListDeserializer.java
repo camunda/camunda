@@ -48,7 +48,7 @@ final class ExporterConfigurationListDeserializer<E> extends JsonDeserializer<Li
   }
 
   @Override
-  public JsonDeserializer<?> createContextual(
+  public ExporterConfigurationListDeserializer<E> createContextual(
       final DeserializationContext ctxt, final BeanProperty property) throws JsonMappingException {
     final JavaType type;
     if (property == null) {
