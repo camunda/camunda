@@ -102,7 +102,10 @@ public class InactiveRole extends AbstractRole {
     // A member that started without a configuration (R16) has no data: it accepts only a
     // configuration in which it is passive with its own incarnation, so that it never votes before
     // the leader promotes it after it has caught up.
-    final var withoutConfiguration = raft.getCluster().getConfiguration() == null;
+    // Only the system partition: a data partition member that joins has no configuration either,
+    // and accepts the type that the leader gives it.
+    final var withoutConfiguration =
+        raft.isSystemPartition() && raft.getCluster().getConfiguration() == null;
     if (withoutConfiguration) {
       final var refusal = refusalWithoutConfiguration(configuration);
       if (refusal != null) {
