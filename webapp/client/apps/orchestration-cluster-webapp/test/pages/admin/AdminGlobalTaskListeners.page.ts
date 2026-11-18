@@ -8,6 +8,7 @@
 
 import {type Page} from '@playwright/test';
 import {BasePage, View} from '#/pages/BasePage';
+import {mockAdminClientConfig} from './mockAdminClientConfig';
 
 class AddGlobalTaskListenerModal extends View {
 	get dialog() {
@@ -65,6 +66,10 @@ class AdminGlobalTaskListenersPage extends BasePage {
 		this.addModal = new AddGlobalTaskListenerModal(page);
 		this.editModal = new EditGlobalTaskListenerModal(page);
 		this.deleteModal = new DeleteGlobalTaskListenerModal(page);
+	}
+
+	async mockClientConfig(script?: string) {
+		await mockAdminClientConfig(this.page, script);
 	}
 
 	async goto() {

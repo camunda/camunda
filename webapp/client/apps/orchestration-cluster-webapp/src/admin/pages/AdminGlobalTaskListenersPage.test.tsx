@@ -35,6 +35,7 @@ async function renderPage(overrides: Partial<AdminGlobalTaskListenersPageProps> 
 	const onSearchChange = vi.fn();
 	const screen = await render(
 		<AdminGlobalTaskListenersPage
+			idPattern={null}
 			globalTaskListeners={[createGlobalTaskListener()]}
 			totalItems={1}
 			search={{}}

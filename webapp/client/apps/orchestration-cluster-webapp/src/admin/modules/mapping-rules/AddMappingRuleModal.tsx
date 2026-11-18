@@ -23,7 +23,7 @@ import {
 import type {MappingRule} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useMappingRuleMutations} from './useMappingRuleMutations';
 import {isDuplicateMappingRuleIdError} from './isDuplicateMappingRuleIdError';
-import {isValidId} from '#/admin/modules/shared/identifierPattern';
+import {isCustomIdPattern, isValidId} from '#/admin/modules/shared/identifierPattern';
 
 type FormValues = MappingRule;
 
@@ -38,10 +38,11 @@ function getMappingRuleIdError(meta: FieldMetaState<string>): string | undefined
 
 type Props = {
 	isOpen: boolean;
+	idPattern: string | null | undefined;
 	onClose: () => void;
 };
 
-const AddMappingRuleModal: React.FC<Props> = ({isOpen, onClose}) => {
+const AddMappingRuleModal: React.FC<Props> = ({isOpen, idPattern, onClose}) => {
 	const {t} = useTranslation();
 	const {create} = useMappingRuleMutations();
 
@@ -78,9 +79,11 @@ const AddMappingRuleModal: React.FC<Props> = ({isOpen, onClose}) => {
 						validate={({mappingRuleId, name, claimName, claimValue}) => ({
 							mappingRuleId: !mappingRuleId
 								? t('admin.mappingRules.mappingRuleIdRequiredError')
-								: isValidId(mappingRuleId)
+								: isValidId(mappingRuleId, idPattern)
 									? undefined
-									: t('admin.mappingRules.mappingRuleIdInvalidError'),
+									: isCustomIdPattern(idPattern)
+										? t('admin.configuredIdPatternInvalidError', {pattern: idPattern})
+										: t('admin.mappingRules.mappingRuleIdInvalidError'),
 							name: name ? undefined : t('admin.mappingRules.mappingRuleNameRequiredError'),
 							claimName: claimName ? undefined : t('admin.mappingRules.claimNameRequiredError'),
 							claimValue: claimValue ? undefined : t('admin.mappingRules.claimValueRequiredError'),

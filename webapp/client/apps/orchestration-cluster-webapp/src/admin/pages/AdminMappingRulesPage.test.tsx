@@ -35,6 +35,7 @@ async function renderPage(overrides: Partial<AdminMappingRulesPageProps> = {}) {
 	const onSearchChange = vi.fn();
 	const screen = await render(
 		<AdminMappingRulesPage
+			idPattern={null}
 			mappingRules={[createMappingRule()]}
 			totalItems={1}
 			search={{}}
@@ -111,6 +112,7 @@ describe('<AdminMappingRulesPage />', () => {
 		// Simulates the route applying the debounced "a" navigation while the reader kept typing.
 		await screen.rerender(
 			<AdminMappingRulesPage
+				idPattern={null}
 				mappingRules={[createMappingRule()]}
 				totalItems={1}
 				search={{search: 'a'}}

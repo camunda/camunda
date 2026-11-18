@@ -39,11 +39,19 @@ type AdminRolesPageProps = {
 	roles: Role[];
 	totalItems: number;
 	defaultRoleIds: string[];
+	idPattern: string | null | undefined;
 	search: RolesSearch;
 	onSearchChange: (next: Partial<RolesSearch>) => void;
 };
 
-const AdminRolesPage: React.FC<AdminRolesPageProps> = ({roles, totalItems, defaultRoleIds, search, onSearchChange}) => {
+const AdminRolesPage: React.FC<AdminRolesPageProps> = ({
+	roles,
+	totalItems,
+	defaultRoleIds,
+	idPattern,
+	search,
+	onSearchChange,
+}) => {
 	const detailPath = useAdminDetailPath();
 	const {t} = useTranslation();
 	const appliedSearchTerm = search.search ?? '';
@@ -202,7 +210,7 @@ const AdminRolesPage: React.FC<AdminRolesPageProps> = ({roles, totalItems, defau
 				)}
 			</div>
 
-			{modalState?.type === 'create' && <AddRoleModal isOpen onClose={closeModal} />}
+			{modalState?.type === 'create' && <AddRoleModal isOpen idPattern={idPattern} onClose={closeModal} />}
 			{modalState?.type === 'edit' && <EditRoleModal isOpen role={modalState.role} onClose={closeModal} />}
 			{modalState?.type === 'delete' && <DeleteRoleModal isOpen roleId={modalState.role.roleId} onClose={closeModal} />}
 		</PageLayout>

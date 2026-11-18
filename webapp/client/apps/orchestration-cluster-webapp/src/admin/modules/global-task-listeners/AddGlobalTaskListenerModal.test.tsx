@@ -54,7 +54,9 @@ describe('<AddGlobalTaskListenerModal />', () => {
 			}),
 		);
 
-		const screen = await render(<AddGlobalTaskListenerModal isOpen onClose={mockOnClose} />, {wrapper: getWrapper()});
+		const screen = await render(<AddGlobalTaskListenerModal idPattern={null} isOpen onClose={mockOnClose} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener ID'}), 'my-listener');
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener type'}), 'my-type');
@@ -67,7 +69,9 @@ describe('<AddGlobalTaskListenerModal />', () => {
 	});
 
 	it('should show validation errors when submitting with empty fields', async () => {
-		const screen = await render(<AddGlobalTaskListenerModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+		const screen = await render(<AddGlobalTaskListenerModal idPattern={null} isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
@@ -77,7 +81,9 @@ describe('<AddGlobalTaskListenerModal />', () => {
 	});
 
 	it('should show a validation error for an invalid listener type', async () => {
-		const screen = await render(<AddGlobalTaskListenerModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+		const screen = await render(<AddGlobalTaskListenerModal idPattern={null} isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener ID'}), 'my-listener');
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener type'}), 'invalid type!');
@@ -91,7 +97,9 @@ describe('<AddGlobalTaskListenerModal />', () => {
 	});
 
 	it('should show a validation error for an invalid listener ID', async () => {
-		const screen = await render(<AddGlobalTaskListenerModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+		const screen = await render(<AddGlobalTaskListenerModal idPattern={null} isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener ID'}), 'invalid id!');
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener type'}), 'my-type');
@@ -104,8 +112,31 @@ describe('<AddGlobalTaskListenerModal />', () => {
 			.toBeVisible();
 	});
 
+	it('should validate the listener ID against the configured pattern', async () => {
+		// given
+		const screen = await render(<AddGlobalTaskListenerModal idPattern="^[a-z]+$" isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
+
+		// when
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener ID'}), 'listener1');
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener type'}), 'mytype');
+		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+		// then
+		await expect
+			.element(
+				screen.getByText(
+					'Must be at most 256 characters and match the ID pattern configured for this cluster: ^[a-z]+$',
+				),
+			)
+			.toBeVisible();
+	});
+
 	it('should show validation errors for decimal retries and priority', async () => {
-		const screen = await render(<AddGlobalTaskListenerModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+		const screen = await render(<AddGlobalTaskListenerModal idPattern={null} isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.fill(screen.getByRole('spinbutton', {name: 'Retries'}), '1.5');
 		await userEvent.fill(screen.getByRole('spinbutton', {name: 'Priority'}), '2.5');
@@ -133,7 +164,9 @@ describe('<AddGlobalTaskListenerModal />', () => {
 			}),
 		);
 
-		const screen = await render(<AddGlobalTaskListenerModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+		const screen = await render(<AddGlobalTaskListenerModal idPattern={null} isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener ID'}), 'my-listener');
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener type'}), 'my-type');
@@ -156,7 +189,9 @@ describe('<AddGlobalTaskListenerModal />', () => {
 			}),
 			mockSearchGlobalTaskListenersEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
 		);
-		const screen = await render(<AddGlobalTaskListenerModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+		const screen = await render(<AddGlobalTaskListenerModal idPattern={null} isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
 
 		// when
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener ID'}), 'my-listener');
@@ -174,7 +209,9 @@ describe('<AddGlobalTaskListenerModal />', () => {
 
 	it('should call onClose when cancelled', async () => {
 		const mockOnClose = vi.fn();
-		const screen = await render(<AddGlobalTaskListenerModal isOpen onClose={mockOnClose} />, {wrapper: getWrapper()});
+		const screen = await render(<AddGlobalTaskListenerModal idPattern={null} isOpen onClose={mockOnClose} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel'}).last());
 

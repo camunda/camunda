@@ -29,7 +29,10 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/global-task-listeners
 	},
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {
-		await queryClient.query(queries.searchGlobalTaskListeners(getGlobalTaskListenersRequestBody(search)));
+		await Promise.all([
+			queryClient.query(queries.searchGlobalTaskListeners(getGlobalTaskListenersRequestBody(search))),
+			queryClient.query(queries.adminClientConfig()),
+		]);
 	},
 	errorComponent: function AdminGlobalTaskListenersErrorPage({error, reset}: ErrorComponentProps) {
 		if (error instanceof ForbiddenError) {
@@ -49,6 +52,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/global-task-listeners
 		const search = Route.useSearch();
 		const navigate = useNavigate();
 		const {data} = useSuspenseQuery(queries.searchGlobalTaskListeners(getGlobalTaskListenersRequestBody(search)));
+		const {data: clientConfig} = useSuspenseQuery(queries.adminClientConfig());
 
 		const handleSearchChange = useCallback(
 			(next: Partial<GlobalTaskListenersSearch>) => {
@@ -61,6 +65,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/global-task-listeners
 			<AdminGlobalTaskListenersPage
 				globalTaskListeners={data.items}
 				totalItems={data.page.totalItems}
+				idPattern={clientConfig.idPattern}
 				search={search}
 				onSearchChange={handleSearchChange}
 			/>

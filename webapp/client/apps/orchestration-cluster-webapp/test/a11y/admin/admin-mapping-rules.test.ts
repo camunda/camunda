@@ -26,7 +26,8 @@ import {createMappingRule, createQueryMappingRulesResponse} from '#/shared-test-
 // every other element, is still scanned.
 const DS_ACTIONS_COLUMN_HEADER_RULE = 'empty-table-header';
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, adminMappingRulesPage}) => {
+	await adminMappingRulesPage.mockClientConfig();
 	network.use(
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfigurationEndpoint({

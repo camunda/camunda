@@ -38,11 +38,12 @@ type ModalState = {type: 'create'} | {type: 'edit'; group: Group} | {type: 'dele
 type AdminGroupsPageProps = {
 	groups: Group[];
 	totalItems: number;
+	idPattern: string | null | undefined;
 	search: GroupsSearch;
 	onSearchChange: (next: Partial<GroupsSearch>) => void;
 };
 
-const AdminGroupsPage: React.FC<AdminGroupsPageProps> = ({groups, totalItems, search, onSearchChange}) => {
+const AdminGroupsPage: React.FC<AdminGroupsPageProps> = ({groups, totalItems, idPattern, search, onSearchChange}) => {
 	const detailPath = useAdminDetailPath();
 	const {t} = useTranslation();
 	const appliedSearchTerm = search.search ?? '';
@@ -183,7 +184,7 @@ const AdminGroupsPage: React.FC<AdminGroupsPageProps> = ({groups, totalItems, se
 				)}
 			</div>
 
-			{modalState?.type === 'create' && <AddGroupModal isOpen onClose={closeModal} />}
+			{modalState?.type === 'create' && <AddGroupModal isOpen idPattern={idPattern} onClose={closeModal} />}
 			{modalState?.type === 'edit' && <EditGroupModal isOpen group={modalState.group} onClose={closeModal} />}
 			{modalState?.type === 'delete' && (
 				<DeleteGroupModal isOpen groupId={modalState.group.groupId} onClose={closeModal} />

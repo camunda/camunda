@@ -84,6 +84,7 @@
 		"relativeDateYearsFmt_time_speech": "d MMMM, yyyy 'à' p",
 		"relativeDateUnknown": "'Inconnu'",
 		"admin": {
+			"configuredIdPatternInvalidError": "Doit comporter au plus 256 caractères et correspondre au modèle d'ID configuré pour ce cluster : {{pattern}}",
 			"adminPanelNavAria": "Navigation Admin",
 			"headerNavItemUsers": "Utilisateurs",
 			"headerNavItemGroups": "Groupes",

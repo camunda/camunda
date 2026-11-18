@@ -40,7 +40,7 @@ function createQueryAuthorizationsResponse(overrides?: {
 }
 
 const ADMIN_CLIENT_CONFIG = {
-	idPattern: '^[a-zA-Z0-9_~@.+-]{1,256}$',
+	idPattern: '^[a-zA-Z0-9_~@.+-]+$',
 	resourcePermissions: {
 		PROCESS_DEFINITION: ['READ_PROCESS_DEFINITION', 'READ_PROCESS_INSTANCE', 'CREATE_PROCESS_INSTANCE'],
 		USER_TASK: ['READ', 'UPDATE', 'CLAIM', 'COMPLETE'],

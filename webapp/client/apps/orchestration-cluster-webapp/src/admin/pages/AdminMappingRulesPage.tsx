@@ -35,6 +35,7 @@ type ModalState = {type: 'add'} | {type: 'edit'; mappingRule: MappingRule} | {ty
 type AdminMappingRulesPageProps = {
 	mappingRules: MappingRule[];
 	totalItems: number;
+	idPattern: string | null | undefined;
 	search: MappingRulesSearch;
 	onSearchChange: (next: Partial<MappingRulesSearch>) => void;
 };
@@ -42,6 +43,7 @@ type AdminMappingRulesPageProps = {
 const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
 	mappingRules,
 	totalItems,
+	idPattern,
 	search,
 	onSearchChange,
 }) => {
@@ -176,7 +178,7 @@ const AdminMappingRulesPage: React.FC<AdminMappingRulesPageProps> = ({
 					</div>
 				)}
 			</div>
-			<AddMappingRuleModal isOpen={modal?.type === 'add'} onClose={() => setModal(null)} />
+			<AddMappingRuleModal isOpen={modal?.type === 'add'} idPattern={idPattern} onClose={() => setModal(null)} />
 			<EditMappingRuleModal
 				mappingRule={modal?.type === 'edit' ? modal.mappingRule : null}
 				onClose={() => setModal(null)}

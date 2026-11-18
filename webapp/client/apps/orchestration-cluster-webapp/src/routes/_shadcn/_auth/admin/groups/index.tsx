@@ -26,7 +26,10 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/')({
 	},
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {
-		await queryClient.query(adminListQuery(queries.queryGroups(getGroupsRequestBody(search))));
+		await Promise.all([
+			queryClient.query(adminListQuery(queries.queryGroups(getGroupsRequestBody(search)))),
+			queryClient.query(queries.adminClientConfig()),
+		]);
 	},
 	errorComponent: function AdminGroupsErrorPage({error, reset}: ErrorComponentProps) {
 		if (error instanceof ForbiddenError) {
@@ -47,6 +50,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/')({
 		const search = Route.useSearch();
 		const navigate = useNavigate();
 		const {data} = useSuspenseQuery(adminListQuery(queries.queryGroups(getGroupsRequestBody(search))));
+		const {data: clientConfig} = useSuspenseQuery(queries.adminClientConfig());
 
 		const handleSearchChange = useCallback(
 			(next: Partial<GroupsSearch>) => {
@@ -59,6 +63,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/')({
 			<AdminGroupsPage
 				groups={data.items}
 				totalItems={data.page.totalItems}
+				idPattern={clientConfig.idPattern}
 				search={search}
 				onSearchChange={handleSearchChange}
 			/>

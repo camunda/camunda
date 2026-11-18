@@ -8,6 +8,7 @@
 
 import {type Page} from '@playwright/test';
 import {BasePage, View} from '#/pages/BasePage';
+import {mockAdminClientConfig} from './mockAdminClientConfig';
 
 class AddMappingRuleModal extends View {
 	get dialog() {
@@ -77,6 +78,10 @@ class AdminMappingRulesPage extends BasePage {
 		this.addModal = new AddMappingRuleModal(page);
 		this.editModal = new EditMappingRuleModal(page);
 		this.deleteModal = new DeleteMappingRuleModal(page);
+	}
+
+	async mockClientConfig(script?: string) {
+		await mockAdminClientConfig(this.page, script);
 	}
 
 	async goto() {

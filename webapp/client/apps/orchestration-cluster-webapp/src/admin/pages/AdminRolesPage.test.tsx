@@ -29,6 +29,7 @@ async function renderPage(overrides: Partial<AdminRolesPageProps> = {}) {
 	const onSearchChange = vi.fn();
 	const screen = await render(
 		<AdminRolesPage
+			idPattern={null}
 			roles={[createRole()]}
 			totalItems={1}
 			defaultRoleIds={[]}
@@ -214,6 +215,38 @@ describe('<AdminRolesPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Create role'}).last());
 
 		await expect.element(screen.getByText('Please enter a valid role ID')).toBeVisible();
+	});
+
+	it('should keep the readable message when the server serves the default pattern', async () => {
+		// given
+		const {screen} = await renderPage({roles: [], idPattern: '^[a-zA-Z0-9_~@.+-]+$'});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Create role'}));
+		await userEvent.fill(screen.getByLabelText('Role ID'), 'not valid!');
+		await userEvent.click(screen.getByRole('button', {name: 'Create role'}).last());
+
+		// then
+		await expect.element(screen.getByText('Please enter a valid role ID')).toBeVisible();
+	});
+
+	it('should name the configured pattern when a role ID does not match it', async () => {
+		// given
+		const {screen} = await renderPage({roles: [], idPattern: '^[a-z]+$'});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Create role'}));
+		await userEvent.fill(screen.getByLabelText('Role ID'), 'role1');
+		await userEvent.click(screen.getByRole('button', {name: 'Create role'}).last());
+
+		// then
+		await expect
+			.element(
+				screen.getByText(
+					'Must be at most 256 characters and match the ID pattern configured for this cluster: ^[a-z]+$',
+				),
+			)
+			.toBeVisible();
 	});
 
 	it('should edit a role', async ({worker}) => {

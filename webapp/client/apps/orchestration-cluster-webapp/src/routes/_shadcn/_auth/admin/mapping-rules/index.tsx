@@ -26,7 +26,10 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/mapping-rules/')({
 	},
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {
-		await queryClient.query(queries.queryMappingRules(getMappingRulesRequestBody(search)));
+		await Promise.all([
+			queryClient.query(queries.queryMappingRules(getMappingRulesRequestBody(search))),
+			queryClient.query(queries.adminClientConfig()),
+		]);
 	},
 	errorComponent: function AdminMappingRulesErrorPage({error, reset}: ErrorComponentProps) {
 		if (error instanceof ForbiddenError) {
@@ -46,6 +49,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/mapping-rules/')({
 		const search = Route.useSearch();
 		const navigate = useNavigate();
 		const {data} = useSuspenseQuery(queries.queryMappingRules(getMappingRulesRequestBody(search)));
+		const {data: clientConfig} = useSuspenseQuery(queries.adminClientConfig());
 
 		const handleSearchChange = useCallback(
 			(next: Partial<MappingRulesSearch>) => {
@@ -58,6 +62,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/mapping-rules/')({
 			<AdminMappingRulesPage
 				mappingRules={data.items}
 				totalItems={data.page.totalItems}
+				idPattern={clientConfig.idPattern}
 				search={search}
 				onSearchChange={handleSearchChange}
 			/>

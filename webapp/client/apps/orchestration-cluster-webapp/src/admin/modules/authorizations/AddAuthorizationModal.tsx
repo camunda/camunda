@@ -34,11 +34,10 @@ import {
 	AUTHORIZATION_WILDCARD,
 	SECRET_NAME_PATTERN,
 	SECRET_REFERENCE_PREFIX,
-	getIdPattern,
-	isValidId,
 	isValidResourceId,
 	isValidSecretResourceId,
 } from './authorizationValidation';
+import {getIdPatternText, isValidId} from '#/admin/modules/shared/identifierPattern';
 import {GUIDE_URLS} from '#/admin/modules/shared/guideUrls';
 import {getResourceTypeLabel} from './resourceTypes';
 
@@ -122,7 +121,7 @@ const AddAuthorizationModal: React.FC<Props> = ({
 							return undefined;
 						}}
 						validate={({ownerId, resourceId, permissionTypes}) => {
-							const pattern = getIdPattern(idPattern).toString();
+							const pattern = getIdPatternText(idPattern);
 							let resourceIdError: string | undefined;
 							if (resourceType === 'SECRET') {
 								resourceIdError = !resourceId

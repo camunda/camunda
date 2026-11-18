@@ -21,7 +21,7 @@ import {
 	Label,
 	Textarea,
 } from '@camunda/design-system';
-import {isValidId} from '#/admin/modules/shared/identifierPattern';
+import {isCustomIdPattern, isValidId} from '#/admin/modules/shared/identifierPattern';
 import {isDuplicateGroupIdError} from './isDuplicateGroupIdError';
 import {useGroupMutations} from './useGroupMutations';
 
@@ -42,10 +42,11 @@ function getGroupIdError(meta: FieldMetaState<string>): string | undefined {
 
 type Props = {
 	isOpen: boolean;
+	idPattern: string | null | undefined;
 	onClose: () => void;
 };
 
-const AddGroupModal: React.FC<Props> = ({isOpen, onClose}) => {
+const AddGroupModal: React.FC<Props> = ({isOpen, idPattern, onClose}) => {
 	const {t} = useTranslation();
 	const {create} = useGroupMutations();
 
@@ -82,9 +83,11 @@ const AddGroupModal: React.FC<Props> = ({isOpen, onClose}) => {
 						validate={({groupId, name}) => ({
 							groupId: !groupId
 								? t('admin.groups.groupIdRequired')
-								: isValidId(groupId)
+								: isValidId(groupId, idPattern)
 									? undefined
-									: t('admin.groups.groupIdInvalid'),
+									: isCustomIdPattern(idPattern)
+										? t('admin.configuredIdPatternInvalidError', {pattern: idPattern})
+										: t('admin.groups.groupIdInvalid'),
 							name: name ? undefined : t('admin.groups.groupNameRequired'),
 						})}
 					>

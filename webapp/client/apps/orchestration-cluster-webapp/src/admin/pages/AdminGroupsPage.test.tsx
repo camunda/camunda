@@ -29,6 +29,7 @@ async function renderPage(overrides: Partial<AdminGroupsPageProps> = {}) {
 	const onSearchChange = vi.fn();
 	const screen = await render(
 		<AdminGroupsPage
+			idPattern={null}
 			groups={[createGroup()]}
 			totalItems={1}
 			search={{}}
@@ -95,7 +96,9 @@ describe('<AdminGroupsPage />', () => {
 			totalItems: 1,
 			onSearchChange: vi.fn(),
 		};
-		const screen = await render(<AdminGroupsPage {...props} search={{}} />, {wrapper: createAdminPageWrapper()});
+		const screen = await render(<AdminGroupsPage idPattern={null} {...props} search={{}} />, {
+			wrapper: createAdminPageWrapper(),
+		});
 		await userEvent.fill(screen.getByRole('searchbox'), 'ab');
 		await vi.waitFor(
 			() => expect(props.onSearchChange).toHaveBeenCalledWith({search: 'ab', page: undefined}),
@@ -104,7 +107,7 @@ describe('<AdminGroupsPage />', () => {
 
 		// when
 		await userEvent.fill(screen.getByRole('searchbox'), 'abc');
-		await screen.rerender(<AdminGroupsPage {...props} search={{search: 'ab'}} />);
+		await screen.rerender(<AdminGroupsPage idPattern={null} {...props} search={{search: 'ab'}} />);
 
 		// then
 		await expect.element(screen.getByRole('searchbox')).toHaveValue('abc');
@@ -214,6 +217,25 @@ describe('<AdminGroupsPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Create group'}).last());
 
 		await expect.element(screen.getByText('Please enter a valid group ID')).toBeVisible();
+	});
+
+	it('should name the configured pattern when a group ID does not match it', async () => {
+		// given
+		const {screen} = await renderPage({groups: [], idPattern: '^[a-z]+$'});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Create group'}));
+		await userEvent.fill(screen.getByLabelText('Group ID'), 'group1');
+		await userEvent.click(screen.getByRole('button', {name: 'Create group'}).last());
+
+		// then
+		await expect
+			.element(
+				screen.getByText(
+					'Must be at most 256 characters and match the ID pattern configured for this cluster: ^[a-z]+$',
+				),
+			)
+			.toBeVisible();
 	});
 
 	it('should edit a group', async ({worker}) => {

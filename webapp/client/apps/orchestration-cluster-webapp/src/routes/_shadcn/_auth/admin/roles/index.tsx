@@ -78,6 +78,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/')({
 				roles={data.items}
 				totalItems={data.page.totalItems}
 				defaultRoleIds={clientConfig.defaultRoleIds}
+				idPattern={clientConfig.idPattern}
 				search={search}
 				onSearchChange={handleSearchChange}
 			/>

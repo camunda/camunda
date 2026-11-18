@@ -41,9 +41,12 @@ describe('<EditGlobalTaskListenerModal />', () => {
 	});
 
 	it('should render nothing when there is no global task listener to edit', async () => {
-		const screen = await render(<EditGlobalTaskListenerModal globalTaskListener={null} onClose={() => {}} />, {
-			wrapper: getWrapper(),
-		});
+		const screen = await render(
+			<EditGlobalTaskListenerModal idPattern={null} globalTaskListener={null} onClose={() => {}} />,
+			{
+				wrapper: getWrapper(),
+			},
+		);
 
 		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
 	});
@@ -51,7 +54,7 @@ describe('<EditGlobalTaskListenerModal />', () => {
 	it('should prefill the fields with the global task listener being edited', async () => {
 		const globalTaskListener = createGlobalTaskListener({id: 'my-listener', type: 'my-type'});
 		const screen = await render(
-			<EditGlobalTaskListenerModal globalTaskListener={globalTaskListener} onClose={() => {}} />,
+			<EditGlobalTaskListenerModal idPattern={null} globalTaskListener={globalTaskListener} onClose={() => {}} />,
 			{wrapper: getWrapper()},
 		);
 
@@ -82,7 +85,7 @@ describe('<EditGlobalTaskListenerModal />', () => {
 		);
 
 		const screen = await render(
-			<EditGlobalTaskListenerModal globalTaskListener={globalTaskListener} onClose={mockOnClose} />,
+			<EditGlobalTaskListenerModal idPattern={null} globalTaskListener={globalTaskListener} onClose={mockOnClose} />,
 			{wrapper: getWrapper()},
 		);
 
@@ -95,7 +98,7 @@ describe('<EditGlobalTaskListenerModal />', () => {
 	it('should show validation errors for decimal retries and priority', async () => {
 		const globalTaskListener = createGlobalTaskListener({id: 'my-listener'});
 		const screen = await render(
-			<EditGlobalTaskListenerModal globalTaskListener={globalTaskListener} onClose={() => {}} />,
+			<EditGlobalTaskListenerModal idPattern={null} globalTaskListener={globalTaskListener} onClose={() => {}} />,
 			{wrapper: getWrapper()},
 		);
 
@@ -128,7 +131,7 @@ describe('<EditGlobalTaskListenerModal />', () => {
 		);
 
 		const screen = await render(
-			<EditGlobalTaskListenerModal globalTaskListener={globalTaskListener} onClose={mockOnClose} />,
+			<EditGlobalTaskListenerModal idPattern={null} globalTaskListener={globalTaskListener} onClose={mockOnClose} />,
 			{wrapper: getWrapper()},
 		);
 
@@ -140,11 +143,33 @@ describe('<EditGlobalTaskListenerModal />', () => {
 		expect(mockOnClose).not.toHaveBeenCalled();
 	});
 
+	it('should validate the listener type against the configured pattern', async () => {
+		// given
+		const globalTaskListener = createGlobalTaskListener({id: 'my-listener', type: 'my-type'});
+		const screen = await render(
+			<EditGlobalTaskListenerModal idPattern="^[a-z]+$" globalTaskListener={globalTaskListener} onClose={() => {}} />,
+			{wrapper: getWrapper()},
+		);
+
+		// when
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener type'}), 'type1');
+		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+		// then
+		await expect
+			.element(
+				screen.getByText(
+					'Must be at most 256 characters and match the ID pattern configured for this cluster: ^[a-z]+$',
+				),
+			)
+			.toBeVisible();
+	});
+
 	it('should call onClose when cancelled', async () => {
 		const mockOnClose = vi.fn();
 		const globalTaskListener = createGlobalTaskListener();
 		const screen = await render(
-			<EditGlobalTaskListenerModal globalTaskListener={globalTaskListener} onClose={mockOnClose} />,
+			<EditGlobalTaskListenerModal idPattern={null} globalTaskListener={globalTaskListener} onClose={mockOnClose} />,
 			{wrapper: getWrapper()},
 		);
 

@@ -24,7 +24,8 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createMappingRule, createQueryMappingRulesResponse} from '#/shared-test-modules/api-mocks/mapping-rules';
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, adminMappingRulesPage}) => {
+	await adminMappingRulesPage.mockClientConfig();
 	network.use(
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfigurationEndpoint({

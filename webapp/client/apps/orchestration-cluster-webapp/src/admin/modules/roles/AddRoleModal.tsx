@@ -21,7 +21,7 @@ import {
 	Label,
 	Textarea,
 } from '@camunda/design-system';
-import {isValidId} from '#/admin/modules/shared/identifierPattern';
+import {isCustomIdPattern, isValidId} from '#/admin/modules/shared/identifierPattern';
 import {isDuplicateRoleIdError} from './isDuplicateRoleIdError';
 import {useRoleMutations} from './useRoleMutations';
 
@@ -42,10 +42,11 @@ function getRoleIdError(meta: FieldMetaState<string>): string | undefined {
 
 type Props = {
 	isOpen: boolean;
+	idPattern: string | null | undefined;
 	onClose: () => void;
 };
 
-const AddRoleModal: React.FC<Props> = ({isOpen, onClose}) => {
+const AddRoleModal: React.FC<Props> = ({isOpen, idPattern, onClose}) => {
 	const {t} = useTranslation();
 	const {create} = useRoleMutations();
 
@@ -82,9 +83,11 @@ const AddRoleModal: React.FC<Props> = ({isOpen, onClose}) => {
 						validate={({roleId, name}) => ({
 							roleId: !roleId
 								? t('admin.roles.roleIdRequired')
-								: isValidId(roleId)
+								: isValidId(roleId, idPattern)
 									? undefined
-									: t('admin.roles.roleIdInvalid'),
+									: isCustomIdPattern(idPattern)
+										? t('admin.configuredIdPatternInvalidError', {pattern: idPattern})
+										: t('admin.roles.roleIdInvalid'),
 							name: name ? undefined : t('admin.roles.roleNameRequired'),
 						})}
 					>
