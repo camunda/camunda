@@ -15,8 +15,8 @@ import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.it.cluster.clustering.ClusteringRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -29,9 +29,13 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.shared.management.ActorClockService.MutableClock;
 import io.camunda.zeebe.test.util.record.ProcessInstances;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -100,9 +104,9 @@ public final class BrokerReprocessingTest {
   @Parameter(1)
   public String name;
 
-  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  public final ClusteringRule clusteringRule = new ClusteringRule(1, 1, 1);
+  public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
   @Rule public ExpectedException exception = ExpectedException.none();
   @Rule public Timeout timeout = new Timeout(120, TimeUnit.SECONDS);
   private Runnable restartAction = () -> {};
@@ -223,7 +227,7 @@ public final class BrokerReprocessingTest {
     var activatedJobBar = activateJob("bar");
 
     // when
-    restartAction = () -> brokerRule.getClock().addTime(defaultJobTimeout);
+    restartAction = () -> clusteringRule.getClock().addTime(defaultJobTimeout);
     reprocessingTrigger.accept(this);
 
     awaitJobTimeout();
@@ -311,7 +315,7 @@ public final class BrokerReprocessingTest {
     activateJob("foo");
 
     // when
-    restartAction = () -> brokerRule.getClock().addTime(defaultJobTimeout);
+    restartAction = () -> clusteringRule.getClock().addTime(defaultJobTimeout);
     reprocessingTrigger.accept(this);
     awaitJobTimeout();
     final var activatedJob = activateJob("foo");
@@ -566,7 +570,7 @@ public final class BrokerReprocessingTest {
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
 
     // when
-    restartAction = () -> brokerRule.getClock().addTime(Duration.ofSeconds(10));
+    restartAction = () -> clusteringRule.getClock().addTime(Duration.ofSeconds(10));
     reprocessingTrigger.accept(this);
 
     // then
@@ -635,27 +639,32 @@ public final class BrokerReprocessingTest {
   }
 
   protected void deleteSnapshotsAndRestart() {
-    brokerRule.stopBroker();
+    final var dataDirectory = Path.of(clusteringRule.getBrokerCfg(0).getData().getDirectory());
+    clusteringRule.stopBroker(0);
 
     // delete snapshot files to trigger recovery
-    try {
-      brokerRule.purgeSnapshots();
-    } catch (final Exception e) {
-      e.printStackTrace();
+    try (final var paths = Files.walk(dataDirectory)) {
+      final var snapshotDirectories =
+          paths.filter(p -> p.getFileName().toString().equals("snapshots")).toList();
+      assertThat(snapshotDirectories).isNotEmpty();
+      for (final var snapshotDirectory : snapshotDirectories) {
+        FileUtil.deleteFolder(snapshotDirectory);
+      }
+    } catch (final IOException e) {
       Assertions.fail(e.getMessage());
     }
 
     restartAction.run();
 
-    brokerRule.startBroker();
+    clusteringRule.startBroker(0);
   }
 
   protected void restartBroker() {
-    brokerRule.stopBroker();
+    clusteringRule.stopBroker(0);
 
     restartAction.run();
 
-    brokerRule.startBroker();
+    clusteringRule.startBroker(0);
   }
 
   private void deploy(final BpmnModelInstance processTwoTasks, final String s) {
@@ -687,7 +696,7 @@ public final class BrokerReprocessingTest {
     final Duration defaultJobTimeout =
         clientRule.getClient().getConfiguration().getDefaultJobTimeout();
 
-    final ControlledActorClock clock = brokerRule.getClock();
+    final MutableClock clock = clusteringRule.getClock();
     final Duration pollingInterval =
         EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL
             // this shouldn't be needed but is caused by the fact hat on reprocessing without

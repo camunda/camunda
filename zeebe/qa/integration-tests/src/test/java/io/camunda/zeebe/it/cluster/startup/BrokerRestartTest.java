@@ -11,38 +11,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.response.PublishMessageResponse;
-import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.it.cluster.clustering.ClusteringRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class BrokerRestartTest {
-  private final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  private final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  private final ClusteringRule clusteringRule = new ClusteringRule(1, 1, 1);
+  private final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
-  @Rule public final RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  @Rule public final RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
 
   @Test
   public void shouldSortRecordsByPosition() {
     // given
-    final var listener = new Listener();
-
     // when
     generateLoad();
-    brokerRule.restartBroker(listener);
+    restartBroker();
     generateLoad();
-    brokerRule.restartBroker(listener);
+    restartBroker();
     generateLoad();
 
     // then
-    final var log = listener.get();
+    final var log = clusteringRule.getLogStream(1);
     final var reader = log.newLogStreamReader();
     reader.seekToFirstEvent();
     assertThat(reader.hasNext()).isTrue();
@@ -53,6 +46,11 @@ public class BrokerRestartTest {
       assertThat(position).isGreaterThan(previousPosition);
       previousPosition = position;
     }
+  }
+
+  private void restartBroker() {
+    clusteringRule.stopBroker(0);
+    clusteringRule.startBroker(0);
   }
 
   private void generateLoad() {
@@ -68,33 +66,5 @@ public class BrokerRestartTest {
         .correlationKey(String.valueOf(key))
         .timeToLive(Duration.ofMinutes(2))
         .send();
-  }
-
-  private static final class Listener implements PartitionListener {
-    private volatile LogStream logStream;
-
-    private LogStream get() {
-      return logStream;
-    }
-
-    @Override
-    public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public ActorFuture<Void> onBecomingLeader(
-        final int partitionId,
-        final long term,
-        final LogStream logStream,
-        final QueryService queryService) {
-      this.logStream = logStream;
-      return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
-      return CompletableActorFuture.completed(null);
-    }
   }
 }
