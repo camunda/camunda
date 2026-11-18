@@ -28,8 +28,16 @@ AVAILABILITY_P99 = {"default": 1.0, "pt1": 9.0, "pt2": 8.0, "pt3": 1.2}
 EXPORT = {"default": (100, 100, 500), "pt1": (4000, 500, 400), "pt2": (3000, 100, 450), "pt3": (50, 50, 500), "pt6": (90000, 1000, 200)}
 
 
+# tenant -> {partition: (queue, exported records per second)}; the summed rate hides the slow partition
+PARTITIONS = {"pt1": {"1": (1000, 1700), "2": (15000, 176)}}
+
+
 def fake(with_tenant_label=True):
     def query(promql, at):
+        if promql.startswith("max by (physicalTenant, partition)"):
+            return [sample(b, physicalTenant=t, partition=p) for t, ps in PARTITIONS.items() for p, (b, _) in ps.items()]
+        if promql.startswith("min by (physicalTenant, partition)"):
+            return [sample(r, physicalTenant=t, partition=p) for t, ps in PARTITIONS.items() for p, (_, r) in ps.items()]
         if "zeebe_log_appender_last_committed_position" in promql and "max_over_time" not in promql:
             if not with_tenant_label:
                 return []
@@ -111,6 +119,13 @@ class ExportTest(unittest.TestCase):
         self.assertAlmostEqual(pt6.export_lag_seconds, 450)
         self.assertAlmostEqual(tenants["default"].export_lag_seconds, 0.2)
 
+    def test_the_export_lag_is_the_slowest_partition_not_the_sum(self):
+        tenants = report.collect_client(fake(), "c8-test", WINDOW, END)
+        report.collect_export(fake(), "c8-test", WINDOW, END, tenants)
+        pt1 = tenants["pt1"]
+        self.assertAlmostEqual(pt1.partition_lag_seconds("1"), 1000 / 1700)
+        self.assertAlmostEqual(pt1.export_lag_seconds, 15000 / 176)  # summed it would be 4000 / 400 = 10 s
+
     def test_a_note_says_when_the_broker_metrics_have_no_tenant_label(self):
         tenants = report.collect_client(fake(with_tenant_label=False), "c8-test", WINDOW, END)
         notes = report.collect_export(fake(with_tenant_label=False), "c8-test", WINDOW, END, tenants)
@@ -191,6 +206,11 @@ class RenderTest(unittest.TestCase):
         self.assertIn("**2 of 5** tenants meet all of them", markdown)  # default and pt3
         self.assertIn("`pt6`", markdown)  # the lagging tenant is named, although it has no load tester
         self.assertEqual(data["failing"]["pt2"], ["served", "availability", "export"])
+
+    def test_the_noisy_tenant_gets_a_table_per_partition(self):
+        markdown, _ = report.build_report(fake(), args())
+        self.assertIn("## Export per partition", markdown)
+        self.assertIn("| 2 | 15,000 | 176.0 |", markdown)
 
     def test_a_tenant_without_load_is_not_counted_as_quiet(self):
         markdown, data = report.build_report(fake(), args())

@@ -69,6 +69,8 @@ class Tenant:
     export_backlog_start: float | None = None
     export_backlog_max: float | None = None
     export_rate: float | None = None
+    # partition -> {"backlog": records not yet exported, "rate": exported per second (slowest exporter)}
+    export_partitions: dict[str, dict[str, float]] = field(default_factory=dict)
 
     @property
     def offered(self) -> float:
@@ -94,9 +96,21 @@ class Tenant:
             return None
         return self.export_backlog - self.export_backlog_start
 
+    def partition_lag_seconds(self, partition: str) -> float | None:
+        values = self.export_partitions.get(partition, {})
+        if "backlog" not in values or values.get("rate", 0) <= 0:
+            return None
+        return values["backlog"] / values["rate"]
+
     @property
     def export_lag_seconds(self) -> float | None:
-        """Time the exporter needs to clear its queue at the rate it exports at."""
+        """Time the slowest partition needs to clear its queue at the rate it exports at.
+
+        The worst partition decides: dividing the summed queue by the summed rate lets the fast
+        partitions hide a slow one."""
+        lags = [lag for p in self.export_partitions if (lag := self.partition_lag_seconds(p)) is not None]
+        if lags:
+            return max(lags)
         if self.export_backlog is None or not self.export_rate or self.export_rate <= 0:
             return None
         return self.export_backlog / self.export_rate
@@ -240,6 +254,19 @@ def collect_export(query: QueryFn, namespace: str, window_s: int, at: float, ten
         ),
         "export_rate",
     )
+    for attribute, promql in (
+        (
+            "backlog",
+            f"max by (physicalTenant, partition) (zeebe_log_appender_last_committed_position{{{sel}}})"
+            f" - min by (physicalTenant, partition) (zeebe_exporter_last_exported_position{{{sel}}})",
+        ),
+        ("rate", f"min by (physicalTenant, partition) (rate(zeebe_exporter_last_exported_position{{{sel}}}[{w}]))"),
+    ):
+        for r in query(promql, at):
+            name, partition = r["metric"].get("physicalTenant"), r["metric"].get("partition")
+            if name is None or partition is None or (v := sample_value(r)) is None:
+                continue
+            tenants.setdefault(name, Tenant(name)).export_partitions.setdefault(partition, {})[attribute] = v
     if not found:
         notes.append(
             "No export queue with a `physicalTenant` label was found: the broker metrics of this build or "
@@ -447,6 +474,24 @@ def render(
             f"{fmt(t.pending_avg, digits=0)} | {queue} | {fmt(t.export_lag_seconds, 's')} | {fmt(t.jobs_handled)} |"
         )
     out += ["", "Served is the share of the offered load answered with success. Rejected is the share of answered requests that failed (backpressure is `resource exhausted` or HTTP 503/429). Skipped is load the starter could not even send. The export queue is records committed but not yet exported, with its change over the window in brackets.", ""]
+
+    partitioned = [t for t in ordered if t.role == "saturating" and t.export_partitions]
+    if partitioned:
+        out += ["## Export per partition", ""]
+        for t in partitioned:
+            out += [
+                f"`{t.name}`: the export lag of a tenant is its slowest partition.",
+                "",
+                "| Partition | Export queue | Export rate (/s) | Export lag |",
+                "| --- | --- | --- | --- |",
+            ]
+            for partition in sorted(t.export_partitions, key=lambda p: int(p) if p.isdigit() else 0):
+                values = t.export_partitions[partition]
+                out.append(
+                    f"| {partition} | {fmt(values.get('backlog'))} | {fmt(values.get('rate'))} | "
+                    f"{fmt(t.partition_lag_seconds(partition), 's')} |"
+                )
+            out.append("")
 
     out += ["## How the load is shared", "", "| Tenant | Offered share | Served share | Fair share (weight) |", "| --- | --- | --- | --- |"]
     for t in ordered:
