@@ -1,6 +1,12 @@
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
+  implementation(project(":configuration"))
+  implementation(project(":camunda-search-client-connect"))
+  implementation(libs.co.elastic.clients.elasticsearch.java)
+  implementation(libs.org.springframework.boot.spring.boot)
+  implementation(libs.org.springframework.spring.core)
+  implementation(libs.org.jspecify.jspecify)
   implementation(libs.info.picocli.picocli)
   implementation(libs.org.slf4j.slf4j.api)
 
