@@ -52,6 +52,10 @@ public final class CamundaExporterConfigurationApplier {
     targetDeleter.setEntityBatchSize(sourceDeleter.getEntityBatchSize());
     targetDeleter.setMaxRetryAttempts(sourceDeleter.getMaxRetryAttempts());
     targetDeleter.setRetryDelayMs(Math.toIntExact(sourceDeleter.getRetryDelay().toMillis()));
+    targetDeleter.setDelayBetweenRuns(
+        Math.toIntExact(sourceDeleter.getDelayBetweenRuns().toMillis()));
+    targetDeleter.setMaxDelayBetweenRuns(
+        Math.toIntExact(sourceDeleter.getMaxDelayBetweenRuns().toMillis()));
   }
 
   public static void applyConnect(

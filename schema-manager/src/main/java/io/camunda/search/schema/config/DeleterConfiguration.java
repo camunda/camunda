@@ -14,6 +14,9 @@ public class DeleterConfiguration {
   private int entityBatchSize = 500;
   private int maxRetryAttempts = 3;
   private int retryDelayMs = 1000;
+  // delay in ms before the next run; grows up to maxDelayBetweenRuns while there is nothing to do
+  private int delayBetweenRuns = 2000;
+  private int maxDelayBetweenRuns = 60000;
 
   public int getEntityBatchSize() {
     return entityBatchSize;
@@ -47,6 +50,22 @@ public class DeleterConfiguration {
     this.retryDelayMs = retryDelayMs;
   }
 
+  public int getDelayBetweenRuns() {
+    return delayBetweenRuns;
+  }
+
+  public void setDelayBetweenRuns(final int delayBetweenRuns) {
+    this.delayBetweenRuns = delayBetweenRuns;
+  }
+
+  public int getMaxDelayBetweenRuns() {
+    return maxDelayBetweenRuns;
+  }
+
+  public void setMaxDelayBetweenRuns(final int maxDelayBetweenRuns) {
+    this.maxDelayBetweenRuns = maxDelayBetweenRuns;
+  }
+
   @Override
   public String toString() {
     return "DeleterConfiguration{"
@@ -58,6 +77,10 @@ public class DeleterConfiguration {
         + maxRetryAttempts
         + ", retryDelayMs="
         + retryDelayMs
+        + ", delayBetweenRuns="
+        + delayBetweenRuns
+        + ", maxDelayBetweenRuns="
+        + maxDelayBetweenRuns
         + '}';
   }
 }
