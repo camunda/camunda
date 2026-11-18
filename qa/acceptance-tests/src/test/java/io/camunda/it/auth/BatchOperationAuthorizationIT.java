@@ -392,6 +392,32 @@ class BatchOperationAuthorizationIT {
   }
 
   @Test
+  void shouldReturnEmptyForUnauthorizedQueryOfBatchOperationItems(
+      @Authenticated(ADMIN) final CamundaClient camundaAdminClient,
+      @Authenticated(RESTRICTED_READ) final CamundaClient camundaRestictedClient) {
+    // given a batch operation with items that the admin can read
+    final var scopeId = startProcessesWithScope(camundaAdminClient);
+    final var batchOperationKey =
+        createProcessInstanceCancelBatchOperation(camundaAdminClient, scopeId)
+            .getBatchOperationKey();
+    waitForBatchOperation(camundaAdminClient, batchOperationKey, 3);
+    waitForBatchOperationItems(
+        camundaAdminClient, batchOperationKey, items -> assertThat(items).hasSize(3));
+
+    // when a user without BATCH READ permission searches the items
+    final var items =
+        camundaRestictedClient
+            .newBatchOperationItemsSearchRequest()
+            .filter(f -> f.batchOperationKey(batchOperationKey))
+            .send()
+            .join();
+
+    // then no items are returned
+    assertThat(items.items()).isEmpty();
+    assertThat(items.page().totalItems()).isZero();
+  }
+
+  @Test
   void shouldResolveIncidentWithJobViaBatchOperationAdmin(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // given - create a process instance that will result in an incident
