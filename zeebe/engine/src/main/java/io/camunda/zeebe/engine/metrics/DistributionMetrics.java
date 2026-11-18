@@ -18,8 +18,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public final class DistributionMetrics {
 
   /** Tag value for distributions which are not part of any queue. */
