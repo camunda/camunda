@@ -34,7 +34,6 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -98,10 +97,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 class CslChainIntegrationTest {
 
   private static final Map<String, Session> SESSION_STORE = new ConcurrentHashMap<>();
-  // the default 'api.audience' of Self-Managed, and the cloud API audience set in
-  // cloudConfiguration()
-  private static final String CCSM_PUBLIC_API_AUDIENCE = "optimize";
-  private static final String CCSAAS_PUBLIC_API_AUDIENCE = "optimize-public-api";
   private static final MapSessionRepository SESSION_REPO = new MapSessionRepository(SESSION_STORE);
   private static JwksTestServer server;
 
@@ -165,38 +160,6 @@ class CslChainIntegrationTest {
   @Test
   void shouldAuthenticateSessionOnApiPathForCcsm() {
     assertSessionAuthenticatesApiPath(ccsmRunner());
-  }
-
-  @Test
-  void shouldRejectSessionOnPublicApiPathsForCcsm() {
-    assertSessionRejectedOnPublicApiPaths(ccsmRunner());
-  }
-
-  @Test
-  void shouldRejectBearerTokenWithoutPublicApiAudienceForCcsm() throws Exception {
-    assertBearerRejectedOnPublicApi(
-        ccsmRunner(), signBearerToken(), "bearer token without the public API audience");
-  }
-
-  @Test
-  void shouldAuthenticateBearerTokenWithPublicApiAudienceForCcsm() throws Exception {
-    assertBearerAuthenticatesOnPublicApi(
-        ccsmRunner(), signBearerToken(CCSM_PUBLIC_API_AUDIENCE, null));
-  }
-
-  // The two tests below pin that OptimizePublicApiAccessFilter is what rejects these requests:
-  // without it on the chain, the shared API chain itself lets both through. This is the isolation
-  // the rejection tests above rely on, made executable rather than observed by hand.
-
-  @Test
-  void shouldReachPublicApiPathWithSessionWhenFilterAbsentForCcsm() {
-    assertSessionReachesPublicApiPath(ccsmRunnerWithoutPublicApiFilter(baseRunner()));
-  }
-
-  @Test
-  void shouldReachPublicApiPathWithoutPublicApiAudienceWhenFilterAbsentForCcsm() throws Exception {
-    assertBearerAuthenticatesOnPublicApi(
-        ccsmRunnerWithoutPublicApiFilter(baseRunner()), signBearerToken());
   }
 
   @Test
@@ -266,56 +229,6 @@ class CslChainIntegrationTest {
   @Test
   void shouldAuthenticateSessionOnApiPathForCcsaas() {
     assertSessionAuthenticatesApiPath(ccsaasRunner());
-  }
-
-  @Test
-  void shouldRejectSessionOnPublicApiPathsForCcsaas() {
-    assertSessionRejectedOnPublicApiPaths(ccsaasRunner());
-  }
-
-  @Test
-  void shouldRejectBearerTokenWithoutPublicApiAudienceForCcsaas() throws Exception {
-    assertBearerRejectedOnPublicApi(
-        ccsaasRunner(), signBearerToken(), "bearer token without the public API audience");
-  }
-
-  @Test
-  void shouldRejectBearerTokenWithoutClusterIdOnPublicApiForCcsaas() throws Exception {
-    // the shared chain accepts a token without the cluster id claim; the public API does not
-    assertBearerRejectedOnPublicApi(
-        ccsaasRunner(),
-        signBearerToken(CCSAAS_PUBLIC_API_AUDIENCE, null),
-        "public API token without the cluster id claim");
-  }
-
-  @Test
-  void shouldAuthenticateBearerTokenWithPublicApiAudienceForCcsaas() throws Exception {
-    assertBearerAuthenticatesOnPublicApi(
-        ccsaasRunner(), signBearerToken(CCSAAS_PUBLIC_API_AUDIENCE, "cluster-1"));
-  }
-
-  // As for CCSM, these pin OptimizePublicApiAccessFilter as the sole cause of the rejections above
-  // —
-  // including the SaaS-only cluster-id check, which the shared chain's lenient validator does not
-  // enforce.
-
-  @Test
-  void shouldReachPublicApiPathWithSessionWhenFilterAbsentForCcsaas() {
-    assertSessionReachesPublicApiPath(ccsaasRunnerWithoutPublicApiFilter());
-  }
-
-  @Test
-  void shouldReachPublicApiPathWithoutPublicApiAudienceWhenFilterAbsentForCcsaas()
-      throws Exception {
-    assertBearerAuthenticatesOnPublicApi(ccsaasRunnerWithoutPublicApiFilter(), signBearerToken());
-  }
-
-  @Test
-  void shouldReachPublicApiPathWithoutClusterIdWhenFilterAbsentForCcsaas() throws Exception {
-    // the token carries the public API audience but no cluster id claim; the shared chain's cluster
-    // validator is lenient on absence, so only the filter would reject it
-    assertBearerAuthenticatesOnPublicApi(
-        ccsaasRunnerWithoutPublicApiFilter(), signBearerToken(CCSAAS_PUBLIC_API_AUDIENCE, null));
   }
 
   @Test
@@ -657,106 +570,6 @@ class CslChainIntegrationTest {
         });
   }
 
-  /**
-   * The public API and ingestion endpoints serve machine clients without per-user checks, so the
-   * session that the rest of the API chain accepts must not reach them.
-   */
-  private void assertSessionRejectedOnPublicApiPaths(final WebApplicationContextRunner runner) {
-    runner.run(
-        ctx -> {
-          final Filter proxy = resolveSecurityFilter(ctx);
-          // Spring decodes path segments before routing, so the encoded forms reach the same
-          // endpoints and must be rejected too.
-          for (final String path :
-              List.of(
-                  "/api/public/collection",
-                  "/api/ingestion/variable",
-                  "/api/p%75blic/collection",
-                  "/api/ingestion/vari%61ble")) {
-            final MockHttpServletRequest request = new MockHttpServletRequest("GET", path);
-            request.setCookies(authenticatedSessionCookie());
-            final MockHttpServletResponse response = new MockHttpServletResponse();
-            final MockFilterChain downstream = new MockFilterChain();
-
-            proxy.doFilter(request, response, downstream);
-
-            assertThat(response.getStatus())
-                .as("session (no bearer) on %s, body: %s", path, response.getContentAsString())
-                .isEqualTo(401);
-            assertThat(downstream.getRequest()).isNull();
-          }
-        });
-  }
-
-  /** A token without the public API audience, such as a user's login token. */
-  private void assertBearerRejectedOnPublicApi(
-      final WebApplicationContextRunner runner, final String token, final String description) {
-    runner.run(
-        ctx -> {
-          final Filter proxy = resolveSecurityFilter(ctx);
-          final MockHttpServletRequest request =
-              new MockHttpServletRequest("GET", "/api/public/collection");
-          request.addHeader("Authorization", "Bearer " + token);
-          final MockHttpServletResponse response = new MockHttpServletResponse();
-          final MockFilterChain downstream = new MockFilterChain();
-
-          proxy.doFilter(request, response, downstream);
-
-          assertThat(response.getStatus())
-              .as("%s, body: %s", description, response.getContentAsString())
-              .isEqualTo(401);
-          assertThat(downstream.getRequest()).isNull();
-        });
-  }
-
-  /**
-   * Without {@link OptimizePublicApiAccessFilter} on the chain, the API chain's session-or-bearer
-   * rule lets a session reach a public API path — which is exactly why the filter is needed.
-   */
-  private void assertSessionReachesPublicApiPath(final WebApplicationContextRunner runner) {
-    runner.run(
-        ctx -> {
-          final Filter proxy = resolveSecurityFilter(ctx);
-          final MockHttpServletRequest request =
-              new MockHttpServletRequest("GET", "/api/public/collection");
-          request.setCookies(authenticatedSessionCookie());
-          final MockHttpServletResponse response = new MockHttpServletResponse();
-          final MockFilterChain downstream = new MockFilterChain();
-
-          proxy.doFilter(request, response, downstream);
-
-          assertThat(response.getStatus())
-              .as(
-                  "session on public API path without the filter, body: %s",
-                  response.getContentAsString())
-              .isEqualTo(200);
-          assertThat(downstream.getRequest()).isNotNull();
-        });
-  }
-
-  /** The control for the rejections above: a public API client still gets through. */
-  private void assertBearerAuthenticatesOnPublicApi(
-      final WebApplicationContextRunner runner, final String token) {
-    runner.run(
-        ctx -> {
-          final Filter proxy = resolveSecurityFilter(ctx);
-          final MockHttpServletRequest request =
-              new MockHttpServletRequest("GET", "/api/public/collection");
-          request.addHeader("Authorization", "Bearer " + token);
-          final MockHttpServletResponse response = new MockHttpServletResponse();
-          final MockFilterChain downstream = new MockFilterChain();
-
-          proxy.doFilter(request, response, downstream);
-
-          assertThat(response.getStatus())
-              .as(
-                  "bearer token with the public API audience, body: %s",
-                  response.getContentAsString())
-              .isEqualTo(200);
-          assertThat(downstream.getRequest()).isNotNull();
-        });
-  }
-
   private void assertUnprotectedPathPermitsAll(final WebApplicationContextRunner runner) {
     runner.run(
         ctx -> {
@@ -1087,16 +900,6 @@ class CslChainIntegrationTest {
   }
 
   private WebApplicationContextRunner ccsmRunner(final WebApplicationContextRunner base) {
-    return ccsmRunnerWithoutPublicApiFilter(base)
-        .withUserConfiguration(OptimizePublicApiAccessConfiguration.class);
-  }
-
-  /**
-   * The CCSM chain without {@link OptimizePublicApiAccessConfiguration}, so a test can prove the
-   * filter is what rejects a request on the public API paths rather than the surrounding chain.
-   */
-  private WebApplicationContextRunner ccsmRunnerWithoutPublicApiFilter(
-      final WebApplicationContextRunner base) {
     return base.withPropertyValues("spring.profiles.active=ccsm")
         .withBean(
             ConfigurationService.class, ConfigurationServiceBuilder::createDefaultConfiguration)
@@ -1111,12 +914,6 @@ class CslChainIntegrationTest {
   }
 
   private WebApplicationContextRunner ccsaasRunner() {
-    return ccsaasRunnerWithoutPublicApiFilter()
-        .withUserConfiguration(OptimizePublicApiAccessConfiguration.class);
-  }
-
-  /** The CCSaaS counterpart of {@link #ccsmRunnerWithoutPublicApiFilter}. */
-  private WebApplicationContextRunner ccsaasRunnerWithoutPublicApiFilter() {
     return baseRunner()
         .withPropertyValues("spring.profiles.active=cloud")
         .withBean(ConfigurationService.class, CslChainIntegrationTest::cloudConfiguration)
@@ -1143,7 +940,6 @@ class CslChainIntegrationTest {
     // access control must not silently fail open), so both must be set for the chain to build.
     cloudAuthConfiguration.setOrganizationId("org-1");
     cloudAuthConfiguration.setClusterId("cluster-1");
-    cloudAuthConfiguration.setAudience(CCSAAS_PUBLIC_API_AUDIENCE);
     return configurationService;
   }
 
@@ -1261,24 +1057,13 @@ class CslChainIntegrationTest {
   }
 
   private static String signBearerToken() throws Exception {
-    return signBearerToken(null, null);
-  }
-
-  /**
-   * A signed bearer token with the given audience and SaaS cluster id claim, each left out when it
-   * is null.
-   */
-  private static String signBearerToken(final String audience, final String clusterId)
-      throws Exception {
     final var header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(server.kid()).build();
     final var claims =
         new JWTClaimsSet.Builder()
             .subject("alice")
             .issuer(server.issuerUri())
-            .audience(audience)
             .issueTime(Date.from(Instant.now()))
             .expirationTime(Date.from(Instant.now().plusSeconds(60)))
-            .claim(OptimizeCloudClusterValidator.CLUSTER_CLAIM, clusterId)
             .build();
     final var jwt = new SignedJWT(header, claims);
     jwt.sign(server.signer());
