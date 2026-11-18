@@ -102,10 +102,10 @@ class RenderTest(unittest.TestCase):
 
 
 class MainTest(unittest.TestCase):
-    def run_main(self, tenant_count):
+    def run_main(self, tenant_count, saturating=1):
         directory = pathlib.Path(tempfile.mkdtemp())
         env = {
-            "TENANT_COUNT": str(tenant_count), "SATURATING_COUNT": "1", "SATURATING_CAPACITY_RATIO": "1.2",
+            "TENANT_COUNT": str(tenant_count), "SATURATING_COUNT": str(saturating), "SATURATING_CAPACITY_RATIO": "1.2",
             "QUIET_MULTIPLIER": "0.2", "WORKER_REPLICAS_PER_100_PI": "3", "STORAGE": "elasticsearch",
             "CAPACITY_RATE": "", "TOTAL_RATE": "0", "TENANT_WEIGHTS": "", "TENANT_OVERRIDES": "",
             "GITHUB_OUTPUT": str(directory / "out"), "GITHUB_STEP_SUMMARY": str(directory / "summary"),
@@ -122,7 +122,10 @@ class MainTest(unittest.TestCase):
         self.assertEqual(len(out.split("profiles=")[1].split("\n")[0].split()), 9)
 
     def test_a_single_tenant_has_no_physical_tenants(self):
-        self.assertIn("physical-tenant-count=0\n", self.run_main(1)[1])
+        self.assertIn("physical-tenant-count=0\n", self.run_main(1, saturating=0)[1])
+
+    def test_a_single_tenant_cannot_also_be_saturating(self):
+        self.assertEqual(self.run_main(1)[0], 1)
 
     def test_zero_tenants_is_rejected(self):
         self.assertEqual(self.run_main(0)[0], 1)
