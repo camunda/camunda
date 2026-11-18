@@ -77,7 +77,9 @@ jobs:
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
       load-test-k6-changes: ${{ steps.filter.outputs.load-test-k6-changes }}
-      gradle-changes: ${{ steps.filter.outputs.gradle-changes }}
+      # Union of the Gradle/Maven build-definition signal and the Java signal (ADR D4: Java, Maven,
+      # Gradle, or relevant CI inputs all trigger compilation and distribution parity).
+      gradle-changes: ${{ steps.filter.outputs.gradle-changes == 'true' || steps.filter.outputs.java-code-changes == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -606,9 +608,7 @@ jobs:
 
   gradle-compile-check:
     name: "Gradle / Compile Check"
-    if: >-
-      needs.detect-changes.outputs.java-code-changes == 'true' ||
-      needs.detect-changes.outputs.gradle-changes == 'true'
+    if: needs.detect-changes.outputs.gradle-changes == 'true'
     needs: [ detect-changes ]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
@@ -658,17 +658,14 @@ jobs:
           ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
             testClasses
       - name: Package distribution
-        if: needs.detect-changes.outputs.gradle-changes == 'true'
         run: |
           ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
             :camunda-zeebe:distZip
       - name: Write distribution dependency report
-        if: needs.detect-changes.outputs.gradle-changes == 'true'
         run: |
           ./gradlew --no-configuration-cache --console=plain -Pskip.fe.build \
             :camunda-zeebe:writeDistDependencyReport
       - name: Prepare Gradle distribution comparison inputs
-        if: needs.detect-changes.outputs.gradle-changes == 'true'
         run: |
           set -euo pipefail
           mapfile -t gradle_zips < <(find dist/build/distributions -maxdepth 1 -type f -name 'camunda-zeebe-*.zip' -print)
@@ -695,7 +692,9 @@ jobs:
       - name: Upload Gradle distribution comparison inputs to GCS
         if: needs.detect-changes.outputs.gradle-changes == 'true' && github.event.pull_request.head.repo.fork != true
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
         env:
+          CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
           GRADLE_PARITY_INPUTS: ${{ runner.temp }}/gradle-parity-inputs
         with:
           max_attempts: 5

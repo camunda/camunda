@@ -47,7 +47,7 @@ merge groups, protected-branch pushes, schedules, and manual runs.
    are not exercised by the affected module's compile task.
 5. For every Gradle change, build the Gradle distribution and compare its archive with the Maven
    archive using `compare-dist.py`. The CI gate compiles `testClasses`, packages `distZip`, and
-   compares the archives in separate steps of the same job.
+   uploads the Gradle outputs, and `gradle-distribution-parity-check` compares the archives.
 6. Preserve already-fixed conventions; avoid regressions.
 
 ### Rebase onto main before Gradle parity work
@@ -107,9 +107,9 @@ The rebase audit identifies what changed. It does not replace the porting proced
 ### Gradle CI gates
 
 On an eligible Gradle CI path, `gradle-compile-check` runs the root `testClasses` lifecycle task,
-builds `:camunda-zeebe:distZip`, writes the distribution dependency report, and compares it with
-the attached Maven distribution ZIP from the SNAPSHOT archive using `compare-dist.py`. These steps
-form the Gradle build gate; do not describe this path as a full Gradle test-suite run.
+builds `:camunda-zeebe:distZip`, and writes the distribution dependency report. The
+`gradle-distribution-parity-check` job then compares them with the attached Maven distribution ZIP
+from the SNAPSHOT archive using `compare-dist.py`. These jobs form the Gradle build gate; do not describe this path as a full Gradle test-suite run.
 
 **Before investigating CI failures: always rebase onto main first.** CI runs on the merge
 commit, so Gradle build files apply against main's Java sources, which may differ from the
