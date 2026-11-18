@@ -7,17 +7,16 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
@@ -26,16 +25,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Keeps the public API ({@code /api/public/**}) and the variable ingestion endpoint ({@code
- * /api/ingestion/variable}) a bearer-only surface for clients of the public API audience, as the
- * legacy security stacks did.
+ * /api/ingestion/variable}) a surface for API clients only, as the legacy security stacks did.
  *
  * <p>Under CSL these paths share the API chain with the internal API, which also accepts the webapp
- * session, and which accepts the login audience and key set next to the public API ones. Their
- * handlers perform no per-user authorization, because they serve machine clients. So on these
- * paths, this filter answers {@code 401} unless the request carries a bearer token whose audience
- * contains the public API audience: {@code api.audience} for Self-Managed, the cloud API audience
- * for SaaS. In SaaS, the token must also carry this cluster's id. These are the checks that the
- * legacy public API decoders made.
+ * session and users' bearer tokens. Their handlers perform no per-user authorization, because they
+ * serve machine clients. So on these paths, this filter answers {@code 401} unless the request
+ * carries a bearer token that CSL classifies as an API client's, by the configured {@code
+ * camunda.security.authentication.oidc.client-id-claim}. In SaaS, the token must also carry this
+ * cluster's id.
+ *
+ * <p>The client classification replaces an audience check: SaaS no longer passes Optimize a public
+ * API audience once it runs CSL, so that check denied every API client (camunda/camunda#69726).
  */
 public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
 
@@ -57,41 +57,35 @@ public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
           PathPatternRequestMatcher.withDefaults().matcher(PUBLIC_API_PATTERN),
           PathPatternRequestMatcher.withDefaults().matcher(INGESTION_VARIABLE_PATTERN));
 
-  private final String publicApiAudience;
+  private final CamundaAuthenticationProvider authenticationProvider;
   private final String clusterId;
 
-  private OptimizePublicApiAccessFilter(final String publicApiAudience, final String clusterId) {
-    if (publicApiAudience == null || publicApiAudience.isBlank()) {
-      this.publicApiAudience = null;
-      LOG.warn(
-          "No public API audience is configured, so every request to {} and {} is denied."
-              + " Configure the audience that the public API clients' tokens carry.",
-          PUBLIC_API_PATTERN,
-          INGESTION_VARIABLE_PATTERN);
-    } else {
-      this.publicApiAudience = publicApiAudience;
-    }
+  private OptimizePublicApiAccessFilter(
+      final CamundaAuthenticationProvider authenticationProvider, final String clusterId) {
+    this.authenticationProvider =
+        Objects.requireNonNull(authenticationProvider, "authenticationProvider must not be null");
     this.clusterId = clusterId;
   }
 
   /**
-   * @param publicApiAudience the audience a public API token must carry; when it is blank, every
-   *     request on the public paths is denied, as the legacy audience validation did
+   * @param authenticationProvider CSL's classification of the request's token as a user's or an API
+   *     client's
    */
-  public static OptimizePublicApiAccessFilter forSelfManaged(final String publicApiAudience) {
-    return new OptimizePublicApiAccessFilter(publicApiAudience, null);
+  public static OptimizePublicApiAccessFilter forSelfManaged(
+      final CamundaAuthenticationProvider authenticationProvider) {
+    return new OptimizePublicApiAccessFilter(authenticationProvider, null);
   }
 
   /**
-   * @param publicApiAudience see {@link #forSelfManaged(String)}
+   * @param authenticationProvider see {@link #forSelfManaged(CamundaAuthenticationProvider)}
    * @param clusterId the cluster id a public API token must carry in its cluster id claim. The
    *     shared chain accepts a token without the claim, because the login token has none; the
    *     legacy public API decoder required it.
    */
   public static OptimizePublicApiAccessFilter forSaas(
-      final String publicApiAudience, final String clusterId) {
+      final CamundaAuthenticationProvider authenticationProvider, final String clusterId) {
     return new OptimizePublicApiAccessFilter(
-        publicApiAudience, Objects.requireNonNull(clusterId, "clusterId must not be null"));
+        authenticationProvider, Objects.requireNonNull(clusterId, "clusterId must not be null"));
   }
 
   @Override
@@ -111,8 +105,7 @@ public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
       return;
     }
     // A denial is an expected client error (wrong or missing token), so it logs at DEBUG, as the
-    // sibling OptimizeBearerPermissionFilter does. The one operational problem that must surface at
-    // the default level — no audience configured — is logged once at WARN in the constructor.
+    // sibling OptimizeBearerPermissionFilter does.
     LOG.debug("Denying request at {}: {}", request.getRequestURI(), denial.reason);
     response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
   }
@@ -122,26 +115,36 @@ public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
         instanceof final JwtAuthenticationToken jwtAuthentication)) {
       return Denial.NOT_A_BEARER_TOKEN;
     }
-    if (publicApiAudience == null) {
-      return Denial.NO_AUDIENCE_CONFIGURED;
-    }
-    final Jwt token = jwtAuthentication.getToken();
-    // a token without an 'aud' claim has a null audience list
-    final List<String> audience = token.getAudience();
-    if (audience == null || !audience.contains(publicApiAudience)) {
-      return Denial.WRONG_AUDIENCE;
+    if (!isApiClient()) {
+      return Denial.NOT_AN_API_CLIENT;
     }
     if (clusterId != null
-        && !clusterId.equals(token.getClaims().get(OptimizeCloudClusterValidator.CLUSTER_CLAIM))) {
+        && !clusterId.equals(
+            jwtAuthentication
+                .getToken()
+                .getClaims()
+                .get(OptimizeCloudClusterValidator.CLUSTER_CLAIM))) {
       return Denial.WRONG_CLUSTER;
     }
     return null;
   }
 
+  // Reads CSL's own classification, as OptimizeBearerPermissionFilter does, so the two filters and
+  // every other CSL consumer agree on who is a client. A token CSL cannot classify is denied.
+  private boolean isApiClient() {
+    try {
+      final var camundaAuthentication = authenticationProvider.getCamundaAuthentication();
+      return camundaAuthentication != null && camundaAuthentication.authenticatedClientId() != null;
+    } catch (final RuntimeException e) {
+      LOG.debug("Could not classify the bearer token's subject, denying the public API request", e);
+      return false;
+    }
+  }
+
   private enum Denial {
     NOT_A_BEARER_TOKEN("the public API accepts only a bearer token, not a session"),
-    NO_AUDIENCE_CONFIGURED("no public API audience is configured"),
-    WRONG_AUDIENCE("the token's audience is not the public API audience"),
+    NOT_AN_API_CLIENT(
+        "the token is not an API client's: it does not carry the configured client id claim"),
     WRONG_CLUSTER("the token does not carry this cluster's id");
 
     private final String reason;

@@ -8,8 +8,11 @@
 package io.camunda.optimize.rest.security.csl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.util.List;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,10 +29,11 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 class OptimizePublicApiAccessFilterTest {
 
-  private static final String PUBLIC_API_AUDIENCE = "optimize-public-api";
+  private final CamundaAuthenticationProvider authenticationProvider =
+      mock(CamundaAuthenticationProvider.class);
 
   private final OptimizePublicApiAccessFilter filter =
-      OptimizePublicApiAccessFilter.forSelfManaged(PUBLIC_API_AUDIENCE);
+      OptimizePublicApiAccessFilter.forSelfManaged(authenticationProvider);
 
   @AfterEach
   void clearSecurityContext() {
@@ -42,14 +46,16 @@ class OptimizePublicApiAccessFilterTest {
         "/api/public/collection",
         "/api/public",
         "/api/ingestion/variable",
-        "/api/p%75blic/collection"
+        "/api/p%75blic/collection",
+        "/api/ingestion/vari%61ble"
       })
-  void shouldAcceptBearerTokenWithThePublicApiAudience(final String path) throws Exception {
+  void shouldAcceptApiClientToken(final String path) throws Exception {
     // given
-    authenticate(bearer(PUBLIC_API_AUDIENCE));
+    authenticate(bearer(null));
+    classifyAsClient();
 
     // when
-    final var result = filter(path);
+    final var result = filter(filter, path);
 
     // then
     assertThat(result.response().getStatus()).isEqualTo(200);
@@ -69,7 +75,7 @@ class OptimizePublicApiAccessFilterTest {
     authenticate(new TestingAuthenticationToken("alice", null, "ROLE_USER"));
 
     // when
-    final var result = filter(path);
+    final var result = filter(filter, path);
 
     // then
     assertThat(result.response().getStatus()).isEqualTo(401);
@@ -77,12 +83,14 @@ class OptimizePublicApiAccessFilterTest {
   }
 
   @Test
-  void shouldRejectBearerTokenWithoutThePublicApiAudience() throws Exception {
-    // given a user's login token, which carries the webapp audience
-    authenticate(bearer("optimize-webapp"));
+  void shouldRejectUserToken() throws Exception {
+    // given a bearer token that CSL classifies as a user's
+    authenticate(bearer(null));
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.user("alice")));
 
     // when
-    final var result = filter("/api/public/collection");
+    final var result = filter(filter, "/api/public/collection");
 
     // then
     assertThat(result.response().getStatus()).isEqualTo(401);
@@ -90,25 +98,14 @@ class OptimizePublicApiAccessFilterTest {
   }
 
   @Test
-  void shouldAcceptBearerTokenWhoseAudiencesIncludeThePublicApiAudience() throws Exception {
-    // given
-    authenticate(bearer(List.of("other", PUBLIC_API_AUDIENCE)));
+  void shouldRejectTokenThatCannotBeClassified() throws Exception {
+    // given a bearer token with neither the username nor the client id claim
+    authenticate(bearer(null));
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenThrow(new IllegalArgumentException("Neither username claim nor clientId claim"));
 
     // when
-    final var result = filter("/api/public/collection");
-
-    // then
-    assertThat(result.response().getStatus()).isEqualTo(200);
-    assertThat(result.chain().getRequest()).isNotNull();
-  }
-
-  @Test
-  void shouldRejectBearerTokenWhoseAudiencesExcludeThePublicApiAudience() throws Exception {
-    // given
-    authenticate(bearer(List.of("other1", "other2")));
-
-    // when
-    final var result = filter("/api/public/collection");
+    final var result = filter(filter, "/api/public/collection");
 
     // then
     assertThat(result.response().getStatus()).isEqualTo(401);
@@ -116,10 +113,25 @@ class OptimizePublicApiAccessFilterTest {
   }
 
   @Test
-  void shouldAcceptSaasTokenWithThisClusterId() throws Exception {
+  void shouldRejectTokenWithoutCamundaAuthentication() throws Exception {
     // given
-    final var saas = OptimizePublicApiAccessFilter.forSaas(PUBLIC_API_AUDIENCE, "cluster-1");
-    authenticate(saasBearer("cluster-1"));
+    authenticate(bearer(null));
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(null);
+
+    // when
+    final var result = filter(filter, "/api/public/collection");
+
+    // then
+    assertThat(result.response().getStatus()).isEqualTo(401);
+    assertThat(result.chain().getRequest()).isNull();
+  }
+
+  @Test
+  void shouldAcceptSaasApiClientTokenWithThisClusterId() throws Exception {
+    // given
+    final var saas = OptimizePublicApiAccessFilter.forSaas(authenticationProvider, "cluster-1");
+    authenticate(bearer("cluster-1"));
+    classifyAsClient();
 
     // when
     final var result = filter(saas, "/api/public/collection");
@@ -132,10 +144,11 @@ class OptimizePublicApiAccessFilterTest {
   @ParameterizedTest
   @NullSource
   @ValueSource(strings = "cluster-2")
-  void shouldRejectSaasTokenWithoutThisClusterId(final String clusterId) throws Exception {
-    // given a public API token without the cluster id claim, or with another cluster's id
-    final var saas = OptimizePublicApiAccessFilter.forSaas(PUBLIC_API_AUDIENCE, "cluster-1");
-    authenticate(saasBearer(clusterId));
+  void shouldRejectSaasApiClientTokenWithoutThisClusterId(final String clusterId) throws Exception {
+    // given an API client's token without the cluster id claim, or with another cluster's id
+    final var saas = OptimizePublicApiAccessFilter.forSaas(authenticationProvider, "cluster-1");
+    authenticate(bearer(clusterId));
+    classifyAsClient();
 
     // when
     final var result = filter(saas, "/api/public/collection");
@@ -145,41 +158,6 @@ class OptimizePublicApiAccessFilterTest {
     assertThat(result.chain().getRequest()).isNull();
   }
 
-  @Test
-  void shouldRejectBearerTokenWithoutAudience() throws Exception {
-    // given a token without an 'aud' claim
-    authenticate(
-        new JwtAuthenticationToken(
-            Jwt.withTokenValue("token").header("alg", "RS256").subject("client").build()));
-
-    // when
-    final var result = filter("/api/public/collection");
-
-    // then
-    assertThat(result.response().getStatus()).isEqualTo(401);
-    assertThat(result.chain().getRequest()).isNull();
-  }
-
-  @ParameterizedTest
-  @NullSource
-  @ValueSource(strings = {"", " "})
-  void shouldRejectEveryRequestWhenNoPublicApiAudienceIsConfigured(final String audience)
-      throws Exception {
-    // given a token that carries the same blank audience
-    final var unconfigured = OptimizePublicApiAccessFilter.forSelfManaged(audience);
-    authenticate(bearer(audience == null ? PUBLIC_API_AUDIENCE : audience));
-    final var request = new MockHttpServletRequest("GET", "/api/public/collection");
-    final var response = new MockHttpServletResponse();
-    final var chain = new MockFilterChain();
-
-    // when
-    unconfigured.doFilter(request, response, chain);
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(401);
-    assertThat(chain.getRequest()).isNull();
-  }
-
   @ParameterizedTest
   @ValueSource(strings = {"/api/report/some-id", "/api/publicity", "/api/ingestion/other"})
   void shouldLeaveOtherPathsAlone(final String path) throws Exception {
@@ -187,15 +165,16 @@ class OptimizePublicApiAccessFilterTest {
     authenticate(new TestingAuthenticationToken("alice", null, "ROLE_USER"));
 
     // when
-    final var result = filter(path);
+    final var result = filter(filter, path);
 
     // then
     assertThat(result.response().getStatus()).isEqualTo(200);
     assertThat(result.chain().getRequest()).isNotNull();
   }
 
-  private Result filter(final String path) throws Exception {
-    return filter(filter, path);
+  private void classifyAsClient() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.clientId("client-1")));
   }
 
   private static Result filter(final OptimizePublicApiAccessFilter filter, final String path)
@@ -211,25 +190,9 @@ class OptimizePublicApiAccessFilterTest {
     SecurityContextHolder.getContext().setAuthentication(authentication);
   }
 
-  private static JwtAuthenticationToken bearer(final String audience) {
-    return bearer(List.of(audience));
-  }
-
-  private static JwtAuthenticationToken bearer(final List<String> audience) {
-    return new JwtAuthenticationToken(
-        Jwt.withTokenValue("token")
-            .header("alg", "RS256")
-            .subject("client")
-            .audience(audience)
-            .build());
-  }
-
-  private static JwtAuthenticationToken saasBearer(final String clusterId) {
-    final var token =
-        Jwt.withTokenValue("token")
-            .header("alg", "RS256")
-            .subject("client")
-            .audience(List.of(PUBLIC_API_AUDIENCE));
+  /** A bearer token with the SaaS cluster id claim, left out when it is null. */
+  private static JwtAuthenticationToken bearer(final String clusterId) {
+    final var token = Jwt.withTokenValue("token").header("alg", "RS256").subject("subject");
     if (clusterId != null) {
       token.claim(OptimizeCloudClusterValidator.CLUSTER_CLAIM, clusterId);
     }
