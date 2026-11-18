@@ -300,12 +300,16 @@ final class OpsRenderer {
               sb.append("\\"").append($key).append("\\":");
           """
               + value;
-      if (p.canBeUnset()) {
-        statements = "    if (!($unset)) {\n" + statements + "    }\n";
-      }
       final var list =
           p.type() == Type.LIST ? appendList("v." + p.field(), p.listElement(), 0) : "";
-      body.append(fill(p, statements, "$unset", p.unset("v"), "$list", list.indent(4)));
+      statements = fill(p, statements, "$list", list.indent(4));
+      if (p.canBeUnset()) {
+        statements =
+            fill("    if (!($unset)) {\n", "$unset", p.unset("v"))
+                + statements.indent(2)
+                + "    }\n";
+      }
+      body.append(statements);
     }
     if (m.unknownField() != null) {
       body.append(fill("    v.$field.appendJson(sb, start);\n", "$field", m.unknownField()));

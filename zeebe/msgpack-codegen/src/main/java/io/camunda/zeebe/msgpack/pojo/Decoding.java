@@ -133,6 +133,18 @@ public final class Decoding {
   }
 
   /**
+   * Returns the encoded value of a raw property, to be written as it is.
+   *
+   * @throws IllegalStateException if the property holds no bytes, which are no msgpack value
+   */
+  public static DirectBuffer raw(final DirectBuffer value, final String key) {
+    if (value.capacity() == 0) {
+      throw new IllegalStateException("Property '" + key + "' holds no encoded value");
+    }
+    return value;
+  }
+
+  /**
    * Returns the document to store for {@code value}, like {@code DocumentValue#wrap} does: an empty
    * or nil value is the empty document {@link DocumentValue#EMPTY_DOCUMENT} (shared, never modify
    * it), a map is returned as it is. Call it in a setter of a {@code document} field to keep the

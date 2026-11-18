@@ -36,7 +36,7 @@ final class CodecRenderer {
             case BOOLEAN, BOXED_BOOLEAN -> "    n += w.writeBoolean($value);\n";
             case STRING -> "    n += w.writeString($value);\n";
             case BINARY -> "    n += w.writeBinary($value);\n";
-            case RAW -> "    n += w.writeRaw(requireRaw($value, $key));\n";
+            case RAW -> "    n += w.writeRaw(Decoding.raw($value, $key));\n";
             case DOCUMENT -> "    n += w.writeBinary(Decoding.document($value));\n";
             case ENUM -> "    n += w.writeString(ENUM_NAMES_$i[$value.ordinal()]);\n";
             case LIST -> "$list";
@@ -82,7 +82,7 @@ final class CodecRenderer {
             case STRING -> "    n += MsgPackWriter.getEncodedStringLength($value.capacity());\n";
             case BINARY ->
                 "    n += MsgPackWriter.getEncodedBinaryValueLength($value.capacity());\n";
-            case RAW -> "    n += requireRaw($value, $key).capacity();\n";
+            case RAW -> "    n += Decoding.raw($value, $key).capacity();\n";
             case DOCUMENT ->
                 "    n += MsgPackWriter.getEncodedBinaryValueLength(Decoding.document($value).capacity());\n";
             case ENUM ->
@@ -213,9 +213,9 @@ final class CodecRenderer {
                   final int keyOffset = r.getOffset();
                   r.skipBytes(keyLength);
                   try {
-                  switch (indexOf(r.getBuffer(), keyOffset, keyLength, i)) {
+                    switch (indexOf(r.getBuffer(), keyOffset, keyLength, i)) {
             $cases\
-                  }
+                    }
                   } catch (final RuntimeException e) {
                     throw Decoding.propertyFailure(r.getBuffer(), keyOffset, keyLength, e);
                   }
@@ -235,13 +235,6 @@ final class CodecRenderer {
                   }
                 }
                 return -1;
-              }
-
-              private static DirectBuffer requireRaw(final DirectBuffer value, final String key) {
-                if (value.capacity() == 0) {
-                  throw new IllegalStateException("Property '" + key + "' holds no encoded value");
-                }
-                return value;
               }
 
             }
@@ -265,7 +258,7 @@ final class CodecRenderer {
             "$entryStart",
             unknown != null ? "      final int entryStart = r.getOffset();\n" : "",
             "$cases",
-            cases,
+            cases.toString().indent(2),
             // like ObjectValue, a property without default must be in the input
             "$requireSet",
             hasUnset
