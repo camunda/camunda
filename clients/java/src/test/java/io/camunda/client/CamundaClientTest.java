@@ -381,6 +381,40 @@ public final class CamundaClientTest {
   }
 
   @Test
+  public void shouldPreferEnvironmentPathsOverInlineMtlsContentConfiguredOnBuilder() {
+    // given - inline material that would fail to load if it were used
+    Environment.system()
+        .put(
+            CamundaClientEnvironmentVariables.MTLS_CERT_PATH_VAR,
+            "src/test/resources/mtls/client.crt");
+    Environment.system()
+        .put(
+            CamundaClientEnvironmentVariables.MTLS_KEY_PATH_VAR,
+            "src/test/resources/mtls/client.key");
+    Environment.system()
+        .put(CamundaClientEnvironmentVariables.MTLS_CA_PATH_VAR, "src/test/resources/mtls/ca.crt");
+    final CamundaClientBuilderImpl builder =
+        (CamundaClientBuilderImpl)
+            new CamundaClientBuilderImpl()
+                .grpcAddress(URI.create("https://localhost:26500"))
+                .restAddress(URI.create("https://localhost:8080"))
+                .clientCertificateContent("not a certificate", "not a key")
+                .mtlsCaCertificateContent("not a CA bundle");
+
+    // when
+    try (final CamundaClient client = builder.build()) {
+      // then
+      final CamundaClientConfiguration configuration = client.getConfiguration();
+      assertThat(configuration.getMtlsCertPath()).isEqualTo("src/test/resources/mtls/client.crt");
+      assertThat(configuration.getMtlsKeyPath()).isEqualTo("src/test/resources/mtls/client.key");
+      assertThat(configuration.getMtlsCaPath()).isEqualTo("src/test/resources/mtls/ca.crt");
+      assertThat(configuration.getMtlsCert()).isNull();
+      assertThat(configuration.getMtlsKey()).isNull();
+      assertThat(configuration.getMtlsCa()).isNull();
+    }
+  }
+
+  @Test
   public void shouldRoundTripMtlsThroughConfiguration() {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
