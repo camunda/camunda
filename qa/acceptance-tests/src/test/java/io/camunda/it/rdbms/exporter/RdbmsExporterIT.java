@@ -1585,29 +1585,31 @@ class RdbmsExporterIT {
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             InstantSource.system()));
     batchingExporter.open(batchingController);
-    final var taskA = FIXTURES.getUserTaskCreatingRecord();
-    final var taskB = FIXTURES.getUserTaskCreatingRecord();
+    try {
+      final var taskA = FIXTURES.getUserTaskCreatingRecord();
+      final var taskB = FIXTURES.getUserTaskCreatingRecord();
 
-    // when - both user tasks are created and their candidates are replaced, task A twice
-    batchingExporter.export(taskA);
-    batchingExporter.export(taskB);
-    batchingExporter.export(userTaskUpdated(taskA, "a1"));
-    batchingExporter.export(userTaskUpdated(taskB, "b1"));
-    batchingExporter.export(userTaskUpdated(taskA, "a2"));
-    batchingController.runScheduledTasks(Duration.ofSeconds(1));
+      // when - both user tasks are created and their candidates are replaced, task A twice
+      batchingExporter.export(taskA);
+      batchingExporter.export(taskB);
+      batchingExporter.export(userTaskUpdated(taskA, "a1"));
+      batchingExporter.export(userTaskUpdated(taskB, "b1"));
+      batchingExporter.export(userTaskUpdated(taskA, "a2"));
+      batchingController.runScheduledTasks(Duration.ofSeconds(1));
 
-    // then - each user task has the candidates of its last update
-    assertThat(batchingController.getPosition()).isEqualTo(FIXTURES.currentPosition());
-    final var userTaskA = rdbmsService.getUserTaskReader().findOne(userTaskKey(taskA));
-    assertThat(userTaskA).isNotEmpty();
-    assertThat(userTaskA.get().candidateUsers()).containsExactly("a2-user");
-    assertThat(userTaskA.get().candidateGroups()).containsExactly("a2-group");
-    final var userTaskB = rdbmsService.getUserTaskReader().findOne(userTaskKey(taskB));
-    assertThat(userTaskB).isNotEmpty();
-    assertThat(userTaskB.get().candidateUsers()).containsExactly("b1-user");
-    assertThat(userTaskB.get().candidateGroups()).containsExactly("b1-group");
-
-    batchingExporter.close();
+      // then - each user task has the candidates of its last update
+      assertThat(batchingController.getPosition()).isEqualTo(FIXTURES.currentPosition());
+      final var userTaskA = rdbmsService.getUserTaskReader().findOne(userTaskKey(taskA));
+      assertThat(userTaskA).isNotEmpty();
+      assertThat(userTaskA.get().candidateUsers()).containsExactly("a2-user");
+      assertThat(userTaskA.get().candidateGroups()).containsExactly("a2-group");
+      final var userTaskB = rdbmsService.getUserTaskReader().findOne(userTaskKey(taskB));
+      assertThat(userTaskB).isNotEmpty();
+      assertThat(userTaskB.get().candidateUsers()).containsExactly("b1-user");
+      assertThat(userTaskB.get().candidateGroups()).containsExactly("b1-group");
+    } finally {
+      batchingExporter.close();
+    }
   }
 
   @Test
