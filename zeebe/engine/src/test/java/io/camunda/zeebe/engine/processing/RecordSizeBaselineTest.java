@@ -11,11 +11,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -24,9 +36,11 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.IntStream;
@@ -35,34 +49,15 @@ import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 /**
- * Compares the bytes that a process instance writes to the log with a baseline file. A change that
- * makes records much larger, or writes more of them, fails this test.
+ * Compares the log bytes of typical scenarios with a baseline. A change of more than 10%, up or
+ * down, fails.
  *
- * <h2>Why the size of the records is important</h2>
+ * <p>Each byte on the log costs the user disk, backup storage, and throughput. For example, in 8.9
+ * the engine copied all token claims to each follow-up record, and the log became two times larger.
+ * Thus, find the cause of a failure before you update the baseline. Make sure that each record
+ * needs the new data, and that a reader for it exists.
  *
- * <p>Each byte that the engine writes to the log has a cost for the user. The broker replicates it,
- * writes it to disk, keeps it in snapshots and backups, and exports it. Larger records thus make
- * the disk and the backup storage larger, and they can decrease the throughput. A small growth per
- * record is large in total, because the engine writes many records for each process instance.
- *
- * <p>For example, the engine copied the full token claims of a client command to all follow-up
- * records since 8.9. With OIDC clients, this made the log about two times larger. No test showed
- * this growth, and it was found only after the release.
- *
- * <h2>When this test fails</h2>
- *
- * <p>Do not only update the baseline. First find the cause of the change, and decide if it is
- * necessary:
- *
- * <ul>
- *   <li>Is the new data necessary on each record, or only on some records?
- *   <li>Does a reader of the new data exist, for example an exporter or a processor?
- *   <li>Can a smaller encoding or a reference replace the data?
- * </ul>
- *
- * <p>If the growth is necessary, update the baseline, and explain the reason in the pull request.
- * The reviewer then sees the size change in the diff of the baseline file. A decrease also fails
- * this test, so that the baseline stays accurate. Update the baseline with:
+ * <p>Update the baseline, and give the reason in the pull request:
  *
  * <pre>
  * ./mvnw verify -pl zeebe/engine -Dtest=RecordSizeBaselineTest -Drecord-size.update=true \
@@ -72,61 +67,246 @@ import org.junit.rules.TestWatcher;
 public final class RecordSizeBaselineTest {
 
   private static final String UPDATE_PROPERTY = "record-size.update";
-  private static final String BASELINE_FILE = "record-size-baseline.txt";
+  private static final String BASELINE_FOLDER = "record-size-baseline";
 
-  /**
-   * The allowed change per group, in percent. It is small enough to show a new field on many
-   * records, and large enough to allow small changes of the encoding.
-   */
+  /** Large enough for small encoding changes, small enough for a new field on many records. */
   private static final int TOLERANCE_PERCENT = 10;
+
+  /** Scheduled tasks write these records at times that the scenarios do not control. */
+  private static final Set<ValueType> TIMED_VALUE_TYPES =
+      Set.of(ValueType.JOB_METRICS_BATCH, ValueType.USAGE_METRIC);
 
   private static final String PROCESS_ID = "process";
   private static final String JOB_TYPE = "task";
+  private static final AuthInfo CLAIMS = oidcClaims();
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldNotChangeRecordSizesOfServiceTaskProcess() {
+  public void shouldNotChangeRecordSizesOfServiceTask() {
     // given
-    engine
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
-                .endEvent()
-                .done())
-        .deploy();
+    deploy(
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done());
+    final long startPosition = lastPosition();
+
+    // when
+    final long processInstanceKey = createProcessInstance();
+    completeJob(jobKey(processInstanceKey, JOB_TYPE));
+    awaitCompletion(processInstanceKey);
+
+    // then
+    assertBaseline("service-task", startPosition);
+  }
+
+  @Test
+  public void shouldNotChangeRecordSizesOfUserTaskWithTaskListener() {
+    // given
+    deploy(
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeTaskListener(l -> l.completing().type("listener"))
+            .endEvent()
+            .done());
+    final long startPosition = lastPosition();
+
+    // when
+    final long processInstanceKey = createProcessInstance();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+    engine.writeRecords(
+        RecordToWrite.commandFromRequest(CLAIMS)
+            .userTask(UserTaskIntent.COMPLETE, new UserTaskRecord().setUserTaskKey(userTaskKey))
+            .key(userTaskKey));
+    completeJob(jobKey(processInstanceKey, "listener"));
+    awaitCompletion(processInstanceKey);
+
+    // then
+    assertBaseline("user-task-with-task-listener", startPosition);
+  }
+
+  @Test
+  public void shouldNotChangeRecordSizesOfMessageCorrelation() {
+    // given
+    deploy(
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .intermediateCatchEvent(
+                "message", e -> e.message(m -> m.name("message").zeebeCorrelationKey("=key")))
+            .endEvent()
+            .done());
     final long startPosition = lastPosition();
 
     // when
     final long processInstanceKey =
-        engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(oidcClaims());
-    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-1")
+            .create(CLAIMS);
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    engine.writeRecords(
+        RecordToWrite.commandFromRequest(CLAIMS)
+            .message(
+                MessageIntent.PUBLISH,
+                new MessageRecord()
+                    .setName("message")
+                    .setCorrelationKey("order-1")
+                    .setTimeToLive(0)));
+    awaitCompletion(processInstanceKey);
+
+    // then
+    assertBaseline("message-correlation", startPosition);
+  }
+
+  @Test
+  public void shouldNotChangeRecordSizesOfIncidentResolution() {
+    // given
+    deploy(
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done());
+    final long startPosition = lastPosition();
+
+    // when
+    final long processInstanceKey = createProcessInstance();
+    final long jobKey = jobKey(processInstanceKey, JOB_TYPE);
+    writeJobCommand(jobKey, JobIntent.FAIL, new JobRecord().setRetries(0).setErrorMessage("fail"));
+    final long incidentKey =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+    writeJobCommand(jobKey, JobIntent.UPDATE_RETRIES, new JobRecord().setRetries(1));
+    engine.incident().ofInstance(processInstanceKey).withKey(incidentKey).resolve(CLAIMS);
+    completeJob(jobKey);
+    awaitCompletion(processInstanceKey);
+
+    // then
+    assertBaseline("incident-resolution", startPosition);
+  }
+
+  @Test
+  public void shouldNotChangeRecordSizesOfTimer() {
+    // given
+    deploy(
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .intermediateCatchEvent("timer", e -> e.timerWithDuration("PT1M"))
+            .endEvent()
+            .done());
+    final long startPosition = lastPosition();
+
+    // when
+    final long processInstanceKey = createProcessInstance();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    engine.increaseTime(Duration.ofMinutes(1));
+    awaitCompletion(processInstanceKey);
+
+    // then
+    assertBaseline("timer", startPosition);
+  }
+
+  @Test
+  public void shouldNotChangeRecordSizesOfRejections() {
+    // given
+    final long startPosition = lastPosition();
+
+    // when
+    engine.processInstance().ofBpmnProcessId("unknown").expectRejection().create(CLAIMS);
+    writeJobCommand(1L, JobIntent.COMPLETE, new JobRecord());
+    RecordingExporter.jobRecords(JobIntent.COMPLETE).onlyCommandRejections().await();
+
+    // then
+    assertBaseline("rejections", startPosition);
+  }
+
+  private void deploy(final BpmnModelInstance process) {
+    engine.deployment().withXmlResource(process).deploy();
+  }
+
+  private long createProcessInstance() {
+    return engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(CLAIMS);
+  }
+
+  private static long jobKey(final long processInstanceKey, final String type) {
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(type)
+        .getFirst()
+        .getKey();
+  }
+
+  private void completeJob(final long jobKey) {
+    writeJobCommand(jobKey, JobIntent.COMPLETE, new JobRecord());
+  }
+
+  /** Writes the job command as a worker sends it: with the claims of an OIDC client. */
+  private void writeJobCommand(final long jobKey, final JobIntent intent, final JobRecord value) {
+    engine.writeRecords(RecordToWrite.commandFromRequest(CLAIMS).job(intent, value).key(jobKey));
+  }
+
+  private static void awaitCompletion(final long processInstanceKey) {
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.PROCESS)
         .await();
+  }
 
-    // then
+  private long lastPosition() {
+    return engine.events().map(LoggedEvent::getPosition).reduce((a, b) -> b).orElse(-1L);
+  }
+
+  private void assertBaseline(final String scenario, final long startPosition) {
     final var actual = measure(startPosition);
     if (Boolean.getBoolean(UPDATE_PROPERTY)) {
-      writeBaseline(actual);
+      writeBaseline(scenario, actual);
       return;
     }
-    final var baseline = readBaseline();
-    assertThat(changes(baseline, actual))
+    assertThat(changes(readBaseline(scenario), actual))
         .as(
-            "The records written to the log changed by more than %d%%. Larger records cost the"
-                + " user disk, backup storage, and throughput. Read the Javadoc of %s before you"
-                + " update the baseline",
+            "The log bytes changed by more than %d%%. Read the Javadoc of %s before you update"
+                + " the baseline",
             TOLERANCE_PERCENT, getClass().getSimpleName())
         .isEmpty();
   }
 
-  /** Returns the groups that are new, removed, or out of the tolerance, with both sizes. */
+  private Map<String, Size> measure(final long afterPosition) {
+    final var sizes = new TreeMap<String, Size>();
+    final var metadata = new RecordMetadata();
+    engine
+        .events()
+        .filter(event -> event.getPosition() > afterPosition)
+        .forEach(
+            event -> {
+              metadata.reset();
+              event.readMetadata(metadata);
+              if (TIMED_VALUE_TYPES.contains(metadata.getValueType())) {
+                return;
+              }
+              final var group = metadata.getRecordType() + " " + metadata.getValueType();
+              final int bytes = event.getMetadataLength() + event.getValueLength();
+              sizes.merge(group, new Size(1, bytes), Size::plus);
+            });
+    return sizes;
+  }
+
   private static List<String> changes(
       final Map<String, Size> baseline, final Map<String, Size> actual) {
     final var groups = new TreeSet<String>(baseline.keySet());
@@ -145,28 +325,6 @@ public final class RecordSizeBaselineTest {
     return changes;
   }
 
-  private long lastPosition() {
-    return engine.events().map(LoggedEvent::getPosition).reduce((a, b) -> b).orElse(-1L);
-  }
-
-  /** Groups the log entries after the given position by record type and value type. */
-  private Map<String, Size> measure(final long afterPosition) {
-    final var sizes = new TreeMap<String, Size>();
-    final var metadata = new RecordMetadata();
-    engine
-        .events()
-        .filter(event -> event.getPosition() > afterPosition)
-        .forEach(
-            event -> {
-              metadata.reset();
-              event.readMetadata(metadata);
-              final var group = metadata.getRecordType() + " " + metadata.getValueType();
-              final int bytes = event.getMetadataLength() + event.getValueLength();
-              sizes.merge(group, new Size(1, bytes), Size::plus);
-            });
-    return sizes;
-  }
-
   private static long lowerBound(final long bytes) {
     return bytes * (100 - TOLERANCE_PERCENT) / 100;
   }
@@ -175,10 +333,7 @@ public final class RecordSizeBaselineTest {
     return bytes * (100 + TOLERANCE_PERCENT) / 100;
   }
 
-  /**
-   * Claims as an OIDC client sends them, with a realistic size. The size of the authorization data
-   * on the follow-up records depends on them.
-   */
+  /** Claims of an OIDC client with a realistic size, as the follow-up records copy them. */
   private static AuthInfo oidcClaims() {
     final var tokenClaims = new TreeMap<String, Object>();
     tokenClaims.put("iss", "https://idp.example.com/realms/camunda-platform");
@@ -218,10 +373,10 @@ public final class RecordSizeBaselineTest {
     return IntStream.rangeClosed(1, 10).mapToObj(i -> "/camunda/department-" + i).toList();
   }
 
-  private static Map<String, Size> readBaseline() {
+  private static Map<String, Size> readBaseline(final String scenario) {
     try {
       final var sizes = new TreeMap<String, Size>();
-      for (final var line : Files.readAllLines(baselinePath(), StandardCharsets.UTF_8)) {
+      for (final var line : Files.readAllLines(baselinePath(scenario), StandardCharsets.UTF_8)) {
         if (line.isBlank() || line.startsWith("#")) {
           continue;
         }
@@ -232,29 +387,30 @@ public final class RecordSizeBaselineTest {
       }
       return sizes;
     } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to read the baseline " + baselinePath(), e);
+      throw new UncheckedIOException("Failed to read the baseline " + baselinePath(scenario), e);
     }
   }
 
-  private static void writeBaseline(final Map<String, Size> sizes) {
+  private static void writeBaseline(final String scenario, final Map<String, Size> sizes) {
     final var lines = new ArrayList<String>();
     lines.add("# Written by RecordSizeBaselineTest. Do not edit by hand.");
     lines.add("# <record type> <value type> <record count> <bytes of metadata and value>");
     sizes.forEach((group, size) -> lines.add(group + " " + size.count() + " " + size.bytes()));
     try {
-      Files.write(baselinePath(), lines, StandardCharsets.UTF_8);
+      Files.createDirectories(baselinePath(scenario).getParent());
+      Files.write(baselinePath(scenario), lines, StandardCharsets.UTF_8);
     } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to write the baseline " + baselinePath(), e);
+      throw new UncheckedIOException("Failed to write the baseline " + baselinePath(scenario), e);
     }
   }
 
   /** Surefire runs the tests in the module directory. */
-  private static Path baselinePath() {
+  private static Path baselinePath(final String scenario) {
     var dir = Path.of("src", "test", "resources");
     for (final var segment : RecordSizeBaselineTest.class.getPackageName().split("\\.")) {
       dir = dir.resolve(segment);
     }
-    return dir.resolve(BASELINE_FILE);
+    return dir.resolve(BASELINE_FOLDER).resolve(scenario + ".txt");
   }
 
   private record Size(int count, long bytes) {

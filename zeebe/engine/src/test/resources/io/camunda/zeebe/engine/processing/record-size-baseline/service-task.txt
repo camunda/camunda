@@ -1,0 +1,9 @@
+# Written by RecordSizeBaselineTest. Do not edit by hand.
+# <record type> <value type> <record count> <bytes of metadata and value>
+COMMAND JOB 1 1891
+COMMAND PROCESS_INSTANCE 8 12892
+COMMAND PROCESS_INSTANCE_CREATION 1 1403
+EVENT JOB 2 1784
+EVENT PROCESS_EVENT 2 540
+EVENT PROCESS_INSTANCE 18 10329
+EVENT PROCESS_INSTANCE_CREATION 1 380
