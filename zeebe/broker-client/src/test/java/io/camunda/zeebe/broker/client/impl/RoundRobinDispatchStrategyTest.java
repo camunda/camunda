@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -331,5 +332,71 @@ final class RoundRobinDispatchStrategyTest {
 
     // then
     assertThat(partitionId).isEqualTo(BrokerClusterState.PARTITION_ID_NULL);
+  }
+
+  @Test
+  void shouldStartAtRandomOffsetBoundedByActiveRing() {
+    // given - configured 3 partitions but the active ring is only 1 and 3, so a start bounded by
+    // the configured count could land outside the ring or double up on its first partition
+    final var topologyManager = new TestTopologyManager();
+    topologyManager
+        .addPartition(1, ZERO)
+        .addPartition(2, ONE)
+        .addPartition(3, TWO)
+        .withClusterConfiguration(
+            getConfigurationWithRoutingState(
+                new RoutingState(
+                    1,
+                    new ActivePartitions(1, Set.of(3), Set.of()),
+                    new MessageCorrelation.HashMod(3))));
+    final int[] ring = {1, 3};
+
+    // when/then - every strategy starts where the shared random says, mirrored by an identically
+    // seeded random, and continues round robin from there
+    final var random = new Random(1024);
+    final var mirror = new Random(1024);
+    for (int i = 0; i < 10; i++) {
+      final var dispatchStrategy = RoundRobinDispatchStrategy.withRandomInitialOffset(random);
+      final int expectedStart = ring[mirror.nextInt(ring.length)];
+
+      assertThat(
+              dispatchStrategy.determinePartition(
+                  topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+          .isEqualTo(expectedStart);
+      assertThat(
+              dispatchStrategy.determinePartition(
+                  topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+          .isEqualTo(nextInRing(ring, expectedStart));
+    }
+  }
+
+  @Test
+  void shouldStartAtRandomOffsetWithinAllPartitions() {
+    // given - no routing state, so the ring spans all configured partitions
+    final var topologyManager = new TestTopologyManager();
+    topologyManager.addPartition(1, ZERO).addPartition(2, ONE).addPartition(3, TWO);
+    final int[] ring = {1, 2, 3};
+
+    // when/then
+    final var random = new Random(1024);
+    final var mirror = new Random(1024);
+    for (int i = 0; i < 10; i++) {
+      final var dispatchStrategy = RoundRobinDispatchStrategy.withRandomInitialOffset(random);
+      final int expectedStart = ring[mirror.nextInt(ring.length)];
+
+      assertThat(
+              dispatchStrategy.determinePartition(
+                  topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+          .isEqualTo(expectedStart);
+    }
+  }
+
+  private static int nextInRing(final int[] ring, final int partition) {
+    for (int i = 0; i < ring.length; i++) {
+      if (ring[i] == partition) {
+        return ring[(i + 1) % ring.length];
+      }
+    }
+    throw new IllegalArgumentException("Partition %d is not in the ring".formatted(partition));
   }
 }

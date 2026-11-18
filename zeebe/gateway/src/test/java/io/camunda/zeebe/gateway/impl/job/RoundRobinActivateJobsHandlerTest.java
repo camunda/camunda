@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -30,9 +31,16 @@ final class RoundRobinActivateJobsHandlerTest {
 
   private final StubbedBrokerClient brokerClient = new StubbedBrokerClient();
   private final List<Integer> polledPartitions = new ArrayList<>();
+  // The deterministic factory makes every untracked type start at the first partition, so the
+  // assertion below can tell an evicted type (restarts there) from a kept one (advances); the
+  // production factory starts untracked types at a random partition.
   private final RoundRobinActivateJobsHandler<Object> handler =
       new RoundRobinActivateJobsHandler<>(
-          brokerClient, Long.MAX_VALUE, r -> new EmptyResult(), IllegalStateException::new);
+          brokerClient,
+          Long.MAX_VALUE,
+          r -> new EmptyResult(),
+          IllegalStateException::new,
+          RoundRobinDispatchStrategy::new);
 
   // Deterministic only because the production cache evicts inline (executor(Runnable::run)), so
   // the size bound holds as soon as each activation returns. If this test becomes flaky, check

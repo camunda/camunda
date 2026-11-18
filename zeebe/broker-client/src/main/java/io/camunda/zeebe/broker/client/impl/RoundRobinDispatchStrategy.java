@@ -16,9 +16,12 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
@@ -35,17 +38,42 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
 
   private final ConcurrentMap<String, GroupState> groups = new ConcurrentHashMap<>();
   private final int initialOffset;
+  private final boolean randomInitialOffset;
+  private final Random random;
 
   public RoundRobinDispatchStrategy() {
     this(0);
   }
 
   public RoundRobinDispatchStrategy(final int initialOffset) {
+    this(initialOffset, false);
+  }
+
+  /**
+   * Picks the first partition of each group uniformly at random from the group's active ring. A
+   * fixed start would concentrate the first request of every untracked or evicted job type on the
+   * first partition, which skews load when the set of tracked types churns faster than the
+   * round-robin cursors spread it.
+   *
+   * @param random source of the initial offsets; injectable for deterministic tests
+   */
+  public static RoundRobinDispatchStrategy withRandomInitialOffset(final Random random) {
+    return new RoundRobinDispatchStrategy(0, true, random);
+  }
+
+  private RoundRobinDispatchStrategy(final int initialOffset, final boolean randomInitialOffset) {
+    this(initialOffset, randomInitialOffset, ThreadLocalRandom.current());
+  }
+
+  private RoundRobinDispatchStrategy(
+      final int initialOffset, final boolean randomInitialOffset, final Random random) {
     if (initialOffset < 0) {
       throw new IllegalArgumentException(
           "Expected initialOffset to be >= 0, but got %d".formatted(initialOffset));
     }
     this.initialOffset = initialOffset;
+    this.randomInitialOffset = randomInitialOffset;
+    this.random = random;
   }
 
   @Override
@@ -60,6 +88,11 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
     final var state =
         groups.computeIfAbsent(partitionGroup, group -> new GroupState(initialOffset));
     final var partitions = updatePartitionRing(topologyManager, partitionGroup, topology, state);
+    if (randomInitialOffset) {
+      // bounded by the active ring, not the configured partition count, so the offset stays
+      // uniform even while the ring is smaller during scaling
+      state.seedOffsetIfUnseeded(random, partitions.size());
+    }
 
     for (int i = 0; i < topology.getPartitionsCount(); i++) {
       final int partition = partitions.partitionAtOffset(state.offset().getAndIncrement());
@@ -126,11 +159,20 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
   }
 
   private record GroupState(
-      AtomicLong offset, AtomicReference<VersionedPartitionRing> partitionRing) {
+      AtomicLong offset,
+      AtomicBoolean offsetSeeded,
+      AtomicReference<VersionedPartitionRing> partitionRing) {
     GroupState(final int initialOffset) {
       this(
           new AtomicLong(initialOffset),
+          new AtomicBoolean(false),
           new AtomicReference<>(VersionedPartitionRing.uninitialized()));
+    }
+
+    void seedOffsetIfUnseeded(final Random random, final int ringSize) {
+      if (offsetSeeded.compareAndSet(false, true)) {
+        offset.set(random.nextInt(ringSize));
+      }
     }
   }
 
@@ -156,6 +198,10 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
 
     public int partitionAtOffset(final long offset) {
       return partitions[Math.floorMod(offset, partitions.length)];
+    }
+
+    int size() {
+      return partitions.length;
     }
   }
 }
