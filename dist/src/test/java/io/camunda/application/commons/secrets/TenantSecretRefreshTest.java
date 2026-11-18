@@ -9,6 +9,8 @@ package io.camunda.application.commons.secrets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.commons.secrets.ConfigurationSecretRefreshReport.Failure;
+import io.camunda.application.commons.secrets.ConfigurationSecretRefreshReport.Reason;
 import io.camunda.configuration.ConfigurationSecretReference;
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult;
@@ -18,10 +20,13 @@ import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.camunda.secretstore.refresh.ClientRefreshException;
 import io.camunda.secretstore.refresh.RefreshableClient;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +45,10 @@ class TenantSecretRefreshTest {
   private final FakeStore store = new FakeStore();
   private final FakeClient client = new FakeClient(Set.of(PASSWORD, USERNAME), Set.of());
   private final List<RefreshableClient> clients = new ArrayList<>(List.of(client));
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final ConfigurationSecretRefreshReport report =
+      new ConfigurationSecretRefreshReport(
+          meterRegistry, InstantSource.fixed(Instant.ofEpochSecond(1_000)));
 
   @Test
   void shouldPassAChangedValueToTheClientThatUsesIt() {
@@ -172,6 +181,98 @@ class TenantSecretRefreshTest {
     assertThat(fileClient.refreshes).containsExactly(Map.of(USERNAME, "camunda"));
   }
 
+  @Test
+  void shouldReportAReferenceThatCantBeReadForEachClientThatUsesIt() {
+    // given
+    final var refresh = refresh();
+    store.values.put("es-password", new Failed(SecretErrorCode.NOT_FOUND, "missing", null));
+
+    // when
+    refresh.run();
+
+    // then
+    assertThat(report.failing())
+        .containsExactly(
+            Map.entry(
+                "tenanta", Set.of(new Failure("secret:es-password", "fake", Reason.NOT_FOUND))));
+    assertThat(
+            meterRegistry
+                .get(ConfigurationSecretRefreshReport.FAILING)
+                .tag("physicalTenant", "tenanta")
+                .tag("reference", "secret:es-password")
+                .tag("client", "fake")
+                .tag("reason", "not_found")
+                .gauge()
+                .value())
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldClearAFailureOnceTheReferenceCanBeReadAgain() {
+    // given
+    final var refresh = refresh();
+    store.unavailable = true;
+    refresh.run();
+
+    // when
+    store.unavailable = false;
+    refresh.run();
+
+    // then
+    assertThat(report.failing()).isEmpty();
+    assertThat(meterRegistry.find(ConfigurationSecretRefreshReport.FAILING).gauges()).isEmpty();
+  }
+
+  @Test
+  void shouldReportAReferenceOnlyReadOnStartupThatCantBeRead() {
+    // given
+    clients.clear();
+    final var refresh = refresh();
+    store.unavailable = true;
+
+    // when
+    refresh.run();
+
+    // then
+    assertThat(report.failing().get("tenanta"))
+        .containsExactly(new Failure("secret:es-password", "startup", Reason.STORE_UNREACHABLE));
+  }
+
+  @Test
+  void shouldReportAClientThatRejectsTheNewValues() {
+    // given
+    final var refresh = refresh();
+    store.values.put("es-password", new Resolved("new-password"));
+    client.failures = 1;
+
+    // when
+    refresh.run();
+
+    // then
+    assertThat(report.failing().get("tenanta"))
+        .containsExactly(new Failure("secret:es-password", "fake", Reason.REJECTED_BY_CHECK));
+  }
+
+  @Test
+  void shouldRecordWhenAChangeWasApplied() {
+    // given
+    final var refresh = refresh();
+    store.values.put("es-password", new Resolved("new-password"));
+
+    // when
+    refresh.run();
+
+    // then
+    assertThat(
+            meterRegistry
+                .get(ConfigurationSecretRefreshReport.LAST_APPLIED)
+                .tag("physicalTenant", "tenanta")
+                .tag("reference", "secret:es-password")
+                .gauge()
+                .value())
+        .isEqualTo(1_000);
+  }
+
   private TenantSecretRefresh refresh() {
     store.values.putIfAbsent("es-password", new Resolved("old-password"));
     return new TenantSecretRefresh(
@@ -180,7 +281,8 @@ class TenantSecretRefreshTest {
         () -> Optional.of(store),
         Map.of(PASSWORD, new ConfigurationSecretReference("es-password")),
         Map.of(PASSWORD, "old-password", USERNAME, "camunda"),
-        () -> clients);
+        () -> clients,
+        report);
   }
 
   private static final class FakeStore implements SecretStore {

@@ -35,7 +35,8 @@ public final class ConfigurationSecretRefresher implements AutoCloseable {
       final PhysicalTenantResolver resolver,
       final ConfigurationSecretStores stores,
       final ConfigurationReferences references,
-      final RefreshableClients clients) {
+      final RefreshableClients clients,
+      final ConfigurationSecretRefreshReport report) {
     resolver
         .getAll()
         .forEach(
@@ -63,7 +64,8 @@ public final class ConfigurationSecretRefresher implements AutoCloseable {
                       () -> stores.forPhysicalTenant(tenantId),
                       references.forPhysicalTenant(tenantId),
                       configuration,
-                      () -> clients.forPhysicalTenant(tenantId));
+                      () -> clients.forPhysicalTenant(tenantId),
+                      report);
               schedule(tenantId, refresh, interval);
             });
   }

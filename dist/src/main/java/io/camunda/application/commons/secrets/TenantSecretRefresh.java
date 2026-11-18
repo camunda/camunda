@@ -7,7 +7,10 @@
  */
 package io.camunda.application.commons.secrets;
 
+import io.camunda.application.commons.secrets.ConfigurationSecretRefreshReport.Failure;
+import io.camunda.application.commons.secrets.ConfigurationSecretRefreshReport.Reason;
 import io.camunda.configuration.ConfigurationSecretReference;
+import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStore;
@@ -44,6 +47,7 @@ import org.slf4j.LoggerFactory;
 final class TenantSecretRefresh {
 
   static final Duration INITIAL_BACKOFF = Duration.ofSeconds(10);
+  static final String STARTUP = "startup";
 
   private static final Logger LOG = LoggerFactory.getLogger(TenantSecretRefresh.class);
 
@@ -53,6 +57,7 @@ final class TenantSecretRefresh {
   private final Map<String, ConfigurationSecretReference> references;
   private final Map<String, String> configuration;
   private final Supplier<List<RefreshableClient>> clients;
+  private final ConfigurationSecretRefreshReport report;
 
   private final Map<String, String> latest = new HashMap<>();
   private final Map<RefreshableClient, Applied> applied = new HashMap<>();
@@ -69,13 +74,15 @@ final class TenantSecretRefresh {
       final Supplier<Optional<SecretStore>> store,
       final Map<String, ConfigurationSecretReference> references,
       final Map<String, String> configuration,
-      final Supplier<List<RefreshableClient>> clients) {
+      final Supplier<List<RefreshableClient>> clients,
+      final ConfigurationSecretRefreshReport report) {
     this.physicalTenantId = physicalTenantId;
     this.interval = interval;
     this.store = store;
     this.references = Map.copyOf(references);
     this.configuration = Map.copyOf(configuration);
     this.clients = clients;
+    this.report = report;
     references.forEach(
         (property, reference) -> {
           final var value = configuration.get(property);
@@ -92,20 +99,35 @@ final class TenantSecretRefresh {
    * @return how long to wait until the next run
    */
   Duration run() {
-    final var readFailed = read();
+    final var unread = read();
     final var registered = clients.get();
     applied.keySet().retainAll(new HashSet<>(registered));
+    final Set<Failure> failures = new HashSet<>();
     final Set<String> usedByClients = new TreeSet<>();
     for (final var client : registered) {
-      refresh(client);
+      refresh(client, failures);
       client.properties().stream()
           .map(references::get)
           .filter(Objects::nonNull)
-          .forEach(reference -> usedByClients.add(reference.name()));
+          .forEach(
+              reference -> {
+                usedByClients.add(reference.name());
+                final var reason = unread.get(reference.name());
+                if (reason != null) {
+                  failures.add(new Failure(reference.toString(), client.name(), reason));
+                }
+              });
     }
+    unread.forEach(
+        (name, reason) -> {
+          if (!usedByClients.contains(name)) {
+            failures.add(new Failure(ConfigurationSecretReference.PREFIX + name, STARTUP, reason));
+          }
+        });
     reportChangesReadOnStartup(usedByClients);
+    report.failing(physicalTenantId, failures);
 
-    if (!readFailed) {
+    if (unread.isEmpty()) {
       backoff = Duration.ZERO;
       return interval;
     }
@@ -116,10 +138,11 @@ final class TenantSecretRefresh {
     return backoff;
   }
 
-  /** Returns whether any reference couldn't be read. */
-  private boolean read() {
+  /** Returns why each reference that couldn't be read wasn't. */
+  private Map<String, Reason> read() {
+    final Map<String, Reason> unread = new HashMap<>();
     if (references.isEmpty()) {
-      return false;
+      return unread;
     }
     final var names =
         references.values().stream()
@@ -131,7 +154,8 @@ final class TenantSecretRefresh {
           "Physical tenant '{}' has no configuration secrets store to read {} from; keeping their current values",
           physicalTenantId,
           names);
-      return true;
+      names.forEach(name -> unread.put(name, Reason.STORE_UNREACHABLE));
+      return unread;
     }
     final Map<String, ?> results;
     try {
@@ -142,14 +166,14 @@ final class TenantSecretRefresh {
           physicalTenantId,
           names,
           e);
-      return true;
+      names.forEach(name -> unread.put(name, Reason.STORE_UNREACHABLE));
+      return unread;
     }
-    var failed = false;
     for (final var name : names) {
       switch (results.get(name)) {
         case final Resolved resolved -> latest.put(name, resolved.value());
         case final Failed failure -> {
-          failed = true;
+          unread.put(name, reasonOf(failure.code()));
           LOG.warn(
               "Physical tenant '{}' failed to read secret:{} from its configuration secrets store ({}); keeping its current value",
               physicalTenantId,
@@ -157,7 +181,7 @@ final class TenantSecretRefresh {
               failure.code());
         }
         case null, default -> {
-          failed = true;
+          unread.put(name, Reason.UNREADABLE);
           LOG.warn(
               "Physical tenant '{}' got no value for secret:{} from its configuration secrets store; keeping its current value",
               physicalTenantId,
@@ -165,10 +189,18 @@ final class TenantSecretRefresh {
         }
       }
     }
-    return failed;
+    return unread;
   }
 
-  private void refresh(final RefreshableClient client) {
+  private static Reason reasonOf(final SecretErrorCode code) {
+    return switch (code) {
+      case NOT_FOUND -> Reason.NOT_FOUND;
+      case ACCESS_DENIED -> Reason.ACCESS_DENIED;
+      case INVALID_REF, UNREADABLE -> Reason.UNREADABLE;
+    };
+  }
+
+  private void refresh(final RefreshableClient client, final Set<Failure> failures) {
     final var current =
         applied.computeIfAbsent(client, c -> new Applied(builtWith(c), hashes(c, Map.of())));
     final var wanted = new Applied(values(client), hashes(client, current.files()));
@@ -179,6 +211,7 @@ final class TenantSecretRefresh {
     try {
       client.refresh(wanted.values());
       applied.put(client, wanted);
+      changed.forEach(reference -> report.applied(physicalTenantId, reference));
       LOG.info(
           "Physical tenant '{}' applied a change of {} to its {} client",
           physicalTenantId,
@@ -191,6 +224,9 @@ final class TenantSecretRefresh {
           changed,
           client.name(),
           e);
+      changed.forEach(
+          reference ->
+              failures.add(new Failure(reference, client.name(), Reason.REJECTED_BY_CHECK)));
     }
   }
 
