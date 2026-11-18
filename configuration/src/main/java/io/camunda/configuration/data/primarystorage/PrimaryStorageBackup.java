@@ -60,8 +60,14 @@ public class PrimaryStorageBackup implements Cloneable {
    * disk to upload them, for example '100MB'. Backups read every journal segment since the last
    * snapshot; without a limit, this can use up the disk throughput when the segments are not in the
    * page cache, so that journal writes wait and all partitions stall. Set it well below the
-   * throughput of the data volume. When not set, the read rate is not limited. Only the S3 backup
-   * store limits its reads so far; the other backup stores ignore this setting.
+   * throughput of the data volume, but high enough that the broker can read the latest snapshot and
+   * the journal segments since then of all its partitions within the interval between two backups;
+   * otherwise each backup takes longer than that interval and the backups fall behind. For example,
+   * a broker with 3 partitions that each keep about 2GB of snapshot and segments, and that takes a
+   * backup every 5 minutes, needs at least 3 * 2GB / 300s = 20MB per second. The rate must be at
+   * least 6554 bytes per second. An upload may pause for up to 10 seconds while it waits for its
+   * turn, so keep the write timeout above that. When not set, the read rate is not limited. Only
+   * the S3 backup store limits its reads so far; the other backup stores ignore this setting.
    */
   private @Nullable DataSize maxReadRate;
 
