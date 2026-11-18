@@ -19,14 +19,18 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -233,7 +237,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     private final ActorFuture<CurrentClusterConfiguration> initialized;
     private final ConcurrencyControl executor;
     private final Duration waitLogInterval;
-    private ScheduledTimer waitLogTimer;
+    private @Nullable ScheduledTimer waitLogTimer;
     private int waitLogCount;
 
     public GossipInitializer(
@@ -249,6 +253,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
           DEFAULT_WAIT_LOG_INTERVAL);
     }
 
+    @VisibleForTesting
     GossipInitializer(
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
         final Supplier<CurrentClusterConfiguration> persistedConfigurationSupplier,
@@ -282,18 +287,21 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
       executor.run(
           () -> {
             if (!initialized.isDone()) {
-              waitLogTimer = executor.runAtFixedRate(waitLogInterval, this::logStillWaiting);
+              final var waitStarted = Instant.now();
+              waitLogTimer =
+                  executor.runAtFixedRate(waitLogInterval, () -> logStillWaiting(waitStarted));
             }
           });
       return initialized;
     }
 
-    private void logStillWaiting() {
+    private void logStillWaiting(final Instant waitStarted) {
       if (initialized.isDone()) {
         return;
       }
       waitLogCount++;
-      final var waited = waitLogInterval.multipliedBy(waitLogCount);
+      final var waited =
+          Duration.between(waitStarted, Instant.now()).truncatedTo(ChronoUnit.SECONDS);
       final var message =
           "Still waiting for the coordinator to provide the initial cluster configuration via"
               + " gossip after {}. Check that the coordinator (broker 0) is up and healthy.";
