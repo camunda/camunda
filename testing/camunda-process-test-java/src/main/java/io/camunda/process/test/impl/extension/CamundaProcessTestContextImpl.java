@@ -52,12 +52,14 @@ import io.camunda.process.test.api.behavior.BehaviorCondition;
 import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.api.mock.MockChildProcessBuilder;
+import io.camunda.process.test.api.mock.MockDmnDecisionBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
 import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.mock.MockChildProcessBuilderImpl;
+import io.camunda.process.test.impl.mock.MockDmnDecisionBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
@@ -466,6 +468,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                 userTask.getProcessInstanceKey(),
                 userTask.getElementInstanceKey(),
                 variableMapper));
+  }
+
+  @Override
+  public MockDmnDecisionBuilder mockDmnDecision() {
+    final CamundaClient client = createClient();
+    return new MockDmnDecisionBuilderImpl(client);
   }
 
   @Override

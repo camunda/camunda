@@ -28,6 +28,7 @@ import io.camunda.process.test.api.behavior.BehaviorCondition;
 import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.api.mock.MockChildProcessBuilder;
+import io.camunda.process.test.api.mock.MockDmnDecisionBuilder;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -378,6 +379,21 @@ public interface CamundaProcessTestContext {
   void completeUserTask(
       final UserTaskSelector userTaskSelector,
       final UnaryOperator<Map<String, Object>> variableMapper);
+
+  /**
+   * Returns a builder for constructing a mock DMN decision. Use {@link
+   * MockDmnDecisionBuilder#withDecisionId(String)} to set the decision ID and {@link
+   * MockDmnDecisionBuilder#thenReturn(Object)} to deploy the stub.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *   processTestContext.mockDmnDecision().withDecisionId("my-decision").thenReturn("approved");
+   * </pre>
+   *
+   * @return a builder for configuring and deploying the mock
+   */
+  MockDmnDecisionBuilder mockDmnDecision();
 
   /**
    * Mocks a DMN decision with the specified decision ID and sets the provided variables.
