@@ -25,12 +25,14 @@ public enum ContextType {
   EXPORTER_POSITION(false),
   FLOW_NODE(false),
   FORM(false),
-  GROUP(false),
+  // identity entities can be created, deleted and re-created with the same ID within one flush;
+  // the default sort would run both INSERTs before the DELETE and violate the primary key
+  GROUP(true),
   HISTORY_DELETION(false),
   INCIDENT(false),
   JOB(false),
   JOB_METRICS_BATCH(false),
-  MAPPING_RULE(false),
+  MAPPING_RULE(true),
   // suspend/resume can queue a CORRELATED update then a restore-CREATED upsert for the same row in
   // one flush; the default sort would run CREATED first and leave the row stale as CORRELATED
   MESSAGE_SUBSCRIPTION(true),
@@ -38,12 +40,12 @@ public enum ContextType {
   // order must be preserved so the state is updated correctly
   PROCESS_DEFINITION(true),
   PROCESS_INSTANCE(false),
-  ROLE(false),
+  ROLE(true),
   SEQUENCE_FLOW(false),
-  TENANT(false),
+  TENANT(true),
   USAGE_METRIC(false),
   USAGE_METRIC_TU(false),
-  USER(false),
+  USER(true),
   USER_TASK(true),
   VARIABLE(false),
   WAIT_STATE(false),
