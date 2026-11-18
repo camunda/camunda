@@ -4,7 +4,10 @@ import org.gradle.process.CommandLineArgumentProvider
 import buildlogic.OptionalDependenciesPomAction
 import buildlogic.micrometerOptionalDependencies
 
-plugins { id("buildlogic.client-conventions") }
+plugins {
+  id("buildlogic.client-conventions")
+  id("buildlogic.spring-configuration-metadata-conventions")
+}
 
 java { disableAutoTargetJvm() }
 
