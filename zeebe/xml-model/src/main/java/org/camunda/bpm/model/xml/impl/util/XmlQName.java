@@ -47,7 +47,7 @@ public class XmlQName {
 
   protected String localName;
   protected String namespaceUri;
-  protected String prefix;
+  protected volatile String prefix;
 
   public XmlQName(DomDocument document, String namespaceUri, String localName) {
     this(document, null, namespaceUri, localName);
