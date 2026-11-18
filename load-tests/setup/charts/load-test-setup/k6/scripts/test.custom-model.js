@@ -19,7 +19,7 @@ import { loadData } from "./lib.data.js";
  * - `writeFlow` (only if WRITE_FLOW_STAGES is set) measures the cost of writing user tasks, without
  *   the search load of the other scenarios. Each iteration starts an instance, finds its user task
  *   by the process instance key (a small search that does not depend on the user task indexes),
- *   assigns it, and completes it. The rate goes through the stages, e.g. "50:10m,100:10m,150:10m".
+ *   assigns it, and completes it. The rate goes through the stages, e.g. "50:10m+100:10m+150:10m".
  *   Set USER_TASK_USERS=0 and API_RATE=0 to run it alone, and stop the Java starter.
  */
 
@@ -162,13 +162,14 @@ export function userTasksScenario(users) {
   };
 }
 
-/* Parses "50:10m,100:10m" into [{ rate: 50, duration: "10m" }, ...]. A semicolon also separates the
- * stages, because `helm --set` splits its values at commas. */
+/* Parses "50:10m,100:10m" into [{ rate: 50, duration: "10m" }, ...]. A plus sign also separates the
+ * stages: `helm --set` splits its values at commas, and the shell reads a semicolon as the end of a
+ * command. */
 export function parseWriteFlowStages(value) {
   if (value.trim() === "") {
     return [];
   }
-  return value.split(/[;,]/).map((stage) => {
+  return value.split(/[+,]/).map((stage) => {
     const match = /^\s*(\d+):(\d+(?:ms|s|m|h))\s*$/.exec(stage);
     if (!match || parseInt(match[1]) <= 0) {
       throw new Error(`Invalid write flow stage: ${stage}`);
