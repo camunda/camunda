@@ -11,6 +11,11 @@ import io.camunda.secretstore.SecretStoreMetricsDoc;
 import io.camunda.secretstore.SecretStoreMetricsDoc.SecretStoreKeyNames;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.text.ParseException;
+import java.time.format.DateTimeParseException;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -125,13 +130,21 @@ final class SignInMonitor implements AutoCloseable {
 
   /**
    * The failure's message, followed by its root cause's when that adds something: a managed
-   * identity, for one, says only "see inner exception". The stack trace is left out, and a message
-   * with a parser diagnostic replaced, because they can quote the response the SDK could not parse.
+   * identity, for one, says only "see inner exception". The stack trace is left out. A failure
+   * caused anywhere in its chain by parsing the response is reported with a fixed reason instead,
+   * because parse errors quote the input they could not parse, and SDK wrappers copy those messages
+   * into their own.
    */
   static String reason(final Throwable failure) {
+    final Set<Throwable> chain = Collections.newSetFromMap(new IdentityHashMap<>());
     var root = failure;
-    while (root.getCause() != null && root.getCause() != root) {
-      root = root.getCause();
+    for (var current = failure;
+        current != null && chain.add(current);
+        current = current.getCause()) {
+      if (isParseFailure(current)) {
+        return UNPARSABLE_RESPONSE;
+      }
+      root = current;
     }
     final var message = messageOf(failure);
     final var rootMessage = messageOf(root);
@@ -140,13 +153,17 @@ final class SignInMonitor implements AutoCloseable {
         : message + " Caused by: " + rootMessage;
   }
 
+  private static boolean isParseFailure(final Throwable failure) {
+    return failure instanceof NumberFormatException
+        || failure instanceof DateTimeParseException
+        || failure instanceof ParseException
+        || (failure.getMessage() != null && failure.getMessage().contains(PARSER_DIAGNOSTIC));
+  }
+
   private static String messageOf(final Throwable failure) {
     final var message = failure.getMessage();
     if (message == null) {
       return failure.getClass().getSimpleName();
-    }
-    if (message.contains(PARSER_DIAGNOSTIC)) {
-      return UNPARSABLE_RESPONSE;
     }
     // the chain joins the messages of its unavailable credentials with line breaks
     return LINE_BREAKS.matcher(message.strip()).replaceAll(" ");

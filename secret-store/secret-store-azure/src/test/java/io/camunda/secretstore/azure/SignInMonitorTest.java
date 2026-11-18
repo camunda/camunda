@@ -19,10 +19,13 @@ import io.camunda.secretstore.SecretStoreMetricsDoc;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.Timeout.ThreadMode;
 
 /**
  * Drives the real credential chain against {@link StubAzureHttpClient}, so what is counted and
@@ -215,6 +218,37 @@ final class SignInMonitorTest {
       assertThat(log.messagesAt(Level.WARN)).hasSize(1);
       assertThat(log.containsInMessagesOrThrowables(token)).isFalse();
     }
+  }
+
+  @Test
+  void shouldNotLogAValueQuotedByAParseErrorAnSdkWrapperCopiedIntoItsMessage() {
+    // given the SDK's sync client wrapping a failure as it does, copying the message of the
+    // ExecutionException, which itself quotes the cause's toString()
+    final var value = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9";
+    final var execution =
+        new ExecutionException(new NumberFormatException("For input string: \"" + value + "\""));
+    final var failure = new ClientAuthenticationException(execution.getMessage(), null, execution);
+
+    // when
+    final var reason = SignInMonitor.reason(failure);
+
+    // then
+    assertThat(reason).doesNotContain(value).contains("could not be parsed");
+  }
+
+  @Test
+  @Timeout(value = 5, threadMode = ThreadMode.SEPARATE_THREAD)
+  void shouldDescribeAFailureWhoseCausesFormACycle() {
+    // given
+    final var first = new IllegalStateException("first");
+    final var second = new IllegalStateException("second", first);
+    first.initCause(second);
+
+    // when
+    final var reason = SignInMonitor.reason(first);
+
+    // then
+    assertThat(reason).isEqualTo("first Caused by: second");
   }
 
   @Test
