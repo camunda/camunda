@@ -308,13 +308,16 @@ public final class CamundaClientTest {
     builder.withProperties(properties);
 
     // when
-    builder.build();
-
-    // then
-    assertThat(builder.getMtlsCertPath()).isEqualTo("src/test/resources/mtls/client.crt");
-    assertThat(builder.getMtlsKeyPath()).isEqualTo("src/test/resources/mtls/client.key");
-    assertThat(builder.getMtlsKeyPassphrase()).isEqualTo("secret");
-    assertThat(builder.getMtlsCaPath()).isEqualTo("src/test/resources/mtls/ca.crt");
+    try (final CamundaClient client = builder.build()) {
+      // then
+      assertThat(client.getConfiguration().getMtlsCertPath())
+          .isEqualTo("src/test/resources/mtls/client.crt");
+      assertThat(client.getConfiguration().getMtlsKeyPath())
+          .isEqualTo("src/test/resources/mtls/client.key");
+      assertThat(client.getConfiguration().getMtlsKeyPassphrase()).isEqualTo("secret");
+      assertThat(client.getConfiguration().getMtlsCaPath())
+          .isEqualTo("src/test/resources/mtls/ca.crt");
+    }
   }
 
   @Test
@@ -332,14 +335,16 @@ public final class CamundaClientTest {
     builder.withProperties(properties);
 
     // when
-    builder.build();
-
-    // then
-    assertThat(builder.getMtlsKeystorePath()).isEqualTo("src/test/resources/mtls/client.p12");
-    assertThat(builder.getMtlsKeystorePassword()).isEqualTo("storepass");
-    assertThat(builder.getMtlsKeystoreKeyPassword()).isEqualTo("storepass");
-    assertThat(builder.getMtlsTruststorePath()).isEqualTo("src/test/resources/mtls/truststore.p12");
-    assertThat(builder.getMtlsTruststorePassword()).isEqualTo("trustpass");
+    try (final CamundaClient client = builder.build()) {
+      // then
+      assertThat(client.getConfiguration().getMtlsKeystorePath())
+          .isEqualTo("src/test/resources/mtls/client.p12");
+      assertThat(client.getConfiguration().getMtlsKeystorePassword()).isEqualTo("storepass");
+      assertThat(client.getConfiguration().getMtlsKeystoreKeyPassword()).isEqualTo("storepass");
+      assertThat(client.getConfiguration().getMtlsTruststorePath())
+          .isEqualTo("src/test/resources/mtls/truststore.p12");
+      assertThat(client.getConfiguration().getMtlsTruststorePassword()).isEqualTo("trustpass");
+    }
   }
 
   @Test
@@ -363,13 +368,16 @@ public final class CamundaClientTest {
                 .restAddress(URI.create("https://localhost:8080"));
 
     // when
-    builder.build();
-
-    // then
-    assertThat(builder.getMtlsCertPath()).isEqualTo("src/test/resources/mtls/client.crt");
-    assertThat(builder.getMtlsKeyPath()).isEqualTo("src/test/resources/mtls/client.key");
-    assertThat(builder.getMtlsKeyPassphrase()).isEqualTo("secret");
-    assertThat(builder.getMtlsCaPath()).isEqualTo("src/test/resources/mtls/ca.crt");
+    try (final CamundaClient client = builder.build()) {
+      // then
+      assertThat(client.getConfiguration().getMtlsCertPath())
+          .isEqualTo("src/test/resources/mtls/client.crt");
+      assertThat(client.getConfiguration().getMtlsKeyPath())
+          .isEqualTo("src/test/resources/mtls/client.key");
+      assertThat(client.getConfiguration().getMtlsKeyPassphrase()).isEqualTo("secret");
+      assertThat(client.getConfiguration().getMtlsCaPath())
+          .isEqualTo("src/test/resources/mtls/ca.crt");
+    }
   }
 
   @Test
