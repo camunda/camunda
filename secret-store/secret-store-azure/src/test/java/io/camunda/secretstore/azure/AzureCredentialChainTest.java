@@ -300,6 +300,25 @@ final class AzureCredentialChainTest {
   }
 
   @Test
+  void shouldNotFallBackToManagedIdentityWhenTheWorkloadIdentityIsMalformed() throws Exception {
+    // given — a workload-identity pod whose tenant ID is not a valid tenant ID
+    final var tokenFile = Files.writeString(tempDir.resolve("azure-identity-token"), "token");
+    final var environment =
+        environment(
+            Map.of(
+                "AZURE_TENANT_ID", "not a tenant/id",
+                "AZURE_CLIENT_ID", "pod-client-id",
+                "AZURE_FEDERATED_TOKEN_FILE", tokenFile.toString()));
+    final var http = StubAzureHttpClient.signingIn(3600);
+
+    // when/then — the misconfiguration surfaces instead of signing in as the managed identity
+    assertThatThrownBy(() -> chain(config("vm-identity", null), environment, http))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenant ID");
+    assertThat(http.requests()).isEmpty();
+  }
+
+  @Test
   void shouldDescribeTheServicePrincipalByItsClientIdButNotItsSecret() {
     // when
     final var credentials =

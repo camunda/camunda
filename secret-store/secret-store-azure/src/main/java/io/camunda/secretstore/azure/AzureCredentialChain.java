@@ -140,6 +140,15 @@ final class AzureCredentialChain {
       final Configuration environment,
       final @Nullable HttpClient httpClient,
       final ExecutorService executor) {
+    if (!isWorkloadIdentityConfigured(config, environment)) {
+      // the builder refuses to build without these; checking them here rather than catching its
+      // IllegalArgumentException keeps a malformed value, such as an invalid tenant ID, a failure
+      return unavailable(
+          WORKLOAD_IDENTITY
+              + " authentication unavailable: it needs AZURE_TENANT_ID, a client ID and "
+              + AZURE_FEDERATED_TOKEN_FILE
+              + ", which AKS sets only in pods labelled azure.workload.identity/use=true");
+    }
     final var builder =
         new WorkloadIdentityCredentialBuilder()
             .configuration(environment)
@@ -153,17 +162,7 @@ final class AzureCredentialChain {
     if (httpClient != null) {
       builder.httpClient(httpClient);
     }
-    try {
-      return builder.build();
-    } catch (final IllegalArgumentException notConfigured) {
-      // this builder refuses to build without its environment, so outside a workload-identity pod
-      // it stands in as unavailable for the chain to move past
-      return unavailable(
-          WORKLOAD_IDENTITY
-              + " authentication unavailable: it needs AZURE_TENANT_ID, a client ID and "
-              + AZURE_FEDERATED_TOKEN_FILE
-              + ", which AKS sets only in pods labelled azure.workload.identity/use=true");
-    }
+    return builder.build();
   }
 
   private static TokenCredential managedIdentityCredential(
@@ -187,6 +186,14 @@ final class AzureCredentialChain {
         && isSet(environment, Configuration.PROPERTY_AZURE_CLIENT_ID)
         && (isSet(environment, Configuration.PROPERTY_AZURE_CLIENT_SECRET)
             || isSet(environment, Configuration.PROPERTY_AZURE_CLIENT_CERTIFICATE_PATH));
+  }
+
+  private static boolean isWorkloadIdentityConfigured(
+      final AzureKeyVaultStoreConfig config, final Configuration environment) {
+    return isSet(environment, Configuration.PROPERTY_AZURE_TENANT_ID)
+        && isSet(environment, AZURE_FEDERATED_TOKEN_FILE)
+        && (config.managedIdentityClientId() != null
+            || isSet(environment, Configuration.PROPERTY_AZURE_CLIENT_ID));
   }
 
   private static boolean isSet(final Configuration environment, final String name) {
