@@ -20,6 +20,15 @@ inputs:
   vault-secret-id:
     description: Vault Secret ID to use
     required: false
+  vault-jwt-role:
+    description: 'Vault JWT role; when set, the action logs in via JWT/OIDC and the job needs id-token: write'
+    required: false
+  vault-jwt-path:
+    description: 'Vault JWT auth backend path'
+    required: false
+  vault-jwt-audience:
+    description: 'GitHub OIDC audience for the Vault JWT login'
+    required: false
   source-build:
     description: true if the camunda build should be built from source, false will build from latest camunda release
     required: false
@@ -83,9 +92,12 @@ runs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ inputs.vault-address }}
-        method: approle
-        roleId: ${{ inputs.vault-role-id }}
-        secretId: ${{ inputs.vault-secret-id }}
+        method: ${{ inputs.vault-jwt-role != '' && 'jwt' || 'approle' }}
+        path: ${{ inputs.vault-jwt-path }}
+        role: ${{ inputs.vault-jwt-role }}
+        jwtGithubAudience: ${{ inputs.vault-jwt-audience }}
+        roleId: ${{ inputs.vault-jwt-role == '' && inputs.vault-role-id || '' }}
+        secretId: ${{ inputs.vault-jwt-role == '' && inputs.vault-secret-id || '' }}
         secrets: |
           secret/data/products/distribution/ci/nexus USER | NEXUS_USERNAME;
           secret/data/products/distribution/ci/nexus PASSWORD | NEXUS_PASSWORD;
@@ -111,6 +123,9 @@ runs:
         vault-secret-id: ${{ inputs.vault-secret-id }}
         vault-address: ${{ inputs.vault-address }}
         vault-role-id: ${{ inputs.vault-role-id }}
+        vault-jwt-role: ${{ inputs.vault-jwt-role }}
+        vault-jwt-path: ${{ inputs.vault-jwt-path }}
+        vault-jwt-audience: ${{ inputs.vault-jwt-audience }}
 
     - name: Setup Node
       uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
