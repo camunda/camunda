@@ -25,11 +25,17 @@ runs:
         # and GitHub runners differ (self-hosted `/runner/` vs gh-hosted `/home/runner`)
         KEY_PREFIX: ${{ runner.environment }}-${{ runner.os }}-npm-${{ inputs.npm-cache-key-modifier }}
       run: |
-        # ~/.npm is npm's global download cache; `npm ci` reuses tarballs from here
-        # instead of hitting the registry. GitHub env variables are used instead of
-        # outputs, as outputs are not available in post steps
-        # https://github.com/actions/runner/issues/2009
-        echo "NPM_CACHE_PATH=~/.npm" >> $GITHUB_ENV
+        # npm's cache lives in the runner temp dir (`../../_temp` from the workspace
+        # on host and in containers), so one cache entry works for both; ~/.npm
+        # differs in containers (HOME=/github/home) and failed to extract there.
+        # The cache `path` is hashed into the cache version, and the runner
+        # rewrites absolute host paths in containers (/__w/...), so it uses the
+        # relative path to get the same version in both.
+        #
+        # GitHub env variables are used instead of outputs, as outputs are not
+        # available in post steps https://github.com/actions/runner/issues/2009
+        echo "NPM_CACHE_PATH=../../_temp/npm-cache" >> $GITHUB_ENV
+        echo "npm_config_cache=${RUNNER_TEMP}/npm-cache" >> $GITHUB_ENV
         echo "NPM_CACHE_KEY=${KEY_PREFIX}-${HASH_FILES}" >> $GITHUB_ENV
         echo "NPM_CACHE_KEY_PREFIX=${KEY_PREFIX}" >> $GITHUB_ENV
 
