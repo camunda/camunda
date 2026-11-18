@@ -27,7 +27,6 @@ public class StarterProperties {
   private boolean startViaMessage = false;
   private String msgName = "msg";
   private WorkloadModel workloadModel = WorkloadModel.OPEN;
-  private Duration livenessMaxNoSuccessAge = Duration.ofMinutes(2);
 
   public String getProcessId() {
     return processId;
@@ -160,14 +159,6 @@ public class StarterProperties {
 
   public void setWorkloadModel(final WorkloadModel workloadModel) {
     this.workloadModel = workloadModel;
-  }
-
-  public Duration getLivenessMaxNoSuccessAge() {
-    return livenessMaxNoSuccessAge;
-  }
-
-  public void setLivenessMaxNoSuccessAge(final Duration livenessMaxNoSuccessAge) {
-    this.livenessMaxNoSuccessAge = livenessMaxNoSuccessAge;
   }
 
   /**
