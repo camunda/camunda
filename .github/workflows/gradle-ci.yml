@@ -1,4 +1,4 @@
-# description: Non-blocking experimental Gradle check for isolated-project compatibility.
+# description: Non-blocking Gradle unit test check.
 # test location: /
 # type: CI
 # owner: @camunda/engineering-operations
@@ -43,18 +43,23 @@ env:
   SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
 
 jobs:
-  gradle-experimental-checks:
-    name: "Gradle / Experimental Checks"
+  gradle-unit-tests:
+    name: "Gradle / Unit Tests"
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
       contents: read
+    env:
+      TEST_PRODUCT: Gradle
+      TEST_TYPE: CI
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
           locale: C.UTF-8
@@ -75,11 +80,22 @@ jobs:
                 )
               )
             }}
-      - name: Verify Gradle isolated-project compatibility
+      - name: Run Gradle unit tests
         run: |
           set -euo pipefail
-          ./gradlew --profile --isolated-projects --console=plain -Pskip.fe.build \
-            testClasses
+          ./gradlew --profile --build-cache --console=plain \
+            -Pskip.fe.build -Ptest.max.forks=2 test
+
+      - name: Upload Gradle test reports
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: gradle-test-reports
+          path: |
+            **/build/reports/tests/test/
+            **/build/test-results/test/*.xml
+          retention-days: 14
+          if-no-files-found: warn
 
       - name: Upload Gradle build reports
         if: always()
@@ -100,7 +116,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  # Experimental checks stay outside Unified CI and do not block pull requests or merge groups.
+  # Gradle unit tests stay outside Unified CI and do not block pull requests or merge groups.
   # Failures on main are reported to Slack instead.
   gradle-notify-failure:
     name: "Gradle / Notify on failure"
@@ -109,8 +125,8 @@ jobs:
       github.repository == 'camunda/camunda' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
-      needs.gradle-experimental-checks.result == 'failure'
-    needs: [ gradle-experimental-checks ]
+      needs.gradle-unit-tests.result == 'failure'
+    needs: [ gradle-unit-tests ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -146,7 +162,7 @@ jobs:
           webhook: ${{ steps.secrets.outputs.GRADLE_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
           webhook-type: webhook-trigger
           payload: |
-            text: "Gradle experimental checks on main failed (${{ needs.gradle-experimental-checks.result }})"
+            text: "Gradle unit tests on main failed (${{ needs.gradle-unit-tests.result }})"
             commit: "${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
             pr: "${{ steps.pr.outputs.number && format('{0}/{1}/pull/{2}', github.server_url, github.repository, steps.pr.outputs.number) || 'n/a' }}"
             run_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

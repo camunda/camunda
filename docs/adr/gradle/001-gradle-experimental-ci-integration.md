@@ -202,9 +202,8 @@ notification is an implementation detail and can change without changing this de
 
 The temporary soft-integration period has ended. Focused Gradle compilation and distribution-parity
 checks now run in Unified CI and are included in `check-results`. The separate `gradle-ci.yml`
-workflow remains non-blocking for the experimental isolated-project compatibility check;
-failures on a push to `main` send a Slack notification. Gradle unit-test execution will be added
-separately.
+workflow runs Gradle unit tests as a non-blocking check; failures on a push to `main` send a Slack
+notification.
 
 ## Deferred work
 
