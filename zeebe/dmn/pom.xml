@@ -36,13 +36,13 @@
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-dmn-model</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-dmn-model</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-xml-model</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-xml-model</artifactId>
     </dependency>
 
     <dependency>

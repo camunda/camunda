@@ -186,18 +186,6 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
       "dmn-engine",
     )
     .versionRef("dmn-scala")
-  library(
-      "org-camunda-bpm-model-camunda-dmn-model",
-      "org.camunda.bpm.model",
-      "camunda-dmn-model",
-    )
-    .versionRef("camunda")
-  library(
-      "org-camunda-bpm-model-camunda-xml-model",
-      "org.camunda.bpm.model",
-      "camunda-xml-model",
-    )
-    .versionRef("camunda")
   library("org-camunda-feel-feel-engine", "org.camunda.feel", "feel-engine")
     .versionRef("org-camunda-feel-feel-engine")
   library("org-checkerframework-checker-qual", "org.checkerframework", "checker-qual")

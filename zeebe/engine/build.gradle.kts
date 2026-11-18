@@ -29,7 +29,7 @@ dependencies {
   implementation(libs.org.msgpack.jackson.dataformat.msgpack)
   implementation(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-auth"))
-  api(libs.org.camunda.bpm.model.camunda.xml.model)
+  api(project(":zeebe-xml-model"))
   implementation(libs.org.apache.commons.commons.lang3)
   implementation(libs.com.cronutils.cron.utils)
   implementation(libs.com.github.ben.manes.caffeine.caffeine)

@@ -15,6 +15,6 @@ at tag `7.24.0` (commit `2d8b7ed86ba912991613a99eea25ce7c486604d9`).
 
 The `org.camunda.bpm.model.dmn` packages were kept on purpose. `dmn-scala`
 (`org.camunda.bpm.extension.dmn.scala:dmn-engine`) compiles against them and depends on the original
-artifact. Exclude `org.camunda.bpm.model:camunda-dmn-model` and
-`org.camunda.bpm.model:camunda-xml-model` from `dmn-scala`, and from anything else that brings them in,
-so the classes are never on the classpath twice.
+artifact. `parent/pom.xml` and `zeebe/dmn/build.gradle.kts` exclude `org.camunda.bpm.model:*` from
+`dmn-scala`. Do the same for anything else that brings the original artifacts in, so the classes are
+never on the classpath twice.
