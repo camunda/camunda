@@ -3,6 +3,7 @@
 import importlib.util
 import pathlib
 import sys
+import tempfile
 import unittest
 
 _spec = importlib.util.spec_from_file_location(
@@ -86,16 +87,33 @@ class RenderTest(unittest.TestCase):
     def test_profiles_and_default_flags(self):
         tenants = profiles.compute(**{**DEFAULTS, "tenant_count": 2})
         out, default_flags, overload, table = profiles.render(tenants, 300)
-        self.assertEqual(out, "450:54 20:3")
-        self.assertEqual(
-            default_flags, "--set load-tester.starter.rate=20 --set load-tester.workers.worker.replicas=3"
-        )
+        self.assertEqual(out, "450 20")
+        self.assertEqual(default_flags, "--set load-tester.starter.rate=20")
         self.assertTrue(overload)
         self.assertIn("overload", table)
 
     def test_run_within_capacity_is_not_flagged(self):
         tenants = profiles.compute(**{**DEFAULTS, "saturating_count": 0})
         self.assertFalse(profiles.render(tenants, 300)[2])
+
+
+class CapacityTest(unittest.TestCase):
+    def setUp(self):
+        self.optimal = pathlib.Path(tempfile.mkdtemp()) / "optimal.json"
+        self.optimal.write_text('{"metrics": {"throughput-per-second": {"expected": 300}}}')
+
+    def test_elasticsearch_uses_the_tested_maximum(self):
+        self.assertEqual(profiles.tested_capacity("elasticsearch", "", self.optimal), 300)
+
+    def test_a_given_capacity_wins(self):
+        self.assertEqual(profiles.tested_capacity("postgresql", "120", self.optimal), 120)
+
+    def test_storage_without_tested_maximum_needs_a_given_capacity(self):
+        with self.assertRaisesRegex(profiles.InputError, "required for secondary storage 'postgresql'"):
+            profiles.tested_capacity("postgresql", "", self.optimal)
+
+    def test_checked_in_optimal_json_has_the_tested_maximum(self):
+        self.assertGreater(profiles.tested_capacity("elasticsearch", ""), 0)
 
 
 if __name__ == "__main__":

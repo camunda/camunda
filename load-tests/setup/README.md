@@ -404,13 +404,13 @@ In the GitHub workflow, set the `physical-tenant-count` input (with `secondary-s
 the storage you want all tenants to share).
 
 By default every tenant runs the scenario's rate. To give tenants different traffic, pass
-`physical_tenant_profiles`: a space-separated list of `<starter-rate>:<worker-replicas>` entries, the
+`physical_tenant_profiles`: a space-separated list of `<starter-rate>[:<worker-replicas>]` entries, the
 i-th applying to `pt<i>`. A tenant without an entry keeps the scenario defaults, and the default tenant
 is configured through the usual load test flags.
 
 ```sh
 # pt1 saturates, pt2 is heavy, pt3 is quiet
-make install physical_tenant_count=3 physical_tenant_profiles="150:18 50:6 5:1" scenario=typical
+make install physical_tenant_count=3 physical_tenant_profiles="150 50 5" scenario=max
 ```
 
 The [`Camunda physical tenants load test`](../../.github/workflows/camunda-physical-tenants-load-test.yml)

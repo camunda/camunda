@@ -69,7 +69,7 @@ chaos ?= false
 # Pass directly: make install physical_tenant_count=3 secondary_storage=postgresql
 physical_tenant_count ?= 0
 # Optional per-tenant traffic profiles for pt1..ptN: a space-separated list of
-# <starter-rate>:<worker-replicas> entries, the i-th entry applying to pt<i>. A tenant without an
+# <starter-rate>[:<worker-replicas>] entries, the i-th entry applying to pt<i>. A tenant without an
 # entry keeps the scenario defaults. The default tenant is configured via the usual load test flags.
 # Pass directly: make install physical_tenant_count=3 physical_tenant_profiles="150:6 50:3 5:1"
 physical_tenant_profiles ?=
@@ -345,10 +345,11 @@ install-load-test-physical-tenants:
 	  profile=$$(echo "$$profiles" | awk -v n="$$i" '{print $$n}'); \
 	  profile_flags=""; \
 	  if [ -n "$$profile" ]; then \
-	    if ! echo "$$profile" | grep -Eq '^[0-9]+:[0-9]+$$'; then \
-	      echo "Error: physical_tenant_profiles entry '$$profile' for $$tenant must look like <rate>:<worker-replicas>" >&2; exit 1; \
+	    if ! echo "$$profile" | grep -Eq '^[0-9]+(:[0-9]+)?$$'; then \
+	      echo "Error: physical_tenant_profiles entry '$$profile' for $$tenant must look like <rate>[:<worker-replicas>]" >&2; exit 1; \
 	    fi; \
-	    profile_flags="--set load-tester.starter.rate=$${profile%%:*} --set load-tester.workers.worker.replicas=$${profile##*:}"; \
+	    profile_flags="--set load-tester.starter.rate=$${profile%%:*}"; \
+	    case "$$profile" in *:*) profile_flags="$$profile_flags --set load-tester.workers.worker.replicas=$${profile##*:}";; esac; \
 	  fi; \
 	  echo "Deploying the $$tenant physical-tenant load tester for namespace $(namespace) (profile: $${profile:-scenario default})..."; \
 	  helm template load-test-setup $(helm_chart_load_test_setup) \

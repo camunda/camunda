@@ -4,7 +4,9 @@
 #              tenant is a multiplier of its allowance (its weighted share of the cluster
 #              capacity), computed by .github/scripts/load-test-physical-tenant-profiles.py, and
 #              the deployment is delegated to camunda-load-test.yml. Use the same inputs on every
-#              solution to compare results; saturating-tenant-count 0 is the reference run
+#              solution to compare results. It runs the max scenario of the daily stress test,
+#              whose capacity is validated every day (load-tests/docs/scripts/optimal.json).
+#              saturating-tenant-count 0 is the reference run
 #              without a noisy neighbour, tenant-count 0 with total-rate the single tenant one.
 # calls: camunda-load-test.yml
 # monitoring: https://dashboard.benchmark.camunda.cloud/
@@ -21,11 +23,9 @@ on:
         type: string
         required: true
       cluster-capacity-rate:
-        description: '── Load ──────────────────────────── Process instances/s the cluster sustains (100%), measured by a calibration run. The allowance of each tenant is its weighted share of it'
-        type: number
-        # TODO: placeholder, the throughput of the max scenario (load-tests/docs/scripts/optimal.json).
-        # Replace with the calibrated value of the typical scenario on the default sizing.
-        default: 300
+        description: '── Load ──────────────────────────── Process instances/s the cluster sustains (100%). Empty uses the maximum the daily stress test validates (Elasticsearch only); other storages need a calibrated value'
+        type: string
+        default: ""
         required: false
       tenant-count:
         description: 'Number of physical tenants (pt1..ptN) next to the default tenant. 0 runs the default tenant only'
@@ -66,10 +66,10 @@ on:
         description: '── Cluster ───────────────────────── Secondary storage shared by all tenants'
         type: choice
         options:
-          - postgresql
           - elasticsearch
+          - postgresql
           - opensearch
-        default: postgresql
+        default: elasticsearch
         required: false
       use-pgbouncer:
         description: 'Put PgBouncer in front of PostgreSQL (ignored for other storages)'
@@ -142,13 +142,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: .github/scripts
+          sparse-checkout: |
+            .github/scripts
+            load-tests/docs/scripts/optimal.json
 
       - name: Compute profiles
         id: profiles
         env:
           TENANT_COUNT: ${{ inputs.tenant-count }}
           SATURATING_COUNT: ${{ inputs.saturating-tenant-count }}
+          STORAGE: ${{ inputs.secondary-storage-type }}
           CAPACITY_RATE: ${{ inputs.cluster-capacity-rate }}
           SATURATING_CAPACITY_RATIO: ${{ inputs.saturating-capacity-ratio }}
           QUIET_MULTIPLIER: ${{ inputs.quiet-multiplier }}
@@ -184,7 +187,9 @@ jobs:
       orchestration-tag: ${{ inputs.orchestration-tag }}
       reuse-tag: ${{ inputs.reuse-tag }}
       ttl: ${{ inputs.ttl }}
-      scenario: typical
+      # The scenario of the daily stress test, whose throughput is validated every day. More scenarios
+      # (e.g. realistic) need a tested maximum of their own first.
+      scenario: max
       secondary-storage-type: ${{ inputs.secondary-storage-type }}
       use-pgbouncer: ${{ needs.prepare.outputs.use-pgbouncer == 'true' }}
       physical-tenant-count: ${{ inputs.tenant-count }}
