@@ -128,6 +128,13 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
     runAtFixedRateAsync(delay, task);
   }
 
+  @Override
+  public void runAtFixedRate(final Duration delay, final Runnable task) {
+    final var actor = context.geAsyncActor(ASYNC_PROCESSING);
+    final var actorService = actor.getScheduleService();
+    actor.run(() -> actorService.runAtFixedRate(delay, task));
+  }
+
   /**
    * Allows control over a task that is asynchronously scheduled. It uses a future that holds the
    * task once it's scheduled.
