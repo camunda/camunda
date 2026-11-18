@@ -28,7 +28,9 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
@@ -154,6 +156,16 @@ abstract class AbstractBatchOperationTest {
 
   protected long createNewCancelProcessInstanceBatchOperation(
       final Set<Long> itemKeys, final Map<String, Object> claims) {
+    return createNewCancelProcessInstanceBatchOperation(
+        itemKeys, claims, AuthorizationUtil.getAuthInfo(DEFAULT_USER.getUsername()));
+  }
+
+  /**
+   * Like {@link #createNewCancelProcessInstanceBatchOperation(Set, Map)}, with the given claims on
+   * the creation command.
+   */
+  protected long createNewCancelProcessInstanceBatchOperation(
+      final Set<Long> itemKeys, final Map<String, Object> claims, final AuthInfo commandClaims) {
     final var result =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
@@ -180,7 +192,7 @@ abstract class AbstractBatchOperationTest {
             .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .withFilter(filterBuffer)
             .withAuthentication(authenticationBuffer)
-            .create(DEFAULT_USER.getUsername())
+            .create(commandClaims)
             .getValue()
             .getBatchOperationKey();
     startScheduler();
