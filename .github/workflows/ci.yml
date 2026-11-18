@@ -283,7 +283,7 @@ jobs:
           go-version-file: load-tests/setup/test/go.mod
           cache-dependency-path: load-tests/setup/test/go.sum
       - name: Set up Helm
-        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+        uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
         with:
           minimum_release_age: 15d
           install_args: helm
@@ -369,7 +369,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Helm
-        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+        uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
         with:
           minimum_release_age: 15d
           install_args: helm
