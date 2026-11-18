@@ -149,7 +149,7 @@ class BackupReadRateLimiterTest {
   /** Pays for the bytes and waits for them, like a read of a limited stream does. */
   private static void acquire(final BackupReadRateLimiter limiter, final long bytes)
       throws InterruptedException {
-    limiter.sleep(limiter.reserve(bytes));
+    limiter.sleep(limiter.reserve(bytes).waitNanos());
   }
 
   @Test
