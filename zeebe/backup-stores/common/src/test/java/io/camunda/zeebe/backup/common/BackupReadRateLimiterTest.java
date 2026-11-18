@@ -210,15 +210,17 @@ class BackupReadRateLimiterTest {
     final var first = limiter.wrap(new ByteArrayInputStream(new byte[1]));
     first.close();
     first.close();
-    limiter.wrap(new ByteArrayInputStream(new byte[1]));
+    final var second = limiter.wrap(new ByteArrayInputStream(new byte[1]));
 
     // when
     final var third = CompletableFuture.supplyAsync(() -> wrapUnchecked(limiter));
 
-    // then
+    // then - the second close of the first stream did not free a second slot
     assertThatThrownBy(() -> third.get(100, TimeUnit.MILLISECONDS))
         .isInstanceOf(TimeoutException.class);
-    third.cancel(true);
+    // the waiting worker cannot be interrupted through the future, so let it open
+    second.close();
+    assertThat(third).succeedsWithin(Duration.ofSeconds(30));
   }
 
   @Test
