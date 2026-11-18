@@ -379,6 +379,25 @@ in:title FooIT AND (label:kind/flake OR in:title flaky)" ]
   [[ "$(block 0 2)" == *'`FooIT.should&lt;T&gt; &amp; more`'* ]]
 }
 
+@test "should keep tests whose names differ after a newline apart" {
+  # given
+  top_tests \
+    "main|io.camunda.it.FooIT|shouldFoo|11|2|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldFoo|11|2|102:1:job"
+  jq '.[0].test_name = "shouldFoo\ncase_A" | .[1].test_name = "shouldFoo\ncase_B"' \
+    fixtures/top-tests.json > fixtures/rows.json && mv fixtures/rows.json fixtures/top-tests.json
+
+  # when
+  build flaky
+
+  # then
+  [[ "$(block 0 2)" == *"• 11x \`FooIT.shouldFoo"$'\n'"case_A\`"* ]]
+  [[ "$(block 0 2)" == *"• 11x \`FooIT.shouldFoo"$'\n'"case_B\`"* ]]
+  # one GH issue lookup per test, not one shared lookup
+  grep -q "^case_A AND" fixtures/gh-searches.txt
+  grep -q "^case_B AND" fixtures/gh-searches.txt
+}
+
 @test "should drop links, then shorten test names, when a section is over the block limit" {
   # given
   long="$(printf 'x%.0s' {1..900})"

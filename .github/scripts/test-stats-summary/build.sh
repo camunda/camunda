@@ -110,12 +110,13 @@ enrich() {
   declare -A issues teams
 
   while read -r row; do
-    mapfile -t fields < <(jq -r '.branch, .test_class_name, .occurrences, .test_rank, .test_name' <<< "$row")
+    mapfile -t fields < <(jq -r '.branch, .test_class_name, .occurrences, .test_rank' <<< "$row")
     branch="${fields[0]}"
     fqcn="${fields[1]}"
     count="${fields[2]}"
     rank="${fields[3]}"
-    test_name="${fields[4]:-}"
+    # Read on its own, as a test name can have a newline
+    test_name="$(jq -r '.test_name' <<< "$row")"
 
     top="$TOP_TESTS_STABLE"
     [[ "$branch" == "${SUPPORTED_BRANCHES[0]}" ]] && top="$TOP_TESTS_MAIN"
