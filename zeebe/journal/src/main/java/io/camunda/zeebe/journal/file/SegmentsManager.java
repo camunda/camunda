@@ -222,8 +222,9 @@ final class SegmentsManager implements AutoCloseable {
         compactSegments.size());
     for (final Segment segment : compactSegments.values()) {
       segment.markAsClosed();
-      segmentsToDelete.add(segment);
+      // a running deletion can take the segment at once and must not decrement an uncounted segment
       journalMetrics.incPendingSegmentDeletions();
+      segmentsToDelete.add(segment);
       journalMetrics.decSegmentCount();
     }
     // removes them from the segment map
