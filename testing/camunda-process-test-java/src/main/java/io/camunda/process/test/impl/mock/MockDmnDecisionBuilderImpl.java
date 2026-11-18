@@ -55,6 +55,11 @@ public class MockDmnDecisionBuilderImpl implements MockDmnDecisionBuilder {
 
   @Override
   public void thenReturn(final Object decisionOutput) {
+    if (decisionId == null) {
+      throw new IllegalStateException(
+          "No decision ID set. Use withDecisionId(String) to set a decision ID before calling thenReturn().");
+    }
+
     final String jsonOutput = client.getConfiguration().getJsonMapper().toJson(decisionOutput);
 
     final DmnModelInstance modelInstance = Dmn.createEmptyModel();
