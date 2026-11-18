@@ -75,6 +75,11 @@ on:
           - opensearch
         default: elasticsearch
         required: false
+      prefer-rest:
+        description: 'API the load testers use: true is REST (what customers use), false is gRPC (no Tomcat and Spring layer, so it isolates the engine from gateway overhead). The capacity differs per API, so give a calibrated cluster-capacity-rate for the one you pick'
+        type: boolean
+        default: true
+        required: false
       use-pgbouncer:
         description: 'Put PgBouncer in front of PostgreSQL (ignored for other storages)'
         type: boolean
@@ -131,7 +136,7 @@ jobs:
       contents: read
     outputs:
       profiles: ${{ steps.profiles.outputs.profiles }}
-      default-tenant-flags: ${{ steps.profiles.outputs.default-tenant-flags }}
+      load-test-load: ${{ steps.flags.outputs.load-test-load }}
       physical-tenant-count: ${{ steps.profiles.outputs.physical-tenant-count }}
       use-pgbouncer: ${{ steps.pgbouncer.outputs.use-pgbouncer }}
     steps:
@@ -169,6 +174,20 @@ jobs:
           TOTAL_RATE: ${{ inputs.total-rate }}
         run: python3 .github/scripts/load-test-physical-tenant-profiles.py
 
+      - name: Compose load tester flags
+        id: flags
+        env:
+          DEFAULT_TENANT_FLAGS: ${{ steps.profiles.outputs.default-tenant-flags }}
+          PREFER_REST: ${{ inputs.prefer-rest }}
+        run: |-
+          flags="${DEFAULT_TENANT_FLAGS}"
+          # The chart default is REST, so only gRPC needs an explicit flag. It applies to every tenant.
+          if [[ "${PREFER_REST}" != "true" ]]; then
+            flags="${flags} --set global.preferRest.enabled=false"
+          fi
+          echo "load-test-load=${flags}" >> "$GITHUB_OUTPUT"
+          echo "Load tester API: $([[ "${PREFER_REST}" == "true" ]] && echo REST || echo gRPC)" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Resolve PgBouncer
         id: pgbouncer
         env:
@@ -203,7 +222,7 @@ jobs:
       use-pgbouncer: ${{ needs.prepare.outputs.use-pgbouncer == 'true' }}
       physical-tenant-count: ${{ fromJSON(needs.prepare.outputs.physical-tenant-count) }}
       physical-tenant-profiles: ${{ needs.prepare.outputs.profiles }}
-      load-test-load: ${{ needs.prepare.outputs.default-tenant-flags }}
+      load-test-load: ${{ needs.prepare.outputs.load-test-load }}
       platform-helm-values: ${{ inputs.platform-helm-values }}
       stable-vms: ${{ inputs.stable-vms }}
       # Optimize is not part of the measurement and would add load of its own.
