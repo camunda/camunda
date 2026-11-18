@@ -61,7 +61,6 @@ import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.mock.MockChildProcessBuilderImpl;
 import io.camunda.process.test.impl.mock.MockDmnDecisionBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
-import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -76,12 +75,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import org.camunda.bpm.model.dmn.Dmn;
-import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.bpm.model.dmn.instance.Decision;
-import org.camunda.bpm.model.dmn.instance.Definitions;
-import org.camunda.bpm.model.dmn.instance.LiteralExpression;
-import org.camunda.bpm.model.dmn.instance.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -478,42 +471,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void mockDmnDecision(final String decisionId, final Object decisionOutput) {
-    final CamundaClient client = createClient();
-    final String jsonVariables = client.getConfiguration().getJsonMapper().toJson(decisionOutput);
-
-    // Create an empty DMN model
-    final DmnModelInstance modelInstance = Dmn.createEmptyModel();
-
-    // Create and configure the definitions element
-    final Definitions definitions = modelInstance.newInstance(Definitions.class);
-    definitions.setName(decisionId + "-name");
-    definitions.setNamespace("http://camunda.org/schema/1.0/dmn");
-    modelInstance.setDefinitions(definitions);
-
-    // Create the decision element
-    final Decision decision = modelInstance.newInstance(Decision.class);
-    decision.setId(decisionId);
-    decision.setName(decisionId + "-decision-name");
-    definitions.addChildElement(decision);
-
-    final LiteralExpression literalExpression = modelInstance.newInstance(LiteralExpression.class);
-    final Text text = modelInstance.newInstance(Text.class);
-    text.setTextContent(jsonVariables);
-    literalExpression.setText(text);
-    decision.addChildElement(literalExpression);
-
-    LOGGER.debug(
-        "Mock: Deploy a DMN [decisionId: '{}'] with decision output {}",
-        decisionId,
-        decisionOutput);
-
-    final String resourceName = decisionId + ".dmn";
-    client
-        .newDeployResourceCommand()
-        .addResourceStream(
-            new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()), resourceName)
-        .send()
-        .join();
+    mockDmnDecision().withDecisionId(decisionId).thenReturn(decisionOutput);
   }
 
   @Override
