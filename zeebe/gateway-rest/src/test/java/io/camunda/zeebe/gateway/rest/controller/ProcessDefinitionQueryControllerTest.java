@@ -232,6 +232,75 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldMapLikeIgnoreCaseOnNameOfProcessDefinitionSearch() {
+    // given
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+            {
+              "filter": {
+                "name": { "$like": "Inv*", "$likeIgnoreCase": "*ICE" }
+              }
+            }""";
+
+    // when
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then: both operators are kept, so the search applies both
+    final var captor = ArgumentCaptor.forClass(ProcessDefinitionQuery.class);
+    verify(processDefinitionServices).search(captor.capture(), any());
+    assertThat(captor.getValue().filter().nameOperations())
+        .containsExactlyInAnyOrder(Operation.like("Inv*"), Operation.likeIgnoreCase("*ICE"));
+  }
+
+  @Test
+  void shouldMapLikeIgnoreCaseOnNameInsideOrGroup() {
+    // given
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+            {
+              "filter": {
+                "$or": [
+                  { "processDefinitionId": { "$like": "*invoice*" } },
+                  { "name": { "$likeIgnoreCase": "*invoice*" } }
+                ]
+              }
+            }""";
+
+    // when
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    final var captor = ArgumentCaptor.forClass(ProcessDefinitionQuery.class);
+    verify(processDefinitionServices).search(captor.capture(), any());
+    final var filter = captor.getValue().filter();
+    assertThat(filter.orFilters()).hasSize(2);
+    assertThat(filter.orFilters().get(0).processDefinitionIdOperations())
+        .containsExactly(Operation.like("*invoice*"));
+    assertThat(filter.orFilters().get(1).nameOperations())
+        .containsExactly(Operation.likeIgnoreCase("*invoice*"));
+  }
+
+  @Test
   void shouldTreatEmptyOrListAsNoOr() {
     // given
     when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))

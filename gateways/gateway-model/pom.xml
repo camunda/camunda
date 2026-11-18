@@ -204,6 +204,7 @@
                 <typeMapping>MessageSubscriptionKeyFilterProperty=String</typeMapping>
                 <typeMapping>ProcessDefinitionIdFilterProperty=String</typeMapping>
                 <typeMapping>ProcessDefinitionKeyFilterProperty=String</typeMapping>
+                <typeMapping>ProcessDefinitionNameFilterProperty=String</typeMapping>
                 <typeMapping>ProcessInstanceKeyFilterProperty=String</typeMapping>
                 <typeMapping>ResourceKeyFilterProperty=String</typeMapping>
                 <typeMapping>ScopeKeyFilterProperty=String</typeMapping>

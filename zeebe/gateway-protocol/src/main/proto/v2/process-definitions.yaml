@@ -435,6 +435,40 @@ components:
             - $ref: '#/components/schemas/ProcessDefinitionFilter'
           description: The process definition search filters.
 
+    ProcessDefinitionNameFilter:
+      title: Advanced filter
+      description: Advanced string filter for the process definition name.
+      allOf:
+        - $ref: 'filters.yaml#/components/schemas/BasicStringFilter'
+        - type: object
+          properties:
+            $like:
+              $ref: 'filters.yaml#/components/schemas/LikeFilter'
+            $likeIgnoreCase:
+              description: |
+                Checks if the name matches the provided like value, ignoring upper and lower case.
+
+                Supports the same wildcard characters as `$like`:
+
+                * `*`: matches zero, one, or multiple characters.
+                * `?`: matches one, single character.
+
+                Wildcard characters can be escaped with backslash, for instance: `\*`.
+              type: string
+          x-properties-added-in-version:
+            - propertyName: "$like"
+              addedInVersion: "8.8"
+            - propertyName: "$likeIgnoreCase"
+              addedInVersion: "8.11"
+
+    ProcessDefinitionNameFilterProperty:
+      description: Process definition name property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+        - $ref: '#/components/schemas/ProcessDefinitionNameFilter'
+
     ProcessDefinitionOrFilterFields:
       description: |
         Fields that can be used inside a `$or` group of the process definition search filter.
@@ -442,7 +476,7 @@ components:
       properties:
         name:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: '#/components/schemas/ProcessDefinitionNameFilterProperty'
           description: Name of this process definition.
         processDefinitionId:
           allOf:
@@ -455,7 +489,7 @@ components:
       properties:
         name:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: '#/components/schemas/ProcessDefinitionNameFilterProperty'
           description: Name of this process definition.
         isLatestVersion:
           description: |
