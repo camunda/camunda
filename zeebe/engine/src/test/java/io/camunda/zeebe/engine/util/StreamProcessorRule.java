@@ -222,7 +222,11 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   }
 
   public RecordStream events() {
-    return new RecordStream(streams.events(getLogName(startPartitionId)));
+    return events(startPartitionId);
+  }
+
+  public RecordStream events(final int partitionId) {
+    return new RecordStream(streams.events(getLogName(partitionId)));
   }
 
   public void printAllRecords() {
