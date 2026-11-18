@@ -19,7 +19,7 @@ DEFAULTS = dict(
     tenant_count=10,
     saturating_count=1,
     capacity=300,
-    saturating_ratio=1.5,
+    saturating_multiplier=3,
     quiet_multiplier=0.2,
     weights="",
     overrides="",
@@ -32,9 +32,9 @@ def run(**changes):
 
 
 class ComputeTest(unittest.TestCase):
-    def test_saturating_tenant_offers_more_than_the_cluster_capacity(self):
+    def test_saturating_tenant_offers_a_multiple_of_its_allowance(self):
         tenants = run()
-        self.assertAlmostEqual(tenants["pt1"].rate, 450)
+        self.assertAlmostEqual(tenants["pt1"].rate, 300 / 11 * 3)
         self.assertTrue(tenants["pt1"].pinned)
 
     def test_quiet_tenants_run_at_a_fraction_of_their_allowance(self):
@@ -67,9 +67,14 @@ class ComputeTest(unittest.TestCase):
         tenants = run(tenant_count=0, saturating_count=0, total_rate=210)
         self.assertAlmostEqual(tenants["default"].rate, 210)
 
+    def test_total_rate_keeps_the_saturating_tenant_and_scales_the_quiet_ones(self):
+        tenants = run(total_rate=300)
+        self.assertAlmostEqual(sum(t.rate for t in tenants.values()), 300)
+        self.assertAlmostEqual(tenants["pt1"].rate, 300 / 11 * 3)
+
     def test_total_rate_below_pinned_load_is_rejected(self):
-        with self.assertRaisesRegex(profiles.InputError, "Overload runs cannot use total-rate"):
-            run(total_rate=100)
+        with self.assertRaisesRegex(profiles.InputError, "Raise total-rate or lower the pinned load"):
+            run(total_rate=50)
 
     def test_unknown_tenant_in_overrides_is_rejected(self):
         with self.assertRaisesRegex(profiles.InputError, "unknown tenant"):
@@ -89,7 +94,7 @@ class RenderTest(unittest.TestCase):
     def test_profiles_and_default_flags(self):
         tenants = profiles.compute(**{**DEFAULTS, "tenant_count": 2})
         out, default_flags, overload, table = profiles.render(tenants, 300, 4)
-        self.assertEqual(out, "450:18 20:1")
+        self.assertEqual(out, "300:12 20:1")
         self.assertEqual(
             default_flags, "--set load-tester.starter.rate=20 --set load-tester.workers.worker.replicas=1"
         )
@@ -105,7 +110,7 @@ class MainTest(unittest.TestCase):
     def run_main(self, tenant_count, saturating=1):
         directory = pathlib.Path(tempfile.mkdtemp())
         env = {
-            "TENANT_COUNT": str(tenant_count), "SATURATING_COUNT": str(saturating), "SATURATING_CAPACITY_RATIO": "1.2",
+            "TENANT_COUNT": str(tenant_count), "SATURATING_COUNT": str(saturating), "SATURATING_MULTIPLIER": "3",
             "QUIET_MULTIPLIER": "0.2", "WORKER_REPLICAS_PER_100_PI": "0.4", "STORAGE": "elasticsearch",
             "CAPACITY_RATE": "", "TOTAL_RATE": "0", "TENANT_WEIGHTS": "", "TENANT_OVERRIDES": "",
             "GITHUB_OUTPUT": str(directory / "out"), "GITHUB_STEP_SUMMARY": str(directory / "summary"),

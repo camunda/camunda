@@ -1,6 +1,6 @@
 # description: Deploys the shared physical-tenants load test (mixed scenario of the noisy neighbour
-#              epic): quiet tenants next to saturating tenants that offer more than the cluster
-#              can process, each tenant with its own starter and worker. The traffic of every
+#              epic): quiet tenants next to saturating tenants that exceed their allowance by a
+#              multiple, together offering more than the cluster can process, each tenant with its own starter and worker. The traffic of every
 #              tenant is a multiplier of its allowance (its weighted share of the cluster
 #              capacity), computed by .github/scripts/load-test-physical-tenant-profiles.py, and
 #              the deployment is delegated to camunda-load-test.yml. Use the same inputs on every
@@ -36,10 +36,10 @@ on:
         type: number
         default: 1
         required: false
-      saturating-capacity-ratio:
-        description: 'Load each saturating tenant offers, in multiples of the cluster capacity (above 1 overloads the cluster)'
+      saturating-multiplier:
+        description: 'Load of each saturating tenant as a multiple of its allowance (2-5 in the user stories). With quiet tenants near their share, 3 pushes the cluster past its capacity'
         type: number
-        default: 1.2
+        default: 3
         required: false
       quiet-multiplier:
         description: 'Load of each quiet tenant (and the default tenant), as a multiple of its allowance. 0.85 keeps them close to their fair share, so interference is visible'
@@ -161,7 +161,7 @@ jobs:
           SATURATING_COUNT: ${{ inputs.saturating-tenant-count }}
           STORAGE: ${{ inputs.secondary-storage-type }}
           CAPACITY_RATE: ${{ inputs.cluster-capacity-rate }}
-          SATURATING_CAPACITY_RATIO: ${{ inputs.saturating-capacity-ratio }}
+          SATURATING_MULTIPLIER: ${{ inputs.saturating-multiplier }}
           QUIET_MULTIPLIER: ${{ inputs.quiet-multiplier }}
           WORKER_REPLICAS_PER_100_PI: ${{ inputs.worker-replicas-per-100-pi }}
           TENANT_WEIGHTS: ${{ inputs.tenant-weights }}
