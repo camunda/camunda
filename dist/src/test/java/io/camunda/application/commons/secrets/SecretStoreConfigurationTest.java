@@ -151,7 +151,7 @@ class SecretStoreConfigurationTest {
     // when / then
     assertThatIllegalStateException()
         .isThrownBy(() -> registries(resolver))
-        .withMessageContaining("no path configured")
+        .withMessageContaining("no camunda.secrets.stores.file.default.path configured")
         .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 

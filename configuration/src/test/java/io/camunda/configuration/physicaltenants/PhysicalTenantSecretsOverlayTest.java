@@ -103,6 +103,41 @@ class PhysicalTenantSecretsOverlayTest {
   }
 
   @Test
+  void shouldReplaceTheRootConfigurationSecretsStoreWithTheTenantsOwn() {
+    // given
+    setProperties(
+        Map.of(
+            "camunda.secrets.internal-config.aws.region", "eu-west-1",
+            "camunda.physical-tenants.tenanta.secrets.internal-config.file.path", "/etc/tenanta"),
+        "tenanta");
+
+    // when
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then
+    final var tenant = resolver.forPhysicalTenant("tenanta").getSecrets().getInternalConfig();
+    assertThat(tenant.getFile()).isNotNull();
+    assertThat(tenant.getFile().getPath()).isEqualTo("/etc/tenanta");
+    assertThat(tenant.getAws()).isNull();
+    assertThat(resolver.forPhysicalTenant("default").getSecrets().getInternalConfig().getAws())
+        .isNotNull();
+  }
+
+  @Test
+  void shouldInheritTheRootConfigurationSecretsStoreWhenTheTenantHasNone() {
+    // given
+    setProperties(Map.of("camunda.secrets.internal-config.aws.region", "eu-west-1"), "tenanta");
+
+    // when
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then
+    final var tenant = resolver.forPhysicalTenant("tenanta").getSecrets().getInternalConfig();
+    assertThat(tenant.getAws()).isNotNull();
+    assertThat(tenant.getAws().getRegion()).isEqualTo("eu-west-1");
+  }
+
+  @Test
   void shouldInheritRootFileStoreWhenTenantHasNoSecretsOverride() {
     // given only a root file store; the tenant overrides no secrets field
     setProperties(

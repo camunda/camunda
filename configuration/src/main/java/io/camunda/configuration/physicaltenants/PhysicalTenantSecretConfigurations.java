@@ -14,9 +14,12 @@ import io.camunda.configuration.Secrets.AzureKeyVaultStore;
 import io.camunda.configuration.Secrets.EnvStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
+import io.camunda.configuration.Secrets.InternalConfig;
 import io.camunda.configuration.physicaltenants.MapOverlaySpec.MapDescriptor;
 import java.util.List;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 
 /**
  * Per-tenant {@link Secrets} resolution: registers the {@code stores.file}, {@code stores.aws},
@@ -45,4 +48,20 @@ final class PhysicalTenantSecretConfigurations {
           Camunda::setSecrets);
 
   private PhysicalTenantSecretConfigurations() {}
+
+  /**
+   * Gives the tenant its own configuration secrets store in place of the root's, if it configures
+   * one. Bound over the root's, a store of another type would sit next to the inherited one.
+   */
+  static void replaceInternalConfig(
+      final Camunda physicalTenant, final String physicalTenantId, final Binder binder) {
+    binder
+        .bind(
+            PhysicalTenantResolver.PHYSICAL_TENANTS_PREFIX
+                + "."
+                + physicalTenantId
+                + ".secrets.internal-config",
+            Bindable.of(InternalConfig.class))
+        .ifBound(physicalTenant.getSecrets()::setInternalConfig);
+  }
 }
