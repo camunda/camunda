@@ -9,12 +9,14 @@ package io.camunda.zeebe.protocol.impl.record.value;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * A record value whose storage ordinal can be set after construction. Every {@link
  * UnifiedRecordValue} that is {@link StorageOrdinalRelated} implements it, so engine code can set
  * the ordinal without knowing the concrete record type.
  */
+@NullMarked
 public interface MutableStorageOrdinal extends StorageOrdinalRelated {
 
   /**

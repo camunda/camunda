@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Marks a {@link TypedRecordProcessor} that handles the records of a storage ordinal controlled
@@ -29,6 +30,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  *
  * @param <T> the record value type processed by the implementing {@link TypedRecordProcessor}
  */
+@NullMarked
 public interface StorageOrdinalAware<T extends UnifiedRecordValue & MutableStorageOrdinal> {
 
   /**

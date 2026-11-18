@@ -18,7 +18,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class TypedRecordProcessors {
 
   private static final EnumSet<ValueType> STORAGE_ORDINAL_VALUE_TYPES =
