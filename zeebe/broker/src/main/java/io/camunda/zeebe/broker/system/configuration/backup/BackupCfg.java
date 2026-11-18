@@ -238,24 +238,30 @@ public class BackupCfg implements ConfigurationEntry {
     /**
      * Creates the limiter for {@link BackupCfg#getMaxReadRate()}. All partitions of a broker read
      * from the same disk, so create it once per broker and pass it to every store the broker
-     * creates; each call returns a limiter with its own budget.
+     * creates; each call returns a limiter with its own budget. Returns an unlimited limiter for
+     * stores that do not limit their reads.
      */
     static BackupReadRateLimiter createReadRateLimiter(final BackupCfg backupCfg) {
       final var maxReadRate = backupCfg.getMaxReadRate();
       if (maxReadRate == null) {
         return BackupReadRateLimiter.unlimited();
       }
-      final var limiter = BackupReadRateLimiter.of(maxReadRate.toBytes());
-      if (backupCfg.getStore() == BackupStoreType.S3) {
-        Loggers.SYSTEM_LOGGER.info(
-            "Limiting the backup reads of this broker to {} per second", maxReadRate);
-      } else {
-        Loggers.SYSTEM_LOGGER.warn(
-            "Backup maxReadRate is set to {} per second, but only the S3 backup store limits its reads. Backups to store {} are not limited.",
-            maxReadRate,
-            backupCfg.getStore());
-      }
-      return limiter;
+      return switch (backupCfg.getStore()) {
+        case NONE -> BackupReadRateLimiter.unlimited();
+        case S3 -> {
+          final var limiter = BackupReadRateLimiter.of(maxReadRate.toBytes());
+          Loggers.SYSTEM_LOGGER.info(
+              "Limiting the backup reads of this broker to {} per second", maxReadRate);
+          yield limiter;
+        }
+        case GCS, AZURE, FILESYSTEM -> {
+          Loggers.SYSTEM_LOGGER.warn(
+              "Backup maxReadRate is set to {} per second, but only the S3 backup store limits its reads. Backups to store {} are not limited.",
+              maxReadRate,
+              backupCfg.getStore());
+          yield BackupReadRateLimiter.unlimited();
+        }
+      };
     }
   }
 
