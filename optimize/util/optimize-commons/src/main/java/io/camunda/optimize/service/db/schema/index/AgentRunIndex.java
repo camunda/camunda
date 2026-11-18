@@ -47,7 +47,7 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public static final String INPUT_TOKENS = AgentRunDto.Fields.inputTokens;
   public static final String OUTPUT_TOKENS = AgentRunDto.Fields.outputTokens;
   public static final String REASONING_TOKENS = AgentRunDto.Fields.reasoningTokens;
-  public static final String CACHE_CREATION_TOKENS = AgentRunDto.Fields.cacheCreationTokens;
+  public static final String CACHE_WRITE_TOKENS = AgentRunDto.Fields.cacheWriteTokens;
   public static final String CACHE_READ_TOKENS = AgentRunDto.Fields.cacheReadTokens;
   public static final String TOTAL_TOKENS = AgentRunDto.Fields.totalTokens;
   public static final String MODEL_CALLS = AgentRunDto.Fields.modelCalls;
@@ -118,7 +118,7 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
         .properties(INPUT_TOKENS, p -> p.long_(k -> k))
         .properties(OUTPUT_TOKENS, p -> p.long_(k -> k))
         .properties(REASONING_TOKENS, p -> p.long_(k -> k))
-        .properties(CACHE_CREATION_TOKENS, p -> p.long_(k -> k))
+        .properties(CACHE_WRITE_TOKENS, p -> p.long_(k -> k))
         .properties(CACHE_READ_TOKENS, p -> p.long_(k -> k))
         .properties(TOTAL_TOKENS, p -> p.long_(k -> k))
         .properties(MODEL_CALLS, p -> p.long_(k -> k))
