@@ -8,6 +8,8 @@
 package io.camunda.application.commons.secrets;
 
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.InstantSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,11 +22,24 @@ public class ConfigurationSecretRefreshConfiguration {
   }
 
   @Bean
+  public ConfigurationSecretRefreshReport configurationSecretRefreshReport(
+      final MeterRegistry meterRegistry) {
+    return new ConfigurationSecretRefreshReport(meterRegistry, InstantSource.system());
+  }
+
+  @Bean
   public ConfigurationSecretRefresher configurationSecretRefresher(
       final PhysicalTenantResolver resolver,
       final ConfigurationSecretStores stores,
       final ConfigurationReferences references,
-      final RefreshableClients clients) {
-    return new ConfigurationSecretRefresher(resolver, stores, references, clients);
+      final RefreshableClients clients,
+      final ConfigurationSecretRefreshReport report) {
+    return new ConfigurationSecretRefresher(resolver, stores, references, clients, report);
+  }
+
+  @Bean
+  public ConfigurationSecretsHealthIndicator configurationSecretsHealthIndicator(
+      final ConfigurationSecretRefreshReport report) {
+    return new ConfigurationSecretsHealthIndicator(report);
   }
 }
