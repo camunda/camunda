@@ -19,7 +19,8 @@
 #   synchronize: all currently-labeled DBs (restarts all benchmarks)
 #   closed:      all currently-labeled DBs (cleanup for all)
 #
-# Job-level concurrency (keyed on matrix.db + matrix.protocol + PR) ensures:
+# Job-level concurrency (keyed on matrix.db + matrix.protocol + PR, one group per label kind:
+# pr-benchmark-* and pr-maximum-*) ensures:
 #   - adding/removing a label for one DB never cancels a benchmark for another DB
 #   - pushing a commit restarts each labeled DB's benchmark independently
 #   - unlabeling a DB cancels its in-progress run; the reusable pipeline then runs cleanup

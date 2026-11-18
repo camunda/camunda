@@ -461,7 +461,7 @@ The regression label runs at a rate below the capacity, so it finds a regression
 The [workflow](../.github/workflows/camunda-pr-maximum-load-test.yaml) deploys 3 clusters from the merge-base with the base branch and 3 clusters from the PR head, all with the `max` scenario at a rate above the capacity of the setup. The rate per label is set in [`pr-load-test-dispatch.yml`](../.github/workflows/pr-load-test-dispatch.yml). After the same warmup and metrics window as above, [`.github/scripts/render-maximum-comparison.py`](../.github/scripts/render-maximum-comparison.py) posts one comment with the median and range of each side. Then all 6 namespaces are torn down.
 
 - **Smallest visible difference:** identical clusters at 900 PI/s differ by about 5%. With the median of 3 clusters per side only a change of roughly 10% or more shows, a smaller delta is reported as within noise.
-- **Outliers:** a cluster more than 15% from the median of its side is listed in the comment. Check it for a failover or a slow host before trusting the median.
+- **Outliers:** a cluster more than 15% from the median of its side in the completed PI/s is listed in the comment. Check it for a failover or a slow host before trusting the median.
 - **Cost:** 6 clusters run for about an hour, plus the image builds of both sides. Use it for changes that should move the throughput, not for every PR.
 
 #### Trigger Camunda load test GitHub workflow (recommended)

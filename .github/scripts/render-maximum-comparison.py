@@ -67,7 +67,11 @@ def verdict(base: float | None, pr: float | None, higher_is_better: bool) -> str
     if base is None or pr is None:
         return "❔"
     if base == 0:
-        return "≈" if pr == 0 else "❔"
+        if pr == 0:
+            return "≈ within noise"
+        # No relative change from zero, the direction alone decides.
+        improved = pr > 0 if higher_is_better else pr < 0
+        return "✅ better" if improved else "⚠️ worse"
     diff = (pr - base) / base * 100
     if abs(diff) < DETECTION_LIMIT_PERCENT:
         return "≈ within noise"

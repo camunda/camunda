@@ -226,8 +226,9 @@ jobs:
   render-comparison:
     name: Render base vs PR comparison
     needs: [sanitize-branch-name, plan, get-metrics]
-    # Run when the metrics were collected (success or failure) so a partial fetch still posts a
-    # comment with the clusters that have results. Skips on unlabel and close because plan is skipped.
+    # Run when the metrics job ran (success or failure) so a partial fetch still posts a comment with
+    # the clusters that have results. A failed deploy or verify leg skips the metrics job, nothing is
+    # posted then. Skips on unlabel and close because plan is skipped.
     if: ${{ !cancelled() && needs.get-metrics.result != 'skipped' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -297,11 +298,14 @@ jobs:
 
   auto-delete:
     name: Auto cleanup ${{ matrix.side }}-${{ matrix.index }}
-    needs: [sanitize-branch-name, comment-comparison-pr]
-    # The metrics-success gate keeps cleanup from firing before the comparison comment is posted.
-    # `!cancelled()` still recycles the namespaces when an earlier job failed, but not on a
-    # workflow-level cancel.
-    if: ${{ !cancelled() && needs.comment-comparison-pr.result == 'success' }}
+    needs: [sanitize-branch-name, plan, comment-comparison-pr]
+    # Waits for the comment job, which is last in the chain, so the clusters outlive the metrics
+    # collection. It runs whatever the result of the deploy, metrics, render or comment jobs, so that
+    # a failed leg does not leave up to 6 overloaded clusters running until the TTL. It does not run
+    # when plan was skipped (unlabel, close) or failed, nothing was deployed then or the delete job
+    # of the unlabel event covers it. A workflow-level cancel (new push) is not cleaned up here, the
+    # next run redeploys the same namespaces.
+    if: ${{ !cancelled() && needs.plan.result == 'success' }}
     strategy:
       fail-fast: false
       matrix:

@@ -9,7 +9,7 @@ import json
 import os
 import sys
 
-# Load the hyphen-named module via importlib and register it so mock.patch works.
+# Load the hyphen-named module via importlib.
 _SCRIPT = os.path.join(os.path.dirname(__file__), "render-maximum-comparison.py")
 _spec = importlib.util.spec_from_file_location("render_maximum_comparison", _SCRIPT)
 rmc = importlib.util.module_from_spec(_spec)
@@ -53,6 +53,12 @@ class TestVerdict:
         result = rmc.verdict(10, 5, higher_is_better=False)
         # then
         assert result == "✅ better"
+
+    def test_zero_base_decides_by_direction(self):
+        # given / when / then: backpressure going from 0 to 5% is worse, 5% to 0 is better
+        assert rmc.verdict(0, 5, higher_is_better=False) == "⚠️ worse"
+        assert rmc.verdict(5, 0, higher_is_better=False) == "✅ better"
+        assert rmc.verdict(0, 0, higher_is_better=False) == "≈ within noise"
 
     def test_missing_side_is_unknown(self):
         # given / when / then
@@ -135,3 +141,69 @@ class TestRenderBody:
         assert "within noise" in body
         assert "10%" in body
         assert "Outliers" not in body
+
+    def test_body_lists_the_flagged_cluster(self):
+        # given: one PR cluster far below the median of its side
+        ctx = {
+            "queries": [QUERY],
+            "storage_type": "none",
+            "protocol": "rest",
+            "rate": "900",
+            "base_sha": "aaaaaaaaaaaa",
+            "head_sha": "bbbbbbbbbbbb",
+            "base_runs": runs(690, 700, 710),
+            "pr_runs": runs(700, 710, 400),
+        }
+        # when
+        body = rmc.render_body(ctx)
+        # then
+        assert "Outliers" in body
+        assert "`ns-2`" in body
+
+    def test_one_side_without_results_still_renders(self):
+        # given: the PR side produced nothing
+        ctx = {
+            "queries": [QUERY],
+            "storage_type": "none",
+            "protocol": "rest",
+            "rate": "900",
+            "base_sha": "aaaaaaaaaaaa",
+            "head_sha": "bbbbbbbbbbbb",
+            "base_runs": runs(690, 700, 710),
+            "pr_runs": {},
+        }
+        # when
+        body = rmc.render_body(ctx)
+        # then
+        assert "base 3, PR 0" in body
+        assert "❔" in body
+
+
+class TestLoadInputs:
+    def test_environment_is_split_per_side_and_shas_are_shortened(self, tmp_path, monkeypatch):
+        # given
+        queries = tmp_path / "queries.json"
+        queries.write_text(json.dumps({"queries": [QUERY]}))
+        results = tmp_path / "results"
+        for ns, rate in (("p-base-1", 700), ("p-pr-1", 800)):
+            (results / f"load-test-results-{ns}").mkdir(parents=True)
+            (results / f"load-test-results-{ns}" / "results.json").write_text(
+                json.dumps({"completed-pi-rate-per-second": rate})
+            )
+        monkeypatch.setenv("QUERIES_JSON_PATH", str(queries))
+        monkeypatch.setenv("RESULTS_DIR", str(results))
+        monkeypatch.setenv("BASE_NAMESPACES", "p-base-1 p-base-2")
+        monkeypatch.setenv("PR_NAMESPACES", "p-pr-1 p-pr-2")
+        monkeypatch.setenv("STORAGE_TYPE", "none")
+        monkeypatch.setenv("PROTOCOL", "grpc")
+        monkeypatch.setenv("RATE", "900")
+        monkeypatch.setenv("BASE_SHA", "a" * 40)
+        monkeypatch.setenv("HEAD_SHA", "b" * 40)
+        # when
+        inputs = rmc.load_inputs()
+        # then
+        assert list(inputs["base_runs"]) == ["p-base-1"]
+        assert list(inputs["pr_runs"]) == ["p-pr-1"]
+        assert inputs["base_sha"] == "a" * 12
+        assert inputs["protocol"] == "grpc"
+        assert inputs["rate"] == "900"
