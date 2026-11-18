@@ -835,7 +835,8 @@ public class SecretServicesTest {
     final var all = multiStore.list(authentication, null).join();
 
     // then each filter matches the store that reports that state, and an unfiltered list holds
-    // the reference once
+    // the reference once. Holds only while a tenant may have several stores; resolve lets the
+    // first store decide, so lifting the one-store cap must make the list do the same.
     assertThat(disabledList).containsExactly("camunda.secrets.shared");
     assertThat(activeList).containsExactly("camunda.secrets.shared");
     assertThat(all).containsExactly("camunda.secrets.shared");
