@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -178,6 +179,20 @@ public final class DeploymentClient {
 
   public Record<DeploymentRecordValue> deploy(final String username) {
     final long position = writer.writeCommand(DeploymentIntent.CREATE, username, deploymentRecord);
+
+    return expectation.apply(position, forEachPartition);
+  }
+
+  public Record<DeploymentRecordValue> deploy(final AuthInfo authInfo) {
+    final long position =
+        writer.writeCommandOnPartition(
+            Protocol.DEPLOYMENT_PARTITION,
+            r ->
+                r.intent(DeploymentIntent.CREATE)
+                    .event(deploymentRecord)
+                    .authorizations(authInfo)
+                    .requestId(1L)
+                    .requestStreamId(1));
 
     return expectation.apply(position, forEachPartition);
   }
