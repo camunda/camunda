@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.api;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import org.jspecify.annotations.Nullable;
 
 /** Read-only access to the migration status stored in a partition's state. */
 public final class MigrationStatusReader {
@@ -21,7 +22,7 @@ public final class MigrationStatusReader {
   }
 
   /** Returns the version that last migrated the state, or {@code null} if none is recorded. */
-  public String getMigratedByVersion() {
+  public @Nullable String getMigratedByVersion() {
     return state.getMigratedByVersion();
   }
 }
