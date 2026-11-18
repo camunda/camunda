@@ -229,6 +229,18 @@ public final class ContainerRuntimePropertiesUtil {
     return connectorsContainerRuntimeProperties.getConnectorsEnvVars();
   }
 
+  public boolean isManagedScriptsEnabled() {
+    return connectorsContainerRuntimeProperties.isManagedScriptsEnabled();
+  }
+
+  public String getManagedScriptsPythonVersion() {
+    return connectorsContainerRuntimeProperties.getManagedScriptsPythonVersion();
+  }
+
+  public String getManagedScriptsNodeVersion() {
+    return connectorsContainerRuntimeProperties.getManagedScriptsNodeVersion();
+  }
+
   public Map<String, String> getConnectorsSecrets() {
     return connectorsContainerRuntimeProperties.getConnectorsSecrets();
   }

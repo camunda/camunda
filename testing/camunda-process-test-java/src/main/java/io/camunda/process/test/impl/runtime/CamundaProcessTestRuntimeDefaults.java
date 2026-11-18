@@ -68,6 +68,11 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final String CONNECTORS_LOGGER_NAME = PROPERTIES_UTIL.getConnectorsLoggerName();
 
   public static final boolean CONNECTORS_ENABLED = PROPERTIES_UTIL.isConnectorsEnabled();
+  public static final boolean MANAGED_SCRIPTS_ENABLED = PROPERTIES_UTIL.isManagedScriptsEnabled();
+  public static final String MANAGED_SCRIPTS_PYTHON_VERSION =
+      PROPERTIES_UTIL.getManagedScriptsPythonVersion();
+  public static final String MANAGED_SCRIPTS_NODE_VERSION =
+      PROPERTIES_UTIL.getManagedScriptsNodeVersion();
   public static final String CONNECTORS_DOCKER_IMAGE_NAME =
       PROPERTIES_UTIL.getConnectorsDockerImageName();
   public static final String CONNECTORS_DOCKER_IMAGE_VERSION =
