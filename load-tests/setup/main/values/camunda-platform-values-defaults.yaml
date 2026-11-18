@@ -172,19 +172,6 @@ orchestration:
     registry: docker.io
     repository: camunda/camunda
     tag: "SNAPSHOT"
-  ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
-  clusterSize: "3"
-  # CUSTOMIZATION: 3 partitions instead of the Camunda default of 1, on purpose, to test with more partitions.
-  ## @param core.partitionCount defines how many partitions are set up in the cluster
-  partitionCount: "3"
-  ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
-  replicationFactor: "3"
-  # CUSTOMIZATION: 3 processing threads instead of the default of 2, sizing baseline that goes with the 3 partitions.
-  ## @param core.cpuThreadCount defines how many threads can be used for the processing on each broker pod
-  cpuThreadCount: "3"
-  # CUSTOMIZATION: 3 exporter threads instead of the default of 2, sizing baseline that goes with the 3 partitions.
-  ## @param core.ioThreadCount defines how many threads can be used for the exporting on each broker pod
-  ioThreadCount: "3"
   # Resources of the orchestration cluster
   # CUSTOMIZATION: cluster sizing baseline, 4 CPU and 4Gi with request = limit (a Guaranteed pod, as customers run it).
   # 3 CPU is throttled 50 to 90% and reaches about 450 PI/s, 4 CPU reaches about 695 PI/s (as fast as 6 CPU).
