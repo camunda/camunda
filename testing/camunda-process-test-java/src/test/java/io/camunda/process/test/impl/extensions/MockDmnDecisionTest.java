@@ -190,6 +190,15 @@ public class MockDmnDecisionTest {
         .hasMessageContaining("withDecisionId");
   }
 
+  @Test
+  void shouldRejectMockDmnDecisionWithBlankDecisionId() {
+    // when/then
+    assertThatThrownBy(
+            () -> processTestContext.mockDmnDecision().withDecisionId("  ").thenReturn("approved"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("withDecisionId");
+  }
+
   private static Optional<String> zeebeVersionTag(final Decision decision) {
     return Optional.ofNullable(decision.getUniqueChildElementByType(ExtensionElements.class))
         .map(
