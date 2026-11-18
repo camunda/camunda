@@ -483,6 +483,11 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getProcessingState(partitionId);
   }
 
+  /** Like {@link #events()}, for the given partition. */
+  public RecordStream events(final int partitionId) {
+    return environmentRule.events(partitionId);
+  }
+
   public StreamProcessor getStreamProcessor(final int partitionId) {
     return environmentRule.getStreamProcessor(partitionId);
   }

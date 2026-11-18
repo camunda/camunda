@@ -1,4 +1,4 @@
-# Written by RecordSizeBaselineTest. Do not edit by hand.
+# Written by RecordSizeBaseline. Do not edit by hand.
 # <record type> <value type> <record count> <bytes of metadata and value>
 COMMAND JOB 1 1891
 COMMAND PROCESS_INSTANCE 8 12892
