@@ -20,6 +20,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -302,6 +304,64 @@ class SegmentsManagerTest {
       loadedSegments.forEach(s -> inOrder.verify(s).delete());
       inOrder.verifyNoMoreInteractions();
     }
+  }
+
+  @Test
+  void shouldPrepareNextSegmentOnBgIoThread() {
+    // given - the next segment is prepared asynchronously; this does blocking I/O, so it must not
+    // occupy a thread of the JVM-wide common ForkJoinPool, where it could starve unrelated work
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    final var preparingThread = new AtomicReference<Thread>();
+    Mockito.doAnswer(
+            call -> {
+              preparingThread.set(Thread.currentThread());
+              return call.callRealMethod();
+            })
+        .when(loader)
+        .createUninitializedSegment(Mockito.any(), Mockito.any(), Mockito.any());
+    segments = journalFactory.segmentsManager(directory, loader);
+    segments.open();
+
+    // when - rolling over triggers preparing the following segment, which is awaited on the next
+    segments.getNextSegment();
+    segments.getNextSegment();
+
+    // then - the prep runs on the journal's dedicated background I/O platform thread; the thread
+    // name is the identity the executor exposes, and is what operators see in thread dumps
+    assertThat(preparingThread.get())
+        .isNotNull()
+        .extracting(Thread::getName)
+        .isEqualTo("journal-bg-io-journal");
+  }
+
+  @Test
+  void shouldCloseBackgroundIoExecutor() {
+    // given
+    final var bgIoExecutor = Executors.newSingleThreadExecutor();
+    segments = journalFactory.segmentsManager(directory, () -> bgIoExecutor);
+    segments.open();
+
+    // when
+    segments.close();
+
+    // then
+    assertThat(bgIoExecutor.isTerminated()).isTrue();
+  }
+
+  @Test
+  void shouldRollOverSegmentAfterReopening() {
+    // given
+    segments = journalFactory.segmentsManager(directory);
+    segments.open();
+    segments.close();
+    segments.open();
+
+    // when
+    final var first = segments.getNextSegment();
+    final var second = segments.getNextSegment();
+
+    // then
+    assertThat(second.id()).isGreaterThan(first.id());
   }
 
   private SegmentedJournal openJournal() {
