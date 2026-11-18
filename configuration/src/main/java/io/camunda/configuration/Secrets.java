@@ -183,11 +183,12 @@ public class Secrets {
     private Map<String, EnvStore> env = new LinkedHashMap<>();
 
     /**
-     * Azure Key Vault stores, keyed by store id; the only supported id is {@code default}. Sign-in
-     * is meant to be identity-based (managed identity, workload identity, or a service principal
-     * from the {@code AZURE_*} environment variables), but signing in and reading the vault are not
-     * implemented yet: until then every reference resolves as not found. Empty by default, so no
-     * Azure store is configured.
+     * Azure Key Vault stores, keyed by store id; the only supported id is {@code default}. Only one
+     * store per physical tenant is supported, across all store types. Sign-in is meant to be
+     * identity-based (managed identity, workload identity, or a service principal from the {@code
+     * AZURE_*} environment variables), but signing in and reading the vault are not implemented
+     * yet: until then every reference resolves as not found. Empty by default, so no Azure store is
+     * configured.
      */
     private Map<String, AzureKeyVaultStore> azure = new LinkedHashMap<>();
 
