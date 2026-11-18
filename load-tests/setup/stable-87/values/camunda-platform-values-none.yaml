@@ -1,0 +1,49 @@
+# Values for Camunda Platform Chart 8.7 without secondary storage.
+# https://github.com/camunda/camunda-platform-helm
+#
+# 8.7 has no `noSecondaryStorage` switch. Zeebe runs without the Elasticsearch exporter and the
+# components that read from Elasticsearch (Operate, Tasklist, Optimize, Connectors) are disabled.
+#
+# The Elasticsearch exporter is also configured by an env var in the defaults file
+# (ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS). With the exporter disabled that
+# env var creates an exporter entry without a class name and the brokers crash-loop. Helm replaces
+# lists as a whole, so `zeebe.env` is repeated below without that entry.
+# Keep the list in sync with camunda-platform-values-defaults.yaml.
+
+global:
+  elasticsearch:
+    disableExporter: true
+
+identity:
+  enabled: true
+
+operate:
+  enabled: false
+
+tasklist:
+  enabled: false
+
+optimize:
+  enabled: false
+
+connectors:
+  enabled: false
+
+zeebe:
+  # The ILM policy for the Elasticsearch indices is not needed.
+  retention:
+    enabled: false
+  env:
+    # Enable JSON logging for google cloud stackdriver
+    - name: ZEEBE_LOG_APPENDER
+      value: Stackdriver
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+      value: zeebe
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    # To be able to load a separate/additional configuration
+    # See https://github.com/camunda/camunda-platform-helm/issues/2197
+    - name: SPRING_CONFIG_ADDITIONALLOCATION
+      value: "/usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml"

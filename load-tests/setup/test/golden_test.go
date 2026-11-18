@@ -185,8 +185,8 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 			}
 
 			if v == "stable-87" {
-				if s.Storage != "elasticsearch" {
-					// Only elasticsearch is supported on 8.7
+				if s.Storage != "elasticsearch" && s.Storage != "none" {
+					// Only elasticsearch and none are supported on 8.7
 					continue
 				}
 			}
