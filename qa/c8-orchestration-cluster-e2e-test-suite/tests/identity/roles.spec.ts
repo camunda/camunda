@@ -434,6 +434,6 @@ test.describe.serial('roles list sorting', () => {
       .click();
 
     await expect(page.getByText(/^Page 1 of/)).toBeVisible();
-    await expect(page.getByRole('table').getByRole('row')).not.toHaveCount(1);
+    await expect(page.getByRole('table').getByRole('row').nth(1)).toBeVisible();
   });
 });
