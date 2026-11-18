@@ -67,7 +67,6 @@ class AgentRunIndexMappingTest {
                 entry("totalTokens", Property.Kind.Long),
                 entry("modelCalls", Property.Kind.Long),
                 entry("toolCalls", Property.Kind.Long),
-                entry("hitLimit", Property.Kind.Boolean),
                 entry("limitHit", Property.Kind.Keyword),
                 entry("hasIncident", Property.Kind.Boolean),
                 entry("toolIncidentCount", Property.Kind.Long),
@@ -77,7 +76,6 @@ class AgentRunIndexMappingTest {
                 entry("toolCallsByTool", Property.Kind.Nested),
                 entry("toolIncidentsByTool", Property.Kind.Nested),
                 entry("lastRecordPosition", Property.Kind.Long),
-                entry("enriched", Property.Kind.Boolean),
                 entry("enrichedAt", Property.Kind.Date)));
   }
 

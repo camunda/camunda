@@ -52,7 +52,6 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public static final String TOTAL_TOKENS = AgentRunDto.Fields.totalTokens;
   public static final String MODEL_CALLS = AgentRunDto.Fields.modelCalls;
   public static final String TOOL_CALLS = AgentRunDto.Fields.toolCalls;
-  public static final String HIT_LIMIT = AgentRunDto.Fields.hitLimit;
   public static final String LIMIT_HIT = AgentRunDto.Fields.limitHit;
   public static final String TOOL_FLOW_NODE_IDS = AgentRunDto.Fields.toolFlowNodeIds;
   public static final String TOOL_CALLS_BY_TOOL = AgentRunDto.Fields.toolCallsByTool;
@@ -63,7 +62,6 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public static final String HAS_INCIDENT = AgentRunDto.Fields.hasIncident;
   public static final String LAST_RECORD_POSITION = AgentRunDto.Fields.lastRecordPosition;
   public static final String ENRICHED_AT = AgentRunDto.Fields.enrichedAt;
-  public static final String ENRICHED = AgentRunDto.Fields.enriched;
   public static final String ACTIVE_DURATION_MS = AgentRunDto.Fields.activeDurationMs;
   public static final String TOOL_INCIDENT_COUNT = AgentRunDto.Fields.toolIncidentCount;
   public static final String TOOL_INCIDENTS_BY_TOOL = AgentRunDto.Fields.toolIncidentsByTool;
@@ -123,7 +121,6 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
         .properties(TOTAL_TOKENS, p -> p.long_(k -> k))
         .properties(MODEL_CALLS, p -> p.long_(k -> k))
         .properties(TOOL_CALLS, p -> p.long_(k -> k))
-        .properties(HIT_LIMIT, p -> p.boolean_(k -> k))
         .properties(LIMIT_HIT, p -> p.keyword(k -> k))
         .properties(TOOL_FLOW_NODE_IDS, p -> p.keyword(k -> k))
         .properties(
@@ -140,7 +137,6 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
             LAST_RECORD_POSITION,
             p -> p.long_(k -> k.index(false).docValues(d -> d.enabled(false))))
         .properties(ENRICHED_AT, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
-        .properties(ENRICHED, p -> p.boolean_(k -> k))
         .properties(ACTIVE_DURATION_MS, p -> p.long_(k -> k))
         .properties(TOOL_INCIDENT_COUNT, p -> p.long_(k -> k))
         .properties(

@@ -55,14 +55,13 @@ public class AgentRunDto implements OptimizeDto {
   private Long totalTokens;
   private Long modelCalls;
   private Long toolCalls;
-  private Boolean hitLimit;
   private List<String> limitHit = new ArrayList<>();
   private List<String> toolFlowNodeIds = new ArrayList<>();
   private List<ToolCallsDto> toolCallsByTool = new ArrayList<>();
   private Boolean hasIncident;
   private Long lastRecordPosition;
+  // null until the run is enriched, so a missing value marks a run still to enrich
   private OffsetDateTime enrichedAt;
-  private Boolean enriched;
   private Long activeDurationMs;
   private Long toolIncidentCount;
   private List<ToolCallsDto> toolIncidentsByTool = new ArrayList<>();
@@ -303,14 +302,6 @@ public class AgentRunDto implements OptimizeDto {
     this.toolCalls = toolCalls;
   }
 
-  public Boolean getHitLimit() {
-    return hitLimit;
-  }
-
-  public void setHitLimit(final Boolean hitLimit) {
-    this.hitLimit = hitLimit;
-  }
-
   public List<String> getLimitHit() {
     return limitHit;
   }
@@ -357,14 +348,6 @@ public class AgentRunDto implements OptimizeDto {
 
   public void setEnrichedAt(final OffsetDateTime enrichedAt) {
     this.enrichedAt = enrichedAt;
-  }
-
-  public Boolean getEnriched() {
-    return enriched;
-  }
-
-  public void setEnriched(final Boolean enriched) {
-    this.enriched = enriched;
   }
 
   public Long getActiveDurationMs() {
@@ -442,14 +425,12 @@ public class AgentRunDto implements OptimizeDto {
         && Objects.equals(totalTokens, that.totalTokens)
         && Objects.equals(modelCalls, that.modelCalls)
         && Objects.equals(toolCalls, that.toolCalls)
-        && Objects.equals(hitLimit, that.hitLimit)
         && Objects.equals(limitHit, that.limitHit)
         && Objects.equals(toolFlowNodeIds, that.toolFlowNodeIds)
         && Objects.equals(toolCallsByTool, that.toolCallsByTool)
         && Objects.equals(hasIncident, that.hasIncident)
         && Objects.equals(lastRecordPosition, that.lastRecordPosition)
         && Objects.equals(enrichedAt, that.enrichedAt)
-        && Objects.equals(enriched, that.enriched)
         && Objects.equals(activeDurationMs, that.activeDurationMs)
         && Objects.equals(toolIncidentCount, that.toolIncidentCount)
         && Objects.equals(toolIncidentsByTool, that.toolIncidentsByTool)
@@ -489,14 +470,12 @@ public class AgentRunDto implements OptimizeDto {
         totalTokens,
         modelCalls,
         toolCalls,
-        hitLimit,
         limitHit,
         toolFlowNodeIds,
         toolCallsByTool,
         hasIncident,
         lastRecordPosition,
         enrichedAt,
-        enriched,
         activeDurationMs,
         toolIncidentCount,
         toolIncidentsByTool,
@@ -565,8 +544,6 @@ public class AgentRunDto implements OptimizeDto {
         + modelCalls
         + ", toolCalls="
         + toolCalls
-        + ", hitLimit="
-        + hitLimit
         + ", limitHit="
         + limitHit
         + ", toolFlowNodeIds="
@@ -579,8 +556,6 @@ public class AgentRunDto implements OptimizeDto {
         + lastRecordPosition
         + ", enrichedAt="
         + enrichedAt
-        + ", enriched="
-        + enriched
         + ", activeDurationMs="
         + activeDurationMs
         + ", toolIncidentCount="
@@ -626,14 +601,12 @@ public class AgentRunDto implements OptimizeDto {
     public static final String totalTokens = "totalTokens";
     public static final String modelCalls = "modelCalls";
     public static final String toolCalls = "toolCalls";
-    public static final String hitLimit = "hitLimit";
     public static final String limitHit = "limitHit";
     public static final String toolFlowNodeIds = "toolFlowNodeIds";
     public static final String toolCallsByTool = "toolCallsByTool";
     public static final String hasIncident = "hasIncident";
     public static final String lastRecordPosition = "lastRecordPosition";
     public static final String enrichedAt = "enrichedAt";
-    public static final String enriched = "enriched";
     public static final String activeDurationMs = "activeDurationMs";
     public static final String toolIncidentCount = "toolIncidentCount";
     public static final String toolIncidentsByTool = "toolIncidentsByTool";
