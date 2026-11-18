@@ -227,6 +227,7 @@ import io.camunda.client.api.statistics.request.ProcessInstanceWaitStateStatisti
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandImpl;
 import io.camunda.client.impl.command.AddClockCommandImpl;
 import io.camunda.client.impl.command.AssignClientToGroupCommandImpl;
@@ -435,6 +436,7 @@ import io.camunda.client.impl.util.JobWorkerExecutors;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
 import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
+import io.camunda.client.impl.worker.probe.ProbeWorkerBuilderImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.CallCredentials;
@@ -955,6 +957,17 @@ public final class CamundaClientImpl implements CamundaClient {
     return new JobWorkerBuilderImpl(
         config,
         jobClient,
+        executorResource.scheduledExecutor(),
+        executorResource.jobHandlingExecutor(),
+        closeables);
+  }
+
+  @Override
+  public ProbeWorkerBuilderStep1 newProbeWorker() {
+    return new ProbeWorkerBuilderImpl(
+        config,
+        httpClient,
+        jsonMapper,
         executorResource.scheduledExecutor(),
         executorResource.jobHandlingExecutor(),
         closeables);

@@ -216,6 +216,7 @@ import io.camunda.client.api.statistics.request.ProcessInstanceWaitStateStatisti
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
 import io.camunda.client.impl.CamundaClientImpl;
@@ -815,6 +816,28 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the worker registration
    */
   JobWorkerBuilderStep1 newWorker();
+
+  /**
+   * Registers a probe worker that answers the probes of its probe IDs (alpha). It polls for all its
+   * probe IDs in one request, runs the handler of each probe's probe ID, and sends the answer the
+   * handler returns, all over REST.
+   *
+   * <pre>
+   * camundaClient
+   *  .newProbeWorker()
+   *  .probeId("validate-configuration/io.camunda:aws-credential:1", awsCredentialHandler)
+   *  .probeId("validate-configuration/io.camunda:slack:1", slackHandler)
+   *  .name("connectors-runtime")
+   *  .open();
+   * </pre>
+   *
+   * <p>Probe workers are marked as <strong>experimental</strong> and may undergo changes or
+   * improvements in future releases.
+   *
+   * @return a builder for the worker
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/68869")
+  ProbeWorkerBuilderStep1 newProbeWorker();
 
   /**
    * Command to delete a resource.
