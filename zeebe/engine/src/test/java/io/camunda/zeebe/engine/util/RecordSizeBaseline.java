@@ -28,13 +28,13 @@ import java.util.TreeSet;
 import java.util.stream.IntStream;
 
 /**
- * Compares the log bytes of a test scenario with a baseline. A change of more than 10%, up or down,
- * fails.
+ * Compares the log records of a test scenario with a baseline. A change of the record count, or a
+ * change of the bytes by more than 10%, up or down, fails.
  *
- * <p>Each byte on the log costs the user disk, backup storage, and throughput. For example, in 8.9
- * the engine copied all token claims to each follow-up record, and the log became two times larger.
- * Thus, find the cause of a failure before you update the baseline. Make sure that each record
- * needs the new data, and that a reader for it exists.
+ * <p>Each record and each byte on the log costs the user disk, backup storage, and throughput. For
+ * example, in 8.9 the engine copied all token claims to each follow-up record, and the log became
+ * two times larger. Thus, find the cause of a failure before you update the baseline. Make sure
+ * that each record needs the new data, and that a reader for it exists.
  *
  * <p>Update the baselines, and give the reason in the pull request:
  *
@@ -76,8 +76,8 @@ public final class RecordSizeBaseline {
     }
     assertThat(changes(readBaseline(scenario), actual))
         .as(
-            "The log bytes of '%s' changed by more than %d%%. Read the Javadoc of %s before you"
-                + " update the baseline",
+            "The record count of '%s' changed, or its log bytes changed by more than %d%%. Read"
+                + " the Javadoc of %s before you update the baseline",
             scenario, TOLERANCE_PERCENT, RecordSizeBaseline.class.getSimpleName())
         .isEmpty();
   }
@@ -155,6 +155,7 @@ public final class RecordSizeBaseline {
       final var size = actual.get(group);
       if (expected == null
           || size == null
+          || size.count() != expected.count()
           || size.bytes() < expected.bytes() * (100 - TOLERANCE_PERCENT) / 100
           || size.bytes() > expected.bytes() * (100 + TOLERANCE_PERCENT) / 100) {
         changes.add("%s: baseline %s, now %s".formatted(group, expected, size));
