@@ -19,7 +19,6 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import java.util.HashMap;
@@ -135,13 +134,7 @@ public final class ConfigurationUtil {
               for (final Entry<Integer, PartitionState> entry : member.partitions().entrySet()) {
                 final Integer partitionId = entry.getKey();
                 final PartitionState partitionState = entry.getValue();
-                if (partitionState.state().equals(State.ACTIVE)
-                    || partitionState.state().equals(State.LEAVING)
-                    || partitionState.state().equals(State.RECOVERING)
-                    || partitionState.state().equals(State.LEARNER)) {
-                  // only add active, leaving, recovering and learner partitions because only those
-                  // have to be started. A learner already replicates the partition and must recover
-                  // its raft state on boot, otherwise a pending promotion could never complete.
+                if (partitionState.state().isStartedOnBoot()) {
                   memberPriorityByPartition
                       .computeIfAbsent(partitionId, k -> new HashMap<>())
                       .put(memberId, partitionState.priority());
@@ -192,13 +185,7 @@ public final class ConfigurationUtil {
                   brokerPartitionState.partitions().entrySet()) {
                 final Integer partitionId = entry.getKey();
                 final PartitionState partitionState = entry.getValue();
-                if (partitionState.state().equals(State.ACTIVE)
-                    || partitionState.state().equals(State.LEAVING)
-                    || partitionState.state().equals(State.RECOVERING)
-                    || partitionState.state().equals(State.LEARNER)) {
-                  // only add active, leaving, recovering and learner partitions because only those
-                  // have to be started. A learner already replicates the partition and must recover
-                  // its raft state on boot, otherwise a pending promotion could never complete.
+                if (partitionState.state().isStartedOnBoot()) {
                   memberPriorityByPartition
                       .computeIfAbsent(partitionId, k -> new HashMap<>())
                       .put(memberId, partitionState.priority());

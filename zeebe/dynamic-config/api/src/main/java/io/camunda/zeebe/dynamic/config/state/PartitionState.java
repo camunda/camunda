@@ -111,5 +111,17 @@ public record PartitionState(State state, int priority, DynamicPartitionConfig c
         case JOINING, LEAVING, BOOTSTRAPPING, LEARNER, UNKNOWN -> false;
       };
     }
+
+    /**
+     * True for a member that starts the partition when it boots. A {@link #LEARNER} already
+     * replicates the partition and must recover its Raft state on boot, otherwise a pending
+     * promotion could never complete.
+     */
+    public boolean isStartedOnBoot() {
+      return switch (this) {
+        case ACTIVE, LEAVING, RECOVERING, LEARNER -> true;
+        case JOINING, BOOTSTRAPPING, UNKNOWN -> false;
+      };
+    }
   }
 }
