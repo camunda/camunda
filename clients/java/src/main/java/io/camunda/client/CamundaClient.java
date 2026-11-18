@@ -46,6 +46,7 @@ import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
 import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
+import io.camunda.client.api.command.CreateProbeCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
@@ -3583,6 +3584,29 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   IncidentProcessInstanceStatisticsByErrorRequest
       newIncidentProcessInstanceStatisticsByErrorRequest();
+
+  /**
+   * Command to send a probe and wait for the answer of the worker that collected it (alpha).
+   *
+   * <pre>
+   * camundaClient
+   *  .newCreateProbeCommand()
+   *  .probeId("validate-configuration/io.camunda:aws-credential:1")
+   *  .input("={region: \"eu-west-1\", accessKey: camunda.secrets.awsKey}")
+   *  .requestTimeout(Duration.ofSeconds(10))
+   *  .send();
+   * </pre>
+   *
+   * <p>A probe that no worker collected before its deadline fails with a {@code ProblemException}
+   * with status 404 ({@code NO_WORKER}), as every error of the cluster does.
+   *
+   * <p>The command is marked as <strong>experimental</strong> and may undergo changes or
+   * improvements in future releases.
+   *
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/68869")
+  CreateProbeCommandStep1 newCreateProbeCommand();
 
   /**
    * Command to evaluate an expression.

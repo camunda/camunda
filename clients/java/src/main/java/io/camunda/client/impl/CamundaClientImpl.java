@@ -54,6 +54,7 @@ import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
 import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
+import io.camunda.client.api.command.CreateProbeCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
@@ -256,6 +257,7 @@ import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.client.impl.command.CreateGlobalTaskListenerCommandImpl;
 import io.camunda.client.impl.command.CreateGroupCommandImpl;
 import io.camunda.client.impl.command.CreateMappingRuleCommandImpl;
+import io.camunda.client.impl.command.CreateProbeCommandImpl;
 import io.camunda.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.client.impl.command.CreateTenantCommandImpl;
@@ -1825,6 +1827,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public EvaluateExpressionCommandStep1 newEvaluateExpressionCommand() {
     return new EvaluateExpressionCommandImpl(config, httpClient, jsonMapper);
+  }
+
+  @Override
+  public CreateProbeCommandStep1 newCreateProbeCommand() {
+    return new CreateProbeCommandImpl(config, httpClient, jsonMapper);
   }
 
   @Override
