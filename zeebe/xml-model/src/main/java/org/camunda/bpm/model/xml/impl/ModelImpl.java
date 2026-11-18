@@ -80,7 +80,7 @@ public class ModelImpl implements Model {
     if (!alternativeNsToActual.containsKey(alternativeNs)) {
       return;
     }
-    String actual = alternativeNsToActual.remove(alternativeNs);
+    final String actual = alternativeNsToActual.remove(alternativeNs);
     actualNsToAlternative.remove(actual);
   }
 
@@ -90,7 +90,7 @@ public class ModelImpl implements Model {
 
   @Override
   public String getAlternativeNamespace(String actualNs) {
-    Set<String> alternatives = getAlternativeNamespaces(actualNs);
+    final Set<String> alternatives = getAlternativeNamespaces(actualNs);
 
     if (alternatives == null || alternatives.size() == 0) {
       return null;
@@ -129,7 +129,7 @@ public class ModelImpl implements Model {
    */
   public void registerType(
       ModelElementType modelElementType, Class<? extends ModelElementInstance> instanceType) {
-    QName qName =
+    final QName qName =
         ModelUtil.getQName(modelElementType.getTypeNamespace(), modelElementType.getTypeName());
     typesByName.put(qName, modelElementType);
     typesByClass.put(instanceType, modelElementType);
@@ -141,7 +141,7 @@ public class ModelImpl implements Model {
 
   @Override
   public int hashCode() {
-    int prime = 31;
+    final int prime = 31;
     int result = 1;
     result = prime * result + ((modelName == null) ? 0 : modelName.hashCode());
     return result;
@@ -158,7 +158,7 @@ public class ModelImpl implements Model {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    ModelImpl other = (ModelImpl) obj;
+    final ModelImpl other = (ModelImpl) obj;
     if (modelName == null) {
       if (other.modelName != null) {
         return false;

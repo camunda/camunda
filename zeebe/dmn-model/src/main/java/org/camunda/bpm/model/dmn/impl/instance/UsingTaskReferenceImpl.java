@@ -33,7 +33,7 @@ public class UsingTaskReferenceImpl extends DmnElementReferenceImpl implements U
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(UsingTaskReference.class, DMN_ELEMENT_USING_TASK)
             .namespaceUri(LATEST_DMN_NS)

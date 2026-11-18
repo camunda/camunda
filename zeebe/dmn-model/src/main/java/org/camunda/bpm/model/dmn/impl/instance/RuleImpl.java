@@ -33,7 +33,7 @@ public class RuleImpl extends DecisionRuleImpl implements Rule {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Rule.class, DMN_ELEMENT_RULE)
             .namespaceUri(LATEST_DMN_NS)

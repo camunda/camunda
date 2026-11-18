@@ -69,8 +69,8 @@ public class StringAttributeBuilderImpl extends AttributeBuilderImpl<String>
    */
   public <V extends ModelElementInstance> AttributeReferenceBuilder<V> qNameAttributeReference(
       Class<V> referenceTargetElement) {
-    AttributeImpl<String> attribute = (AttributeImpl<String>) build();
-    AttributeReferenceBuilderImpl<V> referenceBuilder =
+    final AttributeImpl<String> attribute = (AttributeImpl<String>) build();
+    final AttributeReferenceBuilderImpl<V> referenceBuilder =
         new QNameAttributeReferenceBuilderImpl<V>(attribute, referenceTargetElement);
     setAttributeReference(referenceBuilder);
     return referenceBuilder;
@@ -78,8 +78,8 @@ public class StringAttributeBuilderImpl extends AttributeBuilderImpl<String>
 
   public <V extends ModelElementInstance> AttributeReferenceBuilder<V> idAttributeReference(
       Class<V> referenceTargetElement) {
-    AttributeImpl<String> attribute = (AttributeImpl<String>) build();
-    AttributeReferenceBuilderImpl<V> referenceBuilder =
+    final AttributeImpl<String> attribute = (AttributeImpl<String>) build();
+    final AttributeReferenceBuilderImpl<V> referenceBuilder =
         new AttributeReferenceBuilderImpl<V>(attribute, referenceTargetElement);
     setAttributeReference(referenceBuilder);
     return referenceBuilder;
@@ -90,8 +90,8 @@ public class StringAttributeBuilderImpl extends AttributeBuilderImpl<String>
       AttributeReferenceCollectionBuilder<V> idAttributeReferenceCollection(
           Class<V> referenceTargetElement,
           Class<? extends AttributeReferenceCollection> attributeReferenceCollection) {
-    AttributeImpl<String> attribute = (AttributeImpl<String>) build();
-    AttributeReferenceCollectionBuilder<V> referenceBuilder =
+    final AttributeImpl<String> attribute = (AttributeImpl<String>) build();
+    final AttributeReferenceCollectionBuilder<V> referenceBuilder =
         new AttributeReferenceCollectionBuilderImpl<V>(
             attribute, referenceTargetElement, attributeReferenceCollection);
     setAttributeReference(referenceBuilder);

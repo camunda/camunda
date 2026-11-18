@@ -55,7 +55,7 @@ public class ContextEntryImpl extends DmnModelElementInstanceImpl implements Con
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ContextEntry.class, DMN_ELEMENT_CONTEXT_ENTRY)
             .namespaceUri(LATEST_DMN_NS)
@@ -66,7 +66,7 @@ public class ContextEntryImpl extends DmnModelElementInstanceImpl implements Con
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     variableChild = sequenceBuilder.element(Variable.class).build();
 

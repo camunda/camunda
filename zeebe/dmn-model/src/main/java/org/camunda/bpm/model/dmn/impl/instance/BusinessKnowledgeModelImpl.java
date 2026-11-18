@@ -70,7 +70,7 @@ public class BusinessKnowledgeModelImpl extends DrgElementImpl implements Busine
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(BusinessKnowledgeModel.class, DMN_ELEMENT_BUSINESS_KNOWLEDGE_MODEL)
             .namespaceUri(LATEST_DMN_NS)
@@ -83,7 +83,7 @@ public class BusinessKnowledgeModelImpl extends DrgElementImpl implements Busine
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     encapsulatedLogicChild = sequenceBuilder.element(EncapsulatedLogic.class).build();
 

@@ -34,7 +34,7 @@ public class DecisionMadeReferenceImpl extends DmnElementReferenceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DecisionMadeReference.class, DMN_ELEMENT_DECISION_MADE)
             .namespaceUri(LATEST_DMN_NS)

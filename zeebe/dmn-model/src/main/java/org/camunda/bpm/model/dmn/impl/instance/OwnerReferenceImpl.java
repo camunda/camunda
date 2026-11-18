@@ -33,7 +33,7 @@ public class OwnerReferenceImpl extends DmnElementReferenceImpl implements Owner
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(OwnerReference.class, DMN_ELEMENT_OWNER)
             .namespaceUri(LATEST_DMN_NS)

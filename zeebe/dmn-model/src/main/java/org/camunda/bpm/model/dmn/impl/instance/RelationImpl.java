@@ -49,7 +49,7 @@ public class RelationImpl extends ExpressionImpl implements Relation {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Relation.class, DMN_ELEMENT_RELATION)
             .namespaceUri(LATEST_DMN_NS)
@@ -61,7 +61,7 @@ public class RelationImpl extends ExpressionImpl implements Relation {
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     columnCollection = sequenceBuilder.elementCollection(Column.class).build();
 

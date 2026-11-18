@@ -33,7 +33,7 @@ public class InputEntryImpl extends UnaryTestsImpl implements InputEntry {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InputEntry.class, DMN_ELEMENT_INPUT_ENTRY)
             .namespaceUri(LATEST_DMN_NS)

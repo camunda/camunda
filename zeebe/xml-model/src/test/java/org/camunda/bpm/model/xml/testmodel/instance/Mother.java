@@ -30,7 +30,7 @@ public class Mother extends AnimalReference {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Mother.class, ELEMENT_NAME_MOTHER)
             .namespaceUri(MODEL_NAMESPACE)

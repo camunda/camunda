@@ -33,7 +33,7 @@ public class ColumnImpl extends InformationItemImpl implements Column {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Column.class, DMN_ELEMENT_COLUMN)
             .namespaceUri(LATEST_DMN_NS)

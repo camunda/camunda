@@ -39,26 +39,26 @@ public class IdsElementReferenceCollectionImpl<
   }
 
   protected List<String> getReferenceIdentifiers(ModelElementInstance referenceSourceElement) {
-    String referenceIdentifiers = getReferenceIdentifier(referenceSourceElement);
+    final String referenceIdentifiers = getReferenceIdentifier(referenceSourceElement);
     return StringUtil.splitListBySeparator(referenceIdentifiers, separator);
   }
 
   protected void setReferenceIdentifiers(
       ModelElementInstance referenceSourceElement, List<String> referenceIdentifiers) {
-    String referenceIdentifier = StringUtil.joinList(referenceIdentifiers, separator);
+    final String referenceIdentifier = StringUtil.joinList(referenceIdentifiers, separator);
     referenceSourceElement.setTextContent(referenceIdentifier);
   }
 
   @Override
   protected Collection<DomElement> getView(ModelElementInstanceImpl referenceSourceParentElement) {
-    DomDocument document = referenceSourceParentElement.getModelInstance().getDocument();
-    Collection<Source> referenceSourceElements =
+    final DomDocument document = referenceSourceParentElement.getModelInstance().getDocument();
+    final Collection<Source> referenceSourceElements =
         getReferenceSourceCollection().get(referenceSourceParentElement);
-    Collection<DomElement> referenceTargetElements = new ArrayList<DomElement>();
+    final Collection<DomElement> referenceTargetElements = new ArrayList<DomElement>();
     for (Source referenceSourceElement : referenceSourceElements) {
-      List<String> identifiers = getReferenceIdentifiers(referenceSourceElement);
+      final List<String> identifiers = getReferenceIdentifiers(referenceSourceElement);
       for (String identifier : identifiers) {
-        DomElement referenceTargetElement = document.getElementById(identifier);
+        final DomElement referenceTargetElement = document.getElementById(identifier);
         if (referenceTargetElement != null) {
           referenceTargetElements.add(referenceTargetElement);
         } else {
@@ -72,9 +72,9 @@ public class IdsElementReferenceCollectionImpl<
   @Override
   protected void updateReference(
       ModelElementInstance referenceSourceElement, String oldIdentifier, String newIdentifier) {
-    List<String> referenceIdentifiers = getReferenceIdentifiers(referenceSourceElement);
+    final List<String> referenceIdentifiers = getReferenceIdentifiers(referenceSourceElement);
     if (referenceIdentifiers.contains(oldIdentifier)) {
-      int index = referenceIdentifiers.indexOf(oldIdentifier);
+      final int index = referenceIdentifiers.indexOf(oldIdentifier);
       referenceIdentifiers.remove(oldIdentifier);
       referenceIdentifiers.add(index, newIdentifier);
       setReferenceIdentifiers(referenceSourceElement, referenceIdentifiers);
@@ -86,7 +86,7 @@ public class IdsElementReferenceCollectionImpl<
       ModelElementInstance referenceTargetElement, Object referenceIdentifier) {
     for (ModelElementInstance referenceSourceElement :
         findReferenceSourceElements(referenceTargetElement)) {
-      List<String> referenceIdentifiers = getReferenceIdentifiers(referenceSourceElement);
+      final List<String> referenceIdentifiers = getReferenceIdentifiers(referenceSourceElement);
       if (referenceIdentifiers.contains(referenceIdentifier)) {
         if (referenceIdentifiers.size() == 1) {
           // remove whole element

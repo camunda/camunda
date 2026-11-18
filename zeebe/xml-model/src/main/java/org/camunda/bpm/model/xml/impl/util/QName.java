@@ -42,10 +42,10 @@ public class QName {
   }
 
   public static QName parseQName(String identifier) {
-    String qualifier;
-    String localName;
+    final String qualifier;
+    final String localName;
 
-    String[] split = identifier.split(":", 2);
+    final String[] split = identifier.split(":", 2);
     if (split.length == 2) {
       qualifier = split[0];
       localName = split[1];
@@ -72,7 +72,7 @@ public class QName {
 
   @Override
   public int hashCode() {
-    int prime = 31;
+    final int prime = 31;
     int result = 1;
     result = prime * result + ((localName == null) ? 0 : localName.hashCode());
     result = prime * result + ((qualifier == null) ? 0 : qualifier.hashCode());
@@ -90,7 +90,7 @@ public class QName {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    QName other = (QName) obj;
+    final QName other = (QName) obj;
     if (localName == null) {
       if (other.localName != null) {
         return false;

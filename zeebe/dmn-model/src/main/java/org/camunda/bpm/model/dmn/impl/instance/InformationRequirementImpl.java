@@ -58,7 +58,7 @@ public class InformationRequirementImpl extends DmnModelElementInstanceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InformationRequirement.class, DMN_ELEMENT_INFORMATION_REQUIREMENT)
             .namespaceUri(LATEST_DMN_NS)
@@ -70,7 +70,7 @@ public class InformationRequirementImpl extends DmnModelElementInstanceImpl
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     requiredDecisionRef =
         sequenceBuilder

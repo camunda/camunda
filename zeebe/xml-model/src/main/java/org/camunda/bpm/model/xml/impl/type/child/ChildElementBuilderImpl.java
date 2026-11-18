@@ -67,8 +67,8 @@ public class ChildElementBuilderImpl<T extends ModelElementInstance>
 
   public <V extends ModelElementInstance> ElementReferenceBuilder<V, T> qNameElementReference(
       Class<V> referenceTargetType) {
-    ChildElementImpl<T> child = (ChildElementImpl<T>) build();
-    QNameElementReferenceBuilderImpl<V, T> builder =
+    final ChildElementImpl<T> child = (ChildElementImpl<T>) build();
+    final QNameElementReferenceBuilderImpl<V, T> builder =
         new QNameElementReferenceBuilderImpl<V, T>(childElementType, referenceTargetType, child);
     setReferenceBuilder(builder);
     return builder;
@@ -76,8 +76,8 @@ public class ChildElementBuilderImpl<T extends ModelElementInstance>
 
   public <V extends ModelElementInstance> ElementReferenceBuilder<V, T> idElementReference(
       Class<V> referenceTargetType) {
-    ChildElementImpl<T> child = (ChildElementImpl<T>) build();
-    ElementReferenceBuilderImpl<V, T> builder =
+    final ChildElementImpl<T> child = (ChildElementImpl<T>) build();
+    final ElementReferenceBuilderImpl<V, T> builder =
         new ElementReferenceBuilderImpl<V, T>(childElementType, referenceTargetType, child);
     setReferenceBuilder(builder);
     return builder;
@@ -85,8 +85,8 @@ public class ChildElementBuilderImpl<T extends ModelElementInstance>
 
   public <V extends ModelElementInstance> ElementReferenceBuilder<V, T> uriElementReference(
       Class<V> referenceTargetType) {
-    ChildElementImpl<T> child = (ChildElementImpl<T>) build();
-    ElementReferenceBuilderImpl<V, T> builder =
+    final ChildElementImpl<T> child = (ChildElementImpl<T>) build();
+    final ElementReferenceBuilderImpl<V, T> builder =
         new UriElementReferenceBuilderImpl<V, T>(childElementType, referenceTargetType, child);
     setReferenceBuilder(builder);
     return builder;

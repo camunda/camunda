@@ -33,7 +33,7 @@ public class OutputEntryImpl extends LiteralExpressionImpl implements OutputEntr
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(OutputEntry.class, DMN_ELEMENT_OUTPUT_ENTRY)
             .namespaceUri(LATEST_DMN_NS)

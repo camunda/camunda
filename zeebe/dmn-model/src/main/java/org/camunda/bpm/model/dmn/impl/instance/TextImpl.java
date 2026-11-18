@@ -32,7 +32,7 @@ public class TextImpl extends DmnModelElementInstanceImpl implements Text {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Text.class, DMN_ELEMENT_TEXT)
             .namespaceUri(LATEST_DMN_NS)

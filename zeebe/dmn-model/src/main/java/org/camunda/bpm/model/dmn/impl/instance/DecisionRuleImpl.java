@@ -49,7 +49,7 @@ public class DecisionRuleImpl extends DmnElementImpl implements DecisionRule {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DecisionRule.class, DMN_ELEMENT_DECISION_RULE)
             .namespaceUri(LATEST_DMN_NS)
@@ -61,7 +61,7 @@ public class DecisionRuleImpl extends DmnElementImpl implements DecisionRule {
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     inputEntryCollection = sequenceBuilder.elementCollection(InputEntry.class).build();
 

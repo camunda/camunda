@@ -33,7 +33,7 @@ public class TargetRefImpl extends DmnElementReferenceImpl implements TargetRef 
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(TargetRef.class, DMN_ELEMENT_TARGET_REF)
             .namespaceUri(LATEST_DMN_NS)

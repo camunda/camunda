@@ -33,7 +33,7 @@ public class ItemComponentImpl extends ItemDefinitionImpl implements ItemCompone
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ItemComponent.class, DMN_ELEMENT_ITEM_COMPONENT)
             .namespaceUri(LATEST_DMN_NS)

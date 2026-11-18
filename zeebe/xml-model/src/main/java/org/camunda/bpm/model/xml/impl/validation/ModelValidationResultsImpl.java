@@ -73,8 +73,8 @@ public class ModelValidationResultsImpl implements ValidationResults {
   public void write(StringWriter writer, ValidationResultFormatter formatter) {
     for (Entry<ModelElementInstance, List<ValidationResult>> entry : collectedResults.entrySet()) {
 
-      ModelElementInstance element = entry.getKey();
-      List<ValidationResult> results = entry.getValue();
+      final ModelElementInstance element = entry.getKey();
+      final List<ValidationResult> results = entry.getValue();
 
       formatter.formatElement(writer, element);
 
@@ -89,8 +89,8 @@ public class ModelValidationResultsImpl implements ValidationResults {
     int printedCount = 0;
     int previousLength = 0;
     for (var entry : collectedResults.entrySet()) {
-      var element = entry.getKey();
-      var results = entry.getValue();
+      final var element = entry.getKey();
+      final var results = entry.getValue();
 
       formatter.formatElement(writer, element);
 
@@ -98,11 +98,11 @@ public class ModelValidationResultsImpl implements ValidationResults {
         formatter.formatResult(writer, result);
 
         // Size and Length are not necessarily the same, depending on the encoding of the string.
-        int currentSize = writer.getBuffer().toString().getBytes().length;
-        int currentLength = writer.getBuffer().length();
+        final int currentSize = writer.getBuffer().toString().getBytes().length;
+        final int currentLength = writer.getBuffer().length();
         if (!canAccommodateResult(maxSize, currentSize, printedCount, formatter)) {
           writer.getBuffer().setLength(previousLength);
-          int remaining = errorCount + warningCount - printedCount;
+          final int remaining = errorCount + warningCount - printedCount;
           formatter.formatSuffixWithOmittedResultsCount(writer, remaining);
           return;
         }
@@ -114,12 +114,12 @@ public class ModelValidationResultsImpl implements ValidationResults {
 
   private boolean canAccommodateResult(
       int maxSize, int currentSize, int printedCount, ValidationResultFormatter formatter) {
-    boolean isLastItemToPrint = printedCount == errorCount + warningCount - 1;
+    final boolean isLastItemToPrint = printedCount == errorCount + warningCount - 1;
     if (isLastItemToPrint && currentSize <= maxSize) {
       return true;
     }
-    int remaining = errorCount + warningCount - printedCount;
-    int suffixLength = formatter.getFormattedSuffixWithOmittedResultsSize(remaining);
+    final int remaining = errorCount + warningCount - printedCount;
+    final int suffixLength = formatter.getFormattedSuffixWithOmittedResultsSize(remaining);
     return currentSize + suffixLength <= maxSize;
   }
 

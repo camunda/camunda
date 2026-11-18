@@ -33,7 +33,7 @@ public class InputExpressionImpl extends LiteralExpressionImpl implements InputE
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InputExpression.class, DMN_ELEMENT_INPUT_EXPRESSION)
             .namespaceUri(LATEST_DMN_NS)

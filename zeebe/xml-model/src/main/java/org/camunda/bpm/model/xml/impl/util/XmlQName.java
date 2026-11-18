@@ -99,11 +99,11 @@ public class XmlQName {
         return null;
       } else {
         // lookup for prefix
-        String lookupPrefix = lookupPrefix();
+        final String lookupPrefix = lookupPrefix();
         if (lookupPrefix == null && rootElement != null) {
           // if no prefix is found we generate a new one
           // search for known prefixes
-          String knownPrefix = KNOWN_PREFIXES.get(namespaceUri);
+          final String knownPrefix = KNOWN_PREFIXES.get(namespaceUri);
           if (knownPrefix == null) {
             // generate namespace
             return rootElement.registerNamespace(namespaceUri);

@@ -28,35 +28,36 @@ public class GenerateIdTest {
 
   @Test
   public void shouldNotGenerateIdsOnRead() {
-    DmnModelInstance modelInstance =
+    final DmnModelInstance modelInstance =
         Dmn.readModelFromStream(GenerateIdTest.class.getResourceAsStream("GenerateIdTest.dmn"));
-    Definitions definitions = modelInstance.getDefinitions();
+    final Definitions definitions = modelInstance.getDefinitions();
     assertThat(definitions.getId()).isNull();
 
-    Decision decision = modelInstance.getModelElementsByType(Decision.class).iterator().next();
+    final Decision decision =
+        modelInstance.getModelElementsByType(Decision.class).iterator().next();
     assertThat(decision.getId()).isNull();
 
-    DecisionTable decisionTable =
+    final DecisionTable decisionTable =
         modelInstance.getModelElementsByType(DecisionTable.class).iterator().next();
     assertThat(decisionTable.getId()).isNull();
 
-    Output output = modelInstance.getModelElementsByType(Output.class).iterator().next();
+    final Output output = modelInstance.getModelElementsByType(Output.class).iterator().next();
     assertThat(output.getId()).isNull();
   }
 
   @Test
   public void shouldGenerateIdsOnCreate() {
-    DmnModelInstance modelInstance = Dmn.createEmptyModel();
-    Definitions definitions = modelInstance.newInstance(Definitions.class);
+    final DmnModelInstance modelInstance = Dmn.createEmptyModel();
+    final Definitions definitions = modelInstance.newInstance(Definitions.class);
     assertThat(definitions.getId()).isNotNull();
 
-    Decision decision = modelInstance.newInstance(Decision.class);
+    final Decision decision = modelInstance.newInstance(Decision.class);
     assertThat(decision.getId()).isNotNull();
 
-    DecisionTable decisionTable = modelInstance.newInstance(DecisionTable.class);
+    final DecisionTable decisionTable = modelInstance.newInstance(DecisionTable.class);
     assertThat(decisionTable.getId()).isNotNull();
 
-    Output output = modelInstance.newInstance(Output.class);
+    final Output output = modelInstance.newInstance(Output.class);
     assertThat(output.getId()).isNotNull();
   }
 }

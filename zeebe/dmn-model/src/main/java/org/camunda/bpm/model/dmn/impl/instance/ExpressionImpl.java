@@ -44,7 +44,7 @@ public abstract class ExpressionImpl extends DmnElementImpl implements Expressio
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Expression.class, DMN_ELEMENT_EXPRESSION)
             .namespaceUri(LATEST_DMN_NS)

@@ -58,18 +58,18 @@ public class DmnWriterTest extends DmnModelTest {
    */
   @Test
   public void shouldReadJDK9StyleModel() {
-    DmnModelInstance modelInstance =
+    final DmnModelInstance modelInstance =
         Dmn.readModelFromStream(
             ExampleCompatibilityTest.class.getResourceAsStream("JDK9-style-CDATA.dmn"));
 
-    Decision decision =
+    final Decision decision =
         (Decision) modelInstance.getDefinitions().getDrgElements().iterator().next();
 
-    DecisionTable decisionTable = (DecisionTable) decision.getExpression();
+    final DecisionTable decisionTable = (DecisionTable) decision.getExpression();
 
-    Rule rule = decisionTable.getRules().iterator().next();
-    InputEntry inputEntry = rule.getInputEntries().iterator().next();
-    String textContent = inputEntry.getText().getTextContent();
+    final Rule rule = decisionTable.getRules().iterator().next();
+    final InputEntry inputEntry = rule.getInputEntries().iterator().next();
+    final String textContent = inputEntry.getText().getTextContent();
     assertThat(textContent).isEqualTo(">= 1000");
   }
 }

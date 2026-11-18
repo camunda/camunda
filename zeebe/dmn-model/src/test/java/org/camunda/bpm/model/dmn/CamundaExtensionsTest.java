@@ -63,7 +63,7 @@ public class CamundaExtensionsTest {
 
   @Test
   public void testCamundaClauseOutput() {
-    Input input = modelInstance.getModelElementById("input");
+    final Input input = modelInstance.getModelElementById("input");
     assertThat(input.getCamundaInputVariable()).isEqualTo("myVariable");
     input.setCamundaInputVariable("foo");
     assertThat(input.getCamundaInputVariable()).isEqualTo("foo");
@@ -71,7 +71,7 @@ public class CamundaExtensionsTest {
 
   @Test
   public void testCamundaHistoryTimeToLive() {
-    Decision decision = modelInstance.getModelElementById("decision");
+    final Decision decision = modelInstance.getModelElementById("decision");
     assertThat(decision.getCamundaHistoryTimeToLive()).isEqualTo(5);
     decision.setCamundaHistoryTimeToLive(6);
     assertThat(decision.getCamundaHistoryTimeToLive()).isEqualTo(6);
@@ -79,7 +79,7 @@ public class CamundaExtensionsTest {
 
   @Test
   public void testCamundaVersionTag() {
-    Decision decision = modelInstance.getModelElementById("decision");
+    final Decision decision = modelInstance.getModelElementById("decision");
     assertThat(decision.getVersionTag()).isEqualTo("1.0.0");
     decision.setVersionTag("1.1.0");
     assertThat(decision.getVersionTag()).isEqualTo("1.1.0");

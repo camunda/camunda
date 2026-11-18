@@ -32,7 +32,7 @@ public class QuestionImpl extends DmnModelElementInstanceImpl implements Questio
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Question.class, DMN_ELEMENT_QUESTION)
             .namespaceUri(LATEST_DMN_NS)

@@ -41,8 +41,8 @@ public final class StringUtil {
     if (text == null || text.isEmpty()) {
       return Collections.emptyList();
     }
-    Matcher matcher = pattern.matcher(text);
-    List<String> parts = new ArrayList<String>();
+    final Matcher matcher = pattern.matcher(text);
+    final List<String> parts = new ArrayList<String>();
     while (matcher.find()) {
       parts.add(matcher.group().trim());
     }
@@ -72,13 +72,13 @@ public final class StringUtil {
       return null;
     }
 
-    int size = list.size();
+    final int size = list.size();
     if (size == 0) {
       return "";
     } else if (size == 1) {
       return list.get(0);
     } else {
-      StringBuilder builder = new StringBuilder(size * 8);
+      final StringBuilder builder = new StringBuilder(size * 8);
       builder.append(list.get(0));
       for (Object element : list.subList(1, size)) {
         builder.append(separator);

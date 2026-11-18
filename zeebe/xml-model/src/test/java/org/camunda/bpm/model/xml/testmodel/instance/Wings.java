@@ -39,7 +39,7 @@ public class Wings extends ModelElementInstanceImpl {
 
   public static void registerType(ModelBuilder modelBuilder) {
 
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Wings.class, TYPE_NAME_WINGS)
             .namespaceUri(NEWER_NAMESPACE)

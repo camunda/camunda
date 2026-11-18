@@ -34,7 +34,7 @@ public class EncapsulatedDecisionReferenceImpl extends DmnElementReferenceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(
                 EncapsulatedDecisionReference.class, DMN_ELEMENT_ENCAPSULATED_DECISION_REFERENCE)

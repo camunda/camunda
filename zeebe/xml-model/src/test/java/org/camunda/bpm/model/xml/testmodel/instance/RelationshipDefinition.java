@@ -34,7 +34,7 @@ public abstract class RelationshipDefinition extends ModelElementInstanceImpl {
   protected static AttributeReference<Animal> animalRef;
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(RelationshipDefinition.class, TYPE_NAME_RELATIONSHIP_DEFINITION)
             .namespaceUri(MODEL_NAMESPACE)

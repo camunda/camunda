@@ -35,9 +35,10 @@ public class ParserTest {
 
   @Test
   public void shouldThrowExceptionForTooManyAttributes() {
-    TestModelParser modelParser = new TestModelParser();
-    String testXml = "org/camunda/bpm/model/xml/impl/parser/FeatureSecureProcessing.xml";
-    InputStream testXmlAsStream = this.getClass().getClassLoader().getResourceAsStream(testXml);
+    final TestModelParser modelParser = new TestModelParser();
+    final String testXml = "org/camunda/bpm/model/xml/impl/parser/FeatureSecureProcessing.xml";
+    final InputStream testXmlAsStream =
+        this.getClass().getClassLoader().getResourceAsStream(testXml);
     try {
       modelParser.parseModelFromStream(testXmlAsStream);
     } catch (ModelParseException mpe) {
@@ -57,9 +58,10 @@ public class ParserTest {
     System.setProperty(ACCESS_EXTERNAL_SCHEMA_PROP, "");
 
     try {
-      TestModelParser modelParser = new TestModelParser();
-      String testXml = "org/camunda/bpm/model/xml/impl/parser/ExternalSchemaAccess.xml";
-      InputStream testXmlAsStream = this.getClass().getClassLoader().getResourceAsStream(testXml);
+      final TestModelParser modelParser = new TestModelParser();
+      final String testXml = "org/camunda/bpm/model/xml/impl/parser/ExternalSchemaAccess.xml";
+      final InputStream testXmlAsStream =
+          this.getClass().getClassLoader().getResourceAsStream(testXml);
 
       // then
       exception.expect(ModelParseException.class);
@@ -80,12 +82,13 @@ public class ParserTest {
     System.setProperty(ACCESS_EXTERNAL_SCHEMA_PROP, "all");
 
     try {
-      TestModelParser modelParser = new TestModelParser();
-      String testXml = "org/camunda/bpm/model/xml/impl/parser/ExternalSchemaAccess.xml";
-      InputStream testXmlAsStream = this.getClass().getClassLoader().getResourceAsStream(testXml);
+      final TestModelParser modelParser = new TestModelParser();
+      final String testXml = "org/camunda/bpm/model/xml/impl/parser/ExternalSchemaAccess.xml";
+      final InputStream testXmlAsStream =
+          this.getClass().getClassLoader().getResourceAsStream(testXml);
 
       // when
-      ModelInstance modelInstance = modelParser.parseModelFromStream(testXmlAsStream);
+      final ModelInstance modelInstance = modelParser.parseModelFromStream(testXmlAsStream);
 
       // then
       assertThat(modelInstance).isNotNull();
@@ -96,9 +99,10 @@ public class ParserTest {
 
   @Test
   public void shouldThrowExceptionForDoctype() {
-    TestModelParser modelParser = new TestModelParser();
-    String testXml = "org/camunda/bpm/model/xml/impl/parser/XxeProcessing.xml";
-    InputStream testXmlAsStream = this.getClass().getClassLoader().getResourceAsStream(testXml);
+    final TestModelParser modelParser = new TestModelParser();
+    final String testXml = "org/camunda/bpm/model/xml/impl/parser/XxeProcessing.xml";
+    final InputStream testXmlAsStream =
+        this.getClass().getClassLoader().getResourceAsStream(testXml);
     try {
       modelParser.parseModelFromStream(testXmlAsStream);
     } catch (ModelParseException mpe) {
@@ -110,11 +114,11 @@ public class ParserTest {
   }
 
   protected boolean doesJdkSupportExternalSchemaAccessProperty() {
-    String jvmVendor = System.getProperty("java.vm.vendor");
-    String javaVersion = System.getProperty("java.version");
+    final String jvmVendor = System.getProperty("java.vm.vendor");
+    final String javaVersion = System.getProperty("java.version");
 
-    boolean isIbmJDK = jvmVendor != null && jvmVendor.contains("IBM");
-    boolean isJava6or7 =
+    final boolean isIbmJDK = jvmVendor != null && jvmVendor.contains("IBM");
+    final boolean isJava6or7 =
         javaVersion != null && (javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7"));
 
     return !(isIbmJDK && isJava6or7);

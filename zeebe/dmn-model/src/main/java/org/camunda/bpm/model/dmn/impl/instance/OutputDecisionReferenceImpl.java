@@ -34,7 +34,7 @@ public class OutputDecisionReferenceImpl extends DmnElementReferenceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(OutputDecisionReference.class, DMN_ELEMENT_OUTPUT_DECISION_REFERENCE)
             .namespaceUri(LATEST_DMN_NS)

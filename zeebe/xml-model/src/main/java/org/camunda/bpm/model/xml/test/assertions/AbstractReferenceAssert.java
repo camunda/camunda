@@ -35,7 +35,7 @@ public abstract class AbstractReferenceAssert<
   public S hasIdentifier(ModelElementInstance instance, String identifier) {
     isNotNull();
 
-    String actualIdentifier = actual.getReferenceIdentifier(instance);
+    final String actualIdentifier = actual.getReferenceIdentifier(instance);
 
     if (!identifier.equals(actualIdentifier)) {
       failWithMessage(
@@ -49,7 +49,7 @@ public abstract class AbstractReferenceAssert<
   public S hasTargetElement(ModelElementInstance instance, ModelElementInstance targetElement) {
     isNotNull();
 
-    ModelElementInstance actualTargetElement = actual.getReferenceTargetElement(instance);
+    final ModelElementInstance actualTargetElement = actual.getReferenceTargetElement(instance);
 
     if (!targetElement.equals(actualTargetElement)) {
       failWithMessage(
@@ -63,7 +63,7 @@ public abstract class AbstractReferenceAssert<
   public S hasNoTargetElement(ModelElementInstance instance) {
     isNotNull();
 
-    ModelElementInstance actualTargetElement = actual.getReferenceTargetElement(instance);
+    final ModelElementInstance actualTargetElement = actual.getReferenceTargetElement(instance);
 
     if (actualTargetElement != null) {
       failWithMessage(
@@ -77,7 +77,7 @@ public abstract class AbstractReferenceAssert<
   public S hasTargetAttribute(Attribute<?> targetAttribute) {
     isNotNull();
 
-    Attribute<String> actualTargetAttribute = actual.getReferenceTargetAttribute();
+    final Attribute<String> actualTargetAttribute = actual.getReferenceTargetAttribute();
 
     if (!targetAttribute.equals(actualTargetAttribute)) {
       failWithMessage(

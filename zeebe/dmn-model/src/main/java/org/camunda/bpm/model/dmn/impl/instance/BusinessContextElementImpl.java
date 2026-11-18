@@ -45,7 +45,7 @@ public abstract class BusinessContextElementImpl extends NamedElementImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(BusinessContextElement.class, DMN_ELEMENT_BUSINESS_CONTEXT_ELEMENT)
             .namespaceUri(LATEST_DMN_NS)

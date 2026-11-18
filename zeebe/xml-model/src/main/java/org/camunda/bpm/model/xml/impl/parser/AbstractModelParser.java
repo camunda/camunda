@@ -51,7 +51,7 @@ public abstract class AbstractModelParser {
   protected Map<String, Schema> schemas = new HashMap<>();
 
   protected AbstractModelParser() {
-    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+    final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     configureFactory(dbf);
     this.documentBuilderFactory = dbf;
   }
@@ -117,7 +117,7 @@ public abstract class AbstractModelParser {
    * The properties file is not supported at the moment.
    */
   protected String resolveAccessExternalSchemaProperty() {
-    String systemProperty = System.getProperty(JAXP_ACCESS_EXTERNAL_SCHEMA_SYSTEM_PROPERTY);
+    final String systemProperty = System.getProperty(JAXP_ACCESS_EXTERNAL_SCHEMA_SYSTEM_PROPERTY);
 
     if (systemProperty != null) {
       return systemProperty;
@@ -154,13 +154,13 @@ public abstract class AbstractModelParser {
    */
   public void validateModel(DomDocument document) {
 
-    Schema schema = getSchema(document);
+    final Schema schema = getSchema(document);
 
     if (schema == null) {
       return;
     }
 
-    Validator validator = schema.newValidator();
+    final Validator validator = schema.newValidator();
     try {
       synchronized (document) {
         validator.validate(document.getDomSource());
@@ -173,8 +173,8 @@ public abstract class AbstractModelParser {
   }
 
   protected Schema getSchema(DomDocument document) {
-    DomElement rootElement = document.getRootElement();
-    String namespaceURI = rootElement.getNamespaceURI();
+    final DomElement rootElement = document.getRootElement();
+    final String namespaceURI = rootElement.getNamespaceURI();
     return schemas.get(namespaceURI);
   }
 
@@ -183,7 +183,7 @@ public abstract class AbstractModelParser {
   }
 
   protected Schema createSchema(String location, ClassLoader classLoader) {
-    URL cmmnSchema = ReflectUtil.getResource(location, classLoader);
+    final URL cmmnSchema = ReflectUtil.getResource(location, classLoader);
     try {
       return schemaFactory.newSchema(cmmnSchema);
     } catch (SAXException e) {

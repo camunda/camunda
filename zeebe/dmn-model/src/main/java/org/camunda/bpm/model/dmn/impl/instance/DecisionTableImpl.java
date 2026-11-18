@@ -100,7 +100,7 @@ public class DecisionTableImpl extends ExpressionImpl implements DecisionTable {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DecisionTable.class, DMN_ELEMENT_DECISION_TABLE)
             .namespaceUri(LATEST_DMN_NS)
@@ -129,7 +129,7 @@ public class DecisionTableImpl extends ExpressionImpl implements DecisionTable {
 
     outputLabelAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_OUTPUT_LABEL).build();
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     inputCollection = sequenceBuilder.elementCollection(Input.class).build();
 

@@ -56,8 +56,8 @@ public abstract class ReferenceImpl<T extends ModelElementInstance> implements R
    */
   @SuppressWarnings("unchecked")
   public T getReferenceTargetElement(ModelElementInstance referenceSourceElement) {
-    String identifier = getReferenceIdentifier(referenceSourceElement);
-    ModelElementInstance referenceTargetElement =
+    final String identifier = getReferenceIdentifier(referenceSourceElement);
+    final ModelElementInstance referenceTargetElement =
         referenceSourceElement.getModelInstance().getModelElementById(identifier);
     if (referenceTargetElement != null) {
       try {
@@ -89,9 +89,10 @@ public abstract class ReferenceImpl<T extends ModelElementInstance> implements R
    */
   public void setReferenceTargetElement(
       ModelElementInstance referenceSourceElement, T referenceTargetElement) {
-    ModelInstance modelInstance = referenceSourceElement.getModelInstance();
-    String referenceTargetIdentifier = referenceTargetAttribute.getValue(referenceTargetElement);
-    ModelElementInstance existingElement =
+    final ModelInstance modelInstance = referenceSourceElement.getModelInstance();
+    final String referenceTargetIdentifier =
+        referenceTargetAttribute.getValue(referenceTargetElement);
+    final ModelElementInstance existingElement =
         modelInstance.getModelElementById(referenceTargetIdentifier);
 
     if (existingElement == null || !existingElement.equals(referenceTargetElement)) {
@@ -134,7 +135,7 @@ public abstract class ReferenceImpl<T extends ModelElementInstance> implements R
   public Collection<ModelElementInstance> findReferenceSourceElements(
       ModelElementInstance referenceTargetElement) {
     if (referenceTargetElementType.isBaseTypeOf(referenceTargetElement.getElementType())) {
-      ModelElementType owningElementType = getReferenceSourceElementType();
+      final ModelElementType owningElementType = getReferenceSourceElementType();
       return referenceTargetElement.getModelInstance().getModelElementsByType(owningElementType);
     } else {
       return Collections.emptyList();

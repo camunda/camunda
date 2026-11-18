@@ -32,7 +32,7 @@ public class AttributeReferenceAssert
   public AttributeReferenceAssert hasSourceAttribute(Attribute<?> sourceAttribute) {
     isNotNull();
 
-    Attribute<String> actualSourceAttribute = actual.getReferenceSourceAttribute();
+    final Attribute<String> actualSourceAttribute = actual.getReferenceSourceAttribute();
 
     if (!sourceAttribute.equals(actualSourceAttribute)) {
       failWithMessage(

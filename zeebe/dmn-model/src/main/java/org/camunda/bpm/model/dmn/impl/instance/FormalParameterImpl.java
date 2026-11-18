@@ -33,7 +33,7 @@ public class FormalParameterImpl extends InformationItemImpl implements FormalPa
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(FormalParameter.class, DMN_ELEMENT_FORMAL_PARAMETER)
             .namespaceUri(LATEST_DMN_NS)

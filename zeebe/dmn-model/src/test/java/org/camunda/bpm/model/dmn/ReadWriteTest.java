@@ -66,7 +66,7 @@ public class ReadWriteTest extends DmnModelTest {
   @Test
   public void shouldWriteDecisionTableOrientation() throws Exception {
     modelInstance = Dmn.createEmptyModel();
-    Definitions definitions = generateNamedElement(Definitions.class, "definitions");
+    final Definitions definitions = generateNamedElement(Definitions.class, "definitions");
     definitions.setNamespace(TEST_NAMESPACE);
     modelInstance.setDocumentElement(definitions);
 
@@ -147,7 +147,7 @@ public class ReadWriteTest extends DmnModelTest {
   @Test
   public void shouldWriteHitPolicy() throws Exception {
     modelInstance = Dmn.createEmptyModel();
-    Definitions definitions = generateNamedElement(Definitions.class, "definitions");
+    final Definitions definitions = generateNamedElement(Definitions.class, "definitions");
     definitions.setNamespace(TEST_NAMESPACE);
     modelInstance.setDocumentElement(definitions);
 
@@ -229,13 +229,13 @@ public class ReadWriteTest extends DmnModelTest {
   @DmnModelResource(resource = INPUT_DATA_DMN)
   public void shouldReadInputData() {
 
-    Collection<InputData> inputDataCollection =
+    final Collection<InputData> inputDataCollection =
         modelInstance.getModelElementsByType(InputData.class);
 
     assertThat(inputDataCollection).hasSize(2);
     assertThat(inputDataCollection).extracting("class").contains(InputDataImpl.class);
 
-    InputData inputData = modelInstance.getModelElementById("customerStatusIn");
+    final InputData inputData = modelInstance.getModelElementById("customerStatusIn");
 
     assertThat(inputData).isNotNull();
     assertThat(inputData).isInstanceOf(InputData.class);

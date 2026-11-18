@@ -31,7 +31,7 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 public class FlightPartnerRef extends ModelElementInstanceImpl {
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(FlightPartnerRef.class, ELEMENT_NAME_FLIGHT_PARTNER_REF)
             .namespaceUri(MODEL_NAMESPACE)

@@ -52,15 +52,15 @@ public class ElementReferenceCollectionBuilderImpl<
 
   @SuppressWarnings("unchecked")
   public void performModelBuild(Model model) {
-    ModelElementTypeImpl referenceTargetType =
+    final ModelElementTypeImpl referenceTargetType =
         (ModelElementTypeImpl) model.getType(referenceTargetClass);
-    ModelElementTypeImpl referenceSourceType =
+    final ModelElementTypeImpl referenceSourceType =
         (ModelElementTypeImpl) model.getType(childElementType);
     elementReferenceCollectionImpl.setReferenceTargetElementType(referenceTargetType);
     elementReferenceCollectionImpl.setReferenceSourceElementType(referenceSourceType);
 
     // the referenced attribute may be declared on a base type of the referenced type.
-    AttributeImpl<String> idAttribute =
+    final AttributeImpl<String> idAttribute =
         (AttributeImpl<String>) referenceTargetType.getAttribute("id");
     if (idAttribute != null) {
       idAttribute.registerIncoming(elementReferenceCollectionImpl);

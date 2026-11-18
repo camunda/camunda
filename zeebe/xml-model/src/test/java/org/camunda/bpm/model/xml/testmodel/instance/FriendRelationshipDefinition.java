@@ -30,7 +30,7 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 public class FriendRelationshipDefinition extends RelationshipDefinition {
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(
                 FriendRelationshipDefinition.class, TYPE_NAME_FRIEND_RELATIONSHIP_DEFINITION)

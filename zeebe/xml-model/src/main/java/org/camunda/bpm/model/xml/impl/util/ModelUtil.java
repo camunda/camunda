@@ -49,7 +49,7 @@ public final class ModelUtil {
       DomElement domElement, ModelInstanceImpl modelInstance) {
     ModelElementInstance modelElement = domElement.getModelElementInstance();
     if (modelElement == null) {
-      ModelElementTypeImpl modelType =
+      final ModelElementTypeImpl modelType =
           getModelElement(domElement, modelInstance, domElement.getNamespaceURI());
       modelElement = modelType.newInstance(modelInstance, domElement);
       domElement.setModelElementInstance(modelElement);
@@ -82,14 +82,14 @@ public final class ModelUtil {
 
   protected static ModelElementTypeImpl getModelElement(
       DomElement domElement, ModelInstanceImpl modelInstance, String namespaceUri) {
-    String localName = domElement.getLocalName();
+    final String localName = domElement.getLocalName();
     ModelElementTypeImpl modelType =
         (ModelElementTypeImpl) modelInstance.getModel().getTypeForName(namespaceUri, localName);
 
     if (modelType == null) {
 
-      Model model = modelInstance.getModel();
-      String actualNamespaceUri = model.getActualNamespace(namespaceUri);
+      final Model model = modelInstance.getModel();
+      final String actualNamespaceUri = model.getActualNamespace(namespaceUri);
 
       if (actualNamespaceUri != null) {
         modelType = getModelElement(domElement, modelInstance, actualNamespaceUri);
@@ -181,7 +181,7 @@ public final class ModelUtil {
   @SuppressWarnings("unchecked")
   public static <T extends ModelElementInstance> Collection<T> getModelElementCollection(
       Collection<DomElement> view, ModelInstanceImpl model) {
-    List<ModelElementInstance> resultList = new ArrayList<ModelElementInstance>();
+    final List<ModelElementInstance> resultList = new ArrayList<ModelElementInstance>();
     for (DomElement element : view) {
       resultList.add(getModelElement(element, model));
     }
@@ -198,13 +198,13 @@ public final class ModelUtil {
   public static int getIndexOfElementType(
       ModelElementInstance modelElement, List<ModelElementType> childElementTypes) {
     for (int index = 0; index < childElementTypes.size(); index++) {
-      ModelElementType childElementType = childElementTypes.get(index);
-      Class<? extends ModelElementInstance> instanceType = childElementType.getInstanceType();
+      final ModelElementType childElementType = childElementTypes.get(index);
+      final Class<? extends ModelElementInstance> instanceType = childElementType.getInstanceType();
       if (instanceType.isAssignableFrom(modelElement.getClass())) {
         return index;
       }
     }
-    Collection<String> childElementTypeNames = new ArrayList<String>();
+    final Collection<String> childElementTypeNames = new ArrayList<String>();
     for (ModelElementType childElementType : childElementTypes) {
       childElementTypeNames.add(childElementType.getTypeName());
     }
@@ -222,9 +222,9 @@ public final class ModelUtil {
    */
   public static Collection<ModelElementType> calculateAllExtendingTypes(
       Model model, Collection<ModelElementType> baseTypes) {
-    Set<ModelElementType> allExtendingTypes = new HashSet<ModelElementType>();
+    final Set<ModelElementType> allExtendingTypes = new HashSet<ModelElementType>();
     for (ModelElementType baseType : baseTypes) {
-      ModelElementTypeImpl modelElementTypeImpl =
+      final ModelElementTypeImpl modelElementTypeImpl =
           (ModelElementTypeImpl) model.getType(baseType.getInstanceType());
       modelElementTypeImpl.resolveExtendingTypes(allExtendingTypes);
     }
@@ -233,8 +233,8 @@ public final class ModelUtil {
 
   /** Calculate a collection of all base types for the given type */
   public static Collection<ModelElementType> calculateAllBaseTypes(ModelElementType type) {
-    List<ModelElementType> baseTypes = new ArrayList<ModelElementType>();
-    ModelElementTypeImpl typeImpl = (ModelElementTypeImpl) type;
+    final List<ModelElementType> baseTypes = new ArrayList<ModelElementType>();
+    final ModelElementTypeImpl typeImpl = (ModelElementTypeImpl) type;
     typeImpl.resolveBaseTypes(baseTypes);
     return baseTypes;
   }
@@ -252,7 +252,7 @@ public final class ModelUtil {
       ModelElementInstance modelElementInstance,
       String newId,
       boolean withReferenceUpdate) {
-    Attribute<?> id = type.getAttribute(ID_ATTRIBUTE_NAME);
+    final Attribute<?> id = type.getAttribute(ID_ATTRIBUTE_NAME);
     if (id != null && id instanceof StringAttribute && id.isIdAttribute()) {
       ((StringAttribute) id).setValue(modelElementInstance, newId, withReferenceUpdate);
     }

@@ -31,7 +31,7 @@ public class TestResultFormatter implements ValidationResultFormatter {
 
   @Override
   public void formatElement(StringWriter writer, ModelElementInstance element) {
-    Formatter formatter = new Formatter(writer);
+    final Formatter formatter = new Formatter(writer);
 
     if (element instanceof FlyingAnimal) {
       formatter.format("%s\n", ((FlyingAnimal) element).getId());

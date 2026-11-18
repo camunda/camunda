@@ -53,7 +53,7 @@ public class InvocationImpl extends ExpressionImpl implements Invocation {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Invocation.class, DMN_ELEMENT_INVOCATION)
             .namespaceUri(LATEST_DMN_NS)
@@ -65,7 +65,7 @@ public class InvocationImpl extends ExpressionImpl implements Invocation {
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     expressionChild = sequenceBuilder.element(Expression.class).build();
 

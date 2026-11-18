@@ -36,7 +36,7 @@ public class ExtensionElementsImpl extends DmnModelElementInstanceImpl
 
   public static void registerType(ModelBuilder modelBuilder) {
 
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ExtensionElements.class, DMN_ELEMENT_EXTENSION_ELEMENTS)
             .namespaceUri(LATEST_DMN_NS)
@@ -63,15 +63,15 @@ public class ExtensionElementsImpl extends DmnModelElementInstanceImpl
   }
 
   public ModelElementInstance addExtensionElement(String namespaceUri, String localName) {
-    ModelElementType extensionElementType =
+    final ModelElementType extensionElementType =
         modelInstance.registerGenericType(namespaceUri, localName);
-    ModelElementInstance extensionElement = extensionElementType.newInstance(modelInstance);
+    final ModelElementInstance extensionElement = extensionElementType.newInstance(modelInstance);
     addChildElement(extensionElement);
     return extensionElement;
   }
 
   public <T extends ModelElementInstance> T addExtensionElement(Class<T> extensionElementClass) {
-    ModelElementInstance extensionElement = modelInstance.newInstance(extensionElementClass);
+    final ModelElementInstance extensionElement = modelInstance.newInstance(extensionElementClass);
     addChildElement(extensionElement);
     return extensionElementClass.cast(extensionElement);
   }

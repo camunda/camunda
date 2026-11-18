@@ -37,7 +37,7 @@ public class ChildElementAssert
   public ChildElementAssert occursMinimal(int minOccurs) {
     isNotNull();
 
-    int actualMinOccurs = actual.getMinOccurs();
+    final int actualMinOccurs = actual.getMinOccurs();
 
     if (actualMinOccurs != minOccurs) {
       failWithMessage(
@@ -51,7 +51,7 @@ public class ChildElementAssert
   public ChildElementAssert occursMaximal(int maxOccurs) {
     isNotNull();
 
-    int actualMaxOccurs = actual.getMaxOccurs();
+    final int actualMaxOccurs = actual.getMaxOccurs();
 
     if (actualMaxOccurs != maxOccurs) {
       failWithMessage(
@@ -65,7 +65,7 @@ public class ChildElementAssert
   public ChildElementAssert isOptional() {
     isNotNull();
 
-    int actualMinOccurs = actual.getMinOccurs();
+    final int actualMinOccurs = actual.getMinOccurs();
 
     if (actualMinOccurs != 0) {
       failWithMessage(
@@ -79,7 +79,7 @@ public class ChildElementAssert
   public ChildElementAssert isUnbounded() {
     isNotNull();
 
-    int actualMaxOccurs = actual.getMaxOccurs();
+    final int actualMaxOccurs = actual.getMaxOccurs();
 
     if (actualMaxOccurs != -1) {
       failWithMessage(
@@ -93,7 +93,7 @@ public class ChildElementAssert
   public ChildElementAssert isMutable() {
     isNotNull();
 
-    boolean actualImmutable = actual.isImmutable();
+    final boolean actualImmutable = actual.isImmutable();
 
     if (actualImmutable) {
       failWithMessage("Expected child element <%s> to be mutable but was not", typeClass);
@@ -105,7 +105,7 @@ public class ChildElementAssert
   public ChildElementAssert isImmutable() {
     isNotNull();
 
-    boolean actualImmutable = actual.isImmutable();
+    final boolean actualImmutable = actual.isImmutable();
 
     if (!actualImmutable) {
       failWithMessage("Expected child element <%s> to be immutable but was not", typeClass);
@@ -118,7 +118,7 @@ public class ChildElementAssert
       Class<? extends ModelElementInstance> childElementTypeClass) {
     isNotNull();
 
-    Class<? extends ModelElementInstance> actualChildElementTypeClass =
+    final Class<? extends ModelElementInstance> actualChildElementTypeClass =
         actual.getChildElementTypeClass();
 
     if (!childElementTypeClass.equals(actualChildElementTypeClass)) {
@@ -134,7 +134,7 @@ public class ChildElementAssert
   public ChildElementAssert hasParentElementType(ModelElementType parentElementType) {
     isNotNull();
 
-    ModelElementType actualParentElementType = actual.getParentElementType();
+    final ModelElementType actualParentElementType = actual.getParentElementType();
 
     if (!parentElementType.equals(actualParentElementType)) {
       failWithMessage(
@@ -148,7 +148,7 @@ public class ChildElementAssert
   public ChildElementAssert isNotEmpty(ModelElementInstance instance) {
     isNotNull();
 
-    int actualNumberOfChildElements = actual.get(instance).size();
+    final int actualNumberOfChildElements = actual.get(instance).size();
 
     if (actualNumberOfChildElements == 0) {
       failWithMessage("Expected child element <%s> to contain elements but was not", typeClass);
@@ -160,7 +160,7 @@ public class ChildElementAssert
   public ChildElementAssert hasSize(ModelElementInstance instance, int numberOfChildElements) {
     isNotNull();
 
-    int actualNumberOfChildElements = actual.get(instance).size();
+    final int actualNumberOfChildElements = actual.get(instance).size();
 
     if (actualNumberOfChildElements != numberOfChildElements) {
       failWithMessage(
@@ -174,7 +174,7 @@ public class ChildElementAssert
   public ChildElementAssert isEmpty(ModelElementInstance instance) {
     isNotNull();
 
-    int actualNumberOfChildElements = actual.get(instance).size();
+    final int actualNumberOfChildElements = actual.get(instance).size();
 
     if (actualNumberOfChildElements > 0) {
       failWithMessage(

@@ -30,7 +30,7 @@ public class Guardian extends AnimalReference {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Guardian.class, ELEMENT_NAME_GUARDIAN)
             .namespaceUri(MODEL_NAMESPACE)

@@ -30,7 +30,7 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 public class ChildRelationshipDefinition extends RelationshipDefinition {
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ChildRelationshipDefinition.class, TYPE_NAME_CHILD_RELATIONSHIP_DEFINITION)
             .namespaceUri(MODEL_NAMESPACE)

@@ -39,7 +39,7 @@ public class Animals extends ModelElementInstanceImpl {
 
   public static void registerType(ModelBuilder modelBuilder) {
 
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Animals.class, ELEMENT_NAME_ANIMALS)
             .namespaceUri(MODEL_NAMESPACE)
@@ -50,7 +50,7 @@ public class Animals extends ModelElementInstanceImpl {
                   }
                 });
 
-    SequenceBuilder sequence = typeBuilder.sequence();
+    final SequenceBuilder sequence = typeBuilder.sequence();
 
     descriptionChild = sequence.element(Description.class).build();
 

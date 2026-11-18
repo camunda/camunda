@@ -125,7 +125,7 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance>
   /** the "clear" operation used by this collection */
   private void performClearOperation(
       ModelElementInstanceImpl modelElement, Collection<DomElement> elementsToRemove) {
-    Collection<ModelElementInstance> modelElements =
+    final Collection<ModelElementInstance> modelElements =
         ModelUtil.getModelElementCollection(elementsToRemove, modelElement.getModelInstance());
     for (ModelElementInstance element : modelElements) {
       modelElement.removeChildElement(element);
@@ -164,21 +164,21 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance>
       }
 
       public Iterator<T> iterator() {
-        Collection<T> modelElementCollection =
+        final Collection<T> modelElementCollection =
             ModelUtil.getModelElementCollection(
                 getView(modelElement), modelElement.getModelInstance());
         return modelElementCollection.iterator();
       }
 
       public Object[] toArray() {
-        Collection<T> modelElementCollection =
+        final Collection<T> modelElementCollection =
             ModelUtil.getModelElementCollection(
                 getView(modelElement), modelElement.getModelInstance());
         return modelElementCollection.toArray();
       }
 
       public <U> U[] toArray(U[] a) {
-        Collection<T> modelElementCollection =
+        final Collection<T> modelElementCollection =
             ModelUtil.getModelElementCollection(
                 getView(modelElement), modelElement.getModelInstance());
         return modelElementCollection.toArray(a);
@@ -211,7 +211,7 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance>
         if (!isMutable) {
           throw new UnsupportedModelOperationException("clear()", "collection is immutable");
         }
-        Collection<DomElement> view = getView(modelElement);
+        final Collection<DomElement> view = getView(modelElement);
         performClearOperation(modelElement, view);
       }
 

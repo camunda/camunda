@@ -110,7 +110,7 @@ public final class DomUtil {
       if (!super.matches(node)) {
         return false;
       }
-      ModelElementInstance modelElement =
+      final ModelElementInstance modelElement =
           ModelUtil.getModelElement(new DomElementImpl((Element) node), model);
       return type.isAssignableFrom(modelElement.getClass());
     }
@@ -126,9 +126,9 @@ public final class DomUtil {
    */
   public static List<DomElement> filterNodeList(NodeList nodeList, NodeListFilter filter) {
 
-    List<DomElement> filteredList = new ArrayList<DomElement>();
+    final List<DomElement> filteredList = new ArrayList<DomElement>();
     for (int i = 0; i < nodeList.getLength(); i++) {
-      Node node = nodeList.item(i);
+      final Node node = nodeList.item(i);
       if (filter.matches(node)) {
         filteredList.add(new DomElementImpl((Element) node));
       }
@@ -186,12 +186,12 @@ public final class DomUtil {
     }
 
     public void error(SAXParseException spe) throws SAXException {
-      String message = "Error: " + getParseExceptionInfo(spe);
+      final String message = "Error: " + getParseExceptionInfo(spe);
       throw new SAXException(message);
     }
 
     public void fatalError(SAXParseException spe) throws SAXException {
-      String message = "Fatal Error: " + getParseExceptionInfo(spe);
+      final String message = "Fatal Error: " + getParseExceptionInfo(spe);
       throw new SAXException(message);
     }
   }
@@ -205,7 +205,7 @@ public final class DomUtil {
    */
   public static DomDocument getEmptyDocument(DocumentBuilderFactory documentBuilderFactory) {
     try {
-      DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+      final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
       return new DomDocumentImpl(documentBuilder.newDocument());
     } catch (ParserConfigurationException e) {
       throw new ModelParseException("Unable to create a new document", e);
@@ -224,7 +224,7 @@ public final class DomUtil {
       DocumentBuilderFactory documentBuilderFactory, InputStream inputStream) {
 
     try {
-      DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+      final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
       documentBuilder.setErrorHandler(new DomErrorHandler());
       return new DomDocumentImpl(documentBuilder.parse(inputStream));
     } catch (ParserConfigurationException e) {

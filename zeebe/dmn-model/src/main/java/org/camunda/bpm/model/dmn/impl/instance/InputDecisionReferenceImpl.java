@@ -34,7 +34,7 @@ public class InputDecisionReferenceImpl extends DmnElementReferenceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InputDecisionReference.class, DMN_ELEMENT_INPUT_DECISION_REFERENCE)
             .namespaceUri(LATEST_DMN_NS)

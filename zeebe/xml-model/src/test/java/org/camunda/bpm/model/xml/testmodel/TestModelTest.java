@@ -49,17 +49,17 @@ public abstract class TestModelTest {
   }
 
   protected static Object[] parseModel(Class<?> test) {
-    TestModelParser modelParser = new TestModelParser();
-    String testXml = test.getSimpleName() + ".xml";
-    InputStream testXmlAsStream = test.getResourceAsStream(testXml);
-    ModelInstance modelInstance = modelParser.parseModelFromStream(testXmlAsStream);
+    final TestModelParser modelParser = new TestModelParser();
+    final String testXml = test.getSimpleName() + ".xml";
+    final InputStream testXmlAsStream = test.getResourceAsStream(testXml);
+    final ModelInstance modelInstance = modelParser.parseModelFromStream(testXmlAsStream);
     return new Object[] {"parsed", modelInstance, modelParser};
   }
 
   public static Bird createBird(ModelInstance modelInstance, String id, Gender gender) {
-    Bird bird = modelInstance.newInstance(Bird.class, id);
+    final Bird bird = modelInstance.newInstance(Bird.class, id);
     bird.setGender(gender);
-    Animals animals = (Animals) modelInstance.getDocumentElement();
+    final Animals animals = (Animals) modelInstance.getDocumentElement();
     animals.getAnimals().add(bird);
     return bird;
   }
@@ -68,7 +68,7 @@ public abstract class TestModelTest {
       ModelInstance modelInstance,
       Animal animalInRelationshipWith,
       Class<? extends RelationshipDefinition> relationshipDefinitionClass) {
-    RelationshipDefinition relationshipDefinition =
+    final RelationshipDefinition relationshipDefinition =
         modelInstance.newInstance(
             relationshipDefinitionClass, "relationship-" + animalInRelationshipWith.getId());
     relationshipDefinition.setAnimal(animalInRelationshipWith);
@@ -77,14 +77,14 @@ public abstract class TestModelTest {
 
   public static void addRelationshipDefinition(
       Animal animalWithRelationship, RelationshipDefinition relationshipDefinition) {
-    Animal animalInRelationshipWith = relationshipDefinition.getAnimal();
+    final Animal animalInRelationshipWith = relationshipDefinition.getAnimal();
     relationshipDefinition.setId(
         animalWithRelationship.getId() + "-" + animalInRelationshipWith.getId());
     animalWithRelationship.getRelationshipDefinitions().add(relationshipDefinition);
   }
 
   public static Egg createEgg(ModelInstance modelInstance, String id) {
-    Egg egg = modelInstance.newInstance(Egg.class, id);
+    final Egg egg = modelInstance.newInstance(Egg.class, id);
     return egg;
   }
 

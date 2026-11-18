@@ -29,7 +29,7 @@ public class NamedEnumAttribute<T extends Enum<T>> extends AttributeImpl<T> {
 
   @SuppressWarnings("unchecked")
   protected T convertXmlValueToModelValue(String rawValue) {
-    T[] enumConstants = type.getEnumConstants();
+    final T[] enumConstants = type.getEnumConstants();
     if (rawValue != null && enumConstants != null) {
       for (T enumConstant : enumConstants) {
         if (rawValue.equals(enumConstant.toString())) {

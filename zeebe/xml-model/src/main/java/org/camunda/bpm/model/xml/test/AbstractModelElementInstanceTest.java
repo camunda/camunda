@@ -189,7 +189,7 @@ public abstract class AbstractModelElementInstanceTest {
   }
 
   public ChildElementAssert assertThatChildElement(ModelElementType childElementType) {
-    ModelElementTypeImpl modelElementTypeImpl = (ModelElementTypeImpl) modelElementType;
+    final ModelElementTypeImpl modelElementTypeImpl = (ModelElementTypeImpl) modelElementType;
     return assertThat(modelElementTypeImpl.getChildElementCollection(childElementType));
   }
 
@@ -201,7 +201,7 @@ public abstract class AbstractModelElementInstanceTest {
   public void testType() {
     assertThatType().isPartOfModel(model);
 
-    TypeAssumption assumption = getTypeAssumption();
+    final TypeAssumption assumption = getTypeAssumption();
     assertThatType().hasTypeNamespace(assumption.namespaceUri);
 
     if (assumption.isAbstract) {
@@ -227,14 +227,14 @@ public abstract class AbstractModelElementInstanceTest {
         fail("Unexpected exception " + e.getMessage());
       }
     } else {
-      ModelElementInstance modelElementInstance = modelInstance.newInstance(modelElementType);
+      final ModelElementInstance modelElementInstance = modelInstance.newInstance(modelElementType);
       assertThat(modelElementInstance).isNotNull();
     }
   }
 
   @Test
   public void testChildElements() {
-    Collection<ChildElementAssumption> childElementAssumptions = getChildElementAssumptions();
+    final Collection<ChildElementAssumption> childElementAssumptions = getChildElementAssumptions();
     if (childElementAssumptions == null) {
       assertThatType().hasNoChildElements();
     } else {
@@ -254,14 +254,14 @@ public abstract class AbstractModelElementInstanceTest {
 
   @Test
   public void testAttributes() {
-    Collection<AttributeAssumption> attributesAssumptions = getAttributesAssumptions();
+    final Collection<AttributeAssumption> attributesAssumptions = getAttributesAssumptions();
     if (attributesAssumptions == null) {
       assertThatType().hasNoAttributes();
     } else {
       assertThat(attributesAssumptions).hasSameSizeAs(modelElementType.getAttributes());
       for (AttributeAssumption assumption : attributesAssumptions) {
         assertThatType().hasAttributes(assumption.attributeName);
-        AttributeAssert attributeAssert = assertThatAttribute(assumption.attributeName);
+        final AttributeAssert attributeAssert = assertThatAttribute(assumption.attributeName);
 
         attributeAssert.hasOwningElementType(modelElementType);
 

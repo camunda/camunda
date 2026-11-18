@@ -30,16 +30,16 @@ public class TestModelInstanceTest {
 
   @Test
   public void testClone() throws Exception {
-    ModelInstance modelInstance = new TestModelParser().getEmptyModel();
+    final ModelInstance modelInstance = new TestModelParser().getEmptyModel();
 
-    Animals animals = modelInstance.newInstance(Animals.class);
+    final Animals animals = modelInstance.newInstance(Animals.class);
     modelInstance.setDocumentElement(animals);
 
-    Animal animal = modelInstance.newInstance(Bird.class);
+    final Animal animal = modelInstance.newInstance(Bird.class);
     animal.setId("TestId");
     animals.addChildElement(animal);
 
-    ModelInstance cloneInstance = modelInstance.clone();
+    final ModelInstance cloneInstance = modelInstance.clone();
     getFirstAnimal(cloneInstance).setId("TestId2");
 
     assertThat(getFirstAnimal(modelInstance).getId(), is(equalTo("TestId")));
@@ -47,7 +47,7 @@ public class TestModelInstanceTest {
   }
 
   protected Animal getFirstAnimal(ModelInstance modelInstance) {
-    Animals animals = (Animals) modelInstance.getDocumentElement();
+    final Animals animals = (Animals) modelInstance.getDocumentElement();
     return animals.getAnimals().iterator().next();
   }
 }

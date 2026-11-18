@@ -59,7 +59,7 @@ public abstract class Animal extends ModelElementInstanceImpl {
 
   public static void registerType(ModelBuilder modelBuilder) {
 
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Animal.class, TYPE_NAME_ANIMAL)
             .namespaceUri(MODEL_NAMESPACE)
@@ -94,7 +94,7 @@ public abstract class Animal extends ModelElementInstanceImpl {
             .idAttributeReferenceCollection(Animal.class, AnimalAttributeReferenceCollection.class)
             .build();
 
-    SequenceBuilder sequence = typeBuilder.sequence();
+    final SequenceBuilder sequence = typeBuilder.sequence();
 
     relationshipDefinitionsColl = sequence.elementCollection(RelationshipDefinition.class).build();
 

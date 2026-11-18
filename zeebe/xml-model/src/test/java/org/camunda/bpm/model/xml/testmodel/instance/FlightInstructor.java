@@ -31,7 +31,7 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 public class FlightInstructor extends ModelElementInstanceImpl {
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(FlightInstructor.class, ELEMENT_NAME_FLIGHT_INSTRUCTOR)
             .namespaceUri(MODEL_NAMESPACE)

@@ -61,7 +61,7 @@ public abstract class ReflectUtil {
   }
 
   public static File getResourceAsFile(String path) {
-    URL resource = getResource(path);
+    final URL resource = getResource(path);
     try {
       return new File(resource.toURI());
     } catch (URISyntaxException e) {
@@ -79,15 +79,15 @@ public abstract class ReflectUtil {
   public static <T> T createInstance(Class<T> type, Object... parameters) {
 
     // get types for parameters
-    Class<?>[] parameterTypes = new Class<?>[parameters.length];
+    final Class<?>[] parameterTypes = new Class<?>[parameters.length];
     for (int i = 0; i < parameters.length; i++) {
-      Object parameter = parameters[i];
+      final Object parameter = parameters[i];
       parameterTypes[i] = parameter.getClass();
     }
 
     try {
       // create instance
-      Constructor<T> constructor = type.getConstructor(parameterTypes);
+      final Constructor<T> constructor = type.getConstructor(parameterTypes);
       return constructor.newInstance(parameters);
 
     } catch (Exception e) {

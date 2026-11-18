@@ -23,7 +23,7 @@ public class DmnDiTest {
   @Test
   public void validateDmnWithCamundaDi() {
 
-    DmnModelInstance modelInstance =
+    final DmnModelInstance modelInstance =
         Dmn.readModelFromStream(DmnDiTest.class.getResourceAsStream("ExampleWithCamundaDI.dmn"));
 
     Dmn.validateModel(modelInstance);

@@ -30,13 +30,13 @@ public class DmnModelInstanceTest {
   @Test
   public void testClone() throws Exception {
 
-    DmnModelInstance modelInstance = Dmn.createEmptyModel();
+    final DmnModelInstance modelInstance = Dmn.createEmptyModel();
 
-    Definitions definitions = modelInstance.newInstance(Definitions.class);
+    final Definitions definitions = modelInstance.newInstance(Definitions.class);
     definitions.setId("TestId");
     modelInstance.setDefinitions(definitions);
 
-    DmnModelInstance cloneInstance = modelInstance.clone();
+    final DmnModelInstance cloneInstance = modelInstance.clone();
     cloneInstance.getDefinitions().setId("TestId2");
 
     assertThat(modelInstance.getDefinitions().getId()).isEqualTo("TestId");
@@ -46,15 +46,15 @@ public class DmnModelInstanceTest {
   @Test
   public void shouldExportDmnDiagramWithLatestDmnNamespace() {
     // given
-    DmnModelInstance modelInstance = Dmn.createEmptyModel();
-    Definitions definitions = modelInstance.newInstance(Definitions.class);
+    final DmnModelInstance modelInstance = Dmn.createEmptyModel();
+    final Definitions definitions = modelInstance.newInstance(Definitions.class);
     definitions.setNamespace("http://camunda.org/schema/1.0/dmn");
     definitions.setName("definitions");
     definitions.setId("definitions");
     modelInstance.setDefinitions(definitions);
 
     // when
-    String exportedDiagram = Dmn.convertToString(modelInstance);
+    final String exportedDiagram = Dmn.convertToString(modelInstance);
 
     // then
     assertThat(exportedDiagram).contains(DmnModelConstants.LATEST_DMN_NS);

@@ -59,7 +59,7 @@ public final class IoUtil {
   private static String getStringFromInputStream(InputStream inputStream, boolean trim)
       throws IOException {
     BufferedReader bufferedReader = null;
-    StringBuilder stringBuilder = new StringBuilder();
+    final StringBuilder stringBuilder = new StringBuilder();
     try {
       bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
       String line;
@@ -85,7 +85,7 @@ public final class IoUtil {
    * @return the resulting {@link InputStream}
    */
   public static InputStream convertOutputStreamToInputStream(OutputStream outputStream) {
-    byte[] data = ((ByteArrayOutputStream) outputStream).toByteArray();
+    final byte[] data = ((ByteArrayOutputStream) outputStream).toByteArray();
     return new ByteArrayInputStream(data);
   }
 
@@ -95,8 +95,8 @@ public final class IoUtil {
    * @param document the XML document to convert
    */
   public static String convertXmlDocumentToString(DomDocument document) {
-    StringWriter stringWriter = new StringWriter();
-    StreamResult result = new StreamResult(stringWriter);
+    final StringWriter stringWriter = new StringWriter();
+    final StreamResult result = new StreamResult(stringWriter);
     transformDocumentToXml(document, result);
     return stringWriter.toString();
   }
@@ -108,7 +108,7 @@ public final class IoUtil {
    * @param outputStream the {@link OutputStream} to write to
    */
   public static void writeDocumentToOutputStream(DomDocument document, OutputStream outputStream) {
-    StreamResult result = new StreamResult(outputStream);
+    final StreamResult result = new StreamResult(outputStream);
     transformDocumentToXml(document, result);
   }
 
@@ -119,9 +119,9 @@ public final class IoUtil {
    * @param result the {@link StreamResult} to write to
    */
   public static void transformDocumentToXml(DomDocument document, StreamResult result) {
-    TransformerFactory transformerFactory = TransformerFactory.newInstance();
+    final TransformerFactory transformerFactory = TransformerFactory.newInstance();
     try {
-      Transformer transformer = transformerFactory.newTransformer();
+      final Transformer transformer = transformerFactory.newTransformer();
       transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
       transformer.setOutputProperty(OutputKeys.INDENT, "yes");
       transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");

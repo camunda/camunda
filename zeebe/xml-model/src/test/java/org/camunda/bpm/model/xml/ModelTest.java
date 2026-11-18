@@ -40,7 +40,7 @@ public class ModelTest {
 
   @Test
   public void testGetTypes() {
-    Collection<ModelElementType> types = model.getTypes();
+    final Collection<ModelElementType> types = model.getTypes();
     assertThat(types).isNotEmpty();
     assertThat(types)
         .contains(
@@ -53,7 +53,7 @@ public class ModelTest {
 
   @Test
   public void testGetType() {
-    ModelElementType flyingAnimalType = model.getType(FlyingAnimal.class);
+    final ModelElementType flyingAnimalType = model.getType(FlyingAnimal.class);
     assertThat(flyingAnimalType.getInstanceType()).isEqualTo(FlyingAnimal.class);
   }
 

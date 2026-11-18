@@ -51,10 +51,10 @@ public class ElementReferenceImpl<
 
   @SuppressWarnings("unchecked")
   public Target getReferenceTargetElement(ModelElementInstanceImpl referenceSourceParentElement) {
-    Source referenceSource = getReferenceSource(referenceSourceParentElement);
+    final Source referenceSource = getReferenceSource(referenceSourceParentElement);
     if (referenceSource != null) {
-      String identifier = getReferenceIdentifier(referenceSource);
-      ModelElementInstance referenceTargetElement =
+      final String identifier = getReferenceIdentifier(referenceSource);
+      final ModelElementInstance referenceTargetElement =
           referenceSourceParentElement.getModelInstance().getModelElementById(identifier);
       if (referenceTargetElement != null) {
         return (Target) referenceTargetElement;
@@ -68,9 +68,9 @@ public class ElementReferenceImpl<
 
   public void setReferenceTargetElement(
       ModelElementInstanceImpl referenceSourceParentElement, Target referenceTargetElement) {
-    ModelInstanceImpl modelInstance = referenceSourceParentElement.getModelInstance();
-    String identifier = referenceTargetAttribute.getValue(referenceTargetElement);
-    ModelElementInstance existingElement = modelInstance.getModelElementById(identifier);
+    final ModelInstanceImpl modelInstance = referenceSourceParentElement.getModelInstance();
+    final String identifier = referenceTargetAttribute.getValue(referenceTargetElement);
+    final ModelElementInstance existingElement = modelInstance.getModelElementById(identifier);
 
     if (existingElement == null || !existingElement.equals(referenceTargetElement)) {
       throw new ModelReferenceException(
@@ -78,7 +78,8 @@ public class ElementReferenceImpl<
               + referenceTargetElement
               + ": element is not part of model. Please connect element to the model first.");
     } else {
-      Source referenceSourceElement = modelInstance.newInstance(getReferenceSourceElementType());
+      final Source referenceSourceElement =
+          modelInstance.newInstance(getReferenceSourceElementType());
       setReferenceSource(referenceSourceParentElement, referenceSourceElement);
       setReferenceIdentifier(referenceSourceElement, identifier);
     }

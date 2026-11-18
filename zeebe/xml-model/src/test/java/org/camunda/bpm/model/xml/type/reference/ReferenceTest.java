@@ -60,20 +60,20 @@ public class ReferenceTest extends TestModelTest {
 
   @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
-    Object[][] models = {createModel(), parseModel(ReferenceTest.class)};
+    final Object[][] models = {createModel(), parseModel(ReferenceTest.class)};
     return Arrays.asList(models);
   }
 
   public static Object[] createModel() {
-    TestModelParser modelParser = new TestModelParser();
-    ModelInstance modelInstance = modelParser.getEmptyModel();
+    final TestModelParser modelParser = new TestModelParser();
+    final ModelInstance modelInstance = modelParser.getEmptyModel();
 
-    Animals animals = modelInstance.newInstance(Animals.class);
+    final Animals animals = modelInstance.newInstance(Animals.class);
     modelInstance.setDocumentElement(animals);
 
-    Bird tweety = createBird(modelInstance, "tweety", Gender.Female);
-    Bird daffy = createBird(modelInstance, "daffy", Gender.Male);
-    Bird daisy = createBird(modelInstance, "daisy", Gender.Female);
+    final Bird tweety = createBird(modelInstance, "tweety", Gender.Female);
+    final Bird daffy = createBird(modelInstance, "daffy", Gender.Male);
+    final Bird daisy = createBird(modelInstance, "daisy", Gender.Female);
     createBird(modelInstance, "plucky", Gender.Male);
     createBird(modelInstance, "birdo", Gender.Female);
     tweety.setFather(daffy);
@@ -110,7 +110,7 @@ public class ReferenceTest extends TestModelTest {
     // ID element reference
     flightPartnerRefsColl = FlyingAnimal.flightPartnerRefsColl;
 
-    ModelElementType flightPartnerRefType =
+    final ModelElementType flightPartnerRefType =
         modelInstance.getModel().getType(FlightPartnerRef.class);
     flightPartnerRef =
         (FlightPartnerRef)
@@ -141,7 +141,7 @@ public class ReferenceTest extends TestModelTest {
 
   @Test
   public void testReferenceTargetAttribute() {
-    Attribute<?> idAttribute = animalType.getAttribute("id");
+    final Attribute<?> idAttribute = animalType.getAttribute("id");
     assertThat(idAttribute).hasIncomingReferences(fatherReference, motherReference);
 
     assertThat(fatherReference).hasTargetAttribute(idAttribute);
@@ -151,8 +151,8 @@ public class ReferenceTest extends TestModelTest {
 
   @Test
   public void testReferenceSourceAttribute() {
-    Attribute<?> fatherAttribute = animalType.getAttribute("father");
-    Attribute<?> motherAttribute = animalType.getAttribute("mother");
+    final Attribute<?> fatherAttribute = animalType.getAttribute("father");
+    final Attribute<?> motherAttribute = animalType.getAttribute("mother");
 
     assertThat(fatherReference).hasSourceAttribute(fatherAttribute);
     assertThat(motherReference).hasSourceAttribute(motherAttribute);
@@ -172,9 +172,9 @@ public class ReferenceTest extends TestModelTest {
 
   @Test
   public void testTargetElementsCollection() {
-    Collection<FlyingAnimal> referenceTargetElements =
+    final Collection<FlyingAnimal> referenceTargetElements =
         flightPartnerRefsColl.getReferenceTargetElements(tweety);
-    Collection<FlyingAnimal> flightPartners =
+    final Collection<FlyingAnimal> flightPartners =
         Arrays.asList(new FlyingAnimal[] {birdo, daffy, daisy, plucky});
 
     // directly test collection methods and not use the	appropriate assertion methods

@@ -150,7 +150,7 @@ public class DecisionImpl extends DrgElementImpl implements Decision {
   // camunda extensions
   @Override
   public Integer getCamundaHistoryTimeToLive() {
-    String ttl = getCamundaHistoryTimeToLiveString();
+    final String ttl = getCamundaHistoryTimeToLiveString();
 
     if (ttl != null) {
       return Integer.valueOf(ttl);
@@ -184,7 +184,7 @@ public class DecisionImpl extends DrgElementImpl implements Decision {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Decision.class, DMN_ELEMENT_DECISION)
             .namespaceUri(LATEST_DMN_NS)
@@ -196,7 +196,7 @@ public class DecisionImpl extends DrgElementImpl implements Decision {
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     questionChild = sequenceBuilder.element(Question.class).build();
 

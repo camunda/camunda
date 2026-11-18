@@ -33,7 +33,7 @@ public class DefaultOutputEntryImpl extends LiteralExpressionImpl implements Def
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DefaultOutputEntry.class, DMN_ELEMENT_DEFAULT_OUTPUT_ENTRY)
             .namespaceUri(LATEST_DMN_NS)

@@ -39,12 +39,12 @@ public class ModelInstanceValidator {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public ValidationResults validate() {
 
-    ValidationResultsCollectorImpl resultsCollector = new ValidationResultsCollectorImpl();
+    final ValidationResultsCollectorImpl resultsCollector = new ValidationResultsCollectorImpl();
 
     for (ModelElementValidator validator : validators) {
 
-      Class<? extends ModelElementInstance> elementType = validator.getElementType();
-      Collection<? extends ModelElementInstance> modelElementsByType =
+      final Class<? extends ModelElementInstance> elementType = validator.getElementType();
+      final Collection<? extends ModelElementInstance> modelElementsByType =
           modelInstanceImpl.getModelElementsByType(elementType);
 
       for (ModelElementInstance element : modelElementsByType) {

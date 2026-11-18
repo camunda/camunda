@@ -32,7 +32,7 @@ public abstract class DrgElementImpl extends NamedElementImpl implements DrgElem
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DrgElement.class, DMN_ELEMENT_DRG_ELEMENT)
             .namespaceUri(LATEST_DMN_NS)

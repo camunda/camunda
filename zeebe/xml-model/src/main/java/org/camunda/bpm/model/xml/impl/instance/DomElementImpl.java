@@ -70,7 +70,7 @@ public class DomElementImpl implements DomElement {
 
   public DomDocument getDocument() {
     synchronized (document) {
-      Document ownerDocument = element.getOwnerDocument();
+      final Document ownerDocument = element.getOwnerDocument();
       if (ownerDocument != null) {
         return new DomDocumentImpl(ownerDocument);
       } else {
@@ -81,7 +81,7 @@ public class DomElementImpl implements DomElement {
 
   public DomElement getRootElement() {
     synchronized (document) {
-      DomDocument document = getDocument();
+      final DomDocument document = getDocument();
       if (document != null) {
         return document.getRootElement();
       } else {
@@ -92,7 +92,7 @@ public class DomElementImpl implements DomElement {
 
   public DomElement getParentElement() {
     synchronized (document) {
-      Node parentNode = element.getParentNode();
+      final Node parentNode = element.getParentNode();
       if (parentNode != null && parentNode instanceof Element) {
         return new DomElementImpl((Element) parentNode);
       } else {
@@ -103,21 +103,21 @@ public class DomElementImpl implements DomElement {
 
   public List<DomElement> getChildElements() {
     synchronized (document) {
-      NodeList childNodes = element.getChildNodes();
+      final NodeList childNodes = element.getChildNodes();
       return DomUtil.filterNodeListForElements(childNodes);
     }
   }
 
   public List<DomElement> getChildElementsByNameNs(String namespaceUri, String elementName) {
     synchronized (document) {
-      NodeList childNodes = element.getChildNodes();
+      final NodeList childNodes = element.getChildNodes();
       return DomUtil.filterNodeListByName(childNodes, namespaceUri, elementName);
     }
   }
 
   @Override
   public List<DomElement> getChildElementsByNameNs(Set<String> namespaceUris, String elementName) {
-    List<DomElement> result = new ArrayList<DomElement>();
+    final List<DomElement> result = new ArrayList<DomElement>();
     for (String namespace : namespaceUris) {
       if (namespace != null) {
         result.addAll(getChildElementsByNameNs(namespace, elementName));
@@ -129,15 +129,15 @@ public class DomElementImpl implements DomElement {
   public List<DomElement> getChildElementsByType(
       ModelInstanceImpl modelInstance, Class<? extends ModelElementInstance> elementType) {
     synchronized (document) {
-      NodeList childNodes = element.getChildNodes();
+      final NodeList childNodes = element.getChildNodes();
       return DomUtil.filterNodeListByType(childNodes, modelInstance, elementType);
     }
   }
 
   public void replaceChild(DomElement newChildDomElement, DomElement existingChildDomElement) {
     synchronized (document) {
-      Element newElement = ((DomElementImpl) newChildDomElement).getElement();
-      Element existingElement = ((DomElementImpl) existingChildDomElement).getElement();
+      final Element newElement = ((DomElementImpl) newChildDomElement).getElement();
+      final Element existingElement = ((DomElementImpl) existingChildDomElement).getElement();
       try {
         element.replaceChild(newElement, existingElement);
       } catch (DOMException e) {
@@ -156,7 +156,7 @@ public class DomElementImpl implements DomElement {
 
   public boolean removeChild(DomElement childDomElement) {
     synchronized (document) {
-      Element childElement = ((DomElementImpl) childDomElement).getElement();
+      final Element childElement = ((DomElementImpl) childDomElement).getElement();
       try {
         element.removeChild(childElement);
         return true;
@@ -168,16 +168,16 @@ public class DomElementImpl implements DomElement {
 
   public void appendChild(DomElement childDomElement) {
     synchronized (document) {
-      Element childElement = ((DomElementImpl) childDomElement).getElement();
+      final Element childElement = ((DomElementImpl) childDomElement).getElement();
       element.appendChild(childElement);
     }
   }
 
   public void insertChildElementAfter(DomElement elementToInsert, DomElement insertAfter) {
     synchronized (document) {
-      Element newElement = ((DomElementImpl) elementToInsert).getElement();
+      final Element newElement = ((DomElementImpl) elementToInsert).getElement();
       // find node to insert before
-      Node insertBeforeNode;
+      final Node insertBeforeNode;
       if (insertAfter == null) {
         insertBeforeNode = element.getFirstChild();
       } else {
@@ -209,8 +209,8 @@ public class DomElementImpl implements DomElement {
 
   public String getAttribute(String namespaceUri, String localName) {
     synchronized (document) {
-      XmlQName xmlQName = new XmlQName(this, namespaceUri, localName);
-      String value;
+      final XmlQName xmlQName = new XmlQName(this, namespaceUri, localName);
+      final String value;
       if (xmlQName.hasLocalNamespace()) {
         value = element.getAttributeNS(null, xmlQName.getLocalName());
       } else {
@@ -235,7 +235,7 @@ public class DomElementImpl implements DomElement {
   private void setAttribute(
       String namespaceUri, String localName, String value, boolean isIdAttribute) {
     synchronized (document) {
-      XmlQName xmlQName = new XmlQName(this, namespaceUri, localName);
+      final XmlQName xmlQName = new XmlQName(this, namespaceUri, localName);
       if (xmlQName.hasLocalNamespace()) {
         element.setAttributeNS(null, xmlQName.getLocalName(), value);
         if (isIdAttribute) {
@@ -264,7 +264,7 @@ public class DomElementImpl implements DomElement {
 
   public void removeAttribute(String namespaceUri, String localName) {
     synchronized (document) {
-      XmlQName xmlQName = new XmlQName(this, namespaceUri, localName);
+      final XmlQName xmlQName = new XmlQName(this, namespaceUri, localName);
       if (xmlQName.hasLocalNamespace()) {
         element.removeAttributeNS(null, xmlQName.getLocalName());
       } else {
@@ -287,7 +287,7 @@ public class DomElementImpl implements DomElement {
 
   public void addCDataSection(String data) {
     synchronized (document) {
-      CDATASection cdataSection = document.createCDATASection(data);
+      final CDATASection cdataSection = document.createCDATASection(data);
       element.appendChild(cdataSection);
     }
   }
@@ -306,7 +306,7 @@ public class DomElementImpl implements DomElement {
 
   public String registerNamespace(String namespaceUri) {
     synchronized (document) {
-      String lookupPrefix = lookupPrefix(namespaceUri);
+      final String lookupPrefix = lookupPrefix(namespaceUri);
       if (lookupPrefix == null) {
         // check if a prefix is known
         String prefix = XmlQName.KNOWN_PREFIXES.get(namespaceUri);
@@ -348,7 +348,7 @@ public class DomElementImpl implements DomElement {
       return false;
     }
 
-    DomElementImpl that = (DomElementImpl) o;
+    final DomElementImpl that = (DomElementImpl) o;
     return element.equals(that.element);
   }
 

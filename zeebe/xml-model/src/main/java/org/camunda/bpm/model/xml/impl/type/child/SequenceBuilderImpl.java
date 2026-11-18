@@ -42,7 +42,7 @@ public class SequenceBuilderImpl implements SequenceBuilder, ModelBuildOperation
 
   public <T extends ModelElementInstance> ChildElementBuilder<T> element(
       Class<T> childElementType) {
-    ChildElementBuilderImpl<T> builder =
+    final ChildElementBuilderImpl<T> builder =
         new ChildElementBuilderImpl<T>(childElementType, elementType);
     modelBuildOperations.add(builder);
     return builder;
@@ -50,7 +50,7 @@ public class SequenceBuilderImpl implements SequenceBuilder, ModelBuildOperation
 
   public <T extends ModelElementInstance> ChildElementCollectionBuilder<T> elementCollection(
       Class<T> childElementType) {
-    ChildElementCollectionBuilderImpl<T> builder =
+    final ChildElementCollectionBuilderImpl<T> builder =
         new ChildElementCollectionBuilderImpl<T>(childElementType, elementType);
     modelBuildOperations.add(builder);
     return builder;

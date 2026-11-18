@@ -75,14 +75,14 @@ public class ModelElementTypeImpl implements ModelElementType {
   }
 
   public ModelElementInstance newInstance(ModelInstance modelInstance) {
-    ModelInstanceImpl modelInstanceImpl = (ModelInstanceImpl) modelInstance;
-    DomDocument document = modelInstanceImpl.getDocument();
-    DomElement domElement = document.createElement(typeNamespace, typeName);
+    final ModelInstanceImpl modelInstanceImpl = (ModelInstanceImpl) modelInstance;
+    final DomDocument document = modelInstanceImpl.getDocument();
+    final DomElement domElement = document.createElement(typeNamespace, typeName);
     return newInstance(modelInstanceImpl, domElement);
   }
 
   public ModelElementInstance newInstance(ModelInstanceImpl modelInstance, DomElement domElement) {
-    ModelTypeInstanceContext modelTypeInstanceContext =
+    final ModelTypeInstanceContext modelTypeInstanceContext =
         new ModelTypeInstanceContext(domElement, modelInstance, this);
     return createModelElementInstance(modelTypeInstanceContext);
   }
@@ -172,7 +172,7 @@ public class ModelElementTypeImpl implements ModelElementType {
   }
 
   public Collection<ModelElementType> getAllExtendingTypes() {
-    HashSet<ModelElementType> extendingTypes = new HashSet<ModelElementType>();
+    final HashSet<ModelElementType> extendingTypes = new HashSet<ModelElementType>();
     extendingTypes.add(this);
     resolveExtendingTypes(extendingTypes);
     return extendingTypes;
@@ -185,7 +185,7 @@ public class ModelElementTypeImpl implements ModelElementType {
    */
   public void resolveExtendingTypes(Set<ModelElementType> allExtendingTypes) {
     for (ModelElementType modelElementType : extendingTypes) {
-      ModelElementTypeImpl modelElementTypeImpl = (ModelElementTypeImpl) modelElementType;
+      final ModelElementTypeImpl modelElementTypeImpl = (ModelElementTypeImpl) modelElementType;
       if (!allExtendingTypes.contains(modelElementTypeImpl)) {
         allExtendingTypes.add(modelElementType);
         modelElementTypeImpl.resolveExtendingTypes(allExtendingTypes);
@@ -218,7 +218,7 @@ public class ModelElementTypeImpl implements ModelElementType {
   }
 
   public List<ModelElementType> getAllChildElementTypes() {
-    List<ModelElementType> allChildElementTypes = new ArrayList<ModelElementType>();
+    final List<ModelElementType> allChildElementTypes = new ArrayList<ModelElementType>();
     if (baseType != null) {
       allChildElementTypes.addAll(baseType.getAllChildElementTypes());
     }
@@ -231,7 +231,7 @@ public class ModelElementTypeImpl implements ModelElementType {
   }
 
   public List<ChildElementCollection<?>> getAllChildElementCollections() {
-    List<ChildElementCollection<?>> allChildElementCollections =
+    final List<ChildElementCollection<?>> allChildElementCollections =
         new ArrayList<ChildElementCollection<?>>();
     if (baseType != null) {
       allChildElementCollections.addAll(baseType.getAllChildElementCollections());
@@ -241,12 +241,12 @@ public class ModelElementTypeImpl implements ModelElementType {
   }
 
   public Collection<ModelElementInstance> getInstances(ModelInstance modelInstance) {
-    ModelInstanceImpl modelInstanceImpl = (ModelInstanceImpl) modelInstance;
-    DomDocument document = modelInstanceImpl.getDocument();
+    final ModelInstanceImpl modelInstanceImpl = (ModelInstanceImpl) modelInstance;
+    final DomDocument document = modelInstanceImpl.getDocument();
 
-    List<DomElement> elements = getElementsByNameNs(document, typeNamespace);
+    final List<DomElement> elements = getElementsByNameNs(document, typeNamespace);
 
-    List<ModelElementInstance> resultList = new ArrayList<ModelElementInstance>();
+    final List<ModelElementInstance> resultList = new ArrayList<ModelElementInstance>();
     for (DomElement element : elements) {
       resultList.add(ModelUtil.getModelElement(element, modelInstanceImpl, this));
     }
@@ -257,10 +257,10 @@ public class ModelElementTypeImpl implements ModelElementType {
     List<DomElement> elements = document.getElementsByNameNs(namespaceURI, typeName);
 
     if (elements.isEmpty()) {
-      Set<String> alternativeNamespaces = getModel().getAlternativeNamespaces(namespaceURI);
+      final Set<String> alternativeNamespaces = getModel().getAlternativeNamespaces(namespaceURI);
 
       if (alternativeNamespaces != null) {
-        Iterator<String> namespaceIt = alternativeNamespaces.iterator();
+        final Iterator<String> namespaceIt = alternativeNamespaces.iterator();
         while (elements.isEmpty() && namespaceIt.hasNext()) {
           elements = getElementsByNameNs(document, namespaceIt.next());
         }
@@ -281,7 +281,7 @@ public class ModelElementTypeImpl implements ModelElementType {
     if (this.equals(elementType)) {
       return true;
     } else {
-      Collection<ModelElementType> baseTypes = ModelUtil.calculateAllBaseTypes(elementType);
+      final Collection<ModelElementType> baseTypes = ModelUtil.calculateAllBaseTypes(elementType);
       return baseTypes.contains(this);
     }
   }
@@ -292,9 +292,9 @@ public class ModelElementTypeImpl implements ModelElementType {
    * @return the list of all attributes
    */
   public Collection<Attribute<?>> getAllAttributes() {
-    List<Attribute<?>> allAttributes = new ArrayList<Attribute<?>>();
+    final List<Attribute<?>> allAttributes = new ArrayList<Attribute<?>>();
     allAttributes.addAll(getAttributes());
-    Collection<ModelElementType> baseTypes = ModelUtil.calculateAllBaseTypes(this);
+    final Collection<ModelElementType> baseTypes = ModelUtil.calculateAllBaseTypes(this);
     for (ModelElementType baseType : baseTypes) {
       allAttributes.addAll(baseType.getAttributes());
     }
@@ -327,7 +327,7 @@ public class ModelElementTypeImpl implements ModelElementType {
 
   @Override
   public int hashCode() {
-    int prime = 31;
+    final int prime = 31;
     int result = 1;
     result = prime * result + ((model == null) ? 0 : model.hashCode());
     result = prime * result + ((typeName == null) ? 0 : typeName.hashCode());
@@ -346,7 +346,7 @@ public class ModelElementTypeImpl implements ModelElementType {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    ModelElementTypeImpl other = (ModelElementTypeImpl) obj;
+    final ModelElementTypeImpl other = (ModelElementTypeImpl) obj;
     if (model == null) {
       if (other.model != null) {
         return false;

@@ -55,7 +55,7 @@ public class StringUtilTest {
   @Test
   public void testStringListJoin() {
     assertThat(joinCommaSeparatedList(null)).isNull();
-    List<String> testList = new ArrayList<String>();
+    final List<String> testList = new ArrayList<String>();
     assertThat(joinCommaSeparatedList(testList)).isEqualTo("");
     testList.add("a");
     assertThat(joinCommaSeparatedList(testList)).isEqualTo("a");
@@ -67,7 +67,7 @@ public class StringUtilTest {
     assertThat(joinCommaSeparatedList(testList)).isEqualTo("a, b, ${a,b,c}, foo");
     testList.add("#{bar(e,f,g)}");
     assertThat(joinCommaSeparatedList(testList)).isEqualTo("a, b, ${a,b,c}, foo, #{bar(e,f,g)}");
-    String testString = joinCommaSeparatedList(testList);
+    final String testString = joinCommaSeparatedList(testList);
     assertThat(splitCommaSeparatedList(testString)).containsAll(testList);
   }
 

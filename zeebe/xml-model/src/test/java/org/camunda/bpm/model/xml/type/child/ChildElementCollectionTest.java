@@ -56,21 +56,21 @@ public class ChildElementCollectionTest extends TestModelTest {
 
   @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
-    Object[][] models = {createModel(), parseModel(ChildElementCollectionTest.class)};
+    final Object[][] models = {createModel(), parseModel(ChildElementCollectionTest.class)};
     return Arrays.asList(models);
   }
 
   public static Object[] createModel() {
-    TestModelParser modelParser = new TestModelParser();
-    ModelInstance modelInstance = modelParser.getEmptyModel();
+    final TestModelParser modelParser = new TestModelParser();
+    final ModelInstance modelInstance = modelParser.getEmptyModel();
 
-    Animals animals = modelInstance.newInstance(Animals.class);
+    final Animals animals = modelInstance.newInstance(Animals.class);
     modelInstance.setDocumentElement(animals);
 
-    Bird tweety = createBird(modelInstance, "tweety", Gender.Female);
-    Bird daffy = createBird(modelInstance, "daffy", Gender.Male);
-    Bird daisy = createBird(modelInstance, "daisy", Gender.Female);
-    Bird plucky = createBird(modelInstance, "plucky", Gender.Male);
+    final Bird tweety = createBird(modelInstance, "tweety", Gender.Female);
+    final Bird daffy = createBird(modelInstance, "daffy", Gender.Male);
+    final Bird daisy = createBird(modelInstance, "daisy", Gender.Female);
+    final Bird plucky = createBird(modelInstance, "plucky", Gender.Male);
     createBird(modelInstance, "birdo", Gender.Female);
 
     tweety.setFlightInstructor(daffy);
@@ -132,7 +132,7 @@ public class ChildElementCollectionTest extends TestModelTest {
 
   @Test
   public void testParentElementType() {
-    ModelElementType flyingAnimalType = modelInstance.getModel().getType(FlyingAnimal.class);
+    final ModelElementType flyingAnimalType = modelInstance.getModel().getType(FlyingAnimal.class);
 
     assertThat(flightInstructorChild).hasParentElementType(flyingAnimalType);
     assertThat(flightPartnerRefCollection).hasParentElementType(flyingAnimalType);
@@ -143,7 +143,7 @@ public class ChildElementCollectionTest extends TestModelTest {
     assertThat(flightInstructorChild).hasSize(tweety, 1);
     assertThat(flightPartnerRefCollection).hasSize(tweety, 2);
 
-    FlightInstructor flightInstructor = flightInstructorChild.getChild(tweety);
+    final FlightInstructor flightInstructor = flightInstructorChild.getChild(tweety);
     assertThat(flightInstructor.getTextContent()).isEqualTo(daffy.getId());
 
     for (FlightPartnerRef flightPartnerRef : flightPartnerRefCollection.get(tweety)) {
@@ -165,18 +165,19 @@ public class ChildElementCollectionTest extends TestModelTest {
 
   @Test
   public void testChildElementsCollection() {
-    Collection<FlightPartnerRef> flightPartnerRefs = flightPartnerRefCollection.get(tweety);
+    final Collection<FlightPartnerRef> flightPartnerRefs = flightPartnerRefCollection.get(tweety);
 
-    Iterator<FlightPartnerRef> iterator = flightPartnerRefs.iterator();
-    FlightPartnerRef daisyRef = iterator.next();
-    FlightPartnerRef pluckyRef = iterator.next();
+    final Iterator<FlightPartnerRef> iterator = flightPartnerRefs.iterator();
+    final FlightPartnerRef daisyRef = iterator.next();
+    final FlightPartnerRef pluckyRef = iterator.next();
     assertThat(daisyRef.getTextContent()).isEqualTo(daisy.getId());
     assertThat(pluckyRef.getTextContent()).isEqualTo(plucky.getId());
 
-    FlightPartnerRef birdoRef = modelInstance.newInstance(FlightPartnerRef.class);
+    final FlightPartnerRef birdoRef = modelInstance.newInstance(FlightPartnerRef.class);
     birdoRef.setTextContent(birdo.getId());
 
-    Collection<FlightPartnerRef> flightPartners = Arrays.asList(birdoRef, daisyRef, pluckyRef);
+    final Collection<FlightPartnerRef> flightPartners =
+        Arrays.asList(birdoRef, daisyRef, pluckyRef);
 
     // directly test collection methods and not use the appropriate assertion methods
     assertThat(flightPartnerRefs.size()).isEqualTo(2);

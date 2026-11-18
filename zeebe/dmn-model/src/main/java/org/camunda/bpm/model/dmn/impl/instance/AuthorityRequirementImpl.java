@@ -70,7 +70,7 @@ public class AuthorityRequirementImpl extends DmnModelElementInstanceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(AuthorityRequirement.class, DMN_ELEMENT_AUTHORITY_REQUIREMENT)
             .namespaceUri(LATEST_DMN_NS)
@@ -82,7 +82,7 @@ public class AuthorityRequirementImpl extends DmnModelElementInstanceImpl
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     requiredDecisionRef =
         sequenceBuilder

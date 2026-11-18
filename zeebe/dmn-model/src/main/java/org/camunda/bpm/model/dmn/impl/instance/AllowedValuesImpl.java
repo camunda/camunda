@@ -33,7 +33,7 @@ public class AllowedValuesImpl extends UnaryTestsImpl implements AllowedValues {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(AllowedValues.class, DMN_ELEMENT_ALLOWED_VALUE)
             .namespaceUri(LATEST_DMN_NS)

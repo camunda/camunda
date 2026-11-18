@@ -52,25 +52,25 @@ public class FlyingAnimalTest extends TestModelTest {
 
   @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
-    Object[][] models = {createModel(), parseModel(FlyingAnimalTest.class)};
+    final Object[][] models = {createModel(), parseModel(FlyingAnimalTest.class)};
     return Arrays.asList(models);
   }
 
   public static Object[] createModel() {
-    TestModelParser modelParser = new TestModelParser();
-    ModelInstance modelInstance = modelParser.getEmptyModel();
+    final TestModelParser modelParser = new TestModelParser();
+    final ModelInstance modelInstance = modelParser.getEmptyModel();
 
-    Animals animals = modelInstance.newInstance(Animals.class);
+    final Animals animals = modelInstance.newInstance(Animals.class);
     modelInstance.setDocumentElement(animals);
 
     // add a tns namespace prefix for QName testing
     animals.getDomElement().registerNamespace("tns", MODEL_NAMESPACE);
 
-    FlyingAnimal tweety = createBird(modelInstance, "tweety", Gender.Female);
-    FlyingAnimal hedwig = createBird(modelInstance, "hedwig", Gender.Male);
-    FlyingAnimal birdo = createBird(modelInstance, "birdo", Gender.Female);
-    FlyingAnimal plucky = createBird(modelInstance, "plucky", Gender.Unknown);
-    FlyingAnimal fiffy = createBird(modelInstance, "fiffy", Gender.Female);
+    final FlyingAnimal tweety = createBird(modelInstance, "tweety", Gender.Female);
+    final FlyingAnimal hedwig = createBird(modelInstance, "hedwig", Gender.Male);
+    final FlyingAnimal birdo = createBird(modelInstance, "birdo", Gender.Female);
+    final FlyingAnimal plucky = createBird(modelInstance, "plucky", Gender.Unknown);
+    final FlyingAnimal fiffy = createBird(modelInstance, "fiffy", Gender.Female);
     createBird(modelInstance, "timmy", Gender.Male);
     createBird(modelInstance, "daisy", Gender.Female);
 
@@ -98,21 +98,21 @@ public class FlyingAnimalTest extends TestModelTest {
 
   @Test
   public void testSetWingspanAttributeByHelper() {
-    double wingspan = 2.123;
+    final double wingspan = 2.123;
     tweety.setWingspan(wingspan);
     assertThat(tweety.getWingspan()).isEqualTo(wingspan);
   }
 
   @Test
   public void testSetWingspanAttributeByAttributeName() {
-    Double wingspan = 2.123;
+    final Double wingspan = 2.123;
     tweety.setAttributeValue("wingspan", wingspan.toString(), false);
     assertThat(tweety.getWingspan()).isEqualTo(wingspan);
   }
 
   @Test
   public void testRemoveWingspanAttribute() {
-    double wingspan = 2.123;
+    final double wingspan = 2.123;
     tweety.setWingspan(wingspan);
     assertThat(tweety.getWingspan()).isEqualTo(wingspan);
 
@@ -147,7 +147,7 @@ public class FlyingAnimalTest extends TestModelTest {
 
   @Test
   public void testUpdateFlightInstructorByRemoveElement() {
-    Animals animals = (Animals) modelInstance.getDocumentElement();
+    final Animals animals = (Animals) modelInstance.getDocumentElement();
     animals.getAnimals().remove(hedwig);
     assertThat(tweety.getFlightInstructor()).isNull();
   }
@@ -212,11 +212,13 @@ public class FlyingAnimalTest extends TestModelTest {
   public void testAddFlightPartnerRefElementsByHelper() {
     assertThat(tweety.getFlightPartnerRefElements()).isNotEmpty().hasSize(4);
 
-    FlightPartnerRef timmyFlightPartnerRef = modelInstance.newInstance(FlightPartnerRef.class);
+    final FlightPartnerRef timmyFlightPartnerRef =
+        modelInstance.newInstance(FlightPartnerRef.class);
     timmyFlightPartnerRef.setTextContent(timmy.getId());
     tweety.getFlightPartnerRefElements().add(timmyFlightPartnerRef);
 
-    FlightPartnerRef daisyFlightPartnerRef = modelInstance.newInstance(FlightPartnerRef.class);
+    final FlightPartnerRef daisyFlightPartnerRef =
+        modelInstance.newInstance(FlightPartnerRef.class);
     daisyFlightPartnerRef.setTextContent(daisy.getId());
     tweety.getFlightPartnerRefElements().add(daisyFlightPartnerRef);
 
@@ -228,10 +230,11 @@ public class FlyingAnimalTest extends TestModelTest {
 
   @Test
   public void testFlightPartnerRefElementsByTextContent() {
-    Collection<FlightPartnerRef> flightPartnerRefElements = tweety.getFlightPartnerRefElements();
-    Collection<String> textContents = new ArrayList<String>();
+    final Collection<FlightPartnerRef> flightPartnerRefElements =
+        tweety.getFlightPartnerRefElements();
+    final Collection<String> textContents = new ArrayList<String>();
     for (FlightPartnerRef flightPartnerRefElement : flightPartnerRefElements) {
-      String textContent = flightPartnerRefElement.getTextContent();
+      final String textContent = flightPartnerRefElement.getTextContent();
       assertThat(textContent).isNotEmpty();
       textContents.add(textContent);
     }
@@ -243,7 +246,7 @@ public class FlyingAnimalTest extends TestModelTest {
 
   @Test
   public void testUpdateFlightPartnerRefElementsByTextContent() {
-    List<FlightPartnerRef> flightPartnerRefs =
+    final List<FlightPartnerRef> flightPartnerRefs =
         new ArrayList<FlightPartnerRef>(tweety.getFlightPartnerRefElements());
 
     flightPartnerRefs.get(0).setTextContent(timmy.getId());
@@ -254,7 +257,7 @@ public class FlyingAnimalTest extends TestModelTest {
 
   @Test
   public void testUpdateFlightPartnerRefElementsByRemoveElements() {
-    List<FlightPartnerRef> flightPartnerRefs =
+    final List<FlightPartnerRef> flightPartnerRefs =
         new ArrayList<FlightPartnerRef>(tweety.getFlightPartnerRefElements());
     tweety.getFlightPartnerRefElements().remove(flightPartnerRefs.get(1));
     tweety.getFlightPartnerRefElements().remove(flightPartnerRefs.get(3));
@@ -267,7 +270,7 @@ public class FlyingAnimalTest extends TestModelTest {
     assertThat(tweety.getFlightPartnerRefElements()).isEmpty();
 
     // should not affect animals collection
-    Animals animals = (Animals) modelInstance.getDocumentElement();
+    final Animals animals = (Animals) modelInstance.getDocumentElement();
     assertThat(animals.getAnimals()).isNotEmpty().hasSize(7);
   }
 }

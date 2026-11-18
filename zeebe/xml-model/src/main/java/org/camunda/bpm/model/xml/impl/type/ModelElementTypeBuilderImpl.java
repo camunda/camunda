@@ -68,32 +68,33 @@ public class ModelElementTypeBuilderImpl implements ModelElementTypeBuilder, Mod
   }
 
   public AttributeBuilder<Boolean> booleanAttribute(String attributeName) {
-    BooleanAttributeBuilder builder = new BooleanAttributeBuilder(attributeName, modelType);
+    final BooleanAttributeBuilder builder = new BooleanAttributeBuilder(attributeName, modelType);
     modelBuildOperations.add(builder);
     return builder;
   }
 
   public StringAttributeBuilder stringAttribute(String attributeName) {
-    StringAttributeBuilderImpl builder = new StringAttributeBuilderImpl(attributeName, modelType);
+    final StringAttributeBuilderImpl builder =
+        new StringAttributeBuilderImpl(attributeName, modelType);
     modelBuildOperations.add(builder);
     return builder;
   }
 
   public AttributeBuilder<Integer> integerAttribute(String attributeName) {
-    IntegerAttributeBuilder builder = new IntegerAttributeBuilder(attributeName, modelType);
+    final IntegerAttributeBuilder builder = new IntegerAttributeBuilder(attributeName, modelType);
     modelBuildOperations.add(builder);
     return builder;
   }
 
   public AttributeBuilder<Double> doubleAttribute(String attributeName) {
-    DoubleAttributeBuilder builder = new DoubleAttributeBuilder(attributeName, modelType);
+    final DoubleAttributeBuilder builder = new DoubleAttributeBuilder(attributeName, modelType);
     modelBuildOperations.add(builder);
     return builder;
   }
 
   public <V extends Enum<V>> AttributeBuilder<V> enumAttribute(
       String attributeName, Class<V> enumType) {
-    EnumAttributeBuilder<V> builder =
+    final EnumAttributeBuilder<V> builder =
         new EnumAttributeBuilder<V>(attributeName, modelType, enumType);
     modelBuildOperations.add(builder);
     return builder;
@@ -101,7 +102,7 @@ public class ModelElementTypeBuilderImpl implements ModelElementTypeBuilder, Mod
 
   public <V extends Enum<V>> AttributeBuilder<V> namedEnumAttribute(
       String attributeName, Class<V> enumType) {
-    NamedEnumAttributeBuilder<V> builder =
+    final NamedEnumAttributeBuilder<V> builder =
         new NamedEnumAttributeBuilder<V>(attributeName, modelType, enumType);
     modelBuildOperations.add(builder);
     return builder;
@@ -118,7 +119,7 @@ public class ModelElementTypeBuilderImpl implements ModelElementTypeBuilder, Mod
   }
 
   public SequenceBuilder sequence() {
-    SequenceBuilderImpl builder = new SequenceBuilderImpl(modelType);
+    final SequenceBuilderImpl builder = new SequenceBuilderImpl(modelType);
     modelBuildOperations.add(builder);
     return builder;
   }
@@ -127,7 +128,7 @@ public class ModelElementTypeBuilderImpl implements ModelElementTypeBuilder, Mod
 
     // build type hierarchy
     if (extendedType != null) {
-      ModelElementTypeImpl extendedModelElementType =
+      final ModelElementTypeImpl extendedModelElementType =
           (ModelElementTypeImpl) model.getType(extendedType);
       if (extendedModelElementType == null) {
         throw new ModelException(

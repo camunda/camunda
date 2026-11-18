@@ -51,14 +51,14 @@ public class ModelBuilderImpl extends ModelBuilder {
 
   public ModelElementTypeBuilder defineType(
       Class<? extends ModelElementInstance> modelInstanceType, String typeName) {
-    ModelElementTypeBuilderImpl typeBuilder =
+    final ModelElementTypeBuilderImpl typeBuilder =
         new ModelElementTypeBuilderImpl(modelInstanceType, typeName, model);
     typeBuilders.add(typeBuilder);
     return typeBuilder;
   }
 
   public ModelElementType defineGenericType(String typeName, String typeNamespaceUri) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         defineType(ModelElementInstance.class, typeName)
             .namespaceUri(typeNamespaceUri)
             .instanceProvider(

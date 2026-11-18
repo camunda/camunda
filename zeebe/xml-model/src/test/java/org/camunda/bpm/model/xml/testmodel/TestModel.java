@@ -30,7 +30,7 @@ public final class TestModel {
 
   public static Model getTestModel() {
     if (model == null) {
-      ModelBuilder modelBuilder = getModelBuilder();
+      final ModelBuilder modelBuilder = getModelBuilder();
 
       Animals.registerType(modelBuilder);
       Animal.registerType(modelBuilder);

@@ -34,7 +34,7 @@ public class RequiredKnowledgeReferenceImpl extends DmnElementReferenceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(RequiredKnowledgeReference.class, DMN_ELEMENT_REQUIRED_KNOWLEDGE)
             .namespaceUri(LATEST_DMN_NS)

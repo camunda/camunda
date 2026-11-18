@@ -30,7 +30,7 @@ public class ModelBuilderTest {
 
   @Test
   public void shouldSetModelName() {
-    Model model = ModelBuilder.createInstance(MODEL_NAME).build();
+    final Model model = ModelBuilder.createInstance(MODEL_NAME).build();
 
     assertThat(model.getModelName()).isEqualTo(MODEL_NAME);
   }

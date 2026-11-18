@@ -52,21 +52,21 @@ public class ModelElementInstanceTest extends TestModelTest {
 
   @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
-    Object[][] models = {createModel(), parseModel(ModelElementInstanceTest.class)};
+    final Object[][] models = {createModel(), parseModel(ModelElementInstanceTest.class)};
     return Arrays.asList(models);
   }
 
   private static Object[] createModel() {
-    TestModelParser modelParser = new TestModelParser();
-    ModelInstance modelInstance = modelParser.getEmptyModel();
+    final TestModelParser modelParser = new TestModelParser();
+    final ModelInstance modelInstance = modelParser.getEmptyModel();
 
-    Animals animals = modelInstance.newInstance(Animals.class);
+    final Animals animals = modelInstance.newInstance(Animals.class);
     modelInstance.setDocumentElement(animals);
 
     createBird(modelInstance, "tweety", Gender.Female);
-    Bird donald = createBird(modelInstance, "donald", Gender.Male);
-    Bird daisy = createBird(modelInstance, "daisy", Gender.Female);
-    Bird hedwig = createBird(modelInstance, "hedwig", Gender.Male);
+    final Bird donald = createBird(modelInstance, "donald", Gender.Male);
+    final Bird daisy = createBird(modelInstance, "daisy", Gender.Female);
+    final Bird hedwig = createBird(modelInstance, "hedwig", Gender.Male);
 
     donald.setTextContent("some text content");
     daisy.setTextContent("\n        some text content with outer line breaks\n    ");
@@ -88,7 +88,7 @@ public class ModelElementInstanceTest extends TestModelTest {
 
   @Test
   public void testAttribute() {
-    String tweetyName = tweety.getId() + "-name";
+    final String tweetyName = tweety.getId() + "-name";
     tweety.setAttributeValue("name", tweetyName);
     assertThat(tweety.getAttributeValue("name")).isEqualTo(tweetyName);
     tweety.removeAttribute("name");
@@ -97,7 +97,7 @@ public class ModelElementInstanceTest extends TestModelTest {
 
   @Test
   public void testAttributeWithNamespace() {
-    String tweetyName = tweety.getId() + "-name";
+    final String tweetyName = tweety.getId() + "-name";
     tweety.setAttributeValueNs(MODEL_NAMESPACE, "name", tweetyName);
     assertThat(tweety.getAttributeValue("name")).isEqualTo(tweetyName);
     assertThat(tweety.getAttributeValueNs(MODEL_NAMESPACE, "name")).isEqualTo(tweetyName);
@@ -108,7 +108,7 @@ public class ModelElementInstanceTest extends TestModelTest {
 
   @Test
   public void TestElementType() {
-    ModelElementType birdType = modelInstance.getModel().getType(Bird.class);
+    final ModelElementType birdType = modelInstance.getModel().getType(Bird.class);
     assertThat(tweety.getElementType()).isEqualTo(birdType);
     assertThat(donald.getElementType()).isEqualTo(birdType);
     assertThat(daisy.getElementType()).isEqualTo(birdType);
@@ -122,7 +122,7 @@ public class ModelElementInstanceTest extends TestModelTest {
     assertThat(daisy.getParentElement()).isEqualTo(animals);
     assertThat(hedwig.getParentElement()).isEqualTo(animals);
 
-    Bird timmy = modelInstance.newInstance(Bird.class);
+    final Bird timmy = modelInstance.newInstance(Bird.class);
     timmy.setId("timmy");
     timmy.setGender(Gender.Male);
     assertThat(timmy.getParentElement()).isNull();
@@ -138,7 +138,7 @@ public class ModelElementInstanceTest extends TestModelTest {
 
   @Test
   public void testReplaceWithElement() {
-    Bird timmy = modelInstance.newInstance(Bird.class);
+    final Bird timmy = modelInstance.newInstance(Bird.class);
     timmy.setId("timmy");
     timmy.setGender(Gender.Male);
 
@@ -152,7 +152,7 @@ public class ModelElementInstanceTest extends TestModelTest {
   @Test
   public void testReplaceRootElement() {
     assertThat(((Animals) modelInstance.getDocumentElement()).getAnimals()).isNotEmpty();
-    Animals newAnimals = modelInstance.newInstance(Animals.class);
+    final Animals newAnimals = modelInstance.newInstance(Animals.class);
     modelInstance.setDocumentElement(newAnimals);
     assertThat(((Animals) modelInstance.getDocumentElement()).getAnimals()).isEmpty();
   }
@@ -165,7 +165,7 @@ public class ModelElementInstanceTest extends TestModelTest {
     assertThat(hedwig.getTextContent())
         .isEqualTo("some text content with inner\n        line breaks");
 
-    String testContent = "\n test content \n \n \t camunda.org \t    \n   ";
+    final String testContent = "\n test content \n \n \t camunda.org \t    \n   ";
     tweety.setTextContent(testContent);
     assertThat(tweety.getTextContent()).isEqualTo(testContent.trim());
   }
@@ -179,7 +179,7 @@ public class ModelElementInstanceTest extends TestModelTest {
     assertThat(hedwig.getRawTextContent())
         .isEqualTo("\n        some text content with inner\n        line breaks\n    ");
 
-    String testContent = "\n test content \n \n \t camunda.org \t    \n   ";
+    final String testContent = "\n test content \n \n \t camunda.org \t    \n   ";
     tweety.setTextContent(testContent);
     assertThat(tweety.getRawTextContent()).isEqualTo(testContent);
   }

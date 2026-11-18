@@ -78,7 +78,7 @@ public class KnowledgeSourceImpl extends DrgElementImpl implements KnowledgeSour
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(KnowledgeSource.class, DMN_ELEMENT_KNOWLEDGE_SOURCE)
             .namespaceUri(LATEST_DMN_NS)
@@ -92,7 +92,7 @@ public class KnowledgeSourceImpl extends DrgElementImpl implements KnowledgeSour
 
     locationUriAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_LOCATION_URI).build();
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     authorityRequirementCollection =
         sequenceBuilder.elementCollection(AuthorityRequirement.class).build();

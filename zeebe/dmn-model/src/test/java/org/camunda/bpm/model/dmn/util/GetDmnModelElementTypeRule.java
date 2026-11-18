@@ -39,7 +39,7 @@ public class GetDmnModelElementTypeRule extends TestWatcher implements GetModelE
     String className = description.getClassName();
     assertThat(className).endsWith("Test");
     className = className.substring(0, className.length() - "Test".length());
-    Class<? extends ModelElementInstance> instanceClass;
+    final Class<? extends ModelElementInstance> instanceClass;
     try {
       instanceClass = (Class<? extends ModelElementInstance>) Class.forName(className);
     } catch (ClassNotFoundException e) {

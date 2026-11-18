@@ -33,7 +33,7 @@ public class InputDataReferenceImpl extends DmnElementReferenceImpl implements I
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InputDataReference.class, DMN_ELEMENT_INPUT_DATA_REFERENCE)
             .namespaceUri(LATEST_DMN_NS)

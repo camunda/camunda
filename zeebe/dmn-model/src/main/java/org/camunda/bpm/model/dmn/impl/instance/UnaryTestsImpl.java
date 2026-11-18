@@ -58,7 +58,7 @@ public class UnaryTestsImpl extends DmnElementImpl implements UnaryTests {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(UnaryTests.class, DMN_ELEMENT_UNARY_TESTS)
             .namespaceUri(LATEST_DMN_NS)
@@ -73,7 +73,7 @@ public class UnaryTestsImpl extends DmnElementImpl implements UnaryTests {
     expressionLanguageAttribute =
         typeBuilder.stringAttribute(DMN_ATTRIBUTE_EXPRESSION_LANGUAGE).build();
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     textChild = sequenceBuilder.element(Text.class).build();
 

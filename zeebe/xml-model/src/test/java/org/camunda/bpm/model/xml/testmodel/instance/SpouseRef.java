@@ -30,7 +30,7 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 public class SpouseRef extends ModelElementInstanceImpl {
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(SpouseRef.class, ELEMENT_NAME_SPOUSE_REF)
             .namespaceUri(MODEL_NAMESPACE)

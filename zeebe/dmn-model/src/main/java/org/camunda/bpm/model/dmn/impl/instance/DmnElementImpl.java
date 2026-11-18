@@ -76,7 +76,7 @@ public abstract class DmnElementImpl extends DmnModelElementInstanceImpl impleme
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DmnElement.class, DMN_ELEMENT)
             .namespaceUri(LATEST_DMN_NS)
@@ -86,7 +86,7 @@ public abstract class DmnElementImpl extends DmnModelElementInstanceImpl impleme
 
     labelAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_LABEL).build();
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     descriptionChild = sequenceBuilder.element(Description.class).build();
 

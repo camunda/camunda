@@ -58,7 +58,7 @@ public class TextAnnotationImpl extends ArtifactImpl implements TextAnnotation {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(TextAnnotation.class, DMN_ELEMENT_TEXT_ANNOTATION)
             .namespaceUri(LATEST_DMN_NS)
@@ -73,7 +73,7 @@ public class TextAnnotationImpl extends ArtifactImpl implements TextAnnotation {
     textFormatAttribute =
         typeBuilder.stringAttribute(DMN_ATTRIBUTE_TEXT_FORMAT).defaultValue("text/plain").build();
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     textChild = sequenceBuilder.element(Text.class).build();
 

@@ -45,7 +45,7 @@ public class InformationItemImpl extends NamedElementImpl implements Information
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InformationItem.class, DMN_ELEMENT_INFORMATION_ITEM)
             .namespaceUri(LATEST_DMN_NS)

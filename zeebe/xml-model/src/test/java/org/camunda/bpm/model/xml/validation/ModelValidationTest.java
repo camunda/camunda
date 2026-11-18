@@ -37,16 +37,17 @@ public class ModelValidationTest {
 
   @Before
   public void parseModel() {
-    TestModelParser modelParser = new TestModelParser();
-    String testXml = "org/camunda/bpm/model/xml/testmodel/instance/UnknownAnimalTest.xml";
-    InputStream testXmlAsStream = this.getClass().getClassLoader().getResourceAsStream(testXml);
+    final TestModelParser modelParser = new TestModelParser();
+    final String testXml = "org/camunda/bpm/model/xml/testmodel/instance/UnknownAnimalTest.xml";
+    final InputStream testXmlAsStream =
+        this.getClass().getClassLoader().getResourceAsStream(testXml);
 
     modelInstance = modelParser.parseModelFromStream(testXmlAsStream);
   }
 
   @Test
   public void shouldValidateWithEmptyList() {
-    ValidationResults results = modelInstance.validate(List.of());
+    final ValidationResults results = modelInstance.validate(List.of());
 
     assertThat(results).isNotNull();
     assertThat(results.hasErrors()).isFalse();
@@ -54,9 +55,9 @@ public class ModelValidationTest {
 
   @Test
   public void shouldCollectWarnings() {
-    List<ModelElementValidator<?>> validators = List.of(new IsAdultWarner());
+    final List<ModelElementValidator<?>> validators = List.of(new IsAdultWarner());
 
-    ValidationResults results = modelInstance.validate(validators);
+    final ValidationResults results = modelInstance.validate(validators);
 
     assertThat(results).isNotNull();
     assertThat(results.hasErrors()).isFalse();
@@ -66,9 +67,9 @@ public class ModelValidationTest {
 
   @Test
   public void shouldCollectErrors() {
-    List<ModelElementValidator<?>> validators = List.of(new IllegalBirdValidator("tweety"));
+    final List<ModelElementValidator<?>> validators = List.of(new IllegalBirdValidator("tweety"));
 
-    ValidationResults results = modelInstance.validate(validators);
+    final ValidationResults results = modelInstance.validate(validators);
 
     assertThat(results).isNotNull();
     assertThat(results.hasErrors()).isTrue();
@@ -78,11 +79,11 @@ public class ModelValidationTest {
 
   @Test
   public void shouldWriteResults() {
-    List<ModelElementValidator<?>> validators = List.of(new IllegalBirdValidator("tweety"));
+    final List<ModelElementValidator<?>> validators = List.of(new IllegalBirdValidator("tweety"));
 
-    ValidationResults results = modelInstance.validate(validators);
+    final ValidationResults results = modelInstance.validate(validators);
 
-    StringWriter stringWriter = new StringWriter();
+    final StringWriter stringWriter = new StringWriter();
     results.write(stringWriter, new TestResultFormatter());
 
     assertThat(stringWriter.toString()).isEqualTo("tweety\n\tERROR (20): Bird tweety is illegal\n");
@@ -91,14 +92,14 @@ public class ModelValidationTest {
   @Test
   public void shouldWriteResultsUntilMaxSize() {
     // Given
-    int maxSize = 120;
+    final int maxSize = 120;
 
     // adds 7 elements with warnings of size 30, and an element prefix of size 8
     // total size for 1 warning = 38
-    List<ModelElementValidator<?>> validators = List.of(new IsAdultWarner());
+    final List<ModelElementValidator<?>> validators = List.of(new IsAdultWarner());
 
-    var results = modelInstance.validate(validators);
-    var stringWriter = new StringWriter();
+    final var results = modelInstance.validate(validators);
+    final var stringWriter = new StringWriter();
 
     // When
     results.write(stringWriter, new TestResultFormatter(), maxSize);
@@ -116,16 +117,16 @@ public class ModelValidationTest {
   @Test
   public void shouldCombineDifferentValidationResults() {
     // Given
-    int maxSize = 120;
+    final int maxSize = 120;
 
     // has 7 warnings
-    var results1 = modelInstance.validate(List.of(new IsAdultWarner()));
+    final var results1 = modelInstance.validate(List.of(new IsAdultWarner()));
     // has 1 error
-    var results2 = modelInstance.validate(List.of(new IllegalBirdValidator("tweety")));
-    var stringWriter = new StringWriter();
+    final var results2 = modelInstance.validate(List.of(new IllegalBirdValidator("tweety")));
+    final var stringWriter = new StringWriter();
 
     // When
-    var results = new ModelValidationResultsImpl(results1, results2);
+    final var results = new ModelValidationResultsImpl(results1, results2);
     results.write(stringWriter, new TestResultFormatter(), maxSize);
 
     // it has enough size to print 3 warnings, but it will only print 2,
@@ -140,26 +141,26 @@ public class ModelValidationTest {
 
   @Test
   public void shouldReturnResults() {
-    List<ModelElementValidator<?>> validators =
+    final List<ModelElementValidator<?>> validators =
         List.of(new IllegalBirdValidator("tweety"), new IsAdultWarner());
 
-    ValidationResults results = modelInstance.validate(validators);
+    final ValidationResults results = modelInstance.validate(validators);
 
     assertThat(results.getErrorCount()).isEqualTo(1);
     assertThat(results.getWarinigCount()).isEqualTo(7);
 
-    var resultsByElement = results.getResults();
+    final var resultsByElement = results.getResults();
     assertThat(resultsByElement.size()).isEqualTo(7);
 
     for (var resultEntry : resultsByElement.entrySet()) {
-      Bird element = (Bird) resultEntry.getKey();
-      List<ValidationResult> validationResults = resultEntry.getValue();
+      final Bird element = (Bird) resultEntry.getKey();
+      final List<ValidationResult> validationResults = resultEntry.getValue();
       assertThat(element).isNotNull();
       assertThat(validationResults).isNotNull();
 
       if (element.getId().equals("tweety")) {
         assertThat(validationResults.size()).isEqualTo(2);
-        ValidationResult error = validationResults.remove(0);
+        final ValidationResult error = validationResults.remove(0);
         assertThat(error.getType()).isEqualTo(ValidationResultType.ERROR);
         assertThat(error.getCode()).isEqualTo(20);
         assertThat(error.getMessage()).isEqualTo("Bird tweety is illegal");
@@ -168,7 +169,7 @@ public class ModelValidationTest {
         assertThat(validationResults.size()).isEqualTo(1);
       }
 
-      ValidationResult warning = validationResults.get(0);
+      final ValidationResult warning = validationResults.get(0);
       assertThat(warning.getType()).isEqualTo(ValidationResultType.WARNING);
       assertThat(warning.getCode()).isEqualTo(10);
       assertThat(warning.getMessage()).isEqualTo("Is not an adult");

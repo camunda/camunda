@@ -86,7 +86,7 @@ public class ItemDefinitionImpl extends NamedElementImpl implements ItemDefiniti
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ItemDefinition.class, DMN_ELEMENT_ITEM_DEFINITION)
             .namespaceUri(LATEST_DMN_NS)
@@ -103,7 +103,7 @@ public class ItemDefinitionImpl extends NamedElementImpl implements ItemDefiniti
     isCollectionAttribute =
         typeBuilder.booleanAttribute(DMN_ATTRIBUTE_IS_COLLECTION).defaultValue(false).build();
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     typeRefChild = sequenceBuilder.element(TypeRef.class).build();
 

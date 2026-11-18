@@ -46,7 +46,7 @@ public class InputDataImpl extends DrgElementImpl implements InputData {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InputData.class, DMN_ELEMENT_INPUT_DATA)
             .namespaceUri(LATEST_DMN_NS)
@@ -58,7 +58,7 @@ public class InputDataImpl extends DrgElementImpl implements InputData {
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     informationItemChild = sequenceBuilder.element(InformationItem.class).build();
 

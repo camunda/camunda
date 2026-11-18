@@ -48,8 +48,8 @@ public class UnknownAnimalTest {
   @Before
   public void parseModel() {
     modelParser = new TestModelParser();
-    String testXml = this.getClass().getSimpleName() + ".xml";
-    InputStream testXmlAsStream = this.getClass().getResourceAsStream(testXml);
+    final String testXml = this.getClass().getSimpleName() + ".xml";
+    final InputStream testXmlAsStream = this.getClass().getResourceAsStream(testXml);
     modelInstance = modelParser.parseModelFromStream(testXmlAsStream);
     wanda = modelInstance.getModelElementById("wanda");
     flipper = modelInstance.getModelElementById("flipper");
@@ -57,7 +57,7 @@ public class UnknownAnimalTest {
 
   @After
   public void validateModel() {
-    DomDocument document = modelInstance.getDocument();
+    final DomDocument document = modelInstance.getDocument();
     modelParser.validateModel(document);
   }
 
@@ -76,20 +76,20 @@ public class UnknownAnimalTest {
 
   @Test
   public void testGetUnknownAnimalByType() {
-    ModelInstanceImpl modelInstanceImpl = (ModelInstanceImpl) modelInstance;
-    ModelElementType unknownAnimalType =
+    final ModelInstanceImpl modelInstanceImpl = (ModelInstanceImpl) modelInstance;
+    final ModelElementType unknownAnimalType =
         modelInstanceImpl.registerGenericType(MODEL_NAMESPACE, "unknownAnimal");
-    List<ModelElementInstance> unknownAnimals =
+    final List<ModelElementInstance> unknownAnimals =
         new ArrayList<ModelElementInstance>(
             modelInstance.getModelElementsByType(unknownAnimalType));
     assertThat(unknownAnimals).hasSize(2);
 
-    ModelElementInstance wanda = unknownAnimals.get(0);
+    final ModelElementInstance wanda = unknownAnimals.get(0);
     assertThat(wanda.getAttributeValue("id")).isEqualTo("wanda");
     assertThat(wanda.getAttributeValue("gender")).isEqualTo("Female");
     assertThat(wanda.getAttributeValue("species")).isEqualTo("fish");
 
-    ModelElementInstance flipper = unknownAnimals.get(1);
+    final ModelElementInstance flipper = unknownAnimals.get(1);
     assertThat(flipper.getAttributeValue("id")).isEqualTo("flipper");
     assertThat(flipper.getAttributeValue("gender")).isEqualTo("Male");
     assertThat(flipper.getAttributeValue("species")).isEqualTo("dolphin");
@@ -97,21 +97,21 @@ public class UnknownAnimalTest {
 
   @Test
   public void testAddUnknownAnimal() {
-    ModelInstanceImpl modelInstanceImpl = (ModelInstanceImpl) modelInstance;
-    ModelElementType unknownAnimalType =
+    final ModelInstanceImpl modelInstanceImpl = (ModelInstanceImpl) modelInstance;
+    final ModelElementType unknownAnimalType =
         modelInstanceImpl.registerGenericType(MODEL_NAMESPACE, "unknownAnimal");
-    ModelElementType animalsType = modelInstance.getModel().getType(Animals.class);
-    ModelElementType animalType = modelInstance.getModel().getType(Animal.class);
+    final ModelElementType animalsType = modelInstance.getModel().getType(Animals.class);
+    final ModelElementType animalType = modelInstance.getModel().getType(Animal.class);
 
-    ModelElementInstance unknownAnimal = modelInstance.newInstance(unknownAnimalType);
+    final ModelElementInstance unknownAnimal = modelInstance.newInstance(unknownAnimalType);
     assertThat(unknownAnimal).isNotNull();
     unknownAnimal.setAttributeValue("id", "new-animal", true);
     unknownAnimal.setAttributeValue("gender", "Unknown");
     unknownAnimal.setAttributeValue("species", "unknown");
 
-    ModelElementInstance animals =
+    final ModelElementInstance animals =
         modelInstance.getModelElementsByType(animalsType).iterator().next();
-    List<ModelElementInstance> childElementsByType =
+    final List<ModelElementInstance> childElementsByType =
         new ArrayList<ModelElementInstance>(animals.getChildElementsByType(animalType));
     animals.insertElementAfter(unknownAnimal, childElementsByType.get(2));
     assertThat(animals.getChildElementsByType(unknownAnimalType)).hasSize(3);
@@ -128,7 +128,7 @@ public class UnknownAnimalTest {
 
   @Test
   public void testAddRelationshipDefinitionToUnknownAnimal() {
-    RelationshipDefinition friendRelationshipDefinition =
+    final RelationshipDefinition friendRelationshipDefinition =
         modelInstance.newInstance(FriendRelationshipDefinition.class);
     friendRelationshipDefinition.setId("friend-relationship");
     friendRelationshipDefinition.setAttributeValue("animalRef", flipper.getAttributeValue("id"));
@@ -142,8 +142,8 @@ public class UnknownAnimalTest {
 
     wanda.insertElementAfter(friendRelationshipDefinition, null);
 
-    Animal tweety = modelInstance.getModelElementById("tweety");
-    RelationshipDefinition childRelationshipDefinition =
+    final Animal tweety = modelInstance.getModelElementById("tweety");
+    final RelationshipDefinition childRelationshipDefinition =
         modelInstance.newInstance(ChildRelationshipDefinition.class);
     childRelationshipDefinition.setId("child-relationship");
     childRelationshipDefinition.setAnimal(tweety);
@@ -168,7 +168,7 @@ public class UnknownAnimalTest {
 
   @Test
   public void testReplaceChildOfUnknownAnimal() {
-    ModelElementInstance yogi = modelInstance.newInstance(flipper.getElementType());
+    final ModelElementInstance yogi = modelInstance.newInstance(flipper.getElementType());
     yogi.setAttributeValue("id", "yogi-bear", true);
     yogi.setAttributeValue("gender", "Male");
     yogi.setAttributeValue("species", "bear");

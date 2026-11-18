@@ -44,7 +44,7 @@ public abstract class NamedElementImpl extends DmnElementImpl implements NamedEl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(NamedElement.class, DMN_ELEMENT_NAMED_ELEMENT)
             .namespaceUri(LATEST_DMN_NS)

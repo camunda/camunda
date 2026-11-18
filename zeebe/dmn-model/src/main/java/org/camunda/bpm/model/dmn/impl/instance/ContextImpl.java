@@ -43,7 +43,7 @@ public class ContextImpl extends ExpressionImpl implements Context {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Context.class, DMN_ELEMENT_CONTEXT)
             .namespaceUri(LATEST_DMN_NS)
@@ -55,7 +55,7 @@ public class ContextImpl extends ExpressionImpl implements Context {
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     contextEntryCollection = sequenceBuilder.elementCollection(ContextEntry.class).build();
 

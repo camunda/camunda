@@ -66,7 +66,7 @@ public class DecisionServiceImpl extends NamedElementImpl implements DecisionSer
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DecisionService.class, DMN_ELEMENT_DECISION_SERVICE)
             .namespaceUri(LATEST_DMN_NS)
@@ -78,7 +78,7 @@ public class DecisionServiceImpl extends NamedElementImpl implements DecisionSer
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     outputDecisionRefCollection =
         sequenceBuilder

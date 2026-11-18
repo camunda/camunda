@@ -33,7 +33,7 @@ public class InputValuesImpl extends UnaryTestsImpl implements InputValues {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InputValues.class, DMN_ELEMENT_INPUT_VALUES)
             .namespaceUri(LATEST_DMN_NS)

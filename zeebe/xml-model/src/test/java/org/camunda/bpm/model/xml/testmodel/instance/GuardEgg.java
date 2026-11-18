@@ -32,7 +32,7 @@ public class GuardEgg extends ModelElementInstanceImpl {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(GuardEgg.class, ELEMENT_NAME_GUARD_EGG)
             .namespaceUri(MODEL_NAMESPACE)

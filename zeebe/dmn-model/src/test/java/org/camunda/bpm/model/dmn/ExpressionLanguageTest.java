@@ -42,61 +42,61 @@ public class ExpressionLanguageTest extends DmnModelTest {
   @Test
   @DmnModelResource(resource = EXPRESSION_LANGUAGE_DMN)
   public void shouldReadExpressionLanguage() {
-    Definitions definitions = modelInstance.getDefinitions();
+    final Definitions definitions = modelInstance.getDefinitions();
     assertThat(definitions.getExpressionLanguage()).isEqualTo(EXPRESSION_LANGUAGE);
 
-    DecisionTable decisionTable = modelInstance.getModelElementById("decisionTable");
-    Input input = decisionTable.getInputs().iterator().next();
+    final DecisionTable decisionTable = modelInstance.getModelElementById("decisionTable");
+    final Input input = decisionTable.getInputs().iterator().next();
     assertThat(input.getInputExpression().getExpressionLanguage()).isEqualTo(EXPRESSION_LANGUAGE);
     assertThat(input.getInputValues().getExpressionLanguage()).isEqualTo(EXPRESSION_LANGUAGE);
-    Output output = decisionTable.getOutputs().iterator().next();
+    final Output output = decisionTable.getOutputs().iterator().next();
     assertThat(output.getOutputValues().getExpressionLanguage()).isEqualTo(EXPRESSION_LANGUAGE);
 
-    Rule rule = decisionTable.getRules().iterator().next();
-    InputEntry inputEntry = rule.getInputEntries().iterator().next();
+    final Rule rule = decisionTable.getRules().iterator().next();
+    final InputEntry inputEntry = rule.getInputEntries().iterator().next();
     assertThat(inputEntry.getExpressionLanguage()).isEqualTo(EXPRESSION_LANGUAGE);
-    OutputEntry outputEntry = rule.getOutputEntries().iterator().next();
+    final OutputEntry outputEntry = rule.getOutputEntries().iterator().next();
     assertThat(outputEntry.getExpressionLanguage()).isEqualTo(EXPRESSION_LANGUAGE);
   }
 
   @Test
   public void shouldWriteExpressionLanguage() throws Exception {
     modelInstance = Dmn.createEmptyModel();
-    Definitions definitions = generateNamedElement(Definitions.class, "definitions");
+    final Definitions definitions = generateNamedElement(Definitions.class, "definitions");
     definitions.setNamespace(TEST_NAMESPACE);
     definitions.setExpressionLanguage(EXPRESSION_LANGUAGE);
     modelInstance.setDocumentElement(definitions);
 
-    Decision decision = generateNamedElement(Decision.class, "Check Order");
+    final Decision decision = generateNamedElement(Decision.class, "Check Order");
     definitions.addChildElement(decision);
 
-    DecisionTable decisionTable = generateElement(DecisionTable.class);
+    final DecisionTable decisionTable = generateElement(DecisionTable.class);
     decision.addChildElement(decisionTable);
 
-    Input input = generateElement(Input.class);
+    final Input input = generateElement(Input.class);
     decisionTable.getInputs().add(input);
-    InputExpression inputExpression = generateElement(InputExpression.class);
+    final InputExpression inputExpression = generateElement(InputExpression.class);
     inputExpression.setExpressionLanguage(EXPRESSION_LANGUAGE);
     input.setInputExpression(inputExpression);
-    InputValues inputValues = generateElement(InputValues.class);
+    final InputValues inputValues = generateElement(InputValues.class);
     inputValues.setExpressionLanguage(EXPRESSION_LANGUAGE);
     inputValues.setText(generateElement(Text.class));
     input.setInputValues(inputValues);
 
-    Output output = generateElement(Output.class);
+    final Output output = generateElement(Output.class);
     decisionTable.getOutputs().add(output);
-    OutputValues outputValues = generateElement(OutputValues.class);
+    final OutputValues outputValues = generateElement(OutputValues.class);
     outputValues.setExpressionLanguage(EXPRESSION_LANGUAGE);
     outputValues.setText(generateElement(Text.class));
     output.setOutputValues(outputValues);
 
-    Rule rule = generateElement(Rule.class);
+    final Rule rule = generateElement(Rule.class);
     decisionTable.getRules().add(rule);
-    InputEntry inputEntry = generateElement(InputEntry.class);
+    final InputEntry inputEntry = generateElement(InputEntry.class);
     inputEntry.setExpressionLanguage(EXPRESSION_LANGUAGE);
     inputEntry.setText(generateElement(Text.class));
     rule.getInputEntries().add(inputEntry);
-    OutputEntry outputEntry = generateElement(OutputEntry.class);
+    final OutputEntry outputEntry = generateElement(OutputEntry.class);
     outputEntry.setExpressionLanguage(EXPRESSION_LANGUAGE);
     rule.getOutputEntries().add(outputEntry);
 

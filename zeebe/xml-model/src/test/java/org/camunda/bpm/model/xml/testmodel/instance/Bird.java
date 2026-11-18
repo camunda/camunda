@@ -44,7 +44,7 @@ public class Bird extends FlyingAnimal {
   protected static ChildElement<Wings> wings;
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Bird.class, ELEMENT_NAME_BIRD)
             .namespaceUri(MODEL_NAMESPACE)
@@ -56,7 +56,7 @@ public class Bird extends FlyingAnimal {
                   }
                 });
 
-    SequenceBuilder sequence = typeBuilder.sequence();
+    final SequenceBuilder sequence = typeBuilder.sequence();
 
     eggColl = sequence.elementCollection(Egg.class).minOccurs(0).maxOccurs(6).build();
 

@@ -72,7 +72,7 @@ public class InputClauseImpl extends DmnElementImpl implements InputClause {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InputClause.class, DMN_ELEMENT_INPUT_CLAUSE)
             .namespaceUri(LATEST_DMN_NS)
@@ -84,7 +84,7 @@ public class InputClauseImpl extends DmnElementImpl implements InputClause {
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     inputExpressionChild = sequenceBuilder.element(InputExpression.class).required().build();
 

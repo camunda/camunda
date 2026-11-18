@@ -33,7 +33,7 @@ public class OutputValuesImpl extends UnaryTestsImpl implements OutputValues {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(OutputValues.class, DMN_ELEMENT_OUTPUT_VALUES)
             .namespaceUri(LATEST_DMN_NS)

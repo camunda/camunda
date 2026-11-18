@@ -33,7 +33,7 @@ public class VariableImpl extends InformationItemImpl implements Variable {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Variable.class, DMN_ELEMENT_VARIABLE)
             .namespaceUri(LATEST_DMN_NS)

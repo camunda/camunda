@@ -63,13 +63,13 @@ public class Java9CDataWhitespaceFilter implements Predicate<Node> {
   private boolean isWhitespaceSurroundingCData(Node node) {
 
     if (isWhitespaceTextNode(node)) {
-      Node parent = node.getParentNode();
-      NodeList children = parent.getChildNodes();
+      final Node parent = node.getParentNode();
+      final NodeList children = parent.getChildNodes();
 
       if (children.getLength() == 3) {
-        Node child0 = children.item(0);
-        Node child1 = children.item(1);
-        Node child2 = children.item(2);
+        final Node child0 = children.item(0);
+        final Node child1 = children.item(1);
+        final Node child2 = children.item(2);
 
         return isTextNode(child0) && isCDataSection(child1) && isTextNode(child2);
       } else {

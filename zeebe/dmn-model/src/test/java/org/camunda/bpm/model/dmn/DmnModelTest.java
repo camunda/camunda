@@ -65,7 +65,7 @@ public abstract class DmnModelTest {
 
   public <E extends NamedElement> E generateNamedElement(
       Class<E> elementClass, String name, Integer suffix) {
-    E element = generateElement(elementClass, suffix);
+    final E element = generateElement(elementClass, suffix);
     element.setName(name);
     return element;
   }
@@ -76,7 +76,7 @@ public abstract class DmnModelTest {
 
   public <E extends DmnModelElementInstance> E generateElement(
       Class<E> elementClass, Integer suffix) {
-    E element = modelInstance.newInstance(elementClass);
+    final E element = modelInstance.newInstance(elementClass);
     if (element instanceof DmnElement) {
       String identifier = elementClass.getSimpleName();
       if (suffix != null) {
@@ -89,17 +89,17 @@ public abstract class DmnModelTest {
   }
 
   protected void assertModelEqualsFile(String expectedPath) throws Exception {
-    File actualFile = tmpFolder.newFile();
+    final File actualFile = tmpFolder.newFile();
     Dmn.writeModelToFile(actualFile, modelInstance);
 
-    File expectedFile = ReflectUtil.getResourceAsFile(expectedPath);
+    final File expectedFile = ReflectUtil.getResourceAsFile(expectedPath);
 
-    DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
-    DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
-    Document actualDocument = docBuilder.parse(actualFile);
-    Document expectedDocument = docBuilder.parse(expectedFile);
+    final DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+    final DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+    final Document actualDocument = docBuilder.parse(actualFile);
+    final Document expectedDocument = docBuilder.parse(expectedFile);
 
-    Diff diff =
+    final Diff diff =
         DiffBuilder.compare(expectedDocument)
             .withTest(actualDocument)
             .withNodeFilter(new Java9CDataWhitespaceFilter())
@@ -108,7 +108,7 @@ public abstract class DmnModelTest {
 
     if (diff.hasDifferences()) {
 
-      String failMsg =
+      final String failMsg =
           "XML differs:\n"
               + diff.getDifferences()
               + "\n\nActual XML:\n"
@@ -120,7 +120,7 @@ public abstract class DmnModelTest {
   protected void assertElementIsEqualToId(DmnModelElementInstance actualElement, String id) {
     assertThat(actualElement).isNotNull();
 
-    ModelElementInstance expectedElement = modelInstance.getModelElementById(id);
+    final ModelElementInstance expectedElement = modelInstance.getModelElementById(id);
     assertThat(expectedElement).isNotNull();
 
     assertThat(actualElement).isEqualTo(expectedElement);

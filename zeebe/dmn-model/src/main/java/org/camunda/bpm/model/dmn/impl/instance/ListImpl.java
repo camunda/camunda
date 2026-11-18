@@ -42,7 +42,7 @@ public class ListImpl extends ExpressionImpl implements List {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(List.class, DMN_ELEMENT_LIST)
             .namespaceUri(LATEST_DMN_NS)
@@ -54,7 +54,7 @@ public class ListImpl extends ExpressionImpl implements List {
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     expressionCollection = sequenceBuilder.elementCollection(Expression.class).build();
 

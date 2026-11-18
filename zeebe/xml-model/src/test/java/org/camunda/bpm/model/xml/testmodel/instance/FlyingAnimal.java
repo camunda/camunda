@@ -39,7 +39,7 @@ public abstract class FlyingAnimal extends Animal {
 
   public static void registerType(ModelBuilder modelBuilder) {
 
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(FlyingAnimal.class, TYPE_NAME_FLYING_ANIMAL)
             .namespaceUri(MODEL_NAMESPACE)
@@ -48,7 +48,7 @@ public abstract class FlyingAnimal extends Animal {
 
     wingspanAttribute = typeBuilder.doubleAttribute(ATTRIBUTE_NAME_WINGSPAN).build();
 
-    SequenceBuilder sequence = typeBuilder.sequence();
+    final SequenceBuilder sequence = typeBuilder.sequence();
 
     flightInstructorChild =
         sequence.element(FlightInstructor.class).idElementReference(FlyingAnimal.class).build();

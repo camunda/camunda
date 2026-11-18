@@ -32,7 +32,7 @@ public class ImportedElementImpl extends DmnModelElementInstanceImpl implements 
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ImportedElement.class, DMN_ELEMENT_IMPORTED_ELEMENT)
             .namespaceUri(LATEST_DMN_NS)

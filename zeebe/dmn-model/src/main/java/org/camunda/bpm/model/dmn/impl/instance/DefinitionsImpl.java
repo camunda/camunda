@@ -124,7 +124,7 @@ public class DefinitionsImpl extends NamedElementImpl implements Definitions {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Definitions.class, DMN_ELEMENT_DEFINITIONS)
             .namespaceUri(LATEST_DMN_NS)
@@ -154,7 +154,7 @@ public class DefinitionsImpl extends NamedElementImpl implements Definitions {
 
     exporterVersionAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_EXPORTER_VERSION).build();
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     importCollection = sequenceBuilder.elementCollection(Import.class).build();
 

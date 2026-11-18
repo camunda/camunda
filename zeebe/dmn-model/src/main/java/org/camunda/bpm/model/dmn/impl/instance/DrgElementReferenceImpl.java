@@ -34,7 +34,7 @@ public class DrgElementReferenceImpl extends DmnElementReferenceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DrgElementReference.class, DMN_ELEMENT_DRG_ELEMENT_REFERENCE)
             .namespaceUri(LATEST_DMN_NS)

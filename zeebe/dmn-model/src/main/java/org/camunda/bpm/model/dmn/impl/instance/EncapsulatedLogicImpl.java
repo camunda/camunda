@@ -33,7 +33,7 @@ public class EncapsulatedLogicImpl extends FunctionDefinitionImpl implements Enc
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(EncapsulatedLogic.class, DMN_ELEMENT_ENCAPSULATED_LOGIC)
             .namespaceUri(LATEST_DMN_NS)

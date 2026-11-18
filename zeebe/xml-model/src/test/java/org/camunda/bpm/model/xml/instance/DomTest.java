@@ -57,13 +57,13 @@ public class DomTest extends TestModelTest {
   }
 
   private static Object[] createModel() {
-    TestModelParser modelParser = new TestModelParser();
-    ModelInstance modelInstance = modelParser.getEmptyModel();
+    final TestModelParser modelParser = new TestModelParser();
+    final ModelInstance modelInstance = modelParser.getEmptyModel();
 
-    Animals animals = modelInstance.newInstance(Animals.class);
+    final Animals animals = modelInstance.newInstance(Animals.class);
     modelInstance.setDocumentElement(animals);
 
-    Description description = modelInstance.newInstance(Description.class);
+    final Description description = modelInstance.newInstance(Description.class);
     description.getDomElement().addCDataSection("CDATA <test>");
     animals.addChildElement(description);
 
@@ -79,10 +79,10 @@ public class DomTest extends TestModelTest {
   @Test
   public void testRegisterNamespaces() {
     document.registerNamespace("test", TEST_NS);
-    String prefix = document.registerNamespace(UNKNOWN_NS);
+    final String prefix = document.registerNamespace(UNKNOWN_NS);
     assertThat(prefix).isEqualTo("ns0");
 
-    DomElement rootElement = document.getRootElement();
+    final DomElement rootElement = document.getRootElement();
     assertThat(rootElement.hasAttribute(XMLNS_ATTRIBUTE_NS_URI, "test")).isTrue();
     assertThat(rootElement.getAttribute(XMLNS_ATTRIBUTE_NS_URI, "test")).isEqualTo(TEST_NS);
     assertThat(rootElement.hasAttribute(XMLNS_ATTRIBUTE_NS_URI, "ns0")).isTrue();
@@ -101,7 +101,7 @@ public class DomTest extends TestModelTest {
     prefix = document.registerNamespace(UNKNOWN_NS + 3);
     assertThat(prefix).isEqualTo("ns3");
 
-    DomElement rootElement = document.getRootElement();
+    final DomElement rootElement = document.getRootElement();
     assertThat(rootElement.hasAttribute(XMLNS_ATTRIBUTE_NS_URI, "ns0")).isTrue();
     assertThat(rootElement.getAttribute(XMLNS_ATTRIBUTE_NS_URI, "ns0")).isEqualTo(UNKNOWN_NS + 0);
     assertThat(rootElement.hasAttribute(XMLNS_ATTRIBUTE_NS_URI, "ns1")).isTrue();
@@ -122,7 +122,7 @@ public class DomTest extends TestModelTest {
     prefix = document.registerNamespace(UNKNOWN_NS);
     assertThat(prefix).isEqualTo("ns0");
 
-    DomElement rootElement = document.getRootElement();
+    final DomElement rootElement = document.getRootElement();
     assertThat(rootElement.hasAttribute(XMLNS_ATTRIBUTE_NS_URI, "test")).isTrue();
     assertThat(rootElement.getAttribute(XMLNS_ATTRIBUTE_NS_URI, "test")).isEqualTo(TEST_NS);
     assertThat(rootElement.hasAttribute(XMLNS_ATTRIBUTE_NS_URI, "ns0")).isTrue();
@@ -135,7 +135,7 @@ public class DomTest extends TestModelTest {
     document.registerNamespace(CAMUNDA_NS);
     document.registerNamespace(FOX_NS);
 
-    DomElement rootElement = document.getRootElement();
+    final DomElement rootElement = document.getRootElement();
     assertThat(rootElement.hasAttribute(XMLNS_ATTRIBUTE_NS_URI, "camunda")).isTrue();
     assertThat(rootElement.getAttribute(XMLNS_ATTRIBUTE_NS_URI, "camunda")).isEqualTo(CAMUNDA_NS);
     assertThat(rootElement.hasAttribute(XMLNS_ATTRIBUTE_NS_URI, "fox")).isTrue();
@@ -147,7 +147,7 @@ public class DomTest extends TestModelTest {
     document.registerNamespace("camunda", TEST_NS);
     document.registerNamespace(CAMUNDA_NS);
 
-    DomElement rootElement = document.getRootElement();
+    final DomElement rootElement = document.getRootElement();
     assertThat(rootElement.hasAttribute(XMLNS_ATTRIBUTE_NS_URI, "camunda")).isTrue();
     assertThat(rootElement.getAttribute(XMLNS_ATTRIBUTE_NS_URI, "camunda")).isEqualTo(TEST_NS);
     assertThat(rootElement.hasAttribute(XMLNS_ATTRIBUTE_NS_URI, "ns0")).isTrue();
@@ -215,7 +215,7 @@ public class DomTest extends TestModelTest {
 
   @Test
   public void testCData() {
-    Animals animals = (Animals) modelInstance.getDocumentElement();
+    final Animals animals = (Animals) modelInstance.getDocumentElement();
     assertThat(animals.getDescription().getTextContent()).isEqualTo("CDATA <test>");
   }
 }

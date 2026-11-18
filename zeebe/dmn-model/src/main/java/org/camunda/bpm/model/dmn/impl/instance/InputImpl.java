@@ -33,7 +33,7 @@ public class InputImpl extends InputClauseImpl implements Input {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Input.class, DMN_ELEMENT_INPUT)
             .namespaceUri(LATEST_DMN_NS)

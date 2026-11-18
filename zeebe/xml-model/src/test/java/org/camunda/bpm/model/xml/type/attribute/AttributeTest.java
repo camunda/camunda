@@ -52,15 +52,15 @@ public class AttributeTest extends TestModelTest {
 
   @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
-    Object[][] models = {createModel(), parseModel(AnimalTest.class)};
+    final Object[][] models = {createModel(), parseModel(AnimalTest.class)};
     return Arrays.asList(models);
   }
 
   public static Object[] createModel() {
-    TestModelParser modelParser = new TestModelParser();
-    ModelInstance modelInstance = modelParser.getEmptyModel();
+    final TestModelParser modelParser = new TestModelParser();
+    final ModelInstance modelInstance = modelParser.getEmptyModel();
 
-    Animals animals = modelInstance.newInstance(Animals.class);
+    final Animals animals = modelInstance.newInstance(Animals.class);
     modelInstance.setDocumentElement(animals);
 
     createBird(modelInstance, "tweety", Gender.Female);
@@ -75,7 +75,7 @@ public class AttributeTest extends TestModelTest {
 
     tweety = modelInstance.getModelElementById("tweety");
 
-    ModelElementType animalType = modelInstance.getModel().getType(Animal.class);
+    final ModelElementType animalType = modelInstance.getModel().getType(Animal.class);
     idAttribute = (Attribute<String>) animalType.getAttribute("id");
     nameAttribute = (Attribute<String>) animalType.getAttribute("name");
     fatherAttribute = (Attribute<String>) animalType.getAttribute("father");
@@ -83,7 +83,7 @@ public class AttributeTest extends TestModelTest {
 
   @Test
   public void testOwningElementType() {
-    ModelElementType animalType = modelInstance.getModel().getType(Animal.class);
+    final ModelElementType animalType = modelInstance.getModel().getType(Animal.class);
 
     assertThat(idAttribute).hasOwningElementType(animalType);
     assertThat(nameAttribute).hasOwningElementType(animalType);
@@ -92,21 +92,21 @@ public class AttributeTest extends TestModelTest {
 
   @Test
   public void testSetAttributeValue() {
-    String identifier = "new-" + tweety.getId();
+    final String identifier = "new-" + tweety.getId();
     idAttribute.setValue(tweety, identifier);
     assertThat(idAttribute).hasValue(tweety, identifier);
   }
 
   @Test
   public void testSetAttributeValueWithoutUpdateReference() {
-    String identifier = "new-" + tweety.getId();
+    final String identifier = "new-" + tweety.getId();
     idAttribute.setValue(tweety, identifier, false);
     assertThat(idAttribute).hasValue(tweety, identifier);
   }
 
   @Test
   public void testSetDefaultValue() {
-    String defaultName = "default-name";
+    final String defaultName = "default-name";
     assertThat(tweety.getName()).isNull();
     assertThat(nameAttribute).hasNoDefaultValue();
 
@@ -136,7 +136,7 @@ public class AttributeTest extends TestModelTest {
 
   @Test
   public void testSetNamespaceUri() {
-    String testNamespace = "http://camunda.org/test";
+    final String testNamespace = "http://camunda.org/test";
 
     ((AttributeImpl<String>) idAttribute).setNamespaceUri(testNamespace);
     assertThat(idAttribute).hasNamespaceUri(testNamespace);

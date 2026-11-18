@@ -68,7 +68,7 @@ public class LiteralExpressionImpl extends ExpressionImpl implements LiteralExpr
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(LiteralExpression.class, DMN_ELEMENT_LITERAL_EXPRESSION)
             .namespaceUri(LATEST_DMN_NS)
@@ -83,7 +83,7 @@ public class LiteralExpressionImpl extends ExpressionImpl implements LiteralExpr
     expressionLanguageAttribute =
         typeBuilder.stringAttribute(DMN_ATTRIBUTE_EXPRESSION_LANGUAGE).build();
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     textChild = sequenceBuilder.element(Text.class).build();
 

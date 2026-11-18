@@ -62,14 +62,14 @@ public class AttributeReferenceCollectionBuilderImpl<T extends ModelElementInsta
   @SuppressWarnings("unchecked")
   public void performModelBuild(Model model) {
     // register declaring type as a referencing type of referenced type
-    ModelElementTypeImpl referenceTargetType =
+    final ModelElementTypeImpl referenceTargetType =
         (ModelElementTypeImpl) model.getType(referenceTargetElement);
 
     // the actual referenced type
     attributeReferenceCollection.setReferenceTargetElementType(referenceTargetType);
 
     // the referenced attribute may be declared on a base type of the referenced type.
-    AttributeImpl<String> idAttribute =
+    final AttributeImpl<String> idAttribute =
         (AttributeImpl<String>) referenceTargetType.getAttribute("id");
     if (idAttribute != null) {
       idAttribute.registerIncoming(attributeReferenceCollection);

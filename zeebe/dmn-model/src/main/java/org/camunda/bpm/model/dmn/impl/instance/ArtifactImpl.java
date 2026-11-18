@@ -32,7 +32,7 @@ public abstract class ArtifactImpl extends DmnElementImpl implements Artifact {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Artifact.class, DMN_ELEMENT_ARTIFACT)
             .namespaceUri(LATEST_DMN_NS)

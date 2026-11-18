@@ -48,7 +48,7 @@ public class KnowledgeRequirementImpl extends DmnModelElementInstanceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(KnowledgeRequirement.class, DMN_ELEMENT_KNOWLEDGE_REQUIREMENT)
             .namespaceUri(LATEST_DMN_NS)
@@ -60,7 +60,7 @@ public class KnowledgeRequirementImpl extends DmnModelElementInstanceImpl
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     requiredKnowledgeRef =
         sequenceBuilder

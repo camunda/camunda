@@ -42,13 +42,13 @@ public class QueryImpl<T extends ModelElementInstance> implements Query<T> {
 
   @SuppressWarnings("unchecked")
   public <V extends ModelElementInstance> Query<V> filterByType(ModelElementType elementType) {
-    Class<V> elementClass = (Class<V>) elementType.getInstanceType();
+    final Class<V> elementClass = (Class<V>) elementType.getInstanceType();
     return filterByType(elementClass);
   }
 
   @SuppressWarnings("unchecked")
   public <V extends ModelElementInstance> Query<V> filterByType(Class<V> elementClass) {
-    List<V> filtered = new ArrayList<V>();
+    final List<V> filtered = new ArrayList<V>();
     for (T instance : collection) {
       if (elementClass.isAssignableFrom(instance.getClass())) {
         filtered.add((V) instance);

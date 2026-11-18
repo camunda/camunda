@@ -34,7 +34,7 @@ public class ImpactedPerformanceIndicatorReferenceImpl extends DmnElementReferen
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(
                 ImpactedPerformanceIndicatorReference.class,

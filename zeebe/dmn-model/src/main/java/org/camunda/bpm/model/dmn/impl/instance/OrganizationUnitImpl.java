@@ -52,7 +52,7 @@ public class OrganizationUnitImpl extends BusinessContextElementImpl implements 
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(OrganizationUnit.class, DMN_ELEMENT_ORGANIZATION_UNIT)
             .namespaceUri(LATEST_DMN_NS)
@@ -64,7 +64,7 @@ public class OrganizationUnitImpl extends BusinessContextElementImpl implements 
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     decisionDecisionMadeRefCollection =
         sequenceBuilder

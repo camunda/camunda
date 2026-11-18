@@ -34,7 +34,7 @@ public class SupportedObjectiveReferenceImpl extends DmnElementReferenceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(SupportedObjectiveReference.class, DMN_ELEMENT_SUPPORTED_OBJECT)
             .namespaceUri(LATEST_DMN_NS)

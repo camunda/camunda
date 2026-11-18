@@ -38,7 +38,7 @@ public class Egg extends ModelElementInstanceImpl {
   protected static ElementReferenceCollection<Animal, Guardian> guardianRefCollection;
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Egg.class, ELEMENT_NAME_EGG)
             .namespaceUri(MODEL_NAMESPACE)
@@ -51,7 +51,7 @@ public class Egg extends ModelElementInstanceImpl {
 
     idAttr = typeBuilder.stringAttribute(ATTRIBUTE_NAME_ID).idAttribute().build();
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     motherRefChild =
         sequenceBuilder.element(Mother.class).uriElementReference(Animal.class).build();

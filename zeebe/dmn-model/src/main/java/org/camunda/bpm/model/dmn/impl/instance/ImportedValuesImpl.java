@@ -58,7 +58,7 @@ public class ImportedValuesImpl extends ImportImpl implements ImportedValues {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ImportedValues.class, DMN_ELEMENT_IMPORTED_VALUES)
             .namespaceUri(LATEST_DMN_NS)
@@ -73,7 +73,7 @@ public class ImportedValuesImpl extends ImportImpl implements ImportedValues {
     expressionLanguageAttribute =
         typeBuilder.stringAttribute(DMN_ATTRIBUTE_EXPRESSION_LANGUAGE).build();
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     importedElementChild = sequenceBuilder.element(ImportedElement.class).required().build();
 

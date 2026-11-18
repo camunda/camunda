@@ -34,7 +34,7 @@ public class RequiredInputReferenceImpl extends DmnElementReferenceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(RequiredInputReference.class, DMN_ELEMENT_REQUIRED_INPUT)
             .namespaceUri(LATEST_DMN_NS)

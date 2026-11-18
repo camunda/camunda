@@ -101,7 +101,7 @@ public class ExampleCompatibilityTest extends DmnModelTest {
   public void shouldGetElements() {
 
     // Definitions
-    Definitions definitions = modelInstance.getDefinitions();
+    final Definitions definitions = modelInstance.getDefinitions();
     assertThat(definitions).isNotNull();
     assertThat(definitions.getId()).isEqualTo("definitions");
     assertThat(definitions.getName()).isEqualTo("definitions");
@@ -109,34 +109,34 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     assertElementIsEqualToId(definitions, "definitions");
 
     // Imports
-    Collection<Import> imports = definitions.getImports();
+    final Collection<Import> imports = definitions.getImports();
     assertThat(imports).isEmpty();
 
     // Item definitions
-    Collection<ItemDefinition> itemDefinitions = definitions.getItemDefinitions();
+    final Collection<ItemDefinition> itemDefinitions = definitions.getItemDefinitions();
     assertThat(itemDefinitions).isEmpty();
 
     // DRG elements
-    Collection<DrgElement> drgElements = definitions.getDrgElements();
+    final Collection<DrgElement> drgElements = definitions.getDrgElements();
     assertThat(drgElements).isNotEmpty().hasSize(1);
 
     // Decision
-    Decision decision = (Decision) drgElements.iterator().next();
+    final Decision decision = (Decision) drgElements.iterator().next();
     assertThat(decision).isNotNull();
     assertThat(decision.getId()).isEqualTo("decision");
     assertThat(decision.getName()).isEqualTo("Check Order");
     assertElementIsEqualToId(decision, "decision");
 
     // Decision table
-    DecisionTable decisionTable = (DecisionTable) decision.getExpression();
+    final DecisionTable decisionTable = (DecisionTable) decision.getExpression();
     assertThat(decisionTable).isNotNull();
     assertThat(decisionTable.getId()).isEqualTo("decisionTable");
     assertElementIsEqualToId(decisionTable, "decisionTable");
 
     // Input clauses
-    List<Input> inputs = new ArrayList<>(decisionTable.getInputs());
+    final List<Input> inputs = new ArrayList<>(decisionTable.getInputs());
     assertThat(inputs).hasSize(2);
-    Iterator<Input> inputIterator = inputs.iterator();
+    final Iterator<Input> inputIterator = inputs.iterator();
 
     // 1. Input clause
     Input input = inputIterator.next();
@@ -146,7 +146,7 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     assertThat(inputExpression.getId()).isEqualTo("inputExpression1");
     assertThat(inputExpression.getTypeRef()).isEqualTo("string");
     assertThat(inputExpression.getText().getTextContent()).isEqualTo("status");
-    InputValues inputValues = input.getInputValues();
+    final InputValues inputValues = input.getInputValues();
     assertThat(inputValues.getText().getTextContent()).isEqualTo("\"bronze\",\"silver\",\"gold\"");
 
     // 2. Input clause
@@ -158,7 +158,7 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     assertThat(inputExpression.getTypeRef()).isEqualTo("double");
 
     // Output clause
-    List<Output> outputs = new ArrayList<>(decisionTable.getOutputs());
+    final List<Output> outputs = new ArrayList<>(decisionTable.getOutputs());
     assertThat(outputs).hasSize(2);
 
     // 1. Output clause
@@ -167,7 +167,7 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     assertThat(output.getLabel()).isEqualTo("Check Result");
     assertThat(output.getName()).isEqualTo("result");
     assertThat(output.getTypeRef()).isEqualTo("string");
-    OutputValues outputValues = output.getOutputValues();
+    final OutputValues outputValues = output.getOutputValues();
     assertThat(outputValues.getText().getTextContent()).isEqualTo("\"ok\",\"notok\"");
 
     // 2. Output clause
@@ -178,7 +178,7 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     assertThat(output.getTypeRef()).isEqualTo("string");
 
     // Rules
-    List<Rule> rules = new ArrayList<>(decisionTable.getRules());
+    final List<Rule> rules = new ArrayList<>(decisionTable.getRules());
 
     // 1. Rule
     Rule rule = rules.get(0);
@@ -233,11 +233,11 @@ public class ExampleCompatibilityTest extends DmnModelTest {
         .isEqualTo("\"you get anything you want\"");
 
     // Element collections
-    Collection<ElementCollection> elementCollections = definitions.getElementCollections();
+    final Collection<ElementCollection> elementCollections = definitions.getElementCollections();
     assertThat(elementCollections).isEmpty();
 
     // Business contexts
-    Collection<BusinessContextElement> businessContextElements =
+    final Collection<BusinessContextElement> businessContextElements =
         definitions.getBusinessContextElements();
     assertThat(businessContextElements).isEmpty();
   }
@@ -247,16 +247,16 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     modelInstance = Dmn.createEmptyModel();
 
     // Definitions
-    Definitions definitions = generateNamedElement(Definitions.class, "definitions");
+    final Definitions definitions = generateNamedElement(Definitions.class, "definitions");
     definitions.setNamespace(TEST_NAMESPACE);
     modelInstance.setDocumentElement(definitions);
 
     // Decision
-    Decision decision = generateNamedElement(Decision.class, "Check Order");
+    final Decision decision = generateNamedElement(Decision.class, "Check Order");
     definitions.addChildElement(decision);
 
     // Decision table
-    DecisionTable decisionTable = generateElement(DecisionTable.class);
+    final DecisionTable decisionTable = generateElement(DecisionTable.class);
     decision.addChildElement(decisionTable);
 
     // 1. Input clause
@@ -268,7 +268,7 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     text.setTextContent("status");
     inputExpression.setText(text);
     input.setInputExpression(inputExpression);
-    InputValues inputValues = generateElement(InputValues.class);
+    final InputValues inputValues = generateElement(InputValues.class);
     text = generateElement(Text.class);
     text.setTextContent("\"bronze\",\"silver\",\"gold\"");
     inputValues.setText(text);
@@ -291,7 +291,7 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     output.setLabel("Check Result");
     output.setName("result");
     output.setTypeRef("string");
-    OutputValues outputValues = generateElement(OutputValues.class);
+    final OutputValues outputValues = generateElement(OutputValues.class);
     text = generateElement(Text.class);
     text.setTextContent("\"ok\",\"notok\"");
     outputValues.setText(text);

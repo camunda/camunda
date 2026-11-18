@@ -34,7 +34,7 @@ public class UsingProcessReferenceImpl extends DmnElementReferenceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(UsingProcessReference.class, DMN_ELEMENT_USING_PROCESS)
             .namespaceUri(LATEST_DMN_NS)

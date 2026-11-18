@@ -34,7 +34,7 @@ public class ImpactingDecisionReferenceImpl extends DmnElementReferenceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ImpactingDecisionReference.class, DMN_ELEMENT_IMPACTING_DECISION)
             .namespaceUri(LATEST_DMN_NS)

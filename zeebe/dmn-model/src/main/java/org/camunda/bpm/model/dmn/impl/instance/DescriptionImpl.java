@@ -32,7 +32,7 @@ public class DescriptionImpl extends DmnModelElementInstanceImpl implements Desc
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Description.class, DMN_ELEMENT_DESCRIPTION)
             .namespaceUri(LATEST_DMN_NS)

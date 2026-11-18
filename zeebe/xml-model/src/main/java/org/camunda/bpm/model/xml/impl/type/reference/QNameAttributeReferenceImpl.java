@@ -37,9 +37,9 @@ public class QNameAttributeReferenceImpl<T extends ModelElementInstance>
 
   @Override
   public String getReferenceIdentifier(ModelElementInstance referenceSourceElement) {
-    String identifier = super.getReferenceIdentifier(referenceSourceElement);
+    final String identifier = super.getReferenceIdentifier(referenceSourceElement);
     if (identifier != null) {
-      QName qName = QName.parseQName(identifier);
+      final QName qName = QName.parseQName(identifier);
       return qName.getLocalName();
     } else {
       return null;

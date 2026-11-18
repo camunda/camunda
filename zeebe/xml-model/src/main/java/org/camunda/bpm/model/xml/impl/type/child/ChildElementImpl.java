@@ -46,9 +46,9 @@ public class ChildElementImpl<T extends ModelElementInstance> extends ChildEleme
 
   @SuppressWarnings("unchecked")
   public T getChild(ModelElementInstance element) {
-    ModelElementInstanceImpl elementInstanceImpl = (ModelElementInstanceImpl) element;
+    final ModelElementInstanceImpl elementInstanceImpl = (ModelElementInstanceImpl) element;
 
-    ModelElementInstance childElement =
+    final ModelElementInstance childElement =
         elementInstanceImpl.getUniqueChildElementByType(childElementTypeClass);
     if (childElement != null) {
       ModelUtil.ensureInstanceOf(childElement, childElementTypeClass);
@@ -59,8 +59,8 @@ public class ChildElementImpl<T extends ModelElementInstance> extends ChildEleme
   }
 
   public boolean removeChild(ModelElementInstance element) {
-    ModelElementInstanceImpl childElement = (ModelElementInstanceImpl) getChild(element);
-    ModelElementInstanceImpl elementInstanceImpl = (ModelElementInstanceImpl) element;
+    final ModelElementInstanceImpl childElement = (ModelElementInstanceImpl) getChild(element);
+    final ModelElementInstanceImpl elementInstanceImpl = (ModelElementInstanceImpl) element;
     return elementInstanceImpl.removeChildElement(childElement);
   }
 }

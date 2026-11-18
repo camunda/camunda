@@ -60,39 +60,39 @@ public class AnimalTest extends TestModelTest {
 
   @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
-    Object[][] models = {createModel(), parseModel(AnimalTest.class)};
+    final Object[][] models = {createModel(), parseModel(AnimalTest.class)};
     return Arrays.asList(models);
   }
 
   public static Object[] createModel() {
-    TestModelParser modelParser = new TestModelParser();
-    ModelInstance modelInstance = modelParser.getEmptyModel();
+    final TestModelParser modelParser = new TestModelParser();
+    final ModelInstance modelInstance = modelParser.getEmptyModel();
 
-    Animals animals = modelInstance.newInstance(Animals.class);
+    final Animals animals = modelInstance.newInstance(Animals.class);
     modelInstance.setDocumentElement(animals);
 
     // add a tns namespace prefix for QName testing
     animals.getDomElement().registerNamespace("tns", MODEL_NAMESPACE);
 
-    Animal tweety = createBird(modelInstance, "tweety", Gender.Female);
-    Animal hedwig = createBird(modelInstance, "hedwig", Gender.Male);
-    Animal birdo = createBird(modelInstance, "birdo", Gender.Female);
-    Animal plucky = createBird(modelInstance, "plucky", Gender.Unknown);
-    Animal fiffy = createBird(modelInstance, "fiffy", Gender.Female);
+    final Animal tweety = createBird(modelInstance, "tweety", Gender.Female);
+    final Animal hedwig = createBird(modelInstance, "hedwig", Gender.Male);
+    final Animal birdo = createBird(modelInstance, "birdo", Gender.Female);
+    final Animal plucky = createBird(modelInstance, "plucky", Gender.Unknown);
+    final Animal fiffy = createBird(modelInstance, "fiffy", Gender.Female);
     createBird(modelInstance, "timmy", Gender.Male);
     createBird(modelInstance, "daisy", Gender.Female);
 
     // create and add some relationships
-    RelationshipDefinition hedwigRelationship =
+    final RelationshipDefinition hedwigRelationship =
         createRelationshipDefinition(modelInstance, hedwig, ChildRelationshipDefinition.class);
     addRelationshipDefinition(tweety, hedwigRelationship);
-    RelationshipDefinition birdoRelationship =
+    final RelationshipDefinition birdoRelationship =
         createRelationshipDefinition(modelInstance, birdo, ChildRelationshipDefinition.class);
     addRelationshipDefinition(tweety, birdoRelationship);
-    RelationshipDefinition pluckyRelationship =
+    final RelationshipDefinition pluckyRelationship =
         createRelationshipDefinition(modelInstance, plucky, FriendRelationshipDefinition.class);
     addRelationshipDefinition(tweety, pluckyRelationship);
-    RelationshipDefinition fiffyRelationship =
+    final RelationshipDefinition fiffyRelationship =
         createRelationshipDefinition(modelInstance, fiffy, FriendRelationshipDefinition.class);
     addRelationshipDefinition(tweety, fiffyRelationship);
 
@@ -132,7 +132,7 @@ public class AnimalTest extends TestModelTest {
 
   @Test
   public void testSetIdAttributeByHelper() {
-    String newId = "new-" + tweety.getId();
+    final String newId = "new-" + tweety.getId();
     tweety.setId(newId);
     assertThat(tweety.getId()).isEqualTo(newId);
   }
@@ -465,13 +465,13 @@ public class AnimalTest extends TestModelTest {
     assertThat(tweety.getRelationshipDefinitionRefElements()).isNotEmpty().hasSize(4);
 
     addRelationshipDefinition(tweety, timmyRelationship);
-    RelationshipDefinitionRef timmyRelationshipDefinitionRef =
+    final RelationshipDefinitionRef timmyRelationshipDefinitionRef =
         modelInstance.newInstance(RelationshipDefinitionRef.class);
     timmyRelationshipDefinitionRef.setTextContent(timmyRelationship.getId());
     tweety.getRelationshipDefinitionRefElements().add(timmyRelationshipDefinitionRef);
 
     addRelationshipDefinition(tweety, daisyRelationship);
-    RelationshipDefinitionRef daisyRelationshipDefinitionRef =
+    final RelationshipDefinitionRef daisyRelationshipDefinitionRef =
         modelInstance.newInstance(RelationshipDefinitionRef.class);
     daisyRelationshipDefinitionRef.setTextContent(daisyRelationship.getId());
     tweety.getRelationshipDefinitionRefElements().add(daisyRelationshipDefinitionRef);
@@ -484,11 +484,11 @@ public class AnimalTest extends TestModelTest {
 
   @Test
   public void testRelationshipDefinitionRefElementsByTextContent() {
-    Collection<RelationshipDefinitionRef> relationshipDefinitionRefElements =
+    final Collection<RelationshipDefinitionRef> relationshipDefinitionRefElements =
         tweety.getRelationshipDefinitionRefElements();
-    Collection<String> textContents = new ArrayList<String>();
+    final Collection<String> textContents = new ArrayList<String>();
     for (RelationshipDefinitionRef relationshipDefinitionRef : relationshipDefinitionRefElements) {
-      String textContent = relationshipDefinitionRef.getTextContent();
+      final String textContent = relationshipDefinitionRef.getTextContent();
       assertThat(textContent).isNotEmpty();
       textContents.add(textContent);
     }
@@ -504,7 +504,7 @@ public class AnimalTest extends TestModelTest {
 
   @Test
   public void testUpdateRelationshipDefinitionRefElementsByTextContent() {
-    List<RelationshipDefinitionRef> relationshipDefinitionRefs =
+    final List<RelationshipDefinitionRef> relationshipDefinitionRefs =
         new ArrayList<RelationshipDefinitionRef>(tweety.getRelationshipDefinitionRefElements());
 
     addRelationshipDefinition(tweety, timmyRelationship);
@@ -520,7 +520,7 @@ public class AnimalTest extends TestModelTest {
 
   @Test
   public void testUpdateRelationshipDefinitionRefElementsByTextContentWithNamespace() {
-    List<RelationshipDefinitionRef> relationshipDefinitionRefs =
+    final List<RelationshipDefinitionRef> relationshipDefinitionRefs =
         new ArrayList<RelationshipDefinitionRef>(tweety.getRelationshipDefinitionRefElements());
 
     addRelationshipDefinition(tweety, timmyRelationship);
@@ -536,7 +536,7 @@ public class AnimalTest extends TestModelTest {
 
   @Test
   public void testUpdateRelationshipDefinitionRefElementsByRemoveElements() {
-    List<RelationshipDefinitionRef> relationshipDefinitionRefs =
+    final List<RelationshipDefinitionRef> relationshipDefinitionRefs =
         new ArrayList<RelationshipDefinitionRef>(tweety.getRelationshipDefinitionRefElements());
     tweety.getRelationshipDefinitionRefElements().remove(relationshipDefinitionRefs.get(1));
     tweety.getRelationshipDefinitionRefElements().remove(relationshipDefinitionRefs.get(3));
@@ -574,7 +574,7 @@ public class AnimalTest extends TestModelTest {
 
   @Test
   public void testGetBestFriends() {
-    Collection<Animal> bestFriends = tweety.getBestFriends();
+    final Collection<Animal> bestFriends = tweety.getBestFriends();
 
     assertThat(bestFriends).isNotEmpty().hasSize(2).containsOnly(birdo, plucky);
   }
@@ -583,7 +583,7 @@ public class AnimalTest extends TestModelTest {
   public void testAddBestFriend() {
     tweety.getBestFriends().add(daisy);
 
-    Collection<Animal> bestFriends = tweety.getBestFriends();
+    final Collection<Animal> bestFriends = tweety.getBestFriends();
 
     assertThat(bestFriends).isNotEmpty().hasSize(3).containsOnly(birdo, plucky, daisy);
   }
@@ -592,7 +592,7 @@ public class AnimalTest extends TestModelTest {
   public void testRemoveBestFriendRef() {
     tweety.getBestFriends().remove(plucky);
 
-    Collection<Animal> bestFriends = tweety.getBestFriends();
+    final Collection<Animal> bestFriends = tweety.getBestFriends();
 
     assertThat(bestFriends).isNotEmpty().hasSize(1).containsOnly(birdo);
   }
@@ -601,7 +601,7 @@ public class AnimalTest extends TestModelTest {
   public void testClearBestFriendRef() {
     tweety.getBestFriends().clear();
 
-    Collection<Animal> bestFriends = tweety.getBestFriends();
+    final Collection<Animal> bestFriends = tweety.getBestFriends();
 
     assertThat(bestFriends).isEmpty();
   }
@@ -610,7 +610,7 @@ public class AnimalTest extends TestModelTest {
   public void testClearAndAddBestFriendRef() {
     tweety.getBestFriends().clear();
 
-    Collection<Animal> bestFriends = tweety.getBestFriends();
+    final Collection<Animal> bestFriends = tweety.getBestFriends();
 
     assertThat(bestFriends).isEmpty();
 

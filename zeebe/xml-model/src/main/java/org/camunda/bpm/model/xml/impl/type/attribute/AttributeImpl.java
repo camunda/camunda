@@ -91,11 +91,11 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
     } else {
       value = modelElement.getAttributeValueNs(namespaceUri, attributeName);
       if (value == null) {
-        Set<String> alternativeNamespaces =
+        final Set<String> alternativeNamespaces =
             owningElementType.getModel().getAlternativeNamespaces(namespaceUri);
 
         if (alternativeNamespaces != null) {
-          Iterator<String> namespaceIt = alternativeNamespaces.iterator();
+          final Iterator<String> namespaceIt = alternativeNamespaces.iterator();
 
           while (value == null && namespaceIt.hasNext()) {
             value = modelElement.getAttributeValueNs(namespaceIt.next(), attributeName);
@@ -123,7 +123,7 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
 
   @Override
   public void setValue(ModelElementInstance modelElement, T value, boolean withReferenceUpdate) {
-    String xmlValue = convertModelValueToXmlValue(value);
+    final String xmlValue = convertModelValueToXmlValue(value);
     if (namespaceUri == null) {
       modelElement.setAttributeValue(attributeName, xmlValue, isIdAttribute, withReferenceUpdate);
     } else {

@@ -42,7 +42,7 @@ public class ModelElementTypeTest {
 
   @Before
   public void getTypes() {
-    TestModelParser modelParser = new TestModelParser();
+    final TestModelParser modelParser = new TestModelParser();
     modelInstance = modelParser.getEmptyModel();
     model = modelInstance.getModel();
     animalsType = model.getType(Animals.class);
@@ -123,7 +123,7 @@ public class ModelElementTypeTest {
     assertThat(flyingAnimalType.getInstances(modelInstance)).isEmpty();
     assertThat(birdType.getInstances(modelInstance)).isEmpty();
 
-    Animals animals = (Animals) animalsType.newInstance(modelInstance);
+    final Animals animals = (Animals) animalsType.newInstance(modelInstance);
     modelInstance.setDocumentElement(animals);
 
     try {
@@ -152,11 +152,12 @@ public class ModelElementTypeTest {
 
   @Test
   public void testChildElementTypes() {
-    ModelElementType relationshipDefinitionType = model.getType(RelationshipDefinition.class);
-    ModelElementType relationshipDefinitionRefType = model.getType(RelationshipDefinitionRef.class);
-    ModelElementType flightPartnerRefType = model.getType(FlightPartnerRef.class);
-    ModelElementType eggType = model.getType(Egg.class);
-    ModelElementType spouseRefType = model.getType(SpouseRef.class);
+    final ModelElementType relationshipDefinitionType = model.getType(RelationshipDefinition.class);
+    final ModelElementType relationshipDefinitionRefType =
+        model.getType(RelationshipDefinitionRef.class);
+    final ModelElementType flightPartnerRefType = model.getType(FlightPartnerRef.class);
+    final ModelElementType eggType = model.getType(Egg.class);
+    final ModelElementType spouseRefType = model.getType(SpouseRef.class);
 
     assertThat(animalsType).hasChildElements(animalType);
     assertThat(animalType)

@@ -33,7 +33,7 @@ public class SourceRefImpl extends DmnElementReferenceImpl implements SourceRef 
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(SourceRef.class, DMN_ELEMENT_SOURCE_REF)
             .namespaceUri(LATEST_DMN_NS)

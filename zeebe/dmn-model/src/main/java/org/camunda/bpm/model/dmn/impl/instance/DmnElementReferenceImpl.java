@@ -45,7 +45,7 @@ public class DmnElementReferenceImpl extends DmnModelElementInstanceImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DmnElementReference.class, DMN_ELEMENT_REFERENCE)
             .namespaceUri(LATEST_DMN_NS)

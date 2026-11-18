@@ -33,7 +33,7 @@ public class OutputImpl extends OutputClauseImpl implements Output {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Output.class, DMN_ELEMENT_OUTPUT)
             .namespaceUri(LATEST_DMN_NS)

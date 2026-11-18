@@ -33,7 +33,7 @@ public class ParameterImpl extends InformationItemImpl implements Parameter {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Parameter.class, DMN_ELEMENT_PARAMETER)
             .namespaceUri(LATEST_DMN_NS)

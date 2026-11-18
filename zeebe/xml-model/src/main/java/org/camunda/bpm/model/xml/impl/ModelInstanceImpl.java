@@ -56,7 +56,7 @@ public class ModelInstanceImpl implements ModelInstance {
   }
 
   public ModelElementInstance getDocumentElement() {
-    DomElement rootElement = document.getRootElement();
+    final DomElement rootElement = document.getRootElement();
     if (rootElement != null) {
       return ModelUtil.getModelElement(rootElement, this);
     } else {
@@ -66,7 +66,7 @@ public class ModelInstanceImpl implements ModelInstance {
 
   public void setDocumentElement(ModelElementInstance modelElement) {
     ModelUtil.ensureInstanceOf(modelElement, ModelElementInstanceImpl.class);
-    DomElement domElement = modelElement.getDomElement();
+    final DomElement domElement = modelElement.getDomElement();
     document.setRootElement(domElement);
   }
 
@@ -75,7 +75,7 @@ public class ModelInstanceImpl implements ModelInstance {
   }
 
   public <T extends ModelElementInstance> T newInstance(Class<T> type, String id) {
-    ModelElementType modelElementType = model.getType(type);
+    final ModelElementType modelElementType = model.getType(type);
     if (modelElementType != null) {
       return newInstance(modelElementType, id);
     } else {
@@ -90,7 +90,7 @@ public class ModelInstanceImpl implements ModelInstance {
 
   @SuppressWarnings("unchecked")
   public <T extends ModelElementInstance> T newInstance(ModelElementType type, String id) {
-    ModelElementInstance modelElementInstance = type.newInstance(this);
+    final ModelElementInstance modelElementInstance = type.newInstance(this);
     if (id != null && !id.isEmpty()) {
       ModelUtil.setNewIdentifier(type, modelElementInstance, id, false);
     } else {
@@ -118,7 +118,7 @@ public class ModelInstanceImpl implements ModelInstance {
       return null;
     }
 
-    DomElement element = document.getElementById(id);
+    final DomElement element = document.getElementById(id);
     if (element != null) {
       return (T) ModelUtil.getModelElement(element, this);
     } else {
@@ -127,9 +127,9 @@ public class ModelInstanceImpl implements ModelInstance {
   }
 
   public Collection<ModelElementInstance> getModelElementsByType(ModelElementType type) {
-    Collection<ModelElementType> extendingTypes = type.getAllExtendingTypes();
+    final Collection<ModelElementType> extendingTypes = type.getAllExtendingTypes();
 
-    List<ModelElementInstance> instances = new ArrayList<ModelElementInstance>();
+    final List<ModelElementInstance> instances = new ArrayList<ModelElementInstance>();
     for (ModelElementType modelElementType : extendingTypes) {
       if (!modelElementType.isAbstract()) {
         instances.addAll(modelElementType.getInstances(this));

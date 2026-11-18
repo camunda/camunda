@@ -46,7 +46,7 @@ public class PerformanceIndicatorImpl extends BusinessContextElementImpl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder =
+    final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(PerformanceIndicator.class, DMN_ELEMENT_PERFORMANCE_INDICATOR)
             .namespaceUri(LATEST_DMN_NS)
@@ -59,7 +59,7 @@ public class PerformanceIndicatorImpl extends BusinessContextElementImpl
                   }
                 });
 
-    SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
     impactingDecisionRefCollection =
         sequenceBuilder
