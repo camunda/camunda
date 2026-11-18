@@ -58,6 +58,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `gradle-build-parity`          | Edit, fix, or debug the Gradle build to match Maven behavior (deps, test-jars, optional deps)                  |
 | `gradle-run-build`             | Compile, test, and package with `./gradlew`: single-test filters, `-Pquickly`, IT vs unit, gotchas            |
 | `grafana-dashboards`           | Create or change Grafana dashboards in `monitor/grafana/`: UID, datasource, refresh, rows, PromQL, deployment   |
+| `oc-api-design-review`         | Review OC REST API spec changes or endpoint design proposals against the REST API endpoint guidelines          |
 | `operate-engineering-loop`     | Drive a tracked Operate change (OC webapp `src/operate/`) through implementation, gated validation, independent review, a draft PR, and Copilot review |
 | `operate-frontend`             | Operate frontend conventions for both codebases — the OC webapp `src/operate/` pod and legacy `operate/client/` |
 | `optimize-patch-release`       | Release an Optimize 8.6 or 8.7 patch: release branch, Zeebe/Identity bump, release workflow, GitHub release, next upgrade plan, merge-back PR |
