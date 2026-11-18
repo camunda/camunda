@@ -8,6 +8,7 @@
 package io.camunda.zeebe.util.collection;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import org.jspecify.annotations.Nullable;
 
@@ -77,6 +78,15 @@ public final class MArray<T> {
   public void put(final T value, final int... indices) {
     final var index = mapToIndex(indices);
     items[index] = value;
+  }
+
+  /** Calls the given consumer with every value which was set, skipping unset positions. */
+  public void forEach(final Consumer<? super T> consumer) {
+    for (final var item : items) {
+      if (item != null) {
+        consumer.accept(item);
+      }
+    }
   }
 
   private int mapToIndex(final int... indices) {
