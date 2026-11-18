@@ -194,6 +194,7 @@ final class BackupStoreCfgTest {
   void shouldLimitReadRateWhenMaxReadRateIsSet() {
     // given
     final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
+    backup.setStore(BackupStoreType.S3);
     backup.setMaxReadRate(DataSize.ofMegabytes(50));
 
     // when
@@ -208,6 +209,7 @@ final class BackupStoreCfgTest {
   void shouldCreateReadRateLimitersWithSeparateBudgets() {
     // given - each broker creates its limiter once and shares that instance between its stores
     final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
+    backup.setStore(BackupStoreType.S3);
     backup.setMaxReadRate(DataSize.ofMegabytes(50));
 
     // when
@@ -219,9 +221,32 @@ final class BackupStoreCfgTest {
   }
 
   @Test
+  void shouldNotLimitReadRateOfStoresThatDoNotLimitTheirReads() {
+    for (final var store :
+        new BackupStoreType[] {
+          BackupStoreType.NONE,
+          BackupStoreType.GCS,
+          BackupStoreType.AZURE,
+          BackupStoreType.FILESYSTEM
+        }) {
+      // given - only the S3 store reads through the limiter
+      final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
+      backup.setStore(store);
+      backup.setMaxReadRate(DataSize.ofMegabytes(50));
+
+      // when
+      final var limiter = BackupStoreFactory.createReadRateLimiter(backup);
+
+      // then
+      assertThat(limiter.isUnlimited()).as("limiter for store %s", store).isTrue();
+    }
+  }
+
+  @Test
   void shouldRejectMaxReadRateBelowTheMinimum() {
     // given - a rate at which a single read would pause an upload for longer than allowed
     final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
+    backup.setStore(BackupStoreType.S3);
     backup.setMaxReadRate(DataSize.ofBytes(BackupReadRateLimiter.MIN_BYTES_PER_SECOND - 1));
 
     // when - then
