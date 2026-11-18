@@ -8,11 +8,13 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
+import io.camunda.db.rdbms.sql.ProcessDefinitionMapper.ProcessDefinitionStateDto;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import java.util.List;
 
 public class ProcessDefinitionWriter implements RdbmsWriter {
@@ -36,24 +38,14 @@ public class ProcessDefinitionWriter implements RdbmsWriter {
             processDefinition));
   }
 
-  public void markDeleted(final Long processDefinitionKey) {
+  public void updateState(final Long processDefinitionKey, final ProcessDefinitionState state) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.PROCESS_DEFINITION,
             WriteStatementType.UPDATE,
             processDefinitionKey,
-            "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markDeleted",
-            processDefinitionKey));
-  }
-
-  public void markDraining(final Long processDefinitionKey) {
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.PROCESS_DEFINITION,
-            WriteStatementType.UPDATE,
-            processDefinitionKey,
-            "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markDraining",
-            processDefinitionKey));
+            "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.updateState",
+            new ProcessDefinitionStateDto(processDefinitionKey, state)));
   }
 
   public void deleteByKeys(final List<Long> processDefinitionKeys) {

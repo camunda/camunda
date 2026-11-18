@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
+import io.camunda.db.rdbms.sql.ProcessDefinitionMapper.ProcessDefinitionStateDto;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -55,10 +56,10 @@ class ProcessDefinitionWriterTest {
   }
 
   @Test
-  void shouldMarkProcessDefinitionDeleted() {
+  void shouldUpdateProcessDefinitionState() {
     final Long processDefinitionKey = 123L;
 
-    writer.markDeleted(processDefinitionKey);
+    writer.updateState(processDefinitionKey, ProcessDefinitionState.SUSPENDED);
 
     verify(executionQueue)
         .executeInQueue(
@@ -67,24 +68,8 @@ class ProcessDefinitionWriterTest {
                     ContextType.PROCESS_DEFINITION,
                     WriteStatementType.UPDATE,
                     processDefinitionKey,
-                    "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markDeleted",
-                    processDefinitionKey)));
-  }
-
-  @Test
-  void shouldMarkProcessDefinitionDraining() {
-    final Long processDefinitionKey = 123L;
-
-    writer.markDraining(processDefinitionKey);
-
-    verify(executionQueue)
-        .executeInQueue(
-            eq(
-                new QueueItem(
-                    ContextType.PROCESS_DEFINITION,
-                    WriteStatementType.UPDATE,
-                    processDefinitionKey,
-                    "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markDraining",
-                    processDefinitionKey)));
+                    "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.updateState",
+                    new ProcessDefinitionStateDto(
+                        processDefinitionKey, ProcessDefinitionState.SUSPENDED))));
   }
 }

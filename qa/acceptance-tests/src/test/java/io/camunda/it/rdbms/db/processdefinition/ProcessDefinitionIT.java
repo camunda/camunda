@@ -830,7 +830,7 @@ public class ProcessDefinitionIT {
   public void shouldMarkDeletedWhenDrainedAndDeletedInSameFlush(
       final CamundaRdbmsTestApplication testApplication) {
     // given a process definition deleted with zero active instances emits DRAINING and
-    // FULLY_DELETED back-to-back, so markDraining and markDeleted are queued into the same flush
+    // FULLY_DELETED back-to-back, so both state updates are queued into the same flush
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
@@ -840,13 +840,113 @@ public class ProcessDefinitionIT {
     final var key = processDefinition.processDefinitionKey();
 
     // when both state transitions are flushed together
-    rdbmsWriters.getProcessDefinitionWriter().markDraining(key);
-    rdbmsWriters.getProcessDefinitionWriter().markDeleted(key);
+    rdbmsWriters.getProcessDefinitionWriter().updateState(key, ProcessDefinitionState.DRAINING);
+    rdbmsWriters.getProcessDefinitionWriter().updateState(key, ProcessDefinitionState.DELETED);
     rdbmsWriters.flush();
 
     // then the terminal state wins and the row is DELETED, not stuck at DRAINING
     final var deleted = processDefinitionReader.findOne(key).orElse(null);
     assertThat(deleted).isNotNull();
     assertThat(deleted.state()).isEqualTo(ProcessDefinitionEntity.ProcessDefinitionState.DELETED);
+  }
+
+  @TestTemplate
+  public void shouldMarkSuspendedAndResumeToActive(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionDbReader processDefinitionReader =
+        rdbmsService.getProcessDefinitionReader();
+
+    final var key =
+        createAndSaveRandomProcessDefinition(
+                rdbmsWriters, b -> b.state(ProcessDefinitionState.ACTIVE))
+            .processDefinitionKey();
+
+    // when suspended
+    rdbmsWriters.getProcessDefinitionWriter().updateState(key, ProcessDefinitionState.SUSPENDED);
+    rdbmsWriters.flush();
+
+    // then
+    assertThat(processDefinitionReader.findOne(key).orElseThrow().state())
+        .isEqualTo(ProcessDefinitionState.SUSPENDED);
+
+    // when resumed
+    rdbmsWriters.getProcessDefinitionWriter().updateState(key, ProcessDefinitionState.ACTIVE);
+    rdbmsWriters.flush();
+
+    // then
+    assertThat(processDefinitionReader.findOne(key).orElseThrow().state())
+        .isEqualTo(ProcessDefinitionState.ACTIVE);
+  }
+
+  @TestTemplate
+  public void shouldFilterProcessDefinitionsBySuspendedAndActiveState(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionDbReader processDefinitionReader =
+        rdbmsService.getProcessDefinitionReader();
+
+    // given k1 suspended, k2 active and k3 legacy NULL-state, all in one tenant
+    final var tenant = "tenant-suspension-" + RandomStringUtils.insecure().nextAlphanumeric(8);
+    final var k1 =
+        createAndSaveRandomProcessDefinition(
+                rdbmsWriters, b -> b.tenantId(tenant).state(ProcessDefinitionState.ACTIVE))
+            .processDefinitionKey();
+    final var k2 =
+        createAndSaveRandomProcessDefinition(
+                rdbmsWriters, b -> b.tenantId(tenant).state(ProcessDefinitionState.ACTIVE))
+            .processDefinitionKey();
+    final var k3 =
+        createAndSaveRandomProcessDefinition(rdbmsWriters, b -> b.tenantId(tenant).state(null))
+            .processDefinitionKey();
+    rdbmsWriters.getProcessDefinitionWriter().updateState(k1, ProcessDefinitionState.SUSPENDED);
+    rdbmsWriters.flush();
+
+    // when / then
+    final var suspended =
+        processDefinitionReader.search(
+            ProcessDefinitionQuery.of(
+                b ->
+                    b.filter(f -> f.tenantIds(tenant).state(ProcessDefinitionState.SUSPENDED))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+    assertThat(suspended.items())
+        .extracting(ProcessDefinitionEntity::processDefinitionKey)
+        .containsExactly(k1);
+
+    final var active =
+        processDefinitionReader.search(
+            ProcessDefinitionQuery.of(
+                b ->
+                    b.filter(f -> f.tenantIds(tenant).state(ProcessDefinitionState.ACTIVE))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+    assertThat(active.items())
+        .extracting(ProcessDefinitionEntity::processDefinitionKey)
+        .containsExactlyInAnyOrder(k2, k3);
+  }
+
+  @TestTemplate
+  public void shouldMarkDrainingAfterSuspendedInSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionDbReader processDefinitionReader =
+        rdbmsService.getProcessDefinitionReader();
+
+    // given
+    final var key =
+        createAndSaveRandomProcessDefinition(rdbmsWriters, b -> b).processDefinitionKey();
+    rdbmsWriters.getProcessDefinitionWriter().updateState(key, ProcessDefinitionState.SUSPENDED);
+
+    // when
+    rdbmsWriters.getProcessDefinitionWriter().updateState(key, ProcessDefinitionState.DRAINING);
+    rdbmsWriters.flush();
+
+    // then
+    assertThat(processDefinitionReader.findOne(key).orElseThrow().state())
+        .isEqualTo(ProcessDefinitionState.DRAINING);
   }
 }

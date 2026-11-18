@@ -34,8 +34,8 @@ public enum ContextType {
   // suspend/resume can queue a CORRELATED update then a restore-CREATED upsert for the same row in
   // one flush; the default sort would run CREATED first and leave the row stale as CORRELATED
   MESSAGE_SUBSCRIPTION(true),
-  // draining-deletion issues markDraining and markDeleted as two UPDATEs on the same row, their
-  // order must be preserved so the state is updated correctly
+  // state UPDATEs on the same row (e.g. DRAINING then DELETED, or SUSPENDED then DRAINING) can be
+  // queued into one flush; their order must be preserved so the state is updated correctly
   PROCESS_DEFINITION(true),
   PROCESS_INSTANCE(false),
   ROLE(false),

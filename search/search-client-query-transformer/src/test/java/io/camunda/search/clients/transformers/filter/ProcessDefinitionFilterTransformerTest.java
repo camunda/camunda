@@ -50,6 +50,25 @@ class ProcessDefinitionFilterTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  void shouldQueryByStateSuspendedAsExactMatch() {
+    // given
+    final var filter =
+        FilterBuilders.processDefinition(f -> f.state(ProcessDefinitionState.SUSPENDED));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("state");
+              assertThat(t.value().stringValue()).isEqualTo("SUSPENDED");
+            });
+  }
+
+  @Test
   void shouldQueryByStateActiveAsValueOrMissingField() {
     final var filter =
         FilterBuilders.processDefinition(f -> f.state(ProcessDefinitionState.ACTIVE));

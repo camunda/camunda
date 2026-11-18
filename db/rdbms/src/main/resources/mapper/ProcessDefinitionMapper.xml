@@ -382,17 +382,8 @@
             #{tenantId}, #{versionTag}, #{version}, #{formId}, #{state})
   </insert>
 
-  <update id="markDeleted" parameterType="java.lang.Long">
-    <bind name="state"
-      value="@io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState@DELETED"/>
-    UPDATE ${prefix}PROCESS_DEFINITION
-    SET STATE = #{state}
-    WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
-  </update>
-
-  <update id="markDraining" parameterType="java.lang.Long">
-    <bind name="state"
-      value="@io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState@DRAINING"/>
+  <update id="updateState"
+    parameterType="io.camunda.db.rdbms.sql.ProcessDefinitionMapper$ProcessDefinitionStateDto">
     UPDATE ${prefix}PROCESS_DEFINITION
     SET STATE = #{state}
     WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
