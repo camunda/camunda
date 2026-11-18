@@ -47,7 +47,10 @@ public final class RecordSizeBaseline {
 
   private static final String UPDATE_PROPERTY = "golden.update";
 
-  /** Large enough for small encoding changes, small enough for a new field on many records. */
+  /**
+   * Small changes pass, for example a new short field. Large changes fail, for example the token
+   * claims on each event.
+   */
   private static final int TOLERANCE_PERCENT = 10;
 
   /** Scheduled tasks write these records at times that the scenarios do not control. */
