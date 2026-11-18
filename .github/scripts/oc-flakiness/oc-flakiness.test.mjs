@@ -1169,6 +1169,43 @@ test('should link the run of the night that saw the flake, not the night', () =>
   assert.equal(result.post_merge.last_flake_run_id, 'rdbms-1');
 });
 
+test('should measure a night by the runs that ran the test, not the night', () => {
+  // given — the API nightly starts at 01:30 and never runs this spec, the fix
+  // merges at 01:40, and the E2E nightly re-flakes it at 01:45. The night
+  // straddles the merge, and the re-flake is this fix's.
+  const dir = nightlyDir([
+    {
+      version: '8.10',
+      cell: 'api-all-in-one',
+      runId: 'api-1',
+      createdAt: '2026-11-17T01:30:00Z',
+      tests: [passed],
+      opts: {file: 'api/v2/other.spec.ts', title: 'something else'},
+    },
+    {
+      version: '8.10',
+      cell: 'e2e-v2',
+      runId: 'e2e-1',
+      createdAt: '2026-11-17T01:45:00Z',
+      tests: [flaky],
+    },
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-17T01:40:00Z'},
+    now: '2026-11-18T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 're-flaked');
+  assert.equal(result.post_merge.nightlies, 1);
+  assert.equal(result.post_merge.flaked, 1);
+  assert.equal(result.post_merge.last_flake_run_id, 'e2e-1');
+});
+
 test('should not call a fix clean on one or two nights', () => {
   // given — the tests this agent picks flake in a minority of nights, so a
   // couple of green ones are as likely to be a quiet week as a fix.
