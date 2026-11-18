@@ -271,10 +271,6 @@ final class OpsRenderer {
   /** The static {@code toString(value)} and {@code appendTo(builder, value)} of the ops class. */
   private static String toStringMethod(final Model m) {
     final var body = new StringBuilder();
-    // whether no property comes before, and whether one that is always printed does
-    boolean first = true;
-    boolean printed = false;
-    boolean needsStart = false;
     for (final var p : m.properties()) {
       final var value =
           p.sanitized()
@@ -295,33 +291,24 @@ final class OpsRenderer {
                         : "    v.$field.writeJSON(sb);\n";
                 case LIST -> "$list";
               };
+      // the comma goes with the property, so a property that is left out leaves none behind
       var statements =
           """
+              if (sb.length() > start) {
+                sb.append(',');
+              }
               sb.append("\\"").append($key).append("\\":");
           """
               + value;
-      // the comma goes with the property, so a property that is left out leaves none behind
-      statements = separator(first, printed) + statements;
-      needsStart |= !first && !printed;
       if (p.canBeUnset()) {
         statements = "    if (!($unset)) {\n" + statements + "    }\n";
       }
-      first = false;
-      printed |= !p.canBeUnset();
       final var list =
           p.type() == Type.LIST ? appendList("v." + p.field(), p.listElement(), 0) : "";
       body.append(fill(p, statements, "$unset", p.unset("v"), "$list", list.indent(4)));
     }
     if (m.unknownField() != null) {
-      final var empty = first ? "true" : printed ? "false" : "sb.length() == start";
-      needsStart |= !first && !printed;
-      body.append(
-          fill(
-              "    v.$field.appendJson(sb, $empty);\n",
-              "$field",
-              m.unknownField(),
-              "$empty",
-              empty));
+      body.append(fill("    v.$field.appendJson(sb, start);\n", "$field", m.unknownField()));
     }
     return fill(
         """
@@ -335,7 +322,7 @@ final class OpsRenderer {
           /** Appends {@link #toString} to a builder, for the string of a nested value. */
           public static void appendTo(final StringBuilder sb, final $pojo v) {
             sb.append('{');
-        $start\
+            final int start = sb.length();
         $body\
             sb.append('}');
           }
@@ -343,28 +330,8 @@ final class OpsRenderer {
         """,
         "$pojo",
         m.name(),
-        "$start",
-        needsStart ? "    final int start = sb.length();\n" : "",
         "$body",
         body);
-  }
-
-  /**
-   * The comma before a property in {@link #toStringMethod}: none for the first property, a fixed
-   * one if a property that is always printed comes before, and else one only if a property was
-   * printed before, which the generated code sees from the length of the builder.
-   */
-  private static String separator(final boolean first, final boolean printed) {
-    if (first) {
-      return "";
-    }
-    return printed
-        ? "    sb.append(',');\n"
-        : """
-            if (sb.length() > start) {
-              sb.append(',');
-            }
-        """;
   }
 
   /** The static {@code hashCode(value)} of the ops class. */
