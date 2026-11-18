@@ -34,7 +34,7 @@ only within one tenant.
 | Export rate | `sum by (physicalTenant) (rate(zeebe_exporter_last_exported_position[W]))` |
 | Queue per partition | `max by (physicalTenant, partition) (zeebe_log_appender_last_committed_position) - min by (physicalTenant, partition) (zeebe_exporter_last_exported_position)`. `min` takes the slowest exporter of the partition |
 | Export rate per partition | `min by (physicalTenant, partition) (rate(zeebe_exporter_last_exported_position[W]))` |
-| Export throughput | the rate per partition above, summed over the partitions of a tenant, and over the tenants. Positions per second, not exact records |
+| Export throughput | the rate per partition above, summed over the partitions of a tenant, and its share of the sum over the tenants. Positions per second, not exact records. Every tenant has its own partitions, so the positions of different tenants are separate logs |
 | Export lag (s) | queue divided by rate for each partition. The tenant's lag is its worst partition: a summed queue over a summed rate lets the fast partitions hide a slow one. Without partition data, the summed queue over the summed rate |
 
 To check that the label exists on a namespace: `count by (physicalTenant) (zeebe_exporter_last_exported_position{namespace="<ns>"})`.

@@ -64,7 +64,7 @@ Run the tests with `python3 -m unittest discover -s .agents/skills/noisy-neighbo
 | How the load is shared | Offered vs served vs fair share | The noisy tenant serving more than its fair share while quiet ones serve less |
 | Variance between the quiet tenants | Spread over the tenants that behave | A high CV means uneven treatment. Jain's index near 1 means even |
 | Against the reference run | Ratio to the same tenants without noise | Served below 1, latency and lag above 1: that is the interference |
-| Export throughput | Export rate of every tenant and partition, and the total over all tenants | Partitions or tenants far below the others; the total shows what the exporter can do in all |
+| Export throughput | Export rate of every tenant (its partitions summed), its share, and the total | A tenant far below the others, or a share far from the fair share |
 | Export per partition | Queue, rate and lag of each partition of the noisy tenant | A partition that exports much slower than the others sets the tenant's lag |
 | Cluster context | Backpressure, CPU, throttling | Throttling or dropped requests explain why the cluster is saturated |
 

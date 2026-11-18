@@ -425,30 +425,26 @@ def fmt(value: float | None, unit: str = "", digits: int = 1) -> str:
 
 
 def export_throughput_section(ordered: list[Tenant]) -> list[str]:
-    """Export rate of every tenant and partition, and the total over all the tenants."""
-    rated = [t for t in ordered if any("rate" in v for v in t.export_partitions.values())]
+    """Export rate of every tenant (the sum of its partitions) and the total over the tenants."""
+    rated = [t for t in ordered if t.export_rate is not None]
     if not rated:
         return []
-    partitions = sorted({p for t in rated for p in t.export_partitions}, key=lambda p: int(p) if p.isdigit() else 0)
-
-    def rate(t: Tenant, partition: str) -> float | None:
-        return t.export_partitions.get(partition, {}).get("rate")
-
+    total = sum(t.export_rate for t in rated)
     out = [
         "## Export throughput",
         "",
-        "Positions exported per second, averaged over the window, by the slowest exporter of each partition.",
+        "Positions exported per second, averaged over the window: the sum of the partitions of the tenant, "
+        "each at the speed of its slowest exporter. Every tenant has its own partitions, and a position is not "
+        "a record, so the numbers compare tenants but are not a count of records.",
         "",
-        "| Tenant | " + " | ".join(f"Partition {p}" for p in partitions) + " | Total |",
-        "| --- | " + " | ".join("---" for _ in partitions) + " | --- |",
+        "| Tenant | Role | Export rate (/s) | Share of the total |",
+        "| --- | --- | --- | --- |",
     ]
     for t in rated:
-        out.append(f"| {t.name} | " + " | ".join(fmt(rate(t, p)) for p in partitions) + f" | {fmt(t.export_rate)} |")
-    totals = [sum(rate(t, p) or 0 for t in rated) for p in partitions]
-    out.append("| **All tenants** | " + " | ".join(fmt(v) for v in totals) + f" | {fmt(sum(totals))} |")
-    per_tenant = [t.export_rate for t in rated if t.export_rate is not None]
-    stats = spread(per_tenant)
-    if stats and len(per_tenant) > 1:
+        out.append(f"| {t.name} | {t.role} | {fmt(t.export_rate)} | {fmt(t.export_rate / total if total else None, '%')} |")
+    out.append(f"| **All tenants** | | {fmt(total)} | 100% |")
+    stats = spread([t.export_rate for t in rated])
+    if stats and len(rated) > 1:
         out += [
             "",
             f"Per tenant: mean {fmt(stats['mean'])}/s, min {fmt(stats['min'])}/s, max {fmt(stats['max'])}/s, CV {stats['cv']:.2f}.",

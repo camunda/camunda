@@ -207,12 +207,12 @@ class RenderTest(unittest.TestCase):
         self.assertIn("`pt6`", markdown)  # the lagging tenant is named, although it has no load tester
         self.assertEqual(data["failing"]["pt2"], ["served", "availability", "export"])
 
-    def test_export_throughput_per_tenant_partition_and_in_total(self):
+    def test_export_throughput_is_the_sum_of_the_partitions_of_each_tenant(self):
         markdown, data = report.build_report(fake(), args())
         self.assertIn("## Export throughput", markdown)
-        self.assertIn("| pt1 | 1,700 | 176.0 | 1,876 |", markdown)
-        self.assertIn("| **All tenants** | 2,200 | 476.0 | 2,676 |", markdown)
-        self.assertEqual(data["tenants"]["pt2"]["export_rate"], 800)  # the sum of its partitions
+        self.assertIn("| pt1 | saturating | 1,876 | ", markdown)
+        self.assertIn("| **All tenants** | | 3,876 | 100% |", markdown)
+        self.assertEqual(data["tenants"]["pt2"]["export_rate"], 800)
 
     def test_the_noisy_tenant_gets_a_table_per_partition(self):
         markdown, _ = report.build_report(fake(), args())
