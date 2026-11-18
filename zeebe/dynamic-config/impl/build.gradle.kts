@@ -28,6 +28,7 @@ dependencies {
   testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(project(":zeebe-atomix-cluster"))
+  testImplementation(libs.org.apache.logging.log4j.log4j.api)
   testImplementation(libs.org.awaitility.awaitility)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.net.jqwik.jqwik)
