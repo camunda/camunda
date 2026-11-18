@@ -189,7 +189,7 @@ jobs:
           fi
 
           POM=testing/camunda-process-test-java/pom.xml
-          if ! grep -qF '<io.camunda.process.test.connectorsDockerImageVersion>${project.version}<' "$POM"; then
+          if ! grep -qF "<io.camunda.process.test.connectorsDockerImageVersion>\${project.version}<" "$POM"; then
             echo "Skipping: the Connectors version is already pinned"
             exit 0
           fi
