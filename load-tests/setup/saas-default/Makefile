@@ -30,14 +30,14 @@ install-load-test:
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
-		--set saas.enabled=true \
-		--set saas.credentials.clientId="$${ZEEBE_CLIENT_ID}" \
-		--set saas.credentials.clientSecret="$${ZEEBE_CLIENT_SECRET}" \
-		--set saas.credentials.zeebeRestAddress="$${ZEEBE_REST_ADDRESS}" \
-		--set saas.credentials.authServer="$${ZEEBE_AUTHORIZATION_SERVER_URL}" \
-		--set saas.credentials.authType="OAUTH" \
-		--set saas.credentials.zeebeGrpcAddress="$${ZEEBE_GRPC_ADDRESS}" \
-		--set saas.credentials.authorizationAudience="$${ZEEBE_TOKEN_AUDIENCE}" \
+		--set oidc.enabled=true \
+		--set-string oidc.credentials.clientId="$${ZEEBE_CLIENT_ID}" \
+		--set-string oidc.credentials.clientSecret="$${ZEEBE_CLIENT_SECRET}" \
+		--set-string oidc.credentials.zeebeRestAddress="$${ZEEBE_REST_ADDRESS}" \
+		--set-string oidc.credentials.authServer="$${ZEEBE_AUTHORIZATION_SERVER_URL}" \
+		--set-string oidc.credentials.authType="OAUTH" \
+		--set-string oidc.credentials.zeebeGrpcAddress="$${ZEEBE_GRPC_ADDRESS}" \
+		--set-string oidc.credentials.authorizationAudience="$${ZEEBE_TOKEN_AUDIENCE}" \
 		-f load-test-values.yaml \
 		-f load-test-values-generated.yaml \
 		$(additional_load_test_configuration)
