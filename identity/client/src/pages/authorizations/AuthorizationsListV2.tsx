@@ -91,6 +91,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
     <>
       {data?.items?.length || paginationProps.search ? (
         <EntityList
+          key={resourceType}
           data={data?.items}
           headers={headers}
           addEntityLabel={t("createAuthorization")}
