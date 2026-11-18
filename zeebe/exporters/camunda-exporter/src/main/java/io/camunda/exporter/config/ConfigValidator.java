@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.config;
 
+import io.camunda.search.schema.config.DeleterConfiguration;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
 import java.time.Duration;
@@ -171,6 +172,41 @@ public final class ConfigValidator {
       throw new ExporterException(
           "CamundaExporter retention.applyPolicyJobInterval must be strictly positive. Current value: "
               + applyPolicyJobInterval);
+    }
+
+    validateDeleter(configuration.getHistory().getRetention().getDeleter());
+  }
+
+  private static void validateDeleter(final DeleterConfiguration deleter) {
+    // both batch sizes are used as a search size, which is capped by the default result window
+    validateRange("retention.deleter.documentBatchSize", deleter.getDocumentBatchSize(), 1, 10_000);
+    validateRange("retention.deleter.entityBatchSize", deleter.getEntityBatchSize(), 1, 10_000);
+    validateAtLeast("retention.deleter.maxRetryAttempts", deleter.getMaxRetryAttempts(), 0);
+    validateAtLeast("retention.deleter.retryDelayMs", deleter.getRetryDelayMs(), 0);
+    validateAtLeast("retention.deleter.delayBetweenRuns", deleter.getDelayBetweenRuns(), 1);
+
+    if (deleter.getMaxDelayBetweenRuns() < deleter.getDelayBetweenRuns()) {
+      throw new ExporterException(
+          "CamundaExporter retention.deleter.maxDelayBetweenRuns must be >= retention.deleter.delayBetweenRuns ("
+              + deleter.getDelayBetweenRuns()
+              + "). Current value: "
+              + deleter.getMaxDelayBetweenRuns());
+    }
+  }
+
+  private static void validateRange(
+      final String name, final int value, final int min, final int max) {
+    validateAtLeast(name, value, min);
+    if (value > max) {
+      throw new ExporterException(
+          "CamundaExporter %s must be <= %d. Current value: %d".formatted(name, max, value));
+    }
+  }
+
+  private static void validateAtLeast(final String name, final int value, final int min) {
+    if (value < min) {
+      throw new ExporterException(
+          "CamundaExporter %s must be >= %d. Current value: %d".formatted(name, min, value));
     }
   }
 }
