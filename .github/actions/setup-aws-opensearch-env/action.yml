@@ -13,10 +13,19 @@ inputs:
     required: true
   vault-role-id:
     description: Vault Role ID to use
-    required: true
+    required: false
   vault-secret-id:
     description: Vault Secret ID to use
-    required: true
+    required: false
+  vault-jwt-role:
+    description: 'Vault JWT role; when set, the action logs in via JWT/OIDC and the job needs id-token: write'
+    required: false
+  vault-jwt-path:
+    description: 'Vault JWT auth backend path'
+    required: false
+  vault-jwt-audience:
+    description: 'GitHub OIDC audience for the Vault JWT login'
+    required: false
   opensearch-version:
     description: OpenSearch version to configure (2.19 or 3.7)
     required: true
@@ -34,9 +43,12 @@ runs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ inputs.vault-address }}
-        method: approle
-        roleId: ${{ inputs.vault-role-id }}
-        secretId: ${{ inputs.vault-secret-id }}
+        method: ${{ inputs.vault-jwt-role != '' && 'jwt' || 'approle' }}
+        path: ${{ inputs.vault-jwt-path }}
+        role: ${{ inputs.vault-jwt-role }}
+        jwtGithubAudience: ${{ inputs.vault-jwt-audience }}
+        roleId: ${{ inputs.vault-jwt-role == '' && inputs.vault-role-id || '' }}
+        secretId: ${{ inputs.vault-jwt-role == '' && inputs.vault-secret-id || '' }}
         secrets: |
           secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_19_URL;
           secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_3_7_URL;

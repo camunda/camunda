@@ -29,7 +29,7 @@ Vault/WIF hang (see that action's README).
 - The repository must be checked out first (e.g. `actions/checkout`), since this
   action and its nested actions are referenced by local path.
 - To use any Vault-backed feature (Nexus mirror, DockerHub/Harbor/Minimus login),
-  pass `vault-address` / `vault-role-id` / `vault-secret-id`.
+  pass `vault-address` / `vault-jwt-role` / `vault-jwt-path` / `vault-jwt-audience` and grant the job `id-token: write`.
 
 ## Usage
 
@@ -52,6 +52,9 @@ Vault/WIF hang (see that action's README).
 | vault-address                     | Vault URL to retrieve secrets from                                       | false    |           |
 | vault-role-id                     | Vault AppRole role id                                                    | false    |           |
 | vault-secret-id                   | Vault AppRole secret id                                                  | false    |           |
+| vault-jwt-role | Vault JWT role (`secrets.VAULT_JWT_ROLE`); when set, the action logs in via JWT/OIDC and the job needs `id-token: write` | false | |
+| vault-jwt-path | Vault JWT auth backend path (`secrets.VAULT_JWT_PATH`) | false | |
+| vault-jwt-audience | GitHub OIDC audience for the Vault JWT login (`secrets.VAULT_JWT_AUDIENCE`) | false | |
 
 ### Outputs
 
@@ -84,8 +87,9 @@ jobs:
           dockerhub-readonly: true
           maven-cache-key-modifier: build-shared
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 ```
 
 To also share the run-scoped distball / m2 tarball via the GCS build-cache, call
