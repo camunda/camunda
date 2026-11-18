@@ -33,9 +33,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * carries a bearer token that CSL classifies as an API client's, by the configured {@code
  * camunda.security.authentication.oidc.client-id-claim}. In SaaS, the token must also carry this
  * cluster's id.
- *
- * <p>The client classification replaces an audience check: SaaS no longer passes Optimize a public
- * API audience once it runs CSL, so that check denied every API client (camunda/camunda#69726).
  */
 public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
 

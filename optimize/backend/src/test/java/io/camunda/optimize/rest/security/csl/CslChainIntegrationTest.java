@@ -98,9 +98,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 class CslChainIntegrationTest {
 
   private static final Map<String, Session> SESSION_STORE = new ConcurrentHashMap<>();
-  // The client id claims deployments configure, so the public API sees the classification it gets
-  // in production: the claim the 8.10 upgrade notes tell a Self-Managed (Keycloak) operator to set,
-  // and the claim the SaaS operator sets.
+  // The client id claims Self-Managed (Keycloak) and SaaS deployments configure, so the public API
+  // sees the classification it gets in production.
   private static final String CCSM_CLIENT_ID_CLAIM = "client_id";
   private static final String CCSAAS_CLIENT_ID_CLAIM = "https://camunda.com/clientId";
   // The audiences public API clients' tokens carry: the Helm chart's Optimize audience, and the
@@ -283,8 +282,7 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldAuthenticateClientTokenOnPublicApiForCcsaas() throws Exception {
-    // camunda/camunda#69726: an API client's token as SaaS issues it, on an Optimize that the
-    // operator configures without a public API audience
+    // camunda/camunda#69726: an API client's SaaS token, with no public API audience configured
     assertBearerAuthenticatesOnPublicApi(
         ccsaasRunner(), clientToken(CCSAAS_CLIENT_ID_CLAIM, CCSAAS_TOKEN_AUDIENCE, "cluster-1"));
   }
@@ -1134,7 +1132,7 @@ class CslChainIntegrationTest {
     return baseRunner()
         .withPropertyValues(
             "spring.profiles.active=cloud",
-            // the principal claims the SaaS operator sets on Optimize
+            // the principal claims SaaS configures on Optimize
             "camunda.security.authentication.oidc.username-claim=sub",
             "camunda.security.authentication.oidc.client-id-claim=" + CCSAAS_CLIENT_ID_CLAIM)
         .withBean(ConfigurationService.class, CslChainIntegrationTest::cloudConfiguration)
@@ -1161,8 +1159,7 @@ class CslChainIntegrationTest {
     // access control must not silently fail open), so both must be set for the chain to build.
     cloudAuthConfiguration.setOrganizationId("org-1");
     cloudAuthConfiguration.setClusterId("cluster-1");
-    // No cloud audience: the SaaS operator strips CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE from Optimize
-    // images that run CSL (camunda/camunda#69726).
+    // No cloud audience: SaaS does not configure one on Optimize images that run CSL.
     return configurationService;
   }
 
@@ -1285,9 +1282,8 @@ class CslChainIntegrationTest {
   }
 
   /**
-   * An API client's bearer token, recognized as a client by the given client id claim, as the SaaS
-   * operator or a Self-Managed operator configures it. The SaaS cluster id claim is left out when
-   * it is null.
+   * An API client's bearer token, recognized as a client by the given client id claim, as SaaS and
+   * Self-Managed deployments configure it. The SaaS cluster id claim is left out when it is null.
    */
   private static String clientToken(
       final String clientIdClaim, final String audience, final String clusterId) throws Exception {
