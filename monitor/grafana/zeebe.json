@@ -22159,7 +22159,8 @@
                   "spec": {
                     "options": {
                       "join": [
-                        "pod"
+                        "pod",
+                        "physicalTenant"
                       ],
                       "value": "partition"
                     }
@@ -22255,6 +22256,24 @@
                         }
                       }
                     ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "physicalTenant"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "auto"
+                        }
+                      },
+                      {
+                        "id": "mappings",
+                        "value": []
+                      }
+                    ]
                   }
                 ]
               },
@@ -22263,7 +22282,16 @@
                 "enablePagination": false,
                 "frameIndex": 0,
                 "showHeader": true,
-                "sortBy": []
+                "sortBy": [
+                  {
+                    "displayName": "physicalTenant",
+                    "desc": false
+                  },
+                  {
+                    "displayName": "pod",
+                    "desc": false
+                  }
+                ]
               }
             },
             "version": "12.1.0"
@@ -22314,7 +22342,8 @@
                   "spec": {
                     "options": {
                       "join": [
-                        "pod"
+                        "pod",
+                        "physicalTenant"
                       ],
                       "value": "partition"
                     }
@@ -22400,6 +22429,24 @@
                         }
                       }
                     ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "physicalTenant"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "auto"
+                        }
+                      },
+                      {
+                        "id": "mappings",
+                        "value": []
+                      }
+                    ]
                   }
                 ]
               },
@@ -22408,7 +22455,16 @@
                 "enablePagination": false,
                 "frameIndex": 0,
                 "showHeader": true,
-                "sortBy": []
+                "sortBy": [
+                  {
+                    "displayName": "physicalTenant",
+                    "desc": false
+                  },
+                  {
+                    "displayName": "pod",
+                    "desc": false
+                  }
+                ]
               }
             },
             "version": "12.1.0"
@@ -27384,7 +27440,8 @@
                   "spec": {
                     "options": {
                       "join": [
-                        "pod"
+                        "pod",
+                        "physicalTenant"
                       ],
                       "value": "partition"
                     }
@@ -27475,6 +27532,24 @@
                         }
                       }
                     ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "physicalTenant"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "auto"
+                        }
+                      },
+                      {
+                        "id": "mappings",
+                        "value": []
+                      }
+                    ]
                   }
                 ]
               },
@@ -27483,7 +27558,16 @@
                 "enablePagination": false,
                 "frameIndex": 0,
                 "showHeader": true,
-                "sortBy": []
+                "sortBy": [
+                  {
+                    "displayName": "physicalTenant",
+                    "desc": false
+                  },
+                  {
+                    "displayName": "pod",
+                    "desc": false
+                  }
+                ]
               }
             },
             "version": "12.1.0"
