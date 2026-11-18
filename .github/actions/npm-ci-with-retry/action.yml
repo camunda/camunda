@@ -36,31 +36,60 @@ runs:
       uses: ./.github/actions/setup-npm-cache
       with:
         cache-dependency-path: ${{ inputs.directory }}/package-lock.json
+    - name: Validate timeout and derive attempt budgets
+      id: budget
+      shell: bash
+      env:
+        TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
+      run: |
+        if ! [[ "$TIMEOUT_MINUTES" =~ ^[1-9][0-9]*$ ]]; then
+          echo "::error::npm-ci-with-retry: the 'timeout_minutes' input must be a positive integer, got '${TIMEOUT_MINUTES}'"
+          exit 1
+        fi
+        # npm gets the attempt time minus the 30s --kill-after grace.
+        echo "inner_timeout_seconds=$((TIMEOUT_MINUTES * 60 - 30))" >> "$GITHUB_OUTPUT"
+        echo "retry_timeout_seconds=$((TIMEOUT_MINUTES * 60 + 30))" >> "$GITHUB_OUTPUT"
     - name: Install node dependencies
       uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      env:
+        NPM_CI_DIRECTORY: ${{ inputs.directory }}
+        NPM_CI_TIMEOUT_SECONDS: ${{ steps.budget.outputs.inner_timeout_seconds }}
       with:
         max_attempts: ${{ inputs.max_attempts }}
         retry_wait_seconds: ${{ inputs.retry_wait_seconds }}
-        timeout_minutes: ${{ inputs.timeout_minutes }}
+        # Backstop only: nick-fields/retry kills without waiting for npm to
+        # exit, which let attempts overlap (INC-9201). The inner `timeout`
+        # below must always fire first.
+        timeout_seconds: ${{ steps.budget.outputs.retry_timeout_seconds }}
         # Pin to bash so a forward-slash `directory` works consistently on
         # Linux, container images, and Windows runners (git-bash).
         shell: bash
         # Without these, a single stalled registry request rides along until
-        # the outer timeout above kills the whole process with no error
-        # logged (see #62796). These bound npm's own retry of that request so
-        # it fails fast and lets `nick-fields/retry` try again cleanly.
+        # the timeout kills the whole process with no error logged (see
+        # #62796). These bound npm's own retry of that request so it fails
+        # fast and lets `nick-fields/retry` try again cleanly.
         #
-        # The budget must stay under the smallest `timeout_minutes` any caller
-        # passes (currently 6), or the outer timer SIGTERMs npm mid-retry and
-        # we are back to the silent kill this is meant to remove. Worst case
-        # for one stalled request: 4 request windows of 60s, plus backoff of
-        # 5s + 15s + 15s at npm's default `fetch-retry-factor` of 10, so
-        # 4m35s against a 6m cap. Re-check this if a caller lowers its
-        # timeout or these numbers grow.
+        # The budget must stay under the inner timeout of the smallest
+        # `timeout_minutes` any caller passes (currently 6, so 5m30s), or
+        # npm is killed mid-retry and we are back to the silent kill this is
+        # meant to remove. Worst case for one stalled request: 4 request
+        # windows of 60s, plus backoff of 5s + 15s + 15s at npm's default
+        # `fetch-retry-factor` of 10, so 4m35s. Re-check this if a caller
+        # lowers its timeout or these numbers grow.
+        #
+        # `timeout` returns only after npm's whole process group has exited
+        # (SIGKILL after 30s, exit 137), so the rm -rf below is safe. Don't
+        # add `--foreground`, it would signal npm only.
         command: |
-          cd "${{ inputs.directory }}" && npm ci --fetch-timeout=60000 --fetch-retries=3 --fetch-retry-mintimeout=5000 --fetch-retry-maxtimeout=15000
+          cd "$NPM_CI_DIRECTORY" || exit 1
+          status=0
+          timeout --kill-after=30s "${NPM_CI_TIMEOUT_SECONDS}s" npm ci --fetch-timeout=60000 --fetch-retries=3 --fetch-retry-mintimeout=5000 --fetch-retry-maxtimeout=15000 || status=$?
+          if [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
+            echo "::warning::npm ci timed out after ${NPM_CI_TIMEOUT_SECONDS}s (exit ${status})"
+          fi
+          exit "$status"
         # A killed attempt (timeout) can leave node_modules half-extracted,
         # which makes the next attempt fail deterministically (e.g. ENOTEMPTY)
         # instead of getting a clean retry.
         on_retry_command: |
-          rm -rf "${{ inputs.directory }}/node_modules"
+          rm -rf "$NPM_CI_DIRECTORY/node_modules"
