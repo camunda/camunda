@@ -349,7 +349,13 @@ final class FileSetManager {
   }
 
   void close() {
-    schedulerExecutor.shutdown();
+    if (readRateLimiter.isUnlimited()) {
+      schedulerExecutor.shutdown();
+    } else {
+      // An upload held back by the read limit cannot speed up to finish within the grace period
+      // below; it would only delay closing the store and then be interrupted anyway.
+      schedulerExecutor.shutdownNow();
+    }
     try {
       if (!schedulerExecutor.awaitTermination(1, TimeUnit.MINUTES)) {
         schedulerExecutor.shutdownNow();

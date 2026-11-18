@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceAccessMode;
@@ -151,6 +152,32 @@ final class FileSetManagerRateLimitTest {
         .withThrowableThat()
         .withRootCauseInstanceOf(InterruptedIOException.class);
     assertThat(compressedTempFiles()).isSubsetOf(compressedFilesBefore);
+    assertThat(uploaded).isEmpty();
+  }
+
+  @Test
+  void shouldStopUploadsThatWaitForTheReadLimitWhenClosed() throws Exception {
+    // given - an upload that would need two minutes at this rate, and has started to read
+    final var file = Files.write(directory.resolve("segment-1.log"), randomBytes((int) MIB));
+    final var manager =
+        new FileSetManager(
+            client,
+            new S3BackupConfig.Builder().withBucketName("b").build(),
+            countingLimiter(BackupReadRateLimiter.of(8 * 1024)));
+    final var saved = manager.save("prefix/", new NamedFileSetImpl(Map.of("segment-1.log", file)));
+    Awaitility.await("upload reads through the limiter")
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> bytesReadThroughLimiter.get() > 0);
+
+    // when
+    final var closed = CompletableFuture.runAsync(manager::close);
+
+    // then - closing does not wait for the grace period of a minute that the upload cannot use
+    assertThat(closed).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(saved)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(InterruptedException.class);
     assertThat(uploaded).isEmpty();
   }
 
@@ -354,7 +381,12 @@ final class FileSetManagerRateLimitTest {
 
   /** A limiter that never waits and counts the bytes that are read through its streams. */
   private BackupReadRateLimiter countingLimiter() throws IOException {
-    final var realLimiter = BackupReadRateLimiter.of(1L << 40);
+    return countingLimiter(BackupReadRateLimiter.of(1L << 40));
+  }
+
+  /** Counts the bytes that are read through the streams of the given limiter. */
+  private BackupReadRateLimiter countingLimiter(final BackupReadRateLimiter realLimiter)
+      throws IOException {
     final var limiter = mock(BackupReadRateLimiter.class);
     when(limiter.wrap(any()))
         .then(
