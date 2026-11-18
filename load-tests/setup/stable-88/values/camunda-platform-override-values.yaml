@@ -1,5 +1,9 @@
-# Consistency check overrides for the max stress scenario.
+# Overrides for the max stress scenario: consistency checks off and a short archiver wait.
 # This file is injected as application-override.yml (loaded after and overrides application.yml)
-# when scenario=max, to disable checks that would add overhead during maximum-load tests.
+# when scenario=max, to remove overhead and to exercise the archiver during maximum-load tests.
 zeebe.broker.experimental.consistencyChecks.enablePreconditions: "false"
 zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "false"
+
+# CUSTOMIZATION: archive after 1 minute so the 45 minute stress test exercises the archiver,
+# the default of 1 hour would never archive within the test.
+zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"

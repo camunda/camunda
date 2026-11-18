@@ -6,7 +6,7 @@ This Helm Chart sets up the surrounding infrastructure for a Camunda load test n
 * The `camunda-credentials` and `load-test-credentials` secrets, with deterministic passwords
   generated via Helm's `derivePassword` so reinstalls (e.g. after a TTL cleanup) don't rotate
   credentials out from under the platform release.
-* A **leader-balancer** CronJob that periodically triggers Zeebe partition leader rebalancing.
+* A **leader-balancer** CronJob that periodically triggers Zeebe partition leader rebalancing (optional, disabled by default via `leaderBalancer.enabled`).
 * An optional **chaos-killer** CronJob that randomly deletes matching pods to simulate unscheduled
   restarts.
 * An optional **ECK-managed Elasticsearch** cluster (`elasticsearch.enabled=true`), for load tests

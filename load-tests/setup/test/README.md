@@ -24,11 +24,13 @@ golden/<version>/<scenario>/<chart>/charts/<subchart>/templates/<file>.yaml
 - `<scenario>` — storage/optimize/stable combos (`elasticsearch`, `opensearch`,
   `rdbms`, `rdbms-optimize`, `none`, and the `-stable` variants), the
   `<storage>-physical-tenants` variants (one per storage type, `main`/`stable-810`
-  only), plus the workload profiles `max` and `realistic`
+  only), plus the workload profiles `max` and `realistic`, and `max-platform-config`
+  (the broker ConfigMap rendered with `scenario=max`)
 - `<chart>` — `platform`, `load-tester`, `load-test-setup`
 
-Workload scenarios (`max`, `realistic`) only change load-tester flags, so they
-render just the `load-tester` chart on a fixed elasticsearch backend. `realistic`
+Workload scenarios (`max`, `realistic`) change the load-tester flags (and the leader
+balancer for `max`), so they render just the `load-test-setup` chart on a fixed
+elasticsearch backend. `realistic`
 pulls a values file from the `camunda-load-tests-helm` repo at render time — the
 same live-latest policy as the load-tester chart, so regenerate its golden when
 that file changes.

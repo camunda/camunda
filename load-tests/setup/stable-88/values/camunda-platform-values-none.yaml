@@ -41,7 +41,7 @@ orchestration:
       # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
       zeebe.broker.executionMetricsExporterEnabled: "true"
       camunda.flags.jfr.metrics: "true"
-      # We want to have this for long running load tests, to detect consistency issues early on and to have the foreign key checks enabled for better data integrity.
+      # CUSTOMIZATION: we want to have this for long running load tests, to detect consistency issues early on and to have the foreign key checks enabled for better data integrity.
       # Like endurance / soak tests  but not for our maximum stress tests, where we want to push the system to the limits and consistency checks might cause too much overhead.
       zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
       zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
