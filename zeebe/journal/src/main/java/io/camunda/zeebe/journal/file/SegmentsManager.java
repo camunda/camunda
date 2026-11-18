@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.io.File;
@@ -29,10 +30,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Queue;
 import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Executor;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +53,10 @@ final class SegmentsManager implements AutoCloseable {
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private @Nullable CompletableFuture<UninitializedSegment> nextSegment = null;
+  // the deletion stops at the first failed segment and retries it later, so that the log on disk
+  // never has a gap
+  private final Queue<Segment> segmentsToDelete = new ConcurrentLinkedQueue<>();
+  private CompletableFuture<Void> pendingDeletion = CompletableFuture.completedFuture(null);
 
   private final JournalMetrics journalMetrics;
   private final JournalIndex journalIndex;
@@ -57,6 +65,7 @@ final class SegmentsManager implements AutoCloseable {
   private final SegmentLoader segmentLoader;
   private final String name;
   private final JournalMetaStore metaStore;
+  private final Executor deletionExecutor;
 
   private volatile @Nullable Segment currentSegment;
 
@@ -67,7 +76,8 @@ final class SegmentsManager implements AutoCloseable {
       final String name,
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
-      final JournalMetaStore metaStore) {
+      final JournalMetaStore metaStore,
+      final Executor deletionExecutor) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
@@ -75,10 +85,23 @@ final class SegmentsManager implements AutoCloseable {
     this.segmentLoader = segmentLoader;
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
+    this.deletionExecutor = deletionExecutor;
   }
 
   @Override
   public void close() {
+    try {
+      deleteQueuedSegmentsNow();
+    } catch (final RuntimeException e) {
+      LOG.warn("{} - Failed to delete compacted segments on close", name, e);
+      // the files stay on disk, and the next start loads them again
+      segmentsToDelete.forEach(
+          segment -> {
+            segment.close();
+            journalMetrics.decPendingSegmentDeletions();
+          });
+      segmentsToDelete.clear();
+    }
     segments
         .values()
         .forEach(
@@ -178,6 +201,7 @@ final class SegmentsManager implements AutoCloseable {
   boolean deleteUntil(final long index) {
     final Map.Entry<Long, Segment> segmentEntry = segments.floorEntry(index);
     if (segmentEntry == null) {
+      scheduleQueuedDeletion();
       return false;
     }
 
@@ -188,6 +212,8 @@ final class SegmentsManager implements AutoCloseable {
           "No segments can be deleted with index < {} (first log index: {})",
           index,
           getFirstIndex());
+      // a previous deletion can have failed, and no new segment may become compactable soon
+      scheduleQueuedDeletion();
       return false;
     }
 
@@ -198,17 +224,55 @@ final class SegmentsManager implements AutoCloseable {
         requireNonNull(compactSegments.get(compactSegments.lastKey())).index(),
         compactSegments.size());
     for (final Segment segment : compactSegments.values()) {
-      LOG.trace("{} - Deleting segment: {}", name, segment);
-      segment.delete();
+      segment.markAsClosed();
+      // a running deletion can take the segment at once and must not decrement an uncounted segment
+      journalMetrics.incPendingSegmentDeletions();
+      segmentsToDelete.add(segment);
       journalMetrics.decSegmentCount();
     }
-
     // removes them from the segment map
     compactSegments.clear();
 
     journalIndex.deleteUntil(index);
 
+    scheduleQueuedDeletion();
+
     return true;
+  }
+
+  private void scheduleQueuedDeletion() {
+    if (!segmentsToDelete.isEmpty()) {
+      // file deletion is slow, and appends and readers wait for the journal lock
+      pendingDeletion =
+          pendingDeletion
+              .thenRunAsync(this::deleteQueuedSegments, deletionExecutor)
+              // a failed stage must not skip the later stages
+              .exceptionally(this::onDeletionFailed);
+    }
+  }
+
+  private @Nullable Void onDeletionFailed(final Throwable error) {
+    LOG.error(
+        "{} - Failed to delete segment {}. The next compaction tries again.",
+        name,
+        segmentsToDelete.peek(),
+        error);
+    return null;
+  }
+
+  private void deleteQueuedSegments() {
+    Segment segment;
+    while ((segment = segmentsToDelete.peek()) != null) {
+      LOG.trace("{} - Deleting segment: {}", name, segment);
+      journalMetrics.observeSegmentDeletion(segment::delete);
+      segmentsToDelete.remove();
+      journalMetrics.decPendingSegmentDeletions();
+    }
+  }
+
+  private void deleteQueuedSegmentsNow() {
+    pendingDeletion.join();
+    deleteQueuedSegments();
   }
 
   /**
@@ -224,6 +288,9 @@ final class SegmentsManager implements AutoCloseable {
     // there is "nothing" written, even if we cannot read the descriptor (e.g. if we crash after
     // creating the segment but before writing its descriptor)
     metaStore.resetLastFlushedIndex();
+
+    // the new first segment can use the ID of a segment that waits for deletion
+    deleteQueuedSegmentsNow();
 
     // delete the segments in reverse order, such that if the operation is interrupted (e.g. crash)
     // in the middle, there are no gaps in the log (or between the log and snapshot)
@@ -345,6 +412,23 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn) {
+    try {
+      return createSegmentFile(descriptor, lastWrittenAsqn);
+    } catch (final OutOfDiskSpace e) {
+      // callers compact on out of disk space and retry at once, before the deletion frees space
+      try {
+        deleteQueuedSegmentsNow();
+      } catch (final RuntimeException deletionError) {
+        // callers handle out of disk space in a special way, so the type must not change
+        e.addSuppressed(deletionError);
+        throw e;
+      }
+      return createSegmentFile(descriptor, lastWrittenAsqn);
+    }
+  }
+
+  private Segment createSegmentFile(
+      final SegmentDescriptor descriptor, final long lastWrittenAsqn) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createSegment(
         segmentFile.toPath(), descriptor, lastWrittenAsqn, journalIndex);

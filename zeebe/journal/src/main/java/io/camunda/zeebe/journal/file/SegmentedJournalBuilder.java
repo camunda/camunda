@@ -23,12 +23,19 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import org.jspecify.annotations.Nullable;
 
 /** Raft log builder. */
 @SuppressWarnings("UnusedReturnValue")
 public class SegmentedJournalBuilder {
 
+  // file deletion blocks, so it must not use the common pool, which segment preparation also uses;
+  // idle threads end, so the pool needs no shutdown
+  private static final Executor SEGMENT_DELETION_EXECUTOR =
+      Executors.newCachedThreadPool(
+          Thread.ofPlatform().name("zeebe-journal-segment-deletion-", 0).daemon().factory());
   private static final String DEFAULT_NAME = "journal";
   private static final String DEFAULT_DIRECTORY = System.getProperty("user.dir");
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
@@ -180,7 +187,8 @@ public class SegmentedJournalBuilder {
             name,
             segmentLoader,
             journalMetrics,
-            metaStore);
+            metaStore,
+            SEGMENT_DELETION_EXECUTOR);
 
     return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, metaStore);
   }
