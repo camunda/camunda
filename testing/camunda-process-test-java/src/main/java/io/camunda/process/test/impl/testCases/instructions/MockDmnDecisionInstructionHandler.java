@@ -33,7 +33,15 @@ public class MockDmnDecisionInstructionHandler
 
     final Object decisionOutput =
         instruction.getDecisionOutput().orElse(instruction.getVariables());
-    context.mockDmnDecision(instruction.getDecisionDefinitionId(), decisionOutput);
+    if (instruction.getVersionTag().isPresent()) {
+      context
+          .mockDmnDecision()
+          .withDecisionId(instruction.getDecisionDefinitionId())
+          .withVersionTag(instruction.getVersionTag().get())
+          .thenReturn(decisionOutput);
+    } else {
+      context.mockDmnDecision(instruction.getDecisionDefinitionId(), decisionOutput);
+    }
   }
 
   @Override
