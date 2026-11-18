@@ -25,6 +25,9 @@ import org.springframework.util.unit.DataSize;
 @NullMarked
 public class BackupCfg implements ConfigurationEntry {
 
+  /** The lowest {@link #getMaxReadRate() maxReadRate} in bytes per second. */
+  public static final long MIN_MAX_READ_RATE_BYTES = BackupReadRateLimiter.MIN_BYTES_PER_SECOND;
+
   private BackupStoreType store = BackupStoreType.NONE;
 
   private S3BackupStoreConfig s3 = new S3BackupStoreConfig();
