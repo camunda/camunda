@@ -36,6 +36,7 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -105,12 +106,10 @@ public class SecretStoreConfiguration {
       final PhysicalTenantResolver resolver,
       final ActorClockService clockService,
       final MeterRegistry meterRegistry) {
-    final Map<String, SecretStoreRegistry> registries = new LinkedHashMap<>();
-    // tracks everything built across all tenants processed so far, so a failure partway through
-    // (e.g. a later tenant's AWS store failing to build) can release it instead of leaking clients,
-    // pools and meters; on success it moves into the returned registries, which release it on close
-    final var resources = new SecretStoreResources();
     final var timeSource = new ActorClockInstantSource(clockService);
+    final var registries =
+        new SecretStoreRegistries(
+            (tenantId, secrets) -> build(tenantId, secrets, timeSource, meterRegistry));
     try {
       // the default tenant goes first: it is the root configuration itself, which every other
       // tenant inherits, so an invalid root value fails here under the root property the operator
@@ -119,22 +118,36 @@ public class SecretStoreConfiguration {
           .sorted(
               Comparator.comparing(
                   entry -> !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(entry.getKey())))
-          .forEachOrdered(
-              entry ->
-                  registries.put(
-                      entry.getKey(),
-                      buildRegistry(
-                          entry.getKey(), entry.getValue(), resources, timeSource, meterRegistry)));
+          .forEachOrdered(entry -> registries.put(entry.getKey(), entry.getValue()));
     } catch (final Throwable e) {
       try {
-        resources.close();
+        registries.close();
       } catch (final Throwable closeFailure) {
         // keeps the startup failure as the root cause an operator sees
         e.addSuppressed(closeFailure);
       }
       throw e;
     }
-    return new SecretStoreRegistries(registries, resources);
+    return registries;
+  }
+
+  static TenantSecretStores build(
+      final String tenantId,
+      final Secrets secrets,
+      final InstantSource timeSource,
+      final MeterRegistry meterRegistry) {
+    final var resources = new SecretStoreResources();
+    try {
+      return new TenantSecretStores(
+          buildRegistry(tenantId, secrets, resources, timeSource, meterRegistry), resources);
+    } catch (final Throwable e) {
+      try {
+        resources.close();
+      } catch (final Throwable closeFailure) {
+        e.addSuppressed(closeFailure);
+      }
+      throw e;
+    }
   }
 
   private static SecretStoreRegistry buildRegistry(
@@ -535,10 +548,17 @@ public class SecretStoreConfiguration {
     @Override
     public MeterRegistry get() {
       if (tenantMeterRegistry == null) {
-        tenantMeterRegistry =
+        final var staging = new SimpleMeterRegistry();
+        final var registry =
             MicrometerUtil.wrap(
-                meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), tenantId));
-        resources.addMeterRegistry(tenantMeterRegistry);
+                staging, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), tenantId));
+        resources.addMeterRegistry(registry);
+        resources.onPublish(
+            () -> {
+              registry.add(meterRegistry);
+              registry.remove(staging);
+            });
+        tenantMeterRegistry = registry;
       }
       return tenantMeterRegistry;
     }
