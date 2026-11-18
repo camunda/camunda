@@ -22,7 +22,7 @@ on:
         type: string
         required: true
       cluster-capacity-rate:
-        description: '── Load ──────────────────────────── Process instances/s the cluster sustains (100%). Empty uses an estimate (Elasticsearch only, not yet calibrated); other storages need a calibrated value'
+        description: '── Load ──────────────────────────── Process instances/s the cluster sustains (100%). Empty uses an estimate for the chosen API (Elasticsearch only, not yet calibrated, REST 35% below gRPC); other storages need a calibrated value'
         type: string
         default: ""
         required: false
@@ -76,7 +76,7 @@ on:
         default: elasticsearch
         required: false
       prefer-rest:
-        description: 'API the load testers use: true is REST (what customers use), false is gRPC (no Tomcat and Spring layer, so it isolates the engine from gateway overhead). The capacity differs per API, so give a calibrated cluster-capacity-rate for the one you pick'
+        description: 'API the load testers use: true is REST (what customers use), false is gRPC (no Tomcat and Spring layer, so it isolates the engine from gateway overhead). The capacity differs per API, REST is estimated 35% below gRPC'
         type: boolean
         default: true
         required: false
@@ -166,6 +166,7 @@ jobs:
           SATURATING_COUNT: ${{ inputs.saturating-tenant-count }}
           STORAGE: ${{ inputs.secondary-storage-type }}
           CAPACITY_RATE: ${{ inputs.cluster-capacity-rate }}
+          PREFER_REST: ${{ inputs.prefer-rest }}
           SATURATING_MULTIPLIER: ${{ inputs.saturating-multiplier }}
           QUIET_MULTIPLIER: ${{ inputs.quiet-multiplier }}
           WORKER_REPLICAS_PER_100_PI: ${{ inputs.worker-replicas-per-100-pi }}

@@ -28,8 +28,8 @@ Environment (set by the workflow):
   TENANT_COUNT (including the default tenant), SATURATING_COUNT, SATURATING_MULTIPLIER,
   QUIET_MULTIPLIER, WORKER_REPLICAS_PER_100_PI,
   TENANT_WEIGHTS ("pt2=3,default=2" or empty), TENANT_OVERRIDES ("pt3=4,default=0.1" or empty),
-  TOTAL_RATE (0 disables), STORAGE (secondary storage type),
-  CAPACITY_RATE (empty = the estimate), GITHUB_OUTPUT, GITHUB_STEP_SUMMARY.
+  TOTAL_RATE (0 disables), STORAGE (secondary storage type), PREFER_REST (true is REST, false
+  gRPC), CAPACITY_RATE (empty = the estimate for that storage and API), GITHUB_OUTPUT, GITHUB_STEP_SUMMARY.
 
 Writes the step outputs `profiles` (the physical_tenant_profiles make variable, one rate:replicas
 entry per tenant), `physical-tenant-count` (the N of pt1..ptN), `default-tenant-flags` (Helm flags of
@@ -44,10 +44,13 @@ import os
 import sys
 from dataclasses import dataclass
 
-# PI/s per secondary storage at which the max scenario saturates the cluster.
+# PI/s per secondary storage at which the max scenario saturates the cluster over gRPC.
 # TODO: replace with the result of a calibration run. This is an extrapolation: the daily stress test
 # runs 300 PI/s at about 50% of the CPU limit, and the exporters make up the rest of the load.
-ESTIMATED_CAPACITY = {"elasticsearch": 600.0}
+ESTIMATED_GRPC_CAPACITY = {"elasticsearch": 600.0}
+# REST spends a quarter to a third of the CPU in Tomcat and Spring request handling (profile of a
+# 10 tenant run), so the same cluster sustains less over REST. Assumed 35% less, to be calibrated.
+REST_CAPACITY_FACTOR = 0.65
 
 
 class InputError(ValueError):
@@ -85,16 +88,17 @@ def parse_map(raw: str, tenants: list[str], what: str) -> dict[str, float]:
     return result
 
 
-def capacity_of(storage: str, given: str) -> float:
-    """The given capacity, or the estimate for this storage."""
+def capacity_of(storage: str, given: str, rest: bool = True) -> float:
+    """The given capacity, or the estimate for this storage and API."""
     if given.strip():
         return float(given)
-    if storage not in ESTIMATED_CAPACITY:
+    if storage not in ESTIMATED_GRPC_CAPACITY:
         raise InputError(
             f"cluster-capacity-rate is required for secondary storage '{storage}': no estimate exists "
-            f"(only for {', '.join(ESTIMATED_CAPACITY)}). Calibrate it first."
+            f"(only for {', '.join(ESTIMATED_GRPC_CAPACITY)}). Calibrate it first."
         )
-    return ESTIMATED_CAPACITY[storage]
+    grpc = ESTIMATED_GRPC_CAPACITY[storage]
+    return grpc * REST_CAPACITY_FACTOR if rest else grpc
 
 
 def compute(
@@ -208,7 +212,8 @@ def main() -> int:
         if total_tenants < 1:
             raise InputError("tenant-count includes the default tenant, so it must be at least 1")
         physical_tenants = total_tenants - 1
-        capacity = capacity_of(env["STORAGE"], env.get("CAPACITY_RATE", ""))
+        prefer_rest = env.get("PREFER_REST", "true") == "true"
+        capacity = capacity_of(env["STORAGE"], env.get("CAPACITY_RATE", ""), prefer_rest)
         tenants = compute(
             tenant_count=physical_tenants,
             saturating_count=int(env["SATURATING_COUNT"]),
@@ -230,7 +235,8 @@ def main() -> int:
         out.write(f"default-tenant-flags={default_flags}\n")
         out.write(f"overload={str(overload).lower()}\n")
     with open(env["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
-        source = "given" if env.get("CAPACITY_RATE", "").strip() else "estimate, not yet calibrated"
+        api = "REST" if prefer_rest else "gRPC"
+        source = "given" if env.get("CAPACITY_RATE", "").strip() else f"{api} estimate, not yet calibrated"
         summary.write(f"## Physical tenants load\n\nCluster capacity: {capacity:g} PI/s ({source}).\n\n{table}\n")
     return 0
 

@@ -112,7 +112,7 @@ class MainTest(unittest.TestCase):
         env = {
             "TENANT_COUNT": str(tenant_count), "SATURATING_COUNT": str(saturating), "SATURATING_MULTIPLIER": "3",
             "QUIET_MULTIPLIER": "0.2", "WORKER_REPLICAS_PER_100_PI": "0.4", "STORAGE": "elasticsearch",
-            "CAPACITY_RATE": "", "TOTAL_RATE": "0", "TENANT_WEIGHTS": "", "TENANT_OVERRIDES": "",
+            "CAPACITY_RATE": "", "PREFER_REST": "true", "TOTAL_RATE": "0", "TENANT_WEIGHTS": "", "TENANT_OVERRIDES": "",
             "GITHUB_OUTPUT": str(directory / "out"), "GITHUB_STEP_SUMMARY": str(directory / "summary"),
         }
         with unittest.mock.patch.dict(os.environ, env):
@@ -150,11 +150,18 @@ class WorkersTest(unittest.TestCase):
 
 
 class CapacityTest(unittest.TestCase):
-    def test_elasticsearch_uses_the_estimate(self):
-        self.assertEqual(profiles.capacity_of("elasticsearch", ""), profiles.ESTIMATED_CAPACITY["elasticsearch"])
+    def test_grpc_uses_the_estimate(self):
+        self.assertEqual(
+            profiles.capacity_of("elasticsearch", "", rest=False), profiles.ESTIMATED_GRPC_CAPACITY["elasticsearch"]
+        )
 
-    def test_a_given_capacity_wins(self):
-        self.assertEqual(profiles.capacity_of("postgresql", "120"), 120)
+    def test_rest_has_less_capacity_than_grpc(self):
+        grpc = profiles.capacity_of("elasticsearch", "", rest=False)
+        self.assertAlmostEqual(profiles.capacity_of("elasticsearch", "", rest=True), grpc * 0.65)
+
+    def test_a_given_capacity_wins_for_both_apis(self):
+        self.assertEqual(profiles.capacity_of("postgresql", "120", rest=True), 120)
+        self.assertEqual(profiles.capacity_of("elasticsearch", "120", rest=False), 120)
 
     def test_storage_without_an_estimate_needs_a_given_capacity(self):
         with self.assertRaisesRegex(profiles.InputError, "required for secondary storage 'postgresql'"):
