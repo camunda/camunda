@@ -32,8 +32,13 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeProcessDefinitionRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerSuspendProcessDefinitionRequest;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 
 public class ProcessDefinitionServices
     extends SearchQueryService<
@@ -164,4 +169,46 @@ public class ProcessDefinitionServices
                         authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
                 .getProcessDefinitionMessageSubscriptionStatistics(query));
   }
+
+  public CompletableFuture<ProcessDefinitionSuspensionRecord> suspendProcessDefinitions(
+      final ProcessDefinitionSuspensionRequest request,
+      final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerSuspendProcessDefinitionRequest()
+            .setProcessDefinitionKey(request.processDefinitionKey())
+            .setBpmnProcessId(request.processDefinitionId())
+            .setVersion(request.processDefinitionVersion())
+            .setIncludeProcessInstances(request.includeProcessInstances());
+    if (request.tenantId() != null) {
+      brokerRequest.setTenantId(request.tenantId());
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<ProcessDefinitionSuspensionRecord> resumeProcessDefinitions(
+      final ProcessDefinitionSuspensionRequest request,
+      final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerResumeProcessDefinitionRequest()
+            .setProcessDefinitionKey(request.processDefinitionKey())
+            .setBpmnProcessId(request.processDefinitionId())
+            .setVersion(request.processDefinitionVersion())
+            .setIncludeProcessInstances(request.includeProcessInstances());
+    if (request.tenantId() != null) {
+      brokerRequest.setTenantId(request.tenantId());
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  /**
+   * Selects the process definition versions to suspend or resume: either a single version by key
+   * (the ID, version and tenant are then unset) or by ID with an optional version ({@code -1} for
+   * all versions) and tenant. A {@code null} tenant is left unset so that the engine resolves it.
+   */
+  public record ProcessDefinitionSuspensionRequest(
+      long processDefinitionKey,
+      String processDefinitionId,
+      int processDefinitionVersion,
+      @Nullable String tenantId,
+      boolean includeProcessInstances) {}
 }

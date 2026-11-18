@@ -44,6 +44,8 @@ import io.camunda.gateway.protocol.model.JobStateFilterProperty;
 import io.camunda.gateway.protocol.model.MessageSubscriptionStateFilterProperty;
 import io.camunda.gateway.protocol.model.MessageSubscriptionTypeFilterProperty;
 import io.camunda.gateway.protocol.model.OperationTypeFilterProperty;
+import io.camunda.gateway.protocol.model.ProcessDefinitionResumptionInstruction;
+import io.camunda.gateway.protocol.model.ProcessDefinitionSuspensionInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceStateFilterProperty;
@@ -80,6 +82,8 @@ import io.camunda.zeebe.gateway.rest.deserializer.JobListenerEventTypeFilterProp
 import io.camunda.zeebe.gateway.rest.deserializer.JobStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.MessageSubscriptionStatePropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.MessageSubscriptionTypePropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.ProcessDefinitionResumptionInstructionDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.ProcessDefinitionSuspensionInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceCreationInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceModificationTerminateInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
@@ -141,6 +145,12 @@ public class JacksonConfig {
     module.addDeserializer(
         ProcessInstanceCreationInstruction.class,
         new ProcessInstanceCreationInstructionDeserializer());
+    module.addDeserializer(
+        ProcessDefinitionSuspensionInstruction.class,
+        new ProcessDefinitionSuspensionInstructionDeserializer());
+    module.addDeserializer(
+        ProcessDefinitionResumptionInstruction.class,
+        new ProcessDefinitionResumptionInstructionDeserializer());
     module.addDeserializer(
         DecisionEvaluationInstruction.class, new DecisionEvaluationInstructionDeserializer());
     module.addDeserializer(

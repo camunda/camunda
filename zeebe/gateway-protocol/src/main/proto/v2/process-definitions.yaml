@@ -396,10 +396,344 @@ paths:
       x-added-in-version: "8.9"
       x-scope: physical-tenant
 
+  /process-definitions/suspension:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Process definition
+      operationId: suspendProcessDefinitions
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: SUSPEND_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Suspend process definitions
+      description: |
+        Suspends process definitions so that no new process instances can be created from them.
+        The definition is selected either by `processDefinitionKey`, which identifies exactly one
+        version, or by `processDefinitionId` with an optional `processDefinitionVersion` and
+        `tenantId`. Without a version, all versions of the process definition ID are suspended.
+        Set `includeProcessInstances` to also suspend the running process instances of the affected
+        versions; the instances are changed by a batch operation, returned as `batchOperationKey`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessDefinitionSuspensionInstruction'
+      responses:
+        "200":
+          description: The suspension request was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessDefinitionSuspensionResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: No process definition matches the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: |
+            The request conflicts with the current state of the process definition, likely because
+            the process definition is in a state that cannot be suspended.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
+  /process-definitions/resumption:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Process definition
+      operationId: resumeProcessDefinitions
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: SUSPEND_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Resume process definitions
+      description: |
+        Resumes suspended process definitions so that process instances can be created from them again.
+        The definition is selected either by `processDefinitionKey`, which identifies exactly one
+        version, or by `processDefinitionId` with an optional `processDefinitionVersion` and
+        `tenantId`. Without a version, all versions of the process definition ID are resumed.
+        Set `includeProcessInstances` to also resume the suspended process instances of the affected
+        versions; the instances are changed by a batch operation, returned as `batchOperationKey`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessDefinitionResumptionInstruction'
+      responses:
+        "200":
+          description: The resumption request was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessDefinitionResumptionResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: No process definition matches the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: |
+            The request conflicts with the current state of the process definition, likely because
+            the process definition is in a state that cannot be resumed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
 ## Schema definitions
 
 components:
   schemas:
+    ProcessDefinitionSuspensionInstruction:
+      x-polymorphic-schema: true
+      description: |
+        Instruction to suspend process definitions, selected either by key or by ID.
+      oneOf:
+        - $ref: '#/components/schemas/ProcessDefinitionSuspensionInstructionByKey'
+        - $ref: '#/components/schemas/ProcessDefinitionSuspensionInstructionById'
+
+    ProcessDefinitionSuspensionInstructionByKey:
+      type: object
+      title: Process definition suspension by key
+      required:
+        - processDefinitionKey
+      additionalProperties: false
+      properties:
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition version to suspend.
+        includeProcessInstances:
+          description: |
+            Whether to also suspend the process instances of the affected
+            process definition versions. The instances are changed by a batch operation.
+          type: boolean
+          default: false
+
+    ProcessDefinitionSuspensionInstructionById:
+      type: object
+      title: Process definition suspension by ID
+      required:
+        - processDefinitionId
+      additionalProperties: false
+      properties:
+        processDefinitionId:
+          description: The BPMN process ID of the process definition.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        processDefinitionVersion:
+          description: |
+            The version of the process definition. Must be 1 or greater; `-1` is not accepted.
+            If omitted, all versions are affected.
+          type: integer
+          format: int32
+          minimum: 1
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: |
+            The tenant of the process definition. Required when multi-tenancy is enabled;
+            if multi-tenancy is disabled, it can be omitted and the default tenant is used.
+        includeProcessInstances:
+          description: |
+            Whether to also suspend the process instances of the affected
+            process definition versions. The instances are changed by a batch operation.
+          type: boolean
+          default: false
+
+    ProcessDefinitionSuspensionResult:
+      type: object
+      required:
+        - processDefinitions
+        - batchOperationKey
+      properties:
+        processDefinitions:
+          description: The affected process definition versions.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionSuspensionVersionResult'
+        batchOperationKey:
+          description: |
+            The key of the batch operation that suspends the running process instances.
+            Null when `includeProcessInstances` is not set.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
+
+    ProcessDefinitionSuspensionVersionResult:
+      type: object
+      required:
+        - processDefinitionKey
+        - processDefinitionVersion
+        - outcome
+      properties:
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition version.
+        processDefinitionVersion:
+          description: The version of the process definition.
+          type: integer
+          format: int32
+        outcome:
+          description: |
+            `SUSPENDED` if the version was active and is now suspended. The suspension applies to
+            all partitions shortly after the response.
+            `ALREADY_SUSPENDED` if the version was already suspended, so its state is unchanged.
+            With `includeProcessInstances`, its process instances are still suspended by the
+            batch operation.
+            `DRAINING` if it is being deleted and is left unchanged. This only occurs when the
+            request selects by ID without a version; selecting a single draining version is rejected
+            with 409.
+          type: string
+          enum:
+            - SUSPENDED
+            - ALREADY_SUSPENDED
+            - DRAINING
+
+    ProcessDefinitionResumptionInstruction:
+      x-polymorphic-schema: true
+      description: |
+        Instruction to resume process definitions, selected either by key or by ID.
+      oneOf:
+        - $ref: '#/components/schemas/ProcessDefinitionResumptionInstructionByKey'
+        - $ref: '#/components/schemas/ProcessDefinitionResumptionInstructionById'
+
+    ProcessDefinitionResumptionInstructionByKey:
+      type: object
+      title: Process definition resumption by key
+      required:
+        - processDefinitionKey
+      additionalProperties: false
+      properties:
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition version to resume.
+        includeProcessInstances:
+          description: |
+            Whether to also resume the process instances of the affected
+            process definition versions. The instances are changed by a batch operation.
+          type: boolean
+          default: false
+
+    ProcessDefinitionResumptionInstructionById:
+      type: object
+      title: Process definition resumption by ID
+      required:
+        - processDefinitionId
+      additionalProperties: false
+      properties:
+        processDefinitionId:
+          description: The BPMN process ID of the process definition.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        processDefinitionVersion:
+          description: |
+            The version of the process definition. Must be 1 or greater; `-1` is not accepted.
+            If omitted, all versions are affected.
+          type: integer
+          format: int32
+          minimum: 1
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: |
+            The tenant of the process definition. Required when multi-tenancy is enabled;
+            if multi-tenancy is disabled, it can be omitted and the default tenant is used.
+        includeProcessInstances:
+          description: |
+            Whether to also resume the process instances of the affected
+            process definition versions. The instances are changed by a batch operation.
+          type: boolean
+          default: false
+
+    ProcessDefinitionResumptionResult:
+      type: object
+      required:
+        - processDefinitions
+        - batchOperationKey
+      properties:
+        processDefinitions:
+          description: The affected process definition versions.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionResumptionVersionResult'
+        batchOperationKey:
+          description: |
+            The key of the batch operation that resumes the suspended process instances.
+            Null when `includeProcessInstances` is not set.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
+
+    ProcessDefinitionResumptionVersionResult:
+      type: object
+      required:
+        - processDefinitionKey
+        - processDefinitionVersion
+        - outcome
+      properties:
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition version.
+        processDefinitionVersion:
+          description: The version of the process definition.
+          type: integer
+          format: int32
+        outcome:
+          description: |
+            `RESUMED` if the version was suspended and is now active again. The resumption applies
+            to all partitions shortly after the response.
+            `ALREADY_RESUMED` if the version was already active, so its state is unchanged.
+            With `includeProcessInstances`, its suspended process instances are still resumed by
+            the batch operation.
+            `DRAINING` if it is being deleted and is left unchanged. This only occurs when the
+            request selects by ID without a version; selecting a single draining version is rejected
+            with 409.
+          type: string
+          enum:
+            - RESUMED
+            - ALREADY_RESUMED
+            - DRAINING
+
     ProcessDefinitionSearchQuerySortRequest:
       type: object
       properties:

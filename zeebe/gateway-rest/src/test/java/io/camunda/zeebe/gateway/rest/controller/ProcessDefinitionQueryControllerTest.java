@@ -33,6 +33,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.VariableNameQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
@@ -151,6 +152,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   @MockitoBean VariableServices variableServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
 
   @Captor
   ArgumentCaptor<io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery>
