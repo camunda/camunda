@@ -1523,27 +1523,16 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportUserTaskUpdatesOfSeveralUserTasksWithinOneFlush() {
     // given - an exporter that batches records into interval flushes instead of flushing each one
-    final var batchingController = new ExporterTestController();
-    final var batchingConfiguration =
-        new ExporterConfiguration("user-task-batching-test", Map.of("queueSize", 100));
     final var batchingExporter =
-        new RdbmsExporterWrapper(
-            rdbmsServiceFactory,
-            rdbmsSchemaManagerRegistry,
-            Map.of(
-                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-                batchingConfiguration.instantiate(
-                    io.camunda.exporter.rdbms.ExporterConfiguration.class)));
+        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
     batchingExporter.configure(
         new ExporterContext(
             null,
-            batchingConfiguration,
-            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
-            "",
-            null,
+            new ExporterConfiguration("user-task-batching-test", Map.of("queueSize", 100)),
+            1,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
-            InstantSource.system()));
-    batchingExporter.open(batchingController);
+            null));
+    batchingExporter.open(controller);
     try {
       final var taskA = FIXTURES.getUserTaskCreatingRecord();
       final var taskB = FIXTURES.getUserTaskCreatingRecord();
@@ -1554,10 +1543,10 @@ class RdbmsExporterIT {
       batchingExporter.export(userTaskUpdated(taskA, "a1"));
       batchingExporter.export(userTaskUpdated(taskB, "b1"));
       batchingExporter.export(userTaskUpdated(taskA, "a2"));
-      batchingController.runScheduledTasks(Duration.ofSeconds(1));
+      controller.runScheduledTasks(Duration.ofSeconds(1));
 
       // then - each user task has the candidates of its last update
-      assertThat(batchingController.getPosition()).isEqualTo(FIXTURES.currentPosition());
+      assertThat(controller.getPosition()).isEqualTo(FIXTURES.currentPosition());
       final var userTaskA = rdbmsService.getUserTaskReader().findOne(userTaskKey(taskA));
       assertThat(userTaskA).isNotEmpty();
       assertThat(userTaskA.get().candidateUsers()).containsExactly("a2-user");
