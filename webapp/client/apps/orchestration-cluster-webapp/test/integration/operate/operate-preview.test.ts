@@ -65,6 +65,7 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 	test('should render the shell with both list tiles when there are running instances', async ({
 		network,
 		operatePreviewPage,
+		page,
 	}) => {
 		network.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
@@ -84,6 +85,7 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 		await operatePreviewPage.goto();
 
 		await expect(operatePreviewPage.heading).toBeAttached();
+		await expect(page).toHaveTitle('Operate: Dashboard');
 		await expect(operatePreviewPage.metricPanel).toBeAttached();
 		await expect(operatePreviewPage.processesByNameTile).toBeVisible();
 		await expect(operatePreviewPage.incidentsByErrorTile).toBeVisible();
