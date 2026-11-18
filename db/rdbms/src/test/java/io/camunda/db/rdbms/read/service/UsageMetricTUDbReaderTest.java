@@ -11,12 +11,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel.UsageMetricTUStatisticsDbModel;
 import io.camunda.search.query.UsageMetricsTUQuery;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class UsageMetricTUDbReaderTest {
@@ -36,5 +41,39 @@ class UsageMetricTUDbReaderTest {
     assertThat(result.totalTu()).isEqualTo(100L);
     assertThat(result.tenants()).isNotNull().isEmpty();
     verify(usageMetricTUMapper).usageMetricTUStatistics(any());
+  }
+
+  @Test
+  void shouldReturnEmptyResultWithoutUsageMetricPermission() {
+    // given
+    final var query = UsageMetricsTUQuery.of(b -> b.filter(f -> f.withTenants(true)));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(Authorization.of(a -> a.system().readUsageMetric())),
+            TenantCheck.disabled());
+
+    // when
+    final var result = reader.usageMetricTUStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.totalTu()).isZero();
+    assertThat(result.tenants()).isEmpty();
+    verifyNoInteractions(usageMetricTUMapper);
+  }
+
+  @Test
+  void shouldReturnEmptyResultWhenTenantCheckIsEnabledWithoutTenants() {
+    // given
+    final var query = UsageMetricsTUQuery.of(b -> b);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
+
+    // when
+    final var result = reader.usageMetricTUStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.totalTu()).isZero();
+    assertThat(result.tenants()).isEmpty();
+    verifyNoInteractions(usageMetricTUMapper);
   }
 }

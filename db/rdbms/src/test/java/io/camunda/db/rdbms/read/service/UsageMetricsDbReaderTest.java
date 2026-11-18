@@ -9,9 +9,11 @@ package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.search.query.UsageMetricsQuery;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -34,5 +36,25 @@ class UsageMetricsDbReaderTest {
     assertThat(statistics.totalRpi()).isEqualTo(0);
     assertThat(statistics.at()).isEqualTo(0);
     assertThat(statistics.tenants()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyResultWithoutUsageMetricPermission() {
+    // given
+    final UsageMetricsQuery query = UsageMetricsQuery.of(b -> b);
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(Authorization.of(a -> a.system().readUsageMetric())),
+            TenantCheck.disabled());
+
+    // when
+    final var statistics = usageMetricsDbReader.usageMetricStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(statistics.totalEdi()).isEqualTo(0);
+    assertThat(statistics.totalRpi()).isEqualTo(0);
+    assertThat(statistics.at()).isEqualTo(0);
+    assertThat(statistics.tenants()).isEmpty();
+    verifyNoInteractions(usageMetricsMapper);
   }
 }
