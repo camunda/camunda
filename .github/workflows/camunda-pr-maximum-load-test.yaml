@@ -1,0 +1,335 @@
+# description: Measures what a PR changes in the maximum throughput of a setup. When a PR gets a maximum load test
+#              label (maximum-load-test-<storage>-<protocol>), deploys 3 clusters from the merge-base with the
+#              base branch and 3 clusters from the PR head, all with the scenario 'max' at a rate above the
+#              capacity of the setup. After the warmup and the metrics window it posts one comment that compares
+#              the medians of both sides, then tears all 6 namespaces down. The stricter question "did it
+#              regress at the SLO rate" is answered by the regression load test, see camunda-pr-load-test.yaml.
+#              On unlabel or PR close, fires an explicit cleanup. New commits on the PR cancel the in-flight run
+#              (via dispatch-level concurrency) and redeploy fresh.
+# called by: pr-load-test-dispatch.yml
+# calls: camunda-load-test.yml (scenario: max), camunda-verify-load-test.yml,
+#        camunda-load-test-metrics.yaml, camunda-delete-load-test.yml
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda Pull Request Maximum Load Test
+on:
+  workflow_call:
+    inputs:
+      label:
+        description: 'PR label that triggered this test (e.g., maximum-load-test-none-rest)'
+        required: true
+        type: string
+      secondary-storage-type:
+        description: 'Storage backend (elasticsearch, none)'
+        required: true
+        type: string
+      protocol:
+        description: 'Client protocol of the load-test workers and starters (rest, grpc)'
+        required: true
+        type: string
+      rate:
+        description: 'Offered process instances per second for every cluster, above the capacity of the setup'
+        required: true
+        type: string
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+  # Same warmup and metrics window as the regression load test, see camunda-pr-load-test.yaml.
+  # The `duration-seconds` input below stays literal because the env context is not available in a
+  # reusable workflow call's `with:`.
+  WARMUP_SECONDS: 900
+  METRICS_WINDOW_SECONDS: 1800
+
+jobs:
+  sanitize-branch-name:
+    name: Compute namespace prefix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      prefix: ${{ steps.compute-prefix.outputs.prefix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - id: sanitize-author
+        name: Sanitize author name
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name-1.0.0
+        with:
+          branch: ${{ github.event.pull_request.user.login }}
+          max_length: 10
+
+      - id: sanitize-db-type
+        name: Sanitize db type
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name-1.0.0
+        with:
+          branch: ${{ inputs.secondary-storage-type }}
+          max_length: 15
+
+      - id: compute-prefix
+        name: Compute the namespace prefix, a cluster appends its side and number
+        run: |
+          # The `max` marker keeps these namespaces apart from the regression load test of the same PR.
+          echo "prefix=c8-${AUTHOR}-pr-${PR_NUMBER}-${DB_TYPE}-${PROTOCOL}-max" >> "$GITHUB_OUTPUT"
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ steps.sanitize-author.outputs.branch_name }}
+          DB_TYPE: ${{ steps.sanitize-db-type.outputs.branch_name }}
+          PROTOCOL: ${{ inputs.protocol }}
+
+  plan:
+    name: Resolve the compared commits
+    needs: sanitize-branch-name
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == inputs.label) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, inputs.label))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      base-sha: ${{ steps.merge-base.outputs.sha }}
+      head-sha: ${{ github.event.pull_request.head.sha }}
+      base-tag: ${{ steps.tags.outputs.base-tag }}
+      pr-tag: ${{ steps.tags.outputs.pr-tag }}
+    steps:
+      # The base side is the merge-base, not the tip of the base branch, so that commits of other
+      # authors do not end up in the comparison.
+      - id: merge-base
+        name: Resolve the merge-base with the base branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          sha=$(gh api "repos/${REPO}/compare/${BASE_SHA}...${HEAD_SHA}" --jq '.merge_base_commit.sha')
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+
+      # The image of the first cluster of a side is built by camunda-load-test.yml and tagged
+      # `<cluster name>-<short sha>`, see its `calculate-image-tag` job. The other two clusters of that
+      # side reuse the tag, so both sides are built once. The short sha length depends on the number
+      # of objects in the checkout, so use the same full checkout (no sparse checkout) as that job.
+      - name: Checkout base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.merge-base.outputs.sha }}
+          path: base
+          persist-credentials: false
+      - name: Checkout PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+          persist-credentials: false
+      - id: tags
+        name: Compute the image tags of the first cluster of each side
+        env:
+          PREFIX: ${{ needs.sanitize-branch-name.outputs.prefix }}
+        run: |
+          echo "base-tag=${PREFIX}-base-1-$(git -C base rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "pr-tag=${PREFIX}-pr-1-$(git -C pr rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+  deploy-first:
+    name: Deploy first cluster (${{ matrix.side }})
+    needs: [sanitize-branch-name, plan]
+    strategy:
+      fail-fast: false
+      matrix:
+        side: [base, pr]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.prefix }}-${{ matrix.side }}-1
+      ref: ${{ matrix.side == 'base' && needs.plan.outputs.base-sha || needs.plan.outputs.head-sha }}
+      scenario: 'max'
+      # The explicit rate takes precedence over the scenario rate. Do not rely on the load-tester
+      # default protocol, the daily comparison of the regression test depends on it too.
+      load-test-load: "--set global.preferRest.enabled=${{ inputs.protocol != 'grpc' }} --set load-tester.starter.rate=${{ inputs.rate }}"
+      secondary-storage-type: ${{ inputs.secondary-storage-type }}
+
+  deploy-rest:
+    name: Deploy cluster ${{ matrix.index }} (${{ matrix.side }})
+    needs: [sanitize-branch-name, plan, deploy-first]
+    strategy:
+      fail-fast: false
+      matrix:
+        side: [base, pr]
+        index: [2, 3]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.prefix }}-${{ matrix.side }}-${{ matrix.index }}
+      ref: ${{ matrix.side == 'base' && needs.plan.outputs.base-sha || needs.plan.outputs.head-sha }}
+      scenario: 'max'
+      load-test-load: "--set global.preferRest.enabled=${{ inputs.protocol != 'grpc' }} --set load-tester.starter.rate=${{ inputs.rate }}"
+      secondary-storage-type: ${{ inputs.secondary-storage-type }}
+      reuse-tag: ${{ matrix.side == 'base' && needs.plan.outputs.base-tag || needs.plan.outputs.pr-tag }}
+
+  verify-install:
+    name: Verify install ${{ matrix.side }}-${{ matrix.index }}
+    needs: [sanitize-branch-name, deploy-first, deploy-rest]
+    strategy:
+      fail-fast: false
+      matrix:
+        side: [base, pr]
+        index: [1, 2, 3]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-verify-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.prefix }}-${{ matrix.side }}-${{ matrix.index }}
+
+  await-metrics-window:
+    name: Await the metrics window
+    needs: verify-install
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      # Warmup before metrics start, then the 30-min window the metrics are queried over.
+      - name: Warmup sleep
+        run: sleep "${WARMUP_SECONDS}"
+      - name: Accumulate metrics window
+        run: sleep "${METRICS_WINDOW_SECONDS}"
+
+  get-metrics:
+    name: Collect metrics ${{ matrix.side }}-${{ matrix.index }}
+    needs: [sanitize-branch-name, await-metrics-window]
+    strategy:
+      fail-fast: false
+      matrix:
+        side: [base, pr]
+        index: [1, 2, 3]
+    permissions: {}
+    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.prefix }}-${{ matrix.side }}-${{ matrix.index }}
+      duration-seconds: '1800'
+
+  render-comparison:
+    name: Render base vs PR comparison
+    needs: [sanitize-branch-name, plan, get-metrics]
+    # Run when the metrics were collected (success or failure) so a partial fetch still posts a
+    # comment with the clusters that have results. Skips on unlabel and close because plan is skipped.
+    if: ${{ !cancelled() && needs.get-metrics.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      comparison-md: ${{ steps.render.outputs.comparison-md }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # A missing artifact (metrics step failed) leaves that cluster out of the medians. Each artifact
+      # lands in results/load-test-results-<namespace>/results.json.
+      - name: Download metrics of all clusters
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: load-test-results-${{ needs.sanitize-branch-name.outputs.prefix }}-*
+          path: results
+      - name: Convert queries.yaml to JSON for render step
+        run: yq -o=json '.' load-tests/docs/scripts/queries.yaml > /tmp/queries.json
+      - name: Build comparison markdown
+        id: render
+        env:
+          QUERIES_JSON_PATH: /tmp/queries.json
+          RESULTS_DIR: results
+          BASE_NAMESPACES: ${{ format('{0}-base-1 {0}-base-2 {0}-base-3', needs.sanitize-branch-name.outputs.prefix) }}
+          PR_NAMESPACES: ${{ format('{0}-pr-1 {0}-pr-2 {0}-pr-3', needs.sanitize-branch-name.outputs.prefix) }}
+          STORAGE_TYPE: ${{ inputs.secondary-storage-type }}
+          PROTOCOL: ${{ inputs.protocol }}
+          RATE: ${{ inputs.rate }}
+          BASE_SHA: ${{ needs.plan.outputs.base-sha }}
+          HEAD_SHA: ${{ needs.plan.outputs.head-sha }}
+        run: python3 .github/scripts/render-maximum-comparison.py
+
+  comment-comparison-pr:
+    name: Post base vs PR comparison comment
+    needs: render-comparison
+    # Skip when render was cancelled or skipped upstream so we never post a half-finished comment.
+    if: ${{ !cancelled() && needs.render-comparison.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      COMPARISON_MD: ${{ needs.render-comparison.outputs.comparison-md }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Post comparison comment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const body = process.env.COMPARISON_MD;
+            const prNumber = parseInt(process.env.PR_NUMBER || '0', 10);
+            if (!body || prNumber <= 0) {
+              core.info('No comparison body or PR number, skipping comment.');
+              return;
+            }
+            await github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
+
+  auto-delete:
+    name: Auto cleanup ${{ matrix.side }}-${{ matrix.index }}
+    needs: [sanitize-branch-name, comment-comparison-pr]
+    # The metrics-success gate keeps cleanup from firing before the comparison comment is posted.
+    # `!cancelled()` still recycles the namespaces when an earlier job failed, but not on a
+    # workflow-level cancel.
+    if: ${{ !cancelled() && needs.comment-comparison-pr.result == 'success' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        side: [base, pr]
+        index: [1, 2, 3]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-delete-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.prefix }}-${{ matrix.side }}-${{ matrix.index }}
+
+  delete-on-unlabel:
+    name: Cleanup ${{ matrix.side }}-${{ matrix.index }}
+    needs: sanitize-branch-name
+    if: >
+      (github.event.action == 'unlabeled' && github.event.label.name == inputs.label) ||
+      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, inputs.label))
+    strategy:
+      fail-fast: false
+      matrix:
+        side: [base, pr]
+        index: [1, 2, 3]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-delete-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.prefix }}-${{ matrix.side }}-${{ matrix.index }}
