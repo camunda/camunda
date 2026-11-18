@@ -28,6 +28,7 @@ public final class RateLimitedInputStream extends FilterInputStream {
   private final BackupReadRateLimiter limiter;
   private final AtomicLong waitedNanos = new AtomicLong();
   private final AtomicBoolean closed = new AtomicBoolean();
+  private volatile long reservedUntilNanos = Long.MIN_VALUE;
 
   RateLimitedInputStream(final InputStream in, final BackupReadRateLimiter limiter) {
     super(in);
@@ -76,13 +77,15 @@ public final class RateLimitedInputStream extends FilterInputStream {
       super.close();
     } finally {
       if (closed.compareAndSet(false, true)) {
-        limiter.streamClosed();
+        limiter.streamClosed(reservedUntilNanos);
       }
     }
   }
 
   private void pay(final long bytes) throws InterruptedIOException {
-    final long waitNanos = limiter.reserve(bytes);
+    final var reservation = limiter.reserve(bytes);
+    reservedUntilNanos = reservation.endNanos();
+    final long waitNanos = reservation.waitNanos();
     if (waitNanos <= 0) {
       return;
     }

@@ -145,8 +145,12 @@ public final class BackupReadRateLimiter {
     return new RateLimitedInputStream(inputStream, this);
   }
 
-  /** Lets the next stream open; called once by every stream returned by {@link #wrap}. */
-  void streamClosed() {
+  /**
+   * Lets the next stream open; called once by every stream returned by {@link #wrap}.
+   *
+   * @param reservedUntilNanos when the budget of the last read of the stream is used up
+   */
+  void streamClosed(final long reservedUntilNanos) {
     if (openStreams != null) {
       openStreams.release();
     }
@@ -163,12 +167,12 @@ public final class BackupReadRateLimiter {
   /**
    * Pays for the given number of bytes.
    *
-   * @return the nanoseconds the caller has to {@link #sleep(long) wait} until the reads before
-   *     these bytes fit into the rate
+   * @return how long the caller has to {@link #sleep(long) wait} until the reads before these bytes
+   *     fit into the rate, and when the budget these bytes take is used up
    */
-  long reserve(final long bytes) {
+  Reservation reserve(final long bytes) {
     if (isUnlimited() || bytes <= 0) {
-      return 0;
+      return Reservation.FREE;
     }
 
     final long costNanos = (long) ((double) bytes * TimeUnit.SECONDS.toNanos(1) / bytesPerSecond);
@@ -176,7 +180,7 @@ public final class BackupReadRateLimiter {
       final long now = nanoClock.getAsLong();
       final long start = Math.max(now, nextFreeNanos);
       nextFreeNanos = start + costNanos;
-      return start - now;
+      return new Reservation(start - now, start + costNanos);
     }
   }
 
@@ -189,6 +193,16 @@ public final class BackupReadRateLimiter {
     return isUnlimited()
         ? "BackupReadRateLimiter{unlimited}"
         : "BackupReadRateLimiter{bytesPerSecond=" + bytesPerSecond + '}';
+  }
+
+  /**
+   * A paid read.
+   *
+   * @param waitNanos how long the read has to wait until the reads before it fit into the rate
+   * @param endNanos when the budget of the read is used up, on the limiter's clock
+   */
+  record Reservation(long waitNanos, long endNanos) {
+    static final Reservation FREE = new Reservation(0, Long.MIN_VALUE);
   }
 
   @FunctionalInterface
