@@ -23,7 +23,8 @@ import {useEffect} from 'react';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {MemoryRouter} from 'react-router-dom';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
@@ -40,7 +41,7 @@ function getWrapper(
 
     return (
       <ProcessDefinitionKeyContext.Provider value="123">
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={getMockQueryClient()}>
           <MemoryRouter initialEntries={[initialPath]}>
             {children}
             <button onClick={batchModificationStore.enable}>
