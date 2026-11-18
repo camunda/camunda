@@ -857,8 +857,9 @@ public class BrokerBasedPropertiesOverride {
 
     Preconditions.test(
         primaryStorageBackup.getMaxReadRate() != null
-            && primaryStorageBackup.getMaxReadRate().toBytes() <= 0,
-        "BackupStore maxReadRate must be positive; leave it unset to not limit the read rate");
+            && primaryStorageBackup.getMaxReadRate().toBytes() < BackupCfg.MIN_MAX_READ_RATE_BYTES,
+        "BackupStore maxReadRate must be at least %d bytes per second; leave it unset to not limit the read rate"
+            .formatted(BackupCfg.MIN_MAX_READ_RATE_BYTES));
     backupCfg.setMaxReadRate(primaryStorageBackup.getMaxReadRate());
 
     populateFromS3(override, camunda);
