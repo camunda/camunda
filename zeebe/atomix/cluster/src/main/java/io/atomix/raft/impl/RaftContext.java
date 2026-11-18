@@ -25,7 +25,6 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.FencedListener;
-import io.atomix.raft.JoinAdmission;
 import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
@@ -39,6 +38,8 @@ import io.atomix.raft.RebalanceConfiguration;
 import io.atomix.raft.SnapshotReplicationListener;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.cluster.ReplicaState;
+import io.atomix.raft.cluster.ReplicationStatus;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
@@ -97,6 +98,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -131,13 +133,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   protected final ClusterMembershipService membershipService;
   protected final RaftClusterContext cluster;
   protected final RaftServerProtocol protocol;
+  protected final RaftStorage storage;
   private final RaftServerProtocol outboundProtocol;
   private final Set<FencedListener> fencedListeners = new CopyOnWriteArraySet<>();
   private final Set<RaftConfigurationListener> configurationListeners = new CopyOnWriteArraySet<>();
   private boolean fenced;
-  private volatile JoinAdmission joinAdmission = JoinAdmission.ADMIT_ALL;
-  private EmptyStartGuard emptyStartGuard;
-  protected final RaftStorage storage;
   private final RaftElectionConfig electionConfig;
   private final Set<RaftRoleChangeListener> roleChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<State>> stateChangeListeners = new CopyOnWriteArraySet<>();
@@ -452,70 +452,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return fenced;
   }
 
-  /**
-   * Activates the empty-start guard, see {@link EmptyStartGuard}: the member grants no polls or
-   * votes and starts no election until it has caught up with a leader of at least {@code
-   * probeTerm}. The probe term is stored on disk until the guard is released, so that a restart
-   * keeps the guard, see {@link #restoreEmptyStartGuard()}.
-   */
-  public void activateEmptyStartGuard(final long probeTerm) {
-    checkThread();
-    LOGGER.info("Activating the empty-start guard with probe term {}", probeTerm);
-    meta.storeEmptyStartProbeTerm(probeTerm);
-    emptyStartGuard = new EmptyStartGuard(probeTerm);
-  }
-
-  /**
-   * Activates the empty-start guard again if it was active before a restart: the member has not
-   * caught up yet, thus it still must not vote.
-   */
-  public void restoreEmptyStartGuard() {
-    checkThread();
-    if (isEmptyStartGuardActive()) {
-      return;
-    }
-    meta.loadEmptyStartProbeTerm()
-        .ifPresent(
-            probeTerm -> {
-              LOGGER.info("Restoring the empty-start guard with probe term {}", probeTerm);
-              emptyStartGuard = new EmptyStartGuard(probeTerm);
-            });
-  }
-
-  public boolean isEmptyStartGuardActive() {
-    return emptyStartGuard != null && emptyStartGuard.isActive();
-  }
-
-  /**
-   * Called for each append request of the current leader, see {@link EmptyStartGuard}.
-   *
-   * @param leaderTerm the term of the leader
-   * @param leaderCommitIndex the commit index of the leader
-   */
-  public void onAppendFromLeader(final long leaderTerm, final long leaderCommitIndex) {
-    if (emptyStartGuard != null
-        && leaderTerm == term
-        && emptyStartGuard.onAppendFromLeader(leaderTerm, leaderCommitIndex, commitIndex)) {
-      onEmptyStartGuardReleased();
-    }
-  }
-
-  private void onEmptyStartGuardReleased() {
-    LOGGER.info(
-        "Releasing the empty-start guard (probe term {}) at commit index {}",
-        emptyStartGuard.probeTerm(),
-        commitIndex);
-    meta.clearEmptyStartProbeTerm();
-  }
-
-  public JoinAdmission getJoinAdmission() {
-    return joinAdmission;
-  }
-
-  public void setJoinAdmission(final JoinAdmission joinAdmission) {
-    this.joinAdmission = checkNotNull(joinAdmission, "joinAdmission cannot be null");
-  }
-
   public void addFencedListener(final FencedListener listener) {
     fencedListeners.add(listener);
   }
@@ -726,9 +662,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       }
       raftLog.setCommitIndex(commitIndex);
       this.commitIndex = commitIndex;
-      if (emptyStartGuard != null && emptyStartGuard.onCommit(commitIndex)) {
-        onEmptyStartGuardReleased();
-      }
       final var clusterConfig = cluster.getConfiguration();
       if (clusterConfig != null) {
         final long configurationIndex = clusterConfig.index();
@@ -873,11 +806,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     if (fenced && role != Role.INACTIVE) {
       LOGGER.debug("Not transitioning to {}, the local member is fenced", role);
-      return;
-    }
-
-    if (role == Role.CANDIDATE && isEmptyStartGuardActive()) {
-      LOGGER.debug("Not transitioning to {}, the empty-start guard is active", role);
       return;
     }
 
@@ -1550,6 +1478,13 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return partitionConfig.getPreferSnapshotReplicationThreshold();
   }
 
+  /**
+   * @return true for the system partition, see {@link RaftPartitionConfig#setSystemPartition}
+   */
+  public boolean isSystemPartition() {
+    return partitionConfig.isSystemPartition();
+  }
+
   public long getPromotionLagThreshold() {
     return partitionConfig.getPromotionLagThreshold();
   }
@@ -1575,6 +1510,67 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
           configureFuture.complete(null);
         });
     return configureFuture;
+  }
+
+  /**
+   * @return the replication state of each remote member while this server is the leader, else empty
+   */
+  public Optional<ReplicationStatus> getReplicationStatus() {
+    checkThread();
+    if (role.role() != Role.LEADER) {
+      return Optional.empty();
+    }
+    final var members =
+        cluster.getReplicationTargets().stream()
+            .map(
+                context ->
+                    new ReplicationStatus.MemberStatus(
+                        context.getMember().memberId(),
+                        context.getMember().getIncarnation(),
+                        context.getMember().getType(),
+                        context.getMatchIndex(),
+                        context.getResponseTime(),
+                        context.getReplicationLagBytes()))
+            .toList();
+    return Optional.of(new ReplicationStatus(term, commitIndex, members));
+  }
+
+  /**
+   * @return the local state of the replica
+   */
+  public ReplicaState getReplicaState() {
+    checkThread();
+    final var configuration = cluster.getConfiguration();
+    final var lastEntry = raftLog.getLastEntry();
+    return new ReplicaState(
+        configuration == null
+            ? null
+            : new Configuration(
+                configuration.index(),
+                cluster.getConfigurationTerm(),
+                configuration.time(),
+                configuration.newMembers(),
+                configuration.oldMembers(),
+                configuration.force(),
+                configuration.fenced(),
+                configuration.membershipVersion()),
+        cluster.getLocalMember().getIncarnation(),
+        lastEntry == null ? 0 : lastEntry.term(),
+        lastEntry == null ? 0 : lastEntry.index(),
+        commitIndex,
+        role.role(),
+        fenced);
+  }
+
+  /**
+   * While this server is the leader, sends the fenced notice to the given member, see {@link
+   * io.atomix.raft.RaftServer#sendFencedNotice(MemberId)}.
+   */
+  public void sendFencedNotice(final MemberId member) {
+    checkThread();
+    if (role instanceof final LeaderRole leaderRole) {
+      leaderRole.sendFencedNotice(member);
+    }
   }
 
   public void addConfigurationListener(final RaftConfigurationListener listener) {

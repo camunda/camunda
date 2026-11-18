@@ -22,12 +22,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
+import io.atomix.raft.cluster.MembershipChange;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
-import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
+import io.atomix.raft.cluster.ReplicationStatus;
+import io.atomix.raft.cluster.ReplicationStatus.MemberStatus;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
-import io.atomix.raft.partition.systempartition.SystemPartitionMembership.SelfPromotionCheck;
+import io.atomix.raft.partition.systempartition.SystemPartitionMembership.BrokerState;
+import io.atomix.raft.partition.systempartition.SystemPartitionMembership.ClusterView;
+import io.atomix.raft.partition.systempartition.SystemPartitionMembership.LeaderDecision;
+import io.atomix.raft.partition.systempartition.SystemPartitionMembership.LeaderInput;
+import io.atomix.raft.partition.systempartition.VoterPolicy.ZoneVoters;
 import io.atomix.raft.storage.system.Configuration;
 import java.time.Instant;
 import java.util.Collection;
@@ -64,7 +69,7 @@ final class SystemPartitionMembershipTest {
       final Collection<FenceEntry> fenced,
       final VoterPolicy policy) {
     return new Configuration(
-        10, 2, 1, raftMembers(members, incarnations), List.of(), false, fenced, policy);
+        10, 2, 1, raftMembers(members, incarnations), List.of(), false, fenced, 0);
   }
 
   static List<RaftMember> raftMembers(
@@ -151,7 +156,7 @@ final class SystemPartitionMembershipTest {
       final var configuration = configuration(bootstrapped());
 
       // when
-      final var selection = SystemPartitionMembership.selectVoters(configuration, Set.of());
+      final var selection = SystemPartitionMembership.selectVoters(POLICY, configuration, Set.of());
 
       // then
       assertThat(selection.target()).isEqualTo(bootstrapped());
@@ -170,7 +175,7 @@ final class SystemPartitionMembershipTest {
           configuration(members(C1, ACTIVE, B1, ACTIVE, B2, ACTIVE, B3, PASSIVE));
 
       // when
-      final var selection = SystemPartitionMembership.selectVoters(configuration, Set.of());
+      final var selection = SystemPartitionMembership.selectVoters(POLICY, configuration, Set.of());
 
       // then - no vote moves to zone b
       assertThat(selection.target())
@@ -189,7 +194,7 @@ final class SystemPartitionMembershipTest {
               members(C1, ACTIVE, A2, ACTIVE, B1, ACTIVE, B2, ACTIVE, A3, PASSIVE, B3, PASSIVE));
 
       // when
-      final var selection = SystemPartitionMembership.selectVoters(configuration, Set.of());
+      final var selection = SystemPartitionMembership.selectVoters(POLICY, configuration, Set.of());
 
       // then
       final var zoneA = selection.zone("a").orElseThrow();
@@ -206,7 +211,7 @@ final class SystemPartitionMembershipTest {
           configuration(members(A1, ACTIVE, A2, ACTIVE, A3, ACTIVE, B1, PASSIVE));
 
       // when
-      final var selection = SystemPartitionMembership.selectVoters(configuration, Set.of());
+      final var selection = SystemPartitionMembership.selectVoters(POLICY, configuration, Set.of());
 
       // then
       final var zoneA = selection.zone("a").orElseThrow();
@@ -222,7 +227,8 @@ final class SystemPartitionMembershipTest {
           configuration(members(C1, ACTIVE, A2, ACTIVE, A3, PASSIVE, B1, ACTIVE, B2, ACTIVE));
 
       // when
-      final var selection = SystemPartitionMembership.selectVoters(configuration, Set.of(A3));
+      final var selection =
+          SystemPartitionMembership.selectVoters(POLICY, configuration, Set.of(A3));
 
       // then
       assertThat(selection.zone("a").orElseThrow().candidates()).isEmpty();
@@ -239,7 +245,7 @@ final class SystemPartitionMembershipTest {
               POLICY);
 
       // when
-      final var selection = SystemPartitionMembership.selectVoters(configuration, Set.of());
+      final var selection = SystemPartitionMembership.selectVoters(POLICY, configuration, Set.of());
 
       // then
       assertThat(selection.zone("a").orElseThrow().candidates()).containsExactly(A2);
@@ -252,7 +258,7 @@ final class SystemPartitionMembershipTest {
           configuration(members(C1, ACTIVE, B1, ACTIVE, X1, ACTIVE, A1, PASSIVE));
 
       // when
-      final var selection = SystemPartitionMembership.selectVoters(configuration, Set.of());
+      final var selection = SystemPartitionMembership.selectVoters(POLICY, configuration, Set.of());
 
       // then
       assertThat(selection.nonPolicyVoters()).containsExactly(X1);
@@ -272,10 +278,10 @@ final class SystemPartitionMembershipTest {
               raftMembers(members(A1, ACTIVE, A2, ACTIVE), Map.of()),
               false,
               List.of(),
-              POLICY);
+              0);
 
       // when - then
-      assertThatThrownBy(() -> SystemPartitionMembership.selectVoters(joint, Set.of()))
+      assertThatThrownBy(() -> SystemPartitionMembership.selectVoters(POLICY, joint, Set.of()))
           .isInstanceOf(IllegalArgumentException.class);
     }
   }
@@ -289,7 +295,7 @@ final class SystemPartitionMembershipTest {
       final var configuration = configuration(bootstrapped());
 
       // when
-      final var priorities = SystemPartitionMembership.priorities(configuration);
+      final var priorities = SystemPartitionMembership.priorities(configuration, POLICY);
 
       // then
       assertThat(priorities.targetPriority()).isEqualTo(5);
@@ -311,7 +317,7 @@ final class SystemPartitionMembershipTest {
           configuration(members(C1, ACTIVE, B1, ACTIVE, B2, ACTIVE, B3, PASSIVE));
 
       // when
-      final var priorities = SystemPartitionMembership.priorities(configuration);
+      final var priorities = SystemPartitionMembership.priorities(configuration, POLICY);
 
       // then
       assertThat(priorities.targetPriority()).isEqualTo(5);
@@ -323,14 +329,12 @@ final class SystemPartitionMembershipTest {
     void shouldGiveExtraVotersAtLeastPriorityOne() {
       // given - a policy of 1 voter with 3 voters after a forced change
       final var configuration =
-          configuration(
-              members(A1, ACTIVE, A2, ACTIVE, X1, ACTIVE),
-              Map.of(),
-              List.of(),
-              VoterPolicy.of(new ZoneVoters("a", 1)));
+          configuration(members(A1, ACTIVE, A2, ACTIVE, X1, ACTIVE), Map.of(), List.of(), POLICY);
 
       // when
-      final var priorities = SystemPartitionMembership.priorities(configuration);
+      final var priorities =
+          SystemPartitionMembership.priorities(
+              configuration, VoterPolicy.of(new ZoneVoters("a", 1)));
 
       // then - the zone outside the policy comes last
       assertThat(priorities.targetPriority()).isOne();
@@ -343,13 +347,12 @@ final class SystemPartitionMembershipTest {
       // given - zone b has a higher priority than zone a
       final var configuration =
           configuration(
-              members(A1, ACTIVE, A2, ACTIVE, B1, ACTIVE, B2, ACTIVE),
-              Map.of(),
-              List.of(),
-              VoterPolicy.of(new ZoneVoters("b", 2), new ZoneVoters("a", 2)));
+              members(A1, ACTIVE, A2, ACTIVE, B1, ACTIVE, B2, ACTIVE), Map.of(), List.of(), POLICY);
 
       // when
-      final var priorities = SystemPartitionMembership.priorities(configuration);
+      final var priorities =
+          SystemPartitionMembership.priorities(
+              configuration, VoterPolicy.of(new ZoneVoters("b", 2), new ZoneVoters("a", 2)));
 
       // then
       assertThat(priorities.voterPriorities())
@@ -358,288 +361,628 @@ final class SystemPartitionMembershipTest {
   }
 
   @Nested
-  final class SelfPromotion {
+  final class LeaderRules {
 
-    private final Configuration zoneAEmpty =
-        configuration(
-            members(C1, ACTIVE, B1, ACTIVE, B2, ACTIVE, B3, PASSIVE, A1, PASSIVE, A2, PASSIVE),
-            Map.of(A1, 4L, A2, 7L),
-            List.of(new FenceEntry(A1, 0), new FenceEntry(A2, 0)),
-            POLICY);
+    private static final long NOW = 1_000_000;
+    private static final long ELECTION_TIMEOUT = 2_500;
+    private static final MemberId LEADER = C1;
 
-    private SelfPromotionCheck caughtUp(final MemberId self, final long incarnation) {
-      return new SelfPromotionCheck(self, incarnation, true, false, false, 100, 100);
+    private static Map<MemberId, BrokerState> active(final Collection<MemberId> brokers) {
+      final var states = new LinkedHashMap<MemberId, BrokerState>();
+      brokers.forEach(broker -> states.put(broker, BrokerState.ACTIVE));
+      return states;
+    }
+
+    private static ClusterView view(final Map<MemberId, BrokerState> states) {
+      return new ClusterView(true, 5, states, Set.of(), Set.of(), Set.of());
+    }
+
+    private static ClusterView view(
+        final Map<MemberId, BrokerState> states,
+        final Set<MemberId> pendingJoins,
+        final Set<MemberId> pendingLeaves,
+        final Set<MemberId> pendingRemoves) {
+      return new ClusterView(true, 5, states, pendingJoins, pendingLeaves, pendingRemoves);
+    }
+
+    /** Each member of the configuration has caught up and answered just now. */
+    private static ReplicationStatus caughtUp(final Configuration configuration) {
+      return new ReplicationStatus(
+          3,
+          100,
+          configuration.newMembers().stream()
+              .filter(member -> !member.memberId().equals(LEADER))
+              .map(
+                  member ->
+                      new MemberStatus(
+                          member.memberId(),
+                          member.getIncarnation(),
+                          member.getType(),
+                          100,
+                          NOW,
+                          0))
+              .toList());
+    }
+
+    private static ReplicationStatus withStatus(
+        final ReplicationStatus replication, final MemberStatus status) {
+      final var members =
+          replication.members().stream()
+              .filter(member -> !member.memberId().equals(status.memberId()))
+              .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+      members.add(status);
+      return new ReplicationStatus(replication.term(), replication.commitIndex(), members);
+    }
+
+    /** Each member publishes the incarnation that it has in the configuration. */
+    private static Map<MemberId, Long> published(final Configuration configuration) {
+      final var incarnations = new LinkedHashMap<MemberId, Long>();
+      configuration
+          .newMembers()
+          .forEach(member -> incarnations.put(member.memberId(), member.getIncarnation()));
+      return incarnations;
+    }
+
+    private static LeaderInput input(
+        final Configuration configuration,
+        final ClusterView view,
+        final Map<MemberId, Long> incarnations,
+        final ReplicationStatus replication) {
+      return new LeaderInput(
+          LEADER,
+          configuration,
+          true,
+          view,
+          incarnations,
+          replication,
+          POLICY,
+          NOW,
+          ELECTION_TIMEOUT,
+          1024);
+    }
+
+    private static LeaderInput input(final Configuration configuration, final ClusterView view) {
+      return input(configuration, view, published(configuration), caughtUp(configuration));
+    }
+
+    private static Map<MemberId, Type> targetTypes(final LeaderDecision decision) {
+      assertThat(decision.change()).describedAs(decision.reason()).isNotNull();
+      final var types = new LinkedHashMap<MemberId, Type>();
+      decision.change().members().forEach(member -> types.put(member.memberId(), member.getType()));
+      return types;
+    }
+
+    private static Map<MemberId, Long> targetIncarnations(final LeaderDecision decision) {
+      final var incarnations = new LinkedHashMap<MemberId, Long>();
+      decision
+          .change()
+          .members()
+          .forEach(member -> incarnations.put(member.memberId(), member.getIncarnation()));
+      return incarnations;
     }
 
     @Test
-    void shouldPromoteIntoEmptySlot() {
-      // when
-      final var target = SystemPartitionMembership.selfPromotion(zoneAEmpty, caughtUp(A1, 4));
-
-      // then
-      assertThat(target)
-          .hasValue(
-              members(A1, ACTIVE, C1, ACTIVE, B1, ACTIVE, A2, PASSIVE, B2, ACTIVE, B3, PASSIVE));
-    }
-
-    @Test
-    void shouldNotPromoteIntoFullZone() {
-      // when
-      final var target = SystemPartitionMembership.selfPromotion(zoneAEmpty, caughtUp(B3, 0));
-
-      // then
-      assertThat(target).isEmpty();
-    }
-
-    @Test
-    void shouldNotPromoteBeforeDynamicConfigurationIsInitialized() {
-      // when
-      final var target =
-          SystemPartitionMembership.selfPromotion(
-              zoneAEmpty, new SelfPromotionCheck(A1, 4, false, false, false, 100, 100));
-
-      // then
-      assertThat(target).isEmpty();
-    }
-
-    @Test
-    void shouldNotPromoteExcludedBroker() {
-      // when
-      final var target =
-          SystemPartitionMembership.selfPromotion(
-              zoneAEmpty, new SelfPromotionCheck(A1, 4, true, true, false, 100, 100));
-
-      // then
-      assertThat(target).isEmpty();
-    }
-
-    @Test
-    void shouldNotPromoteWithEmptyStartMarker() {
-      // when
-      final var target =
-          SystemPartitionMembership.selfPromotion(
-              zoneAEmpty, new SelfPromotionCheck(A1, 4, true, false, true, 100, 100));
-
-      // then
-      assertThat(target).isEmpty();
-    }
-
-    @Test
-    void shouldNotPromoteBeforeCaughtUp() {
-      // when
-      final var target =
-          SystemPartitionMembership.selfPromotion(
-              zoneAEmpty, new SelfPromotionCheck(A1, 4, true, false, false, 99, 100));
-
-      // then
-      assertThat(target).isEmpty();
-    }
-
-    @Test
-    void shouldNotPromoteFencedIncarnation() {
-      // given - A1 still runs with its fenced incarnation 0
-      final var fenced =
-          configuration(
-              members(C1, ACTIVE, B1, ACTIVE, B2, ACTIVE, A1, PASSIVE),
-              Map.of(),
-              List.of(new FenceEntry(A1, 0)),
-              POLICY);
-
-      // when
-      final var target = SystemPartitionMembership.selfPromotion(fenced, caughtUp(A1, 0));
-
-      // then
-      assertThat(target).isEmpty();
-    }
-
-    @Test
-    void shouldNotPromoteWithIncarnationThatIsNotInConfiguration() {
-      // when - the broker joined again, but the configuration has its previous incarnation
-      final var target = SystemPartitionMembership.selfPromotion(zoneAEmpty, caughtUp(A1, 5));
-
-      // then
-      assertThat(target).isEmpty();
-    }
-
-    @Test
-    void shouldNotPromoteNonMember() {
-      // when
-      final var target = SystemPartitionMembership.selfPromotion(zoneAEmpty, caughtUp(A3, 0));
-
-      // then
-      assertThat(target).isEmpty();
-    }
-
-    @Test
-    void shouldNotPromoteInZoneOutsidePolicy() {
+    void shouldDoNothingWhenMembersAgreeWithClusterAndPolicy() {
       // given
-      final var configuration = configuration(members(C1, ACTIVE, B1, ACTIVE, X1, PASSIVE));
+      final var configuration = configuration(bootstrapped());
 
       // when
-      final var target = SystemPartitionMembership.selfPromotion(configuration, caughtUp(X1, 0));
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(configuration, view(active(bootstrapped().keySet()))));
 
       // then
-      assertThat(target).isEmpty();
+      assertThat(decision.change()).isNull();
+      assertThat(decision.transferLeadership()).isFalse();
+      assertThat(decision.fencedNotices()).isEmpty();
     }
 
     @Test
-    void shouldRankCandidatesByNodeIndex() {
-      // when - then
-      assertThat(SystemPartitionMembership.selfPromotionRank(zoneAEmpty, A1, Set.of())).hasValue(0);
-      assertThat(SystemPartitionMembership.selfPromotionRank(zoneAEmpty, A2, Set.of())).hasValue(1);
-      assertThat(SystemPartitionMembership.selfPromotionRank(zoneAEmpty, A2, Set.of(A1)))
-          .hasValue(0);
-      assertThat(SystemPartitionMembership.selfPromotionRank(zoneAEmpty, A1, Set.of(A1))).isEmpty();
-    }
-  }
+    void shouldAddJoiningBrokerAsPassive() {
+      // given
+      final var configuration = configuration(bootstrapped());
+      final var b4 = MemberId.from("b", 4);
+      final var states = active(bootstrapped().keySet());
+      states.put(b4, BrokerState.JOINING);
+      final var incarnations = published(configuration);
+      incarnations.put(b4, 44L);
 
-  @Nested
-  final class Demotion {
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(configuration, view(states), incarnations, caughtUp(configuration)));
+
+      // then - rule 3
+      assertThat(targetTypes(decision)).containsEntry(b4, PASSIVE).hasSize(8);
+      assertThat(targetIncarnations(decision)).containsEntry(b4, 44L);
+      assertThat(decision.change().membershipVersion()).isEqualTo(5);
+      assertThat(decision.change().expectedIndex()).isEqualTo(configuration.index());
+    }
+
+    @Test
+    void shouldAddTargetOfPendingMemberJoin() {
+      // given - the broker is not in the dynamic configuration yet (D21)
+      final var configuration = configuration(bootstrapped());
+      final var b4 = MemberId.from("b", 4);
+      final var incarnations = published(configuration);
+      incarnations.put(b4, 44L);
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(
+                  configuration,
+                  view(active(bootstrapped().keySet()), Set.of(b4), Set.of(), Set.of()),
+                  incarnations,
+                  caughtUp(configuration)));
+
+      // then
+      assertThat(targetTypes(decision)).containsEntry(b4, PASSIVE);
+    }
+
+    @Test
+    void shouldRemoveTargetOfCancelledMemberJoin() {
+      // given - b4 was added for a pending MemberJoin, then the plan was cancelled
+      final var withB4 = new LinkedHashMap<>(bootstrapped());
+      final var b4 = MemberId.from("b", 4);
+      withB4.put(b4, PASSIVE);
+      final var configuration = configuration(withB4, Map.of(b4, 44L), List.of(), POLICY);
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(configuration, view(active(bootstrapped().keySet()))));
+
+      // then - rule 1
+      assertThat(targetTypes(decision)).doesNotContainKey(b4).hasSize(7);
+    }
+
+    @Test
+    void shouldNotAddBrokerWithoutIncarnation() {
+      // given - a broker of an older version publishes no incarnation (Q12)
+      final var configuration = configuration(bootstrapped());
+      final var b4 = MemberId.from("b", 4);
+      final var states = active(bootstrapped().keySet());
+      states.put(b4, BrokerState.JOINING);
+
+      // when
+      final var decision = SystemPartitionMembership.decide(input(configuration, view(states)));
+
+      // then
+      assertThat(decision.change()).isNull();
+    }
+
+    @Test
+    void shouldSendFencedNoticeToBrokerWithFencedIncarnationInsteadOfAddingIt() {
+      // given - b4 was removed and comes back with its old data
+      final var b4 = MemberId.from("b", 4);
+      final var configuration =
+          configuration(bootstrapped(), Map.of(), List.of(new FenceEntry(b4, 0)), POLICY);
+      final var states = active(bootstrapped().keySet());
+      states.put(b4, BrokerState.JOINING);
+      final var incarnations = published(configuration);
+      incarnations.put(b4, 0L);
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(configuration, view(states), incarnations, caughtUp(configuration)));
+
+      // then
+      assertThat(decision.change()).isNull();
+      assertThat(decision.fencedNotices()).containsExactly(b4);
+    }
+
+    @Test
+    void shouldRemoveLeavingVoterAndPromoteReplacementInOneChange() {
+      // given
+      final var configuration = configuration(bootstrapped());
+      final var states = active(bootstrapped().keySet());
+      states.put(B1, BrokerState.LEAVING);
+
+      // when
+      final var decision = SystemPartitionMembership.decide(input(configuration, view(states)));
+
+      // then - rule 1 with a replacement of the same zone (D9)
+      assertThat(targetTypes(decision))
+          .doesNotContainKey(B1)
+          .containsEntry(B2, ACTIVE)
+          .containsEntry(B3, ACTIVE)
+          .hasSize(6);
+    }
+
+    @Test
+    void shouldRemoveLeavingVoterWithoutReplacementIfNoneHasCaughtUp() {
+      // given
+      final var configuration = configuration(bootstrapped());
+      final var states = active(bootstrapped().keySet());
+      states.put(B1, BrokerState.LEAVING);
+      final var replication =
+          withStatus(caughtUp(configuration), new MemberStatus(B3, 0, PASSIVE, 0, NOW, 1 << 30));
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(configuration, view(states), published(configuration), replication));
+
+      // then
+      assertThat(targetTypes(decision)).doesNotContainKey(B1).containsEntry(B3, PASSIVE);
+    }
+
+    @Test
+    void shouldRemoveLeftBrokersAndTargetsOfPendingRemoveInOneChange() {
+      // given - zone a is force-removed: A1 and A2 are targets of MemberRemove, A3 is LEFT
+      final var configuration = configuration(bootstrapped());
+      final var states = active(bootstrapped().keySet());
+      states.put(A3, BrokerState.LEFT);
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(
+                  configuration,
+                  view(states, Set.of(), Set.of(), Set.of(A1, A2)),
+                  published(configuration),
+                  caughtUp(configuration)));
+
+      // then - nobody can replace them in zone a; their slots stay empty
+      assertThat(targetTypes(decision))
+          .containsExactlyInAnyOrderEntriesOf(
+              members(C1, ACTIVE, B1, ACTIVE, B2, ACTIVE, B3, PASSIVE));
+    }
+
+    @Test
+    void shouldNotRemoveOrPromoteTargetOfPendingMemberLeave() {
+      // given - B1 is the target of a pending MemberLeave but not LEAVING yet; B3 too
+      final var configuration =
+          configuration(
+              members(C1, ACTIVE, A1, ACTIVE, A2, ACTIVE, B1, ACTIVE, A3, PASSIVE, B3, PASSIVE));
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(
+                  configuration,
+                  view(
+                      active(
+                          configuration.newMembers().stream().map(RaftMember::memberId).toList()),
+                      Set.of(),
+                      Set.of(B1, B3),
+                      Set.of()),
+                  published(configuration),
+                  caughtUp(configuration)));
+
+      // then - B1 keeps its vote, and B3 is not promoted into the empty slot of zone b
+      assertThat(decision.change()).isNull();
+    }
+
+    @Test
+    void shouldTransferLeadershipBeforeRemovingTheLeader() {
+      // given
+      final var configuration = configuration(bootstrapped());
+      final var states = active(bootstrapped().keySet());
+      states.put(LEADER, BrokerState.LEAVING);
+
+      // when
+      final var decision = SystemPartitionMembership.decide(input(configuration, view(states)));
+
+      // then
+      assertThat(decision.change()).isNull();
+      assertThat(decision.transferLeadership()).isTrue();
+    }
+
+    @Test
+    void shouldReplaceSilentVoterThatPublishesNewIncarnation() {
+      // given - A1 lost its disk and runs with incarnation 11; its old incarnation is silent
+      final var configuration = configuration(bootstrapped());
+      final var incarnations = published(configuration);
+      incarnations.put(A1, 11L);
+      final var replication =
+          withStatus(
+              caughtUp(configuration),
+              new MemberStatus(A1, 0, ACTIVE, 100, NOW - ELECTION_TIMEOUT - 1, 0));
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(
+                  configuration, view(active(bootstrapped().keySet())), incarnations, replication));
+
+      // then - rule 2: A1#11 is added as passive and A3 is promoted in the same change
+      assertThat(targetTypes(decision)).containsEntry(A1, PASSIVE).containsEntry(A3, ACTIVE);
+      assertThat(targetIncarnations(decision)).containsEntry(A1, 11L);
+    }
+
+    @Test
+    void shouldReplacePassiveMemberThatPublishesNewIncarnation() {
+      // given
+      final var configuration = configuration(bootstrapped());
+      final var incarnations = published(configuration);
+      incarnations.put(B3, 33L);
+      final var replication =
+          withStatus(
+              caughtUp(configuration),
+              new MemberStatus(B3, 0, PASSIVE, 100, NOW - ELECTION_TIMEOUT - 1, 0));
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(
+                  configuration, view(active(bootstrapped().keySet())), incarnations, replication));
+
+      // then
+      assertThat(targetTypes(decision)).containsExactlyInAnyOrderEntriesOf(bootstrapped());
+      assertThat(targetIncarnations(decision)).containsEntry(B3, 33L);
+    }
+
+    @Test
+    void shouldNotReplaceIncarnationThatAnsweredWithinElectionTimeout() {
+      // given - a second process publishes another incarnation, the member still answers
+      final var configuration = configuration(bootstrapped());
+      final var incarnations = published(configuration);
+      incarnations.put(A1, 11L);
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(
+                  configuration,
+                  view(active(bootstrapped().keySet())),
+                  incarnations,
+                  caughtUp(configuration)));
+
+      // then
+      assertThat(decision.change()).isNull();
+    }
+
+    @Test
+    void shouldNotReplaceWithFencedIncarnation() {
+      // given
+      final var configuration =
+          configuration(bootstrapped(), Map.of(), List.of(new FenceEntry(A1, 11)), POLICY);
+      final var incarnations = published(configuration);
+      incarnations.put(A1, 11L);
+      final var replication =
+          withStatus(
+              caughtUp(configuration),
+              new MemberStatus(A1, 0, ACTIVE, 100, NOW - ELECTION_TIMEOUT - 1, 0));
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(
+                  configuration, view(active(bootstrapped().keySet())), incarnations, replication));
+
+      // then
+      assertThat(decision.change()).isNull();
+    }
+
+    @Test
+    void shouldPromoteCaughtUpPassiveMemberIntoEmptySlot() {
+      // given - zone a has one voter
+      final var configuration =
+          configuration(
+              members(C1, ACTIVE, A1, ACTIVE, B1, ACTIVE, B2, ACTIVE, A2, PASSIVE, A3, PASSIVE));
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(
+                  configuration,
+                  view(
+                      active(
+                          configuration.newMembers().stream()
+                              .map(RaftMember::memberId)
+                              .toList()))));
+
+      // then - rule 5, lowest node index first
+      assertThat(targetTypes(decision)).containsEntry(A2, ACTIVE).containsEntry(A3, PASSIVE);
+    }
+
+    @Test
+    void shouldNotPromoteMemberThatDidNotAnswerRecentlyOrLags() {
+      // given
+      final var configuration =
+          configuration(
+              members(C1, ACTIVE, A1, ACTIVE, B1, ACTIVE, B2, ACTIVE, A2, PASSIVE, A3, PASSIVE));
+      var replication =
+          withStatus(
+              caughtUp(configuration),
+              new MemberStatus(A2, 0, PASSIVE, 100, NOW - ELECTION_TIMEOUT - 1, 0));
+      replication = withStatus(replication, new MemberStatus(A3, 0, PASSIVE, 50, NOW, 1 << 30));
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(
+                  configuration,
+                  view(
+                      active(
+                          configuration.newMembers().stream().map(RaftMember::memberId).toList())),
+                  published(configuration),
+                  replication));
+
+      // then
+      assertThat(decision.change()).isNull();
+    }
+
+    @Test
+    void shouldPromoteMemberThatLagsBelowThreshold() {
+      // given - under load a passive member lags a little
+      final var configuration =
+          configuration(members(C1, ACTIVE, A1, ACTIVE, B1, ACTIVE, B2, ACTIVE, A2, PASSIVE));
+      final var replication =
+          withStatus(caughtUp(configuration), new MemberStatus(A2, 0, PASSIVE, 98, NOW, 512));
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(
+                  configuration,
+                  view(
+                      active(
+                          configuration.newMembers().stream().map(RaftMember::memberId).toList())),
+                  published(configuration),
+                  replication));
+
+      // then
+      assertThat(targetTypes(decision)).containsEntry(A2, ACTIVE);
+    }
 
     @Test
     void shouldDemoteExtraVoterWithHighestNodeIndex() {
-      // given
+      // given - zone a has three voters
       final var configuration =
-          configuration(members(A1, ACTIVE, A2, ACTIVE, A3, ACTIVE, B1, ACTIVE));
+          configuration(members(C1, ACTIVE, A1, ACTIVE, A2, ACTIVE, A3, ACTIVE, B1, ACTIVE));
 
       // when
-      final var target = SystemPartitionMembership.demotion(configuration);
+      final var decision =
+          SystemPartitionMembership.decide(
+              input(
+                  configuration,
+                  view(
+                      active(
+                          configuration.newMembers().stream()
+                              .map(RaftMember::memberId)
+                              .toList()))));
 
-      // then
-      assertThat(target).hasValue(members(A1, ACTIVE, B1, ACTIVE, A2, ACTIVE, A3, PASSIVE));
+      // then - rule 4 before rule 5
+      assertThat(targetTypes(decision)).containsEntry(A3, PASSIVE).containsEntry(A2, ACTIVE);
     }
 
     @Test
-    void shouldDemoteOneVoterPerChange() {
-      // given - policy a:1 with three voters in zone a
+    void shouldDemoteVoterOfZoneOutsidePolicyOnlyOnceAPolicyZoneHasAVoter() {
+      // given - only X1, outside the policy, is a voter, e.g. after a forced change
+      final var onlyOutside = configuration(members(X1, ACTIVE, A1, PASSIVE));
+      final var outsideAndPolicy = configuration(members(X1, ACTIVE, A1, ACTIVE));
+      final var states = active(List.of(X1, A1, LEADER));
+
+      // when
+      final var keep =
+          SystemPartitionMembership.decide(
+              new LeaderInput(
+                  X1,
+                  onlyOutside,
+                  true,
+                  view(states),
+                  published(onlyOutside),
+                  new ReplicationStatus(
+                      3, 100, List.of(new MemberStatus(A1, 0, PASSIVE, 0, 0, 1 << 30))),
+                  POLICY,
+                  NOW,
+                  ELECTION_TIMEOUT,
+                  1024));
+      final var demote =
+          SystemPartitionMembership.decide(
+              new LeaderInput(
+                  A1,
+                  outsideAndPolicy,
+                  true,
+                  view(states),
+                  published(outsideAndPolicy),
+                  caughtUp(outsideAndPolicy),
+                  POLICY,
+                  NOW,
+                  ELECTION_TIMEOUT,
+                  1024));
+
+      // then
+      assertThat(keep.change()).isNull();
+      assertThat(targetTypes(demote)).containsEntry(X1, PASSIVE).containsEntry(A1, ACTIVE);
+    }
+
+    @Test
+    void shouldWaitWhileDynamicConfigurationIsNotInitialized() {
+      // given
+      final var configuration = configuration(bootstrapped());
+
+      // when
+      final var decision =
+          SystemPartitionMembership.decide(input(configuration, ClusterView.notInitialized()));
+
+      // then - not even rule 1 removes the members that it does not know yet
+      assertThat(decision.change()).isNull();
+      assertThat(decision.reason()).contains("not initialized");
+    }
+
+    @Test
+    void shouldWaitWhileViewIsOlderThanMembershipVersion() {
+      // given - an earlier leader changed the members with a newer view (R19)
       final var configuration =
-          configuration(
-              members(A1, ACTIVE, A2, ACTIVE, A3, ACTIVE),
-              Map.of(),
+          new Configuration(
+              10, 2, 1, raftMembers(bootstrapped(), Map.of()), List.of(), false, List.of(), 9);
+      final var states = active(bootstrapped().keySet());
+      states.put(B1, BrokerState.LEAVING);
+
+      // when
+      final var decision = SystemPartitionMembership.decide(input(configuration, view(states)));
+
+      // then
+      assertThat(decision.change()).isNull();
+      assertThat(decision.reason()).contains("older than the membership version");
+    }
+
+    @Test
+    void shouldWaitWhileJointChangeIsInProgress() {
+      // given
+      final var joint =
+          new Configuration(
+              10,
+              2,
+              1,
+              raftMembers(bootstrapped(), Map.of()),
+              raftMembers(bootstrapped(), Map.of()),
+              false,
               List.of(),
-              VoterPolicy.of(new ZoneVoters("a", 1)));
+              0);
+      final var states = active(bootstrapped().keySet());
+      states.put(B1, BrokerState.LEAVING);
 
       // when
-      final var target = SystemPartitionMembership.demotion(configuration);
+      final var decision = SystemPartitionMembership.decide(input(joint, view(states)));
 
       // then
-      assertThat(target).hasValue(members(A1, ACTIVE, A2, ACTIVE, A3, PASSIVE));
+      assertThat(decision.change()).isNull();
     }
 
     @Test
-    void shouldNotDemoteWithinPolicy() {
-      // when
-      final var target = SystemPartitionMembership.demotion(configuration(bootstrapped()));
-
-      // then
-      assertThat(target).isEmpty();
-    }
-
-    @Test
-    void shouldKeepOnlyVoterOfZoneOutsidePolicy() {
-      // given - a forced change made the only member with the most recent log a voter
-      final var configuration = configuration(members(X1, ACTIVE, A1, PASSIVE, B1, PASSIVE));
-
-      // when
-      final var target = SystemPartitionMembership.demotion(configuration);
-
-      // then
-      assertThat(target).isEmpty();
-    }
-
-    @Test
-    void shouldDemoteVoterOutsidePolicyOncePolicyZoneHasVoter() {
+    void shouldAuthorizeOnlyJoiningOrActiveBrokersAndPendingJoinTargets() {
       // given
-      final var configuration = configuration(members(X1, ACTIVE, A1, ACTIVE, B1, PASSIVE));
+      final var b4 = MemberId.from("b", 4);
+      final var b5 = MemberId.from("b", 5);
+      final var states = new LinkedHashMap<MemberId, BrokerState>();
+      states.put(A1, BrokerState.ACTIVE);
+      states.put(A2, BrokerState.JOINING);
+      states.put(A3, BrokerState.LEAVING);
+      states.put(B1, BrokerState.LEFT);
+      states.put(B2, BrokerState.ACTIVE);
+      final var clusterView = view(states, Set.of(b4, B1), Set.of(B2), Set.of(b5));
 
-      // when
-      final var target = SystemPartitionMembership.demotion(configuration);
-
-      // then
-      assertThat(target).hasValue(members(A1, ACTIVE, B1, PASSIVE, X1, PASSIVE));
+      // then - LEFT and pending removals have priority over a pending MemberJoin
+      assertThat(SystemPartitionMembership.isAuthorized(clusterView, A1)).isTrue();
+      assertThat(SystemPartitionMembership.isAuthorized(clusterView, A2)).isTrue();
+      assertThat(SystemPartitionMembership.isAuthorized(clusterView, b4)).isTrue();
+      assertThat(SystemPartitionMembership.isAuthorized(clusterView, A3)).isFalse();
+      assertThat(SystemPartitionMembership.isAuthorized(clusterView, B1)).isFalse();
+      assertThat(SystemPartitionMembership.isAuthorized(clusterView, B2)).isFalse();
+      assertThat(SystemPartitionMembership.isAuthorized(clusterView, b5)).isFalse();
+      assertThat(SystemPartitionMembership.mustBeRemoved(clusterView, B2)).isFalse();
+      assertThat(SystemPartitionMembership.mustBeRemoved(clusterView, A3)).isTrue();
     }
-  }
-
-  @Nested
-  final class MemberLeave {
 
     @Test
-    void shouldReplaceLeavingVoterInOneChange() {
+    void shouldProduceChangeThatCarriesViewVersionAndExpectedIndex() {
       // given
       final var configuration = configuration(bootstrapped());
+      final var states = active(bootstrapped().keySet());
+      states.put(B3, BrokerState.LEAVING);
 
       // when
-      final var change =
-          SystemPartitionMembership.leaveChange(configuration, A1, Set.of(), member -> true)
-              .orElseThrow();
+      final MembershipChange change =
+          SystemPartitionMembership.decide(input(configuration, view(states))).change();
 
       // then
-      assertThat(change.target())
-          .isEqualTo(
-              members(C1, ACTIVE, A2, ACTIVE, A3, ACTIVE, B1, ACTIVE, B2, ACTIVE, B3, PASSIVE));
-      assertThat(change.replacement()).isEqualTo(A3);
-      assertThat(change.fence()).isEqualTo(new FenceEntry(A1, 0));
-    }
-
-    @Test
-    void shouldRemoveVoterWithoutReplacementIfNoneIsAvailable() {
-      // given
-      final var configuration = configuration(bootstrapped());
-
-      // when - A3 has not caught up
-      final var change =
-          SystemPartitionMembership.leaveChange(configuration, A1, Set.of(), member -> false)
-              .orElseThrow();
-
-      // then
-      assertThat(change.target())
-          .isEqualTo(
-              members(C1, ACTIVE, A2, ACTIVE, A3, PASSIVE, B1, ACTIVE, B2, ACTIVE, B3, PASSIVE));
-      assertThat(change.replacement()).isNull();
-    }
-
-    @Test
-    void shouldNotReplaceWithExcludedOrOtherZoneMember() {
-      // given
-      final var configuration = configuration(bootstrapped());
-
-      // when - A3 is the target of a pending removal; B3 is in another zone
-      final var change =
-          SystemPartitionMembership.leaveChange(configuration, A1, Set.of(A3), member -> true)
-              .orElseThrow();
-
-      // then
-      assertThat(change.replacement()).isNull();
-      assertThat(change.target()).containsEntry(B3, PASSIVE);
-    }
-
-    @Test
-    void shouldRemovePassiveMember() {
-      // given
-      final var configuration = configuration(bootstrapped(), Map.of(B3, 9L), List.of(), POLICY);
-
-      // when
-      final var change =
-          SystemPartitionMembership.leaveChange(configuration, B3, Set.of(), member -> true)
-              .orElseThrow();
-
-      // then
-      assertThat(change.target()).doesNotContainKey(B3).hasSize(6);
-      assertThat(change.fence()).isEqualTo(new FenceEntry(B3, 9));
-      assertThat(change.replacement()).isNull();
-    }
-
-    @Test
-    void shouldCompleteIfBrokerIsNotMember() {
-      // given
-      final var configuration = configuration(members(C1, ACTIVE, B1, ACTIVE));
-
-      // when
-      final var change =
-          SystemPartitionMembership.leaveChange(configuration, A1, Set.of(), member -> true);
-
-      // then
-      assertThat(change).isEmpty();
+      assertThat(change).isNotNull();
+      assertThat(change.membershipVersion()).isEqualTo(5);
+      assertThat(change.expectedIndex()).isEqualTo(10);
     }
   }
 }

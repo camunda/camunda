@@ -243,7 +243,7 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
                             List.of(),
                             false,
                             response.fenced(),
-                            response.voterPolicy()));
+                            response.membershipVersion()));
                     future.complete(null);
                   } catch (final Exception e) {
                     future.completeExceptionally(e);

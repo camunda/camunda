@@ -329,7 +329,7 @@ final class LeaderAppender {
         .withNewMembers(new ArrayList<>(configuration.newMembers()))
         .withOldMembers(new ArrayList<>(configuration.oldMembers()))
         .withFenced(configuration.fenced())
-        .withVoterPolicy(configuration.voterPolicy())
+        .withMembershipVersion(configuration.membershipVersion())
         .withCommitted(committed)
         .build();
   }
@@ -353,6 +353,19 @@ final class LeaderAppender {
     LOGGER.debug("Sending a fenced notice to {}", member.getMember());
     raft.getOutboundProtocol()
         .configure(member.getMember().memberId(), buildConfigureRequest(true));
+  }
+
+  /**
+   * Sends the fenced notice to a broker that is not a member of the configuration, see {@link
+   * LeaderRole#sendFencedNotice(MemberId)}. The caller limits how often it sends the notice.
+   */
+  void sendFencedNotice(final MemberId member) {
+    final var configuration = raft.getCluster().getConfiguration();
+    if (!configuration.force() && raft.getCommitIndex() < configuration.index()) {
+      return;
+    }
+    LOGGER.debug("Sending a fenced notice to {}, which is not a member", member);
+    raft.getOutboundProtocol().configure(member, buildConfigureRequest(true));
   }
 
   /** Connects to the member and sends a configure request. */
@@ -1162,7 +1175,7 @@ final class LeaderAppender {
    */
   private long computeHeartbeatTime() {
     return raft.getCluster()
-        .getQuorumFor(RaftMemberContext::getHeartbeatTime)
+        .getQuorumFor(RaftMemberContext::getHeartbeatTime, 0L)
         // No remote members, use current time because the local member is always reachable.
         .orElseGet(System::currentTimeMillis);
   }
@@ -1180,7 +1193,7 @@ final class LeaderAppender {
 
     final long commitIndex =
         raft.getCluster()
-            .getQuorumFor(RaftMemberContext::getMatchIndex)
+            .getQuorumFor(RaftMemberContext::getMatchIndex, 0L)
             // If there are no remote members, commit up to the last log index.
             .orElseGet(() -> raft.getLog().getLastIndex());
 
@@ -1200,7 +1213,7 @@ final class LeaderAppender {
 
   private long computeResponseTime() {
     return raft.getCluster()
-        .getQuorumFor(RaftMemberContext::getResponseTime)
+        .getQuorumFor(RaftMemberContext::getResponseTime, 0L)
         // No remote members, use current time because the local member is always reachable.
         .orElseGet(System::currentTimeMillis);
   }

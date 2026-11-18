@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,12 +30,12 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a persisted server configuration.
@@ -53,8 +52,9 @@ import org.jspecify.annotations.Nullable;
  *     without a quorum.
  * @param fenced The fence list: members with these incarnations are rejected by all members. Empty
  *     for configurations that predate fencing.
- * @param voterPolicy The voter policy, or null if the configuration has none. Raft only checks that
- *     a change does not exceed it.
+ * @param membershipVersion An opaque version that the owner of the partition writes with a change
+ *     of the members, for example the version of the cluster membership view that it used. Raft
+ *     stores it but does not interpret it. 0 for configurations that predate it.
  */
 public record Configuration(
     long index,
@@ -64,7 +64,7 @@ public record Configuration(
     Collection<RaftMember> oldMembers,
     boolean force,
     Collection<FenceEntry> fenced,
-    @Nullable VoterPolicy voterPolicy) {
+    long membershipVersion) {
 
   public Configuration(
       final long index,
@@ -74,7 +74,7 @@ public record Configuration(
       final Collection<RaftMember> oldMembers,
       final boolean force,
       final Collection<FenceEntry> fenced,
-      final @Nullable VoterPolicy voterPolicy) {
+      final long membershipVersion) {
     checkArgument(time > 0, "time must be positive");
     checkNotNull(newMembers, "newMembers cannot be null");
     checkNotNull(oldMembers, "oldMembers cannot be null");
@@ -87,7 +87,7 @@ public record Configuration(
     this.oldMembers = copyMembers(oldMembers);
     this.force = force;
     this.fenced = List.copyOf(new LinkedHashSet<>(fenced));
-    this.voterPolicy = voterPolicy;
+    this.membershipVersion = membershipVersion;
 
     if (force) {
       checkArgument(oldMembers.isEmpty(), "oldMembers must be empty when force is true");
@@ -102,7 +102,7 @@ public record Configuration(
       final Collection<RaftMember> newMembers,
       final Collection<RaftMember> oldMembers,
       final boolean force) {
-    this(index, term, time, newMembers, oldMembers, force, List.of(), null);
+    this(index, term, time, newMembers, oldMembers, force, List.of(), 0);
   }
 
   public Configuration(
@@ -141,17 +141,41 @@ public record Configuration(
   /**
    * @return a set of all members in the configuration. During joint consensus where a member can be
    *     in both the old and new configuration, the member with the higher {@link RaftMember.Type
-   *     type} is used.
+   *     type} is used. If the member has a different incarnation in the new members (the
+   *     replacement of an incarnation), the member of the new members is used: the old incarnation
+   *     is gone, and the process that runs with the member id is the new incarnation. The old
+   *     incarnation still counts for the quorum of the old members, but only with answers of its
+   *     own incarnation, see {@link io.atomix.raft.cluster.impl.RaftClusterContext#getQuorumFor}.
    */
   public Set<RaftMember> allMembers() {
+    final var newIncarnations =
+        newMembers.stream()
+            .collect(Collectors.toMap(RaftMember::memberId, RaftMember::getIncarnation));
     return new HashSet<>(
-        Stream.concat(newMembers.stream(), oldMembers.stream())
+        Stream.concat(
+                newMembers.stream(),
+                oldMembers.stream()
+                    .filter(
+                        member ->
+                            newIncarnations.getOrDefault(member.memberId(), member.getIncarnation())
+                                == member.getIncarnation()))
             .collect(
                 Collectors.toMap(
                     RaftMember::memberId,
                     Function.identity(),
                     BinaryOperator.maxBy(Comparator.comparing(RaftMember::getType))))
             .values());
+  }
+
+  /**
+   * @return the incarnation of the member in the new members, else in the old members; empty if it
+   *     is not a member
+   */
+  public OptionalLong incarnationOf(final MemberId member) {
+    return Stream.concat(newMembers.stream(), oldMembers.stream())
+        .filter(m -> m.memberId().equals(member))
+        .mapToLong(RaftMember::getIncarnation)
+        .findFirst();
   }
 
   private static Collection<RaftMember> copyMembers(final Collection<RaftMember> members) {

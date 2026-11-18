@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.raft;
+package io.atomix.raft.cluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.junit.jupiter.api.Test;
 
-final class JoinOptionsTest {
+final class IncarnationsTest {
 
   @Test
   void shouldNeverGenerateReservedIncarnations() {
@@ -30,15 +29,9 @@ final class JoinOptionsTest {
     final var values = new ConcurrentLinkedQueue<>(List.of(0L, Long.MIN_VALUE, 0L, 42L));
 
     // when
-    final long incarnation = JoinOptions.newIncarnation(values::remove);
+    final long incarnation = Incarnations.newIncarnation(values::remove);
 
     // then
     assertThat(incarnation).isEqualTo(42L);
-  }
-
-  @Test
-  void shouldRejectIncarnationThatReadsAsNull() {
-    assertThatThrownBy(() -> JoinOptions.withIncarnation(Long.MIN_VALUE))
-        .isInstanceOf(IllegalArgumentException.class);
   }
 }

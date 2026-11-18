@@ -19,6 +19,7 @@ package io.atomix.raft.roles;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftServer;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
@@ -96,11 +97,35 @@ public class InactiveRole extends AbstractRole {
             request.oldMembers() != null ? request.oldMembers() : List.of(),
             false,
             request.fenced(),
-            request.voterPolicy());
+            request.membershipVersion());
+
+    // A member that started without a configuration (R16) has no data: it accepts only a
+    // configuration in which it is passive with its own incarnation, so that it never votes before
+    // the leader promotes it after it has caught up.
+    final var withoutConfiguration = raft.getCluster().getConfiguration() == null;
+    if (withoutConfiguration) {
+      final var refusal = refusalWithoutConfiguration(configuration);
+      if (refusal != null) {
+        log.debug("Rejecting {}: {}", request, refusal);
+        return CompletableFuture.completedFuture(
+            logResponse(
+                ConfigureResponse.builder()
+                    .withStatus(Status.ERROR)
+                    .withError(Type.ILLEGAL_MEMBER_STATE, refusal)
+                    .build()));
+      }
+    }
 
     // Configure the cluster membership. This will cause this server to transition to the
     // appropriate state if its type has changed.
     raft.getCluster().configure(configuration);
+
+    if (withoutConfiguration) {
+      // Stored at once, so that a restart starts with it (row 1 of the start table) and stays
+      // passive, instead of starting without data again with a new incarnation. It can only make
+      // this member passive, thus it is safe even if it is not committed.
+      raft.getMetaStore().storeConfiguration(raft.getCluster().getConfiguration());
+    }
 
     // If the configuration is already committed, commit it to disk.
     // Check against the actual cluster Configuration rather than the received configuration in
@@ -111,6 +136,40 @@ public class InactiveRole extends AbstractRole {
 
     return CompletableFuture.completedFuture(
         logResponse(ConfigureResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+  }
+
+  /**
+   * @return null if a member without a configuration may accept the configuration, else the reason
+   *     why not
+   */
+  private String refusalWithoutConfiguration(final Configuration configuration) {
+    final var local = raft.getCluster().getLocalMember();
+    if (configuration.force()) {
+      return "a member without data does not accept a forced configuration";
+    }
+    final var newMember =
+        configuration.newMembers().stream()
+            .filter(member -> member.memberId().equals(local.memberId()))
+            .findAny();
+    if (newMember.isEmpty()
+        || newMember.get().getType() != RaftMember.Type.PASSIVE
+        || newMember.get().getIncarnation() != local.getIncarnation()) {
+      return "a member without data accepts only a configuration in which it is %s with its incarnation %d, but got %s"
+          .formatted(RaftMember.Type.PASSIVE, local.getIncarnation(), newMember);
+    }
+    final var otherIncarnation =
+        configuration.oldMembers().stream()
+            .filter(member -> member.memberId().equals(local.memberId()))
+            .filter(
+                member ->
+                    member.getIncarnation() != local.getIncarnation()
+                        || member.getType() != RaftMember.Type.PASSIVE)
+            .findAny();
+    if (otherIncarnation.isPresent()) {
+      return "the old members of the joint configuration have %s, a member without data waits for the end of the joint phase"
+          .formatted(otherIncarnation.get());
+    }
+    return null;
   }
 
   @Override

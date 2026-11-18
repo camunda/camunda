@@ -23,19 +23,28 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.FenceEntry;
+import io.atomix.raft.cluster.MembershipChange;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
-import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.partition.systempartition.SystemPartitionRecovery;
+import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.MemberReport;
+import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.RecoveryDecision;
+import io.atomix.raft.partition.systempartition.VoterPolicy;
+import io.atomix.raft.partition.systempartition.VoterPolicy.ZoneVoters;
+import io.atomix.raft.protocol.AppendResponse;
+import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
+import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
+import io.atomix.raft.protocol.VersionedAppendRequest;
+import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
@@ -44,19 +53,25 @@ import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -66,9 +81,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Tests the Raft mechanisms that the system partition needs: a partition replicated on every
- * broker, in which only some members are voters ({@link Type#ACTIVE}) and the others are {@link
- * Type#PASSIVE}.
+ * Tests the Raft mechanisms that the system partition needs (design revision 7, 5.8): a partition
+ * replicated on every broker, in which only some members are voters ({@link Type#ACTIVE}) and the
+ * others are {@link Type#PASSIVE}, whose members only the leader changes, and in which a member
+ * without data starts without a configuration. Servers are created with the {@code systemPartition}
+ * option (R20) unless a test says otherwise.
  */
 final class SystemPartitionRaftTest {
   private final MemberId id1 = MemberId.from("1");
@@ -92,6 +109,10 @@ final class SystemPartitionRaftTest {
     return createServer(id, config -> {}, others);
   }
 
+  private RaftServer createDataPartitionServer(final MemberId id, final MemberId... others) {
+    return createServer(id, config -> config.setSystemPartition(false), others);
+  }
+
   private RaftServer createServer(
       final MemberId id,
       final Consumer<RaftPartitionConfig> configCustomizer,
@@ -109,6 +130,7 @@ final class SystemPartitionRaftTest {
         new RaftPartitionConfig()
             .setElectionTimeout(Duration.ofMillis(500))
             .setHeartbeatInterval(Duration.ofMillis(100));
+    partitionConfig.setSystemPartition(true);
     configCustomizer.accept(partitionConfig);
     final var server =
         RaftServer.builder(id)
@@ -122,6 +144,16 @@ final class SystemPartitionRaftTest {
     return server;
   }
 
+  private void stop(final RaftServer server) {
+    server.shutdown().join();
+    servers.remove(server);
+  }
+
+  private void loseDisk(final RaftServer server, final MemberId id) throws IOException {
+    stop(server);
+    FileUtil.deleteFolderIfExists(tmp.resolve(id.id()));
+  }
+
   private static Optional<RaftServer> leaderOf(final RaftServer... servers) {
     return Arrays.stream(servers).filter(RaftServer::isLeader).findAny();
   }
@@ -130,6 +162,20 @@ final class SystemPartitionRaftTest {
     return Awaitility.await("a leader is elected")
         .until(() -> leaderOf(servers), Optional::isPresent)
         .orElseThrow();
+  }
+
+  private static RaftServer awaitLeaderIs(final RaftServer expected, final RaftServer... servers) {
+    Awaitility.await("the expected member is the leader")
+        .until(
+            () -> {
+              final var leader = awaitLeader(servers);
+              if (leader != expected) {
+                leader.stepDown().join();
+                return false;
+              }
+              return true;
+            });
+    return expected;
   }
 
   private static Map<MemberId, Type> memberTypes(final RaftServer server) {
@@ -144,8 +190,11 @@ final class SystemPartitionRaftTest {
     return onRaftThread(server, () -> server.getContext().getCommitIndex());
   }
 
-  private static <T> T onRaftThread(
-      final RaftServer server, final java.util.function.Supplier<T> supplier) {
+  private static Configuration configurationOf(final RaftServer server) {
+    return onRaftThread(server, () -> server.getContext().getCluster().getConfiguration());
+  }
+
+  private static <T> T onRaftThread(final RaftServer server, final Supplier<T> supplier) {
     final var result = new CompletableFuture<T>();
     server
         .getContext()
@@ -162,6 +211,10 @@ final class SystemPartitionRaftTest {
   }
 
   private static long appendEntry(final RaftServer leader) {
+    return appendEntryAsync(leader).orTimeout(10, TimeUnit.SECONDS).join();
+  }
+
+  private static CompletableFuture<Long> appendEntryAsync(final RaftServer leader) {
     final var result = new AppendResult();
     final RaftContext context = leader.getContext();
     context
@@ -170,44 +223,72 @@ final class SystemPartitionRaftTest {
             () ->
                 ((LeaderRole) context.getRaftRole())
                     .appendEntry(-1, -1, ByteBuffer.wrap(new byte[0]), result));
-    return result.commit().orTimeout(10, TimeUnit.SECONDS).join();
+    return result.commit();
   }
 
-  private record ConfigurationId(long index, long term) {}
+  private static long configurationIndex(final RaftServer server) {
+    return onRaftThread(server, () -> server.getContext().getCluster().getConfiguration().index());
+  }
 
-  private static ConfigurationId configurationId(final RaftServer server) {
-    return onRaftThread(
-        server,
-        () ->
-            new ConfigurationId(
-                server.getContext().getCluster().getConfiguration().index(),
-                server.getContext().getCluster().getConfigurationTerm()));
+  private static RaftMember member(final MemberId id, final Type type) {
+    return member(id, type, 0);
+  }
+
+  private static RaftMember member(final MemberId id, final Type type, final long incarnation) {
+    return new DefaultRaftMember(id, type, Instant.now(), incarnation);
+  }
+
+  /** Retries the change on the leader until it accepts it, e.g. once a member caught up. */
+  private static ReconfigureResponse awaitChanged(
+      final RaftServer leader,
+      final List<RaftMember> members,
+      final List<FenceEntry> fenced,
+      final long membershipVersion) {
+    return Awaitility.await("the leader changes the members to %s".formatted(members))
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              try {
+                return leader
+                    .changeMembers(
+                        new MembershipChange(
+                            members, fenced, membershipVersion, configurationIndex(leader)))
+                    .get(10, TimeUnit.SECONDS);
+              } catch (final Exception e) {
+                return null;
+              }
+            },
+            response -> response != null && response.status() == Status.OK);
+  }
+
+  private static ReconfigureResponse awaitChanged(
+      final RaftServer leader, final RaftMember... members) {
+    return awaitChanged(leader, List.of(members), List.of(), 0);
+  }
+
+  private List<RaftServer> bootstrap(final Map<MemberId, Type> members) {
+    final var ids = members.keySet().toArray(MemberId[]::new);
+    final var created = new ArrayList<RaftServer>();
+    for (final var id : ids) {
+      created.add(
+          createServer(
+              id, Arrays.stream(ids).filter(other -> !other.equals(id)).toArray(MemberId[]::new)));
+    }
+    CompletableFuture.allOf(
+            created.stream()
+                .map(server -> server.bootstrap(members))
+                .toArray(CompletableFuture[]::new))
+        .orTimeout(30, TimeUnit.SECONDS)
+        .join();
+    created.sort(
+        (a, b) ->
+            MemberId.ID_COMPARATOR.compare(
+                a.cluster().getLocalMember().memberId(), b.cluster().getLocalMember().memberId()));
+    return created;
   }
 
   private List<RaftServer> bootstrapTwoVotersOnePassive() {
-    final var members = twoVotersOnePassive();
-    final var m1 = createServer(id1, id2, id3);
-    final var m2 = createServer(id2, id1, id3);
-    final var m3 = createServer(id3, id1, id2);
-    CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
-        .orTimeout(30, TimeUnit.SECONDS)
-        .join();
-    return List.of(m1, m2, m3);
-  }
-
-  /** Retries the change until the leader accepts it, e.g. once the member caught up. */
-  private static ReconfigureResponse awaitReconfigured(
-      final RaftServer requester, final RaftServer leader, final Map<MemberId, Type> target) {
-    return Awaitility.await("reconfiguration to %s is accepted".formatted(target))
-        .until(
-            () -> {
-              final var current = configurationId(leader);
-              return requester
-                  .reconfigure(target, current.index(), current.term())
-                  .orTimeout(10, TimeUnit.SECONDS)
-                  .join();
-            },
-            response -> response.status() == Status.OK);
+    return bootstrap(twoVotersOnePassive());
   }
 
   private Map<MemberId, Type> twoVotersOnePassive() {
@@ -221,20 +302,16 @@ final class SystemPartitionRaftTest {
     void shouldBootstrapWithTypedMembers() {
       // given
       final var members = twoVotersOnePassive();
-      final var m1 = createServer(id1, id2, id3);
-      final var m2 = createServer(id2, id1, id3);
-      final var m3 = createServer(id3, id1, id2);
 
       // when
-      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
+      final var cluster = bootstrap(members);
 
       // then
-      final var leader = awaitLeader(m1, m2, m3);
+      final var m3 = cluster.get(2);
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
       assertThat(leader).isNotSameAs(m3);
       assertThat(m3.getRole()).isEqualTo(Role.PASSIVE);
-      assertThat(memberTypes(m1)).isEqualTo(members);
+      assertThat(memberTypes(cluster.get(0))).isEqualTo(members);
       assertThat(memberTypes(m3)).isEqualTo(members);
 
       // and the passive member receives committed entries
@@ -247,16 +324,10 @@ final class SystemPartitionRaftTest {
     void shouldKeepTypesAfterRestart() {
       // given
       final var members = twoVotersOnePassive();
-      final var m1 = createServer(id1, id2, id3);
-      final var m2 = createServer(id2, id1, id3);
-      final var m3 = createServer(id3, id1, id2);
-      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
+      final var cluster = bootstrap(members);
 
       // when - restart the passive member with an untyped bootstrap, which would make all ACTIVE
-      m3.shutdown().join();
-      servers.remove(m3);
+      stop(cluster.get(2));
       final var restarted = createServer(id3, id1, id2);
       restarted.bootstrap(id1, id2, id3).orTimeout(30, TimeUnit.SECONDS).join();
 
@@ -289,24 +360,63 @@ final class SystemPartitionRaftTest {
               () -> m4.bootstrap(twoVotersOnePassive()).orTimeout(5, TimeUnit.SECONDS).join())
           .hasRootCauseInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void shouldAppendFirstConfigurationEntryAsFirstLeader() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+
+      // when
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+
+      // then - a configuration index above 0 shows that the system partition exists (R14)
+      Awaitility.await("the first configuration entry is committed")
+          .untilAsserted(
+              () ->
+                  assertThat(cluster)
+                      .allSatisfy(server -> assertThat(configurationIndex(server)).isPositive()));
+      assertThat(configurationOf(leader).newMembers())
+          .extracting(RaftMember::memberId, RaftMember::getType)
+          .containsExactlyInAnyOrder(
+              tuple(id1, Type.ACTIVE), tuple(id2, Type.ACTIVE), tuple(id3, Type.PASSIVE));
+    }
+
+    @Test
+    void shouldNotAppendConfigurationEntryInDataPartition() {
+      // given
+      final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE);
+      final var m1 = createDataPartitionServer(id1, id2);
+      final var m2 = createDataPartitionServer(id2, id1);
+      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+
+      // when
+      appendEntry(awaitLeader(m1, m2));
+
+      // then - data partitions keep their log (R20)
+      assertThat(configurationIndex(m1)).isZero();
+      assertThat(configurationIndex(m2)).isZero();
+    }
   }
 
   @Nested
-  final class ExactIndexReconfigure {
+  final class LeaderChangesMembers {
 
     @Test
-    void shouldPromotePassiveMemberThroughForwardedRequest() {
+    void shouldPromoteCaughtUpPassiveMember() {
       // given
       final var cluster = bootstrapTwoVotersOnePassive();
       final var m3 = cluster.get(2);
       final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
       appendEntry(leader);
-      final var target = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE);
 
-      // when - the passive member requests its own promotion, which it forwards to the leader
-      awaitReconfigured(m3, leader, target);
+      // when
+      awaitChanged(
+          leader, member(id1, Type.ACTIVE), member(id2, Type.ACTIVE), member(id3, Type.ACTIVE));
 
       // then
+      final var target = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE);
       Awaitility.await("all members see the promotion")
           .untilAsserted(
               () -> cluster.forEach(server -> assertThat(memberTypes(server)).isEqualTo(target)));
@@ -316,56 +426,144 @@ final class SystemPartitionRaftTest {
     }
 
     @Test
-    void shouldRejectStaleIndexWithCurrentConfiguration() {
+    void shouldStoreMembershipVersion() {
       // given
       final var cluster = bootstrapTwoVotersOnePassive();
       final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      final var before = configurationId(leader);
-      final var withPassive4 =
-          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE, id4, Type.PASSIVE);
-      awaitReconfigured(leader, leader, withPassive4);
-      final var current = configurationId(leader);
 
-      // when - a different target calculated from the old configuration
+      // when
+      awaitChanged(
+          leader,
+          List.of(
+              member(id1, Type.ACTIVE),
+              member(id2, Type.ACTIVE),
+              member(id3, Type.PASSIVE),
+              member(id4, Type.PASSIVE, 44)),
+          List.of(),
+          17);
+
+      // then - all members store it, Raft does not interpret it (R19)
+      Awaitility.await("all members have the membership version")
+          .untilAsserted(
+              () ->
+                  assertThat(cluster)
+                      .allSatisfy(
+                          server ->
+                              assertThat(configurationOf(server).membershipVersion())
+                                  .isEqualTo(17)));
+      assertThat(configurationOf(leader).newMembers())
+          .filteredOn(m -> m.memberId().equals(id4))
+          .extracting(RaftMember::getIncarnation)
+          .containsExactly(44L);
+    }
+
+    @Test
+    void shouldRejectChangeOnFollower() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var follower = cluster.stream().filter(s -> s != leader).findFirst().orElseThrow();
+
+      // when - then
+      assertThatThrownBy(
+              () ->
+                  follower
+                      .changeMembers(
+                          new MembershipChange(
+                              List.of(member(id1, Type.ACTIVE), member(id2, Type.ACTIVE)),
+                              List.of(),
+                              0,
+                              configurationIndex(follower)))
+                      .orTimeout(10, TimeUnit.SECONDS)
+                      .join())
+          .hasRootCauseInstanceOf(RaftException.NoLeader.class);
+    }
+
+    @Test
+    void shouldRejectTargetConfigurationOfOtherMember() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeaderIs(cluster.get(0), cluster.toArray(RaftServer[]::new));
+      appendEntry(leader);
+
+      // when - the passive member sends a target configuration that promotes it
+      final var response =
+          ((TestRaftServerProtocol) cluster.get(2).getContext().getProtocol())
+              .reconfigure(
+                  id1,
+                  ReconfigureRequest.builder()
+                      .withIndex(configurationIndex(leader))
+                      .withTerm(leader.getTerm())
+                      .withMembers(
+                          List.of(
+                              member(id1, Type.ACTIVE),
+                              member(id2, Type.ACTIVE),
+                              member(id3, Type.ACTIVE)))
+                      .from(id3.id())
+                      .build())
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+
+      // then - only the leader changes the members (R3)
+      assertThat(response.status()).isEqualTo(Status.ERROR);
+      assertThat(response.error().message()).contains("Only the leader changes the members");
+      assertThat(memberTypes(leader)).isEqualTo(twoVotersOnePassive());
+    }
+
+    @Test
+    void shouldRejectJoinOfOtherMember() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeaderIs(cluster.get(0), cluster.toArray(RaftServer[]::new));
+      appendEntry(leader);
+
+      // when - a broker asks to join, as a data partition member would
+      final var response =
+          ((TestRaftServerProtocol) cluster.get(2).getContext().getProtocol())
+              .join(
+                  id1,
+                  JoinRequest.builder().withJoiningMember(member(id4, Type.PASSIVE, 4)).build())
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+
+      // then
+      assertThat(response.status()).isEqualTo(Status.ERROR);
+      assertThat(memberTypes(leader)).doesNotContainKey(id4);
+    }
+
+    @Test
+    void shouldRejectStaleExpectedIndex() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      appendEntry(leader);
+      final var before = configurationIndex(leader);
+      awaitChanged(
+          leader,
+          member(id1, Type.ACTIVE),
+          member(id2, Type.ACTIVE),
+          member(id3, Type.PASSIVE),
+          member(id4, Type.PASSIVE, 4));
+
+      // when - a target calculated from the old configuration
       final var response =
           leader
-              .reconfigure(twoVotersOnePassive(), before.index(), before.term())
+              .changeMembers(
+                  new MembershipChange(
+                      List.of(
+                          member(id1, Type.ACTIVE),
+                          member(id2, Type.ACTIVE),
+                          member(id3, Type.PASSIVE)),
+                      List.of(),
+                      0,
+                      before))
               .orTimeout(10, TimeUnit.SECONDS)
               .join();
 
       // then
       assertThat(response.status()).isEqualTo(Status.ERROR);
       assertThat(response.error().type()).isEqualTo(RaftError.Type.CONFIGURATION_ERROR);
-      assertThat(response.index()).isEqualTo(current.index());
-      assertThat(response.term()).isEqualTo(current.term());
-      assertThat(response.members())
-          .extracting(RaftMember::memberId, RaftMember::getType)
-          .containsExactlyInAnyOrder(
-              withPassive4.entrySet().stream()
-                  .map(e -> org.assertj.core.groups.Tuple.tuple(e.getKey(), e.getValue()))
-                  .toArray(org.assertj.core.groups.Tuple[]::new));
-    }
-
-    @Test
-    void shouldRejectHigherIndex() {
-      // given
-      final var cluster = bootstrapTwoVotersOnePassive();
-      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      final var current = configurationId(leader);
-
-      // when
-      final var response =
-          leader
-              .reconfigure(
-                  Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE, id4, Type.PASSIVE),
-                  current.index() + 1,
-                  current.term())
-              .orTimeout(10, TimeUnit.SECONDS)
-              .join();
-
-      // then
-      assertThat(response.status()).isEqualTo(Status.ERROR);
-      assertThat(response.index()).isEqualTo(current.index());
+      assertThat(memberTypes(leader)).containsKey(id4);
     }
 
     @Test
@@ -373,67 +571,20 @@ final class SystemPartitionRaftTest {
       // given
       final var cluster = bootstrapTwoVotersOnePassive();
       final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      final var before = configurationId(leader);
-      final var target =
-          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE, id4, Type.PASSIVE);
-      awaitReconfigured(leader, leader, target);
-      final var after = configurationId(leader);
+      appendEntry(leader);
+      final var index = configurationIndex(leader);
 
-      // when - a retry with the old index
+      // when
       final var response =
-          leader
-              .reconfigure(target, before.index(), before.term())
-              .orTimeout(10, TimeUnit.SECONDS)
-              .join();
+          awaitChanged(
+              leader,
+              member(id1, Type.ACTIVE),
+              member(id2, Type.ACTIVE),
+              member(id3, Type.PASSIVE));
 
       // then
-      assertThat(response.status()).isEqualTo(Status.OK);
-      assertThat(configurationId(leader)).isEqualTo(after);
-    }
-
-    @Test
-    void shouldKeepIncarnationsOfLeaderForRequestOfLaggingMember() throws IOException {
-      // given - passive member 4 lags: it misses that member 3 joins again with incarnation 77
-      final var members =
-          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE, id4, Type.PASSIVE);
-      final var m1 = createServer(id1, id2, id3, id4);
-      final var m2 = createServer(id2, id1, id3, id4);
-      final var m3 = createServer(id3, id1, id2, id4);
-      final var m4 = createServer(id4, id1, id2, id3);
-      CompletableFuture.allOf(
-              m1.bootstrap(members),
-              m2.bootstrap(members),
-              m3.bootstrap(members),
-              m4.bootstrap(members))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      final var leader = awaitLeader(m1, m2);
-      final var index = appendEntry(leader);
-      Awaitility.await("passive member 4 caught up")
-          .untilAsserted(() -> assertThat(commitIndex(m4)).isGreaterThanOrEqualTo(index));
-      ((TestRaftServerProtocol) leader.getContext().getProtocol()).disconnect(id4);
-      m3.shutdown().join();
-      servers.remove(m3);
-      FileUtil.deleteFolderIfExists(tmp.resolve(id3.id()));
-      createServer(id3, id1, id2, id4)
-          .join(Type.PASSIVE, List.of(id1, id2), JoinOptions.withIncarnation(77L))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-
-      // when - member 4 asks for the current types, with the incarnations it knows
-      final var current = configurationId(leader);
-      final var response =
-          m4.reconfigure(members, current.index(), current.term())
-              .orTimeout(10, TimeUnit.SECONDS)
-              .join();
-
-      // then - the leader keeps the incarnation of member 3
-      assertThat(response.status()).isEqualTo(Status.OK);
-      assertThat(configurationId(leader)).isEqualTo(current);
-      assertThat(leader.getConfiguration().join().newMembers())
-          .filteredOn(member -> member.memberId().equals(id3))
-          .extracting(RaftMember::getIncarnation)
-          .containsExactly(77L);
+      assertThat(response.index()).isEqualTo(index);
+      assertThat(configurationIndex(leader)).isEqualTo(index);
     }
 
     @Test
@@ -441,34 +592,171 @@ final class SystemPartitionRaftTest {
       // given
       final var cluster = bootstrapTwoVotersOnePassive();
       final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      final var current = configurationId(leader);
+      appendEntry(leader);
 
       // when
       final var response =
-          Awaitility.await("leader answers with a final response")
-              .until(
-                  () ->
-                      leader
-                          .reconfigure(
-                              Map.of(
-                                  id1,
-                                  Type.ACTIVE,
-                                  id2,
-                                  Type.ACTIVE,
-                                  id3,
-                                  Type.PASSIVE,
-                                  id4,
-                                  Type.ACTIVE),
-                              current.index(),
-                              current.term())
-                          .orTimeout(10, TimeUnit.SECONDS)
-                          .join(),
-                  r -> r.error() == null || r.error().message().contains("new member"));
+          leader
+              .changeMembers(
+                  new MembershipChange(
+                      List.of(
+                          member(id1, Type.ACTIVE),
+                          member(id2, Type.ACTIVE),
+                          member(id3, Type.PASSIVE),
+                          member(id4, Type.ACTIVE, 4)),
+                      List.of(),
+                      0,
+                      configurationIndex(leader)))
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
 
       // then
       assertThat(response.status()).isEqualTo(Status.ERROR);
-      assertThat(response.error().message()).contains("must not be ACTIVE");
-      assertThat(configurationId(leader)).isEqualTo(current);
+      assertThat(response.error().message()).contains("a new member must not be ACTIVE");
+    }
+
+    @Test
+    void shouldReadLeaderConfigurationThroughPassiveMember() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      appendEntry(leader);
+      awaitChanged(
+          leader,
+          List.of(
+              member(id1, Type.ACTIVE),
+              member(id2, Type.ACTIVE),
+              member(id3, Type.PASSIVE),
+              member(id4, Type.PASSIVE, 4)),
+          List.of(),
+          3);
+
+      // when - the passive member forwards the read to the leader (R3)
+      final var read =
+          cluster.get(2).readLeaderConfiguration().orTimeout(10, TimeUnit.SECONDS).join();
+
+      // then
+      assertThat(read.leader()).isEqualTo(leader.cluster().getLocalMember().memberId());
+      assertThat(read.isCommittedAndNotJoint()).isTrue();
+      assertThat(read.configuration().index()).isEqualTo(configurationIndex(leader));
+      assertThat(read.configuration().membershipVersion()).isEqualTo(3);
+      assertThat(read.configuration().newMembers())
+          .extracting(RaftMember::memberId)
+          .containsExactlyInAnyOrder(id1, id2, id3, id4);
+    }
+  }
+
+  @Nested
+  final class PromotionCheck {
+
+    /** Two voters and a passive member that caught up, then went down. */
+    private RaftServer bootstrapWithDownPassiveMember(final boolean systemPartition) {
+      final var members = twoVotersOnePassive();
+      final var created = new ArrayList<RaftServer>();
+      for (final var id : List.of(id1, id2, id3)) {
+        created.add(
+            createServer(
+                id,
+                config -> config.setSystemPartition(systemPartition),
+                List.of(id1, id2, id3).stream()
+                    .filter(o -> !o.equals(id))
+                    .toArray(MemberId[]::new)));
+      }
+      CompletableFuture.allOf(
+              created.stream().map(s -> s.bootstrap(members)).toArray(CompletableFuture[]::new))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      final var leader = awaitLeaderIs(created.get(0), created.toArray(RaftServer[]::new));
+      final var index = appendEntry(leader);
+      Awaitility.await("passive member caught up")
+          .untilAsserted(
+              () -> assertThat(commitIndex(created.get(2))).isGreaterThanOrEqualTo(index));
+      stop(created.get(2));
+      return leader;
+    }
+
+    /** Promotes member 3 once more than an election timeout passed since it went down. */
+    private ReconfigureResponse promoteMember3Later(final RaftServer leader) {
+      return Awaitility.await("leader answers after an election timeout")
+          .pollDelay(Duration.ofSeconds(1))
+          .until(
+              () ->
+                  leader
+                      .changeMembers(
+                          new MembershipChange(
+                              List.of(
+                                  member(id1, Type.ACTIVE),
+                                  member(id2, Type.ACTIVE),
+                                  member(id3, Type.ACTIVE)),
+                              List.of(),
+                              0,
+                              configurationIndex(leader)))
+                      .orTimeout(10, TimeUnit.SECONDS)
+                      .join(),
+              r -> r.error() == null || !r.error().message().contains("Another configuration"));
+    }
+
+    @Test
+    void shouldNotPromoteMemberThatDidNotAnswerRecently() {
+      // given
+      final var leader = bootstrapWithDownPassiveMember(true);
+
+      // when
+      final var response = promoteMember3Later(leader);
+
+      // then - member 3 is caught up, but it did not answer (R9)
+      assertThat(response.status()).isEqualTo(Status.ERROR);
+      assertThat(response.error().message())
+          .contains("did not answer within the election timeout")
+          .doesNotContain("not caught up");
+    }
+
+    @Test
+    void shouldPromoteMemberThatDidNotAnswerRecentlyInDataPartition() {
+      // given - a data partition keeps its behavior (R20)
+      final var leader = bootstrapWithDownPassiveMember(false);
+
+      // when
+      final var response = promoteMember3Later(leader);
+
+      // then
+      assertThat(response.status()).isEqualTo(Status.OK);
+    }
+
+    @Test
+    void shouldPromotePassiveMemberUnderConstantLoadWithLagThreshold() {
+      // given - a passive member gets only committed entries, thus it lags a little under load
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeaderIs(cluster.get(0), cluster.toArray(RaftServer[]::new));
+      appendEntry(leader);
+      final var load = new AtomicBoolean(true);
+      final var loadThread =
+          new Thread(
+              () -> {
+                while (load.get()) {
+                  try {
+                    appendEntryAsync(leader).get(5, TimeUnit.SECONDS);
+                  } catch (final Exception e) {
+                    return;
+                  }
+                }
+              });
+      loadThread.start();
+
+      try {
+        // when
+        final var response =
+            awaitChanged(
+                leader,
+                member(id1, Type.ACTIVE),
+                member(id2, Type.ACTIVE),
+                member(id3, Type.ACTIVE));
+
+        // then
+        assertThat(response.status()).isEqualTo(Status.OK);
+      } finally {
+        load.set(false);
+      }
     }
   }
 
@@ -476,21 +764,11 @@ final class SystemPartitionRaftTest {
   final class ForceConfigure {
 
     private List<RaftServer> bootstrapThreeVotersOnePassive() {
-      final var members =
-          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE, id4, Type.PASSIVE);
-      final var m1 = createServer(id1, id2, id3, id4);
-      final var m2 = createServer(id2, id1, id3, id4);
-      final var m3 = createServer(id3, id1, id2, id4);
-      final var m4 = createServer(id4, id1, id2, id3);
-      CompletableFuture.allOf(
-              m1.bootstrap(members),
-              m2.bootstrap(members),
-              m3.bootstrap(members),
-              m4.bootstrap(members))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      appendEntry(awaitLeader(m1, m2, m3));
-      return List.of(m1, m2, m3, m4);
+      final var cluster =
+          bootstrap(
+              Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE, id4, Type.PASSIVE));
+      appendEntry(awaitLeader(cluster.get(0), cluster.get(1), cluster.get(2)));
+      return cluster;
     }
 
     @Test
@@ -499,8 +777,8 @@ final class SystemPartitionRaftTest {
       final var cluster = bootstrapThreeVotersOnePassive();
       final var m1 = cluster.get(0);
       final var m3 = cluster.get(2);
-      cluster.get(1).shutdown().join();
-      cluster.get(3).shutdown().join();
+      stop(cluster.get(1));
+      stop(cluster.get(3));
 
       // when - force a configuration that keeps 2 and 4 as passive members
       final var target =
@@ -519,8 +797,8 @@ final class SystemPartitionRaftTest {
       final var cluster = bootstrapThreeVotersOnePassive();
       final var m3 = cluster.get(2);
       final var m4 = cluster.get(3);
-      cluster.get(0).shutdown().join();
-      cluster.get(1).shutdown().join();
+      stop(cluster.get(0));
+      stop(cluster.get(1));
 
       // when - the passive member forces itself and the remaining voter to be the voters
       final var target =
@@ -539,7 +817,7 @@ final class SystemPartitionRaftTest {
       // given - voter 2 is down
       final var cluster = bootstrapThreeVotersOnePassive();
       final var m1 = cluster.get(0);
-      cluster.get(1).shutdown().join();
+      stop(cluster.get(1));
 
       // when - force a configuration in which the unreachable member is a voter
       final var target =
@@ -549,58 +827,341 @@ final class SystemPartitionRaftTest {
       assertThatThrownBy(() -> m1.forceConfigure(target).orTimeout(30, TimeUnit.SECONDS).join())
           .hasRootCauseInstanceOf(RaftException.ProtocolException.class);
     }
+
+    @Test
+    void shouldKeepEntryThatIsCommittedButNoSurvivorKnowsAsCommitted() {
+      // given - four voters, member 1 leads; member 4 is cut off
+      final var cluster =
+          bootstrap(Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE, id4, Type.ACTIVE));
+      final var m1 = awaitLeaderIs(cluster.get(0), cluster.toArray(RaftServer[]::new));
+      final var m2 = cluster.get(1);
+      final var m3 = cluster.get(2);
+      appendEntry(m1);
+      protocolFactory.partition(id4);
+      final var commitBefore = commitIndex(m1);
+      // members 2 and 3 never learn a commit index above the one before the entry
+      ((TestRaftServerProtocol) m1.getContext().getProtocol())
+          .interceptDelivery(
+              VersionedAppendRequest.class,
+              (receiver, request) ->
+                  (receiver.equals(id2) || receiver.equals(id3))
+                          && request.commitIndex() > commitBefore
+                      ? CompletableFuture.failedFuture(new ConnectException("blocked"))
+                      : CompletableFuture.completedFuture(null));
+
+      // when - the entry commits on 1, 2 and 3, then 1 and 4 fail
+      final var entry = appendEntry(m1);
+      assertThat(commitIndex(m2)).isLessThan(entry);
+      assertThat(commitIndex(m3)).isLessThan(entry);
+      stop(m1);
+      stop(cluster.get(3));
+
+      // and phase 0 removes them with a forced change; the survivors are a blocking set (D20)
+      final var reports = List.of(report(m2), report(m3));
+      final var decision =
+          SystemPartitionRecovery.removeMembers(
+              Set.of(id1, id4), reports, VoterPolicy.of(new ZoneVoters("", 4)), false);
+      assertThat(decision).isInstanceOf(RecoveryDecision.ForcedChange.class);
+      final var forced = (RecoveryDecision.ForcedChange) decision;
+      assertThat(forced.completeness().complete()).isTrue();
+      m2.forceConfigure(forced.target()).orTimeout(30, TimeUnit.SECONDS).join();
+
+      // then - the new leader commits the entry: nothing committed is lost
+      final var newLeader = awaitLeader(m2, m3);
+      appendEntry(newLeader);
+      assertThat(commitIndex(m2)).isGreaterThanOrEqualTo(entry);
+      assertThat(commitIndex(m3)).isGreaterThanOrEqualTo(entry);
+      assertThat(memberTypes(newLeader))
+          .containsExactlyInAnyOrderEntriesOf(Map.of(id2, Type.ACTIVE, id3, Type.ACTIVE));
+      assertThat(configurationOf(newLeader).fenced())
+          .containsExactlyInAnyOrder(new FenceEntry(id1, 0), new FenceEntry(id4, 0));
+    }
+
+    private MemberReport report(final RaftServer server) {
+      final var state = server.getReplicaState().orTimeout(5, TimeUnit.SECONDS).join();
+      return new MemberReport(
+          server.cluster().getLocalMember().memberId(),
+          state.configuration(),
+          state.incarnation(),
+          state.lastLogTerm(),
+          state.lastLogIndex(),
+          state.commitIndex(),
+          null,
+          0);
+    }
+  }
+
+  @Nested
+  final class StartWithoutConfiguration {
+
+    private RaftServer startWithoutData(final MemberId id, final long incarnation) {
+      final var others =
+          List.of(id1, id2, id3, id4).stream().filter(o -> !o.equals(id)).toArray(MemberId[]::new);
+      final var server = createServer(id, others);
+      server.startWithoutConfiguration(incarnation).orTimeout(30, TimeUnit.SECONDS).join();
+      return server;
+    }
+
+    private ConfigureRequest configureRequest(
+        final List<RaftMember> newMembers, final List<RaftMember> oldMembers) {
+      return ConfigureRequest.builder()
+          .withTerm(1)
+          .withLeader(id1)
+          .withIndex(5)
+          .withTime(System.currentTimeMillis())
+          .withNewMembers(new ArrayList<>(newMembers))
+          .withOldMembers(new ArrayList<>(oldMembers))
+          .build();
+    }
+
+    @Test
+    void shouldNotVoteOrPollWithoutConfiguration() {
+      // given
+      final var m3 = startWithoutData(id3, 33);
+      final var sender = protocolFactory.newServerProtocol(id1);
+
+      // when
+      final var poll =
+          sender
+              .poll(
+                  id3,
+                  PollRequest.builder()
+                      .withTerm(5)
+                      .withCandidate(id1)
+                      .withLastLogIndex(10)
+                      .withLastLogTerm(5)
+                      .build())
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+      final var vote =
+          sender
+              .vote(
+                  id3,
+                  VoteRequest.builder()
+                      .withTerm(5)
+                      .withCandidate(id1)
+                      .withLastLogIndex(10)
+                      .withLastLogTerm(5)
+                      .build())
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+
+      // then
+      assertThat(m3.getRole()).isEqualTo(Role.INACTIVE);
+      assertThat(poll.status() == Status.ERROR || !poll.accepted()).isTrue();
+      assertThat(vote.status() == Status.ERROR || !vote.voted()).isTrue();
+    }
+
+    @Test
+    void shouldRejectConfigurationInWhichItIsNotPassiveWithItsIncarnation() {
+      // given
+      final var m3 = startWithoutData(id3, 33);
+      final var sender = protocolFactory.newServerProtocol(id1);
+      final var others = List.of(member(id1, Type.ACTIVE), member(id2, Type.ACTIVE));
+
+      // when
+      final var asVoter =
+          sender
+              .configure(
+                  id3,
+                  configureRequest(
+                      List.of(others.get(0), others.get(1), member(id3, Type.ACTIVE, 33)),
+                      List.of()))
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+      final var asOldVoter =
+          sender
+              .configure(
+                  id3,
+                  configureRequest(
+                      List.of(others.get(0), others.get(1), member(id3, Type.ACTIVE, 0)),
+                      List.of()))
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+      final var jointReplacement =
+          sender
+              .configure(
+                  id3,
+                  configureRequest(
+                      List.of(others.get(0), others.get(1), member(id3, Type.PASSIVE, 33)),
+                      List.of(others.get(0), others.get(1), member(id3, Type.ACTIVE, 0))))
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+
+      // then - each rejection carries its incarnation (R16)
+      assertThat(List.of(asVoter, asOldVoter, jointReplacement))
+          .allSatisfy(
+              response -> {
+                assertThat(response.status()).isEqualTo(Status.ERROR);
+                assertThat(response.senderIncarnation()).isEqualTo(33);
+              });
+      assertThat(m3.getRole()).isEqualTo(Role.INACTIVE);
+      assertThat(configurationOf(m3)).isNull();
+    }
+
+    @Test
+    void shouldBecomePassiveWhenLeaderAddsItAndStayPassiveAfterRestart() {
+      // given
+      final var cluster = bootstrap(Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE));
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var index = appendEntry(leader);
+      final var m3 = startWithoutData(id3, 33);
+
+      // when
+      awaitChanged(
+          leader,
+          member(id1, Type.ACTIVE),
+          member(id2, Type.ACTIVE),
+          member(id3, Type.PASSIVE, 33));
+
+      // then
+      Awaitility.await("member 3 catches up as a passive member")
+          .untilAsserted(
+              () -> {
+                assertThat(m3.getRole()).isEqualTo(Role.PASSIVE);
+                assertThat(commitIndex(m3)).isGreaterThanOrEqualTo(index);
+              });
+
+      // when - it restarts with its stored configuration
+      stop(m3);
+      final var restarted = createServer(id3, id1, id2);
+      restarted.bootstrap(id1, id2, id3).orTimeout(30, TimeUnit.SECONDS).join();
+
+      // then
+      assertThat(restarted.getRole()).isEqualTo(Role.PASSIVE);
+      assertThat(restarted.cluster().getLocalMember().getIncarnation()).isEqualTo(33);
+    }
+
+    @Test
+    void shouldFailToStartWithoutConfigurationWithStoredConfiguration() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      awaitLeader(cluster.toArray(RaftServer[]::new));
+      stop(cluster.get(2));
+      final var restarted = createServer(id3, id1, id2);
+
+      // when - then
+      assertThatThrownBy(
+              () -> restarted.startWithoutConfiguration(33).orTimeout(30, TimeUnit.SECONDS).join())
+          .hasRootCauseInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldNeverVoteAfterLosingItsDisk() throws IOException {
+      // given - three voters; member 1 leads; member 3 loses its disk and starts without data
+      final var cluster = bootstrap(Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE));
+      final var m1 = awaitLeaderIs(cluster.get(0), cluster.toArray(RaftServer[]::new));
+      final var m2 = cluster.get(1);
+      appendEntry(m1);
+      loseDisk(cluster.get(2), id3);
+      final var m3 = startWithoutData(id3, 33);
+
+      // when - the leader goes down; member 2 needs a vote of member 3
+      stop(m1);
+
+      // then - member 3 does not vote with its empty log (D15)
+      Awaitility.await("no leader without a vote of the old incarnation")
+          .during(Duration.ofSeconds(3))
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(leaderOf(m2, m3)).isEmpty());
+      assertThat(m3.getRole()).isEqualTo(Role.INACTIVE);
+    }
+  }
+
+  @Nested
+  final class IncarnationsInTheQuorum {
+
+    @Test
+    void shouldNotCountNewIncarnationForOldVoterInJointPhaseOfReplacement() throws IOException {
+      // given - voters 1, 2 and 3, passive member 4; member 1 leads
+      final var cluster =
+          bootstrap(
+              Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE, id4, Type.PASSIVE));
+      final var m1 = awaitLeaderIs(cluster.get(0), cluster.get(0), cluster.get(1), cluster.get(2));
+      final var m2 = cluster.get(1);
+      final var index = appendEntry(m1);
+      Awaitility.await("passive member caught up")
+          .untilAsserted(
+              () -> assertThat(commitIndex(cluster.get(3))).isGreaterThanOrEqualTo(index));
+
+      // and - member 3 lost its disk and runs with incarnation 33; member 2 is down
+      loseDisk(cluster.get(2), id3);
+      final var m3 = createServer(id3, id1, id2, id4);
+      m3.startWithoutConfiguration(33).orTimeout(30, TimeUnit.SECONDS).join();
+      stop(m2);
+
+      // when - the leader replaces 3#0 by 3#33 and promotes member 4 in one change (rule 2)
+      final var change =
+          m1.changeMembers(
+              new MembershipChange(
+                  List.of(
+                      member(id1, Type.ACTIVE),
+                      member(id2, Type.ACTIVE),
+                      member(id4, Type.ACTIVE),
+                      member(id3, Type.PASSIVE, 33)),
+                  List.of(),
+                  0,
+                  configurationIndex(m1)));
+
+      // then - the joint configuration needs 2 of the old voters {1, 2, 3#0}; the answers of 3#33
+      // must not count for 3#0, thus it does not commit while member 2 is down (R17, Q15)
+      Awaitility.await("the joint configuration is appended")
+          .untilAsserted(() -> assertThat(configurationOf(m1).requiresJointConsensus()).isTrue());
+      final var jointIndex = configurationIndex(m1);
+      Awaitility.await("the joint configuration does not commit")
+          .during(Duration.ofSeconds(2))
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(() -> assertThat(commitIndex(m1)).isLessThan(jointIndex));
+
+      // when - member 2 comes back
+      final var restarted2 = createServer(id2, id1, id3, id4);
+      restarted2.bootstrap(id1, id2, id3, id4).orTimeout(30, TimeUnit.SECONDS).join();
+
+      // then - the joint phase ends, maybe by a new leader if member 1 stepped down without a
+      // quorum of the old voters, and its end fences 3#0 (R18)
+      Awaitility.await("the joint phase ends")
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var configuration = configurationOf(restarted2);
+                assertThat(configuration.requiresJointConsensus()).isFalse();
+                assertThat(configuration.newMembers())
+                    .extracting(
+                        RaftMember::memberId, RaftMember::getType, RaftMember::getIncarnation)
+                    .containsExactlyInAnyOrder(
+                        tuple(id1, Type.ACTIVE, 0L),
+                        tuple(id2, Type.ACTIVE, 0L),
+                        tuple(id4, Type.ACTIVE, 0L),
+                        tuple(id3, Type.PASSIVE, 33L));
+                assertThat(configuration.fenced()).containsExactly(new FenceEntry(id3, 0));
+              });
+      assertThat(change).isDone();
+      final var next = appendEntry(awaitLeader(m1, restarted2, cluster.get(3)));
+      Awaitility.await("the new incarnation catches up as a passive member")
+          .untilAsserted(
+              () -> {
+                assertThat(m3.getRole()).isEqualTo(Role.PASSIVE);
+                assertThat(commitIndex(m3)).isGreaterThanOrEqualTo(next);
+              });
+    }
   }
 
   @Nested
   final class Fencing {
 
-    private Configuration configurationOf(final RaftServer server) {
-      return onRaftThread(server, () -> server.getContext().getCluster().getConfiguration());
+    /** Demotes member 3 and fences it with incarnation 0, with a leader among 1 and 2. */
+    private RaftServer demoteAndFenceMember3(final List<RaftServer> cluster) {
+      final var leader = awaitLeaderIs(cluster.get(0), cluster.toArray(RaftServer[]::new));
+      awaitChanged(
+          leader,
+          List.of(member(id1, Type.ACTIVE), member(id2, Type.ACTIVE), member(id3, Type.PASSIVE)),
+          List.of(new FenceEntry(id3, 0)),
+          0);
+      return leader;
     }
 
     private List<RaftServer> bootstrapThreeVoters() {
-      final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE);
-      final var m1 = createServer(id1, id2, id3);
-      final var m2 = createServer(id2, id1, id3);
-      final var m3 = createServer(id3, id1, id2);
-      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      return List.of(m1, m2, m3);
-    }
-
-    /** Demotes and fences member 3 with incarnation 0, with a leader among 1 and 2. */
-    private RaftServer fenceMember3(final List<RaftServer> cluster) {
-      final var m1 = cluster.get(0);
-      final var m2 = cluster.get(1);
-      final var m3 = cluster.get(2);
-      Awaitility.await("member 3 is not the leader")
-          .until(
-              () -> {
-                final var leader = awaitLeader(m1, m2, m3);
-                if (leader == m3) {
-                  m3.stepDown().join();
-                  return false;
-                }
-                return true;
-              });
-      final var leader = awaitLeader(m1, m2);
-      Awaitility.await("member 3 is demoted and fenced")
-          .until(
-              () -> {
-                final var current = configurationId(leader);
-                return leader
-                    .reconfigure(
-                        Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE),
-                        List.of(new FenceEntry(id3, 0)),
-                        null,
-                        current.index(),
-                        current.term())
-                    .orTimeout(10, TimeUnit.SECONDS)
-                    .join();
-              },
-              response -> response.status() == Status.OK);
-      return leader;
+      return bootstrap(Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE));
     }
 
     @Test
@@ -612,14 +1173,13 @@ final class SystemPartitionRaftTest {
       m3.addFencedListener(fencedIncarnation::complete);
 
       // when
-      final var leader = fenceMember3(cluster);
+      final var leader = demoteAndFenceMember3(cluster);
 
       // then
       assertThat(fencedIncarnation.orTimeout(30, TimeUnit.SECONDS).join()).isZero();
       Awaitility.await("fenced member stays inactive")
           .untilAsserted(() -> assertThat(m3.getRole()).isEqualTo(Role.INACTIVE));
       assertThat(configurationOf(leader).fenced()).containsExactly(new FenceEntry(id3, 0));
-      // the cluster continues without the fenced member
       appendEntry(leader);
     }
 
@@ -629,7 +1189,7 @@ final class SystemPartitionRaftTest {
       final var cluster = bootstrapThreeVoters();
       final var m1 = cluster.get(0);
       final var m3 = cluster.get(2);
-      final var leader = fenceMember3(cluster);
+      final var leader = demoteAndFenceMember3(cluster);
       appendEntry(leader);
       final var termBefore = m1.getTerm();
 
@@ -655,107 +1215,55 @@ final class SystemPartitionRaftTest {
     }
 
     @Test
-    void shouldNotFenceMemberThatForwardsJoinOfFencedMember() {
-      // given - passive member 4 has caught up
-      final var members =
-          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE, id4, Type.PASSIVE);
-      final var m1 = createServer(id1, id2, id3, id4);
-      final var m2 = createServer(id2, id1, id3, id4);
-      final var m3 = createServer(id3, id1, id2, id4);
-      final var m4 = createServer(id4, id1, id2, id3);
-      CompletableFuture.allOf(
-              m1.bootstrap(members),
-              m2.bootstrap(members),
-              m3.bootstrap(members),
-              m4.bootstrap(members))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      Awaitility.await("member 3 is not the leader")
+    void shouldSendFencedNoticeToRemovedMemberWithOldData() {
+      // given - member 3 is removed while it is down; the end of the joint phase fences it
+      final var cluster = bootstrapThreeVoters();
+      final var leader = awaitLeaderIs(cluster.get(0), cluster.toArray(RaftServer[]::new));
+      stop(cluster.get(2));
+      awaitChanged(leader, member(id1, Type.ACTIVE), member(id2, Type.ACTIVE));
+      assertThat(configurationOf(leader).fenced()).containsExactly(new FenceEntry(id3, 0));
+
+      // and - it starts with its old data, as a passive member would, and sends nothing
+      final var restarted = createServer(id3, id1, id2);
+      final var fenced = new CompletableFuture<Long>();
+      restarted.addFencedListener(fenced::complete);
+      restarted.bootstrap(id1, id2, id3);
+
+      // when - the leader sees its fenced incarnation and sends the notice (5.6.6)
+      Awaitility.await("the removed member is fenced")
+          .atMost(Duration.ofSeconds(30))
           .until(
               () -> {
-                final var leader = awaitLeader(m1, m2, m3);
-                if (leader == m3) {
-                  m3.stepDown().join();
-                  return false;
-                }
-                return true;
+                leader.sendFencedNotice(id3).join();
+                return fenced.isDone();
               });
-      final var leader = awaitLeader(m1, m2);
-      final var index = appendEntry(leader);
-      Awaitility.await("passive member caught up")
-          .untilAsserted(() -> assertThat(commitIndex(m4)).isGreaterThanOrEqualTo(index));
 
-      // given - member 4 lags behind: it does not get the change that fences member 3
-      final var leaderProtocol = (TestRaftServerProtocol) leader.getContext().getProtocol();
-      leaderProtocol.disconnect(id4);
-      Awaitility.await("member 3 is demoted and fenced")
-          .until(
-              () -> {
-                final var current = configurationId(leader);
-                return leader
-                    .reconfigure(
-                        Map.of(
-                            id1,
-                            Type.ACTIVE,
-                            id2,
-                            Type.ACTIVE,
-                            id3,
-                            Type.PASSIVE,
-                            id4,
-                            Type.PASSIVE),
-                        List.of(new FenceEntry(id3, 0)),
-                        null,
-                        current.index(),
-                        current.term())
-                    .orTimeout(10, TimeUnit.SECONDS)
-                    .join();
-              },
-              response -> response.status() == Status.OK);
-
-      // when - the fenced member asks member 4 to join with its fenced incarnation, and member 4
-      // forwards the request to the leader
-      final var response =
-          ((TestRaftServerProtocol) m3.getContext().getProtocol())
-              .join(
-                  id4,
-                  JoinRequest.builder()
-                      .withJoiningMember(new DefaultRaftMember(id3, Type.PASSIVE, Instant.now()))
-                      .build())
-              .orTimeout(10, TimeUnit.SECONDS)
-              .join();
-
-      // then - the rejection reaches the fenced member, and the forwarder stays healthy
-      assertThat(response.status()).isEqualTo(Status.ERROR);
-      assertThat(response.error().type()).isEqualTo(RaftError.Type.FENCED);
-      assertThat(onRaftThread(m4, () -> m4.getContext().isFenced())).isFalse();
-      assertThat(m4.getRole()).isEqualTo(Role.PASSIVE);
-      leaderProtocol.reconnect(id4);
-      final var nextIndex = appendEntry(leader);
-      Awaitility.await("member 4 catches up again")
-          .untilAsserted(() -> assertThat(commitIndex(m4)).isGreaterThanOrEqualTo(nextIndex));
+      // then
+      assertThat(fenced.join()).isZero();
     }
 
     @Test
-    void shouldAdmitFencedMemberThatJoinsWithNewIncarnation() throws IOException {
+    void shouldAddFencedMemberAgainWithNewIncarnation() throws IOException {
       // given
       final var cluster = bootstrapThreeVoters();
       final var m3 = cluster.get(2);
       final var fenced = new CompletableFuture<Long>();
       m3.addFencedListener(fenced::complete);
-      final var leader = fenceMember3(cluster);
+      final var leader = demoteAndFenceMember3(cluster);
       fenced.orTimeout(30, TimeUnit.SECONDS).join();
 
-      // when - member 3 deletes its data and joins with a new incarnation
-      m3.shutdown().join();
-      servers.remove(m3);
-      FileUtil.deleteFolderIfExists(tmp.resolve(id3.id()));
-      final var rejoined = createServer(id3, id1, id2);
-      rejoined
-          .join(Type.PASSIVE, List.of(id1, id2), JoinOptions.withIncarnation(77L))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
+      // when - member 3 deletes its data, starts without data with a new incarnation, and the
+      // leader replaces its incarnation (rule 2)
+      loseDisk(m3, id3);
+      final var restarted = createServer(id3, id1, id2);
+      restarted.startWithoutConfiguration(77).orTimeout(30, TimeUnit.SECONDS).join();
+      awaitChanged(
+          leader,
+          member(id1, Type.ACTIVE),
+          member(id2, Type.ACTIVE),
+          member(id3, Type.PASSIVE, 77));
 
-      // then
+      // then - the old entry stays and does not match the new incarnation
       final var configuration = configurationOf(leader);
       assertThat(configuration.newMembers())
           .filteredOn(member -> member.memberId().equals(id3))
@@ -763,64 +1271,21 @@ final class SystemPartitionRaftTest {
           .containsExactly(tuple(Type.PASSIVE, 77L));
       assertThat(configuration.fenced()).containsExactly(new FenceEntry(id3, 0));
       final var index = appendEntry(leader);
-      Awaitility.await("rejoined member receives entries")
-          .untilAsserted(() -> assertThat(commitIndex(rejoined)).isGreaterThanOrEqualTo(index));
-    }
-
-    @Test
-    void shouldRejectJoinWithFencedIncarnation() throws IOException {
-      // given
-      final var cluster = bootstrapThreeVoters();
-      final var m3 = cluster.get(2);
-      fenceMember3(cluster);
-      m3.shutdown().join();
-      servers.remove(m3);
-      FileUtil.deleteFolderIfExists(tmp.resolve(id3.id()));
-      final var rejoined = createServer(id3, id1, id2);
-      final var fenced = new CompletableFuture<Long>();
-      rejoined.addFencedListener(fenced::complete);
-
-      // when - it joins again with the fenced incarnation
-      final var join =
-          rejoined.join(Type.PASSIVE, List.of(id1, id2), JoinOptions.withIncarnation(0L));
-
-      // then
-      assertThat(fenced.orTimeout(30, TimeUnit.SECONDS).join()).isZero();
-      assertThatThrownBy(() -> join.orTimeout(30, TimeUnit.SECONDS).join())
-          .hasMessageContaining("fenced");
+      Awaitility.await("the new incarnation receives entries")
+          .untilAsserted(() -> assertThat(commitIndex(restarted)).isGreaterThanOrEqualTo(index));
     }
 
     @Test
     void shouldNotifyFencedMemberThatRestartsWithOldData() {
-      // given - member 3 is down while it is fenced
+      // given - member 3 is down while it is demoted and fenced
       final var cluster = bootstrapThreeVoters();
-      final var m3 = cluster.get(2);
-      Awaitility.await("member 3 is not the leader")
-          .until(
-              () -> {
-                final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-                if (leader == m3) {
-                  m3.stepDown().join();
-                  return false;
-                }
-                return true;
-              });
-      m3.shutdown().join();
-      servers.remove(m3);
-      final var leader = awaitLeader(cluster.get(0), cluster.get(1));
-      final var current = configurationId(leader);
-      assertThat(
-              leader
-                  .reconfigure(
-                      Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE),
-                      List.of(new FenceEntry(id3, 0)),
-                      null,
-                      current.index(),
-                      current.term())
-                  .orTimeout(10, TimeUnit.SECONDS)
-                  .join()
-                  .status())
-          .isEqualTo(Status.OK);
+      final var leader = awaitLeaderIs(cluster.get(0), cluster.toArray(RaftServer[]::new));
+      stop(cluster.get(2));
+      awaitChanged(
+          leader,
+          List.of(member(id1, Type.ACTIVE), member(id2, Type.ACTIVE), member(id3, Type.PASSIVE)),
+          List.of(new FenceEntry(id3, 0)),
+          0);
 
       // when - it restarts with its old data, in which it is a voter
       final var restarted = createServer(id3, id1, id2);
@@ -836,69 +1301,28 @@ final class SystemPartitionRaftTest {
   }
 
   @Nested
-  final class FenceOfLeavingVoter {
-
-    private RaftServer awaitLeaderIs(final RaftServer expected, final RaftServer... servers) {
-      Awaitility.await("%s is the leader".formatted(expected.name()))
-          .until(
-              () -> {
-                final var leader = awaitLeader(servers);
-                if (leader != expected) {
-                  leader.stepDown().join();
-                  return false;
-                }
-                return true;
-              });
-      return expected;
-    }
+  final class EndOfJointPhase {
 
     @Test
-    void shouldCompleteLeaveOfVoterWhileAnotherVoterIsDown() {
+    void shouldFenceRemovedVoterWhileAnotherVoterIsDown() {
       // given - voters 1, 2 and 3, passive member 4 has caught up, member 1 leads
-      final var members =
-          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE, id4, Type.PASSIVE);
-      final var m1 = createServer(id1, id2, id3, id4);
-      final var m2 = createServer(id2, id1, id3, id4);
-      final var m3 = createServer(id3, id1, id2, id4);
-      final var m4 = createServer(id4, id1, id2, id3);
-      CompletableFuture.allOf(
-              m1.bootstrap(members),
-              m2.bootstrap(members),
-              m3.bootstrap(members),
-              m4.bootstrap(members))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      final var leader = awaitLeaderIs(m1, m1, m2, m3);
+      final var cluster =
+          bootstrap(
+              Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE, id4, Type.PASSIVE));
+      final var leader =
+          awaitLeaderIs(cluster.get(0), cluster.get(0), cluster.get(1), cluster.get(2));
       final var index = appendEntry(leader);
       Awaitility.await("passive member caught up")
-          .untilAsserted(() -> assertThat(commitIndex(m4)).isGreaterThanOrEqualTo(index));
-      m2.shutdown().join();
+          .untilAsserted(
+              () -> assertThat(commitIndex(cluster.get(3))).isGreaterThanOrEqualTo(index));
+      stop(cluster.get(1));
 
-      // when - member 3 leaves, member 4 replaces it, and member 3 is fenced; the old voters
-      // need member 3 for their quorum
-      final var target = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id4, Type.ACTIVE);
-      final var response =
-          Awaitility.await("the leave of member 3 completes")
-              .atMost(Duration.ofSeconds(30))
-              .until(
-                  () -> {
-                    final var current = configurationId(leader);
-                    try {
-                      return m3.reconfigure(
-                              target,
-                              List.of(new FenceEntry(id3, 0)),
-                              null,
-                              current.index(),
-                              current.term())
-                          .get(5, TimeUnit.SECONDS);
-                    } catch (final Exception e) {
-                      return null;
-                    }
-                  },
-                  r -> r != null && r.status() == Status.OK);
+      // when - member 3 leaves and member 4 replaces it in one change; the old voters need member
+      // 3 for their quorum, thus it is fenced only when the joint phase ends
+      awaitChanged(
+          leader, member(id1, Type.ACTIVE), member(id2, Type.ACTIVE), member(id4, Type.ACTIVE));
 
       // then
-      assertThat(response.fenced()).containsExactly(new FenceEntry(id3, 0));
       final var configuration = leader.getConfiguration().orTimeout(5, TimeUnit.SECONDS).join();
       assertThat(configuration.requiresJointConsensus()).isFalse();
       assertThat(configuration.newMembers())
@@ -910,34 +1334,31 @@ final class SystemPartitionRaftTest {
     }
 
     @Test
-    void shouldCompleteLeaveOfLeaderWithoutElection() {
+    void shouldCommitRemovalOfLeaderWithoutElection() {
       // given - voters 1, 2 and 3, member 3 leads
-      final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE);
-      final var m1 = createServer(id1, id2, id3);
-      final var m2 = createServer(id2, id1, id3);
-      final var m3 = createServer(id3, id1, id2);
-      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      final var leader = awaitLeaderIs(m3, m1, m2, m3);
+      final var cluster = bootstrap(Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE));
+      final var leader = awaitLeaderIs(cluster.get(2), cluster.toArray(RaftServer[]::new));
       appendEntry(leader);
       final var termBefore = leader.getTerm();
-      final var current = configurationId(leader);
 
-      // when - the leader removes and fences itself
-      leader
-          .reconfigure(
-              Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE),
-              List.of(new FenceEntry(id3, 0)),
-              null,
-              current.index(),
-              current.term())
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
+      // when - the leader removes itself
+      final var response =
+          leader
+              .changeMembers(
+                  new MembershipChange(
+                      List.of(member(id1, Type.ACTIVE), member(id2, Type.ACTIVE)),
+                      List.of(),
+                      0,
+                      configurationIndex(leader)))
+              .orTimeout(30, TimeUnit.SECONDS)
+              .join();
+      // the leader steps down when the configuration that fences it commits, thus it may answer
+      // with an error although the change is done; the membership component transfers the
+      // leadership before (5.5, rule 1)
+      assertThat(response).isNotNull();
 
-      // then - the leader itself appended the configuration that ends the joint phase, in its
-      // own term; it steps down only once that configuration is committed
-      final var newLeader = awaitLeader(m1, m2);
+      // then - the leader itself appended the configuration that ends the joint phase
+      final var newLeader = awaitLeader(cluster.get(0), cluster.get(1));
       appendEntry(newLeader);
       final var configuration = newLeader.getConfiguration().orTimeout(5, TimeUnit.SECONDS).join();
       assertThat(configuration.requiresJointConsensus()).isFalse();
@@ -947,388 +1368,66 @@ final class SystemPartitionRaftTest {
       assertThat(configuration.fenced()).containsExactly(new FenceEntry(id3, 0));
       assertThat(configuration.term()).isEqualTo(termBefore);
     }
-  }
-
-  @Nested
-  final class JoinAdmissionHook {
-
-    private List<RaftServer> bootstrapTwoVoters(final JoinAdmission admission) {
-      final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE);
-      final var m1 = createServer(id1, id2, id3, id4);
-      final var m2 = createServer(id2, id1, id3, id4);
-      m1.setJoinAdmission(admission);
-      m2.setJoinAdmission(admission);
-      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      return List.of(m1, m2);
-    }
 
     @Test
-    void shouldRetryRefusedJoinUntilAdmitted() {
-      // given
-      final var decision = new AtomicReference<>(JoinAdmission.Decision.NOT_A_MEMBER);
-      final var checks = new java.util.concurrent.ConcurrentLinkedQueue<Long>();
+    void shouldFenceRemovedMemberWhenNewLeaderEndsJointPhase() {
+      // given - voters 1 to 4, member 1 leads
       final var cluster =
-          bootstrapTwoVoters(
-              (member, version) -> {
-                checks.add(version);
-                return decision.get();
-              });
-      final var m3 = createServer(id3, id1, id2);
+          bootstrap(Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE, id4, Type.ACTIVE));
+      final var m1 = awaitLeaderIs(cluster.get(0), cluster.toArray(RaftServer[]::new));
+      final var m2 = cluster.get(1);
+      appendEntry(m1);
+      // and the leader never hears back, thus it cannot commit what it appends
+      ((TestRaftServerProtocol) m1.getContext().getProtocol())
+          .interceptResponse(
+              AppendResponse.class,
+              response -> CompletableFuture.failedFuture(new ConnectException("dropped")));
 
-      // when
-      final var join =
-          m3.join(
-              Type.PASSIVE,
-              List.of(id1, id2),
-              JoinOptions.withIncarnation(5).withConfigurationVersion(42));
-      Awaitility.await("the join was refused").until(() -> !checks.isEmpty());
-      assertThat(join).isNotDone();
-      decision.set(JoinAdmission.Decision.ADMIT);
+      // when - it appends the joint configuration that removes member 4, then fails
+      m1.changeMembers(
+          new MembershipChange(
+              List.of(member(id1, Type.ACTIVE), member(id2, Type.ACTIVE), member(id3, Type.ACTIVE)),
+              List.of(),
+              0,
+              configurationIndex(m1)));
+      Awaitility.await("the followers have the joint configuration")
+          .untilAsserted(() -> assertThat(configurationOf(m2).requiresJointConsensus()).isTrue());
+      assertThat(configurationOf(m1).fenced()).isEmpty();
+      stop(m1);
 
-      // then
-      join.orTimeout(30, TimeUnit.SECONDS).join();
-      assertThat(checks).contains(42L);
-      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      assertThat(memberTypes(leader)).containsEntry(id3, Type.PASSIVE);
-    }
-
-    @Test
-    void shouldFailJoinThatIsNeverAdmitted() {
-      // given
-      bootstrapTwoVoters((member, version) -> JoinAdmission.Decision.NOT_READY);
-      final var m3 =
-          createServer(
-              id3, config -> config.setConfigurationChangeTimeout(Duration.ofSeconds(3)), id1, id2);
-
-      // when - then
-      assertThatThrownBy(
-              () ->
-                  m3.join(Type.PASSIVE, List.of(id1, id2), JoinOptions.withIncarnation(5))
-                      .orTimeout(30, TimeUnit.SECONDS)
-                      .join())
-          .hasMessageContaining("Not ready");
-    }
-
-    @Test
-    void shouldRefuseNewMemberOfTargetConfiguration() {
-      // given
-      final var cluster =
-          bootstrapTwoVoters(
-              (member, version) ->
-                  member.equals(id4)
-                      ? JoinAdmission.Decision.NOT_A_MEMBER
-                      : JoinAdmission.Decision.ADMIT);
-      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      final var current = configurationId(leader);
-
-      // when
-      final var response =
-          Awaitility.await("leader answers with a final response")
-              .until(
-                  () ->
-                      leader
-                          .reconfigure(
-                              Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id4, Type.PASSIVE),
-                              current.index(),
-                              current.term())
-                          .orTimeout(10, TimeUnit.SECONDS)
-                          .join(),
-                  r -> r.error() != null && r.error().type() != RaftError.Type.CONFIGURATION_ERROR);
-
-      // then
-      assertThat(response.error().type()).isEqualTo(RaftError.Type.NOT_A_MEMBER);
-      assertThat(response.index()).isEqualTo(current.index());
-      assertThat(configurationId(leader)).isEqualTo(current);
-    }
-  }
-
-  @Nested
-  final class VoterPolicyInConfiguration {
-    private final MemberId a0 = MemberId.from("a_0");
-    private final MemberId a1 = MemberId.from("a_1");
-    private final MemberId b0 = MemberId.from("b_0");
-    private final VoterPolicy oneVoterPerZone =
-        VoterPolicy.of(new ZoneVoters("a", 1), new ZoneVoters("b", 1));
-
-    private List<RaftServer> bootstrapWithPolicy() {
-      final var members = Map.of(a0, Type.ACTIVE, b0, Type.ACTIVE, a1, Type.PASSIVE);
-      final var servers =
-          List.of(createServer(a0, b0, a1), createServer(b0, a0, a1), createServer(a1, a0, b0));
-      CompletableFuture.allOf(
-              servers.stream()
-                  .map(server -> server.bootstrap(members, oneVoterPerZone))
-                  .toArray(CompletableFuture[]::new))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      return servers;
-    }
-
-    private Configuration configurationOf(final RaftServer server) {
-      return onRaftThread(server, () -> server.getContext().getCluster().getConfiguration());
-    }
-
-    @Test
-    void shouldAppendInitialConfigurationWithPolicyAsFirstLeader() {
-      // when
-      final var cluster = bootstrapWithPolicy();
-      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-
-      // then - every member learns a configuration with an index above 0 that has the policy
-      Awaitility.await("all members have the first configuration entry")
+      // then - a new leader ends the joint phase and fences member 4 (R18, Q13)
+      final var newLeader = awaitLeader(cluster.get(1), cluster.get(2), cluster.get(3));
+      Awaitility.await("the joint phase is ended")
           .untilAsserted(
-              () ->
-                  cluster.forEach(
-                      server -> {
-                        final var configuration = configurationOf(server);
-                        assertThat(configuration.index()).isPositive();
-                        assertThat(configuration.voterPolicy()).isEqualTo(oneVoterPerZone);
-                      }));
-      assertThat(memberTypes(leader))
-          .isEqualTo(Map.of(a0, Type.ACTIVE, b0, Type.ACTIVE, a1, Type.PASSIVE));
-    }
-
-    @Test
-    void shouldNotAppendConfigurationEntryWithoutPolicy() {
-      // when
-      final var cluster = bootstrapTwoVotersOnePassive();
-      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      appendEntry(leader);
-
-      // then
-      assertThat(configurationOf(leader).index()).isZero();
-    }
-
-    @Test
-    void shouldRejectPromotionBeyondPolicy() {
-      // given
-      final var cluster = bootstrapWithPolicy();
-      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      appendEntry(leader);
-
-      // when
-      final var response =
-          Awaitility.await("leader answers with a final response")
-              .until(
-                  () -> {
-                    final var current = configurationId(leader);
-                    return leader
-                        .reconfigure(
-                            Map.of(a0, Type.ACTIVE, b0, Type.ACTIVE, a1, Type.ACTIVE),
-                            current.index(),
-                            current.term())
-                        .orTimeout(10, TimeUnit.SECONDS)
-                        .join();
-                  },
-                  r -> r.error() == null || r.error().message().contains("voter policy"));
-
-      // then
-      assertThat(response.status()).isEqualTo(Status.ERROR);
-      assertThat(memberTypes(leader)).containsEntry(a1, Type.PASSIVE);
-    }
-
-    @Test
-    void shouldPromoteAfterPolicyUpdate() {
-      // given
-      final var cluster = bootstrapWithPolicy();
-      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      appendEntry(leader);
-      final var twoVotersInA = VoterPolicy.of(new ZoneVoters("a", 2), new ZoneVoters("b", 1));
-
-      // when - the policy update is a configuration change of its own
-      Awaitility.await("policy is updated")
-          .until(
               () -> {
-                final var current = configurationId(leader);
-                return leader
-                    .reconfigure(
-                        Map.of(a0, Type.ACTIVE, b0, Type.ACTIVE, a1, Type.PASSIVE),
-                        List.of(),
-                        twoVotersInA,
-                        current.index(),
-                        current.term())
-                    .orTimeout(10, TimeUnit.SECONDS)
-                    .join();
-              },
-              r -> r.status() == Status.OK);
-      awaitReconfigured(leader, leader, Map.of(a0, Type.ACTIVE, b0, Type.ACTIVE, a1, Type.ACTIVE));
-
-      // then
-      assertThat(configurationOf(leader).voterPolicy()).isEqualTo(twoVotersInA);
-      assertThat(memberTypes(leader)).containsEntry(a1, Type.ACTIVE);
-    }
-  }
-
-  @Nested
-  final class EmptyStartGuard {
-
-    private static boolean guarded(final RaftServer server) {
-      return server.isEmptyStartGuardActive().orTimeout(5, TimeUnit.SECONDS).join();
-    }
-
-    private List<RaftServer> bootstrapTwoVoters() {
-      final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE);
-      final var m1 = createServer(id1, id2, id3);
-      final var m2 = createServer(id2, id1, id3);
-      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      return List.of(m1, m2);
+                final var configuration = configurationOf(m2);
+                assertThat(configuration.requiresJointConsensus()).isFalse();
+                assertThat(configuration.newMembers())
+                    .extracting(RaftMember::memberId)
+                    .containsOnly(id1, id2, id3);
+                assertThat(configuration.fenced()).containsExactly(new FenceEntry(id4, 0));
+              });
+      assertThat(newLeader).isNotNull();
     }
 
     @Test
-    void shouldReleaseGuardOnceCaughtUpWithCurrentLeader() {
+    void shouldNotFenceRemovedMemberInDataPartition() {
       // given
-      final var cluster = bootstrapTwoVoters();
-      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      final var index = appendEntry(leader);
-      final var m3 = createServer(id3, id1, id2);
-
-      // when
-      m3.join(
-              Type.PASSIVE,
-              List.of(id1, id2),
-              JoinOptions.withIncarnation(3).withEmptyStartGuard(leader.getTerm()))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-
-      // then
-      Awaitility.await("guard is released").untilAsserted(() -> assertThat(guarded(m3)).isFalse());
-      assertThat(commitIndex(m3)).isGreaterThanOrEqualTo(index);
-    }
-
-    @Test
-    void shouldNotGrantPollsWhileGuarded() {
-      // given - the probe saw a higher term than any current leader has
-      final var cluster = bootstrapTwoVoters();
-      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      final var m3 = createServer(id3, id1, id2);
-      m3.join(
-              Type.PASSIVE,
-              List.of(id1, id2),
-              JoinOptions.withIncarnation(3).withEmptyStartGuard(leader.getTerm() + 100))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      appendEntry(leader);
-
-      // when - a candidate with an up-to-date log asks for a vote
-      final var protocol = (TestRaftServerProtocol) leader.getContext().getProtocol();
-      final var response =
-          protocol
-              .poll(
-                  id3,
-                  PollRequest.builder()
-                      .withTerm(leader.getTerm())
-                      .withCandidate(leader.getContext().getCluster().getLocalMember().memberId())
-                      .withLastLogIndex(Long.MAX_VALUE / 2)
-                      .withLastLogTerm(leader.getTerm())
-                      .build())
-              .orTimeout(10, TimeUnit.SECONDS)
-              .join();
-
-      // then
-      assertThat(guarded(m3)).isTrue();
-      assertThat(response.accepted()).isFalse();
-    }
-
-    @Test
-    void shouldNotHelpElectLeaderWhileGuarded() throws IOException {
-      // given - three voters, member 3 lost its disk and joins again with the guard
       final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE);
-      final var m1 = createServer(id1, id2, id3);
-      final var m2 = createServer(id2, id1, id3);
-      final var m3 = createServer(id3, id1, id2);
+      final var m1 = createDataPartitionServer(id1, id2, id3);
+      final var m2 = createDataPartitionServer(id2, id1, id3);
+      final var m3 = createDataPartitionServer(id3, id1, id2);
       CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
           .orTimeout(30, TimeUnit.SECONDS)
           .join();
-      Awaitility.await("member 1 is the leader")
-          .until(
-              () -> {
-                final var leader = awaitLeader(m1, m2, m3);
-                if (leader != m1) {
-                  leader.stepDown().join();
-                  return false;
-                }
-                return true;
-              });
-      appendEntry(m1);
-      m3.shutdown().join();
-      servers.remove(m3);
-      FileUtil.deleteFolderIfExists(tmp.resolve(id3.id()));
-      final var rejoined = createServer(id3, id1, id2);
-      rejoined
-          .join(
-              Type.PASSIVE,
-              List.of(id1, id2),
-              JoinOptions.withIncarnation(33).withEmptyStartGuard(m1.getTerm() + 100))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      Awaitility.await("rejoined member stays a voter")
-          .untilAsserted(() -> assertThat(rejoined.getRole()).isEqualTo(Role.FOLLOWER));
+      final var leader = awaitLeaderIs(m1, m1, m2, m3);
+      appendEntry(leader);
 
-      // when - the leader goes down; member 2 needs the vote of member 3
-      m1.shutdown().join();
+      // when
+      awaitChanged(leader, member(id1, Type.ACTIVE), member(id2, Type.ACTIVE));
 
-      // then - no leader is elected while member 3 is guarded
-      Awaitility.await("no leader while guarded")
-          .during(Duration.ofSeconds(3))
-          .atMost(Duration.ofSeconds(10))
-          .untilAsserted(() -> assertThat(leaderOf(m2, rejoined)).isEmpty());
-    }
-
-    @Test
-    void shouldKeepGuardWhenGuardedVoterRestartsBeforeCatchingUp() throws IOException {
-      // given - three voters, member 3 lost its disk and joins again with the guard
-      final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE);
-      final var m1 = createServer(id1, id2, id3);
-      final var m2 = createServer(id2, id1, id3);
-      final var m3 = createServer(id3, id1, id2);
-      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      Awaitility.await("member 1 is the leader")
-          .until(
-              () -> {
-                final var leader = awaitLeader(m1, m2, m3);
-                if (leader != m1) {
-                  leader.stepDown().join();
-                  return false;
-                }
-                return true;
-              });
-      appendEntry(m1);
-      m3.shutdown().join();
-      servers.remove(m3);
-      FileUtil.deleteFolderIfExists(tmp.resolve(id3.id()));
-      final var rejoined = createServer(id3, id1, id2);
-      rejoined
-          .join(
-              Type.PASSIVE,
-              List.of(id1, id2),
-              JoinOptions.withIncarnation(34).withEmptyStartGuard(m1.getTerm() + 100))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-
-      // when - member 3 restarts with its data before it has caught up with a leader of the
-      // probe term
-      rejoined.shutdown().join();
-      servers.remove(rejoined);
-      final var restarted = createServer(id3, id1, id2);
-      restarted.bootstrap(id1, id2, id3).orTimeout(30, TimeUnit.SECONDS).join();
-
-      // then - it is still guarded
-      assertThat(guarded(restarted)).isTrue();
-
-      // when - the leader goes down; member 2 needs the vote of member 3
-      m1.shutdown().join();
-
-      // then - member 3 neither votes for member 2 nor starts an election itself
-      Awaitility.await("no leader while guarded")
-          .during(Duration.ofSeconds(3))
-          .atMost(Duration.ofSeconds(10))
-          .untilAsserted(() -> assertThat(leaderOf(m2, restarted)).isEmpty());
-      assertThat(guarded(restarted)).isTrue();
+      // then - data partitions keep their behavior (R20)
+      assertThat(configurationOf(leader).fenced()).isEmpty();
     }
   }
 
@@ -1348,89 +1447,27 @@ final class SystemPartitionRaftTest {
       assertThat(m3.getRole()).isEqualTo(Role.PASSIVE);
     }
 
-    /** Two voters and a passive member that caught up, then went down. */
-    private RaftServer bootstrapWithDownPassiveMember(final VoterPolicy policy) {
-      final var members = twoVotersOnePassive();
-      final var m1 = createServer(id1, id2, id3);
-      final var m2 = createServer(id2, id1, id3);
-      final var m3 = createServer(id3, id1, id2);
-      CompletableFuture.allOf(
-              policy == null ? m1.bootstrap(members) : m1.bootstrap(members, policy),
-              policy == null ? m2.bootstrap(members) : m2.bootstrap(members, policy),
-              policy == null ? m3.bootstrap(members) : m3.bootstrap(members, policy))
-          .orTimeout(30, TimeUnit.SECONDS)
-          .join();
-      final var leader = awaitLeader(m1, m2, m3);
-      final var index = appendEntry(leader);
-      Awaitility.await("passive member caught up")
-          .untilAsserted(() -> assertThat(commitIndex(m3)).isGreaterThanOrEqualTo(index));
-      m3.shutdown().join();
-      return leader;
-    }
-
-    /** Promotes member 3 once more than an election timeout passed since it went down. */
-    private ReconfigureResponse promoteMember3Later(final RaftServer leader) {
-      return Awaitility.await("leader answers after an election timeout")
-          .pollDelay(Duration.ofSeconds(1))
-          .until(
-              () -> {
-                final var current = configurationId(leader);
-                return leader
-                    .reconfigure(
-                        Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE),
-                        current.index(),
-                        current.term())
-                    .orTimeout(10, TimeUnit.SECONDS)
-                    .join();
-              },
-              r -> r.error() == null || !r.error().message().contains("Another configuration"));
-    }
-
-    @Test
-    void shouldNotPromoteMemberThatDidNotAnswerRecently() {
-      // given - the policy allows three voters
-      final var leader = bootstrapWithDownPassiveMember(VoterPolicy.of(new ZoneVoters("", 3)));
-
-      // when
-      final var response = promoteMember3Later(leader);
-
-      // then - member 3 is caught up, but it did not answer
-      assertThat(response.status()).isEqualTo(Status.ERROR);
-      assertThat(response.error().message())
-          .contains("did not answer within the election timeout")
-          .doesNotContain("not caught up");
-    }
-
-    @Test
-    void shouldPromoteMemberThatDidNotAnswerRecentlyWithoutVoterPolicy() {
-      // given - a data partition, which has no voter policy, keeps its behavior
-      final var leader = bootstrapWithDownPassiveMember(null);
-
-      // when
-      final var response = promoteMember3Later(leader);
-
-      // then
-      assertThat(response.status()).isEqualTo(Status.OK);
-    }
-
     @Test
     void shouldNotifyConfigurationListenerAndReadTypedConfiguration() {
       // given
       final var cluster = bootstrapTwoVotersOnePassive();
       final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
       final var m3 = cluster.get(2);
-      final var committed = new java.util.concurrent.ConcurrentLinkedQueue<Configuration>();
+      final var committed = new ConcurrentLinkedQueue<Configuration>();
       m3.addConfigurationListener(
           (configuration, isCommitted) -> {
             if (isCommitted) {
               committed.add(configuration);
             }
           });
-      final var target =
-          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE, id4, Type.PASSIVE);
 
       // when
-      awaitReconfigured(leader, leader, target);
+      awaitChanged(
+          leader,
+          member(id1, Type.ACTIVE),
+          member(id2, Type.ACTIVE),
+          member(id3, Type.PASSIVE),
+          member(id4, Type.PASSIVE, 4));
 
       // then
       Awaitility.await("passive member is notified of the committed configuration")
@@ -1438,11 +1475,9 @@ final class SystemPartitionRaftTest {
               () ->
                   assertThat(committed)
                       .anySatisfy(
-                          configuration ->
-                              assertThat(configuration.newMembers()).hasSize(target.size())));
+                          configuration -> assertThat(configuration.newMembers()).hasSize(4)));
       final var view = leader.getConfiguration().orTimeout(5, TimeUnit.SECONDS).join();
-      assertThat(view.index()).isEqualTo(configurationId(leader).index());
-      assertThat(view.term()).isEqualTo(configurationId(leader).term());
+      assertThat(view.index()).isEqualTo(configurationIndex(leader));
       assertThat(view.requiresJointConsensus()).isFalse();
       assertThat(view.newMembers())
           .extracting(RaftMember::memberId, RaftMember::getType)
@@ -1451,6 +1486,35 @@ final class SystemPartitionRaftTest {
               tuple(id2, Type.ACTIVE),
               tuple(id3, Type.PASSIVE),
               tuple(id4, Type.PASSIVE));
+    }
+
+    @Test
+    void shouldExposeReplicationStatusOnLeaderOnly() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var index = appendEntry(leader);
+      final var follower = cluster.stream().filter(s -> s != leader).findFirst().orElseThrow();
+
+      // when
+      final var status = leader.getReplicationStatus().orTimeout(5, TimeUnit.SECONDS).join();
+
+      // then
+      assertThat(follower.getReplicationStatus().orTimeout(5, TimeUnit.SECONDS).join()).isEmpty();
+      assertThat(status).isPresent();
+      Awaitility.await("the passive member is replicated")
+          .untilAsserted(
+              () ->
+                  assertThat(
+                          leader
+                              .getReplicationStatus()
+                              .join()
+                              .orElseThrow()
+                              .member(id3)
+                              .orElseThrow()
+                              .matchIndex())
+                      .isGreaterThanOrEqualTo(index));
+      assertThat(status.orElseThrow().commitIndex()).isGreaterThanOrEqualTo(index);
     }
   }
 }

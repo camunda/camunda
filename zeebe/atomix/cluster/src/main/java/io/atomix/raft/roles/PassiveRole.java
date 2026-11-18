@@ -341,7 +341,7 @@ public class PassiveRole extends InactiveRole {
                   List.of(), // Skip joint consensus
                   true,
                   mergedFenceList(currentConfiguration, request.fenced()),
-                  request.voterPolicy()));
+                  request.membershipVersion()));
     } else if (!currentConfiguration.allMembers().equals(request.newMembers())) {
       // This is not expected. When force configuration is retried, we expect that they are retried
       // with the same state. If this is not the case, it is likely that there are two force
@@ -421,7 +421,6 @@ public class PassiveRole extends InactiveRole {
       // snapshot replication, so we must abort it to avoid waiting forever.
       abortPendingSnapshots();
     }
-    raft.onAppendFromLeader(request.term(), request.commitIndex());
     return handleAppend(request);
   }
 
@@ -463,14 +462,6 @@ public class PassiveRole extends InactiveRole {
 
   /** Handles a poll request. */
   protected PollResponse handlePoll(final PollRequest request) {
-    if (raft.isEmptyStartGuardActive()) {
-      log.debug("Rejected {}: the empty-start guard is active", request);
-      return PollResponse.builder()
-          .withStatus(RaftResponse.Status.OK)
-          .withTerm(raft.getTerm())
-          .withAccepted(false)
-          .build();
-    }
     // If the request term is not as great as the current context term then don't
     // vote for the candidate. We want to vote for candidates that are at least
     // as up to date as us.
@@ -545,14 +536,6 @@ public class PassiveRole extends InactiveRole {
 
   /** Handles a vote request. */
   protected VoteResponse handleVote(final VoteRequest request) {
-    if (raft.isEmptyStartGuardActive()) {
-      log.debug("Rejected {}: the empty-start guard is active", request);
-      return VoteResponse.builder()
-          .withStatus(RaftResponse.Status.OK)
-          .withTerm(raft.getTerm())
-          .withVoted(false)
-          .build();
-    }
     // If the request term is not as great as the current context term then don't
     // vote for the candidate. We want to vote for candidates that are at least
     // as up to date as us.

@@ -21,8 +21,6 @@ import static io.atomix.raft.storage.serializer.SerializerUtil.getSBEType;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.cluster.VoterPolicy;
-import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
@@ -32,14 +30,12 @@ import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.FencedDecoder;
 import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.NewMembersDecoder;
 import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.OldMembersDecoder;
-import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.VoterPolicyDecoder;
 import io.camunda.zeebe.journal.file.RecordDataEncoder;
 import io.camunda.zeebe.util.SbeUtil;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -95,17 +91,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
                     FencedDecoder.sbeBlockLength()
                         + FencedDecoder.memberIdHeaderLength()
                         + utf8Length(fence.memberId().id()))
-            .sum()
-        + VoterPolicyDecoder.sbeHeaderSize()
-        + (entry.voterPolicy() == null
-            ? 0
-            : entry.voterPolicy().zones().stream()
-                .mapToInt(
-                    zone ->
-                        VoterPolicyDecoder.sbeBlockLength()
-                            + VoterPolicyDecoder.zoneHeaderLength()
-                            + utf8Length(zone.zone()))
-                .sum());
+            .sum();
   }
 
   @Override
@@ -162,6 +148,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
     configurationEntryEncoder.wrap(buffer, offset + entryOffset + headerEncoder.encodedLength());
 
     configurationEntryEncoder.timestamp(entry.timestamp());
+    configurationEntryEncoder.membershipVersion(entry.membershipVersion());
 
     final var newMembersEncoder =
         configurationEntryEncoder.newMembersCount(entry.newMembers().size());
@@ -190,13 +177,6 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
     final var fencedEncoder = configurationEntryEncoder.fencedCount(entry.fenced().size());
     for (final FenceEntry fence : entry.fenced()) {
       fencedEncoder.next().incarnation(fence.incarnation()).memberId(fence.memberId().id());
-    }
-
-    final var policyZones =
-        entry.voterPolicy() == null ? List.<ZoneVoters>of() : entry.voterPolicy().zones();
-    final var policyEncoder = configurationEntryEncoder.voterPolicyCount(policyZones.size());
-    for (final ZoneVoters zone : policyZones) {
-      policyEncoder.next().voters(zone.voters()).zone(zone.zone());
     }
 
     return entryOffset + headerEncoder.encodedLength() + configurationEntryEncoder.encodedLength();
@@ -288,6 +268,11 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
         headerDecoder.version());
 
     final long timestamp = configurationEntryDecoder.timestamp();
+    final long membershipVersion =
+        configurationEntryDecoder.membershipVersion()
+                == ConfigurationEntryDecoder.membershipVersionNullValue()
+            ? 0
+            : configurationEntryDecoder.membershipVersion();
 
     final NewMembersDecoder newMembersDecoder = configurationEntryDecoder.newMembers();
     final ArrayList<RaftMember> newMembers = new ArrayList<>(newMembersDecoder.count());
@@ -321,14 +306,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
       fenced.add(new FenceEntry(MemberId.from(fence.memberId()), incarnation));
     }
 
-    final var zones = new ArrayList<ZoneVoters>();
-    for (final var zone : configurationEntryDecoder.voterPolicy()) {
-      final int voters = zone.voters();
-      zones.add(new ZoneVoters(zone.zone(), voters));
-    }
-    final var voterPolicy = zones.isEmpty() ? null : new VoterPolicy(zones);
-
-    return new ConfigurationEntry(timestamp, newMembers, oldMembers, fenced, voterPolicy);
+    return new ConfigurationEntry(timestamp, newMembers, oldMembers, fenced, membershipVersion);
   }
 
   private static int utf8Length(final String value) {

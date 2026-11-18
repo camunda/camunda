@@ -23,8 +23,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
-import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.RaftStorage;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -73,21 +71,6 @@ class MetaStoreTest {
 
       // then
       assertThat(metaStore.loadTerm()).isEqualTo(2L);
-    }
-
-    @Test
-    void shouldKeepEmptyStartProbeTermUntilCleared() throws IOException {
-      // given
-      metaStore.storeEmptyStartProbeTerm(7L);
-
-      // when
-      metaStore.close();
-      metaStore = new MetaStore(storage, meterRegistry);
-
-      // then
-      assertThat(metaStore.loadEmptyStartProbeTerm()).hasValue(7L);
-      metaStore.clearEmptyStartProbeTerm();
-      assertThat(metaStore.loadEmptyStartProbeTerm()).isEmpty();
     }
 
     @Test
@@ -343,7 +326,7 @@ class MetaStoreTest {
                   new Configuration(2, 3, 1235L, getMembers("0", "3"), List.of(), true))),
           Arguments.of(
               named(
-                  "fence list and voter policy",
+                  "fence list and membership version",
                   new Configuration(
                       2,
                       3,
@@ -352,7 +335,7 @@ class MetaStoreTest {
                       List.of(),
                       false,
                       List.of(new FenceEntry(MemberId.from("b_2"), 42L)),
-                      VoterPolicy.of(new ZoneVoters("a", 2), new ZoneVoters("b", 1))))));
+                      17L))));
     }
   }
 }

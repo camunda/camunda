@@ -21,8 +21,6 @@ import static io.atomix.raft.storage.serializer.SerializerUtil.getSBEType;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.cluster.VoterPolicy;
-import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.storage.system.MetaStoreRecord;
@@ -30,7 +28,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -65,7 +62,8 @@ public class MetaStoreSerializer {
         .index(configuration.index())
         .term(configuration.term())
         .timestamp(configuration.time())
-        .force(configuration.force() ? BooleanType.TRUE : BooleanType.FALSE);
+        .force(configuration.force() ? BooleanType.TRUE : BooleanType.FALSE)
+        .membershipVersion(configuration.membershipVersion());
 
     final var newMembersEncoder =
         configurationEncoder.newMembersCount(configuration.newMembers().size());
@@ -96,15 +94,6 @@ public class MetaStoreSerializer {
       fencedEncoder.next().incarnation(fence.incarnation()).memberId(fence.memberId().id());
     }
 
-    final var policyZones =
-        configuration.voterPolicy() == null
-            ? List.<ZoneVoters>of()
-            : configuration.voterPolicy().zones();
-    final var policyEncoder = configurationEncoder.voterPolicyCount(policyZones.size());
-    for (final ZoneVoters zone : policyZones) {
-      policyEncoder.next().voters(zone.voters()).zone(zone.zone());
-    }
-
     final int totalLength =
         VERSION_LENGTH + headerEncoder.encodedLength() + configurationEncoder.encodedLength();
     final ByteBuffer bb = ByteBuffer.allocateDirect(totalLength);
@@ -124,6 +113,11 @@ public class MetaStoreSerializer {
     final long term = configurationDecoder.term();
     final long timestamp = configurationDecoder.timestamp();
     final boolean force = BooleanType.TRUE.equals(configurationDecoder.force());
+    final long membershipVersion =
+        configurationDecoder.membershipVersion()
+                == ConfigurationDecoder.membershipVersionNullValue()
+            ? 0
+            : configurationDecoder.membershipVersion();
 
     final var newMembersDecoder = configurationDecoder.newMembers();
     final var newMembers = new ArrayList<RaftMember>(newMembersDecoder.count());
@@ -157,15 +151,8 @@ public class MetaStoreSerializer {
       fenced.add(new FenceEntry(MemberId.from(fence.memberId()), incarnation));
     }
 
-    final var zones = new ArrayList<ZoneVoters>();
-    for (final var zone : configurationDecoder.voterPolicy()) {
-      final int voters = zone.voters();
-      zones.add(new ZoneVoters(zone.zone(), voters));
-    }
-    final var voterPolicy = zones.isEmpty() ? null : new VoterPolicy(zones);
-
     return new Configuration(
-        index, term, timestamp, newMembers, oldMembers, force, fenced, voterPolicy);
+        index, term, timestamp, newMembers, oldMembers, force, fenced, membershipVersion);
   }
 
   public void writeTerm(final long term) {

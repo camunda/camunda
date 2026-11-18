@@ -26,17 +26,13 @@ import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.serializer.MetaEncoder;
 import io.atomix.raft.storage.serializer.MetaStoreSerializer;
 import io.camunda.zeebe.journal.JournalMetaStore;
-import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.util.OptionalLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +49,6 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final FileChannel configurationChannel;
   private final File confFile;
-  private final Path emptyStartFile;
   private final MetaStoreSerializer serializer = new MetaStoreSerializer();
   private final FileChannel metaFileChannel;
   private final MetaStoreMetrics metrics;
@@ -120,54 +115,6 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     }
     configurationChannel =
         FileChannel.open(confFile.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE);
-
-    emptyStartFile = storage.directory().toPath().resolve(storage.prefix() + ".empty-start");
-  }
-
-  /**
-   * Stores the probe term of the empty-start guard (see {@link
-   * io.atomix.raft.JoinOptions#emptyStartProbeTerm()}), so that a restart keeps the guard until it
-   * is released.
-   */
-  public synchronized void storeEmptyStartProbeTerm(final long probeTerm) {
-    try {
-      final var temporary = emptyStartFile.resolveSibling(emptyStartFile.getFileName() + ".tmp");
-      Files.writeString(
-          temporary,
-          Long.toString(probeTerm),
-          StandardOpenOption.CREATE,
-          StandardOpenOption.TRUNCATE_EXISTING,
-          StandardOpenOption.WRITE,
-          StandardOpenOption.SYNC);
-      FileUtil.moveDurably(temporary, emptyStartFile, StandardCopyOption.ATOMIC_MOVE);
-    } catch (final IOException e) {
-      throw new StorageException(e);
-    }
-  }
-
-  /**
-   * @return the stored probe term of the empty-start guard, or empty if the guard is not active
-   */
-  public synchronized OptionalLong loadEmptyStartProbeTerm() {
-    try {
-      if (!Files.exists(emptyStartFile)) {
-        return OptionalLong.empty();
-      }
-      return OptionalLong.of(Long.parseLong(Files.readString(emptyStartFile).trim()));
-    } catch (final IOException e) {
-      throw new StorageException(e);
-    }
-  }
-
-  /** Removes the stored probe term once the empty-start guard is released. */
-  public synchronized void clearEmptyStartProbeTerm() {
-    try {
-      if (Files.deleteIfExists(emptyStartFile)) {
-        FileUtil.flushDirectory(emptyStartFile.getParent());
-      }
-    } catch (final IOException e) {
-      throw new StorageException(e);
-    }
   }
 
   /**

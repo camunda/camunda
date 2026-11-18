@@ -12,12 +12,14 @@ import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftError;
+import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftException.ProtocolException;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.FenceEntry;
+import io.atomix.raft.cluster.LeaderConfiguration;
+import io.atomix.raft.cluster.MembershipChange;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext.State;
 import io.atomix.raft.protocol.ForceConfigureRequest;
@@ -27,6 +29,7 @@ import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TransferRequest;
+import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.ForceConfigureQuorum;
 import io.atomix.utils.concurrent.Scheduled;
@@ -48,7 +51,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,15 +66,6 @@ public final class ReconfigurationHelper {
   }
 
   public CompletableFuture<Void> join(final Type type, final Collection<MemberId> clusterMembers) {
-    return join(type, clusterMembers, 0);
-  }
-
-  /**
-   * Joins like {@link #join(Type, Collection)}; the configuration version is passed to the leader's
-   * {@link io.atomix.raft.JoinAdmission}.
-   */
-  public CompletableFuture<Void> join(
-      final Type type, final Collection<MemberId> clusterMembers, final long configurationVersion) {
     final var result = new CompletableFuture<Void>();
     if (type == Type.INACTIVE) {
       result.completeExceptionally(
@@ -143,12 +136,7 @@ public final class ReconfigurationHelper {
           threadContext.execute(
               () ->
                   joinWithRetry(
-                      joining,
-                      configurationVersion,
-                      knownAssistingMembers,
-                      assistingMembers,
-                      result,
-                      deadline));
+                      joining, knownAssistingMembers, assistingMembers, result, deadline));
         });
     return result;
   }
@@ -170,7 +158,6 @@ public final class ReconfigurationHelper {
    */
   private void joinWithRetry(
       final RaftMember joining,
-      final long configurationVersion,
       final Collection<MemberId> knownAssistingMembers,
       final Queue<MemberId> assistingMembers,
       final CompletableFuture<Void> result,
@@ -192,13 +179,7 @@ public final class ReconfigurationHelper {
         threadContext.schedule(
             raftContext.getElectionTimeout(),
             () ->
-                joinWithRetry(
-                    joining,
-                    configurationVersion,
-                    knownAssistingMembers,
-                    assistingMembers,
-                    result,
-                    deadline));
+                joinWithRetry(joining, knownAssistingMembers, assistingMembers, result, deadline));
         return;
       }
       result.completeExceptionally(
@@ -208,12 +189,7 @@ public final class ReconfigurationHelper {
     }
     raftContext
         .getOutboundProtocol()
-        .join(
-            receiver,
-            JoinRequest.builder()
-                .withJoiningMember(joining)
-                .withConfigurationVersion(configurationVersion)
-                .build())
+        .join(receiver, JoinRequest.builder().withJoiningMember(joining).build())
         .whenCompleteAsync(
             (response, error) -> {
               if (error != null) {
@@ -226,12 +202,7 @@ public final class ReconfigurationHelper {
                   threadContext.execute(
                       () ->
                           joinWithRetry(
-                              joining,
-                              configurationVersion,
-                              knownAssistingMembers,
-                              assistingMembers,
-                              result,
-                              deadline));
+                              joining, knownAssistingMembers, assistingMembers, result, deadline));
                 } else {
                   LOGGER.error("Join request failed with an unexpected error, not retrying", error);
                   result.completeExceptionally(error);
@@ -254,11 +225,7 @@ public final class ReconfigurationHelper {
                     response.index());
                 awaitLocalCommit(response.index(), result);
               } else if (response.error().type() == RaftError.Type.NO_LEADER
-                  || response.error().type() == RaftError.Type.CONFIGURATION_ERROR
-                  // The leader's admission check refused the join for now; the cluster may make
-                  // this member a member, or the leader may become ready, later.
-                  || response.error().type() == RaftError.Type.NOT_A_MEMBER
-                  || response.error().type() == RaftError.Type.NOT_READY) {
+                  || response.error().type() == RaftError.Type.CONFIGURATION_ERROR) {
                 if (Instant.now().isBefore(deadline)) {
                   LOGGER.debug(
                       "Join request failed, retrying after {}",
@@ -277,12 +244,7 @@ public final class ReconfigurationHelper {
                       raftContext.getElectionTimeout(),
                       () ->
                           joinWithRetry(
-                              joining,
-                              configurationVersion,
-                              knownAssistingMembers,
-                              assistingMembers,
-                              result,
-                              deadline));
+                              joining, knownAssistingMembers, assistingMembers, result, deadline));
                 } else {
                   LOGGER.error(
                       "Join request failed, not retrying because the join did not complete within {}",
@@ -295,12 +257,7 @@ public final class ReconfigurationHelper {
                 threadContext.execute(
                     () ->
                         joinWithRetry(
-                            joining,
-                            configurationVersion,
-                            knownAssistingMembers,
-                            assistingMembers,
-                            result,
-                            deadline));
+                            joining, knownAssistingMembers, assistingMembers, result, deadline));
               } else {
                 final var errorAsException = response.error().createException();
                 LOGGER.error("Join request rejected, not retrying", errorAsException);
@@ -333,42 +290,49 @@ public final class ReconfigurationHelper {
   }
 
   /**
-   * Requests a change to the given full target configuration. The target is calculated from the
-   * configuration at {@code index}, thus the leader accepts it only if its configuration index is
-   * exactly {@code index} (and the term matches). A non-leader forwards the request to the leader.
-   * A rejection carries the leader's current configuration, from which the caller can calculate the
-   * target again.
-   *
-   * @return the response of the leader: OK with the new configuration, or an error. Never fails
-   *     exceptionally; a forwarding failure is answered as {@link RaftError.Type#NO_LEADER}.
+   * Changes the members while the local server is the leader, see {@link
+   * io.atomix.raft.RaftServer#changeMembers(MembershipChange)}.
    */
-  public CompletableFuture<ReconfigureResponse> reconfigure(
-      final Map<MemberId, Type> members, final long index, final long term) {
-    return reconfigure(members, List.of(), null, index, term);
-  }
-
-  /**
-   * Like {@link #reconfigure(Map, long, long)}, and adds the given fence entries to the fence list
-   * and sets the voter policy, if it is not null.
-   */
-  public CompletableFuture<ReconfigureResponse> reconfigure(
-      final Map<MemberId, Type> members,
-      final Collection<FenceEntry> fenced,
-      final @Nullable VoterPolicy voterPolicy,
-      final long index,
-      final long term) {
+  public CompletableFuture<ReconfigureResponse> changeMembers(final MembershipChange change) {
     final var result = new CompletableFuture<ReconfigureResponse>();
     threadContext.execute(
         () -> {
-          final Set<RaftMember> targetMembers = withKnownIncarnations(members);
+          if (!(raftContext.getRaftRole() instanceof final LeaderRole leaderRole)) {
+            result.completeExceptionally(
+                new NoLeader(
+                    "Cannot change the members, %s is not the leader"
+                        .formatted(raftContext.getCluster().getLocalMember().memberId())));
+            return;
+          }
+          leaderRole
+              .changeMembers(change)
+              .whenComplete(
+                  (response, error) -> {
+                    if (error == null) {
+                      result.complete(response);
+                    } else {
+                      result.completeExceptionally(error);
+                    }
+                  });
+        });
+    return result;
+  }
+
+  /**
+   * Reads the configuration of the leader, see {@link
+   * io.atomix.raft.RaftServer#readLeaderConfiguration()}. The local role answers if it is the
+   * leader, else it forwards the read to the leader.
+   */
+  public CompletableFuture<LeaderConfiguration> readLeaderConfiguration() {
+    final var result = new CompletableFuture<LeaderConfiguration>();
+    threadContext.execute(
+        () -> {
           final var request =
               ReconfigureRequest.builder()
-                  .withIndex(index)
-                  .withTerm(term)
-                  .withMembers(targetMembers)
-                  .withFenced(fenced)
-                  .withVoterPolicy(voterPolicy)
-                  .withExactIndex(true)
+                  .withIndex(0)
+                  .withTerm(0)
+                  .withMembers(List.of())
+                  .withReadOnly(true)
                   .from(raftContext.getCluster().getLocalMember().memberId().id())
                   .build();
           raftContext
@@ -376,18 +340,36 @@ public final class ReconfigurationHelper {
               .onReconfigure(request)
               .whenComplete(
                   (response, error) -> {
-                    if (error == null) {
-                      result.complete(response);
+                    if (error != null) {
+                      result.completeExceptionally(error);
+                    } else if (response.status() != Status.OK) {
+                      result.completeExceptionally(
+                          response.error() == null
+                              ? new NoLeader("No leader answered the read of its configuration")
+                              : response.error().createException());
                     } else {
-                      result.complete(
-                          ReconfigureResponse.builder()
-                              .withStatus(Status.ERROR)
-                              .withError(RaftError.Type.NO_LEADER, error.getMessage())
-                              .build());
+                      result.complete(toLeaderConfiguration(response));
                     }
                   });
         });
     return result;
+  }
+
+  private static LeaderConfiguration toLeaderConfiguration(final ReconfigureResponse response) {
+    final var configuration =
+        new Configuration(
+            response.index(),
+            response.term(),
+            Math.max(1, response.timestamp()),
+            response.members(),
+            response.oldMembers(),
+            false,
+            response.fenced(),
+            response.membershipVersion());
+    return new LeaderConfiguration(
+        response.leader() == null ? MemberId.from("unknown") : MemberId.from(response.leader()),
+        configuration,
+        response.committed());
   }
 
   /**
@@ -515,7 +497,7 @@ public final class ReconfigurationHelper {
           triggerForceConfigure(
               withKnownIncarnations(newMembersIds),
               List.of(),
-              currentConfiguration == null ? null : currentConfiguration.voterPolicy(),
+              currentConfiguration == null ? 0 : currentConfiguration.membershipVersion(),
               future);
         });
     return future;
@@ -532,14 +514,17 @@ public final class ReconfigurationHelper {
         () ->
             triggerForceConfigure(
                 // Beware that using ImmutableCollections can break Kryo serialization
-                new HashSet<>(target.newMembers()), target.fenced(), target.voterPolicy(), future));
+                new HashSet<>(target.newMembers()),
+                target.fenced(),
+                target.membershipVersion(),
+                future));
     return future;
   }
 
   private void triggerForceConfigure(
       final Set<RaftMember> newMembers,
       final Collection<FenceEntry> fenced,
-      final @Nullable VoterPolicy voterPolicy,
+      final long membershipVersion,
       final CompletableFuture<Void> future) {
     final var currentConfiguration = raftContext.getCluster().getConfiguration();
     final var newFenced =
@@ -569,7 +554,7 @@ public final class ReconfigurationHelper {
               Set.of(),
               true,
               List.copyOf(newFenced),
-              voterPolicy);
+              membershipVersion);
 
       raftContext.getCluster().configure(newConfiguration);
     } else if (!(currentConfiguration.allMembers().equals(newMembers))) {
@@ -629,7 +614,7 @@ public final class ReconfigurationHelper {
             // Beware that using ImmutableCollections can break Kryo serialization
             .withNewMembers(new HashSet<>(configuration.newMembers()))
             .withFenced(configuration.fenced())
-            .withVoterPolicy(configuration.voterPolicy())
+            .withMembershipVersion(configuration.membershipVersion())
             .from(localMemberId)
             .build();
 

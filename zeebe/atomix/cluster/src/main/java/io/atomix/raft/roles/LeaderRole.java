@@ -26,8 +26,8 @@ import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.FenceEntry;
+import io.atomix.raft.cluster.MembershipChange;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
 import io.atomix.raft.impl.RaftContext;
@@ -77,8 +77,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
@@ -188,13 +186,77 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   @Override
   public CompletableFuture<ReconfigureResponse> onReconfigure(final ReconfigureRequest request) {
+    raft.checkThread();
+    if (request.readOnly()) {
+      logRequest(request);
+      return CompletableFuture.completedFuture(logResponse(readConfiguration()));
+    }
+    // In the system partition, only the leader changes the members, see changeMembers. Another
+    // member must not send a target configuration: it can have an older view of the cluster.
+    if (raft.isSystemPartition()) {
+      logRequest(request);
+      return CompletableFuture.completedFuture(
+          rejectReconfigure(
+              Type.CONFIGURATION_ERROR,
+              "Only the leader changes the members of the system partition, rejecting the request of %s"
+                  .formatted(request.from())));
+    }
     return reconfigure(request, false);
   }
 
   /**
-   * @param changesIncarnation true only for the change of a join: a member's incarnation changes
-   *     only when the member itself joins again. Any other request keeps the leader's incarnations
-   *     of the existing members, because the requester may have an older configuration.
+   * Changes the members on the leader's own decision (design 5.5, R3), see {@link
+   * io.atomix.raft.RaftServer#changeMembers(MembershipChange)}. The members keep the incarnations
+   * of the change: the leader decides which incarnation of a member is in the configuration.
+   */
+  public CompletableFuture<ReconfigureResponse> changeMembers(final MembershipChange change) {
+    raft.checkThread();
+    final var request =
+        ReconfigureRequest.builder()
+            .withIndex(change.expectedIndex())
+            .withTerm(raft.getCluster().getConfigurationTerm())
+            // Beware that immutable collections cannot be serialized by Kryo
+            .withMembers(new ArrayList<>(change.members()))
+            .withFenced(change.fenced())
+            .withMembershipVersion(change.membershipVersion())
+            .withExactIndex(true)
+            .from(raft.getCluster().getLocalMember().memberId().id())
+            .build();
+    return reconfigure(request, true);
+  }
+
+  /** The answer to a read of the leader's configuration (R3). */
+  private ReconfigureResponse readConfiguration() {
+    final var configuration = raft.getCluster().getConfiguration();
+    return ReconfigureResponse.builder()
+        .withStatus(Status.OK)
+        .withIndex(configuration.index())
+        .withTerm(raft.getCluster().getConfigurationTerm())
+        .withTime(configuration.time())
+        // Beware that immutable collections cannot be serialized by Kryo
+        .withMembers(new ArrayList<>(configuration.newMembers()))
+        .withOldMembers(configuration.oldMembers())
+        .withFenced(configuration.fenced())
+        .withMembershipVersion(configuration.membershipVersion())
+        .withCommitted(configuration.force() || raft.getCommitIndex() >= configuration.index())
+        .withLeader(raft.getCluster().getLocalMember().memberId().id())
+        .build();
+  }
+
+  /**
+   * Sends the committed configuration as the fenced notice to a broker that is not a member of the
+   * configuration but runs with a fenced incarnation (design 5.6.6).
+   */
+  public void sendFencedNotice(final MemberId member) {
+    raft.checkThread();
+    appender.sendFencedNotice(member);
+  }
+
+  /**
+   * @param changesIncarnation true for a change that sets the incarnations of the members: the
+   *     change of a join, and a change of the leader itself (changeMembers). Any other request
+   *     keeps the leader's incarnations of the existing members, because the requester may have an
+   *     older configuration.
    */
   private CompletableFuture<ReconfigureResponse> reconfigure(
       final ReconfigureRequest request, final boolean changesIncarnation) {
@@ -257,11 +319,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // for that configuration, thus any other index is rejected. If the target is already the
     // current configuration, it is a retry of a change that succeeded and is answered OK.
     final var targetFenced = targetFenced(configuration, request);
-    final var targetVoterPolicy = targetVoterPolicy(configuration, request);
+    final var targetMembershipVersion = targetMembershipVersion(configuration, request);
     if (request.exactIndex()
         && equalMembership(configuration.newMembers(), requestedMembers)
         && configuration.fenced().equals(targetFenced)
-        && Objects.equals(configuration.voterPolicy(), targetVoterPolicy)
+        && configuration.membershipVersion() == targetMembershipVersion
         && !configuration.requiresJointConsensus()) {
       return CompletableFuture.completedFuture(
           logResponse(
@@ -272,7 +334,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .withTime(configuration.time())
                   .withMembers(new ArrayList<>(configuration.newMembers()))
                   .withFenced(configuration.fenced())
-                  .withVoterPolicy(configuration.voterPolicy())
+                  .withMembershipVersion(configuration.membershipVersion())
                   .build()));
     }
     if (request.exactIndex() && request.index() != configuration.index()) {
@@ -321,7 +383,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     if (equalMembership(currentMembers, updatedMembers)
         && configuration.fenced().equals(targetFenced)
-        && Objects.equals(configuration.voterPolicy(), targetVoterPolicy)) {
+        && configuration.membershipVersion() == targetMembershipVersion) {
       return CompletableFuture.completedFuture(
           logResponse(
               ReconfigureResponse.builder()
@@ -331,18 +393,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .withTime(configuration.time())
                   .withMembers(currentMembers)
                   .withFenced(configuration.fenced())
-                  .withVoterPolicy(configuration.voterPolicy())
+                  .withMembershipVersion(configuration.membershipVersion())
                   .build()));
-    }
-
-    final var exceededZone =
-        zoneExceedingVoterPolicy(configuration, updatedMembers, targetVoterPolicy);
-    if (exceededZone != null) {
-      return CompletableFuture.completedFuture(
-          rejectReconfigure(
-              Type.CONFIGURATION_ERROR,
-              "Cannot add a voter to zone '%s', it would have more voters than the voter policy %s allows"
-                  .formatted(exceededZone, targetVoterPolicy)));
     }
 
     // A fenced member is not replicated to, thus as a voter it would block every commit.
@@ -378,17 +430,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                         newActiveMember.get().memberId(),
                         RaftMember.Type.ACTIVE,
                         RaftMember.Type.ACTIVE)));
-      }
-
-      for (final var member : updatedMembers) {
-        if (configuration.hasMember(member.memberId())) {
-          continue;
-        }
-        final var refusal = checkAdmission(member.memberId(), 0);
-        if (refusal != null) {
-          return CompletableFuture.completedFuture(
-              rejectReconfigure(refusal.type(), refusal.message()));
-        }
       }
     }
 
@@ -450,12 +491,12 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                             : String.valueOf(memberContext.getReplicationLagBytes()),
                         raft.getPromotionLagThreshold())));
       }
-      // With a voter policy (the system partition), the member must also have answered within an
-      // election timeout (R9): a member that is down can look caught up from an old
-      // acknowledgement, and as a voter it would block commits. Partitions without a policy keep
-      // their behavior.
+      // In the system partition, the member must also have answered within an election timeout
+      // (R9): a member that is down can look caught up from an old acknowledgement, and as a voter
+      // it would block commits. Data partitions keep their behavior (R20). Only answers of the
+      // incarnation of the configuration count (R17), see OutboundRaftProtocol.
       final long sinceLastAnswer = System.currentTimeMillis() - memberContext.getResponseTime();
-      if (targetVoterPolicy != null && sinceLastAnswer > raft.getElectionTimeout().toMillis()) {
+      if (raft.isSystemPartition() && sinceLastAnswer > raft.getElectionTimeout().toMillis()) {
         return CompletableFuture.completedFuture(
             rejectReconfigure(
                 Type.CONFIGURATION_ERROR,
@@ -472,7 +513,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // New fence entries take effect only in the configuration that ends the joint phase: in the
     // joint configuration, a leaving voter still counts for the quorum of the old members, so it
     // must still get entries and its answers must count.
-    configure(updatedMembers, currentMembers, configuration.fenced(), targetVoterPolicy)
+    configure(updatedMembers, currentMembers, configuration.fenced(), targetMembershipVersion)
         .whenComplete(
             (jointConsensusIndex, jointConsensusError) -> {
               if (jointConsensusError == null) {
@@ -507,61 +548,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             // Beware that immutable collections cannot be serialized by Kryo
             .withMembers(new ArrayList<>(configuration.newMembers()))
             .withFenced(configuration.fenced())
-            .withVoterPolicy(configuration.voterPolicy())
+            .withMembershipVersion(configuration.membershipVersion())
             .build());
-  }
-
-  /**
-   * @return null if the member may be added, else the refusal
-   */
-  private @Nullable RaftError checkAdmission(
-      final MemberId member, final long configurationVersion) {
-    final var decision = raft.getJoinAdmission().check(member, configurationVersion);
-    return switch (decision) {
-      case ADMIT -> null;
-      case NOT_A_MEMBER ->
-          new RaftError(Type.NOT_A_MEMBER, "%s is not a member of the cluster".formatted(member));
-      case NOT_READY ->
-          new RaftError(
-              Type.NOT_READY, "Not ready to decide whether %s may join".formatted(member));
-    };
-  }
-
-  /**
-   * Returns a zone that the target configuration gives more voters than the voter policy allows, if
-   * the change adds voters to it. A zone that is not in the policy has no voter slots; a member
-   * without a zone is in the zone "". A change that does not add voters to a zone is allowed even
-   * if the zone has too many, so that the extra voters can be demoted one at a time, and a policy
-   * change does not need to fix all zones at once.
-   *
-   * @return the zone, or null if the change respects the policy or there is no policy
-   */
-  private static @Nullable String zoneExceedingVoterPolicy(
-      final Configuration configuration,
-      final Collection<RaftMember> targetMembers,
-      final @Nullable VoterPolicy voterPolicy) {
-    if (voterPolicy == null) {
-      return null;
-    }
-    final var currentVoters = votersByZone(configuration.newMembers());
-    final var targetVoters = votersByZone(targetMembers);
-    for (final var zoneVoters : targetVoters.entrySet()) {
-      final var zone = zoneVoters.getKey();
-      final long voters = zoneVoters.getValue();
-      final long slots = voterPolicy.votersOf(zone).orElse(0);
-      if (voters > slots && voters > currentVoters.getOrDefault(zone, 0L)) {
-        return zone;
-      }
-    }
-    return null;
-  }
-
-  private static Map<String, Long> votersByZone(final Collection<RaftMember> members) {
-    return members.stream()
-        .filter(member -> member.getType() == RaftMember.Type.ACTIVE)
-        .collect(
-            Collectors.groupingBy(
-                member -> Objects.toString(member.memberId().zone(), ""), Collectors.counting()));
   }
 
   /**
@@ -597,9 +585,13 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return List.copyOf(fenced);
   }
 
-  private static @Nullable VoterPolicy targetVoterPolicy(
+  /**
+   * Only the leader's own change (changeMembers) sets the membership version; other changes, for
+   * example of data partitions, keep it.
+   */
+  private static long targetMembershipVersion(
       final Configuration configuration, final ReconfigureRequest request) {
-    return request.voterPolicy() != null ? request.voterPolicy() : configuration.voterPolicy();
+    return request.exactIndex() ? request.membershipVersion() : configuration.membershipVersion();
   }
 
   @Override
@@ -634,37 +626,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
         currentConfiguration.newMembers().stream()
             .filter(member -> member.memberId().equals(request.joiningMember().memberId()))
             .findAny();
-    // A member that joins with another incarnation lost its data and starts again. The leader
-    // writes the new incarnation, so that a fence entry of the old incarnation no longer applies,
-    // but it keeps the member's type: a voter that lost its disk stays a voter.
-    final var sameIncarnation =
-        existingMember
-            .map(member -> member.getIncarnation() == request.joiningMember().getIncarnation())
-            .orElse(false);
-    final RaftMember joiningMember =
-        existingMember.isPresent()
-                && !sameIncarnation
-                && existingMember.get().getType().ordinal()
-                    > request.joiningMember().getType().ordinal()
-            ? new DefaultRaftMember(
-                request.joiningMember().memberId(),
-                existingMember.get().getType(),
-                Instant.now(),
-                request.joiningMember().getIncarnation())
-            : request.joiningMember();
-    // Adding a member, also a known member with a new incarnation, needs the admission of the
-    // owner of the server: Raft does not know who may be a member.
-    if (existingMember.isEmpty() || !sameIncarnation) {
-      final var refusal =
-          checkAdmission(request.joiningMember().memberId(), request.configurationVersion());
-      if (refusal != null) {
-        return CompletableFuture.completedFuture(
-            logResponse(
-                JoinResponse.builder().withStatus(Status.ERROR).withError(refusal).build()));
-      }
-    }
     if (existingMember.isPresent()
-        && sameIncarnation
         && existingMember.get().getType().ordinal() > request.joiningMember().getType().ordinal()
         && !initializing()
         && !configuring()
@@ -677,7 +639,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .build()));
     }
 
-    return reconfigure(
+    // In the system partition, onReconfigure rejects the join: only the leader adds members.
+    return onReconfigure(
             ReconfigureRequest.builder()
                 .withIndex(currentConfiguration.index())
                 // The same term the validation in onReconfigure expects, see
@@ -686,10 +649,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 .withTerm(raft.getCluster().getConfigurationTerm())
                 .withMembers(currentConfiguration.newMembers())
                 // Override local member with the new type.
-                .withMember(joiningMember)
+                .withMember(request.joiningMember())
                 .from(raft.getCluster().getLocalMember().memberId().id())
-                .build(),
-            true)
+                .build())
         .handle(
             (reconfigureResponse, throwable) -> {
               if (throwable != null) {
@@ -787,9 +749,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .build()));
       return;
     }
-    // The joint configuration already has the target voter policy.
+    // The joint configuration already has the target membership version.
     final var jointConfiguration = raft.getCluster().getConfiguration();
-    configure(updatedMembers, List.of(), targetFenced, jointConfiguration.voterPolicy())
+    final var finalFenced = withRemovedMembersFenced(jointConfiguration, targetFenced);
+    configure(updatedMembers, List.of(), finalFenced, jointConfiguration.membershipVersion())
         .whenComplete(
             (leftJointConsensusIndex, leftJointConsensusError) -> {
               if (leftJointConsensusError == null) {
@@ -801,8 +764,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                             .withTerm(configuration.term())
                             .withTime(configuration.time())
                             .withMembers(updatedMembers)
-                            .withFenced(targetFenced)
-                            .withVoterPolicy(jointConfiguration.voterPolicy())
+                            .withFenced(finalFenced)
+                            .withMembershipVersion(jointConfiguration.membershipVersion())
                             .build()));
               } else {
                 ongoingReconfigurationRequestFuture.complete(
@@ -815,6 +778,34 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             });
   }
 
+  /**
+   * In the system partition, the configuration that ends a joint phase fences each member that is
+   * in the old members but not in the new members, with its incarnation (design R18). A member
+   * whose incarnation the change replaced is fenced with its old incarnation. The entries are added
+   * only here and not in the joint configuration: in the joint phase, a leaving voter still counts
+   * for the quorum of the old members. Because the entries follow from the joint configuration
+   * alone, a new leader that ends the joint phase of an earlier leader adds them too (Q13).
+   */
+  private List<FenceEntry> withRemovedMembersFenced(
+      final Configuration jointConfiguration, final List<FenceEntry> targetFenced) {
+    if (!raft.isSystemPartition() || !jointConfiguration.requiresJointConsensus()) {
+      return targetFenced;
+    }
+    final var fenced = new LinkedHashSet<>(targetFenced);
+    for (final var oldMember : jointConfiguration.oldMembers()) {
+      final boolean stays =
+          jointConfiguration.newMembers().stream()
+              .anyMatch(
+                  newMember ->
+                      newMember.memberId().equals(oldMember.memberId())
+                          && newMember.getIncarnation() == oldMember.getIncarnation());
+      if (!stays) {
+        fenced.add(new FenceEntry(oldMember.memberId(), oldMember.getIncarnation()));
+      }
+    }
+    return List.copyOf(fenced);
+  }
+
   private boolean isDuplicateReconfigureRequest(
       final ReconfigureRequest request, final Collection<RaftMember> requestedUpdate) {
     final var configuration = raft.getCluster().getConfiguration();
@@ -822,7 +813,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
         ongoingTargetFenced != null ? ongoingTargetFenced : configuration.fenced();
     return equalMembership(requestedUpdate, configuration.newMembers())
         && ongoingFenced.equals(targetFenced(configuration, request))
-        && Objects.equals(configuration.voterPolicy(), targetVoterPolicy(configuration, request));
+        && configuration.membershipVersion() == targetMembershipVersion(configuration, request);
   }
 
   /** Checks if the membership is equal in terms of member ids and types. */
@@ -930,10 +921,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   /**
-   * The first leader of a partition that was bootstrapped with a voter policy appends the initial
-   * configuration (index 0) as an entry, right after its initial entry. Thus a configuration index
-   * above 0 shows that the partition has been started, and the entry confirms the policy. Without a
-   * policy nothing changes, so that existing partitions keep their log.
+   * The first leader of the system partition appends the initial configuration (index 0) as an
+   * entry, right after its initial entry (R14). Thus a configuration index above 0 shows that the
+   * partition has been started. Data partitions are not changed, so that they keep their log.
    *
    * <p>It is appended once the initial entry is committed, before the leadership is announced, so
    * no other entry precedes it. Appending it earlier loses it on the followers: a follower with an
@@ -943,18 +933,18 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private void appendFirstConfigurationEntry() {
     final var configuration = raft.getCluster().getConfiguration();
     if (configuration.index() != 0
-        || configuration.voterPolicy() == null
+        || !raft.isSystemPartition()
         || configuration.force()
         || configuration.requiresJointConsensus()) {
       return;
     }
     log.info(
-        "Appending the initial configuration with voter policy {}", configuration.voterPolicy());
+        "Appending the initial configuration {} as the first configuration entry", configuration);
     configure(
             configuration.newMembers(),
             List.of(),
             configuration.fenced(),
-            configuration.voterPolicy())
+            configuration.membershipVersion())
         .whenComplete(
             (index, error) -> {
               if (error != null) {
@@ -1058,14 +1048,14 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       final Collection<RaftMember> newMembers,
       final Collection<RaftMember> oldMembers,
       final Collection<FenceEntry> fenced,
-      final @Nullable VoterPolicy voterPolicy) {
+      final long membershipVersion) {
     raft.checkThread();
 
     final long term = raft.getTerm();
 
     final var configurationEntry =
         new ConfigurationEntry(
-            System.currentTimeMillis(), newMembers, oldMembers, fenced, voterPolicy);
+            System.currentTimeMillis(), newMembers, oldMembers, fenced, membershipVersion);
     final IndexedRaftLogEntry entry;
     try {
       entry = appendEntry(new RaftLogEntry(term, configurationEntry));
@@ -1086,7 +1076,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 configurationEntry.oldMembers(),
                 false,
                 configurationEntry.fenced(),
-                configurationEntry.voterPolicy()));
+                configurationEntry.membershipVersion()));
 
     return appender
         .appendEntries(entry.index())

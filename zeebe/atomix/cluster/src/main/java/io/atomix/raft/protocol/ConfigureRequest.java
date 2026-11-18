@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.cluster.VoterPolicy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -58,7 +57,7 @@ public class ConfigureRequest extends AbstractRaftRequest {
 
   // Absent (null) in requests of members that predate fencing and voter policies.
   private final @Nullable Collection<FenceEntry> fenced;
-  private final @Nullable VoterPolicy voterPolicy;
+  private final long membershipVersion;
 
   /**
    * True if the leader has committed this configuration. A member acts on finding itself on the
@@ -74,17 +73,7 @@ public class ConfigureRequest extends AbstractRaftRequest {
       final Collection<RaftMember> newMembers,
       final Collection<RaftMember> oldMembers,
       final long configurationTerm) {
-    this(
-        term,
-        leader,
-        index,
-        timestamp,
-        newMembers,
-        oldMembers,
-        configurationTerm,
-        null,
-        null,
-        false);
+    this(term, leader, index, timestamp, newMembers, oldMembers, configurationTerm, null, 0, false);
   }
 
   public ConfigureRequest(
@@ -96,7 +85,7 @@ public class ConfigureRequest extends AbstractRaftRequest {
       final Collection<RaftMember> oldMembers,
       final long configurationTerm,
       final @Nullable Collection<FenceEntry> fenced,
-      final @Nullable VoterPolicy voterPolicy,
+      final long membershipVersion,
       final boolean committed) {
     this.term = term;
     this.leader = leader;
@@ -106,7 +95,7 @@ public class ConfigureRequest extends AbstractRaftRequest {
     this.oldMembers = oldMembers;
     this.configurationTerm = configurationTerm;
     this.fenced = fenced;
-    this.voterPolicy = voterPolicy;
+    this.membershipVersion = membershipVersion;
     this.committed = committed;
   }
 
@@ -118,10 +107,11 @@ public class ConfigureRequest extends AbstractRaftRequest {
   }
 
   /**
-   * @return the voter policy of the configuration, or null if it has none
+   * @return the membership version of the configuration, see {@link
+   *     io.atomix.raft.storage.system.Configuration#membershipVersion()}
    */
-  public @Nullable VoterPolicy voterPolicy() {
-    return voterPolicy;
+  public long membershipVersion() {
+    return membershipVersion;
   }
 
   public boolean committed() {
@@ -171,8 +161,8 @@ public class ConfigureRequest extends AbstractRaftRequest {
         + configurationTerm
         + ", fenced="
         + fenced
-        + ", voterPolicy="
-        + voterPolicy
+        + ", membershipVersion="
+        + membershipVersion
         + ", committed="
         + committed
         + '}';
@@ -269,7 +259,7 @@ public class ConfigureRequest extends AbstractRaftRequest {
     private boolean committed;
 
     private @Nullable Collection<FenceEntry> fenced;
-    private @Nullable VoterPolicy voterPolicy;
+    private long membershipVersion;
 
     public Builder withFenced(final Collection<FenceEntry> fenced) {
       // Beware that immutable collections cannot be serialized by Kryo
@@ -277,8 +267,8 @@ public class ConfigureRequest extends AbstractRaftRequest {
       return this;
     }
 
-    public Builder withVoterPolicy(final @Nullable VoterPolicy voterPolicy) {
-      this.voterPolicy = voterPolicy;
+    public Builder withMembershipVersion(final long membershipVersion) {
+      this.membershipVersion = membershipVersion;
       return this;
     }
 
@@ -387,7 +377,7 @@ public class ConfigureRequest extends AbstractRaftRequest {
           oldMembers,
           configurationTerm,
           fenced,
-          voterPolicy,
+          membershipVersion,
           committed);
     }
 

@@ -246,32 +246,6 @@ public class RaftError {
       PrimitiveException createException(final String message) {
         return message != null ? new PrimitiveException.Unavailable(message) : createException();
       }
-    },
-
-    /** The leader refused to add the member: it is not a member of the cluster (retriable). */
-    NOT_A_MEMBER {
-      @Override
-      PrimitiveException createException() {
-        return createException("Not a cluster member");
-      }
-
-      @Override
-      PrimitiveException createException(final String message) {
-        return message != null ? new PrimitiveException.Unavailable(message) : createException();
-      }
-    },
-
-    /** The leader cannot decide yet whether to add the member (retriable). */
-    NOT_READY {
-      @Override
-      PrimitiveException createException() {
-        return createException("Not ready to admit the member");
-      }
-
-      @Override
-      PrimitiveException createException(final String message) {
-        return message != null ? new PrimitiveException.Unavailable(message) : createException();
-      }
     };
 
     /**

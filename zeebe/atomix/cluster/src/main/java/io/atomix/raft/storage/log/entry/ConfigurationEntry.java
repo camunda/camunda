@@ -20,14 +20,12 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer.SerializedBufferWriterAdapter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Stores a cluster configuration.
@@ -44,7 +42,7 @@ public record ConfigurationEntry(
     Collection<RaftMember> newMembers,
     Collection<RaftMember> oldMembers,
     Collection<FenceEntry> fenced,
-    @Nullable VoterPolicy voterPolicy)
+    long membershipVersion)
     implements RaftEntry {
 
   public ConfigurationEntry {
@@ -57,7 +55,7 @@ public record ConfigurationEntry(
       final long timestamp,
       final Collection<RaftMember> newMembers,
       final Collection<RaftMember> oldMembers) {
-    this(timestamp, newMembers, oldMembers, List.of(), null);
+    this(timestamp, newMembers, oldMembers, List.of(), 0);
   }
 
   public ConfigurationEntry(final long timestamp, final Collection<RaftMember> newMembers) {

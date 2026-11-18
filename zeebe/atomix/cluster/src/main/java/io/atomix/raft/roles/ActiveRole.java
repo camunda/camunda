@@ -45,8 +45,6 @@ public abstract class ActiveRole extends PassiveRole {
       abortPendingSnapshots();
     }
 
-    raft.onAppendFromLeader(request.term(), request.commitIndex());
-
     // Handle the append request.
     final CompletableFuture<AppendResponse> future = handleAppend(request);
 

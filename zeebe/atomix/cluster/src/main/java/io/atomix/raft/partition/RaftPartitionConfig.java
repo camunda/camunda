@@ -66,6 +66,7 @@ public class RaftPartitionConfig {
   private int snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
   private boolean receiveOnLegacySubject = DEFAULT_RECEIVE_ON_LEGACY_SUBJECT;
   private long promotionLagThreshold = DEFAULT_PROMOTION_LAG_THRESHOLD;
+  private boolean systemPartition;
 
   /**
    * Returns the Raft leader election timeout.
@@ -318,6 +319,25 @@ public class RaftPartitionConfig {
     this.promotionLagThreshold = promotionLagThreshold;
   }
 
+  /**
+   * @return true if the partition is the system partition, see {@link #setSystemPartition}
+   */
+  public boolean isSystemPartition() {
+    return systemPartition;
+  }
+
+  /**
+   * Marks the partition as the system partition (design R20). Only then does the first leader
+   * append a configuration entry after its initial entry (R14), does a promotion also need an
+   * answer of the member within the election timeout (R9), does the end of a joint phase fence the
+   * members that the change removed (R18), and are the membership requests of other members (join,
+   * leave, reconfigure) rejected, because only the leader changes the members (R3). Data partitions
+   * keep their behavior.
+   */
+  public void setSystemPartition(final boolean systemPartition) {
+    this.systemPartition = systemPartition;
+  }
+
   @Override
   public String toString() {
     return "RaftPartitionConfig{"
@@ -357,6 +377,8 @@ public class RaftPartitionConfig {
         + receiveOnLegacySubject
         + ", promotionLagThreshold="
         + promotionLagThreshold
+        + ", systemPartition="
+        + systemPartition
         + '}';
   }
 }

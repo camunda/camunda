@@ -13,26 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.raft.cluster;
+package io.atomix.raft.partition.systempartition;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The voter policy of a Raft configuration: the number of voters ({@link RaftMember.Type#ACTIVE}
- * members) for each zone, in the order of the zones' priority. The zone of a member is {@link
- * io.atomix.cluster.MemberId#zone()}.
+ * The voter policy of the system partition (design 5.1): the number of voters ({@link
+ * io.atomix.raft.cluster.RaftMember.Type#ACTIVE} members) for each zone, in the order of the zones
+ * for the election priority. The first zone is the control zone, if the cluster has one. The zone
+ * of a member is {@link io.atomix.cluster.MemberId#zone()}, or "" for a member without a zone.
  *
- * <p>Raft stores the policy with the configuration and changes it with a configuration change. The
- * leader rejects a change that puts more voters into a zone than the policy allows. Everything else
- * about the policy (who is promoted or demoted) is decided outside of Raft.
- *
- * <p>Not a record: Raft requests carry the policy, and Kryo serializes records by position. As a
- * class, it is serialized field by field with names, so that a later version can add a field.
+ * <p>Raft does not know the policy (D18). The membership component uses it to decide promotions and
+ * demotions, and the recovery uses it to limit the voters of a forced configuration.
  */
 public final class VoterPolicy {
 
@@ -46,8 +42,7 @@ public final class VoterPolicy {
     if (zones.isEmpty()) {
       throw new IllegalArgumentException("A voter policy must have at least one zone");
     }
-    // A mutable copy, because Kryo cannot deserialize immutable collections
-    this.zones = new ArrayList<>(zones);
+    this.zones = List.copyOf(zones);
   }
 
   public List<ZoneVoters> zones() {

@@ -22,14 +22,12 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.atomix.raft.JoinAdmission;
-import io.atomix.raft.JoinOptions;
+import io.atomix.raft.FencedListener;
+import io.atomix.raft.RaftConfigurationListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
-import io.atomix.raft.protocol.ReconfigureResponse;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -60,6 +58,8 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   private final Set<RaftRoleChangeListener> deferredRoleChangeListeners =
       new CopyOnWriteArraySet<>();
   private final PartitionMetadata partitionMetadata;
+  private final Set<FencedListener> fencedListeners = new CopyOnWriteArraySet<>();
+  private final Set<RaftConfigurationListener> configurationListeners = new CopyOnWriteArraySet<>();
   private RaftPartitionServer server;
   // A closed server stays referenced, e.g. for delete(); only a closed one may be replaced by a
   // join
@@ -121,26 +121,31 @@ public final class RaftPartition implements Partition, HealthMonitorable {
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore,
       final Map<MemberId, RaftMember.Type> members) {
-    return bootstrap(managementService, snapshotStore, members, null);
+    if (members.containsKey(managementService.getMembershipService().getLocalMember().id())) {
+      final var running = rejectWhileServerRuns();
+      if (running != null) {
+        return running;
+      }
+      initServer(managementService, snapshotStore);
+      return server.bootstrap(members).thenApply(v -> this);
+    }
+    return CompletableFuture.completedFuture(this);
   }
 
   /**
-   * Bootstraps a partition with typed members and an optional voter policy. See {@link
-   * io.atomix.raft.cluster.RaftCluster#bootstrap(Map, VoterPolicy)}.
+   * Starts the partition without a configuration, for a member without data (design R16). See
+   * {@link io.atomix.raft.cluster.RaftCluster#startWithoutConfiguration(long)}.
    */
-  public CompletableFuture<RaftPartition> bootstrap(
+  public CompletableFuture<RaftPartition> startWithoutConfiguration(
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore,
-      final Map<MemberId, RaftMember.Type> members,
-      final VoterPolicy voterPolicy) {
-    if (members.containsKey(managementService.getMembershipService().getLocalMember().id())) {
-      initServer(managementService, snapshotStore);
-      return (voterPolicy == null
-              ? server.bootstrap(members)
-              : server.bootstrap(members, voterPolicy))
-          .thenApply(v -> this);
+      final long incarnation) {
+    final var running = rejectWhileServerRuns();
+    if (running != null) {
+      return running;
     }
-    return CompletableFuture.completedFuture(this);
+    initServer(managementService, snapshotStore);
+    return server.startWithoutConfiguration(incarnation).thenApply(v -> this);
   }
 
   /**
@@ -151,7 +156,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
       final RaftMember.Type type,
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore) {
-    final var running = rejectJoinWhileServerRuns();
+    final var running = rejectWhileServerRuns();
     if (running != null) {
       return running;
     }
@@ -160,41 +165,19 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   /**
-   * Joins with the given options, for example the new incarnation of a member that starts without
-   * data. See {@link io.atomix.raft.cluster.RaftCluster#join(RaftMember.Type, Collection,
-   * JoinOptions)}.
+   * A join, a typed bootstrap or a start without configuration creates a new server on the same
+   * data directory. If a server was started before and is not closed, both would use the directory
+   * and the network at the same time (R11). The caller must close the partition first, e.g. before
+   * it deletes the data of a fenced member and starts again without data.
    */
-  public CompletableFuture<RaftPartition> join(
-      final RaftMember.Type type,
-      final PartitionManagementService managementService,
-      final ReceivableSnapshotStore snapshotStore,
-      final JoinOptions options) {
-    final var running = rejectJoinWhileServerRuns();
-    if (running != null) {
-      return running;
-    }
-    initServer(managementService, snapshotStore);
-    return server.join(type, options).thenApply(v -> this);
-  }
-
-  /**
-   * A join creates a new server on the same data directory. If a server was started before and is
-   * not closed, both would use the directory and the network at the same time. The caller must
-   * close the partition first, e.g. before it deletes the data of a fenced member and joins again.
-   */
-  private CompletableFuture<RaftPartition> rejectJoinWhileServerRuns() {
+  private CompletableFuture<RaftPartition> rejectWhileServerRuns() {
     if (server != null && !serverClosed) {
       return CompletableFuture.failedFuture(
           new IllegalStateException(
-              "Cannot join partition %s, its server is still running; close it first"
+              "Cannot start partition %s again, its server is still running; close it first"
                   .formatted(partitionId)));
     }
     return null;
-  }
-
-  /** See {@link io.atomix.raft.RaftServer#setJoinAdmission(JoinAdmission)}. */
-  public void setJoinAdmission(final JoinAdmission joinAdmission) {
-    server.setJoinAdmission(joinAdmission);
   }
 
   public CompletableFuture<RaftPartition> leave() {
@@ -221,13 +204,23 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   /**
-   * Changes the configuration to the given full target membership, calculated from the
-   * configuration with the given index and term. See {@link io.atomix.raft.RaftServer#reconfigure(
-   * Map, long, long)}.
+   * Adds a listener that is notified when the local member is fenced. It is registered on each
+   * server that the partition creates from now on, before the server starts, so that a fence found
+   * at start is not missed.
    */
-  public CompletableFuture<ReconfigureResponse> reconfigure(
-      final Map<MemberId, RaftMember.Type> members, final long index, final long term) {
-    return server.reconfigure(members, index, term);
+  public void addFencedListener(final FencedListener listener) {
+    fencedListeners.add(listener);
+    if (server != null) {
+      server.addFencedListener(listener);
+    }
+  }
+
+  /** Like {@link #addFencedListener(FencedListener)}, for configuration changes. */
+  public void addConfigurationListener(final RaftConfigurationListener listener) {
+    configurationListeners.add(listener);
+    if (server != null) {
+      server.addConfigurationListener(listener);
+    }
   }
 
   private void initServer(
@@ -235,6 +228,8 @@ public final class RaftPartition implements Partition, HealthMonitorable {
       final ReceivableSnapshotStore snapshotStore) {
     server = createServer(managementService, snapshotStore);
     serverClosed = false;
+    fencedListeners.forEach(server::addFencedListener);
+    configurationListeners.forEach(server::addConfigurationListener);
 
     if (!deferredRoleChangeListeners.isEmpty()) {
       deferredRoleChangeListeners.forEach(server::addRoleChangeListener);

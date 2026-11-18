@@ -23,7 +23,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.cluster.VoterPolicy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -39,7 +38,7 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
   protected final Collection<RaftMember> members;
   // Absent (null) in responses of members that predate fencing and voter policies.
   protected final @Nullable Collection<FenceEntry> fenced;
-  protected final @Nullable VoterPolicy voterPolicy;
+  protected final long membershipVersion;
 
   public ConfigurationResponse(
       final Status status,
@@ -48,7 +47,7 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
       final long term,
       final long timestamp,
       final Collection<RaftMember> members) {
-    this(status, error, index, term, timestamp, members, null, null);
+    this(status, error, index, term, timestamp, members, null, 0);
   }
 
   public ConfigurationResponse(
@@ -59,14 +58,14 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
       final long timestamp,
       final Collection<RaftMember> members,
       final @Nullable Collection<FenceEntry> fenced,
-      final @Nullable VoterPolicy voterPolicy) {
+      final long membershipVersion) {
     super(status, error);
     this.index = index;
     this.term = term;
     this.timestamp = timestamp;
     this.members = members;
     this.fenced = fenced;
-    this.voterPolicy = voterPolicy;
+    this.membershipVersion = membershipVersion;
   }
 
   /**
@@ -77,10 +76,11 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
   }
 
   /**
-   * @return the voter policy of the configuration, or null if it has none
+   * @return the membership version of the configuration, see {@link
+   *     io.atomix.raft.storage.system.Configuration#membershipVersion()}
    */
-  public @Nullable VoterPolicy voterPolicy() {
-    return voterPolicy;
+  public long membershipVersion() {
+    return membershipVersion;
   }
 
   /**
@@ -151,7 +151,7 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
           .add("timestamp", timestamp)
           .add("members", members)
           .add("fenced", fenced)
-          .add("voterPolicy", voterPolicy)
+          .add("membershipVersion", membershipVersion)
           .toString();
     } else {
       return toStringHelper(this).add("status", status).add("error", error).toString();
@@ -167,7 +167,7 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
     protected long timestamp;
     protected Collection<RaftMember> members;
     protected @Nullable Collection<FenceEntry> fenced;
-    protected @Nullable VoterPolicy voterPolicy;
+    protected long membershipVersion;
 
     @SuppressWarnings("unchecked")
     public T withFenced(final Collection<FenceEntry> fenced) {
@@ -177,8 +177,8 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
     }
 
     @SuppressWarnings("unchecked")
-    public T withVoterPolicy(final @Nullable VoterPolicy voterPolicy) {
-      this.voterPolicy = voterPolicy;
+    public T withMembershipVersion(final long membershipVersion) {
+      this.membershipVersion = membershipVersion;
       return (T) this;
     }
 

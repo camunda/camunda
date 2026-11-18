@@ -69,7 +69,7 @@ final class ConfigurationVersion4CompatibilityTest {
         .extracting(RaftMember::memberId, RaftMember::getType, RaftMember::getIncarnation)
         .containsExactly(tuple(MemberId.from("a_1"), Type.ACTIVE, 0L));
     assertThat(configuration.fenced()).isEmpty();
-    assertThat(configuration.voterPolicy()).isNull();
+    assertThat(configuration.membershipVersion()).isZero();
   }
 
   @Test
@@ -94,6 +94,6 @@ final class ConfigurationVersion4CompatibilityTest {
         .extracting(RaftMember::memberId, RaftMember::getType, RaftMember::getIncarnation)
         .containsExactly(tuple(MemberId.from("a_1"), Type.ACTIVE, 0L));
     assertThat(configuration.fenced()).isEmpty();
-    assertThat(configuration.voterPolicy()).isNull();
+    assertThat(configuration.membershipVersion()).isZero();
   }
 }

@@ -17,13 +17,11 @@
 package io.atomix.raft.cluster;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.raft.JoinOptions;
 import io.atomix.raft.RaftServer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Raft server cluster API.
@@ -151,18 +149,21 @@ public interface RaftCluster {
    * @param members the members of the initial configuration with their types
    * @return A completable future to be completed once the cluster has been bootstrapped.
    */
-  default CompletableFuture<Void> bootstrap(final Map<MemberId, RaftMember.Type> members) {
-    return bootstrap(members, null);
-  }
+  CompletableFuture<Void> bootstrap(Map<MemberId, RaftMember.Type> members);
 
   /**
-   * Bootstraps like {@link #bootstrap(Map)}, with a voter policy in the initial configuration. With
-   * a policy, the first leader appends a configuration entry right after its initial entry, so that
-   * a configuration index above 0 shows that the partition has been started. All members must be
-   * bootstrapped with the same policy.
+   * Starts the local member without a configuration (design R16), for a member that has no data: it
+   * is {@link RaftMember.Type#INACTIVE}, it grants no votes or polls, starts no election and
+   * rejects appends and snapshots. It accepts a configuration from a leader only if the
+   * configuration has the local member as {@link RaftMember.Type#PASSIVE} with the given
+   * incarnation; then it stores the configuration and becomes passive. Thus a member without data
+   * becomes a voter only when the leader promotes it after it has caught up.
+   *
+   * <p>Fails if the local member has a stored or logged configuration.
+   *
+   * @param incarnation the new incarnation of the local member, never 0
    */
-  CompletableFuture<Void> bootstrap(
-      Map<MemberId, RaftMember.Type> members, @Nullable VoterPolicy voterPolicy);
+  CompletableFuture<Void> startWithoutConfiguration(long incarnation);
 
   /**
    * Joins the cluster as an {@link RaftMember.Type#ACTIVE} member.
@@ -185,14 +186,6 @@ public interface RaftCluster {
    * @return A completable future to be completed once the server has joined the cluster.
    */
   CompletableFuture<Void> join(RaftMember.Type type, Collection<MemberId> cluster);
-
-  /**
-   * Joins like {@link #join(RaftMember.Type, Collection)}, with the given options. The local member
-   * uses the incarnation of the options. If it differs from the one in the leader's configuration,
-   * the leader writes a new configuration with it.
-   */
-  CompletableFuture<Void> join(
-      RaftMember.Type type, Collection<MemberId> cluster, JoinOptions options);
 
   /**
    * Returns a member by ID.

@@ -20,18 +20,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.systempartition.SystemPartitionMembership;
+import io.atomix.raft.partition.systempartition.SystemPartitionMembership.BrokerState;
+import io.atomix.raft.partition.systempartition.SystemPartitionMembership.ClusterView;
 import io.atomix.raft.partition.systempartition.SystemPartitionMembership.ElectionPriorities;
-import io.atomix.raft.partition.systempartition.SystemPartitionMembership.SelfPromotionCheck;
+import io.atomix.raft.partition.systempartition.SystemPartitionMembership.LeaderDecision;
+import io.atomix.raft.partition.systempartition.SystemPartitionMembership.LeaderInput;
 import io.atomix.raft.partition.systempartition.SystemPartitionRecovery;
 import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.MemberReport;
 import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.RecoveryDecision;
+import io.atomix.raft.partition.systempartition.VoterPolicy;
 import io.atomix.raft.protocol.RaftResponse.Status;
-import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
@@ -53,7 +55,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -73,22 +74,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An in-process system partition: one Raft server per broker, with a small in-memory stand-in of
- * the dynamic configuration. It plays the broker side of the design (start table, background join,
- * self-promotion, the leader's demotion, MemberLeave, phase 0 and "force system partition voters")
- * with {@link SystemPartitionMembership} and {@link SystemPartitionRecovery}, so that scenario
- * tests can check the Raft configuration and the quorum at each step.
+ * An in-process system partition (design revision 7): one Raft server per broker, with a small
+ * in-memory stand-in of the dynamic configuration. It plays the broker side of the design: the
+ * start table (bootstrap, restart with the stored configuration, start without data), the fenced
+ * listener, the membership component of the leader ({@link SystemPartitionMembership#decide}),
+ * {@code MemberLeave}, phase 0 and "force system partition voters" ({@link
+ * SystemPartitionRecovery}), so that scenario tests can check the Raft configuration and the quorum
+ * at each step.
  *
- * <p>Self-promotion and demotion run only when a test calls {@link #reconcileOnce()}, so that a
- * test can also check that nothing changes. The join of a broker without data and the rejoin of a
- * fenced broker run in the background, as in a broker.
+ * <p>The membership component runs only when a test calls {@link #reconcileOnce()}, so that a test
+ * can also check that nothing changes. A fenced broker deletes its data and starts again without
+ * data in the background, as a broker does.
  */
 final class SystemPartitionCluster implements AutoCloseable {
 
   static final Duration ELECTION_TIMEOUT = Duration.ofMillis(500);
   private static final Logger LOG = LoggerFactory.getLogger(SystemPartitionCluster.class);
-  private static final Duration JOIN_TIMEOUT = Duration.ofSeconds(3);
-  private static final Duration JOIN_RETRY_DELAY = Duration.ofMillis(200);
 
   final DynamicConfiguration dynamic = new DynamicConfiguration();
   private final Path root;
@@ -114,23 +115,24 @@ final class SystemPartitionCluster implements AutoCloseable {
   /** Row 3 of the start table: all static brokers bootstrap the initial configuration (5.4.1). */
   void bootstrap(final Collection<MemberId> staticMembers) {
     final var initial = SystemPartitionMembership.initialConfiguration(policy, staticMembers);
-    staticMembers.forEach(member -> dynamic.setState(member, MemberState.ACTIVE));
-    final var priorities = SystemPartitionMembership.priorities(configuration(initial, policy));
+    staticMembers.forEach(member -> dynamic.setState(member, BrokerState.ACTIVE));
+    staticMembers.forEach(member -> brokers.computeIfAbsent(member, Broker::new));
+    final var priorities = SystemPartitionMembership.priorities(configuration(initial), policy);
     final var futures =
         staticMembers.stream()
             .map(
                 member ->
                     createServer(member, priorities, 0)
-                        .bootstrap(initial, policy)
+                        .bootstrap(initial)
                         .orTimeout(30, TimeUnit.SECONDS))
             .toArray(CompletableFuture[]::new);
     CompletableFuture.allOf(futures).join();
   }
 
   /**
-   * Row 1 of the start table: the broker starts with the configuration that it stored on disk. Its
-   * priorities come from that configuration, without a leader. A fenced broker is notified and
-   * rejoins in the background.
+   * Row 1 of the start table: the broker starts with the configuration that it stored on disk, with
+   * the member ids and types of that configuration. Its priorities come from that configuration,
+   * without a leader. A fenced broker is notified and starts again without data in the background.
    */
   void restart(final MemberId member) {
     restartAll(List.of(member));
@@ -139,20 +141,23 @@ final class SystemPartitionCluster implements AutoCloseable {
   void restartAll(final Collection<MemberId> members) {
     final var futures = new ArrayList<CompletableFuture<?>>();
     for (final var member : members) {
-      final var stored = storedConfiguration(member).orElseThrow();
-      final var broker = brokers.get(member);
-      final var priorities = SystemPartitionMembership.priorities(stored);
-      final var server = createServer(member, priorities, broker.incarnation);
-      final var ids = stored.allMembers().stream().map(RaftMember::memberId).toList();
+      final var stored = storedConfiguration(member);
+      if (stored.isEmpty()) {
+        startWithoutData(member);
+        continue;
+      }
+      final var priorities = SystemPartitionMembership.priorities(stored.get(), policy);
+      final var incarnation = stored.get().incarnationOf(member).orElse(0);
+      final var server = createServer(member, priorities, incarnation);
+      final var ids = stored.get().allMembers().stream().map(RaftMember::memberId).toList();
       // A fenced broker's start does not complete; its fenced listener takes over
       final var fenced = new CompletableFuture<Void>();
-      server.addFencedListener(incarnation -> fenced.complete(null));
+      server.addFencedListener(i -> fenced.complete(null));
       futures.add(
           CompletableFuture.anyOf(server.bootstrap(ids), fenced)
               .orTimeout(30, TimeUnit.SECONDS)
               .exceptionally(
                   error -> {
-                    // a fenced broker fails to start; its fenced listener takes over
                     LOG.info("Start of {} failed", member, error);
                     return null;
                   }));
@@ -161,199 +166,126 @@ final class SystemPartitionCluster implements AutoCloseable {
   }
 
   /**
-   * Row 2 of the start table, after a disk loss, a fence notice or {@code MemberJoin}: the broker
-   * deletes its data and joins as passive member with a new incarnation and the empty-start guard,
-   * in the background, until the leader admits it.
+   * Row 2 of the start table and 5.4.3: the broker deletes its data, generates a new incarnation,
+   * publishes it and starts without a configuration. It waits until the leader adds it.
    */
-  void joinWithoutData(final MemberId member) {
-    joinWithoutData(member, 0);
-  }
-
-  /**
-   * Like {@link #joinWithoutData(MemberId)}, with a probe term that is higher by {@code
-   * extraProbeTerm} than the highest term of the voters, as if a voter had reported the term of an
-   * election that it did not win.
-   */
-  void joinWithoutData(final MemberId member, final long extraProbeTerm) {
-    // All join steps of all brokers run on the single background thread, so that a new join
-    // never races with the retry of an earlier one.
-    try {
-      background.submit(() -> startJoin(member, extraProbeTerm)).get(60, TimeUnit.SECONDS);
-    } catch (final Exception e) {
-      throw new IllegalStateException(e);
-    }
-  }
-
-  private void startJoin(final MemberId member, final long extraProbeTerm) {
+  void startWithoutData(final MemberId member) {
     final var broker = brokers.computeIfAbsent(member, Broker::new);
-    final var attempt = new CompletableFuture<Void>();
-    broker.joined = attempt;
     stopServer(broker);
     deleteData(member);
-    broker.incarnation = incarnations.incrementAndGet();
-    tryJoin(broker, attempt, extraProbeTerm);
-  }
-
-  /** {@code MemberJoin} (5.6.1): the broker becomes JOINING, deletes old data and joins. */
-  void memberJoin(final MemberId member) {
-    dynamic.setState(member, MemberState.JOINING);
-    joinWithoutData(member);
-  }
-
-  CompletableFuture<Void> joined(final MemberId member) {
-    return brokers.get(member).joined;
-  }
-
-  private void tryJoin(
-      final Broker broker, final CompletableFuture<Void> attempt, final long extraProbeTerm) {
-    if (closed || broker.joined != attempt || attempt.isDone()) {
-      return;
-    }
-    if (!dynamic.mayAskToJoin(broker.id)) {
-      retryJoin(broker, attempt, extraProbeTerm);
-      return;
-    }
-    final var probe = probe();
-    if (probe.isEmpty()) {
-      retryJoin(broker, attempt, extraProbeTerm);
-      return;
-    }
-    final var server = createServer(broker.id, null, broker.incarnation);
-    final var contacts =
-        probe.get().members().stream().filter(member -> !member.equals(broker.id)).toList();
-    final var options =
-        JoinOptions.withIncarnation(broker.incarnation)
-            .withConfigurationVersion(dynamic.version())
-            .withEmptyStartGuard(probe.get().term() + extraProbeTerm);
-    server
-        .join(Type.PASSIVE, contacts, options)
-        .whenCompleteAsync(
-            (ok, error) -> {
-              if (broker.joined != attempt) {
-                if (broker.server != server) {
-                  server.shutdown().join();
-                }
-                return;
-              }
-              if (error == null) {
-                LOG.info("{} joined with incarnation {}", broker.id, broker.incarnation);
-                attempt.complete(null);
-                return;
-              }
-              LOG.info("Join of {} failed, trying again", broker.id, error);
-              stopServer(broker);
-              deleteData(broker.id);
-              retryJoin(broker, attempt, extraProbeTerm);
-            },
-            background);
-  }
-
-  private void retryJoin(
-      final Broker broker, final CompletableFuture<Void> attempt, final long extraProbeTerm) {
-    if (!closed) {
-      background.schedule(
-          () -> tryJoin(broker, attempt, extraProbeTerm),
-          JOIN_RETRY_DELAY.toMillis(),
-          TimeUnit.MILLISECONDS);
-    }
+    final long incarnation = incarnations.incrementAndGet();
+    createServer(member, null, incarnation)
+        .startWithoutConfiguration(incarnation)
+        .orTimeout(30, TimeUnit.SECONDS)
+        .join();
+    LOG.info("{} started without data with incarnation {}", member, incarnation);
   }
 
   /**
-   * The probe of a broker without data (5.4.2, 5.4.3): the highest configuration of the running
-   * brokers, and the highest term of the voters of that configuration. Empty unless a quorum of
-   * these voters answered.
+   * {@code MemberJoin} (5.6.1): the broker is the target of a pending {@code MemberJoin}, starts
+   * without data and becomes {@code JOINING}. The applier does not change the system partition.
    */
-  private Optional<Probe> probe() {
-    final var answers = new LinkedHashMap<MemberId, Configuration>();
-    final var terms = new LinkedHashMap<MemberId, Long>();
-    for (final var broker : brokers.values()) {
-      final var server = broker.server;
-      if (server == null || !server.isRunning()) {
-        continue;
-      }
-      try {
-        final var configuration = server.getConfiguration().get(5, TimeUnit.SECONDS);
-        if (configuration != null) {
-          answers.put(broker.id, configuration);
-          terms.put(broker.id, server.getTerm());
-        }
-      } catch (final Exception e) {
-        LOG.debug("Probe of {} failed", broker.id, e);
-      }
+  void memberJoin(final MemberId member) {
+    dynamic.addPendingJoin(member);
+    if (!isRunning(member)) {
+      startWithoutData(member);
     }
-    final var highest =
-        answers.values().stream()
-            .max(
-                Comparator.comparingLong(Configuration::index)
-                    .thenComparingLong(Configuration::term));
-    if (highest.isEmpty() || highest.get().index() == 0) {
-      return Optional.empty();
-    }
-    final var voters =
-        highest.get().newMembers().stream()
-            .filter(member -> member.getType() == Type.ACTIVE)
-            .map(RaftMember::memberId)
-            .toList();
-    final var answered = voters.stream().filter(terms::containsKey).toList();
-    if (answered.size() <= voters.size() / 2) {
-      return Optional.empty();
-    }
-    final long probeTerm = answered.stream().mapToLong(terms::get).max().orElseThrow();
-    return Optional.of(
-        new Probe(
-            highest.get().allMembers().stream().map(RaftMember::memberId).toList(), probeTerm));
+    dynamic.setState(member, BrokerState.JOINING);
   }
 
   // ---------------------------------------------------------------------------------------------
-  // Own membership (5.6.4)
+  // The membership component of the leader (5.5)
   // ---------------------------------------------------------------------------------------------
 
   /**
-   * Runs the leader's demotion and each broker's self-promotion once, in node index order, and
-   * stops at the first accepted change. Each change uses the exact index of the configuration it
-   * was calculated from.
+   * Runs the rules of the leader once: decides with {@link SystemPartitionMembership#decide}, sends
+   * the fenced notices, and sends the change or transfers the leadership.
    *
-   * @return true if a change was accepted
+   * @return true if the leader made a change
    */
   boolean reconcileOnce() {
     final var leader = leader();
     if (leader.isEmpty()) {
       return false;
     }
-    final var leaderServer = leader.get().server;
-    final var leaderView = committedView(leaderServer);
-    if (leaderView.isPresent()) {
-      final var demotion = SystemPartitionMembership.demotion(leaderView.get());
-      if (demotion.isPresent()) {
-        return accepted(
-            leaderServer.reconfigure(
-                demotion.get(), leaderView.get().index(), leaderView.get().term()));
-      }
+    final var server = leader.get().server;
+    final var decision = decide(leader.get().id, server);
+    if (decision.isEmpty()) {
+      return false;
     }
-    final long leaderCommitIndex = commitIndex(leaderServer);
-    final var excluded = dynamic.excluded();
-    for (final var broker : runningBrokers()) {
-      final var server = broker.server;
-      final var view = committedView(server);
-      if (view.isEmpty()) {
-        continue;
-      }
-      final var check =
-          new SelfPromotionCheck(
-              broker.id,
-              localIncarnation(server),
-              dynamic.isInitialized(),
-              excluded.contains(broker.id),
-              server.isEmptyStartGuardActive().join(),
-              commitIndex(server),
-              leaderCommitIndex);
-      final var promotion = SystemPartitionMembership.selfPromotion(view.get(), check);
-      if (promotion.isPresent()
-          && accepted(server.reconfigure(promotion.get(), view.get().index(), view.get().term()))) {
-        return true;
-      }
+    LOG.info("Leader {} decided: {}", leader.get().id, decision.get());
+    decision.get().fencedNotices().forEach(member -> server.sendFencedNotice(member).join());
+    if (decision.get().transferLeadership()) {
+      transferLeadership(leader.get().id);
+      return false;
     }
-    return false;
+    if (decision.get().change() == null) {
+      return false;
+    }
+    try {
+      final var response = server.changeMembers(decision.get().change()).get(10, TimeUnit.SECONDS);
+      if (response.status() != Status.OK) {
+        LOG.info("Change rejected: {}", response.error());
+      }
+      return response.status() == Status.OK;
+    } catch (final Exception e) {
+      LOG.info("Change failed", e);
+      return false;
+    }
+  }
+
+  private Optional<LeaderDecision> decide(final MemberId leaderId, final RaftServer server) {
+    try {
+      final var configuration = server.getConfiguration().get(5, TimeUnit.SECONDS);
+      final var replication = server.getReplicationStatus().get(5, TimeUnit.SECONDS);
+      if (configuration == null || replication.isEmpty()) {
+        return Optional.empty();
+      }
+      final boolean committed =
+          configuration.force() || replication.get().commitIndex() >= configuration.index();
+      return Optional.of(
+          SystemPartitionMembership.decide(
+              new LeaderInput(
+                  leaderId,
+                  configuration,
+                  committed,
+                  dynamic.view(),
+                  publishedIncarnations(),
+                  replication.get(),
+                  policy,
+                  System.currentTimeMillis(),
+                  ELECTION_TIMEOUT.toMillis(),
+                  16 * 1024 * 1024)));
+    } catch (final Exception e) {
+      LOG.info("Leader {} could not decide", leaderId, e);
+      return Optional.empty();
+    }
+  }
+
+  /** The leader transfers its leadership to another voter before it is removed (R6). */
+  private void transferLeadership(final MemberId leader) {
+    final var configuration = server(leader).getConfiguration().join();
+    configuration.newMembers().stream()
+        .filter(member -> member.getType() == Type.ACTIVE)
+        .map(RaftMember::memberId)
+        .filter(member -> !member.equals(leader))
+        .filter(this::isRunning)
+        .findFirst()
+        .ifPresent(
+            target -> {
+              try {
+                server(target).anoint().get(10, TimeUnit.SECONDS);
+              } catch (final Exception e) {
+                LOG.info("Transfer of the leadership to {} failed", target, e);
+              }
+            });
+  }
+
+  /** The incarnations that the running brokers publish (5.4.4). */
+  Map<MemberId, Long> publishedIncarnations() {
+    final var published = new LinkedHashMap<MemberId, Long>();
+    runningBrokers().forEach(broker -> published.put(broker.id, broker.incarnation));
+    return published;
   }
 
   /** Calls {@link #reconcileOnce()} until the leader has the expected members and types. */
@@ -376,61 +308,42 @@ final class SystemPartitionCluster implements AutoCloseable {
   // ---------------------------------------------------------------------------------------------
 
   /**
-   * {@code MemberLeave} (5.6.2): one change that removes the leaving broker, promotes a replacement
-   * of its zone if a voter leaves, and fences it. Then the broker is LEFT and stops.
+   * {@code MemberLeave} (5.6.2): the broker is {@code LEAVING}; the leader removes it and promotes
+   * a replacement in one change. The applier waits until the leader reports a committed, non-joint
+   * configuration without the broker; it reads it from another member, because the leaving broker
+   * is fenced. Then the broker is {@code LEFT} and stops.
    */
-  SystemPartitionMembership.LeaveChange memberLeave(final MemberId member) {
-    dynamic.setState(member, MemberState.LEAVING);
-    final var leaving = brokers.get(member).server;
-    final var unavailable = new HashSet<MemberId>();
-    final var sent = new AtomicReference<SystemPartitionMembership.LeaveChange>();
-    final var change =
-        Awaitility.await("the system partition removes " + member)
-            .atMost(Duration.ofSeconds(60))
-            .until(
-                () -> {
-                  final var current = leaderView().orElse(null);
-                  if (current == null) {
-                    return null;
-                  }
-                  final var leave =
-                      SystemPartitionMembership.leaveChange(
-                          current, member, dynamic.excluded(), m -> !unavailable.contains(m));
-                  if (leave.isEmpty()) {
-                    return Optional.ofNullable(sent.get());
-                  }
-                  sent.set(leave.get());
-                  final ReconfigureResponse response;
-                  try {
-                    response =
-                        leaving
-                            .reconfigure(
-                                leave.get().target(),
-                                List.of(leave.get().fence()),
-                                null,
-                                current.index(),
-                                current.term())
-                            .get(5, TimeUnit.SECONDS);
-                  } catch (final Exception e) {
-                    // The leader fences the leaving broker when the change commits, and the
-                    // broker stops its server before the answer arrives. Step 1 of the next try
-                    // finds that the broker is not a member any more.
-                    LOG.info("No answer to the removal of {}", member, e);
-                    return null;
-                  }
-                  if (response.status() == Status.OK) {
-                    return leave;
-                  }
-                  if (leave.get().replacement() != null
-                      && response.error().message().contains("Cannot promote")) {
-                    unavailable.add(leave.get().replacement());
-                  }
-                  return null;
-                },
-                Objects::nonNull);
-    dynamic.setState(member, MemberState.LEFT);
+  void memberLeave(final MemberId member) {
+    dynamic.setState(member, BrokerState.LEAVING);
+    Awaitility.await("the system partition removes " + member)
+        .atMost(Duration.ofSeconds(60))
+        .until(
+            () -> {
+              reconcileOnce();
+              return leaderConfigurationWithout(member, Set.of(member));
+            });
+    dynamic.setState(member, BrokerState.LEFT);
     stop(member);
-    return change.orElse(null);
+  }
+
+  /**
+   * Reads the leader's configuration from a running member that is not one of {@code readers to
+   * avoid}, as the appliers of 5.6 do.
+   */
+  private boolean leaderConfigurationWithout(
+      final MemberId member, final Set<MemberId> avoidReaders) {
+    for (final var broker : runningBrokers()) {
+      if (avoidReaders.contains(broker.id)) {
+        continue;
+      }
+      try {
+        final var read = broker.server.readLeaderConfiguration().get(5, TimeUnit.SECONDS);
+        return read.isCommittedAndNotJoint() && !read.configuration().hasMember(member);
+      } catch (final Exception e) {
+        LOG.debug("{} could not read the leader's configuration", broker.id, e);
+      }
+    }
+    return false;
   }
 
   /**
@@ -438,27 +351,31 @@ final class SystemPartitionCluster implements AutoCloseable {
    * configuration marks the removed brokers LEFT (phase 2).
    */
   RecoveryDecision forceRemove(final Set<MemberId> removed) {
-    return forceRemove(removed, null);
+    return forceRemove(removed, null, false);
   }
 
-  /** Like {@link #forceRemove(Set)}, run by the given broker instead of the lowest one. */
-  RecoveryDecision forceRemove(final Set<MemberId> removed, final MemberId executor) {
+  /** Like {@link #forceRemove(Set)}, run by the given broker. */
+  RecoveryDecision forceRemove(
+      final Set<MemberId> removed, final MemberId executor, final boolean acceptPossibleLoss) {
     removed.forEach(dynamic::addPendingRemoval);
     final var decision =
         applyRecovery(
             removed,
-            reports -> SystemPartitionRecovery.removeMembers(removed, reports),
+            reports ->
+                SystemPartitionRecovery.removeMembers(removed, reports, policy, acceptPossibleLoss),
             executor,
             "phase 0 removes " + removed);
-    removed.forEach(member -> dynamic.setState(member, MemberState.LEFT));
+    if (!(decision instanceof RecoveryDecision.Rejected)) {
+      removed.forEach(member -> dynamic.setState(member, BrokerState.LEFT));
+    }
     return decision;
   }
 
   /** "Force system partition voters" (5.6.5), run by the lowest surviving broker. */
-  RecoveryDecision forceVoters(final Set<MemberId> down) {
+  RecoveryDecision forceVoters(final Set<MemberId> down, final boolean acceptPossibleLoss) {
     return applyRecovery(
         down,
-        reports -> SystemPartitionRecovery.forceVoters(down, reports),
+        reports -> SystemPartitionRecovery.forceVoters(down, reports, policy, acceptPossibleLoss),
         null,
         "force voters without " + down);
   }
@@ -481,6 +398,7 @@ final class SystemPartitionCluster implements AutoCloseable {
                           executorId != null
                               ? executorId
                               : reports.stream()
+                                  .filter(report -> report.configuration() != null)
                                   .map(MemberReport::memberId)
                                   .min(MemberId.ID_COMPARATOR)
                                   .orElseThrow())
@@ -488,14 +406,13 @@ final class SystemPartitionCluster implements AutoCloseable {
               LOG.info("{}: {}", description, decision);
               return switch (decision) {
                 case final RecoveryDecision.AlreadyDone done -> true;
-                case final RecoveryDecision.NormalChange normal ->
-                    accepted(
-                        executor.reconfigure(
-                            normal.members(),
-                            normal.fenced(),
-                            null,
-                            normal.index(),
-                            normal.term()));
+                case final RecoveryDecision.Rejected rejected -> true;
+                case final RecoveryDecision.NormalChange normal -> {
+                  // the leader removes the targets of the pending MemberRemove operations
+                  reconcileOnce();
+                  yield normal.removed().stream()
+                      .allMatch(member -> leaderConfigurationWithout(member, failed));
+                }
                 case final RecoveryDecision.ForcedChange forced ->
                     forceConfigure(executor, forced.target());
                 case final RecoveryDecision.ResendForced resend ->
@@ -522,24 +439,17 @@ final class SystemPartitionCluster implements AutoCloseable {
       if (failed.contains(broker.id)) {
         continue;
       }
-      final var server = broker.server;
-      final var configuration = server.getConfiguration().join();
-      if (configuration == null) {
-        continue;
-      }
+      final var state = broker.server.getReplicaState().join();
       reports.add(
-          onRaftThread(
-              server,
-              () -> {
-                final var log = server.getContext().getLog();
-                final var last = log.getLastEntry();
-                return new MemberReport(
-                    broker.id,
-                    configuration,
-                    last == null ? 0 : last.term(),
-                    log.getLastIndex(),
-                    server.getContext().getCommitIndex());
-              }));
+          new MemberReport(
+              broker.id,
+              state.configuration(),
+              state.incarnation(),
+              state.lastLogTerm(),
+              state.lastLogIndex(),
+              state.commitIndex(),
+              policy,
+              1));
     }
     return reports;
   }
@@ -561,6 +471,13 @@ final class SystemPartitionCluster implements AutoCloseable {
 
   RaftServer server(final MemberId member) {
     return brokers.get(member).server;
+  }
+
+  boolean isRunning(final MemberId member) {
+    final var broker = brokers.get(member);
+    // A passive member that started with its stored configuration is not READY until a leader
+    // reaches it, but its process runs and publishes its incarnation.
+    return broker != null && broker.server != null;
   }
 
   long incarnation(final MemberId member) {
@@ -617,7 +534,7 @@ final class SystemPartitionCluster implements AutoCloseable {
     protocolFactory.heal(member);
   }
 
-  /** The configuration of the broker, with the term that a reconfigure needs. */
+  /** The configuration of the broker. */
   Configuration configuration(final MemberId member) {
     return server(member).getConfiguration().orTimeout(5, TimeUnit.SECONDS).join();
   }
@@ -697,7 +614,7 @@ final class SystemPartitionCluster implements AutoCloseable {
                 RaftMember::memberId, RaftMember::getType, (a, b) -> a, LinkedHashMap::new));
   }
 
-  static Configuration configuration(final Map<MemberId, Type> members, final VoterPolicy policy) {
+  static Configuration configuration(final Map<MemberId, Type> members) {
     final var raftMembers =
         members.entrySet().stream()
             .map(
@@ -705,15 +622,7 @@ final class SystemPartitionCluster implements AutoCloseable {
                     (RaftMember)
                         new DefaultRaftMember(entry.getKey(), entry.getValue(), Instant.now()))
             .toList();
-    return new Configuration(0, 0, 1, raftMembers, List.of(), false, List.of(), policy);
-  }
-
-  private static boolean accepted(final CompletableFuture<ReconfigureResponse> future) {
-    final var response = future.orTimeout(10, TimeUnit.SECONDS).join();
-    if (response.status() != Status.OK) {
-      LOG.info("Change rejected: {}", response.error());
-    }
-    return response.status() == Status.OK;
+    return new Configuration(0, 0, 1, raftMembers, List.of(), false, List.of(), 0);
   }
 
   private Optional<Configuration> view(final RaftServer server) {
@@ -730,11 +639,6 @@ final class SystemPartitionCluster implements AutoCloseable {
         .filter(configuration -> !configuration.requiresJointConsensus())
         .filter(
             configuration -> configuration.force() || commitIndex(server) >= configuration.index());
-  }
-
-  private static long localIncarnation(final RaftServer server) {
-    return onRaftThread(
-        server, () -> server.getContext().getCluster().getLocalMember().getIncarnation());
   }
 
   private static long commitIndex(final RaftServer server) {
@@ -759,7 +663,7 @@ final class SystemPartitionCluster implements AutoCloseable {
 
   private List<Broker> runningBrokers() {
     return brokers.values().stream()
-        .filter(broker -> broker.server != null && broker.server.isRunning())
+        .filter(broker -> broker.server != null)
         .sorted(Comparator.comparing(broker -> broker.id, MemberId.ID_COMPARATOR))
         .toList();
   }
@@ -783,9 +687,9 @@ final class SystemPartitionCluster implements AutoCloseable {
   }
 
   /**
-   * Creates the server of a broker. Its priorities come from the given configuration priorities (or
-   * 0 for a broker without data), and a configuration listener recalculates them on each new
-   * configuration (5.3).
+   * Creates the server of a broker. Its priorities come from the given priorities (or 0 for a
+   * broker without data), and a configuration listener recalculates them on each new configuration
+   * (5.3). A fenced broker deletes its data and starts again without data (5.6.6).
    */
   private RaftServer createServer(
       final MemberId member, final ElectionPriorities priorities, final long incarnation) {
@@ -797,7 +701,7 @@ final class SystemPartitionCluster implements AutoCloseable {
         new RaftPartitionConfig()
             .setElectionTimeout(ELECTION_TIMEOUT)
             .setHeartbeatInterval(Duration.ofMillis(100));
-    partitionConfig.setConfigurationChangeTimeout(JOIN_TIMEOUT);
+    partitionConfig.setSystemPartition(true);
     final int target = priorities == null ? policyTotal() : priorities.targetPriority();
     final int nodePriority = priorities == null ? 0 : priorities.priorityOf(member);
     broker.nodePriority = nodePriority;
@@ -811,21 +715,19 @@ final class SystemPartitionCluster implements AutoCloseable {
             .withElectionConfig(RaftElectionConfig.ofPriorityElection(target, nodePriority))
             .withMeterRegistry(meterRegistry)
             .build();
-    server.setJoinAdmission(dynamic::admit);
     server.addFencedListener(
         fencedIncarnation -> {
           broker.fencedNotices.add(fencedIncarnation);
-          // The broker deletes its data and joins again (5.6.6), off the Raft thread
           background.execute(
               () -> {
                 if (broker.server == server && !closed) {
-                  startJoin(member, 0);
+                  startWithoutData(member);
                 }
               });
         });
     server.addConfigurationListener(
         (configuration, committed) -> {
-          final var updated = SystemPartitionMembership.priorities(configuration);
+          final var updated = SystemPartitionMembership.priorities(configuration, policy);
           if (broker.nodePriority != updated.priorityOf(member)) {
             broker.nodePriority = updated.priorityOf(member);
             server.reconfigurePriority(broker.nodePriority);
@@ -873,15 +775,6 @@ final class SystemPartitionCluster implements AutoCloseable {
     meterRegistry.close();
   }
 
-  record Probe(List<MemberId> members, long term) {}
-
-  enum MemberState {
-    JOINING,
-    ACTIVE,
-    LEAVING,
-    LEFT
-  }
-
   static final class Broker {
     final MemberId id;
     final List<Long> fencedNotices = new CopyOnWriteArrayList<>();
@@ -889,7 +782,6 @@ final class SystemPartitionCluster implements AutoCloseable {
     volatile long incarnation;
     volatile int nodePriority;
     volatile int targetPriority;
-    volatile CompletableFuture<Void> joined = CompletableFuture.completedFuture(null);
 
     Broker(final MemberId id) {
       this.id = id;
@@ -898,26 +790,37 @@ final class SystemPartitionCluster implements AutoCloseable {
 
   /**
    * Stand-in of the dynamic configuration: the state of each cluster member and the targets of
-   * pending removals. It is shared by all brokers, i.e. every broker has the same, current view.
+   * pending operations. The leader reads it as its view (5.5).
    */
   static final class DynamicConfiguration {
-    private final Map<MemberId, MemberState> states = new ConcurrentHashMap<>();
-    private final Set<MemberId> pendingRemovals = ConcurrentHashMap.newKeySet();
-    private final Set<MemberId> staleViews = ConcurrentHashMap.newKeySet();
-    private final Map<MemberId, AtomicLong> refusals = new ConcurrentHashMap<>();
+    private final Map<MemberId, BrokerState> states = new ConcurrentHashMap<>();
+    private final Set<MemberId> pendingJoins = ConcurrentHashMap.newKeySet();
+    private final Set<MemberId> pendingRemoves = ConcurrentHashMap.newKeySet();
     private final AtomicLong version = new AtomicLong();
     private volatile boolean initialized = true;
 
-    void setState(final MemberId member, final MemberState state) {
+    void setState(final MemberId member, final BrokerState state) {
       states.put(member, state);
-      if (state == MemberState.LEFT || state == MemberState.JOINING) {
-        pendingRemovals.remove(member);
+      if (state != BrokerState.JOINING) {
+        pendingJoins.remove(member);
+      }
+      if (state == BrokerState.LEFT || state == BrokerState.JOINING) {
+        pendingRemoves.remove(member);
+      }
+      if (state == BrokerState.LEFT) {
+        // a completed plan removes LEFT brokers
+        states.remove(member);
       }
       version.incrementAndGet();
     }
 
+    void addPendingJoin(final MemberId member) {
+      pendingJoins.add(member);
+      version.incrementAndGet();
+    }
+
     void addPendingRemoval(final MemberId member) {
-      pendingRemovals.add(member);
+      pendingRemoves.add(member);
       version.incrementAndGet();
     }
 
@@ -925,65 +828,20 @@ final class SystemPartitionCluster implements AutoCloseable {
       this.initialized = initialized;
     }
 
-    boolean isInitialized() {
-      return initialized;
+    ClusterView view() {
+      if (!initialized) {
+        return ClusterView.notInitialized();
+      }
+      return new ClusterView(
+          true, version.get(), Map.copyOf(states), pendingJoins, Set.of(), pendingRemoves);
     }
 
-    long version() {
-      return version.get();
-    }
-
-    MemberState state(final MemberId member) {
+    BrokerState state(final MemberId member) {
       return states.get(member);
     }
 
-    /** 5.2: brokers that are not JOINING or ACTIVE, and targets of pending removals. */
-    Set<MemberId> excluded() {
-      final var excluded = new HashSet<>(pendingRemovals);
-      states.forEach(
-          (member, state) -> {
-            if (state != MemberState.JOINING && state != MemberState.ACTIVE) {
-              excluded.add(member);
-            }
-          });
-      return excluded;
-    }
-
-    /**
-     * The local view of the broker still shows it as a member, e.g. because it was down while it
-     * was removed (4.2): it asks to join, and only the leader's admission refuses it.
-     */
-    void setStaleView(final MemberId member, final boolean stale) {
-      if (stale) {
-        staleViews.add(member);
-      } else {
-        staleViews.remove(member);
-      }
-    }
-
-    /** 5.4.4, steps 1 and 2 of the broker. */
-    boolean mayAskToJoin(final MemberId member) {
-      return staleViews.contains(member)
-          || (initialized && !excluded().contains(member) && states.containsKey(member));
-    }
-
-    /** The number of joins of the member that the leader's admission refused. */
-    long refusals(final MemberId member) {
-      return refusals.computeIfAbsent(member, m -> new AtomicLong()).get();
-    }
-
-    /** The leader's admission hook (5.4.4). */
-    JoinAdmission.Decision admit(final MemberId member, final long joinerVersion) {
-      if (!initialized || joinerVersion > version.get()) {
-        return JoinAdmission.Decision.NOT_READY;
-      }
-      final var state = states.get(member);
-      if ((state != MemberState.JOINING && state != MemberState.ACTIVE)
-          || pendingRemovals.contains(member)) {
-        refusals.computeIfAbsent(member, m -> new AtomicLong()).incrementAndGet();
-        return JoinAdmission.Decision.NOT_A_MEMBER;
-      }
-      return JoinAdmission.Decision.ADMIT;
+    Set<MemberId> members() {
+      return new HashSet<>(states.keySet());
     }
   }
 }

@@ -10,6 +10,7 @@ package io.atomix.raft.partition;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -17,7 +18,6 @@ import static org.mockito.Mockito.verify;
 
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.atomix.raft.JoinOptions;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.cluster.PartitionId;
@@ -48,27 +48,25 @@ final class RaftPartitionJoinTest {
   }
 
   @Test
-  void shouldRejectJoinWhileServerRuns(@TempDir final Path tempDir) throws IllegalAccessException {
+  void shouldRejectStartWithoutConfigurationWhileServerRuns(@TempDir final Path tempDir)
+      throws IllegalAccessException {
     // given
     final var running = mock(RaftPartitionServer.class);
     final var partition = partitionWithRunningServer(tempDir, running);
 
     // when
     final var join =
-        partition.join(
-            Type.PASSIVE,
-            mock(PartitionManagementService.class),
-            mock(ReceivableSnapshotStore.class),
-            JoinOptions.withIncarnation(7));
+        partition.startWithoutConfiguration(
+            mock(PartitionManagementService.class), mock(ReceivableSnapshotStore.class), 7);
 
-    // then - the running server is neither replaced nor joined again
+    // then - the running server is neither replaced nor started again
     assertThat(join)
         .failsWithin(java.time.Duration.ofSeconds(5))
         .withThrowableThat()
         .withRootCauseInstanceOf(IllegalStateException.class)
         .withMessageContaining("still running");
     assertThat(FieldUtils.readField(partition, "server", true)).isSameAs(running);
-    verify(running, never()).join(any(), any(JoinOptions.class));
+    verify(running, never()).startWithoutConfiguration(anyLong());
     verify(running, never()).join(any());
   }
 
@@ -92,7 +90,7 @@ final class RaftPartitionJoinTest {
   }
 
   @Test
-  void shouldNotRejectJoinAfterServerIsClosed(@TempDir final Path tempDir)
+  void shouldNotRejectStartWithoutConfigurationAfterServerIsClosed(@TempDir final Path tempDir)
       throws IllegalAccessException {
     // given
     final var closed = mock(RaftPartitionServer.class);
@@ -105,11 +103,8 @@ final class RaftPartitionJoinTest {
     catchThrowable(
         () ->
             partition
-                .join(
-                    Type.PASSIVE,
-                    managementService,
-                    mock(ReceivableSnapshotStore.class),
-                    JoinOptions.withIncarnation(7))
+                .startWithoutConfiguration(
+                    managementService, mock(ReceivableSnapshotStore.class), 7)
                 .join());
 
     // then - the guard did not reject the join: the partition started to create a new server

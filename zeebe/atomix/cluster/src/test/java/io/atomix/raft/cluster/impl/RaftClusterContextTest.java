@@ -419,7 +419,7 @@ final class RaftClusterContextTest {
     context.getMemberContext(new MemberId("5")).setMatchIndex(5);
 
     // then
-    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(4L);
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex, 0L)).hasValue(4L);
   }
 
   @ParameterizedTest
@@ -447,7 +447,7 @@ final class RaftClusterContextTest {
     context.getMemberContext(nonActiveMember.memberId()).setMatchIndex(5);
 
     // then
-    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(3L);
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex, 0L)).hasValue(3L);
   }
 
   @Test
@@ -468,7 +468,7 @@ final class RaftClusterContextTest {
     context.getMemberContext(activeMember2.memberId()).setMatchIndex(3);
 
     // then
-    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(2L);
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex, 0L)).hasValue(2L);
   }
 
   @Test
@@ -497,7 +497,7 @@ final class RaftClusterContextTest {
     context.getMemberContext(newActiveMember.memberId()).setMatchIndex(2);
 
     // then
-    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(2L);
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex, 0L)).hasValue(2L);
   }
 
   @Test
@@ -529,7 +529,7 @@ final class RaftClusterContextTest {
     context.getMemberContext(newActiveMember2.memberId()).setMatchIndex(3);
 
     // then
-    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(3L);
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex, 0L)).hasValue(3L);
   }
 
   @Test
@@ -552,7 +552,7 @@ final class RaftClusterContextTest {
     context.getMemberContext(new MemberId("3")).setMatchIndex(3);
 
     // then
-    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(2L);
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex, 0L)).hasValue(2L);
   }
 
   @Test
@@ -588,7 +588,7 @@ final class RaftClusterContextTest {
     }
 
     // then
-    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(2L);
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex, 0L)).hasValue(2L);
   }
 
   @Test
@@ -624,7 +624,7 @@ final class RaftClusterContextTest {
     }
 
     // then
-    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(2L);
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex, 0L)).hasValue(2L);
   }
 
   @Test
@@ -652,7 +652,7 @@ final class RaftClusterContextTest {
     }
 
     // then
-    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(5L);
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex, 0L)).hasValue(5L);
   }
 
   @Test
@@ -680,7 +680,7 @@ final class RaftClusterContextTest {
     }
 
     // then
-    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(5L);
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex, 0L)).hasValue(5L);
   }
 
   @Test

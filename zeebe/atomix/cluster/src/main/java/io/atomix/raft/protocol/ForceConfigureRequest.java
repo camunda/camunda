@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.cluster.VoterPolicy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -47,7 +46,7 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
 
   // Absent (null) in requests of members that predate fencing and voter policies.
   private final @Nullable Collection<FenceEntry> fenced;
-  private final @Nullable VoterPolicy voterPolicy;
+  private final long membershipVersion;
 
   public ForceConfigureRequest(
       final long term,
@@ -55,7 +54,7 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
       final long timestamp,
       final Set<RaftMember> newMembers,
       final String from) {
-    this(term, index, timestamp, newMembers, from, null, null);
+    this(term, index, timestamp, newMembers, from, null, 0);
   }
 
   public ForceConfigureRequest(
@@ -65,14 +64,14 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
       final Set<RaftMember> newMembers,
       final String from,
       final @Nullable Collection<FenceEntry> fenced,
-      final @Nullable VoterPolicy voterPolicy) {
+      final long membershipVersion) {
     this.term = term;
     this.index = index;
     this.timestamp = timestamp;
     members = newMembers;
     this.from = from;
     this.fenced = fenced;
-    this.voterPolicy = voterPolicy;
+    this.membershipVersion = membershipVersion;
   }
 
   /**
@@ -83,10 +82,11 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
   }
 
   /**
-   * @return the voter policy of the configuration, or null if it has none
+   * @return the membership version of the configuration, see {@link
+   *     io.atomix.raft.storage.system.Configuration#membershipVersion()}
    */
-  public @Nullable VoterPolicy voterPolicy() {
-    return voterPolicy;
+  public long membershipVersion() {
+    return membershipVersion;
   }
 
   @Override
@@ -126,8 +126,8 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
         + '\''
         + ", fenced="
         + fenced
-        + ", voterPolicy="
-        + voterPolicy
+        + ", membershipVersion="
+        + membershipVersion
         + '}';
   }
 
@@ -191,7 +191,7 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
     private String from;
 
     private @Nullable Collection<FenceEntry> fenced;
-    private @Nullable VoterPolicy voterPolicy;
+    private long membershipVersion;
 
     public Builder withFenced(final Collection<FenceEntry> fenced) {
       // Beware that immutable collections cannot be serialized by Kryo
@@ -199,8 +199,8 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
       return this;
     }
 
-    public Builder withVoterPolicy(final @Nullable VoterPolicy voterPolicy) {
-      this.voterPolicy = voterPolicy;
+    public Builder withMembershipVersion(final long membershipVersion) {
+      this.membershipVersion = membershipVersion;
       return this;
     }
 
@@ -265,7 +265,7 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
     public ForceConfigureRequest build() {
       validate();
       return new ForceConfigureRequest(
-          term, index, timestamp, newMembers, from, fenced, voterPolicy);
+          term, index, timestamp, newMembers, from, fenced, membershipVersion);
     }
 
     @Override

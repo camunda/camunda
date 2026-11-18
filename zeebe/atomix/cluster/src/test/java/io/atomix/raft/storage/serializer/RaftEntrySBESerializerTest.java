@@ -21,8 +21,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
-import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
@@ -213,7 +211,7 @@ public class RaftEntrySBESerializerTest {
   }
 
   @Test
-  public void shouldWriteConfigurationEntryWithIncarnationsFenceListAndVoterPolicy() {
+  public void shouldWriteConfigurationEntryWithIncarnationsFenceListAndMembershipVersion() {
     // given
     final List<RaftMember> members =
         List.of(
@@ -223,11 +221,7 @@ public class RaftEntrySBESerializerTest {
                 MemberId.from("b_2"), Type.PASSIVE, Instant.ofEpochMilli(123457L), 1234567L));
     final ConfigurationEntry configurationEntryWritten =
         new ConfigurationEntry(
-            1234L,
-            members,
-            List.of(),
-            List.of(new FenceEntry(MemberId.from("b_2"), 99L)),
-            VoterPolicy.of(new ZoneVoters("a", 2), new ZoneVoters("b", 0)));
+            1234L, members, List.of(), List.of(new FenceEntry(MemberId.from("b_2"), 99L)), 17L);
 
     // when
     final int writtenBytes =
@@ -242,8 +236,7 @@ public class RaftEntrySBESerializerTest {
         .extracting(RaftMember::getIncarnation)
         .containsExactly(0L, 1234567L);
     assertThat(configurationEntryRead.fenced()).isEqualTo(configurationEntryWritten.fenced());
-    assertThat(configurationEntryRead.voterPolicy())
-        .isEqualTo(configurationEntryWritten.voterPolicy());
+    assertThat(configurationEntryRead.membershipVersion()).isEqualTo(17L);
   }
 
   @Test

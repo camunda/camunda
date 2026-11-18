@@ -23,7 +23,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.raft.cluster.VoterPolicy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -52,12 +51,19 @@ public class ReconfigureRequest extends AbstractRaftRequest {
   /** Fence entries to add to the configuration; null or empty to add none. */
   private final @Nullable Collection<FenceEntry> fenced;
 
-  /** The voter policy of the target configuration; null to keep the current policy. */
-  private final @Nullable VoterPolicy voterPolicy;
+  /** The membership version of the target configuration. */
+  private final long membershipVersion;
+
+  /**
+   * True if the request only reads the leader's configuration and changes nothing, see {@link
+   * io.atomix.raft.RaftServer#readLeaderConfiguration()}. Absent (false) in requests of members
+   * that predate this field.
+   */
+  private final boolean readOnly;
 
   public ReconfigureRequest(
       final Collection<RaftMember> members, final long index, final long term, final String from) {
-    this(members, index, term, from, false, null, null);
+    this(members, index, term, from, false, null, 0, false);
   }
 
   public ReconfigureRequest(
@@ -67,14 +73,20 @@ public class ReconfigureRequest extends AbstractRaftRequest {
       final String from,
       final boolean exactIndex,
       final @Nullable Collection<FenceEntry> fenced,
-      final @Nullable VoterPolicy voterPolicy) {
+      final long membershipVersion,
+      final boolean readOnly) {
     this.members = members;
     this.index = index;
     this.term = term;
     this.from = from;
     this.exactIndex = exactIndex;
     this.fenced = fenced;
-    this.voterPolicy = voterPolicy;
+    this.membershipVersion = membershipVersion;
+    this.readOnly = readOnly;
+  }
+
+  public boolean readOnly() {
+    return readOnly;
   }
 
   public boolean exactIndex() {
@@ -89,10 +101,11 @@ public class ReconfigureRequest extends AbstractRaftRequest {
   }
 
   /**
-   * @return the voter policy of the target configuration, or null to keep the current one
+   * @return the membership version of the configuration, see {@link
+   *     io.atomix.raft.storage.system.Configuration#membershipVersion()}
    */
-  public @Nullable VoterPolicy voterPolicy() {
-    return voterPolicy;
+  public long membershipVersion() {
+    return membershipVersion;
   }
 
   /**
@@ -152,7 +165,8 @@ public class ReconfigureRequest extends AbstractRaftRequest {
         .add("members", members)
         .add("exactIndex", exactIndex)
         .add("fenced", fenced)
-        .add("voterPolicy", voterPolicy)
+        .add("membershipVersion", membershipVersion)
+        .add("readOnly", readOnly)
         .toString();
   }
 
@@ -166,7 +180,12 @@ public class ReconfigureRequest extends AbstractRaftRequest {
 
     private boolean exactIndex;
     private @Nullable Collection<FenceEntry> fenced;
-    private @Nullable VoterPolicy voterPolicy;
+    private long membershipVersion;
+    private boolean readOnly;
+    private Set<RaftMember> members;
+    private long index = -1;
+    private long term = -1;
+    private String from;
 
     /** Fence entries to add to the configuration, see {@link FenceEntry}. */
     public Builder withFenced(final Collection<FenceEntry> fenced) {
@@ -175,9 +194,15 @@ public class ReconfigureRequest extends AbstractRaftRequest {
       return this;
     }
 
-    /** The voter policy of the target configuration; null keeps the current one. */
-    public Builder withVoterPolicy(final @Nullable VoterPolicy voterPolicy) {
-      this.voterPolicy = voterPolicy;
+    /** Only reads the leader's configuration, see {@link ReconfigureRequest#readOnly()}. */
+    public Builder withReadOnly(final boolean readOnly) {
+      this.readOnly = readOnly;
+      return this;
+    }
+
+    /** The membership version of the target configuration. */
+    public Builder withMembershipVersion(final long membershipVersion) {
+      this.membershipVersion = membershipVersion;
       return this;
     }
 
@@ -189,12 +214,6 @@ public class ReconfigureRequest extends AbstractRaftRequest {
       this.exactIndex = exactIndex;
       return this;
     }
-
-    private Set<RaftMember> members;
-    private long index = -1;
-    private long term = -1;
-
-    private String from;
 
     /**
      * Sets the request members.
@@ -261,7 +280,8 @@ public class ReconfigureRequest extends AbstractRaftRequest {
     @Override
     public ReconfigureRequest build() {
       validate();
-      return new ReconfigureRequest(members, index, term, from, exactIndex, fenced, voterPolicy);
+      return new ReconfigureRequest(
+          members, index, term, from, exactIndex, fenced, membershipVersion, readOnly);
     }
 
     @Override

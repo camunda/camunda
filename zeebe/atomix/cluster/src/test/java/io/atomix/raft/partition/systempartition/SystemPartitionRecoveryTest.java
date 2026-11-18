@@ -24,16 +24,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
-import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
-import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.MemberReport;
-import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.RecoveryDecision;
 import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.RecoveryDecision.AlreadyDone;
 import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.RecoveryDecision.ForcedChange;
 import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.RecoveryDecision.NormalChange;
+import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.RecoveryDecision.Rejected;
 import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.RecoveryDecision.ResendForced;
+import io.atomix.raft.partition.systempartition.SystemPartitionRecovery.RejectionReason;
+import io.atomix.raft.partition.systempartition.VoterPolicy.ZoneVoters;
 import io.atomix.raft.storage.system.Configuration;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -59,10 +58,24 @@ final class SystemPartitionRecoveryTest {
   private static final VoterPolicy DUAL_REGION =
       VoterPolicy.of(new ZoneVoters("a", 2), new ZoneVoters("b", 2));
 
-  private static Configuration configuration(
-      final long index, final Map<MemberId, Type> members, final VoterPolicy policy) {
+  private static Configuration configuration(final long index, final Map<MemberId, Type> members) {
     return new Configuration(
-        index, 3, 1, raftMembers(members, Map.of()), List.of(), false, List.of(), policy);
+        index, 3, 1, raftMembers(members, Map.of()), List.of(), false, List.of(), 4);
+  }
+
+  private static Configuration joint(
+      final long index,
+      final Map<MemberId, Type> oldMembers,
+      final Map<MemberId, Type> newMembers) {
+    return new Configuration(
+        index,
+        3,
+        1,
+        raftMembers(newMembers, Map.of()),
+        raftMembers(oldMembers, Map.of()),
+        false,
+        List.of(),
+        4);
   }
 
   private static Map<MemberId, Type> dualRegion() {
@@ -78,11 +91,27 @@ final class SystemPartitionRecoveryTest {
 
   private static MemberReport report(
       final MemberId member, final Configuration configuration, final long lastLogIndex) {
-    return new MemberReport(member, configuration, 3, lastLogIndex, lastLogIndex);
+    return report(member, configuration, 3, lastLogIndex, 0);
+  }
+
+  private static MemberReport report(
+      final MemberId member,
+      final Configuration configuration,
+      final long lastLogTerm,
+      final long lastLogIndex,
+      final long incarnation) {
+    return new MemberReport(
+        member, configuration, incarnation, lastLogTerm, lastLogIndex, lastLogIndex, null, 0);
   }
 
   private static List<FenceEntry> fenced(final MemberId... members) {
     return Arrays.stream(members).map(member -> new FenceEntry(member, 0)).toList();
+  }
+
+  private static Map<MemberId, Type> types(final Configuration configuration) {
+    final var types = new LinkedHashMap<MemberId, Type>();
+    configuration.newMembers().forEach(member -> types.put(member.memberId(), member.getType()));
+    return types;
   }
 
   @Nested
@@ -91,200 +120,278 @@ final class SystemPartitionRecoveryTest {
     @Test
     void shouldUseNormalChangeIfRemainingVotersAreQuorum() {
       // given - 2.5 regions, zone a fails
-      final var configuration = configuration(7, twoAndAHalfRegions(), POLICY);
+      final var configuration = configuration(7, twoAndAHalfRegions());
       final var reports =
           List.of(
               report(C1, configuration, 20), report(B1, configuration, 20),
               report(B2, configuration, 20), report(B3, configuration, 18));
 
       // when
-      final var decision = SystemPartitionRecovery.removeMembers(Set.of(A1, A2, A3), reports);
+      final var decision =
+          SystemPartitionRecovery.removeMembers(Set.of(A1, A2, A3), reports, POLICY, false);
 
-      // then
-      assertThat(decision)
-          .isEqualTo(
-              new NormalChange(
-                  members(C1, ACTIVE, B1, ACTIVE, B2, ACTIVE, B3, PASSIVE),
-                  fenced(A1, A2, A3),
-                  7,
-                  3));
+      // then - the leader removes them; the executor waits for it
+      assertThat(decision).isEqualTo(new NormalChange(configuration, Set.of(A1, A2, A3)));
     }
 
     @Test
     void shouldUseHighestConfiguration() {
       // given - B3 missed the last change, which added B4
-      final var old = configuration(5, twoAndAHalfRegions(), POLICY);
+      final var old = configuration(5, twoAndAHalfRegions());
       final var withB4 = new LinkedHashMap<>(twoAndAHalfRegions());
       withB4.put(B4, PASSIVE);
-      final var current = configuration(7, withB4, POLICY);
+      final var current = configuration(7, withB4);
 
       // when
       final var decision =
           SystemPartitionRecovery.removeMembers(
               Set.of(A1, A2, A3),
-              List.of(report(B3, old, 10), report(C1, current, 20), report(B1, current, 20)));
+              List.of(report(B3, old, 10), report(C1, current, 20), report(B1, current, 20)),
+              POLICY,
+              false);
 
       // then
       assertThat(decision).isInstanceOf(NormalChange.class);
-      final var normal = (NormalChange) decision;
-      assertThat(normal.index()).isEqualTo(7);
-      assertThat(normal.members()).containsEntry(B4, PASSIVE);
+      assertThat(((NormalChange) decision).configuration().index()).isEqualTo(7);
     }
 
     @Test
-    void shouldForceMembersWithMostRecentLogIfRemainingVotersAreNoQuorum() {
-      // given - dual region, zone b fails
-      final var configuration = configuration(4, dualRegion(), DUAL_REGION);
+    void shouldForceSurvivingZoneWithoutLossWhenSurvivorsAreBlockingSet() {
+      // given - dual region, zone b fails; A1 and A2 are 2 of 4 voters, quorum 3 (5.10.1)
+      final var configuration = configuration(7, dualRegion());
       final var reports =
           List.of(
-              report(A1, configuration, 30), report(A2, configuration, 30),
-              report(A3, configuration, 29), report(A4, configuration, 28));
+              report(A1, configuration, 20),
+              report(A2, configuration, 20),
+              report(A3, configuration, 20),
+              report(A4, configuration, 19));
 
       // when
-      final var decision = SystemPartitionRecovery.removeMembers(Set.of(B1, B2, B3, B4), reports);
+      final var decision =
+          SystemPartitionRecovery.removeMembers(
+              Set.of(B1, B2, B3, B4), reports, DUAL_REGION, false);
+
+      // then - the policy limits the voters of zone a to A1 and A2
+      assertThat(decision).isInstanceOf(ForcedChange.class);
+      final var forced = (ForcedChange) decision;
+      assertThat(forced.completeness().complete()).isTrue();
+      assertThat(types(forced.target()))
+          .containsExactlyInAnyOrderEntriesOf(
+              members(A1, ACTIVE, A2, ACTIVE, A3, PASSIVE, A4, PASSIVE));
+      assertThat(forced.fenced()).containsExactlyInAnyOrderElementsOf(fenced(B1, B2, B3, B4));
+      assertThat(forced.target().force()).isTrue();
+      assertThat(forced.target().membershipVersion()).isEqualTo(4);
+    }
+
+    @Test
+    void shouldRejectForcedChangeIfSurvivorsAreNotBlockingSet() {
+      // given - only A1 of the voters answers, and only A3 has the most recent log (5.10.1)
+      final var configuration = configuration(7, dualRegion());
+      final var reports =
+          List.of(
+              report(A1, configuration, 18),
+              report(A3, configuration, 20),
+              report(A4, configuration, 19));
+
+      // when
+      final var decision =
+          SystemPartitionRecovery.removeMembers(
+              Set.of(B1, B2, B3, B4), reports, DUAL_REGION, false);
 
       // then
-      assertThat(decision).isInstanceOf(ForcedChange.class);
-      assertThat(((ForcedChange) decision).members())
-          .isEqualTo(members(A1, ACTIVE, A2, ACTIVE, A3, PASSIVE, A4, PASSIVE));
-      assertThat(((ForcedChange) decision).fenced())
-          .containsExactlyInAnyOrderElementsOf(fenced(B1, B2, B3, B4));
+      assertThat(decision).isInstanceOf(Rejected.class);
+      final var rejected = (Rejected) decision;
+      assertThat(rejected.reason()).isEqualTo(RejectionReason.METADATA_COMPLETENESS_UNKNOWN);
+      assertThat(rejected.completeness().answered()).containsExactly(A1);
+      assertThat(rejected.completeness().missing()).containsExactlyInAnyOrder(A2, B1, B2);
     }
 
     @Test
-    void shouldBuildForcedTargetFromHighestReport() {
-      // given - A4 lags: it missed the rejoin of A3 with incarnation 7 and the fence of X1
-      final var old = configuration(3, dualRegion(), DUAL_REGION);
-      final var current =
-          new Configuration(
-              4,
-              3,
-              1,
-              raftMembers(dualRegion(), Map.of(A3, 7L)),
-              List.of(),
-              false,
-              List.of(new FenceEntry(X1, 2)),
-              DUAL_REGION);
+    void shouldForceMemberWithMostRecentLogAndFenceDemotedVotersWhenLossIsAccepted() {
+      // given - as before, with acceptPossibleLoss
+      final var configuration = configuration(7, dualRegion());
       final var reports =
           List.of(
-              report(A1, current, 30),
-              report(A2, current, 30),
-              report(A3, current, 30),
-              report(A4, old, 28));
+              report(A1, configuration, 18),
+              report(A3, configuration, 20),
+              report(A4, configuration, 19));
 
       // when
-      final var decision = SystemPartitionRecovery.removeMembers(Set.of(B1, B2, B3, B4), reports);
+      final var decision =
+          SystemPartitionRecovery.removeMembers(Set.of(B1, B2, B3, B4), reports, DUAL_REGION, true);
 
-      // then - the target has the incarnations, fence list and policy of the highest report
+      // then - A1 and A2 were voters and are not voters any more: they are fenced too (item 6)
       assertThat(decision).isInstanceOf(ForcedChange.class);
-      final var target = ((ForcedChange) decision).target();
-      assertThat(target.force()).isTrue();
-      assertThat(target.voterPolicy()).isEqualTo(DUAL_REGION);
-      assertThat(target.newMembers())
-          .filteredOn(member -> member.memberId().equals(A3))
-          .extracting(RaftMember::getIncarnation)
-          .containsExactly(7L);
-      assertThat(target.fenced())
-          .containsExactlyInAnyOrder(
-              new FenceEntry(X1, 2),
-              new FenceEntry(B1, 0),
-              new FenceEntry(B2, 0),
-              new FenceEntry(B3, 0),
-              new FenceEntry(B4, 0));
+      final var forced = (ForcedChange) decision;
+      assertThat(forced.completeness().complete()).isFalse();
+      assertThat(types(forced.target()))
+          .containsExactlyInAnyOrderEntriesOf(
+              members(A3, ACTIVE, A1, PASSIVE, A2, PASSIVE, A4, PASSIVE));
+      assertThat(forced.fenced())
+          .containsExactlyInAnyOrderElementsOf(fenced(B1, B2, B3, B4, A1, A2));
     }
 
     @Test
-    void shouldForceOnlyPassiveMemberWithMostRecentLog() {
-      // given - only A3 has the most recent log
-      final var configuration = configuration(4, dualRegion(), DUAL_REGION);
-      final var reports =
-          List.of(
-              report(A1, configuration, 29), report(A2, configuration, 29),
-              report(A3, configuration, 30), report(A4, configuration, 28));
+    void shouldNotCountMemberThatAnswersWithAnotherIncarnation() {
+      // given - A2 lost its disk and answers with incarnation 22
+      final var configuration = configuration(7, dualRegion());
+      final var reports = List.of(report(A1, configuration, 20), report(A2, null, 0, 0, 22));
 
       // when
-      final var decision = SystemPartitionRecovery.removeMembers(Set.of(B1, B2, B3, B4), reports);
+      final var decision =
+          SystemPartitionRecovery.removeMembers(
+              Set.of(B1, B2, B3, B4), reports, DUAL_REGION, false);
 
-      // then
-      assertThat(((ForcedChange) decision).members())
-          .isEqualTo(members(A3, ACTIVE, A1, PASSIVE, A2, PASSIVE, A4, PASSIVE));
+      // then - R has only A1, which is not a blocking set of 4 voters
+      assertThat(decision).isInstanceOf(Rejected.class);
+      assertThat(((Rejected) decision).completeness().missing()).contains(A2);
+    }
+
+    @Test
+    void shouldNeedQuorumInBothSetsOfJointConfiguration() {
+      // given - a joint change replaces B2 by B3; B1 and B2 fail
+      final var oldMembers = dualRegion();
+      final var newMembers = new LinkedHashMap<>(dualRegion());
+      newMembers.put(B2, PASSIVE);
+      newMembers.put(B3, ACTIVE);
+      final var configuration = joint(7, oldMembers, newMembers);
+      final var reports =
+          List.of(
+              report(A1, configuration, 20),
+              report(A2, configuration, 20),
+              report(B3, configuration, 20));
+
+      // when - the new set {A1, A2, B1, B3} keeps 3 of 4, the old set {A1, A2, B1, B2} only 2
+      final var decision =
+          SystemPartitionRecovery.removeMembers(Set.of(B1, B2), reports, DUAL_REGION, false);
+
+      // then - a forced change; R = {A1, A2, B3} is a blocking set of both sets
+      assertThat(decision).isInstanceOf(ForcedChange.class);
+      final var forced = (ForcedChange) decision;
+      assertThat(forced.completeness().complete()).isTrue();
+      assertThat(forced.completeness().voterSets()).hasSize(2);
+      assertThat(types(forced.target()))
+          .containsEntry(A1, ACTIVE)
+          .containsEntry(A2, ACTIVE)
+          .containsEntry(B3, ACTIVE)
+          .doesNotContainKeys(B1, B2);
+      assertThat(forced.fenced()).containsExactlyInAnyOrderElementsOf(fenced(B1, B2));
+    }
+
+    @Test
+    void shouldFenceVotersOfBothSetsThatAreNotVotersOfForcedConfiguration() {
+      // given - a joint change replaces B2 by B3; zone b fails except B3, which lags
+      final var oldMembers = dualRegion();
+      final var newMembers = new LinkedHashMap<>(dualRegion());
+      newMembers.put(B2, PASSIVE);
+      newMembers.put(B3, ACTIVE);
+      final var configuration = joint(7, oldMembers, newMembers);
+      final var reports =
+          List.of(
+              report(A1, configuration, 20),
+              report(A2, configuration, 20),
+              report(B3, configuration, 15));
+
+      // when
+      final var decision =
+          SystemPartitionRecovery.removeMembers(Set.of(B1, B2), reports, DUAL_REGION, false);
+
+      // then - B3 is a voter of the new set without the most recent log: it is fenced
+      final var forced = (ForcedChange) decision;
+      assertThat(types(forced.target())).containsEntry(B3, PASSIVE);
+      assertThat(forced.fenced()).containsExactlyInAnyOrderElementsOf(fenced(B1, B2, B3));
     }
 
     @Test
     void shouldCompareLastTermBeforeLastIndex() {
-      // given - A2 has a shorter log with a higher last term
-      final var configuration = configuration(4, dualRegion(), DUAL_REGION);
+      // given - A2 has fewer entries, but of a higher term
+      final var configuration = configuration(7, dualRegion());
       final var reports =
-          List.of(
-              new MemberReport(A1, configuration, 3, 40, 30),
-              new MemberReport(A2, configuration, 4, 35, 30));
+          List.of(report(A1, configuration, 3, 30, 0), report(A2, configuration, 4, 20, 0));
 
       // when
-      final var decision = SystemPartitionRecovery.removeMembers(Set.of(B1, B2, B3, B4), reports);
+      final var decision =
+          SystemPartitionRecovery.removeMembers(
+              Set.of(B1, B2, B3, B4), reports, DUAL_REGION, false);
 
       // then
-      assertThat(((ForcedChange) decision).members())
-          .containsEntry(A2, ACTIVE)
-          .containsEntry(A1, PASSIVE);
-    }
-
-    @Test
-    void shouldLimitForcedVotersToSlotsOfZone() {
-      // given - all of zone a has the most recent log
-      final var configuration = configuration(4, dualRegion(), DUAL_REGION);
-      final var reports =
-          List.of(
-              report(A4, configuration, 30), report(A3, configuration, 30),
-              report(A2, configuration, 30), report(A1, configuration, 30));
-
-      // when
-      final var decision = SystemPartitionRecovery.removeMembers(Set.of(B1, B2, B3, B4), reports);
-
-      // then
-      assertThat(((ForcedChange) decision).members())
-          .isEqualTo(members(A1, ACTIVE, A2, ACTIVE, A3, PASSIVE, A4, PASSIVE));
+      final var forced = (ForcedChange) decision;
+      assertThat(types(forced.target())).containsEntry(A2, ACTIVE).containsEntry(A1, PASSIVE);
     }
 
     @Test
     void shouldForceMemberOutsidePolicyIfOnlyItHasMostRecentLog() {
-      // given
-      final var members = new LinkedHashMap<>(dualRegion());
-      members.put(X1, PASSIVE);
-      final var configuration = configuration(4, members, DUAL_REGION);
+      // given - X1 is in a zone without slots
+      final var membersWithX1 = new LinkedHashMap<>(dualRegion());
+      membersWithX1.put(X1, PASSIVE);
+      final var configuration = configuration(7, membersWithX1);
       final var reports =
           List.of(
-              report(A1, configuration, 29),
-              report(A2, configuration, 29),
-              report(X1, configuration, 30));
+              report(A1, configuration, 18),
+              report(A2, configuration, 18),
+              report(X1, configuration, 20));
 
       // when
-      final var decision = SystemPartitionRecovery.removeMembers(Set.of(B1, B2, B3, B4), reports);
+      final var decision =
+          SystemPartitionRecovery.removeMembers(
+              Set.of(B1, B2, B3, B4), reports, DUAL_REGION, false);
 
       // then
-      assertThat(((ForcedChange) decision).members())
+      final var forced = (ForcedChange) decision;
+      assertThat(types(forced.target()))
           .containsEntry(X1, ACTIVE)
           .containsEntry(A1, PASSIVE)
           .containsEntry(A2, PASSIVE);
     }
 
     @Test
+    void shouldUsePolicyWithHighestVersionFromReports() {
+      // given - A3 applied a newer policy that gives zone a three slots
+      final var configuration = configuration(7, dualRegion());
+      final var newer = VoterPolicy.of(new ZoneVoters("a", 3), new ZoneVoters("b", 2));
+      final var reports =
+          List.of(
+              report(A1, configuration, 20),
+              report(A2, configuration, 20),
+              new MemberReport(A3, configuration, 0, 3, 20, 20, newer, 12),
+              new MemberReport(A4, configuration, 0, 3, 20, 20, DUAL_REGION, 2));
+
+      // when
+      final var decision =
+          SystemPartitionRecovery.removeMembers(
+              Set.of(B1, B2, B3, B4), reports, DUAL_REGION, false);
+
+      // then
+      final var forced = (ForcedChange) decision;
+      assertThat(types(forced.target()))
+          .containsEntry(A1, ACTIVE)
+          .containsEntry(A2, ACTIVE)
+          .containsEntry(A3, ACTIVE)
+          .containsEntry(A4, PASSIVE);
+    }
+
+    @Test
     void shouldResendForcedChangeOfEarlierTry() {
-      // given - an earlier try forced the configuration
+      // given - an earlier try forced the configuration and fenced zone b
       final var forced =
           new Configuration(
-              5,
+              7,
               3,
               1,
               raftMembers(members(A1, ACTIVE, A2, ACTIVE, A3, PASSIVE, A4, PASSIVE), Map.of()),
               List.of(),
               true,
               fenced(B1, B2, B3, B4),
-              DUAL_REGION);
-      // A3 now has a more recent log than the forced voters; the decision must not change
-      final var reports = List.of(report(A1, forced, 30), report(A3, forced, 31));
+              4);
+      final var old = configuration(6, dualRegion());
 
       // when
-      final var decision = SystemPartitionRecovery.removeMembers(Set.of(B1, B2, B3, B4), reports);
+      final var decision =
+          SystemPartitionRecovery.removeMembers(
+              Set.of(B1, B2, B3, B4),
+              List.of(report(A1, forced, 20), report(A3, old, 20)),
+              DUAL_REGION,
+              false);
 
       // then
       assertThat(decision).isEqualTo(new ResendForced(forced));
@@ -292,11 +399,10 @@ final class SystemPartitionRecoveryTest {
 
     @Test
     void shouldRemoveBrokersThatForceVotersKeptAsFencedPassiveMembers() {
-      // given - "force system partition voters" kept the down brokers as fenced passive members,
-      // and no leader has ended the forced configuration yet
+      // given - "force system partition voters" kept zone a and C1 as fenced passive members
       final var forced =
           new Configuration(
-              8,
+              9,
               3,
               1,
               raftMembers(
@@ -307,58 +413,52 @@ final class SystemPartitionRecoveryTest {
               List.of(),
               true,
               fenced(A1, A2, A3, C1),
-              POLICY);
+              4);
 
-      // when - phase 0 removes zone a
+      // when
       final var decision =
           SystemPartitionRecovery.removeMembers(
-              Set.of(A1, A2, A3), List.of(report(B1, forced, 20), report(B2, forced, 20)));
+              Set.of(A1, A2, A3),
+              List.of(report(B1, forced, 20), report(B2, forced, 20)),
+              POLICY,
+              false);
 
-      // then - a real removal, not a resend of the forced change
-      assertThat(decision)
-          .isEqualTo(
-              new NormalChange(
-                  members(B1, ACTIVE, B2, ACTIVE, B3, PASSIVE, C1, PASSIVE),
-                  fenced(A1, A2, A3),
-                  8,
-                  3));
+      // then - a normal change, not a resend: B1 and B2 are a quorum of {B1, B2}
+      assertThat(decision).isEqualTo(new NormalChange(forced, Set.of(A1, A2, A3)));
     }
 
     @Test
     void shouldBeDoneIfBrokersAreNotMembers() {
-      // given - the normal change of an earlier try committed
+      // given
       final var configuration =
-          configuration(9, members(C1, ACTIVE, B1, ACTIVE, B2, ACTIVE, B3, PASSIVE), POLICY);
+          configuration(9, members(C1, ACTIVE, B1, ACTIVE, B2, ACTIVE, B3, PASSIVE));
 
       // when
-      final RecoveryDecision decision =
+      final var decision =
           SystemPartitionRecovery.removeMembers(
-              Set.of(A1, A2, A3), List.of(report(C1, configuration, 20)));
+              Set.of(A1, A2, A3), List.of(report(B1, configuration, 20)), POLICY, false);
 
       // then
-      assertThat(decision).isInstanceOf(AlreadyDone.class);
+      assertThat(decision).isEqualTo(new AlreadyDone(configuration));
     }
 
     @Test
     void shouldFenceRemovedMembersWithTheirIncarnation() {
-      // given - A1 joined again with incarnation 4 and is removed again
+      // given - B1 runs with incarnation 5
       final var configuration =
           new Configuration(
-              7,
-              3,
-              1,
-              raftMembers(twoAndAHalfRegions(), Map.of(A1, 4L)),
-              List.of(),
-              false,
-              fenced(A1),
-              POLICY);
+              7, 3, 1, raftMembers(dualRegion(), Map.of(B1, 5L)), List.of(), false, List.of(), 4);
+      final var reports = List.of(report(A1, configuration, 20), report(A2, configuration, 20));
 
       // when
       final var decision =
-          SystemPartitionRecovery.removeMembers(Set.of(A1), List.of(report(C1, configuration, 20)));
+          SystemPartitionRecovery.removeMembers(
+              Set.of(B1, B2, B3, B4), reports, DUAL_REGION, false);
 
       // then
-      assertThat(((NormalChange) decision).fenced()).containsExactly(new FenceEntry(A1, 4));
+      assertThat(((ForcedChange) decision).fenced())
+          .contains(new FenceEntry(B1, 5))
+          .doesNotContain(new FenceEntry(B1, 0));
     }
   }
 
@@ -366,9 +466,9 @@ final class SystemPartitionRecoveryTest {
   final class ForceVoters {
 
     @Test
-    void shouldForceSurvivingVotersAndKeepDownBrokersAsPassive() {
-      // given - control zone and zone a are down
-      final var configuration = configuration(7, twoAndAHalfRegions(), POLICY);
+    void shouldForceSurvivingVotersAndKeepDownBrokersAsPassiveWhenLossIsAccepted() {
+      // given - 2.5 regions, zone a and the control zone are down (5.10.2)
+      final var configuration = configuration(7, twoAndAHalfRegions());
       final var reports =
           List.of(
               report(B1, configuration, 20),
@@ -376,17 +476,50 @@ final class SystemPartitionRecoveryTest {
               report(B3, configuration, 20));
 
       // when
-      final var decision = SystemPartitionRecovery.forceVoters(Set.of(A1, A2, A3, C1), reports);
+      final var decision =
+          SystemPartitionRecovery.forceVoters(Set.of(A1, A2, A3, C1), reports, POLICY, true);
 
-      // then - the policy b:2 limits the voters to B1 and B2
-      assertThat(decision).isInstanceOf(ForcedChange.class);
-      assertThat(((ForcedChange) decision).members())
-          .isEqualTo(
+      // then - the policy limits the voters of zone b to B1 and B2
+      final var forced = (ForcedChange) decision;
+      assertThat(forced.completeness().complete()).isFalse();
+      assertThat(types(forced.target()))
+          .containsExactlyInAnyOrderEntriesOf(
               members(
                   B1, ACTIVE, B2, ACTIVE, A1, PASSIVE, A2, PASSIVE, A3, PASSIVE, B3, PASSIVE, C1,
                   PASSIVE));
-      assertThat(((ForcedChange) decision).fenced())
-          .containsExactlyInAnyOrderElementsOf(fenced(A1, C1, A2, A3));
+      assertThat(forced.fenced()).containsExactlyInAnyOrderElementsOf(fenced(A1, A2, A3, C1));
+    }
+
+    @Test
+    void shouldRejectWithoutAcceptPossibleLoss() {
+      // given
+      final var configuration = configuration(7, twoAndAHalfRegions());
+      final var reports = List.of(report(B1, configuration, 20), report(B2, configuration, 20));
+
+      // when
+      final var decision =
+          SystemPartitionRecovery.forceVoters(Set.of(A1, A2, A3, C1), reports, POLICY, false);
+
+      // then - B1 and B2 are not a blocking set of 5 voters (3 necessary)
+      assertThat(decision).isInstanceOf(Rejected.class);
+      assertThat(((Rejected) decision).reason())
+          .isEqualTo(RejectionReason.METADATA_COMPLETENESS_UNKNOWN);
+    }
+
+    @Test
+    void shouldRejectIfVoterDidNotAnswerAndIsNotDown() {
+      // given - B2 did not answer, but the operator did not name it
+      final var configuration = configuration(7, twoAndAHalfRegions());
+      final var reports = List.of(report(B1, configuration, 20));
+
+      // when
+      final var decision =
+          SystemPartitionRecovery.forceVoters(Set.of(A1, A2, A3, C1), reports, POLICY, true);
+
+      // then
+      assertThat(decision).isInstanceOf(Rejected.class);
+      assertThat(((Rejected) decision).reason()).isEqualTo(RejectionReason.VOTER_DID_NOT_ANSWER);
+      assertThat(((Rejected) decision).message()).contains(B2.id());
     }
 
     @Test
@@ -394,7 +527,7 @@ final class SystemPartitionRecoveryTest {
       // given
       final var forced =
           new Configuration(
-              8,
+              7,
               3,
               1,
               raftMembers(
@@ -405,24 +538,26 @@ final class SystemPartitionRecoveryTest {
               List.of(),
               true,
               fenced(A1, A2, A3, C1),
-              POLICY);
+              4);
 
       // when
       final var decision =
           SystemPartitionRecovery.forceVoters(
-              Set.of(A1, A2, A3, C1), List.of(report(B1, forced, 20)));
+              Set.of(A1, A2, A3, C1),
+              List.of(report(B1, forced, 20), report(B2, forced, 20)),
+              POLICY,
+              true);
 
       // then
-      assertThat(decision).isInstanceOf(ResendForced.class);
-      assertThat(((ResendForced) decision).members()).containsEntry(B1, ACTIVE);
+      assertThat(decision).isEqualTo(new ResendForced(forced));
     }
 
     @Test
     void shouldBeDoneOnceDownBrokersAreFencedAndPassive() {
-      // given - the next leader appended a normal configuration after the forced change
-      final var configuration =
+      // given - a leader ended the forced configuration
+      final var current =
           new Configuration(
-              9,
+              8,
               4,
               1,
               raftMembers(
@@ -433,15 +568,43 @@ final class SystemPartitionRecoveryTest {
               List.of(),
               false,
               fenced(A1, A2, A3, C1),
-              POLICY);
+              4);
 
       // when
       final var decision =
           SystemPartitionRecovery.forceVoters(
-              Set.of(A1, A2, A3, C1), List.of(report(B1, configuration, 20)));
+              Set.of(A1, A2, A3, C1), List.of(report(B1, current, 20)), POLICY, true);
 
       // then
-      assertThat(decision).isInstanceOf(AlreadyDone.class);
+      assertThat(decision).isEqualTo(new AlreadyDone(current));
+    }
+  }
+
+  @Nested
+  final class Completeness {
+
+    @Test
+    void shouldNeedOnlyBlockingSetForCompleteness() {
+      // given - 5 voters, quorum 3: any 3 voters are a blocking set
+      final var configuration = configuration(7, twoAndAHalfRegions());
+
+      // when
+      final var three =
+          SystemPartitionRecovery.completeness(
+              configuration,
+              List.of(
+                  report(C1, configuration, 1),
+                  report(B1, configuration, 1),
+                  report(B2, configuration, 1)));
+      final var two =
+          SystemPartitionRecovery.completeness(
+              configuration, List.of(report(B1, configuration, 1), report(B2, configuration, 1)));
+
+      // then
+      assertThat(three.complete()).isTrue();
+      assertThat(two.complete()).isFalse();
+      assertThat(two.missing()).extracting(MemberId::id).hasSize(3);
+      assertThat(three.voterSets().getFirst()).hasSize(5);
     }
   }
 }

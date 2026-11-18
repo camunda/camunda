@@ -21,11 +21,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Comparators;
 import io.atomix.cluster.MemberId;
-import io.atomix.raft.JoinOptions;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.impl.ReconfigurationHelper;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
@@ -91,8 +89,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   @Override
-  public CompletableFuture<Void> bootstrap(
-      final Map<MemberId, Type> cluster, final @Nullable VoterPolicy voterPolicy) {
+  public CompletableFuture<Void> bootstrap(final Map<MemberId, Type> cluster) {
     final var localType = cluster.get(localMember.memberId());
     if (localType == null || localType == Type.INACTIVE) {
       return CompletableFuture.failedFuture(
@@ -119,7 +116,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
               reloadStoredConfiguration();
               reloadConfigurationFromLog();
               if (configuration == null) {
-                createInitialConfig(members, voterPolicy);
+                createInitialConfig(members);
               } else {
                 // The incarnation of the local member is part of the configuration, so that a
                 // restart keeps it.
@@ -137,9 +134,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
                   return;
                 }
               }
-              // A member that restarts before its empty-start guard was released must still not
-              // vote.
-              raft.restoreEmptyStartGuard();
               raft.transition(localMember.getType());
               bootstrapFuture.complete(null);
             });
@@ -148,17 +142,38 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   @Override
-  public CompletableFuture<Void> join(final Type type, final Collection<MemberId> cluster) {
-    return join(type, cluster, 0);
+  public CompletableFuture<Void> startWithoutConfiguration(final long incarnation) {
+    if (incarnation == 0 || incarnation == Long.MIN_VALUE) {
+      return CompletableFuture.failedFuture(
+          new IllegalArgumentException(
+              "A member without data needs a new incarnation that is not 0 or Long.MIN_VALUE, but got %d"
+                  .formatted(incarnation)));
+    }
+    final var startFuture = new CompletableFuture<Void>();
+    raft.getThreadContext()
+        .execute(
+            () -> {
+              reloadStoredConfiguration();
+              reloadConfigurationFromLog();
+              if (configuration != null) {
+                startFuture.completeExceptionally(
+                    new IllegalStateException(
+                        "Cannot start %s without a configuration, it has the configuration %s; bootstrap with it instead"
+                            .formatted(localMember.memberId(), configuration)));
+                return;
+              }
+              localMember.setIncarnation(incarnation);
+              localMember.update(Type.INACTIVE, Instant.now());
+              raft.transition(Type.INACTIVE);
+              startFuture.complete(null);
+            });
+    return startFuture;
   }
 
-  private CompletableFuture<Void> join(
-      final Type type, final Collection<MemberId> cluster, final long configurationVersion) {
-    // Runs after the guard of the join options, if any; else a guard from before a restart
-    // applies.
-    raft.getThreadContext().execute(raft::restoreEmptyStartGuard);
+  @Override
+  public CompletableFuture<Void> join(final Type type, final Collection<MemberId> cluster) {
     return new ReconfigurationHelper(raft)
-        .join(type, cluster, configurationVersion)
+        .join(type, cluster)
         // Usually the transition is triggered by `onConfigure` when the leader sends the updated
         // configuration. If the join is attempted again, it can be accepted without a configuration
         // change and nothing triggers the transition.
@@ -167,21 +182,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
         // inactive to inactive and the actual transition to the active role will happen when the
         // leader sends the updated configuration.
         .thenRunAsync(() -> raft.transition(localMember.getType()), raft.getThreadContext());
-  }
-
-  @Override
-  public CompletableFuture<Void> join(
-      final Type type, final Collection<MemberId> cluster, final JoinOptions options) {
-    // The thread context runs tasks in order, so the join runs with the new incarnation.
-    raft.getThreadContext()
-        .execute(
-            () -> {
-              localMember.setIncarnation(options.incarnation());
-              if (options.emptyStartProbeTerm() >= 0) {
-                raft.activateEmptyStartGuard(options.emptyStartProbeTerm());
-              }
-            });
-    return join(type, cluster, options.configurationVersion());
   }
 
   @Override
@@ -203,8 +203,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     return configuration != null ? configuration.allMembers() : null;
   }
 
-  private void createInitialConfig(
-      final Map<MemberId, Type> members, final @Nullable VoterPolicy voterPolicy) {
+  private void createInitialConfig(final Map<MemberId, Type> members) {
     localMember.setType(members.get(localMember.memberId()));
 
     final Set<RaftMember> initialMembers =
@@ -229,7 +228,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
             List.of(),
             false,
             List.of(),
-            voterPolicy);
+            0);
     configure(initialConfiguration);
     commitCurrentConfiguration();
   }
@@ -249,13 +248,13 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    *     by enough remote members to form a quorum with the local member.
    */
   public <T extends Comparable<T>> Optional<T> getQuorumFor(
-      final Function<RaftMemberContext, T> calculateMemberValue) {
+      final Function<RaftMemberContext, T> calculateMemberValue, final T absentValue) {
     if (configuration.requiresJointConsensus()) {
       final var oldMembers = configuration.oldMembers();
       final var newMembers = configuration.newMembers();
 
-      final var oldQuorum = getQuorumFor(oldMembers, calculateMemberValue);
-      final var newQuorum = getQuorumFor(newMembers, calculateMemberValue);
+      final var oldQuorum = getQuorumFor(oldMembers, calculateMemberValue, absentValue);
+      final var newQuorum = getQuorumFor(newMembers, calculateMemberValue, absentValue);
       if (oldQuorum.isPresent() && newQuorum.isPresent()) {
         return Optional.of(Comparators.min(oldQuorum.get(), newQuorum.get()));
       } else if (oldQuorum.isPresent()) {
@@ -265,12 +264,21 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       }
     }
 
-    return getQuorumFor(configuration.newMembers(), calculateMemberValue);
+    return getQuorumFor(configuration.newMembers(), calculateMemberValue, absentValue);
   }
 
+  /**
+   * @param absentValue the value of a voter that does not count: a voter whose incarnation is not
+   *     the incarnation of the member context. In the joint phase of a replacement, the old
+   *     incarnation of a broker is a voter of the old members, while the member context follows the
+   *     new incarnation (see {@link Configuration#allMembers()}); the answers of the new
+   *     incarnation must not count for the old one (R17, Q15). It must not be higher than any value
+   *     of a member.
+   */
   private <T extends Comparable<T>> Optional<T> getQuorumFor(
       final Collection<RaftMember> members,
-      final Function<RaftMemberContext, T> calculateMemberValue) {
+      final Function<RaftMemberContext, T> calculateMemberValue,
+      final T absentValue) {
     // Under joint consensus, `remoteMemberContexts` is not authoritative, because it contains
     // entries from old and new configurations. So filter for members that actually are in the
     // configuration.
@@ -278,25 +286,31 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
         members.stream().filter(member -> member.getType() == Type.ACTIVE).toList();
     final var includeLocalMemberInQuorum =
         activeMembers.stream().anyMatch(member -> member.memberId().equals(localMember.memberId()));
-    final var contexts =
+    final var values =
         activeMembers.stream()
             .filter(member -> !member.memberId().equals(localMember.memberId()))
-            .map(member -> remoteMemberContexts.get(member.memberId()))
+            .map(
+                member -> {
+                  final var context = remoteMemberContexts.get(member.memberId());
+                  return context == null
+                          || context.getMember().getIncarnation() != member.getIncarnation()
+                      ? absentValue
+                      : calculateMemberValue.apply(context);
+                })
             .collect(Collectors.toCollection(ArrayList::new));
 
-    if (contexts.isEmpty()) {
+    if (values.isEmpty()) {
       return Optional.empty();
     }
-    contexts.sort(Comparator.comparing(calculateMemberValue).reversed());
+    values.sort(Comparator.<T>naturalOrder().reversed());
 
-    final var remoteActiveMembers = contexts.size();
+    final var remoteActiveMembers = values.size();
     final int includeLocalMember = includeLocalMemberInQuorum ? 1 : 0;
     final var totalActiveMembers = remoteActiveMembers + includeLocalMember;
     final var quorum = (totalActiveMembers / 2) + 1;
 
     final var remoteQuorumIndex = quorum - 1 - includeLocalMember;
-    final var context = contexts.get(remoteQuorumIndex);
-    return Optional.of(calculateMemberValue.apply(context));
+    return Optional.of(values.get(remoteQuorumIndex));
   }
 
   /**
@@ -532,7 +546,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
                   configurationEntry.oldMembers(),
                   false,
                   configurationEntry.fenced(),
-                  configurationEntry.voterPolicy());
+                  configurationEntry.membershipVersion());
         }
       }
       return Optional.ofNullable(newest);

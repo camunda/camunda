@@ -24,8 +24,6 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.FencedListener;
-import io.atomix.raft.JoinAdmission;
-import io.atomix.raft.JoinOptions;
 import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
@@ -35,9 +33,12 @@ import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
+import io.atomix.raft.cluster.LeaderConfiguration;
+import io.atomix.raft.cluster.MembershipChange;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
+import io.atomix.raft.cluster.ReplicaState;
+import io.atomix.raft.cluster.ReplicationStatus;
 import io.atomix.raft.metrics.RaftRequestMetrics;
 import io.atomix.raft.metrics.RaftStartupMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
@@ -125,13 +126,9 @@ public class RaftPartitionServer implements HealthMonitorable {
     return bootstrap(server -> server.bootstrap(members));
   }
 
-  /**
-   * Bootstraps with typed members and a voter policy, see {@link RaftServer#bootstrap(Map,
-   * VoterPolicy)}.
-   */
-  public CompletableFuture<RaftPartitionServer> bootstrap(
-      final Map<MemberId, Type> members, final VoterPolicy voterPolicy) {
-    return bootstrap(server -> server.bootstrap(members, voterPolicy));
+  /** Starts without a configuration, see {@link RaftServer#startWithoutConfiguration(long)}. */
+  public CompletableFuture<RaftPartitionServer> startWithoutConfiguration(final long incarnation) {
+    return bootstrap(server -> server.startWithoutConfiguration(incarnation));
   }
 
   private CompletableFuture<RaftPartitionServer> bootstrap(
@@ -160,16 +157,6 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   public CompletableFuture<RaftPartitionServer> join(final Type type) {
     return join(type, server -> server.join(type, partitionMetadata.members()));
-  }
-
-  /** Joins with the given options, see {@link RaftServer#join(Type, Collection, JoinOptions)}. */
-  public CompletableFuture<RaftPartitionServer> join(final Type type, final JoinOptions options) {
-    return join(type, server -> server.join(type, partitionMetadata.members(), options));
-  }
-
-  /** See {@link RaftServer#setJoinAdmission(JoinAdmission)}. */
-  public void setJoinAdmission(final JoinAdmission joinAdmission) {
-    server.setJoinAdmission(joinAdmission);
   }
 
   private CompletableFuture<RaftPartitionServer> join(
@@ -243,10 +230,34 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.forceConfigure(members).thenApply(v -> this);
   }
 
-  /** See {@link RaftServer#reconfigure(Map, long, long)}. */
-  public CompletableFuture<ReconfigureResponse> reconfigure(
-      final Map<MemberId, Type> members, final long index, final long term) {
-    return server.reconfigure(members, index, term);
+  /** See {@link RaftServer#changeMembers(MembershipChange)}. */
+  public CompletableFuture<ReconfigureResponse> changeMembers(final MembershipChange change) {
+    return server.changeMembers(change);
+  }
+
+  /** See {@link RaftServer#readLeaderConfiguration()}. */
+  public CompletableFuture<LeaderConfiguration> readLeaderConfiguration() {
+    return server.readLeaderConfiguration();
+  }
+
+  /** See {@link RaftServer#getReplicationStatus()}. */
+  public CompletableFuture<Optional<ReplicationStatus>> getReplicationStatus() {
+    return server.getReplicationStatus();
+  }
+
+  /** See {@link RaftServer#getReplicaState()}. */
+  public CompletableFuture<ReplicaState> getReplicaState() {
+    return server.getReplicaState();
+  }
+
+  /** See {@link RaftServer#sendFencedNotice(MemberId)}. */
+  public CompletableFuture<Void> sendFencedNotice(final MemberId member) {
+    return server.sendFencedNotice(member);
+  }
+
+  /** See {@link RaftServer#forceConfigure(Configuration)}. */
+  public CompletableFuture<RaftPartitionServer> forceConfigure(final Configuration target) {
+    return server.forceConfigure(target).thenApply(v -> this);
   }
 
   public CompletableFuture<Void> stop() {

@@ -62,7 +62,9 @@ import java.util.function.Function;
  *   <li>a {@link RaftError.Type#FENCED} rejection of such a request tells the local member that it
  *       is fenced; the rejection of a forwarded request is only passed back to its sender;
  *   <li>a response from a fenced member fails like an unreachable member, so that its term is never
- *       taken over.
+ *       taken over;
+ *   <li>a response from another incarnation than the one of the configuration fails the same way
+ *       (R17).
  * </ul>
  *
  * <p>Requests are sent on the Raft thread; responses are checked on the thread that completes them.
@@ -115,6 +117,19 @@ final class OutboundRaftProtocol implements RaftServerProtocol {
           new RaftException.ProtocolException(
               "Ignoring the response of %s, its incarnation %d is fenced",
               target, raftResponse.senderIncarnation()));
+    }
+    // A response counts for a member only if it comes from the incarnation that the configuration
+    // has for the member (R17): a new incarnation of a broker lost the log of the old one, thus its
+    // answers must not count for the old one, also not for the quorum or the match index.
+    final var configuration = raft.getCluster().getConfiguration();
+    if (ownRequest && configuration != null) {
+      final var expected = configuration.incarnationOf(target);
+      if (expected.isPresent() && expected.getAsLong() != raftResponse.senderIncarnation()) {
+        throw new CompletionException(
+            new RaftException.ProtocolException(
+                "Ignoring the response of %s, its incarnation %d is not the incarnation %d of the configuration",
+                target, raftResponse.senderIncarnation(), expected.getAsLong()));
+      }
     }
     return response;
   }

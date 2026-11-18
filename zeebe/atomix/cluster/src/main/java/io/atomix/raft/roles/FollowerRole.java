@@ -120,12 +120,6 @@ public final class FollowerRole extends ActiveRole {
    * CANDIDATE state.
    */
   private void sendPollRequests() {
-    if (raft.isEmptyStartGuardActive()) {
-      log.debug("Not starting an election, the empty-start guard is active");
-      electionTimer.reset();
-      return;
-    }
-
     // Create a quorum that will track the number of nodes that have responded to the poll request.
     final AtomicBoolean complete = new AtomicBoolean();
     final var votingMembers = raft.getCluster().getVotingMembers();

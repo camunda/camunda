@@ -21,11 +21,13 @@ import static io.atomix.raft.RaftException.ConfigurationException;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
-import io.atomix.raft.cluster.FenceEntry;
+import io.atomix.raft.cluster.LeaderConfiguration;
+import io.atomix.raft.cluster.MembershipChange;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
+import io.atomix.raft.cluster.ReplicaState;
+import io.atomix.raft.cluster.ReplicationStatus;
 import io.atomix.raft.impl.DefaultRaftServer;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftElectionConfig;
@@ -47,6 +49,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -264,37 +267,44 @@ public interface RaftServer {
   CompletableFuture<RaftServer> bootstrap(Collection<MemberId> cluster);
 
   /**
-   * Changes the configuration to the given full target membership. The target must be calculated
-   * from the configuration with the given index and term: the leader accepts the change only if its
-   * configuration index is exactly {@code index}. A member that is not part of the current
-   * configuration must not be {@link Type#ACTIVE}. If the target is already the configuration, the
-   * leader answers OK without a change. A non-leader forwards the request to the leader.
-   *
-   * <p>A rejection carries the leader's current configuration (index, term and members) so that the
-   * caller can calculate the target again and retry.
-   *
-   * @param members the full target membership with types
-   * @param index the index of the configuration the target was calculated from
-   * @param term the term of the configuration the target was calculated from
-   * @return the leader's response; it does not fail exceptionally
+   * Changes the members of the configuration while this server is the leader (design 5.5, R3). The
+   * change uses joint consensus. Only the leader changes the members this way; there is no request
+   * that lets another member send a target configuration. Fails with a {@link
+   * io.atomix.raft.RaftException.NoLeader} if this server is not the leader, and completes with an
+   * error response if the leader rejects the change, for example because its configuration index is
+   * not {@link MembershipChange#expectedIndex()} or another change is in progress.
    */
-  CompletableFuture<ReconfigureResponse> reconfigure(
-      Map<MemberId, Type> members, long index, long term);
+  CompletableFuture<ReconfigureResponse> changeMembers(MembershipChange change);
 
   /**
-   * Like {@link #reconfigure(Map, long, long)}, and in the same change adds the given entries to
-   * the fence list (entries are never removed) and sets the voter policy if it is not null.
+   * Reads the configuration of the current leader (design R3). A member that is not the leader
+   * forwards the read to the leader. Fails if no leader is known or the leader cannot be reached;
+   * the caller retries.
    */
-  CompletableFuture<ReconfigureResponse> reconfigure(
-      Map<MemberId, Type> members,
-      Collection<FenceEntry> fenced,
-      VoterPolicy voterPolicy,
-      long index,
-      long term);
+  CompletableFuture<LeaderConfiguration> readLeaderConfiguration();
+
+  /**
+   * @return the replication state of each member while this server is the leader, else empty
+   *     (design R10)
+   */
+  CompletableFuture<Optional<ReplicationStatus>> getReplicationStatus();
+
+  /**
+   * @return the local state of the replica, see {@link ReplicaState}
+   */
+  CompletableFuture<ReplicaState> getReplicaState();
+
+  /**
+   * While this server is the leader, sends the committed configuration as the fenced notice to the
+   * given member, which is not a member of the configuration but runs with a fenced incarnation
+   * (design 5.6.6). Does nothing if this server is not the leader or the configuration is not
+   * committed.
+   */
+  CompletableFuture<Void> sendFencedNotice(MemberId member);
 
   /**
    * Like {@link #forceConfigure(Map)}, with a full target configuration: the members with their
-   * types and incarnations, the fence list and the voter policy are taken from {@code target}
+   * types and incarnations, the fence list and the membership version are taken from {@code target}
    * instead of from the local configuration, which can lag. Its index, term and old members are
    * ignored. The local fence entries are kept: fence lists are merged, never replaced.
    */
@@ -310,10 +320,10 @@ public interface RaftServer {
   CompletableFuture<RaftServer> bootstrap(Map<MemberId, Type> members);
 
   /**
-   * Bootstraps the cluster with typed members and a voter policy, see {@link
-   * io.atomix.raft.cluster.RaftCluster#bootstrap(Map, VoterPolicy)}.
+   * Starts this server without a configuration, see {@link
+   * io.atomix.raft.cluster.RaftCluster#startWithoutConfiguration(long)}.
    */
-  CompletableFuture<RaftServer> bootstrap(Map<MemberId, Type> members, VoterPolicy voterPolicy);
+  CompletableFuture<RaftServer> startWithoutConfiguration(long incarnation);
 
   /**
    * Bootstraps the cluster using the provided cluster configuration.
@@ -371,24 +381,6 @@ public interface RaftServer {
    * @return A completable future to be completed once the server has joined the cluster.
    */
   CompletableFuture<RaftServer> join(Type type, Collection<MemberId> cluster);
-
-  /**
-   * Joins with the given options, see {@link io.atomix.raft.cluster.RaftCluster#join(Type,
-   * Collection, JoinOptions)}.
-   */
-  CompletableFuture<RaftServer> join(Type type, Collection<MemberId> cluster, JoinOptions options);
-
-  /**
-   * Sets the check that decides, while this server is the leader, whether a member may be added.
-   * See {@link JoinAdmission}.
-   */
-  void setJoinAdmission(JoinAdmission joinAdmission);
-
-  /**
-   * @return true while the empty-start guard of a join is active, see {@link
-   *     JoinOptions#emptyStartProbeTerm()}
-   */
-  CompletableFuture<Boolean> isEmptyStartGuardActive();
 
   /**
    * Adds a listener that is notified when the local member is fenced, see {@link FencedListener}.
@@ -453,9 +445,9 @@ public interface RaftServer {
 
   /**
    * Returns the local view of the current configuration: the new members with their types and
-   * incarnations, the old members while a joint change is in progress, the fence list, the voter
-   * policy and the index. The term is the one that {@link #reconfigure(Map, long, long)} expects.
-   * Null if the server has no configuration yet.
+   * incarnations, the old members while a joint change is in progress, the fence list, the
+   * membership version and the index. The term is the term of the configuration entry. Null if the
+   * server has no configuration yet.
    */
   CompletableFuture<Configuration> getConfiguration();
 

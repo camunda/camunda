@@ -21,16 +21,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.FencedListener;
-import io.atomix.raft.JoinAdmission;
-import io.atomix.raft.JoinOptions;
 import io.atomix.raft.RaftConfigurationListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftThreadContextFactory;
-import io.atomix.raft.cluster.FenceEntry;
+import io.atomix.raft.cluster.LeaderConfiguration;
+import io.atomix.raft.cluster.MembershipChange;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
+import io.atomix.raft.cluster.ReplicaState;
+import io.atomix.raft.cluster.ReplicationStatus;
 import io.atomix.raft.impl.RaftContext.State;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.storage.RaftStorage;
@@ -38,6 +38,7 @@ import io.atomix.raft.storage.system.Configuration;
 import io.camunda.zeebe.util.health.FailureListener;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -111,31 +112,32 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
-  public CompletableFuture<RaftServer> bootstrap(
-      final Map<MemberId, Type> members, final VoterPolicy voterPolicy) {
-    return start(() -> cluster().bootstrap(members, voterPolicy));
+  public CompletableFuture<RaftServer> startWithoutConfiguration(final long incarnation) {
+    // Unlike a bootstrap or a join, the start does not wait until the server is READY: a member
+    // without data is INACTIVE until a leader adds it, which can take long or never happen.
+    if (started) {
+      return CompletableFuture.completedFuture(this);
+    }
+    if (openFutureRef.compareAndSet(null, new CompletableFuture<>())) {
+      stopped = false;
+      cluster()
+          .startWithoutConfiguration(incarnation)
+          .whenComplete(
+              (result, error) -> {
+                if (error == null) {
+                  started = true;
+                  openFutureRef.get().complete(this);
+                } else {
+                  openFutureRef.get().completeExceptionally(error);
+                }
+              });
+    }
+    return openFutureRef.get();
   }
 
   @Override
   public CompletableFuture<RaftServer> join(final Type type, final Collection<MemberId> cluster) {
     return start(() -> cluster().join(type, cluster));
-  }
-
-  @Override
-  public CompletableFuture<RaftServer> join(
-      final Type type, final Collection<MemberId> cluster, final JoinOptions options) {
-    return start(() -> cluster().join(type, cluster, options));
-  }
-
-  @Override
-  public CompletableFuture<Boolean> isEmptyStartGuardActive() {
-    return CompletableFuture.supplyAsync(
-        context::isEmptyStartGuardActive, context.getThreadContext());
-  }
-
-  @Override
-  public void setJoinAdmission(final JoinAdmission joinAdmission) {
-    context.setJoinAdmission(joinAdmission);
   }
 
   @Override
@@ -159,20 +161,29 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
-  public CompletableFuture<ReconfigureResponse> reconfigure(
-      final Map<MemberId, Type> members, final long index, final long term) {
-    return new ReconfigurationHelper(context).reconfigure(members, index, term);
+  public CompletableFuture<ReconfigureResponse> changeMembers(final MembershipChange change) {
+    return new ReconfigurationHelper(context).changeMembers(change);
   }
 
   @Override
-  public CompletableFuture<ReconfigureResponse> reconfigure(
-      final Map<MemberId, Type> members,
-      final Collection<FenceEntry> fenced,
-      final VoterPolicy voterPolicy,
-      final long index,
-      final long term) {
-    return new ReconfigurationHelper(context)
-        .reconfigure(members, fenced, voterPolicy, index, term);
+  public CompletableFuture<LeaderConfiguration> readLeaderConfiguration() {
+    return new ReconfigurationHelper(context).readLeaderConfiguration();
+  }
+
+  @Override
+  public CompletableFuture<Optional<ReplicationStatus>> getReplicationStatus() {
+    return CompletableFuture.supplyAsync(context::getReplicationStatus, context.getThreadContext());
+  }
+
+  @Override
+  public CompletableFuture<ReplicaState> getReplicaState() {
+    return CompletableFuture.supplyAsync(context::getReplicaState, context.getThreadContext());
+  }
+
+  @Override
+  public CompletableFuture<Void> sendFencedNotice(final MemberId member) {
+    return CompletableFuture.runAsync(
+        () -> context.sendFencedNotice(member), context.getThreadContext());
   }
 
   @Override
@@ -202,7 +213,7 @@ public class DefaultRaftServer implements RaftServer {
               configuration.oldMembers(),
               configuration.force(),
               configuration.fenced(),
-              configuration.voterPolicy());
+              configuration.membershipVersion());
         },
         context.getThreadContext());
   }

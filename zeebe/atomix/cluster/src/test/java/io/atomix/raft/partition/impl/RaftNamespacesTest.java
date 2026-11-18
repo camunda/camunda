@@ -22,8 +22,6 @@ import io.atomix.raft.RaftError;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
-import io.atomix.raft.cluster.VoterPolicy;
-import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ForceConfigureRequest;
@@ -47,7 +45,6 @@ final class RaftNamespacesTest {
 
   private final Serializer serializer = Serializer.using(RaftNamespaces.RAFT_PROTOCOL);
   private final List<FenceEntry> fenced = List.of(new FenceEntry(MemberId.from("b_2"), 42L));
-  private final VoterPolicy policy = VoterPolicy.of(new ZoneVoters("a", 2), new ZoneVoters("b", 1));
   private final Set<RaftMember> members =
       new HashSet<>(
           List.of(
@@ -67,8 +64,9 @@ final class RaftNamespacesTest {
             .withTerm(2)
             .withMembers(members)
             .withFenced(fenced)
-            .withVoterPolicy(policy)
+            .withMembershipVersion(9)
             .withExactIndex(true)
+            .withReadOnly(true)
             .from("a_1")
             .build();
     request.setSenderIncarnation(5L);
@@ -78,8 +76,9 @@ final class RaftNamespacesTest {
 
     // then
     assertThat(read.exactIndex()).isTrue();
+    assertThat(read.readOnly()).isTrue();
     assertThat(read.fenced()).containsExactlyElementsOf(fenced);
-    assertThat(read.voterPolicy()).isEqualTo(policy);
+    assertThat(read.membershipVersion()).isEqualTo(9);
     assertThat(read.senderIncarnation()).isEqualTo(5L);
     assertThat(read.members())
         .extracting(RaftMember::memberId, RaftMember::getIncarnation)
@@ -100,7 +99,10 @@ final class RaftNamespacesTest {
             .withTime(1)
             .withMembers(members)
             .withFenced(fenced)
-            .withVoterPolicy(policy)
+            .withMembershipVersion(9)
+            .withOldMembers(members)
+            .withCommitted(true)
+            .withLeader("a_1")
             .build();
 
     // when
@@ -110,7 +112,10 @@ final class RaftNamespacesTest {
     assertThat(read.index()).isEqualTo(3);
     assertThat(read.members()).hasSize(2);
     assertThat(read.fenced()).containsExactlyElementsOf(fenced);
-    assertThat(read.voterPolicy()).isEqualTo(policy);
+    assertThat(read.membershipVersion()).isEqualTo(9);
+    assertThat(read.oldMembers()).hasSize(2);
+    assertThat(read.committed()).isTrue();
+    assertThat(read.leader()).isEqualTo("a_1");
   }
 
   @Test
@@ -125,7 +130,7 @@ final class RaftNamespacesTest {
             .withNewMembers(members)
             .withOldMembers(new HashSet<>())
             .withFenced(fenced)
-            .withVoterPolicy(policy)
+            .withMembershipVersion(9)
             .withCommitted(true)
             .build();
 
@@ -134,7 +139,7 @@ final class RaftNamespacesTest {
 
     // then
     assertThat(read.fenced()).containsExactlyElementsOf(fenced);
-    assertThat(read.voterPolicy()).isEqualTo(policy);
+    assertThat(read.membershipVersion()).isEqualTo(9);
     assertThat(read.committed()).isTrue();
   }
 
@@ -148,7 +153,7 @@ final class RaftNamespacesTest {
             .withTime(1)
             .withNewMembers(members)
             .withFenced(fenced)
-            .withVoterPolicy(policy)
+            .withMembershipVersion(9)
             .from(MemberId.from("a_1"))
             .build();
 
@@ -157,7 +162,7 @@ final class RaftNamespacesTest {
 
     // then
     assertThat(read.fenced()).containsExactlyElementsOf(fenced);
-    assertThat(read.voterPolicy()).isEqualTo(policy);
+    assertThat(read.membershipVersion()).isEqualTo(9);
   }
 
   @Test
@@ -180,14 +185,12 @@ final class RaftNamespacesTest {
    * with its name, and a reader skips the fields that it does not know.
    */
   @Test
-  void shouldSerializeFenceEntryAndVoterPolicyWithFieldNames() {
+  void shouldSerializeFenceEntryWithFieldNames() {
     // when
     final var fenceEntry =
         new String(serializer.encode(fenced.getFirst()), StandardCharsets.ISO_8859_1);
-    final var voterPolicy = new String(serializer.encode(policy), StandardCharsets.ISO_8859_1);
 
     // then - Kryo marks the last character of an ASCII string with the high bit
     assertThat(fenceEntry).contains("memberI").contains("incarnatio");
-    assertThat(voterPolicy).contains("zone").contains("voter");
   }
 }
