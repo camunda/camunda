@@ -146,6 +146,10 @@ function nightsOf(reportsDir, version) {
 // calling it clean outright would overstate what was measured.
 export const MIN_NIGHTS = 3;
 
+// Stamped on every record this script writes, so a later run can tell what
+// `confirmed` counts.
+const NIGHTS = 'nights';
+
 export function verdictOf({nightlies, flaked, confirmed = flaked, windowCoversMerge}) {
   if (flaked > 0) {
     return {
@@ -230,8 +234,13 @@ export function postMerge({reportsDir, ledger = {}, merged = {}, now}) {
       (entry.post_merge.merged_at ?? mergedAt) === mergedAt
         ? entry.post_merge
         : undefined;
+    // Only a count this script wrote in nights can be carried forward as one.
+    // Before the calendar-night fold `confirmed` counted workflow runs, so an
+    // entry without the marker is worth one night -- all it still proves is
+    // that the fix failed at least once.
     const priorConfirmed =
-      prior?.confirmed ?? (prior?.verdict === 're-flaked' ? 1 : 0);
+      (prior?.unit === NIGHTS ? prior.confirmed : undefined) ??
+      (prior?.verdict === 're-flaked' ? 1 : 0);
     // A lower bound, not a sum: nights still inside the window were already
     // counted by the run that recorded `confirmed`.
     const confirmed = Math.max(priorConfirmed, hits.length);
@@ -255,6 +264,7 @@ export function postMerge({reportsDir, ledger = {}, merged = {}, now}) {
       verdict,
       needs_flag: verdict === 're-flaked' && flaggedAt === '',
       post_merge: {
+        unit: NIGHTS,
         merged_at: mergedAt,
         nightlies: after.length,
         flaked: hits.length,

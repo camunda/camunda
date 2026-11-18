@@ -828,6 +828,7 @@ test('should keep a re-flake after the night that showed it leaves the window', 
     reportsDir: dir,
     ledger: mergedLedger({
       post_merge: {
+        unit: 'nights',
         merged_at: '2026-11-05T09:00:00Z',
         verdict: 're-flaked',
         confirmed: 2,
@@ -846,6 +847,38 @@ test('should keep a re-flake after the night that showed it leaves the window', 
   assert.equal(result.post_merge.last_flake_run_id, '3');
   assert.match(result.post_merge.summary, /left the report window/);
   assert.equal(result.needs_flag, false);
+});
+
+test('should not carry a pre-fold re-flake count forward as nights', () => {
+  // given — an entry written before the calendar-night fold, whose `confirmed`
+  // counts workflow runs: both workflows of one night failing was stored as 2.
+  // All it still proves is that the fix failed, so it is worth one night.
+  const dir = nightlyDir([night('7', '2026-11-16T02:00:00Z', [passed])]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger({
+      post_merge: {
+        merged_at: '2026-11-05T09:00:00Z',
+        verdict: 're-flaked',
+        confirmed: 2,
+        pr_flagged_at: '2026-11-08T06:00:00Z',
+      },
+    }),
+    merged: {[MERGED_FP]: '2026-11-05T09:00:00Z'},
+    now: '2026-11-18T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 're-flaked');
+  assert.equal(result.post_merge.confirmed, 1);
+  assert.equal(result.post_merge.unit, 'nights');
+  assert.equal(
+    result.post_merge.summary,
+    're-flaked in 1 night(s) since the merge; those nights have since left ' +
+      'the report window',
+  );
 });
 
 test('should not inherit a re-flake recorded for a different merge', () => {
