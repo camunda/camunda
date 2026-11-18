@@ -401,5 +401,18 @@
       "last_flake_run_id": "",
       "checked_at": "2026-11-18T06:24:32.914Z"
     }
+  },
+  "9932e04a": {
+    "version": "8.10",
+    "file": "tests/api/v2/wait-state/wait-state-flag-isolated/wait-state-flag-off.spec.ts",
+    "titlePath": [
+      "Wait States Flag Off",
+      "wait-states/search returns no rows for an instance that would otherwise be waiting on a job"
+    ],
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 40 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44251159531",
+    "updated_at": "2026-11-18T06:41:53Z",
+    "cooldown_until": "2026-11-21T06:41:53Z"
   }
 }
