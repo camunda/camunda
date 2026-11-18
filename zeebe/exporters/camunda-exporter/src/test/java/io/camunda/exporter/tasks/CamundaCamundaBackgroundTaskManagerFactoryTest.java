@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
 import io.camunda.exporter.tasks.archiver.AuditLogArchiverJob;
@@ -24,6 +25,7 @@ import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricTUArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
+import io.camunda.exporter.tasks.deletion.ProcessInstanceDeleterJob;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionJob;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.incident.PendingIncidentUpdateCountTask;
@@ -49,18 +51,22 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
 
   @BeforeEach
   void setUp() {
-    factory =
-        new CamundaBackgroundTaskManagerFactory(
-            PARTITION_ID,
-            EXPORTER_ID,
-            config,
-            new TestExporterResourceProvider("", true),
-            new CamundaExporterMetrics(new SimpleMeterRegistry()),
-            LoggerFactory.getLogger(CamundaCamundaBackgroundTaskManagerFactoryTest.class),
-            mock(ExporterMetadata.class),
-            new ObjectMapper(),
-            mock(ExporterEntityCacheImpl.class),
-            InstantSource.system());
+    factory = createFactory(PARTITION_ID);
+  }
+
+  private CamundaBackgroundTaskManagerFactory createFactory(final int partitionId) {
+    return new CamundaBackgroundTaskManagerFactory(
+        partitionId,
+        EXPORTER_ID,
+        config,
+        new TestExporterResourceProvider("", true),
+        new TargetIndexLocator(),
+        new CamundaExporterMetrics(new SimpleMeterRegistry()),
+        LoggerFactory.getLogger(CamundaCamundaBackgroundTaskManagerFactoryTest.class),
+        mock(ExporterMetadata.class),
+        new ObjectMapper(),
+        mock(ExporterEntityCacheImpl.class),
+        InstantSource.system());
   }
 
   @Test
@@ -173,7 +179,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should always schedule incident and usage metrics tasks regardless of PI config")
-        .hasSize(11)
+        .hasSize(12)
         .anyMatch(task -> isTaskOfType(task, IncidentUpdateTask.class))
         .anyMatch(task -> isTaskOfType(task, PendingIncidentUpdateCountTask.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricArchiverJob.class))
@@ -184,7 +190,72 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
         .anyMatch(task -> isTaskOfType(task, BatchOperationUpdateTask.class))
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class))
         .anyMatch(task -> isTaskOfType(task, HistoryDeletionJob.class))
-        .anyMatch(task -> isTaskOfType(task, AuditLogArchiverJob.class));
+        .anyMatch(task -> isTaskOfType(task, AuditLogArchiverJob.class))
+        .anyMatch(task -> isTaskOfType(task, ProcessInstanceDeleterJob.class));
+  }
+
+  @Test
+  void shouldScheduleProcessInstanceDeleterJobWhenRetentionEnabled() {
+    // given
+    config.getHistory().getRetention().setEnabled(true);
+
+    // when
+    final var taskManager = factory.build();
+
+    // then
+    final var tasks = getTasksFromManager(taskManager);
+    assertThat(tasks)
+        .as("Should schedule ProcessInstanceDeleterJob when retention is enabled")
+        .anyMatch(task -> isTaskOfType(task, ProcessInstanceDeleterJob.class));
+  }
+
+  @Test
+  void shouldNotScheduleProcessInstanceDeleterJobWhenRetentionDisabled() {
+    // given
+    config.getHistory().getRetention().setEnabled(false);
+
+    // when
+    final var taskManager = factory.build();
+
+    // then
+    final var tasks = getTasksFromManager(taskManager);
+    assertThat(tasks)
+        .as("Should not schedule ProcessInstanceDeleterJob when retention is disabled")
+        .noneMatch(task -> isTaskOfType(task, ProcessInstanceDeleterJob.class));
+  }
+
+  @Test
+  void shouldScheduleProcessInstanceDeleterJobOnEveryPartition() {
+    // given
+    config.getHistory().getRetention().setEnabled(true);
+    final var otherPartitionFactory = createFactory(PARTITION_ID + 1);
+
+    // when
+    final var taskManager = otherPartitionFactory.build();
+
+    // then
+    final var tasks = getTasksFromManager(taskManager);
+    assertThat(tasks)
+        .as("Should schedule ProcessInstanceDeleterJob on partitions other than the first")
+        .anyMatch(task -> isTaskOfType(task, ProcessInstanceDeleterJob.class))
+        .noneMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
+  }
+
+  @Test
+  void shouldScheduleProcessInstanceDeleterJobAlongsideArchiver() {
+    // given
+    config.getHistory().setProcessInstanceEnabled(true);
+    config.getHistory().getRetention().setEnabled(true);
+
+    // when
+    final var taskManager = factory.build();
+
+    // then
+    final var tasks = getTasksFromManager(taskManager);
+    assertThat(tasks)
+        .as("Should schedule both the PI archiver and deleter when both are enabled")
+        .anyMatch(task -> isProcessInstanceArchiverTask(task))
+        .anyMatch(task -> isTaskOfType(task, ProcessInstanceDeleterJob.class));
   }
 
   @Test
@@ -215,7 +286,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should schedule ApplyRolloverPeriodJob when retention is enabled")
-        .hasSize(13)
+        .hasSize(14)
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 

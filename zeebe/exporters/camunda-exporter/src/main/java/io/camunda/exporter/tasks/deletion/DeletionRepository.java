@@ -11,7 +11,7 @@ import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-public interface DeletionRepository extends DeleteByIdSupport {
+public interface DeletionRepository extends DeleteByIdSupport, AutoCloseable {
 
   /**
    * Used to delete documents in a similar way to a _delete_by_query call but is done via repeated
