@@ -27,8 +27,32 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.page.getByRole('group', {name: 'Instance header'});
 	}
 
+	headerText(text: string) {
+		return this.header.getByText(text);
+	}
+
+	get actionsButton() {
+		return this.header.getByRole('button', {name: 'Actions'});
+	}
+
 	get breadcrumb() {
 		return this.page.getByRole('navigation', {name: 'breadcrumb'});
+	}
+
+	breadcrumbLink(name: string) {
+		return this.breadcrumb.getByRole('link', {name});
+	}
+
+	get breadcrumbMoreButton() {
+		return this.breadcrumb.getByRole('button', {name: 'More'});
+	}
+
+	get menu() {
+		return this.page.getByRole('menu');
+	}
+
+	menuItem(name: string | RegExp) {
+		return this.menu.getByRole('menuitem', {name});
 	}
 
 	get diagramPanel() {
