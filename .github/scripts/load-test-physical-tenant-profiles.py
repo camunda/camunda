@@ -22,7 +22,7 @@ CPU at about half of its limit. Until a calibration run measures the capacity, a
 Elasticsearch only (see ESTIMATED_CAPACITY); for any other secondary storage it must be given.
 
 Worker replicas scale linearly with the rate (WORKER_REPLICAS_PER_100_PI, at least one), so workers
-never limit a tenant; overprovisioning them is deliberate.
+never limit a tenant. 3 workers sustain about 800 PI/s, so the default ratio keeps some margin.
 
 Environment (set by the workflow):
   TENANT_COUNT (including the default tenant), WORKER_REPLICAS_PER_100_PI, SATURATING_COUNT, SATURATING_CAPACITY_RATIO, QUIET_MULTIPLIER,

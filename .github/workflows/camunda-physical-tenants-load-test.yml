@@ -47,9 +47,9 @@ on:
         default: 0.2
         required: false
       worker-replicas-per-100-pi:
-        description: 'Worker replicas per 100 PI/s of a tenant, scaled linearly and rounded up (at least 1). Overprovisioned so workers never limit a tenant'
+        description: 'Worker replicas per 100 PI/s of a tenant, scaled linearly and rounded up (at least 1). The default is 3 workers for 800 PI/s, with some margin'
         type: number
-        default: 3
+        default: 0.4
         required: false
       tenant-weights:
         description: 'Relative share of tenants, e.g. pt2=3,default=2. Unlisted tenants have weight 1'

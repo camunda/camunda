@@ -106,7 +106,7 @@ class MainTest(unittest.TestCase):
         directory = pathlib.Path(tempfile.mkdtemp())
         env = {
             "TENANT_COUNT": str(tenant_count), "SATURATING_COUNT": str(saturating), "SATURATING_CAPACITY_RATIO": "1.2",
-            "QUIET_MULTIPLIER": "0.2", "WORKER_REPLICAS_PER_100_PI": "3", "STORAGE": "elasticsearch",
+            "QUIET_MULTIPLIER": "0.2", "WORKER_REPLICAS_PER_100_PI": "0.4", "STORAGE": "elasticsearch",
             "CAPACITY_RATE": "", "TOTAL_RATE": "0", "TENANT_WEIGHTS": "", "TENANT_OVERRIDES": "",
             "GITHUB_OUTPUT": str(directory / "out"), "GITHUB_STEP_SUMMARY": str(directory / "summary"),
         }
@@ -135,6 +135,10 @@ class WorkersTest(unittest.TestCase):
     def test_workers_scale_linearly_with_the_rate_and_round_up(self):
         self.assertEqual(profiles.workers(900, 4), 36)
         self.assertEqual(profiles.workers(901, 4), 37)
+
+    def test_default_ratio_gives_three_workers_for_the_saturating_tenant(self):
+        self.assertEqual(profiles.workers(720, 0.4), 3)
+        self.assertEqual(profiles.workers(800, 0.4), 4)
 
     def test_every_tenant_has_at_least_one_worker(self):
         self.assertEqual(profiles.workers(1, 4), 1)
