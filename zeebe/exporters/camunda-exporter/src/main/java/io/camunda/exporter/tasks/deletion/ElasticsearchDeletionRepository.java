@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.deletion;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -31,7 +32,7 @@ import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
-import java.util.ArrayList;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -80,8 +81,24 @@ public class ElasticsearchDeletionRepository extends ElasticsearchRepository
                 finishedProcessInstancesQuery(
                     "now-" + retention.getMinimumAge(), partitionId, retentionMode))
             .size(config.getEntityBatchSize())
-            .source(s -> s.filter(f -> f.includes(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY)))
+            .source(
+                s ->
+                    s.filter(
+                        f ->
+                            f.includes(
+                                ListViewTemplate.KEY,
+                                ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY,
+                                ListViewTemplate.STORAGE_ORDINAL)))
             .sort(
+                // a batch only covers one storage ordinal, so sort by it first to fill batches;
+                // documents without one are treated as being in the main index
+                SortOptions.of(
+                    s ->
+                        s.field(
+                            f ->
+                                f.field(ListViewTemplate.STORAGE_ORDINAL)
+                                    .order(SortOrder.Asc)
+                                    .missing(FieldValue.of(StorageOrdinalRelated.MAIN_INDEX)))),
                 SortOptions.of(
                     s -> s.field(f -> f.field(ListViewTemplate.END_DATE).order(SortOrder.Asc))))
             .build();
@@ -89,7 +106,10 @@ public class ElasticsearchDeletionRepository extends ElasticsearchRepository
     return client
         .search(request, ProcessInstanceForListViewEntity.class)
         .thenApplyAsync(
-            response -> toProcessInstanceDeletionBatch(response.hits().hits()), executor);
+            response ->
+                ProcessInstanceDeletionBatch.from(
+                    response.hits().hits().stream().map(Hit::source).toList(), retentionMode),
+            executor);
   }
 
   @Override
@@ -159,23 +179,6 @@ public class ElasticsearchDeletionRepository extends ElasticsearchRepository
         .bulk(request)
         .thenApplyAsync(this::getDeletedDocCount, executor)
         .thenApply(Math::toIntExact);
-  }
-
-  private ProcessInstanceDeletionBatch toProcessInstanceDeletionBatch(
-      final List<Hit<ProcessInstanceForListViewEntity>> hits) {
-    final List<Long> processInstanceKeys = new ArrayList<>();
-    final List<Long> rootProcessInstanceKeys = new ArrayList<>();
-
-    for (final var hit : hits) {
-      final var rootKey = hit.source() == null ? null : hit.source().getRootProcessInstanceKey();
-      if (retentionMode != ProcessInstanceRetentionMode.PI && rootKey != null) {
-        rootProcessInstanceKeys.add(rootKey);
-      } else {
-        processInstanceKeys.add(Long.valueOf(hit.id()));
-      }
-    }
-
-    return new ProcessInstanceDeletionBatch(processInstanceKeys, rootProcessInstanceKeys);
   }
 
   private long getDeletedDocCount(final BulkResponse response) {
