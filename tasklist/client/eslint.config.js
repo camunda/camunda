@@ -88,6 +88,7 @@ export default [
         'error',
         {
           allowConstantExport: true,
+          extraHOCs: ['observer'],
         },
       ],
     },
