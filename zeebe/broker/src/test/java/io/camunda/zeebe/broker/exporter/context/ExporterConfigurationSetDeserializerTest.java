@@ -10,9 +10,12 @@ package io.camunda.zeebe.broker.exporter.context;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -41,6 +44,22 @@ final class ExporterConfigurationSetDeserializerTest {
     assertThat(instance.items())
         .containsExactlyInAnyOrder(
             Category.ADMIN, Category.USER_TASKS, Category.DEPLOYED_RESOURCES);
+  }
+
+  @Test
+  void shouldDeserializeElevenIndexedEntriesAsSet() {
+    // given — Set reads through the same converter as List, so 11 entries hit the same bug
+    final var indexed = new LinkedHashMap<String, Object>();
+    IntStream.rangeClosed(0, 10).forEach(i -> indexed.put(String.valueOf(i), "v" + i));
+    final var args = Map.<String, Object>of("items", indexed);
+
+    // when
+    final var instance = ExporterConfiguration.fromArgs(StringSetConfig.class, args);
+
+    // then
+    assertThat(instance.items())
+        .containsExactlyInAnyOrderElementsOf(
+            IntStream.rangeClosed(0, 10).mapToObj(i -> "v" + i).toList());
   }
 
   @Test
@@ -92,10 +111,16 @@ final class ExporterConfigurationSetDeserializerTest {
 
   @Test
   void shouldDeserializeIndexedSetNestedInObjectProperty() {
-    // given — Spring Boot flattens client.categories[0..1] under a nested object
+    // given — Spring Boot flattens client.categories and client.excludes (11 entries) under a
+    // nested object
+    final var excludes =
+        IntStream.range(0, EntityType.values().length)
+            .boxed()
+            .collect(Collectors.toMap(String::valueOf, i -> EntityType.values()[i].name()));
     final var args =
         Map.<String, Object>of(
-            "client", Map.of("categories", Map.of("0", "ADMIN", "1", "USER_TASKS")));
+            "client",
+            Map.of("categories", Map.of("0", "ADMIN", "1", "USER_TASKS"), "excludes", excludes));
 
     // when
     final var instance = ExporterConfiguration.fromArgs(NestedSetConfig.class, args);
@@ -103,7 +128,10 @@ final class ExporterConfigurationSetDeserializerTest {
     // then
     assertThat(instance.getClient().getCategories())
         .containsExactlyInAnyOrder(Category.ADMIN, Category.USER_TASKS);
+    assertThat(instance.getClient().getExcludes()).containsExactlyInAnyOrder(EntityType.values());
   }
+
+  private record StringSetConfig(Set<String> items) {}
 
   private record CategorySetConfig(Set<Category> items) {}
 
@@ -123,6 +151,7 @@ final class ExporterConfigurationSetDeserializerTest {
 
   private static final class ActorConfig {
     private Set<Category> categories = Set.of();
+    private Set<EntityType> excludes = Set.of();
 
     public Set<Category> getCategories() {
       return categories;
@@ -132,11 +161,34 @@ final class ExporterConfigurationSetDeserializerTest {
       this.categories = categories;
       return this;
     }
+
+    public Set<EntityType> getExcludes() {
+      return excludes;
+    }
+
+    public ActorConfig setExcludes(final Set<EntityType> excludes) {
+      this.excludes = excludes;
+      return this;
+    }
   }
 
   private enum Category {
     ADMIN,
     USER_TASKS,
     DEPLOYED_RESOURCES
+  }
+
+  private enum EntityType {
+    PROCESS_INSTANCE,
+    VARIABLE,
+    INCIDENT,
+    JOB,
+    USER_TASK,
+    DECISION,
+    BATCH,
+    USER,
+    MAPPING_RULE,
+    ROLE,
+    GROUP
   }
 }
