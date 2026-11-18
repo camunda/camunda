@@ -27,6 +27,8 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
@@ -34,6 +36,7 @@ import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -42,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -178,16 +182,19 @@ final class ClusterConfigurationInitializerTest {
   }
 
   @Test
-  void shouldStopLoggingOnceGossipIsReceived() {
+  void shouldCleanUpOnceGossipIsReceived() {
     // given
     final var notifier = new TestClusterConfigurationNotifier();
-    final var initializer = newGossipInitializerOnActor(notifier);
+    final var timerCancelled = new AtomicBoolean();
+    final var initializer = newGossipInitializerOnActor(notifier, timerCancelled);
 
     try (final var logCapturer = LogCapturer.capturing(GossipInitializer.class, Level.WARN)) {
       final var initializeFuture = initializer.initialize();
       Awaitility.await("until the first warning")
           .atMost(FAIL_FAST_TIMEOUT)
           .untilAsserted(() -> assertThat(logCapturer.messagesAt(Level.WARN)).isNotEmpty());
+      assertThat(notifier.hasListener()).isTrue();
+      assertThat(timerCancelled).isFalse();
 
       // when
       notifier.updateTopology(initialClusterConfiguration);
@@ -205,7 +212,6 @@ final class ClusterConfigurationInitializerTest {
       // and nothing is logged anymore, over several intervals
       final var loggedBeforeStop = logCapturer.messages().size();
 
-      // then - several intervals pass without any further log
       Awaitility.await("until no more logs are written")
           .during(Duration.ofMillis(250))
           .atMost(FAIL_FAST_TIMEOUT)
@@ -221,14 +227,47 @@ final class ClusterConfigurationInitializerTest {
    */
   private GossipInitializer newGossipInitializerOnActor(
       final TestClusterConfigurationNotifier notifier) {
+    return newGossipInitializerOnActor(notifier, new AtomicBoolean());
+  }
+
+  /**
+   * Same as above, and sets {@code timerCancelled} once the fixed-rate timer registered by the
+   * initializer is cancelled.
+   */
+  private GossipInitializer newGossipInitializerOnActor(
+      final TestClusterConfigurationNotifier notifier, final AtomicBoolean timerCancelled) {
     final var actor = Actor.newActor().name("gossip-initializer-test").build();
     actorScheduler.submitActor(actor).join();
     return new GossipInitializer(
         notifier,
         persistedClusterConfiguration,
         ignore -> {},
-        actor,
+        recordingTimerCancellation(actor, timerCancelled),
         Duration.ofMillis(25));
+  }
+
+  /** Delegates everything to the actor, but reports the cancellation of fixed-rate timers. */
+  private static ConcurrencyControl recordingTimerCancellation(
+      final ConcurrencyControl delegate, final AtomicBoolean timerCancelled) {
+    return Mockito.mock(
+        ConcurrencyControl.class,
+        invocation -> {
+          final Object result;
+          try {
+            result = invocation.getMethod().invoke(delegate, invocation.getArguments());
+          } catch (final InvocationTargetException e) {
+            throw e.getCause();
+          }
+          if (result instanceof final ScheduledTimer timer
+              && invocation.getMethod().getName().equals("runAtFixedRate")) {
+            return (ScheduledTimer)
+                () -> {
+                  timerCancelled.set(true);
+                  timer.cancel();
+                };
+          }
+          return result;
+        });
   }
 
   @Test
@@ -529,7 +568,12 @@ final class ClusterConfigurationInitializerTest {
   private static final class TestClusterConfigurationNotifier
       implements ClusterConfigurationUpdateNotifier {
 
-    private ClusterConfigurationUpdateListener listener;
+    // written on the actor thread and read by the test thread
+    private volatile ClusterConfigurationUpdateListener listener;
+
+    boolean hasListener() {
+      return listener != null;
+    }
 
     @Override
     public void addUpdateListener(final ClusterConfigurationUpdateListener listener) {
