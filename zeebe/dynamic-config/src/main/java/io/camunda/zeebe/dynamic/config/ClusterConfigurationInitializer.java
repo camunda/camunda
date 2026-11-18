@@ -289,7 +289,14 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
         configurationGossiper.accept(persistedConfiguration);
       }
       // Without this, a coordinator that never comes up leaves this member silently waiting.
-      waitLogTimer = executor.runAtFixedRate(waitLogInterval, this::logStillWaiting);
+      // runAtFixedRate must be called from the actor, which initialize() does not guarantee when
+      // chained after another initializer.
+      executor.run(
+          () -> {
+            if (!initialized.isDone()) {
+              waitLogTimer = executor.runAtFixedRate(waitLogInterval, this::logStillWaiting);
+            }
+          });
       return initialized;
     }
 
