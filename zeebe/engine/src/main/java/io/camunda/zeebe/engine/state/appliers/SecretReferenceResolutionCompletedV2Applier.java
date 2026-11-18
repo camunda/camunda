@@ -14,12 +14,14 @@ import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferen
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * As version 1, and makes activatable again the probes parked on the secret reference that wait for
  * no other pending reference. Jobs are reactivated by the {@code BATCH_REACTIVATE_JOBS} chain
  * instead; probes are few per reference and need no batching.
  */
+@NullMarked
 public final class SecretReferenceResolutionCompletedV2Applier
     implements TypedEventApplier<SecretReferenceIntent, SecretReferenceRecord> {
 

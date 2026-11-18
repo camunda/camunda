@@ -14,8 +14,10 @@ import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
+import org.jspecify.annotations.NullMarked;
 
 /** As version 1, and parks the probes of the event on the secret reference too. */
+@NullMarked
 public final class SecretReferenceResolutionRequestedV2Applier
     implements TypedEventApplier<SecretReferenceIntent, SecretReferenceRecord> {
 
