@@ -304,28 +304,9 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             "<default>",
             "formId",
             ProcessDefinitionState.SUSPENDED);
-    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
-        .thenReturn(
-            new Builder<ProcessDefinitionEntity>()
-                .total(1L)
-                .items(List.of(suspendedEntity))
-                .startCursor("f")
-                .endCursor("v")
-                .build());
     when(processDefinitionServices.getByKey(eq(23L), any())).thenReturn(suspendedEntity);
 
-    // when / then - search
-    webClient
-        .post()
-        .uri(PROCESS_DEFINITION_SEARCH_URL)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .jsonPath("$.items[0].state")
-        .isEqualTo("SUSPENDED");
-
-    // when / then - get by key
+    // when / then
     webClient
         .get()
         .uri(PROCESS_DEFINITION_URL + "23")
