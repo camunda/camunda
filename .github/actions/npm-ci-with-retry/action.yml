@@ -77,13 +77,21 @@ runs:
         # `fetch-retry-factor` of 10, so 4m35s. Re-check this if a caller
         # lowers its timeout or these numbers grow.
         #
-        # `timeout` returns only after npm's whole process group has exited
-        # (SIGKILL after 30s, exit 137), so the rm -rf below is safe. Don't
+        # `timeout` signals npm's whole process group (SIGKILL after 30s, exit
+        # 137) but only waits for npm itself, so a descendant that ignores
+        # SIGTERM can outlive it. timeout leads its own process group, so the
+        # leftovers are killed by group ID before the rm -rf below runs. Don't
         # add `--foreground`, it would signal npm only.
         command: |
           cd "$NPM_CI_DIRECTORY" || exit 1
           status=0
-          timeout --kill-after=30s "${NPM_CI_TIMEOUT_SECONDS}s" npm ci --fetch-timeout=60000 --fetch-retries=3 --fetch-retry-mintimeout=5000 --fetch-retry-maxtimeout=15000 || status=$?
+          timeout --kill-after=30s "${NPM_CI_TIMEOUT_SECONDS}s" npm ci --fetch-timeout=60000 --fetch-retries=3 --fetch-retry-mintimeout=5000 --fetch-retry-maxtimeout=15000 &
+          pgid=$!
+          wait "$pgid" || status=$?
+          if kill -0 -- "-$pgid" 2>/dev/null; then
+            kill -KILL -- "-$pgid" 2>/dev/null || true
+            while kill -0 -- "-$pgid" 2>/dev/null; do sleep 1; done
+          fi
           if [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
             echo "::warning::npm ci timed out after ${NPM_CI_TIMEOUT_SECONDS}s (exit ${status})"
           fi
