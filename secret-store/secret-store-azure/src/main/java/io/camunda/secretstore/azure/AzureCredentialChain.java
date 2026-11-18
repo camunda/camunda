@@ -103,12 +103,28 @@ final class AzureCredentialChain {
             monitor),
         new SignInCredential(
             MANAGED_IDENTITY,
-            MANAGED_IDENTITY
-                + (clientId != null
-                    ? " (user-assigned identity" + clientIdSuffix(clientId) + ")"
-                    : " (system-assigned identity)"),
+            MANAGED_IDENTITY + managedIdentityDescription(clientId, environment),
             managedIdentityCredential(config, environment, httpClient, executor),
             monitor));
+  }
+
+  /**
+   * Names the identity the SDK will actually request. Without a configured client ID it requests
+   * the system-assigned identity, except in a workload-identity pod: there it exchanges the
+   * federated token for {@code AZURE_CLIENT_ID} instead of calling IMDS.
+   */
+  private static String managedIdentityDescription(
+      final @Nullable String clientId, final Configuration environment) {
+    if (clientId != null) {
+      return " (user-assigned identity" + clientIdSuffix(clientId) + ")";
+    }
+    if (environment.get(Configuration.PROPERTY_AZURE_TENANT_ID) != null
+        && environment.get(AZURE_FEDERATED_TOKEN_FILE) != null) {
+      return " (federated token"
+          + clientIdSuffix(environment.get(Configuration.PROPERTY_AZURE_CLIENT_ID))
+          + ")";
+    }
+    return " (system-assigned identity)";
   }
 
   private static TokenCredential environmentCredential(

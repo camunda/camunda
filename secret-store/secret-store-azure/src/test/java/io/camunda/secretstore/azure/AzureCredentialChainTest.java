@@ -183,6 +183,44 @@ final class AzureCredentialChainTest {
   }
 
   @Test
+  void shouldSignInWithTheSystemAssignedIdentityDespiteAClientIdInTheEnvironment() {
+    // given — AZURE_CLIENT_ID alone, as left over from a service principal or another tool
+    final var http = StubAzureHttpClient.signingIn(3600);
+    final var environment = environment(Map.of("AZURE_CLIENT_ID", "unrelated-client-id"));
+    final var credential = chain(AzureKeyVaultStoreConfig.of(VAULT_URL), environment, http);
+    // MSAL caches managed-identity tokens process-wide; a scope of its own keeps this test from
+    // serving the system-assigned token another test expects to request
+    final var scope = new TokenRequestContext().addScopes("https://other.vault.azure.net/.default");
+
+    // when
+    credential.getTokenSync(scope);
+
+    // then
+    assertThat(http.tokenRequests())
+        .singleElement()
+        .satisfies(
+            request -> {
+              assertThat(request.isImdsRequest()).isTrue();
+              assertThat(request.url()).doesNotContain("client_id=");
+            });
+    assertThat(managedIdentityDescription(AzureKeyVaultStoreConfig.of(VAULT_URL), environment))
+        .contains("system-assigned identity");
+  }
+
+  @Test
+  void shouldDescribeTheManagedIdentityByTheClientIdItUsesInAWorkloadIdentityPod()
+      throws Exception {
+    // when
+    final var description =
+        managedIdentityDescription(
+            AzureKeyVaultStoreConfig.of(VAULT_URL),
+            workloadIdentityEnvironment("pod-client-id", "federated-token"));
+
+    // then — the SDK exchanges the federated token for AZURE_CLIENT_ID, not the system identity
+    assertThat(description).contains("pod-client-id").doesNotContain("system-assigned");
+  }
+
+  @Test
   void shouldSignEachPhysicalTenantInAsItsOwnIdentity() {
     // given — the same process environment, as two tenants of one broker share it
     final var tenantA = StubAzureHttpClient.signingIn(3600);
@@ -334,6 +372,18 @@ final class AzureCredentialChainTest {
         .contains(AzureCredentialChain.ENVIRONMENT)
         .contains("sp-client-id")
         .doesNotContain("sp-secret");
+  }
+
+  private String managedIdentityDescription(
+      final AzureKeyVaultStoreConfig config, final Configuration environment) {
+    return AzureCredentialChain.credentials(
+            config,
+            environment,
+            StubAzureHttpClient.offline(),
+            executor,
+            new SignInMonitor(VAULT_URL))
+        .getLast()
+        .description();
   }
 
   private TokenCredential chain(
