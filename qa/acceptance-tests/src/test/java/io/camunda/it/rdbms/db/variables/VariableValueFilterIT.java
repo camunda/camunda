@@ -694,6 +694,32 @@ public class VariableValueFilterIT {
         .containsExactly("value?single_wildcards1", "value?single_wildcards2");
   }
 
+  // A truncated variable stores its preview in VAR_VALUE and the original in VAR_FULL_VALUE, so a
+  // like filter has to check both columns. Placing the marker beyond the preview size makes only
+  // the VAR_FULL_VALUE branch match, which is the branch that must stay scoped by the other
+  // predicates of the query.
+
+  @TestTemplate
+  public void shouldApplyNameFilterWhenLikeMatchesTruncatedValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given two truncated variables with different names, both matching the like filter
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String marker = nextStringId();
+    final VariableDbModel matchingVariable =
+        VariableFixtures.createRandomized(
+            b -> b.name("var-name-" + nextStringId()).value(generateRandomString(9000, marker)));
+    createAndSaveVariable(rdbmsService, matchingVariable);
+    createAndSaveVariable(
+        rdbmsService,
+        VariableFixtures.createRandomized(
+            b -> b.name("var-name-" + nextStringId()).value(generateRandomString(9000, marker))));
+
+    // when searching by the first variable's name and the like filter
+    // then only the variable with that name is returned
+    searchAndAssertVariableValueFilter(
+        rdbmsService, matchingVariable, matchingVariable.name(), Operation.like("*" + marker));
+  }
+
   private static void searchAndAssertVariableValueFilter(
       final RdbmsService rdbmsService,
       final VariableDbModel variableDbModel,
