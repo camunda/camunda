@@ -65,6 +65,10 @@ import org.mockito.Mockito;
 @Timeout(120)
 final class ClusterConfigurationInitializerTest {
   @RegisterExtension final ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension();
+  // Far above the milliseconds these waits take, so slow CI machines do not make the tests flaky.
+  // It only bounds them, so that a broken initializer fails the test instead of hanging it.
+  private static final Duration FAIL_FAST_TIMEOUT = Duration.ofSeconds(10);
+
   @TempDir Path rootDir;
   private final ClusterConfiguration initialClusterConfiguration =
       ClusterConfiguration.init()
@@ -160,7 +164,9 @@ final class ClusterConfigurationInitializerTest {
     topologyNotifier.updateTopology(initialClusterConfiguration);
 
     // then
-    assertThatClusterTopology(initializeFuture.join()).isInitialized();
+    assertThat(initializeFuture)
+        .succeedsWithin(FAIL_FAST_TIMEOUT)
+        .satisfies(configuration -> assertThat(configuration.isUninitialized()).isFalse());
   }
 
   @Test
@@ -174,6 +180,7 @@ final class ClusterConfigurationInitializerTest {
 
       // then
       Awaitility.await("until the wait is escalated to an error")
+          .atMost(FAIL_FAST_TIMEOUT)
           .untilAsserted(() -> assertThat(logCapturer.messagesAt(Level.ERROR)).isNotEmpty());
       assertThat(logCapturer.messagesAt(Level.WARN))
           .hasSize(GossipInitializer.ERROR_LOG_THRESHOLD - 1)
@@ -193,16 +200,18 @@ final class ClusterConfigurationInitializerTest {
     try (final var logCapturer = LogCapturer.capturing(GossipInitializer.class, Level.WARN)) {
       final var initializeFuture = initializer.initialize();
       Awaitility.await("until the first warning")
+          .atMost(FAIL_FAST_TIMEOUT)
           .untilAsserted(() -> assertThat(logCapturer.messagesAt(Level.WARN)).isNotEmpty());
       assertThat(notifier.hasListener()).isTrue();
       assertThat(timerCancelled).isFalse();
 
       // when
       notifier.updateTopology(initialClusterConfiguration);
-      initializeFuture.join();
+      assertThat(initializeFuture).succeedsWithin(FAIL_FAST_TIMEOUT);
 
       // then - the cleanup runs on the actor right after the future completes
       Awaitility.await("until the listener is removed and the timer is cancelled")
+          .atMost(FAIL_FAST_TIMEOUT)
           .untilAsserted(
               () -> {
                 assertThat(notifier.hasListener()).isFalse();
@@ -213,7 +222,7 @@ final class ClusterConfigurationInitializerTest {
       final var loggedBeforeStop = logCapturer.messages().size();
       Awaitility.await("until no more logs are written")
           .during(Duration.ofMillis(250))
-          .atMost(Duration.ofSeconds(5))
+          .atMost(FAIL_FAST_TIMEOUT)
           .untilAsserted(() -> assertThat(logCapturer.messages()).hasSize(loggedBeforeStop));
     }
   }
@@ -671,7 +680,9 @@ final class ClusterConfigurationInitializerTest {
       topologyUpdateNotifier.updateTopology(initialClusterConfiguration);
 
       // then
-      assertThatClusterTopology(initializeFuture.join()).isInitialized();
+      assertThat(initializeFuture)
+          .succeedsWithin(FAIL_FAST_TIMEOUT)
+          .satisfies(configuration -> assertThat(configuration.isUninitialized()).isFalse());
     }
 
     @Test
