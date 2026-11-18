@@ -139,12 +139,17 @@
 
   <sql id="searchFilter">
     <where>
-      <!-- tenant authorization filter -->
-      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
-        AND (TENANT_SCOPE = 'GLOBAL' OR TENANT_ID IN
-        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
-          #{tenantId}
-        </foreach>)
+      <!-- tenant authorization filter: global logs are always visible, tenant-scoped logs only
+           for authorized tenants (none if the user has no tenant access) -->
+      <if test="tenantCheckEnabled">
+        AND (TENANT_SCOPE = 'GLOBAL'
+        <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+          OR TENANT_ID IN
+          <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+            #{tenantId}
+          </foreach>
+        </if>
+        )
       </if>
       <!-- Deny all access when no authorizations are configured -->
       <if test="authorizationFilter.authorizedCategories.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">

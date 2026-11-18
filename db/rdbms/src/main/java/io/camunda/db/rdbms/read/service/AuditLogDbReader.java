@@ -51,10 +51,9 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
       final AuditLogQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), AuditLogSearchColumn.TIMESTAMP);
 
-    // Only check for resource access, not tenant access.
-    // Audit logs can be GLOBAL scoped (e.g., ADMIN category operations) and don't require
-    // tenant access. The SQL query already handles this by allowing TENANT_SCOPE = 'GLOBAL'
-    // when authorizedTenantIds is empty.
+    // Only short-circuit on missing resource access, not on missing tenant access: GLOBAL scoped
+    // audit logs (e.g., ADMIN category operations) stay visible without any tenant access. The
+    // tenant check itself is applied in SQL, which restricts such users to GLOBAL scoped logs.
     if (noResourceAccess(resourceAccessChecks)) {
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
@@ -68,6 +67,7 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
                 b.filter(query.filter())
                     .authorizationFilter(authorizationFilter)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .tenantCheckEnabled(resourceAccessChecks.tenantCheck().enabled())
                     .sort(dbSort)
                     .page(dbPage));
 
