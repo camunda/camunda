@@ -31,7 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -55,7 +55,7 @@ final class DiskSpaceMonitorIT {
                     .setMonitoringInterval(Duration.ofSeconds(1));
               });
 
-  private CamundaClient client;
+  @AutoClose private CamundaClient client;
   private ZeebeResourcesHelper resourcesHelper;
   private ActorClockActuator clock;
 
@@ -64,11 +64,6 @@ final class DiskSpaceMonitorIT {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
     clock = ActorClockActuator.of(zeebe);
-  }
-
-  @AfterEach
-  void closeClient() {
-    client.close();
   }
 
   @Test

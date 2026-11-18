@@ -21,7 +21,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
@@ -47,7 +47,7 @@ final class CancelProcessInstanceInBatchesIT {
                 c.getProcessing().setEnableStraightthroughProcessingLoopDetector(false);
               });
 
-  private CamundaClient client;
+  @AutoClose private CamundaClient client;
   private ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
@@ -59,11 +59,6 @@ final class CancelProcessInstanceInBatchesIT {
             .maxMessageSize(MAX_MESSAGE_SIZE_KB * ONE_KB)
             .build();
     resourcesHelper = new ZeebeResourcesHelper(client);
-  }
-
-  @AfterEach
-  void closeClient() {
-    client.close();
   }
 
   @Test

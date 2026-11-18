@@ -21,7 +21,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +31,7 @@ final class ClientReconnectIT {
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  private CamundaClient client;
+  @AutoClose private CamundaClient client;
   private long processDefinitionKey;
 
   @BeforeEach
@@ -40,11 +40,6 @@ final class ClientReconnectIT {
     processDefinitionKey =
         new ZeebeResourcesHelper(client)
             .deployProcess(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
-  }
-
-  @AfterEach
-  void closeClient() {
-    client.close();
   }
 
   @Test

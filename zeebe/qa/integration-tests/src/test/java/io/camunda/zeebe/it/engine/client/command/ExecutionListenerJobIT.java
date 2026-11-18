@@ -30,7 +30,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,18 +40,13 @@ final class ExecutionListenerJobIT {
   private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true);
 
-  private CamundaClient client;
+  @AutoClose private CamundaClient client;
   private ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
   void createClient() {
     client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
-  }
-
-  @AfterEach
-  void closeClient() {
-    client.close();
   }
 
   @Test

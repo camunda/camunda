@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
@@ -45,7 +45,7 @@ final class SmallMessageSizeIT {
                 c.getApi().getLongPolling().setEnabled(false);
               });
 
-  private CamundaClient client;
+  @AutoClose private CamundaClient client;
   private long processInstanceKey;
   private String jobType;
 
@@ -90,11 +90,6 @@ final class SmallMessageSizeIT {
                     .limit(4)
                     .count(),
             n -> n == 4);
-  }
-
-  @AfterEach
-  void closeClient() {
-    client.close();
   }
 
   @Test

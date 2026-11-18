@@ -17,7 +17,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,8 +28,8 @@ final class MultipleClientIT {
   private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true);
 
-  private CamundaClient client1;
-  private CamundaClient client2;
+  @AutoClose private CamundaClient client1;
+  @AutoClose private CamundaClient client2;
   private ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
@@ -37,12 +37,6 @@ final class MultipleClientIT {
     client1 = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
     client2 = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
     resourcesHelper = new ZeebeResourcesHelper(client1);
-  }
-
-  @AfterEach
-  void closeClients() {
-    client1.close();
-    client2.close();
   }
 
   @Test

@@ -30,7 +30,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -45,17 +45,12 @@ final class MessageCorrelationIT {
   private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true);
 
-  private CamundaClient client;
+  @AutoClose private CamundaClient client;
   private ZeebeResourcesHelper resourcesHelper;
 
   private void createClient() {
     client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
-  }
-
-  @AfterEach
-  void closeClient() {
-    client.close();
   }
 
   private long processDefinitionKey;

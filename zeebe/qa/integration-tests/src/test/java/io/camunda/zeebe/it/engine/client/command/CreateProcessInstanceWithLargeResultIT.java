@@ -21,7 +21,7 @@ import io.camunda.zeebe.util.ByteValue;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
@@ -42,7 +42,7 @@ final class CreateProcessInstanceWithLargeResultIT {
                     .setLogSegmentSize(DataSize.ofMegabytes(64));
               });
 
-  private CamundaClient client;
+  @AutoClose private CamundaClient client;
   private ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
@@ -54,11 +54,6 @@ final class CreateProcessInstanceWithLargeResultIT {
             .maxMessageSize(21 * ONE_MB)
             .build();
     resourcesHelper = new ZeebeResourcesHelper(client);
-  }
-
-  @AfterEach
-  void closeClient() {
-    client.close();
   }
 
   @Test

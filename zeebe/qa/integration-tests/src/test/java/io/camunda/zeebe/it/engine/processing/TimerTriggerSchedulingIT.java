@@ -20,6 +20,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +35,7 @@ final class TimerTriggerSchedulingIT {
 
   private final ActorClockActuator clock = ActorClockActuator.of(ZEEBE);
 
-  private CamundaClient client;
+  @AutoClose private CamundaClient client;
   private ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
@@ -44,8 +45,7 @@ final class TimerTriggerSchedulingIT {
   }
 
   @AfterEach
-  void closeClient() {
-    client.close();
+  void resetClock() {
     clock.resetTime();
   }
 
