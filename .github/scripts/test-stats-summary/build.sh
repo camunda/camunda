@@ -62,8 +62,10 @@ bq_query() {
 }
 
 top_tests() {
-  # bq would read a leading "--" comment line as a flag, so drop the comment lines
+  # bq would read a leading "--" comment line as a flag, so drop the comment lines. The query
+  # returns all tests of all branches, more than the 100 rows bq returns by default.
   bq_query \
+    --max_rows=100000 \
     --parameter="days:INT64:${DAYS}" \
     --parameter="test_status:STRING:${MODE}" \
     --parameter="triggers:ARRAY<STRING>:$(json_array "${TRIGGERS[@]}")" \

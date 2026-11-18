@@ -24,7 +24,7 @@ setup() {
   # bq: picks the fixture by the column the query selects, logs the query parameters
   cat > bin/bq <<'EOF'
 #!/usr/bin/env bash
-printf '%s\n' "$@" | grep '^--parameter=' >> "${FIXTURES}/bq-parameters.txt"
+printf '%s\n' "$@" | grep -E '^--(parameter|max_rows)=' >> "${FIXTURES}/bq-parameters.txt"
 query="${*: -1}"
 case "$query" in
   *user_reason*) echo '[{"number_of_all_jobs":"6"}]' ;;
@@ -159,6 +159,14 @@ block() {
   grep -qx -- '--parameter=test_status:STRING:flaky' fixtures/bq-parameters.txt
   grep -qx -- '--parameter=triggers:ARRAY<STRING>:\["push","merge_group","pull_request"\]' fixtures/bq-parameters.txt
   grep -qx -- '--parameter=branches:ARRAY<STRING>:\["main","stable/8.10","stable/8.9","stable/8.8"\]' fixtures/bq-parameters.txt
+}
+
+@test "should read all tests of all branches, not only the first 100 rows" {
+  # when
+  build flaky
+
+  # then
+  grep -qx -- '--max_rows=100000' fixtures/bq-parameters.txt
 }
 
 @test "should count failed tests of push and merge queue runs of the previous 7 days" {
