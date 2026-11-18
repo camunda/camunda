@@ -19,10 +19,12 @@ import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationCheck;
 import io.camunda.security.core.authz.ResourceAccessChecks;
@@ -318,6 +320,107 @@ public class ProcessDefinitionSpecificFilterIT {
     assertThat(searchResult.items())
         .extracting(d -> d.processDefinitionKey())
         .containsExactly(9401L);
+  }
+
+  @Test
+  public void shouldMatchNameLikeIgnoreCaseWithDifferentCase() {
+    // given
+    createSimpleNamedDefinition(9501L, "ci-name-process", "Send INVOICE Now", "ci-tenant");
+
+    // when
+    final var searchResult = searchByName("ci-tenant", Operation.likeIgnoreCase("*invoice*"));
+
+    // then
+    assertThat(searchResult.items())
+        .extracting(d -> d.processDefinitionKey())
+        .containsExactly(9501L);
+  }
+
+  @Test
+  public void shouldMatchNameLikeIgnoreCaseWithUpperCasePattern() {
+    // given
+    createSimpleNamedDefinition(9511L, "ci-upper-process", "send invoice now", "ci-upper-tenant");
+
+    // when
+    final var searchResult = searchByName("ci-upper-tenant", Operation.likeIgnoreCase("SEND*"));
+
+    // then
+    assertThat(searchResult.items())
+        .extracting(d -> d.processDefinitionKey())
+        .containsExactly(9511L);
+  }
+
+  @Test
+  public void shouldKeepUnderscoreInNameLikeIgnoreCaseLiteral() {
+    // given
+    createSimpleNamedDefinition(9531L, "ci-underscore-process-1", "A_b report", "ci-us-tenant");
+    createSimpleNamedDefinition(9532L, "ci-underscore-process-2", "axb report", "ci-us-tenant");
+
+    // when
+    final var searchResult = searchByName("ci-us-tenant", Operation.likeIgnoreCase("a_B*"));
+
+    // then: the underscore is literal, so "axb report" does not match
+    assertThat(searchResult.items())
+        .extracting(d -> d.processDefinitionKey())
+        .containsExactly(9531L);
+  }
+
+  @Test
+  public void shouldMatchNameLikeIgnoreCaseInsideOrGroup() {
+    // given
+    createSimpleNamedDefinition(9541L, "ci-or-first", "Send INVOICE Now", "ci-or-tenant");
+    createSimpleNamedDefinition(9542L, "ci-or-second", "Something else", "ci-or-tenant");
+
+    // when
+    final var searchResult =
+        processDefinitionReader.search(
+            ProcessDefinitionQuery.of(
+                b ->
+                    b.filter(
+                            FilterBuilders.processDefinition(
+                                f ->
+                                    f.tenantIds("ci-or-tenant")
+                                        .addOrOperation(
+                                            FilterBuilders.processDefinition(
+                                                o ->
+                                                    o.processDefinitionIdOperations(
+                                                        Operation.like("*no-such-id*"))))
+                                        .addOrOperation(
+                                            FilterBuilders.processDefinition(
+                                                o ->
+                                                    o.nameOperations(
+                                                        Operation.likeIgnoreCase("*invoice*"))))))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.items())
+        .extracting(d -> d.processDefinitionKey())
+        .containsExactly(9541L);
+  }
+
+  private void createSimpleNamedDefinition(
+      final long key, final String processDefinitionId, final String name, final String tenantId) {
+    createAndSaveProcessDefinition(
+        rdbmsWriters,
+        ProcessDefinitionFixtures.createRandomized(
+            b ->
+                b.processDefinitionKey(key)
+                    .processDefinitionId(processDefinitionId)
+                    .name(name)
+                    .tenantId(tenantId)));
+  }
+
+  private SearchQueryResult<ProcessDefinitionEntity> searchByName(
+      final String tenantId, final Operation<String> nameOperation) {
+    return processDefinitionReader.search(
+        ProcessDefinitionQuery.of(
+            b ->
+                b.filter(
+                        FilterBuilders.processDefinition(
+                            f -> f.tenantIds(tenantId).nameOperations(nameOperation)))
+                    .sort(s -> s)
+                    .page(p -> p.from(0).size(10))));
   }
 
   static List<ProcessDefinitionFilter> shouldFindProcessDefinitionWithSpecificFilterParameters() {

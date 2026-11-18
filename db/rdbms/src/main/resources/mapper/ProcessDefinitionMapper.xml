@@ -105,8 +105,17 @@
       </if>
       <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
         <foreach collection="filter.nameOperations" item="operation">
-          AND NAME
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+          <choose>
+            <!-- LIKE_IGNORE_CASE compares lower-cased values; Commons.operationCondition has no column to wrap -->
+            <when test="operation.operator.name().equals('LIKE_IGNORE_CASE')">
+              AND LOWER(NAME) LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler})
+                ESCAPE ${escapeChar}
+            </when>
+            <otherwise>
+              AND NAME
+              <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+            </otherwise>
+          </choose>
         </foreach>
       </if>
       <if test="filter.resourceNames != null and !filter.resourceNames.isEmpty()">
