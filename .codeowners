@@ -479,9 +479,8 @@ optimize.Dockerfile         @camunda/core-features
 # operate-frontend/operate-backend team split.
 /operate/client/            @camunda/operate-admin-pod
 
-# Optimize frontend: overrides the broad /optimize/ rule above, which predates the
-# optimize-frontend/optimize-backend team split.
-/optimize/client/           @camunda/optimize-frontend
+# Optimize frontend: overrides the broad /optimize/ rule above.
+/optimize/client/           @camunda/optimize
 
 # Unified webapp frontend: overrides the broad /webapp/ rule above, which covers
 # the Java BFF. Pod areas override the frontend default.
