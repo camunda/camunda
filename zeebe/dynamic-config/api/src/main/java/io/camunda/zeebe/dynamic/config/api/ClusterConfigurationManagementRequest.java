@@ -205,8 +205,19 @@ public sealed interface ClusterConfigurationManagementRequest {
     }
   }
 
-  record ForceRemoveBrokersRequest(Set<MemberId> membersToRemove, boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+  /**
+   * @param acceptPossibleLoss internal only, not on the management API yet (system partition design
+   *     5.12 is pending approval): phase 0 may make a forced change of the system partition even if
+   *     the completeness check fails
+   */
+  record ForceRemoveBrokersRequest(
+      Set<MemberId> membersToRemove, boolean dryRun, boolean acceptPossibleLoss)
+      implements ClusterConfigurationManagementRequest {
+
+    public ForceRemoveBrokersRequest(final Set<MemberId> membersToRemove, final boolean dryRun) {
+      this(membersToRemove, dryRun, false);
+    }
+  }
 
   /**
    * Discards a disabled physical tenant, so that a broker still holding its partitions may leave

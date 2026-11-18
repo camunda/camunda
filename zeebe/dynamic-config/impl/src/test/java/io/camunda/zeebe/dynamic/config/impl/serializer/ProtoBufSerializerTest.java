@@ -52,6 +52,7 @@ import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.SystemPartitionRemoveMembersOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
@@ -512,6 +513,43 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeClusterPatchRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(clusterPatchRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeSystemPartitionRemoveMembersInPhasedPlan() {
+    // given - phase 0 of a force-remove plan
+    final var phaseZero =
+        new SystemPartitionRemoveMembersOperation(
+            MemberId.from("0"), Set.of(MemberId.from("2"), MemberId.from("3")), true);
+    final var configuration =
+        CurrentClusterConfiguration.init().initPlan(List.of(new GlobalPhase(List.of(phaseZero))));
+
+    // when
+    final var encoded = protoBufSerializer.encodeCurrentClusterConfiguration(configuration);
+    final var decoded =
+        protoBufSerializer.decodeCurrentClusterConfiguration(encoded, 0, encoded.length);
+
+    // then
+    assertThat(decoded.phasedChangeState().pending().values())
+        .singleElement()
+        .satisfies(
+            plan ->
+                assertThat(((GlobalPhase) plan.phases().getFirst()).operations())
+                    .containsExactly(phaseZero));
+  }
+
+  @Test
+  void shouldEncodeAndDecodeForceRemoveBrokersRequestThatAcceptsPossibleLoss() {
+    // given
+    final var request = new ForceRemoveBrokersRequest(Set.of(MemberId.from("6")), false, true);
+
+    // when
+    final var decoded =
+        protoBufSerializer.decodeForceRemoveBrokersRequest(
+            protoBufSerializer.encodeForceRemoveBrokersRequest(request));
+
+    // then
+    assertThat(decoded).isEqualTo(request);
   }
 
   @Test

@@ -176,6 +176,7 @@ message GlobalChangeOperation {
     PreScalingOperation preScaling = 5;
     PostScalingOperation postScaling = 6;
     UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 7;
+    SystemPartitionRemoveMembersOperation systemPartitionRemoveMembers = 8;
   }
 }
 
@@ -326,6 +327,7 @@ message TopologyChangeOperation {
     PartitionPromoteOperation partitionPromote = 30;
     PartitionDemoteOperation partitionDemote = 31;
     SchemaInitializationOperation schemaInitialization = 32;
+    SystemPartitionRemoveMembersOperation systemPartitionRemoveMembers = 33;
   }
 }
 
@@ -460,6 +462,12 @@ message MemberJoinOperation {}
 message MemberLeaveOperation {}
 
 message MemberRemoveOperation { string memberToRemove = 1; }
+
+// Phase 0 of a force-remove plan: removes the brokers from the system partition.
+message SystemPartitionRemoveMembersOperation {
+  repeated string removedBrokers = 1;
+  bool acceptPossibleLoss = 2;
+}
 
 message ModeChangeOperation {
   Mode mode = 1;

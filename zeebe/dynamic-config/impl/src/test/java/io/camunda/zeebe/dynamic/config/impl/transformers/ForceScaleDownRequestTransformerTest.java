@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.SystemPartitionRemoveMembersOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -91,6 +92,41 @@ class ForceScaleDownRequestTransformerTest {
             new PartitionForceReconfigureOperation(id2, 2, Set.of(id2)),
             new MemberRemoveOperation(id0, id1),
             new MemberRemoveOperation(id0, id3));
+  }
+
+  @Test
+  void shouldRemoveBrokersFromSystemPartitionInPhaseZero() {
+    // given - the cluster runs a system partition
+    final var transformer =
+        new ForceScaleDownRequestTransformer(
+            Set.of(id0, id2), id0, new SystemPartitionPhase(true, true));
+
+    // when
+    final var phases = transformer.phases(currentTopology);
+
+    // then - phase 0 comes before the partitions and the member removal (design 5.6.3)
+    EitherAssert.assertThat(phases).isRight();
+    assertThat(phases.get()).hasSize(3);
+    assertThat(((GlobalPhase) phases.get().getFirst()).operations())
+        .containsExactly(new SystemPartitionRemoveMembersOperation(id0, Set.of(id1, id3), true));
+    assertThat(((GlobalPhase) phases.get().getLast()).operations())
+        .containsExactly(new MemberRemoveOperation(id0, id1), new MemberRemoveOperation(id0, id3));
+  }
+
+  @Test
+  void shouldNotAddPhaseZeroWithoutSystemPartition() {
+    // when
+    final var phases =
+        new ForceScaleDownRequestTransformer(Set.of(id0, id2), id0).phases(currentTopology);
+
+    // then
+    EitherAssert.assertThat(phases).isRight();
+    assertThat(phases.get())
+        .noneMatch(
+            phase ->
+                phase instanceof final GlobalPhase global
+                    && global.operations().stream()
+                        .anyMatch(SystemPartitionRemoveMembersOperation.class::isInstance));
   }
 
   @Test

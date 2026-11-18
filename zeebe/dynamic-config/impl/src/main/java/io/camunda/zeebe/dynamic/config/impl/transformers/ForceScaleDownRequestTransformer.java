@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.SystemPartitionRemoveMembersOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
@@ -46,10 +47,20 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
 
   private final MemberId coordinator;
 
+  private final SystemPartitionPhase systemPartitionPhase;
+
   public ForceScaleDownRequestTransformer(
       final Set<MemberId> membersToRetain, final MemberId coordinator) {
+    this(membersToRetain, coordinator, SystemPartitionPhase.DISABLED);
+  }
+
+  public ForceScaleDownRequestTransformer(
+      final Set<MemberId> membersToRetain,
+      final MemberId coordinator,
+      final SystemPartitionPhase systemPartitionPhase) {
     this.membersToRetain = membersToRetain;
     this.coordinator = coordinator;
+    this.systemPartitionPhase = systemPartitionPhase;
   }
 
   /**
@@ -121,6 +132,19 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
             .toList();
 
     final List<Phase> phases = new ArrayList<>();
+    if (systemPartitionPhase.enabled() && !removeMembers.isEmpty()) {
+      // Phase 0 (system partition design 5.6.3): the system partition first, because later the
+      // plan itself is stored in the system partition and can continue only if it works.
+      final var removed =
+          members.stream().filter(member -> !membersToRetain.contains(member)).toList();
+      phases.add(
+          new GlobalPhase(
+              List.of(
+                  new SystemPartitionRemoveMembersOperation(
+                      coordinator,
+                      Set.copyOf(removed),
+                      systemPartitionPhase.acceptPossibleLoss()))));
+    }
     if (!reconfigureByTenant.isEmpty()) {
       phases.add(PartitionGroupPhase.sequential(reconfigureByTenant));
     }

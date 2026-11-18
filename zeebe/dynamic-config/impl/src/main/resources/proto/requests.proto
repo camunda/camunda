@@ -100,6 +100,9 @@ message ClusterZoneMigrationRequest {
 message ForceRemoveBrokersRequest {
   repeated string membersToRemove = 1;
   bool dryRun = 2;
+  // Internal only: phase 0 may make a forced change of the system partition even if the
+  // completeness check fails.
+  bool acceptPossibleLoss = 3;
 }
 
 message RemoveZoneRequest {

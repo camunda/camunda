@@ -57,6 +57,7 @@ import io.camunda.zeebe.dynamic.config.impl.transformers.RemovePhysicalTenantReq
 import io.camunda.zeebe.dynamic.config.impl.transformers.RemoveZoneTransformer;
 import io.camunda.zeebe.dynamic.config.impl.transformers.RestoreRequestTransformer;
 import io.camunda.zeebe.dynamic.config.impl.transformers.ScaleRequestTransformer;
+import io.camunda.zeebe.dynamic.config.impl.transformers.SystemPartitionPhase;
 import io.camunda.zeebe.dynamic.config.impl.transformers.UpdatePartitionDistributionTransformer;
 import io.camunda.zeebe.dynamic.config.impl.transformers.UpdateRoutingStateTransformer;
 import io.camunda.zeebe.dynamic.config.impl.transformers.UpdateZonePrioritiesTransformer;
@@ -79,16 +80,31 @@ public final class ClusterConfigurationManagementRequestsHandler
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
   private final RequestValidatorRegistry validatorRegistry;
+  private final boolean systemPartition;
 
   public ClusterConfigurationManagementRequestsHandler(
       final ConfigurationChangeCoordinator coordinator,
       final MemberId localMemberId,
       final ConcurrencyControl executor,
       final RequestValidatorRegistry validatorRegistry) {
+    this(coordinator, localMemberId, executor, validatorRegistry, false);
+  }
+
+  /**
+   * @param systemPartition true if the cluster runs a system partition: force-remove plans then get
+   *     phase 0, see {@link SystemPartitionPhase}
+   */
+  public ClusterConfigurationManagementRequestsHandler(
+      final ConfigurationChangeCoordinator coordinator,
+      final MemberId localMemberId,
+      final ConcurrencyControl executor,
+      final RequestValidatorRegistry validatorRegistry,
+      final boolean systemPartition) {
     this.coordinator = coordinator;
     this.executor = executor;
     this.localMemberId = localMemberId;
     this.validatorRegistry = validatorRegistry;
+    this.systemPartition = systemPartition;
   }
 
   @Override
@@ -152,7 +168,10 @@ public final class ClusterConfigurationManagementRequestsHandler
 
     return handleRequest(
         forceScaleDownRequest.dryRun(),
-        new ForceScaleDownRequestTransformer(forceScaleDownRequest.members(), localMemberId));
+        new ForceScaleDownRequestTransformer(
+            forceScaleDownRequest.members(),
+            localMemberId,
+            new SystemPartitionPhase(systemPartition, false)));
   }
 
   @Override
@@ -218,7 +237,10 @@ public final class ClusterConfigurationManagementRequestsHandler
     return handleRequest(
         forceRemoveBrokersRequest.dryRun(),
         new ForceRemoveBrokersRequestTransformer(
-            forceRemoveBrokersRequest.membersToRemove(), localMemberId));
+            forceRemoveBrokersRequest.membersToRemove(),
+            localMemberId,
+            new SystemPartitionPhase(
+                systemPartition, forceRemoveBrokersRequest.acceptPossibleLoss())));
   }
 
   @Override
@@ -237,7 +259,11 @@ public final class ClusterConfigurationManagementRequestsHandler
       final RemoveZoneRequest removeZoneRequest) {
     return handleRequest(
         removeZoneRequest.dryRun(),
-        new RemoveZoneTransformer(removeZoneRequest.zoneId(), removeZoneRequest.force()));
+        new RemoveZoneTransformer(
+            removeZoneRequest.zoneId(),
+            removeZoneRequest.force(),
+            new SystemPartitionPhase(systemPartition, false),
+            systemPartition ? localMemberId : null));
   }
 
   @Override

@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.config.impl.changes.appliers.MemberJoinApplier;
 import io.camunda.zeebe.dynamic.config.impl.changes.appliers.MemberLeaveApplier;
 import io.camunda.zeebe.dynamic.config.impl.changes.appliers.PostScalingApplier;
 import io.camunda.zeebe.dynamic.config.impl.changes.appliers.PreScalingApplier;
+import io.camunda.zeebe.dynamic.config.impl.changes.appliers.SystemPartitionRemoveMembersApplier;
 import io.camunda.zeebe.dynamic.config.impl.changes.appliers.UpdatePartitionDistributorConfigApplier;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOp
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.SystemPartitionRemoveMembersOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 
 public final class GlobalConfigurationChangeAppliersImpl
@@ -51,6 +53,8 @@ public final class GlobalConfigurationChangeAppliersImpl
           new PostScalingApplier(op.memberId(), op.clusterMembers(), clusterChangeExecutor);
       case final UpdatePartitionDistributorConfigOperation op ->
           new UpdatePartitionDistributorConfigApplier(op);
+      case final SystemPartitionRemoveMembersOperation op ->
+          new SystemPartitionRemoveMembersApplier(op, clusterMembershipChangeExecutor);
     };
   }
 }

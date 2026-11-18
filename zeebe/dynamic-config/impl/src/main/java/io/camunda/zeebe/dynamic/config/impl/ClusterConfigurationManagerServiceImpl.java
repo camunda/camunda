@@ -31,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.impl.ClusterConfigurationInitializer.Stat
 import io.camunda.zeebe.dynamic.config.impl.ClusterConfigurationInitializer.SyncInitializer;
 import io.camunda.zeebe.dynamic.config.impl.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.impl.api.ClusterConfigurationRequestServer;
+import io.camunda.zeebe.dynamic.config.impl.changes.ClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.impl.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.impl.changes.ConfigurationChangeCoordinatorImpl;
 import io.camunda.zeebe.dynamic.config.impl.changes.GlobalConfigurationChangeAppliersImpl;
@@ -75,6 +76,7 @@ public final class ClusterConfigurationManagerServiceImpl
   private final Actor managerActor;
   private final ClusterConfigurationGossiperConfig gossiperConfig;
   private final ClusterChangeExecutor clusterChangeExecutor;
+  private final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor;
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
   private final ClusterMembershipService membershipService;
@@ -89,6 +91,29 @@ public final class ClusterConfigurationManagerServiceImpl
       final ClusterConfigurationGossiperConfig config,
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry) {
+    this(
+        dataRootDirectory,
+        communicationService,
+        memberShipService,
+        config,
+        clusterChangeExecutor,
+        new NoopClusterMembershipChangeExecutor(),
+        meterRegistry);
+  }
+
+  /**
+   * @param clusterMembershipChangeExecutor reacts to members that join or leave, e.g. waits until
+   *     the system partition removed a leaving member
+   */
+  public ClusterConfigurationManagerServiceImpl(
+      final Path dataRootDirectory,
+      final ClusterCommunicationService communicationService,
+      final ClusterMembershipService memberShipService,
+      final ClusterConfigurationGossiperConfig config,
+      final ClusterChangeExecutor clusterChangeExecutor,
+      final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor,
+      final MeterRegistry meterRegistry) {
+    this.clusterMembershipChangeExecutor = clusterMembershipChangeExecutor;
     gossiperConfig = config;
     this.clusterChangeExecutor = clusterChangeExecutor;
     topologyMetrics = new TopologyMetrics(meterRegistry);
@@ -132,7 +157,11 @@ public final class ClusterConfigurationManagerServiceImpl
             communicationService,
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                configurationChangeCoordinator, localMemberId, managerActor, validators));
+                configurationChangeCoordinator,
+                localMemberId,
+                managerActor,
+                validators,
+                clusterMembershipChangeExecutor.managesSystemPartition()));
 
     clusterConfigurationManager.setCurrentConfigurationGossiper(
         clusterConfigurationGossiper::updateCurrentClusterConfiguration);
@@ -274,7 +303,7 @@ public final class ClusterConfigurationManagerServiceImpl
               // through managerActor's executor.
               clusterConfigurationManager.registerGlobalChangeAppliers(
                   new GlobalConfigurationChangeAppliersImpl(
-                      new NoopClusterMembershipChangeExecutor(), clusterChangeExecutor));
+                      clusterMembershipChangeExecutor, clusterChangeExecutor));
               final var coordinatorMemberId =
                   ClusterConfigurationCoordinatorSupplier.ofMembers(
                           staticConfiguration.clusterMembers())

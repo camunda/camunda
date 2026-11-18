@@ -40,10 +40,27 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
 
   private final String zoneId;
   private final boolean force;
+  private final SystemPartitionPhase systemPartitionPhase;
+  private final MemberId preferredCoordinator;
 
   public RemoveZoneTransformer(final String zoneId, final boolean force) {
+    this(zoneId, force, SystemPartitionPhase.DISABLED, null);
+  }
+
+  /**
+   * @param preferredCoordinator with {@code force}, the coordinator if it is not in the zone: the
+   *     broker that received the request, which is reachable. The lowest member outside the zone
+   *     can be down (system partition design 5.6.3); null to use the lowest member
+   */
+  public RemoveZoneTransformer(
+      final String zoneId,
+      final boolean force,
+      final SystemPartitionPhase systemPartitionPhase,
+      final MemberId preferredCoordinator) {
     this.zoneId = zoneId;
     this.force = force;
+    this.systemPartitionPhase = systemPartitionPhase;
+    this.preferredCoordinator = preferredCoordinator;
   }
 
   @Override
@@ -54,7 +71,7 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
         .flatMap(
             removal ->
                 force
-                    ? forcedPhases(configuration, removal)
+                    ? forcedPhases(configuration, withPreferredCoordinator(removal))
                     : regularPhases(configuration, removal));
   }
 
@@ -70,9 +87,10 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
    * default group alone would leave the other tenants' partitions on the removed zone's brokers,
    * and the member removal that follows would refuse the whole plan.
    */
-  private static Either<Exception, List<Phase>> forcedPhases(
+  private Either<Exception, List<Phase>> forcedPhases(
       final CurrentClusterConfiguration configuration, final ZoneRemoval removal) {
-    return new ForceScaleDownRequestTransformer(removal.membersToRetain(), removal.coordinator())
+    return new ForceScaleDownRequestTransformer(
+            removal.membersToRetain(), removal.coordinator(), systemPartitionPhase)
         .phases(configuration)
         .map(phases -> withLayoutUpdateLast(phases, removal.updateLayout()));
   }
@@ -182,6 +200,13 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
     final var coordinator = coordinatorSupplier.getNextCoordinatorExcluding(zoneMembers);
 
     return Either.right(new ZoneRemoval(retain, coordinator, new ZoneAwareConfig(remainingZones)));
+  }
+
+  private ZoneRemoval withPreferredCoordinator(final ZoneRemoval removal) {
+    if (preferredCoordinator == null || !removal.membersToRetain().contains(preferredCoordinator)) {
+      return removal;
+    }
+    return new ZoneRemoval(removal.membersToRetain(), preferredCoordinator, removal.shrunkLayout());
   }
 
   /** What removing the zone amounts to, once the request is known to be valid. */

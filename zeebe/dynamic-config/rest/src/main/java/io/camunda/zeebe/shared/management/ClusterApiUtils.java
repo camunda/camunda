@@ -30,6 +30,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOp
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.SystemPartitionRemoveMembersOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
@@ -504,6 +505,15 @@ final class ClusterApiUtils {
               new Operation()
                   .operation(OperationEnum.BROKER_REMOVE)
                   .brokers(List.of(brokerIdValue(memberRemoveOperation.memberToRemove())));
+          // The management API has no operation type for phase 0 yet (design 5.12.2 proposes
+          // SYSTEM_PARTITION_REMOVE_MEMBERS, pending approval); it is shown as a removal.
+          case final SystemPartitionRemoveMembersOperation systemPartitionRemoveMembers ->
+              new Operation()
+                  .operation(OperationEnum.BROKER_REMOVE)
+                  .brokers(
+                      systemPartitionRemoveMembers.removedBrokers().stream()
+                          .map(m -> brokerIdValue(m))
+                          .collect(toList()));
           case final RemovePhysicalTenantOperation ignored ->
               // A partition-group operation, so physicalTenantId here is already the target group.
               new Operation()

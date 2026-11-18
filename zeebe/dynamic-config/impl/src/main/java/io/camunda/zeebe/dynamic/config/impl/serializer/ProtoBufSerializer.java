@@ -72,6 +72,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOp
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.SystemPartitionRemoveMembersOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
@@ -614,6 +615,8 @@ public class ProtoBufSerializer
       case final UpdateIncarnationNumberOperation msg ->
           builder.setUpdateIncarnationNumber(
               Topology.UpdateIncarnationNumberOperation.newBuilder().build());
+      case final SystemPartitionRemoveMembersOperation op ->
+          builder.setSystemPartitionRemoveMembers(encodeSystemPartitionRemoveMembers(op));
       case final PreScalingOperation preScalingOperation ->
           builder.setPreScaling(
               Topology.PreScalingOperation.newBuilder()
@@ -964,6 +967,9 @@ public class ProtoBufSerializer
       return new UpdateRoutingState(memberId, routingState);
     } else if (topologyChangeOperation.hasUpdateIncarnationNumber()) {
       return new UpdateIncarnationNumberOperation(memberId);
+    } else if (topologyChangeOperation.hasSystemPartitionRemoveMembers()) {
+      return decodeSystemPartitionRemoveMembers(
+          memberId, topologyChangeOperation.getSystemPartitionRemoveMembers());
     } else if (topologyChangeOperation.hasPreScaling()) {
       final var preScalingOperation = topologyChangeOperation.getPreScaling();
       return new PreScalingOperation(
@@ -1176,6 +1182,7 @@ public class ProtoBufSerializer
         .addAllMembersToRemove(
             forceRemoveBrokersRequest.membersToRemove().stream().map(MemberId::id).toList())
         .setDryRun(forceRemoveBrokersRequest.dryRun())
+        .setAcceptPossibleLoss(forceRemoveBrokersRequest.acceptPossibleLoss())
         .build()
         .toByteArray();
   }
@@ -1468,7 +1475,8 @@ public class ProtoBufSerializer
           forceRemoveBrokersRequest.getMembersToRemoveList().stream()
               .map(MemberId::from)
               .collect(Collectors.toSet()),
-          forceRemoveBrokersRequest.getDryRun());
+          forceRemoveBrokersRequest.getDryRun(),
+          forceRemoveBrokersRequest.getAcceptPossibleLoss());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -2375,6 +2383,22 @@ public class ProtoBufSerializer
         Instant.ofEpochSecond(completedAt.getSeconds(), completedAt.getNanos()));
   }
 
+  private static Topology.SystemPartitionRemoveMembersOperation encodeSystemPartitionRemoveMembers(
+      final SystemPartitionRemoveMembersOperation operation) {
+    return Topology.SystemPartitionRemoveMembersOperation.newBuilder()
+        .addAllRemovedBrokers(operation.removedBrokers().stream().map(MemberId::id).toList())
+        .setAcceptPossibleLoss(operation.acceptPossibleLoss())
+        .build();
+  }
+
+  private static SystemPartitionRemoveMembersOperation decodeSystemPartitionRemoveMembers(
+      final MemberId memberId, final Topology.SystemPartitionRemoveMembersOperation proto) {
+    return new SystemPartitionRemoveMembersOperation(
+        memberId,
+        proto.getRemovedBrokersList().stream().map(MemberId::from).collect(Collectors.toSet()),
+        proto.getAcceptPossibleLoss());
+  }
+
   private Topology.GlobalChangeOperation encodeGlobalChangeOperation(
       final GlobalChangeOperation operation) {
     final var builder =
@@ -2389,6 +2413,8 @@ public class ProtoBufSerializer
               Topology.MemberRemoveOperation.newBuilder()
                   .setMemberToRemove(op.memberToRemove().id())
                   .build());
+      case final SystemPartitionRemoveMembersOperation op ->
+          builder.setSystemPartitionRemoveMembers(encodeSystemPartitionRemoveMembers(op));
       case final PreScalingOperation op ->
           builder.setPreScaling(
               Topology.PreScalingOperation.newBuilder()
@@ -2418,6 +2444,8 @@ public class ProtoBufSerializer
     } else if (proto.hasMemberRemove()) {
       return new MemberRemoveOperation(
           memberId, MemberId.from(proto.getMemberRemove().getMemberToRemove()));
+    } else if (proto.hasSystemPartitionRemoveMembers()) {
+      return decodeSystemPartitionRemoveMembers(memberId, proto.getSystemPartitionRemoveMembers());
     } else if (proto.hasPreScaling()) {
       return new PreScalingOperation(
           memberId,

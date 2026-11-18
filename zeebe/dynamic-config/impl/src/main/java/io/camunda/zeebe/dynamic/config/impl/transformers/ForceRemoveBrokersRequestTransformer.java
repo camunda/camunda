@@ -25,11 +25,20 @@ public final class ForceRemoveBrokersRequestTransformer implements Configuration
 
   private final Set<MemberId> membersToRemove;
   private final MemberId coordinator;
+  private final SystemPartitionPhase systemPartitionPhase;
 
   public ForceRemoveBrokersRequestTransformer(
       final Set<MemberId> membersToRemove, final MemberId coordinator) {
+    this(membersToRemove, coordinator, SystemPartitionPhase.DISABLED);
+  }
+
+  public ForceRemoveBrokersRequestTransformer(
+      final Set<MemberId> membersToRemove,
+      final MemberId coordinator,
+      final SystemPartitionPhase systemPartitionPhase) {
     this.membersToRemove = membersToRemove;
     this.coordinator = coordinator;
+    this.systemPartitionPhase = systemPartitionPhase;
   }
 
   /** Force-removes the named brokers from every physical tenant's partition group. */
@@ -39,7 +48,8 @@ public final class ForceRemoveBrokersRequestTransformer implements Configuration
         new HashSet<>(configuration.globalConfiguration().members().keySet());
     membersToRetain.removeAll(membersToRemove);
 
-    return new ForceScaleDownRequestTransformer(membersToRetain, coordinator).phases(configuration);
+    return new ForceScaleDownRequestTransformer(membersToRetain, coordinator, systemPartitionPhase)
+        .phases(configuration);
   }
 
   @Override

@@ -69,6 +69,31 @@ public sealed interface GlobalChangeOperation extends ClusterConfigurationChange
     }
   }
 
+  /**
+   * Phase 0 of a force-remove plan (system partition design 5.6.3): removes the given brokers from
+   * the system partition, with a normal change of the leader if the remaining voters are a quorum,
+   * else with a forced change. It does not change the members of this configuration.
+   *
+   * @param memberId the member that runs the operation (the executor), a surviving broker
+   * @param removedBrokers the brokers to remove
+   * @param acceptPossibleLoss true if the operator accepts that a forced change loses committed
+   *     entries of the system partition when the completeness check fails
+   */
+  record SystemPartitionRemoveMembersOperation(
+      MemberId memberId, SortedSet<MemberId> removedBrokers, boolean acceptPossibleLoss)
+      implements GlobalChangeOperation {
+
+    public SystemPartitionRemoveMembersOperation(
+        final MemberId memberId,
+        final Set<MemberId> removedBrokers,
+        final boolean acceptPossibleLoss) {
+      this(
+          memberId,
+          ImmutableSortedSet.copyOf(MemberId.ID_COMPARATOR, removedBrokers),
+          acceptPossibleLoss);
+    }
+  }
+
   record UpdatePartitionDistributorConfigOperation(
       MemberId memberId, PartitionDistributorConfig config) implements GlobalChangeOperation {}
 }
