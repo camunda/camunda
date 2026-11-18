@@ -8,7 +8,7 @@ allowance of a tenant, the share of the cluster capacity it is entitled to:
     allowance(i) = capacity * weight(i) / sum(weights)
     rate(i)      = allowance(i) * multiplier(i)
 
-Tenants are the default tenant and pt1..ptN. Roles:
+Tenants are the default tenant and pt1..ptN; the tenant count of the workflow includes the default tenant. Roles:
   * saturating (pt1..pt<S>): offers `saturating-capacity-ratio * capacity` alone. Pinned.
   * overridden (tenant-overrides): offers allowance * given multiplier. Pinned.
   * quiet (all others, including the default tenant): allowance * quiet-multiplier.
@@ -25,12 +25,12 @@ Worker replicas scale linearly with the rate (WORKER_REPLICAS_PER_100_PI, at lea
 never limit a tenant; overprovisioning them is deliberate.
 
 Environment (set by the workflow):
-  TENANT_COUNT, WORKER_REPLICAS_PER_100_PI, SATURATING_COUNT, SATURATING_CAPACITY_RATIO, QUIET_MULTIPLIER,
+  TENANT_COUNT (including the default tenant), WORKER_REPLICAS_PER_100_PI, SATURATING_COUNT, SATURATING_CAPACITY_RATIO, QUIET_MULTIPLIER,
   TENANT_WEIGHTS ("pt2=3,default=2" or empty), TENANT_OVERRIDES ("pt3=4,default=0.1" or empty),
   TOTAL_RATE (0 disables), STORAGE (secondary storage type), CAPACITY_RATE (empty = the estimate), GITHUB_OUTPUT, GITHUB_STEP_SUMMARY.
 
 Writes the step outputs `profiles` (the physical_tenant_profiles make variable, one rate:replicas entry per tenant),
-`default-tenant-flags` (Helm flags of the default tenant) and `overload` (true when one tenant alone
+`physical-tenant-count` (the N of pt1..ptN), `default-tenant-flags` (Helm flags of the default tenant) and `overload` (true when one tenant alone
 offers at least the cluster capacity), and a Markdown table to the step summary.
 """
 
@@ -107,7 +107,7 @@ def compute(
     if tenant_count < 0 or saturating_count < 0:
         raise InputError("tenant-count and saturating-tenant-count must not be negative")
     if saturating_count > tenant_count:
-        raise InputError(f"saturating-tenant-count ({saturating_count}) exceeds tenant-count ({tenant_count})")
+        raise InputError(f"saturating-tenant-count ({saturating_count}) exceeds the number of physical tenants ({tenant_count})")
     if capacity < 1 or saturating_ratio <= 0 or quiet_multiplier <= 0 or total_rate < 0:
         raise InputError(
             "cluster-capacity-rate must be at least 1, the multipliers above 0 and total-rate not negative"
@@ -202,9 +202,13 @@ def render(tenants: list[Tenant], capacity: float, per_100_pi: float) -> tuple[s
 def main() -> int:
     env = os.environ
     try:
+        total_tenants = int(env["TENANT_COUNT"])
+        if total_tenants < 1:
+            raise InputError("tenant-count includes the default tenant, so it must be at least 1")
+        physical_tenants = total_tenants - 1
         capacity = capacity_of(env["STORAGE"], env.get("CAPACITY_RATE", ""))
         tenants = compute(
-            tenant_count=int(env["TENANT_COUNT"]),
+            tenant_count=physical_tenants,
             saturating_count=int(env["SATURATING_COUNT"]),
             capacity=capacity,
             saturating_ratio=float(env["SATURATING_CAPACITY_RATIO"]),
@@ -219,6 +223,7 @@ def main() -> int:
 
     profiles, default_flags, overload, table = render(tenants, capacity, float(env["WORKER_REPLICAS_PER_100_PI"]))
     with open(env["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+        out.write(f"physical-tenant-count={physical_tenants}\n")
         out.write(f"profiles={profiles}\n")
         out.write(f"default-tenant-flags={default_flags}\n")
         out.write(f"overload={str(overload).lower()}\n")

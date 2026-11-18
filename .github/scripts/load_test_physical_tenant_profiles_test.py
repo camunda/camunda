@@ -1,9 +1,12 @@
 """Tests for load-test-physical-tenant-profiles.py. Run: python3 -m unittest <this file>."""
 
 import importlib.util
+import os
 import pathlib
 import sys
+import tempfile
 import unittest
+import unittest.mock
 
 _spec = importlib.util.spec_from_file_location(
     "profiles", pathlib.Path(__file__).with_name("load-test-physical-tenant-profiles.py")
@@ -96,6 +99,33 @@ class RenderTest(unittest.TestCase):
     def test_run_within_capacity_is_not_flagged(self):
         tenants = profiles.compute(**{**DEFAULTS, "saturating_count": 0})
         self.assertFalse(profiles.render(tenants, 300, 4)[2])
+
+
+class MainTest(unittest.TestCase):
+    def run_main(self, tenant_count):
+        directory = pathlib.Path(tempfile.mkdtemp())
+        env = {
+            "TENANT_COUNT": str(tenant_count), "SATURATING_COUNT": "1", "SATURATING_CAPACITY_RATIO": "1.2",
+            "QUIET_MULTIPLIER": "0.2", "WORKER_REPLICAS_PER_100_PI": "3", "STORAGE": "elasticsearch",
+            "CAPACITY_RATE": "", "TOTAL_RATE": "0", "TENANT_WEIGHTS": "", "TENANT_OVERRIDES": "",
+            "GITHUB_OUTPUT": str(directory / "out"), "GITHUB_STEP_SUMMARY": str(directory / "summary"),
+        }
+        with unittest.mock.patch.dict(os.environ, env):
+            code = profiles.main()
+        out = (directory / "out").read_text() if (directory / "out").exists() else ""
+        return code, out
+
+    def test_tenant_count_includes_the_default_tenant(self):
+        code, out = self.run_main(10)
+        self.assertEqual(code, 0)
+        self.assertIn("physical-tenant-count=9\n", out)
+        self.assertEqual(len(out.split("profiles=")[1].split("\n")[0].split()), 9)
+
+    def test_a_single_tenant_has_no_physical_tenants(self):
+        self.assertIn("physical-tenant-count=0\n", self.run_main(1)[1])
+
+    def test_zero_tenants_is_rejected(self):
+        self.assertEqual(self.run_main(0)[0], 1)
 
 
 class WorkersTest(unittest.TestCase):

@@ -6,7 +6,7 @@
 #              the deployment is delegated to camunda-load-test.yml. Use the same inputs on every
 #              solution to compare results. It runs the max scenario of the daily stress test.
 #              saturating-tenant-count 0 is the reference run
-#              without a noisy neighbour, tenant-count 0 with total-rate the single tenant one.
+#              without a noisy neighbour, tenant-count 1 with total-rate the single tenant one.
 # calls: camunda-load-test.yml
 # monitoring: https://dashboard.benchmark.camunda.cloud/
 # type: CI
@@ -27,7 +27,7 @@ on:
         default: ""
         required: false
       tenant-count:
-        description: 'Number of physical tenants (pt1..ptN) next to the default tenant. 0 runs the default tenant only'
+        description: 'Total number of tenants including the default tenant (the others are pt1..). 1 runs the default tenant only'
         type: number
         default: 10
         required: false
@@ -39,7 +39,7 @@ on:
       saturating-capacity-ratio:
         description: 'Load each saturating tenant offers, in multiples of the cluster capacity (above 1 overloads the cluster)'
         type: number
-        default: 1.5
+        default: 1.2
         required: false
       quiet-multiplier:
         description: 'Load of each quiet tenant (and the default tenant), as a multiple of its allowance (0.2 = 20%)'
@@ -49,7 +49,7 @@ on:
       worker-replicas-per-100-pi:
         description: 'Worker replicas per 100 PI/s of a tenant, scaled linearly and rounded up (at least 1). Overprovisioned so workers never limit a tenant'
         type: number
-        default: 4
+        default: 3
         required: false
       tenant-weights:
         description: 'Relative share of tenants, e.g. pt2=3,default=2. Unlisted tenants have weight 1'
@@ -79,6 +79,11 @@ on:
         description: 'Put PgBouncer in front of PostgreSQL (ignored for other storages)'
         type: boolean
         default: true
+        required: false
+      stable-vms:
+        description: 'Run on non-spot VMs, avoiding node churn during the run (more stable, higher cost). The daily tests use spot VMs'
+        type: boolean
+        default: false
         required: false
       platform-helm-values:
         description: 'Extra Helm values for the Camunda chart, e.g. broker/partition count or resources (--set orchestration.clusterSize=3)'
@@ -127,6 +132,7 @@ jobs:
     outputs:
       profiles: ${{ steps.profiles.outputs.profiles }}
       default-tenant-flags: ${{ steps.profiles.outputs.default-tenant-flags }}
+      physical-tenant-count: ${{ steps.profiles.outputs.physical-tenant-count }}
       use-pgbouncer: ${{ steps.pgbouncer.outputs.use-pgbouncer }}
     steps:
       - name: Validate version inputs
@@ -195,12 +201,11 @@ jobs:
       scenario: max
       secondary-storage-type: ${{ inputs.secondary-storage-type }}
       use-pgbouncer: ${{ needs.prepare.outputs.use-pgbouncer == 'true' }}
-      physical-tenant-count: ${{ inputs.tenant-count }}
+      physical-tenant-count: ${{ fromJSON(needs.prepare.outputs.physical-tenant-count) }}
       physical-tenant-profiles: ${{ needs.prepare.outputs.profiles }}
       load-test-load: ${{ needs.prepare.outputs.default-tenant-flags }}
       platform-helm-values: ${{ inputs.platform-helm-values }}
-      # Non-spot VMs: node churn adds noise to the measurements (LT-1).
-      stable-vms: true
+      stable-vms: ${{ inputs.stable-vms }}
       # Optimize is not part of the measurement and would add load of its own.
       enable-optimize: false
       enable-chaos: false
