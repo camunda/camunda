@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.MigrateProcessInstanceDto;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -43,14 +44,25 @@ public class ProcessInstanceWriter {
             processInstance));
   }
 
-  public void update(final ProcessInstanceDbModel processInstance) {
+  /**
+   * Points the process instance at its migration target. The item carries a dedicated DTO rather
+   * than a {@link ProcessInstanceDbModel}, so {@link #mergeToQueue} never merges incident counts,
+   * state or dates into it, which the migration statement would not write.
+   */
+  public void migrate(
+      final long key,
+      final String processDefinitionId,
+      final long processDefinitionKey,
+      final int version,
+      final String treePath) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.UPDATE,
-            processInstance.processInstanceKey(),
-            "io.camunda.db.rdbms.sql.ProcessInstanceMapper.update",
-            processInstance));
+            key,
+            "io.camunda.db.rdbms.sql.ProcessInstanceMapper.migrate",
+            new MigrateProcessInstanceDto(
+                key, processDefinitionId, processDefinitionKey, version, treePath)));
   }
 
   public void finish(

@@ -18,6 +18,8 @@ public interface ProcessInstanceMapper extends ProcessBasedHistoryCleanupMapper 
 
   void insert(ProcessInstanceDbModel processInstance);
 
+  void migrate(MigrateProcessInstanceDto dto);
+
   void updateStateAndEndDate(EndProcessInstanceDto dto);
 
   void incrementIncidentCount(Long processInstanceKey);
@@ -31,6 +33,13 @@ public interface ProcessInstanceMapper extends ProcessBasedHistoryCleanupMapper 
   List<ProcessInstanceEntity> search(ProcessInstanceDbQuery filter);
 
   List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(long processInstanceKey);
+
+  record MigrateProcessInstanceDto(
+      long processInstanceKey,
+      String processDefinitionId,
+      long processDefinitionKey,
+      int version,
+      String treePath) {}
 
   record EndProcessInstanceDto(
       long processInstanceKey,

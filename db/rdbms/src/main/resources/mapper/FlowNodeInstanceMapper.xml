@@ -161,20 +161,18 @@
             #{treePath}, #{incidentKey}, #{numSubprocessIncidents}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
-  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
-    UPDATE FLOW_NODE_INSTANCE
+  <!--
+    The columns a migration (ELEMENT_MIGRATED / ANCESTOR_MIGRATED) changes. State and dates are
+    deliberately absent: the element keeps its start date, and a completion in the same flush,
+    merged into the queued insert, must not be reset to ACTIVE by the migration that sorts after
+    it.
+  -->
+  <update id="migrate" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
+    UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET FLOW_NODE_ID             = #{flowNodeId},
         FLOW_NODE_NAME           = #{flowNodeName},
-        FLOW_NODE_SCOPE_KEY      = #{flowNodeScopeKey},
-        PROCESS_INSTANCE_KEY     = #{processInstanceKey},
         PROCESS_DEFINITION_ID    = #{processDefinitionId},
-        PROCESS_DEFINITION_KEY   = #{processDefinitionKey},
-        TYPE                     = #{type},
-        STATE                    = #{state},
-        START_DATE               = #{startDate, jdbcType=TIMESTAMP},
-        END_DATE                 = #{endDate, jdbcType=TIMESTAMP},
-        TENANT_ID                = #{tenantId},
-        HISTORY_CLEANUP_DATE     = #{historyCleanupDate, jdbcType=TIMESTAMP}
+        PROCESS_DEFINITION_KEY   = #{processDefinitionKey}
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 

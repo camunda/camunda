@@ -68,7 +68,7 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
       flowNodeInstanceWriter.create(map(record, value));
     } else if (record.getIntent() == ProcessInstanceIntent.ELEMENT_MIGRATED
         || record.getIntent() == ProcessInstanceIntent.ANCESTOR_MIGRATED) {
-      flowNodeInstanceWriter.update(map(record, value));
+      flowNodeInstanceWriter.migrate(map(record, value));
     } else if (record.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED) {
       flowNodeInstanceWriter.finish(
           record.getKey(),

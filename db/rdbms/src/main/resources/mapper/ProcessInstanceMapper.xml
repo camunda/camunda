@@ -325,20 +325,14 @@
             #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
-  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel">
-    UPDATE PROCESS_INSTANCE
-    SET PROCESS_DEFINITION_ID       = #{processDefinitionId},
-        PROCESS_DEFINITION_KEY      = #{processDefinitionKey},
-        STATE                       = #{state},
-        START_DATE                  = #{startDate, jdbcType=TIMESTAMP},
-        END_DATE                    = #{endDate, jdbcType=TIMESTAMP},
-        TENANT_ID                   = #{tenantId},
-        PARENT_PROCESS_INSTANCE_KEY = #{parentProcessInstanceKey},
-        PARENT_ELEMENT_INSTANCE_KEY = #{parentElementInstanceKey},
-        NUM_INCIDENTS               = #{numIncidents},
-        VERSION                     = #{version},
-        TREE_PATH                   = #{treePath},
-        HISTORY_CLEANUP_DATE        = #{historyCleanupDate, jdbcType=TIMESTAMP}
+  <!-- Sets only what a migration changes; dates, state and the incident count stay as stored. -->
+  <update id="migrate"
+    parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$MigrateProcessInstanceDto">
+    UPDATE ${prefix}PROCESS_INSTANCE
+    SET PROCESS_DEFINITION_ID  = #{processDefinitionId},
+        PROCESS_DEFINITION_KEY = #{processDefinitionKey},
+        VERSION                = #{version},
+        TREE_PATH              = #{treePath}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 

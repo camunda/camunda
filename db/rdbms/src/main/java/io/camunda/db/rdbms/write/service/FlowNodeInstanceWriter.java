@@ -44,13 +44,17 @@ public class FlowNodeInstanceWriter {
             flowNode));
   }
 
-  public void update(final FlowNodeInstanceDbModel flowNode) {
+  /**
+   * Points the flow node instance at its migration target (ELEMENT_MIGRATED / ANCESTOR_MIGRATED).
+   * Only the element ID, name and process definition are written; state and dates stay as stored.
+   */
+  public void migrate(final FlowNodeInstanceDbModel flowNode) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.FLOW_NODE,
             WriteStatementType.UPDATE,
             flowNode.flowNodeInstanceKey(),
-            "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.update",
+            "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.migrate",
             flowNode));
   }
 

@@ -16,6 +16,8 @@ public interface IncidentMapper extends ProcessBasedHistoryCleanupMapper {
 
   void insert(IncidentDbModel incident);
 
+  void migrate(MigrateIncidentDto dto);
+
   void updateState(IncidentStateDto dto);
 
   IncidentEntity findOne(Long incidentKey);
@@ -29,4 +31,11 @@ public interface IncidentMapper extends ProcessBasedHistoryCleanupMapper {
       IncidentEntity.IncidentState state,
       String errorMessage,
       Integer errorMessageHash) {}
+
+  record MigrateIncidentDto(
+      long incidentKey,
+      String processDefinitionId,
+      Long processDefinitionKey,
+      String flowNodeId,
+      String treePath) {}
 }
