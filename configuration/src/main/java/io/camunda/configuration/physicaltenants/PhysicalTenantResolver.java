@@ -107,6 +107,8 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
       // registered map config with the merge-aware overlay engine. The named OIDC providers are
       // merged with the rest of the authentication below.
       PhysicalTenantMapOverlays.apply(physicalTenant, physicalTenantId, environment);
+      PhysicalTenantSecretConfigurations.replaceInternalConfig(
+          physicalTenant, physicalTenantId, binder);
       // Exporter entries have the same defect but raw Map<String, Object> args that the typed
       // overlay engine cannot merge — recompute them with the dedicated exporter step (ADR-0008).
       PhysicalTenantExporterConfigurations.apply(

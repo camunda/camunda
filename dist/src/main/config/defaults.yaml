@@ -1940,6 +1940,125 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Defaults to `20m`.
       ttl: "20m" # Type: Duration, Env: CAMUNDA_SECRETS_CACHE_TTL
     
+    internal-config: # Type: io.camunda.configuration.Secrets$InternalConfig  
+      aws: # Type: io.camunda.configuration.Secrets$AwsSecretsManagerStore  
+        # Upper bound on a single HTTP attempt within a call, so one stalled socket does not consume the whole
+        # {@link #callTimeout} budget. Must be positive and not longer than {@link #callTimeout}, which would
+        # make it unreachable.
+        attempt-timeout: null # Type: Duration, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AWS_ATTEMPTTIMEOUT
+        # Opt-in: resolve secrets via AWS's `BatchGetSecretValue` (fewer round-trips) instead of one
+        # `GetSecretValue` call per reference. Off by default because it requires the
+        # `secretsmanager:BatchGetSecretValue` IAM action in addition to `GetSecretValue`, which not every
+        # deployment's IAM policy grants. Mutually exclusive with {@link #containerSecretId}.
+        batch-enabled: false # Type: Boolean, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AWS_BATCHENABLED
+        # Maximum number of secret ids per `BatchGetSecretValue` call when {@link #batchEnabled} is set. Only
+        # meaningful when batching is enabled. Must be between 1 and 20 (AWS's cap).
+        batch-size: 20 # Type: Integer, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AWS_BATCHSIZE
+        # Upper bound on one call to AWS Secrets Manager, retries included. The AWS SDK sets no such bound by
+        # default, which lets an unresponsive endpoint hold the caller for minutes. The background secret
+        # resolution calls the store from an IO-bound actor thread shared with every partition's exporter, so
+        # an unbounded call there stalls exporting broker-wide (camunda/camunda#62869). Must be positive.
+        call-timeout: null # Type: Duration, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AWS_CALLTIMEOUT
+        # Opt-in: instead of one AWS secret per reference, treat every reference as a JSON key inside this one
+        # named secret (e.g. `app-config`). Mutually exclusive with {@link #batchEnabled}, since only this
+        # single secret is ever fetched.
+        # The named secret's string value must be a flat JSON object mapping each reference name to a JSON
+        # string value (e.g. `{"db-password": "s3cr3t"`}); nested objects/arrays are not supported, and a
+        # non-object value makes the store unusable.
+        container-secret-id: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AWS_CONTAINERSECRETID
+        # Optional prefix prepended, with no separator inserted, to every reference name to form the AWS
+        # secret id (e.g. `camunda/` plus reference `db-password` resolves to secret id `camunda/db-password`;
+        # include the trailing separator here if one is wanted). When omitted, references map to bare secret
+        # names. Applies to {@link #containerSecretId} as well, since that is itself resolved as an AWS secret
+        # id.
+        path-prefix: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AWS_PATHPREFIX
+        # AWS region for this store. Optional: when omitted the SDK resolves it from the environment
+        # (`AWS_REGION`) or instance metadata.
+        region: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AWS_REGION
+      
+      azure: # Type: io.camunda.configuration.Secrets$AzureKeyVaultStore  
+        # Upper bound on a single HTTP attempt within a call, so one stalled socket does not consume the whole
+        # {@link #callTimeout} budget. Must be positive and not longer than {@link #callTimeout}. Defaults to
+        # 2 seconds, or to {@link #callTimeout} when that is shorter. `null` while unset, so the default can
+        # follow {@link #callTimeout}.
+        attempt-timeout: null # Type: Duration, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AZURE_ATTEMPTTIMEOUT
+        # Microsoft Entra authority host to sign in against, for sovereign clouds (e.g.
+        # `https://login.microsoftonline.us`). Must be an absolute `https://` URL with only a host and
+        # optional port when set. Not set by default, so the public cloud is used.
+        authority-host: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AZURE_AUTHORITYHOST
+        # Upper bound on one call to Key Vault, retries included. The background secret resolution calls the
+        # store from an IO-bound actor thread shared with every partition's exporter, so an unbounded call
+        # there stalls exporting broker-wide (camunda/camunda#62869). Must be positive. Defaults to 5 seconds.
+        call-timeout: null # Type: Duration, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AZURE_CALLTIMEOUT
+        # Opt-in: instead of one Key Vault secret per reference, treat every reference as a JSON key inside
+        # this one named secret (e.g. `app-config`). The secret's value must be a flat JSON object mapping
+        # each reference name to a string value (e.g. `{"db-password": "s3cr3t"`}). Not set by default. With
+        # {@link #pathPrefix} prepended, it must be a Key Vault secret name: 1 to 127 characters of
+        # `[0-9A-Za-z-]`.
+        container-secret-id: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AZURE_CONTAINERSECRETID
+        # Client id of the user-assigned managed identity to sign in with, so each physical tenant can use its
+        # own identity. Must not be blank when set. Not set by default, so the system-assigned identity or
+        # whichever identity the environment provides is used.
+        managed-identity-client-id: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AZURE_MANAGEDIDENTITYCLIENTID
+        # How many times a throttled or transient request to the vault is retried. Must not be negative.
+        # Defaults to `3`.
+        max-retries: 3 # Type: Integer, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AZURE_MAXRETRIES
+        # Optional prefix prepended, with no separator inserted, to every reference name to form the Key Vault
+        # secret name (e.g. `camunda-` plus reference `db-password` reads secret `camunda-db-password`). When
+        # omitted, references map to bare secret names. Applies to {@link #containerSecretId} as well. Key
+        # Vault secret names allow only `[0-9A-Za-z-]`, so use e.g. `camunda-` rather than `camunda/`; any
+        # other character is rejected at startup. At most 126 characters, leaving room for at least one
+        # character of the name. No prefix by default.
+        path-prefix: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AZURE_PATHPREFIX
+        # URL of the vault holding the secrets, such as `https://my-vault.vault.azure.net`. Required, with no
+        # default. Must be an absolute `https://` URL with only a host and optional port, as Key Vault
+        # requires HTTPS; any host name is accepted, so private endpoints and sovereign clouds work.
+        vault-url: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_AZURE_VAULTURL
+      
+      env: # Type: io.camunda.configuration.Secrets$EnvStore  
+        # Prefix every secret variable carries: secret `name` is read from the variable ``. Required, and must
+        # start with a letter, contain only letters, digits and underscores, and end with an underscore, such
+        # as `APP_SECRET_`. Startup is refused when it is missing or malformed, or when it starts, ignoring
+        # case, with a prefix reserved for the platform's own settings and credentials, such as `CAMUNDA_`,
+        # `ZEEBE_`, `SPRING_` or `AWS_`.
+        prefix: "" # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_ENV_PREFIX
+      
+      file: # Type: io.camunda.configuration.Secrets$FileStore  
+        # Path to the directory backing this file-based secret store. Defaults to `/etc/camunda/secrets`.
+        path: "/etc/camunda/secrets" # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_FILE_PATH
+      
+      gcp: # Type: io.camunda.configuration.Secrets$GcpSecretManagerStore  
+        # Upper bound on one call to GCP Secret Manager, retries included. gax's defaults let an unresponsive
+        # endpoint hold the caller far longer than that. The background secret resolution calls the store from
+        # an IO-bound actor thread shared with every partition's exporter, so an unbounded call there stalls
+        # exporting broker-wide (camunda/camunda#62869). Must be positive.
+        call-timeout: null # Type: Duration, Env: CAMUNDA_SECRETS_INTERNALCONFIG_GCP_CALLTIMEOUT
+        # Opt-in: instead of one GCP secret per reference, treat every reference as a JSON key inside this one
+        # named secret (e.g. `app-config`). If set it must not be blank.
+        # The named secret's value must be a flat JSON object mapping each reference name to a JSON string
+        # value (e.g. `{"db-password": "s3cr3t"`}); nested objects/arrays are not supported, and a non-object
+        # value makes the store unusable.
+        container-secret-id: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_GCP_CONTAINERSECRETID
+        # Optional Secret Manager endpoint override (e.g. a regional endpoint such as
+        # `secretmanager.europe-west1.rep.googleapis.com:443`, or a Private Service Connect endpoint). Unlike
+        # the AWS SDK, the GCP client libraries do not honour an endpoint override via environment variable,
+        # so it is exposed here as first-class config; it also doubles as the hook for pointing at an emulator
+        # in tests. When omitted, the default global endpoint is used.
+        endpoint: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_GCP_ENDPOINT
+        # Optional prefix prepended, with no separator inserted, to every reference name to form the GCP
+        # secret id (e.g. `camunda-` plus reference `db-password` resolves to secret id `camunda-db-password`;
+        # include the trailing separator here if one is wanted). When omitted, references map to bare secret
+        # ids. Applies to {@link #containerSecretId} as well, since that is itself resolved as a GCP secret
+        # id.
+        # Note GCP secret ids only allow `[a-zA-Z0-9_-]` and are capped at 255 characters, so an AWS-style
+        # `camunda/` prefix (with a slash) would produce invalid ids; use e.g. `camunda-` instead.
+        path-prefix: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_GCP_PATHPREFIX
+        # GCP project id owning the secrets. Optional: when omitted the client resolves it from the
+        # environment (`GOOGLE_CLOUD_PROJECT`) or the compute metadata server, via the Application Default
+        # Credentials chain — mirroring how {@link AwsSecretsManagerStore#region} is resolved for AWS. If set
+        # it must not be blank.
+        project-id: null # Type: String, Env: CAMUNDA_SECRETS_INTERNALCONFIG_GCP_PROJECTID
+    
     # How many sequential backend calls a store whose cost scales with call count (`namesPerCall()` less
     # than the request size) may issue at once, bounded by a semaphore shared by every such store the
     # registry wraps. `1` resolves exactly as before this setting existed: one call at a time, on the
