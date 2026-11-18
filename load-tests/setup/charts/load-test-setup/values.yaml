@@ -396,7 +396,7 @@ postgresql:
     repository: dockerhub/postgres
     tag: "18.4"
 
-  # -- Create the indexes (A), (B), (C) and (D) of camunda/camunda#67171 on `USER_TASK` and
+  # -- Create the indexes of camunda/camunda#67171 on `USER_TASK` and
   # `VARIABLE`, as soon as Camunda creates the tables. Only for the user task search
   # experiment: assumes no table prefix, `public` schema and the `custom-model` scenario.
   userTaskIndexes:
@@ -404,6 +404,9 @@ postgresql:
     # -- `true`: the indexes start with TENANT_ID, as in the issue (multi-tenancy checks on).
     # `false`: without TENANT_ID, for the queries without a tenant filter (checks off).
     withTenant: true
+    # -- `issue`: the indexes (A), (B), (C) and (D) of the issue. `proposed`: the indexes (B), (C),
+    # (D), (E) and (H), all with `NULLS FIRST` on the `user_task_key` tie-breaker, as in the report.
+    set: issue
 
   # -- The UID and GID used by the PostgreSQL container.
   # This should match the UID/GID in use by the specified Docker image.
