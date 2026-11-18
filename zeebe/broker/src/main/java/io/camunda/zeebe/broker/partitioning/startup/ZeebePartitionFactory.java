@@ -31,7 +31,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.StateController;
-import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
@@ -62,8 +61,7 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.engine.processing.EngineProcessors;
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.api.EngineDependencies;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -73,7 +71,6 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
-import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
@@ -171,8 +168,7 @@ public final class ZeebePartitionFactory {
     final var membershipService = clusterServices.getMembershipService();
     final var probeNotifier =
         new RemoteProbeNotifier(clusterServices.getEventService(), raftPartition.id().group());
-    final var typedRecordProcessorsFactory =
-        createFactory(localBroker, featureFlags, probeNotifier);
+    final var engineDependencies = createEngineDependencies(featureFlags, probeNotifier);
 
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
@@ -207,7 +203,7 @@ public final class ZeebePartitionFactory {
             snapshotCopy,
             brokerClient,
             stateController,
-            typedRecordProcessorsFactory,
+            engineDependencies,
             exporterRepository,
             new PartitionProcessingState(raftPartition),
             diskSpaceUsageMonitor,
@@ -289,28 +285,15 @@ public final class ZeebePartitionFactory {
     return rootRuntimeDirectory.resolve(String.valueOf(partitionId.number()));
   }
 
-  private TypedRecordProcessorsFactory createFactory(
-      final BrokerInfo localBroker,
-      final FeatureFlags featureFlags,
-      final ProbeNotifier probeNotifier) {
-    return recordProcessorContext -> {
-      final InterPartitionCommandSender partitionCommandSender =
-          recordProcessorContext.getPartitionCommandSender();
-      final SubscriptionCommandSender subscriptionCommandSender =
-          new SubscriptionCommandSender(
-              recordProcessorContext.getPartitionId(), partitionCommandSender);
-
-      return EngineProcessors.createEngineProcessors(
-          recordProcessorContext,
-          brokerCfg.getCluster().getPartitionsCount(),
-          subscriptionCommandSender,
-          partitionCommandSender,
-          featureFlags,
-          jobStreamer,
-          probeNotifier,
-          searchClientsProxy,
-          brokerRequestAuthorizationConverter,
-          secretStoreRegistry);
-    };
+  private EngineDependencies createEngineDependencies(
+      final FeatureFlags featureFlags, final ProbeNotifier probeNotifier) {
+    return new EngineDependencies(
+        brokerCfg.getCluster().getPartitionsCount(),
+        featureFlags,
+        jobStreamer,
+        probeNotifier,
+        searchClientsProxy,
+        brokerRequestAuthorizationConverter,
+        secretStoreRegistry);
   }
 }

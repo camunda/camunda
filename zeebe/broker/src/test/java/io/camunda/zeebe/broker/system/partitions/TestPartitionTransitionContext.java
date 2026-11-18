@@ -39,7 +39,7 @@ import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.api.EngineDependencies;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -67,7 +67,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private Role currentRole;
   private long currentTerm;
   private HealthMonitor healthMonitor;
-  private TypedRecordProcessorFactory typedRecordProcessorFactory;
+  private EngineDependencies engineDependencies;
   private ExporterDirector exporterDirector;
   private LogStream logStream;
   private StreamProcessor streamProcessor;
@@ -493,8 +493,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
-    return typedRecordProcessorFactory;
+  public EngineDependencies getEngineDependencies() {
+    return engineDependencies;
   }
 
   @Override
@@ -507,9 +507,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.concurrencyControl = concurrencyControl;
   }
 
-  public void setTypedRecordProcessorFactory(
-      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
-    this.typedRecordProcessorFactory = typedRecordProcessorFactory;
+  public void setEngineDependencies(final EngineDependencies engineDependencies) {
+    this.engineDependencies = engineDependencies;
   }
 
   public void setRaftPartition(final RaftPartition raftPartition) {

@@ -10,16 +10,10 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
-import io.camunda.zeebe.engine.state.ProcessingDbState;
-import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
-import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
-import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
+import io.camunda.zeebe.engine.api.EngineFactory;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
-import java.time.InstantSource;
 
 public class MigrationTransitionStep implements PartitionTransitionStep {
 
@@ -36,36 +30,17 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
       return CompletableActorFuture.completed(null);
     }
 
-    // migration
-    final var transientMessageSubscriptionState = new TransientPendingSubscriptionState();
-    final var transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
-    final var transientAskState = new TransientPendingMessageStartProcessInstanceAskState();
-    final var zeebeDb = context.getZeebeDb();
-    final var zeebeDbContext = zeebeDb.createContext();
-
-    final var processingState =
-        new ProcessingDbState(
-            context.getPartitionId(),
-            zeebeDb,
-            zeebeDbContext,
-            KeyGenerator.immutable(context.getPartitionId()),
-            transientMessageSubscriptionState,
-            transientProcessMessageSubscriptionState,
-            transientAskState,
-            context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
-            InstantSource.system(),
-            ExpressionLanguageMetrics.noop());
-
-    final var dbMigrator =
-        new DbMigratorImpl(
-            context.getBrokerCfg().getExperimental().isVersionCheckRestrictionEnabled(),
-            new ClusterContextImpl(context.getPartitionCount()),
-            processingState,
-            context.getBrokerVersion());
     try {
-      final var migrationsPerformed = dbMigrator.runMigrations();
-      zeebeDbContext.getCurrentTransaction().commit();
-      if (migrationsPerformed.versionChanged()) {
+      final var config = context.getBrokerCfg().getExperimental();
+      final var versionChanged =
+          EngineFactory.runMigrations(
+              context.getPartitionId(),
+              context.getZeebeDb(),
+              config.getEngine().createEngineConfiguration(),
+              config.isVersionCheckRestrictionEnabled(),
+              new ClusterContextImpl(context.getPartitionCount()),
+              context.getBrokerVersion());
+      if (versionChanged) {
         context.markMigrationsDone();
         context.resetMigrationSnapshotTaken();
       } else if (!context.areMigrationsPerformed()) {
