@@ -158,7 +158,7 @@ public enum DistributionMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getAdditionalKeyNames() {
-      return DistributionMetricKeyNames.values();
+      return new KeyName[] {DistributionMetricKeyNames.TARGET_PARTITION};
     }
   };
 

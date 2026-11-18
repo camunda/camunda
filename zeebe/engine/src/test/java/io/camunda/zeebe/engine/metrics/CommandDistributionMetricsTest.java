@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.collection.Tuple;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -236,20 +238,20 @@ public class CommandDistributionMetricsTest {
   }
 
   private double getCounterValue(final int partition, final String metricName) {
-    final var counter = engine.getMeterRegistry(partition).find(metricName).counter();
-    return counter != null ? counter.count() : 0.0;
+    // sums all series, as metrics are additionally tagged by target partition and queue
+    return engine.getMeterRegistry(partition).find(metricName).counters().stream()
+        .mapToDouble(Counter::count)
+        .sum();
   }
 
   private double getGaugeValue(final int partition, final String metricName) {
-    final var gauge = engine.getMeterRegistry(partition).find(metricName).gauge();
-    return gauge != null ? gauge.value() : 0.0;
+    return engine.getMeterRegistry(partition).find(metricName).gauges().stream()
+        .mapToDouble(Gauge::value)
+        .sum();
   }
 
   private double getGaugeValue(
-      final int partition,
-      final String metricName,
-      final int targetPartition,
-      final String queue) {
+      final int partition, final String metricName, final int targetPartition, final String queue) {
     final var gauge =
         engine
             .getMeterRegistry(partition)

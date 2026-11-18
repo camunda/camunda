@@ -329,7 +329,6 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             .setIntent(command.getIntent());
 
     final int receiverPartitionId = Protocol.decodePartitionId(distributionKey);
-    final var queueId = distributionState.getQueueIdForDistribution(distributionKey);
     sideEffectWriter.appendSideEffect(
         () -> {
           interPartitionCommandSender.sendCommand(
@@ -340,7 +339,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
               acknowledgeRecord);
         });
 
-    getMetrics().sentAcknowledgeDistribution(receiverPartitionId, queueId.orElse(null));
+    getMetrics().sentAcknowledgeDistribution(receiverPartitionId);
   }
 
   private <T extends UnifiedRecordValue> void requestContinuation(

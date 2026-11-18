@@ -7,21 +7,53 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.util.collection.Table;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 public final class DistributionMetrics {
 
-  private static final String NO_QUEUE = "NONE";
+  /** Tag value for distributions which are not part of any queue. */
+  static final String NO_QUEUE = "NONE";
+
+  /**
+   * Tag value for queues which are not declared in {@link DistributionQueue}. Queue ids can also be
+   * user-controlled (e.g. cluster variable names), so they must never be used as a tag value as
+   * that would make the number of time series unbounded.
+   */
+  static final String OTHER_QUEUE = "OTHER";
+
+  private static final Set<String> KNOWN_QUEUES =
+      Arrays.stream(DistributionQueue.getValues())
+          .map(DistributionQueue::getQueueId)
+          .collect(Collectors.toUnmodifiableSet());
 
   private final MeterRegistry meterRegistry;
-  private final Map<MetricKey, PartitionDistributionMetrics> partitionMetrics =
-      new ConcurrentHashMap<>();
+
+  /** Metrics by target partition id and (bounded) queue tag. */
+  private final Table<Integer, String, PartitionDistributionMetrics> partitionMetrics =
+      Table.concurrent();
+
+  /**
+   * The receiving partition does not know the queue of a distribution, so this counter is only
+   * tagged by partition.
+   */
+  private final Map<Integer, Counter> sentAcknowledgeCounters = new ConcurrentHashMap<>();
+
+  /** All created entries of {@link #partitionMetrics}, as a table cannot be iterated. */
+  private final List<PartitionDistributionMetrics> allPartitionMetrics =
+      new CopyOnWriteArrayList<>();
 
   // Metrics
   private final StatefulGauge activeDistributionsGauge;
@@ -47,7 +79,7 @@ public final class DistributionMetrics {
 
   public void reset() {
     activeDistributionsGauge.set(0);
-    partitionMetrics.values().forEach(PartitionDistributionMetrics::resetGauges);
+    allPartitionMetrics.forEach(PartitionDistributionMetrics::resetGauges);
   }
 
   public void startedDistribution() {
@@ -62,19 +94,21 @@ public final class DistributionMetrics {
     activeDistributionsGauge.decrement();
   }
 
-  public void addPendingDistribution(final int targetPartitionId, final String queueId) {
+  public void addPendingDistribution(final int targetPartitionId, final @Nullable String queueId) {
     getPartitionMetrics(targetPartitionId, queueId).addPendingDistribution();
   }
 
-  public void removePendingDistribution(final int targetPartitionId, final String queueId) {
+  public void removePendingDistribution(
+      final int targetPartitionId, final @Nullable String queueId) {
     getPartitionMetrics(targetPartitionId, queueId).removePendingDistribution();
   }
 
-  public void addInflightDistribution(final int targetPartitionId, final String queueId) {
+  public void addInflightDistribution(final int targetPartitionId, final @Nullable String queueId) {
     getPartitionMetrics(targetPartitionId, queueId).addInflightDistribution();
   }
 
-  public void removeInflightDistribution(final int targetPartitionId, final String queueId) {
+  public void removeInflightDistribution(
+      final int targetPartitionId, final @Nullable String queueId) {
     getPartitionMetrics(targetPartitionId, queueId).removeInflightDistribution();
   }
 
@@ -82,11 +116,27 @@ public final class DistributionMetrics {
    * This method is called on the target partition when a distribution command has been successfully
    * processed and an acknowledgement is sent back to the origin partition.
    *
+   * <p>Not tagged by queue: the queue is only known to the origin partition.
+   *
    * @param originPartitionId the source partition id of the distribution (where the distribution
    *     was started)
    */
-  public void sentAcknowledgeDistribution(final int originPartitionId, final String queueId) {
-    getPartitionMetrics(originPartitionId, queueId).sentAcknowledgeDistribution();
+  public void sentAcknowledgeDistribution(final int originPartitionId) {
+    sentAcknowledgeCounters
+        .computeIfAbsent(
+            originPartitionId,
+            id ->
+                Counter.builder(
+                        DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getName())
+                    .description(
+                        DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS
+                            .getDescription())
+                    .tag(
+                        DistributionMetricsDoc.DistributionMetricKeyNames.TARGET_PARTITION
+                            .asString(),
+                        String.valueOf(id))
+                    .register(meterRegistry))
+        .increment();
   }
 
   /**
@@ -96,7 +146,8 @@ public final class DistributionMetrics {
    * @param targetPartitionId the source partition id of the distribution (where the distribution
    *     was started)
    */
-  public void receivedAcknowledgeDistribution(final int targetPartitionId, final String queueId) {
+  public void receivedAcknowledgeDistribution(
+      final int targetPartitionId, final @Nullable String queueId) {
     getPartitionMetrics(targetPartitionId, queueId).receivedAcknowledgeDistribution();
   }
 
@@ -107,24 +158,31 @@ public final class DistributionMetrics {
    *
    * @param targetPartitionId the target partition id of the distribution
    */
-  public void retryInflightDistribution(final int targetPartitionId, final String queueId) {
+  public void retryInflightDistribution(
+      final int targetPartitionId, final @Nullable String queueId) {
     getPartitionMetrics(targetPartitionId, queueId).retryInflightDistribution();
   }
 
   private PartitionDistributionMetrics getPartitionMetrics(
-      final int targetPartitionId, final String queueId) {
+      final int targetPartitionId, final @Nullable String queueId) {
     return partitionMetrics.computeIfAbsent(
-        new MetricKey(targetPartitionId, normalizeQueueId(queueId)),
-        key ->
-            new PartitionDistributionMetrics(
-                key.targetPartitionId(), key.queueId(), meterRegistry));
+        targetPartitionId,
+        toQueueTag(queueId),
+        (partitionId, queueTag) -> {
+          final var metrics =
+              new PartitionDistributionMetrics(partitionId, queueTag, meterRegistry);
+          allPartitionMetrics.add(metrics);
+          return metrics;
+        });
   }
 
-  private static String normalizeQueueId(final String queueId) {
-    return queueId == null ? NO_QUEUE : queueId;
+  /** Maps the queue id to a tag value out of a bounded set: known queues, NONE, or OTHER. */
+  static String toQueueTag(final @Nullable String queueId) {
+    if (queueId == null) {
+      return NO_QUEUE;
+    }
+    return KNOWN_QUEUES.contains(queueId) ? queueId : OTHER_QUEUE;
   }
-
-  private record MetricKey(int targetPartitionId, String queueId) {}
 
   private static class PartitionDistributionMetrics {
 
@@ -137,12 +195,11 @@ public final class DistributionMetrics {
     private final StatefulGauge inflightDistributionsGauge;
     private final Counter retryInflightDistributionsCounter;
     private final Counter receivedAcknowledgeDistributionsCounter;
-    private final Counter sentAcknowledgeDistributionsCounter;
 
     public PartitionDistributionMetrics(
         final int targetPartitionId, final String queueId, final MeterRegistry meterRegistry) {
       this.targetPartitionId = targetPartitionId;
-      this.queueId = Objects.requireNonNull(queueId);
+      this.queueId = queueId;
       this.meterRegistry = meterRegistry;
 
       pendingDistributionsGauge =
@@ -161,13 +218,6 @@ public final class DistributionMetrics {
           Counter.builder(DistributionMetricsDoc.RETRY_INFLIGHT_COMMAND_DISTRIBUTIONS.getName())
               .description(
                   DistributionMetricsDoc.RETRY_INFLIGHT_COMMAND_DISTRIBUTIONS.getDescription())
-              .tags(tags())
-              .register(meterRegistry);
-
-      sentAcknowledgeDistributionsCounter =
-          Counter.builder(DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getName())
-              .description(
-                  DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getDescription())
               .tags(tags())
               .register(meterRegistry);
 
@@ -208,10 +258,6 @@ public final class DistributionMetrics {
 
     public void retryInflightDistribution() {
       retryInflightDistributionsCounter.increment();
-    }
-
-    public void sentAcknowledgeDistribution() {
-      sentAcknowledgeDistributionsCounter.increment();
     }
 
     public void receivedAcknowledgeDistribution() {
