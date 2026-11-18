@@ -12,7 +12,7 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionResumptionInstructionB
 import io.camunda.gateway.protocol.model.ProcessDefinitionResumptionInstructionByKey;
 
 public class ProcessDefinitionResumptionInstructionDeserializer
-    extends AbstractProcessDefinitionStateChangeInstructionDeserializer<
+    extends AbstractProcessDefinitionSuspensionInstructionDeserializer<
         ProcessDefinitionResumptionInstruction> {
 
   @Override

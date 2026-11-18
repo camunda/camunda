@@ -19,7 +19,7 @@ class ProcessDefinitionRequestValidatorTest {
   void shouldAcceptValidKey() {
     // when
     final var result =
-        ProcessDefinitionRequestValidator.validateStateChangeByKey("2251799813685249");
+        ProcessDefinitionRequestValidator.validateSuspensionByKey("2251799813685249");
 
     // then
     assertThat(result).isEmpty();
@@ -29,7 +29,7 @@ class ProcessDefinitionRequestValidatorTest {
   @ValueSource(strings = {"abc", "12.34", "12abc", "", " "})
   void shouldRejectInvalidKey(final String invalidKey) {
     // when
-    final var result = ProcessDefinitionRequestValidator.validateStateChangeByKey(invalidKey);
+    final var result = ProcessDefinitionRequestValidator.validateSuspensionByKey(invalidKey);
 
     // then
     assertThat(result).isPresent();
@@ -39,7 +39,7 @@ class ProcessDefinitionRequestValidatorTest {
   @Test
   void shouldAcceptIdWithoutVersion() {
     // when
-    final var result = ProcessDefinitionRequestValidator.validateStateChangeById("invoice", null);
+    final var result = ProcessDefinitionRequestValidator.validateSuspensionById("invoice", null);
 
     // then
     assertThat(result).isEmpty();
@@ -48,7 +48,7 @@ class ProcessDefinitionRequestValidatorTest {
   @Test
   void shouldAcceptIdWithPositiveVersion() {
     // when
-    final var result = ProcessDefinitionRequestValidator.validateStateChangeById("invoice", 1);
+    final var result = ProcessDefinitionRequestValidator.validateSuspensionById("invoice", 1);
 
     // then
     assertThat(result).isEmpty();
@@ -58,7 +58,7 @@ class ProcessDefinitionRequestValidatorTest {
   void shouldRejectIllegalId() {
     // when
     final var result =
-        ProcessDefinitionRequestValidator.validateStateChangeById("1 invalid id", null);
+        ProcessDefinitionRequestValidator.validateSuspensionById("1 invalid id", null);
 
     // then
     assertThat(result).isPresent();
@@ -69,8 +69,7 @@ class ProcessDefinitionRequestValidatorTest {
   @ValueSource(ints = {0, -1})
   void shouldRejectNonPositiveVersion(final int version) {
     // when
-    final var result =
-        ProcessDefinitionRequestValidator.validateStateChangeById("invoice", version);
+    final var result = ProcessDefinitionRequestValidator.validateSuspensionById("invoice", version);
 
     // then
     assertThat(result).isPresent();

@@ -15,7 +15,7 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionResumptionVersionResul
 import io.camunda.gateway.protocol.model.ProcessDefinitionSuspensionInstructionById;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSuspensionInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSuspensionVersionResult.OutcomeEnum;
-import io.camunda.service.ProcessDefinitionServices.ProcessDefinitionStateChangeRequest;
+import io.camunda.service.ProcessDefinitionServices.ProcessDefinitionSuspensionRequest;
 import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionResolvedVersion;
 import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
@@ -45,7 +45,7 @@ class ProcessDefinitionMapperTest {
     // then
     assertThat(result.isRight()).isTrue();
     assertThat(result.get())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(123L, "", -1, null, false));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(123L, "", -1, null, false));
   }
 
   @Test
@@ -63,7 +63,7 @@ class ProcessDefinitionMapperTest {
     // then
     assertThat(result.isRight()).isTrue();
     assertThat(result.get())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(123L, "", -1, null, true));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(123L, "", -1, null, true));
   }
 
   @Test
@@ -81,7 +81,7 @@ class ProcessDefinitionMapperTest {
     assertThat(result.isRight()).isTrue();
     assertThat(result.get())
         .isEqualTo(
-            new ProcessDefinitionStateChangeRequest(-1L, "invoice", -1, DEFAULT_TENANT, false));
+            new ProcessDefinitionSuspensionRequest(-1L, "invoice", -1, DEFAULT_TENANT, false));
   }
 
   @Test
@@ -101,7 +101,7 @@ class ProcessDefinitionMapperTest {
     // then
     assertThat(result.isRight()).isTrue();
     assertThat(result.get())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(-1L, "invoice", 3, "tenant-a", true));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(-1L, "invoice", 3, "tenant-a", true));
   }
 
   @Test
@@ -118,7 +118,7 @@ class ProcessDefinitionMapperTest {
     // then
     assertThat(result.isRight()).isTrue();
     assertThat(result.get())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(456L, "", -1, null, false));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(456L, "", -1, null, false));
   }
 
   @Test
@@ -136,7 +136,7 @@ class ProcessDefinitionMapperTest {
     // then
     assertThat(result.isRight()).isTrue();
     assertThat(result.get())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(456L, "", -1, null, true));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(456L, "", -1, null, true));
   }
 
   @Test
@@ -154,7 +154,7 @@ class ProcessDefinitionMapperTest {
     assertThat(result.isRight()).isTrue();
     assertThat(result.get())
         .isEqualTo(
-            new ProcessDefinitionStateChangeRequest(-1L, "invoice", -1, DEFAULT_TENANT, false));
+            new ProcessDefinitionSuspensionRequest(-1L, "invoice", -1, DEFAULT_TENANT, false));
   }
 
   @Test
@@ -174,7 +174,7 @@ class ProcessDefinitionMapperTest {
     // then
     assertThat(result.isRight()).isTrue();
     assertThat(result.get())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(-1L, "invoice", 2, "tenant-a", true));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(-1L, "invoice", 2, "tenant-a", true));
   }
 
   @Test

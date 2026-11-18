@@ -19,7 +19,7 @@ import java.util.Set;
  * instruction. A version and a tenant only qualify a process definition ID, so they cannot be
  * combined with a key.
  */
-abstract class AbstractProcessDefinitionStateChangeInstructionDeserializer<T>
+abstract class AbstractProcessDefinitionSuspensionInstructionDeserializer<T>
     extends AbstractRequestDeserializer<T> {
 
   private static final String PROCESS_DEFINITION_KEY_FIELD = "processDefinitionKey";

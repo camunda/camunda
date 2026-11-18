@@ -32,7 +32,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.VariableNameQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
-import io.camunda.service.ProcessDefinitionServices.ProcessDefinitionStateChangeRequest;
+import io.camunda.service.ProcessDefinitionServices.ProcessDefinitionSuspensionRequest;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -249,7 +249,7 @@ public class ProcessDefinitionController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> suspendProcessDefinitions(
-      final String physicalTenantId, final ProcessDefinitionStateChangeRequest request) {
+      final String physicalTenantId, final ProcessDefinitionSuspensionRequest request) {
     final var services = serviceRegistry.processDefinitionServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
@@ -259,7 +259,7 @@ public class ProcessDefinitionController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> resumeProcessDefinitions(
-      final String physicalTenantId, final ProcessDefinitionStateChangeRequest request) {
+      final String physicalTenantId, final ProcessDefinitionSuspensionRequest request) {
     final var services = serviceRegistry.processDefinitionServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(

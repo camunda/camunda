@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.service.ProcessDefinitionServices.ProcessDefinitionStateChangeRequest;
+import io.camunda.service.ProcessDefinitionServices.ProcessDefinitionSuspensionRequest;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
@@ -47,7 +47,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
   static final String SUSPENSION_URL = "/v2/process-definitions/suspension";
   static final String RESUMPTION_URL = "/v2/process-definitions/resumption";
 
-  @Captor ArgumentCaptor<ProcessDefinitionStateChangeRequest> requestCaptor;
+  @Captor ArgumentCaptor<ProcessDefinitionSuspensionRequest> requestCaptor;
   @MockitoBean ProcessDefinitionServices processDefinitionServices;
   @MockitoBean ServiceRegistry serviceRegistry;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
@@ -93,7 +93,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
             JsonCompareMode.STRICT);
     verify(processDefinitionServices).suspendProcessDefinitions(requestCaptor.capture(), any());
     assertThat(requestCaptor.getValue())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(11L, "", -1, null, false));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(11L, "", -1, null, false));
   }
 
   @Test
@@ -134,7 +134,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
             JsonCompareMode.STRICT);
     verify(processDefinitionServices).suspendProcessDefinitions(requestCaptor.capture(), any());
     assertThat(requestCaptor.getValue())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(-1L, "invoice", -1, "<default>", true));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(-1L, "invoice", -1, "<default>", true));
   }
 
   @Test
@@ -156,7 +156,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
     response.expectStatus().isOk();
     verify(processDefinitionServices).suspendProcessDefinitions(requestCaptor.capture(), any());
     assertThat(requestCaptor.getValue())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(-1L, "invoice", 2, "<default>", false));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(-1L, "invoice", 2, "<default>", false));
   }
 
   @Test
@@ -190,7 +190,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
             JsonCompareMode.STRICT);
     verify(processDefinitionServices).resumeProcessDefinitions(requestCaptor.capture(), any());
     assertThat(requestCaptor.getValue())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(11L, "", -1, null, false));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(11L, "", -1, null, false));
   }
 
   @Test
@@ -224,7 +224,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
         .isEqualTo("7");
     verify(processDefinitionServices).resumeProcessDefinitions(requestCaptor.capture(), any());
     assertThat(requestCaptor.getValue())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(-1L, "invoice", 2, "<default>", true));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(-1L, "invoice", 2, "<default>", true));
   }
 
   @Test
@@ -330,7 +330,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
     response.expectStatus().isOk();
     verify(processDefinitionServices).suspendProcessDefinitions(requestCaptor.capture(), any());
     assertThat(requestCaptor.getValue())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(-1L, "invoice", -1, "<default>", false));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(-1L, "invoice", -1, "<default>", false));
   }
 
   @Test
@@ -352,7 +352,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
     response.expectStatus().isOk();
     verify(processDefinitionServices).resumeProcessDefinitions(requestCaptor.capture(), any());
     assertThat(requestCaptor.getValue())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(-1L, "invoice", -1, "<default>", false));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(-1L, "invoice", -1, "<default>", false));
   }
 
   @Test
@@ -374,7 +374,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
     response.expectStatus().isOk();
     verify(processDefinitionServices).suspendProcessDefinitions(requestCaptor.capture(), any());
     assertThat(requestCaptor.getValue())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(123L, "", -1, null, false));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(123L, "", -1, null, false));
   }
 
   @Test
@@ -396,7 +396,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
     response.expectStatus().isOk();
     verify(processDefinitionServices).resumeProcessDefinitions(requestCaptor.capture(), any());
     assertThat(requestCaptor.getValue())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(123L, "", -1, null, false));
+        .isEqualTo(new ProcessDefinitionSuspensionRequest(123L, "", -1, null, false));
   }
 
   @Test

@@ -30,7 +30,7 @@ import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.service.ProcessDefinitionServices.ProcessDefinitionStateChangeRequest;
+import io.camunda.service.ProcessDefinitionServices.ProcessDefinitionSuspensionRequest;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
@@ -233,7 +233,7 @@ public class ProcessDefinitionServiceTest {
     when(brokerClient.sendRequest(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(response)));
     final var request =
-        new ProcessDefinitionStateChangeRequest(-1L, "invoice-review", 2, TENANT_ID, true);
+        new ProcessDefinitionSuspensionRequest(-1L, "invoice-review", 2, TENANT_ID, true);
 
     // when
     final var result = services.suspendProcessDefinitions(request, authentication).join();
@@ -260,7 +260,7 @@ public class ProcessDefinitionServiceTest {
             CompletableFuture.completedFuture(
                 new BrokerResponse<>(new ProcessDefinitionSuspensionRecord())));
     final var request =
-        new ProcessDefinitionStateChangeRequest(PROCESS_DEFINITION_KEY, "", -1, null, false);
+        new ProcessDefinitionSuspensionRequest(PROCESS_DEFINITION_KEY, "", -1, null, false);
 
     // when
     services.resumeProcessDefinitions(request, authentication).join();

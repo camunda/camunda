@@ -171,7 +171,7 @@ public class ProcessDefinitionServices
   }
 
   public CompletableFuture<ProcessDefinitionSuspensionRecord> suspendProcessDefinitions(
-      final ProcessDefinitionStateChangeRequest request,
+      final ProcessDefinitionSuspensionRequest request,
       final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerSuspendProcessDefinitionRequest()
@@ -186,7 +186,7 @@ public class ProcessDefinitionServices
   }
 
   public CompletableFuture<ProcessDefinitionSuspensionRecord> resumeProcessDefinitions(
-      final ProcessDefinitionStateChangeRequest request,
+      final ProcessDefinitionSuspensionRequest request,
       final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerResumeProcessDefinitionRequest()
@@ -205,7 +205,7 @@ public class ProcessDefinitionServices
    * (the ID, version and tenant are then unset) or by ID with an optional version ({@code -1} for
    * all versions) and tenant. A {@code null} tenant is left unset so that the engine resolves it.
    */
-  public record ProcessDefinitionStateChangeRequest(
+  public record ProcessDefinitionSuspensionRequest(
       long processDefinitionKey,
       String processDefinitionId,
       int processDefinitionVersion,

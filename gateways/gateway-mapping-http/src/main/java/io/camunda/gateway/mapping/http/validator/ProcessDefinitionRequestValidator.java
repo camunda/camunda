@@ -18,13 +18,12 @@ import org.springframework.http.ProblemDetail;
 
 public class ProcessDefinitionRequestValidator {
 
-  public static Optional<ProblemDetail> validateStateChangeByKey(
-      final String processDefinitionKey) {
+  public static Optional<ProblemDetail> validateSuspensionByKey(final String processDefinitionKey) {
     return validate(
         violations -> validateKeyFormat(processDefinitionKey, "processDefinitionKey", violations));
   }
 
-  public static Optional<ProblemDetail> validateStateChangeById(
+  public static Optional<ProblemDetail> validateSuspensionById(
       final String processDefinitionId, final @Nullable Integer processDefinitionVersion) {
     return validate(
         violations -> {
