@@ -229,6 +229,11 @@ public final class ConcurrentSecretStore implements SecretStore {
   }
 
   @Override
+  public List<SecretListEntry> listEntries() {
+    return delegate.listEntries();
+  }
+
+  @Override
   public void close() {
     delegate.close();
   }

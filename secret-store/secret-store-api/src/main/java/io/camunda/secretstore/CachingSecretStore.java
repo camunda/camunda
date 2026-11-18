@@ -137,6 +137,11 @@ public final class CachingSecretStore implements LocallyCachedSecretStore {
     return store.list();
   }
 
+  @Override
+  public List<SecretListEntry> listEntries() {
+    return store.listEntries();
+  }
+
   /**
    * Answers for the store this caches for rather than for this wrapper, so a caller asking which
    * store was configured gets the same answer whether or not the store had to be wrapped.

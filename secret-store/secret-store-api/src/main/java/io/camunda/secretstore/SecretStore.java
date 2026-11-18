@@ -41,6 +41,22 @@ public interface SecretStore extends AutoCloseable {
   List<String> list();
 
   /**
+   * Lists all secrets known to this store together with their state.
+   *
+   * <p>The default reports every secret from {@link #list()} as {@link SecretStatus#ACTIVE}, so a
+   * store that cannot tell a secret's state needs no change. A store that can overrides this.
+   * Wrappers must delegate it, or the wrapped store's states are lost.
+   *
+   * <p>Implementations must be thread-safe.
+   *
+   * @throws SecretStoreUnavailableException if the backing store cannot be accessed or its content
+   *     is malformed
+   */
+  default List<SecretListEntry> listEntries() {
+    return list().stream().map(name -> new SecretListEntry(name, SecretStatus.ACTIVE)).toList();
+  }
+
+  /**
    * Whether this is a store of the given type, seeing through any wrapper: a store wrapped for
    * caching answers for the store it wraps rather than for the wrapper. That lets a caller tell
    * which store was configured without reading it, which for a cloud store would mean a call to the
