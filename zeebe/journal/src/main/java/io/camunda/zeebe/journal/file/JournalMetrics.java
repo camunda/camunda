@@ -31,6 +31,8 @@ final class JournalMetrics {
   private final Timer segmentFlushTime;
   private final Timer journalFlushTime;
   private final AtomicLong segmentCount;
+  private final AtomicLong pendingSegmentDeletions;
+  private final Timer segmentDeletionTime;
   private final AtomicLong journalOpenDuration;
   private final Timer segmentAllocationTime;
   private final Timer appendLatency;
@@ -50,6 +52,12 @@ final class JournalMetrics {
     Gauge.builder(SEGMENT_COUNT.getName(), segmentCount::get)
         .description(SEGMENT_COUNT.getDescription())
         .register(registry);
+
+    pendingSegmentDeletions = new AtomicLong(0L);
+    Gauge.builder(PENDING_SEGMENT_DELETIONS.getName(), pendingSegmentDeletions::get)
+        .description(PENDING_SEGMENT_DELETIONS.getDescription())
+        .register(registry);
+    segmentDeletionTime = makeTimer(SEGMENT_DELETION_TIME);
 
     journalOpenDuration = new AtomicLong(0L);
     Gauge.builder(JOURNAL_OPERATION_DURATION.getName(), journalOpenDuration::get)
@@ -99,6 +107,18 @@ final class JournalMetrics {
 
   void decSegmentCount() {
     segmentCount.decrementAndGet();
+  }
+
+  void incPendingSegmentDeletions() {
+    pendingSegmentDeletions.incrementAndGet();
+  }
+
+  void decPendingSegmentDeletions() {
+    pendingSegmentDeletions.decrementAndGet();
+  }
+
+  void observeSegmentDeletion(final Runnable segmentDeletion) {
+    segmentDeletionTime.record(segmentDeletion);
   }
 
   CloseableSilently observeSegmentAllocation() {
