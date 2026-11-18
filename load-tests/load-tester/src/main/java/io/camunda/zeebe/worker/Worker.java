@@ -16,7 +16,6 @@ import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -25,7 +24,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -56,7 +57,7 @@ public class Worker {
     this.connectionMonitor = connectionMonitor;
   }
 
-  @PostConstruct
+  @EventListener(ApplicationReadyEvent.class)
   void awaitTopologyAndLogConfig() {
     responseChecker.start();
     connectionMonitor.awaitAndPrintTopology();

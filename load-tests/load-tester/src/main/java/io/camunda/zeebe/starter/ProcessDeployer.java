@@ -14,18 +14,21 @@ import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
-import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
- * Waits for the cluster topology and deploys the benchmark process in a {@code @PostConstruct}
- * method. The context therefore finishes starting only after the deployment succeeded, and
- * components that start on {@code ApplicationReadyEvent} can rely on the process existing. The web
- * server and its health endpoints are not available until the deployment succeeded.
+ * Waits for the cluster topology and deploys the benchmark process on {@code
+ * ApplicationReadyEvent}, ordered before the other starter components that need the process to
+ * exist. The web server is already running at that point, so the health endpoints answer while the
+ * deployer waits.
  */
 @Component
 @Profile("starter")
@@ -52,7 +55,8 @@ public class ProcessDeployer {
     this.livenessIndicator = livenessIndicator;
   }
 
-  @PostConstruct
+  @EventListener(ApplicationReadyEvent.class)
+  @Order(Ordered.HIGHEST_PRECEDENCE)
   void deployProcess() {
     connectionMonitor.awaitAndPrintTopology();
     livenessIndicator.recordStarted();

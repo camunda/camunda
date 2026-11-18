@@ -105,7 +105,8 @@ class StarterTest {
     final var deployer =
         new ProcessDeployer(
             loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator);
-    // Spring calls this @PostConstruct method, but there is no Spring context in this test.
+    // Spring calls this ApplicationReadyEvent listener, but there is no Spring context in this
+    // test.
     deployer.deployProcess();
     final var creator =
         new ProcessInstanceCreator(

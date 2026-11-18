@@ -5,6 +5,11 @@
 
 server:
   port: 9600
+  shutdown: graceful
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
 
 # Logging configuration
 logging:
