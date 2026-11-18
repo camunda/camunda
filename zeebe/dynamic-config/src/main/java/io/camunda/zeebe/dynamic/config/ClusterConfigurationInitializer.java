@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +55,7 @@ import org.slf4j.LoggerFactory;
  *     ClusterConfigurationModifier}. For example, {@link ExporterStateInitializer} overwrites the
  *     local member's state to keep it in sync with the statically configured exporters.
  */
+@NullMarked
 public interface ClusterConfigurationInitializer<T extends InitializableClusterConfiguration> {
   Logger LOG = LoggerFactory.getLogger(ClusterConfigurationInitializer.class);
 
@@ -244,7 +247,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     private final T uninitialized;
 
     private final Duration waitLogInterval;
-    private ScheduledTimer waitLogTimer;
+    private @Nullable ScheduledTimer waitLogTimer;
     private int waitLogCount;
 
     public GossipInitializer(
@@ -376,7 +379,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     private final Set<MemberId> uninitializedMembers = new HashSet<>();
     private final Set<MemberId> requestsInFlight = new HashSet<>();
     private boolean retryScheduled;
-    private ScheduledTimer bootstrapTimeoutTimer;
+    private @Nullable ScheduledTimer bootstrapTimeoutTimer;
     private final ConcurrencyControl executor;
     private final Function<MemberId, ActorFuture<T>> syncRequester;
     private final T uninitialized;
