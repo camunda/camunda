@@ -44,14 +44,20 @@ public interface ProcessingSession {
 
   default void appendAuthInfoToFollowUps(final @Nullable AuthInfo authInfo) {
     if (authInfo != null && authInfo.hasAnyClaims()) {
-      // On events, only the actor has a reader. Commands need the full claims for authorization.
-      // Create it once, so that all events of this command share one encoding.
+      // Create it once, so that all follow-ups of this command share one encoding.
       final var actorAuthInfo = authInfo.withActorClaimsOnly();
       appendMetadataToFollowUps(
-          metadata ->
-              metadata.authorization(
-                  metadata.getRecordType() == RecordType.EVENT ? actorAuthInfo : authInfo));
+          metadata -> metadata.authorization(needsFullClaims(metadata) ? authInfo : actorAuthInfo));
     }
+  }
+
+  /**
+   * The engine checks the claims of a batch operation command. For other follow-ups, only the actor
+   * has a reader: the engine does not check the claims of internal commands.
+   */
+  private static boolean needsFullClaims(final RecordMetadata metadata) {
+    return metadata.getRecordType() == RecordType.COMMAND
+        && metadata.getBatchOperationReference() != batchOperationReferenceNullValue();
   }
 
   default void appendAgentInfoToFollowUps(final @Nullable Agent agentInfo) {

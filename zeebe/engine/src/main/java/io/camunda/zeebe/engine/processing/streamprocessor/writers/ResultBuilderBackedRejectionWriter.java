@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -33,7 +32,6 @@ final class ResultBuilderBackedRejectionWriter extends AbstractResultBuilderBack
         new RecordMetadata()
             .recordType(RecordType.COMMAND_REJECTION)
             .intent(command.getIntent())
-            .authorization(new AuthInfo().setClaims(command.getAuthorizations()))
             .rejectionType(rejectionType)
             .rejectionReason(reason)
             .operationReference(command.getOperationReference());
