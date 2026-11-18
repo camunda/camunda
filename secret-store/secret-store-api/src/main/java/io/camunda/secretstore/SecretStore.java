@@ -44,8 +44,9 @@ public interface SecretStore extends AutoCloseable {
    * Lists all secrets known to this store together with their state.
    *
    * <p>The default reports every secret from {@link #list()} as {@link SecretStatus#ACTIVE}, so a
-   * store that cannot tell a secret's state needs no change. A store that can overrides this.
-   * Wrappers must delegate it, or the wrapped store's states are lost.
+   * store that cannot tell a secret's state needs no change. A store that can overrides this and
+   * must keep {@link #list()} naming the same secrets, whatever their state. Wrappers must delegate
+   * it, or the wrapped store's states are lost.
    *
    * <p>Implementations must be thread-safe.
    *

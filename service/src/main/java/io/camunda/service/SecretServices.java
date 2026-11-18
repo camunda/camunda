@@ -378,9 +378,10 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   }
 
   /**
-   * Enumerates the references of every configured store, sorted and without duplicates. A store's
-   * {@code list()} deliberately bypasses what it has cached: that is the values read so far, which
-   * is not the tenant's set of secrets.
+   * Enumerates the references of every configured store, sorted and without duplicates, keeping
+   * only those in {@code status} when one is given. A store's {@code listEntries()} deliberately
+   * bypasses what it has cached: that is the values read so far, which is not the tenant's set of
+   * secrets.
    *
    * <p>A listed reference is usable verbatim with {@link #resolve}, but not always in a FEEL
    * expression: a name FEEL does not accept as a bare identifier — a dashed one above all — has to

@@ -817,6 +817,31 @@ public class SecretServicesTest {
   }
 
   @Test
+  void shouldListAReferenceOnceWhenTwoStoresReportItInDifferentStatuses() {
+    // given two stores holding the same name, one reporting it DISABLED and one ACTIVE
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    final var disabled =
+        new TestSecretStore().holds("shared", "v").reportsStatus("shared", SecretStatus.DISABLED);
+    final var active = new TestSecretStore().holds("shared", "v");
+    final var stores = new LinkedHashMap<String, SecretStore>();
+    stores.put("first", disabled);
+    stores.put("second", active);
+    final var multiStore = newSecretServices(PHYSICAL_TENANT_ID, new SecretStoreRegistry(stores));
+
+    // when
+    final var disabledList = multiStore.list(authentication, SecretStatus.DISABLED).join();
+    final var activeList = multiStore.list(authentication, SecretStatus.ACTIVE).join();
+    final var all = multiStore.list(authentication, null).join();
+
+    // then each filter matches the store that reports that state, and an unfiltered list holds
+    // the reference once
+    assertThat(disabledList).containsExactly("camunda.secrets.shared");
+    assertThat(activeList).containsExactly("camunda.secrets.shared");
+    assertThat(all).containsExactly("camunda.secrets.shared");
+  }
+
+  @Test
   void shouldApplyTheAuthorizationFilterAfterTheStatusFilter() {
     // given a disabled and an active secret, the caller may read only the disabled one
     authorizationsConfig.setEnabled(true);
