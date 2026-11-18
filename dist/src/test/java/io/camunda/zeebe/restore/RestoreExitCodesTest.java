@@ -10,7 +10,7 @@ package io.camunda.zeebe.restore;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.restore.RestoreFailure.BackupNotFound;
-import io.camunda.zeebe.restore.RestoreFailure.BackupStoreUnavailable;
+import io.camunda.zeebe.restore.RestoreFailure.BackupStoreFailure;
 import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
 import io.camunda.zeebe.restore.RestoreFailure.InvalidState;
 import io.camunda.zeebe.restore.RestoreFailure.Reason;
@@ -77,7 +77,9 @@ final class RestoreExitCodesTest {
   void shouldExitWithFourForAnUnavailableBackupStore() {
     // when
     final var exitCode =
-        exitCodes.getExitCode(new BackupStoreUnavailable(new IOException("Connection refused")));
+        exitCodes.getExitCode(
+            new BackupStoreFailure(
+                Reason.BACKUP_STORE_UNAVAILABLE, new IOException("Connection refused")));
 
     // then
     assertThat(exitCode).isEqualTo(4);
