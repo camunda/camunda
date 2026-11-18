@@ -384,10 +384,12 @@ opensearch:
       number_of_shards: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS:1}
       # How many shards the agent run index (optimize-agent-instance) uses. It holds one document per
       # agent run of all processes and tenants. Plan with about 2 KB of disk per agent run, which is
-      # about 15 million agent runs per 30 GB shard. The default of 5 fits about 75 million agent runs.
-      # NOTE: like number_of_shards, this property only applies when Optimize creates the index.
+      # about 15 million agent runs per 30 GB shard. The default of 3 fits about 45 million agent runs,
+      # or about 75 million at 50 GB per shard.
+      # NOTE: like number_of_shards, this property only applies when Optimize creates the index, which
+      # happens on the first start or upgrade with this version, so set it before then.
       # Changing it later needs the index to be deleted (with all its data) and Optimize restarted.
-      agent_instance_number_of_shards: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_AGENT_INSTANCE_NUMBER_OF_SHARDS:5}
+      agent_instance_number_of_shards: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_AGENT_INSTANCE_NUMBER_OF_SHARDS:3}
       # How long Elasticsearch waits until the documents are available
       # for search. A positive value defines the duration in seconds.
       # A value of -1 means that a refresh needs to be done manually.
@@ -512,10 +514,12 @@ es:
       number_of_shards: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS:1}
       # How many shards the agent run index (optimize-agent-instance) uses. It holds one document per
       # agent run of all processes and tenants. Plan with about 2 KB of disk per agent run, which is
-      # about 15 million agent runs per 30 GB shard. The default of 5 fits about 75 million agent runs.
-      # NOTE: like number_of_shards, this property only applies when Optimize creates the index.
+      # about 15 million agent runs per 30 GB shard. The default of 3 fits about 45 million agent runs,
+      # or about 75 million at 50 GB per shard.
+      # NOTE: like number_of_shards, this property only applies when Optimize creates the index, which
+      # happens on the first start or upgrade with this version, so set it before then.
       # Changing it later needs the index to be deleted (with all its data) and Optimize restarted.
-      agent_instance_number_of_shards: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_AGENT_INSTANCE_NUMBER_OF_SHARDS:5}
+      agent_instance_number_of_shards: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_AGENT_INSTANCE_NUMBER_OF_SHARDS:3}
       # How long Elasticsearch waits until the documents are available
       # for search. A positive value defines the duration in seconds.
       # A value of -1 means that a refresh needs to be done manually.

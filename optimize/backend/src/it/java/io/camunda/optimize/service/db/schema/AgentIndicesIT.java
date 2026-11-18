@@ -36,7 +36,7 @@ class AgentIndicesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     // then the agent run index uses its own default and the definition index keeps one shard
     assertThat(databaseIntegrationTestExtension.getNumberOfShards(AGENT_INSTANCE_INDEX_NAME))
-        .isEqualTo(5);
+        .isEqualTo(3);
     assertThat(databaseIntegrationTestExtension.getNumberOfShards(AGENT_DEFINITION_INDEX_NAME))
         .isEqualTo(1);
   }

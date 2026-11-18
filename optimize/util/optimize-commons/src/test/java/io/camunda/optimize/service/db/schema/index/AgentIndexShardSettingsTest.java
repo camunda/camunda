@@ -33,8 +33,8 @@ class AgentIndexShardSettingsTest {
     final String openSearchShards = openSearchShards(new AgentRunIndexOS(), DEFAULT_CONFIGURATION);
 
     // then
-    assertThat(elasticsearchShards).isEqualTo("5");
-    assertThat(openSearchShards).isEqualTo("5");
+    assertThat(elasticsearchShards).isEqualTo("3");
+    assertThat(openSearchShards).isEqualTo("3");
   }
 
   @Test
@@ -49,8 +49,8 @@ class AgentIndexShardSettingsTest {
     final String openSearchShards = openSearchShards(new AgentRunIndexOS(), configuration);
 
     // then
-    assertThat(elasticsearchShards).isEqualTo("3");
-    assertThat(openSearchShards).isEqualTo("3");
+    assertThat(elasticsearchShards).isEqualTo("7");
+    assertThat(openSearchShards).isEqualTo("7");
   }
 
   @Test
