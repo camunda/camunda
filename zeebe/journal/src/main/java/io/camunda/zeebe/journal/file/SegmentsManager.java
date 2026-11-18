@@ -93,7 +93,11 @@ final class SegmentsManager implements AutoCloseable {
     } catch (final RuntimeException e) {
       LOG.warn("{} - Failed to delete compacted segments on close", name, e);
       // the files stay on disk, and the next start loads them again
-      segmentsToDelete.forEach(Segment::close);
+      segmentsToDelete.forEach(
+          segment -> {
+            segment.close();
+            journalMetrics.decPendingSegmentDeletions();
+          });
       segmentsToDelete.clear();
     }
     segments
@@ -220,6 +224,7 @@ final class SegmentsManager implements AutoCloseable {
     for (final Segment segment : compactSegments.values()) {
       segment.markAsClosed();
       segmentsToDelete.add(segment);
+      journalMetrics.incPendingSegmentDeletions();
       journalMetrics.decSegmentCount();
     }
     // removes them from the segment map
@@ -256,8 +261,9 @@ final class SegmentsManager implements AutoCloseable {
     Segment segment;
     while ((segment = segmentsToDelete.peek()) != null) {
       LOG.trace("{} - Deleting segment: {}", name, segment);
-      segment.delete();
+      journalMetrics.observeSegmentDeletion(segment::delete);
       segmentsToDelete.remove();
+      journalMetrics.decPendingSegmentDeletions();
     }
   }
 

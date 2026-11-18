@@ -97,6 +97,10 @@ final class TestJournalFactory {
     return loader;
   }
 
+  MeterRegistry meterRegistry() {
+    return meterRegistry;
+  }
+
   MockJournalMetastore metaStore() {
     return metaStore;
   }
