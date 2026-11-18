@@ -11,7 +11,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43378213427",
     "updated_at": "2026-11-13T07:19:56Z",
     "cooldown_until": "2026-11-27T07:19:56Z",
-    "pr": "https://github.com/camunda/camunda/pull/69298"
+    "pr": "https://github.com/camunda/camunda/pull/69298",
+    "post_merge": {
+      "merged_at": "2026-11-13T10:05:11Z",
+      "nightlies": 5,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "clean",
+      "summary": "clean 5 night(s)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-12T02:22:41Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-18T06:24:32.914Z"
+    }
   },
   "d64e1205": {
     "version": "main",
@@ -25,7 +37,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43378236227",
     "updated_at": "2026-11-13T07:24:03Z",
     "cooldown_until": "2026-11-27T07:24:03Z",
-    "pr": "https://github.com/camunda/camunda/pull/69299"
+    "pr": "https://github.com/camunda/camunda/pull/69299",
+    "post_merge": {
+      "merged_at": "2026-11-13T10:27:48Z",
+      "nightlies": 5,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "clean",
+      "summary": "clean 5 night(s)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-12T01:47:37Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-18T06:24:32.914Z"
+    }
   },
   "f9a130cc": {
     "version": "8.8",
@@ -39,7 +63,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43101441670",
     "updated_at": "2026-11-11T21:49:35Z",
     "cooldown_until": "2026-11-25T21:49:35Z",
-    "pr": "https://github.com/camunda/camunda/pull/69103"
+    "pr": "https://github.com/camunda/camunda/pull/69103",
+    "post_merge": {
+      "merged_at": "2026-11-12T12:35:04Z",
+      "nightlies": 6,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "clean",
+      "summary": "clean 6 night(s)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-12T00:45:07Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-18T06:24:32.914Z"
+    }
   },
   "0acc0fd5": {
     "version": "8.9",
@@ -79,7 +115,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43565906119",
     "updated_at": "2026-11-14T07:47:23Z",
     "cooldown_until": "2026-11-28T07:47:23Z",
-    "pr": "https://github.com/camunda/camunda/pull/69413"
+    "pr": "https://github.com/camunda/camunda/pull/69413",
+    "post_merge": {
+      "merged_at": "2026-11-16T14:56:44Z",
+      "nightlies": 2,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "clean",
+      "summary": "clean 2 night(s)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-12T02:22:41Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-18T06:24:32.914Z"
+    }
   },
   "bb4828fb": {
     "version": "8.7",
@@ -106,7 +154,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43817621639",
     "updated_at": "2026-11-16T07:13:12Z",
     "cooldown_until": "2026-11-30T07:13:12Z",
-    "pr": "https://github.com/camunda/camunda/pull/69476"
+    "pr": "https://github.com/camunda/camunda/pull/69476",
+    "post_merge": {
+      "merged_at": "2026-11-16T10:41:30Z",
+      "nightlies": 2,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "clean",
+      "summary": "clean 2 night(s)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-12T00:52:39Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-18T06:24:32.914Z"
+    }
   },
   "3b4d6f3c": {
     "version": "8.8",
@@ -120,7 +180,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43224116544",
     "updated_at": "2026-11-12T13:57:31Z",
     "cooldown_until": "2026-11-26T13:57:31Z",
-    "pr": "https://github.com/camunda/camunda/pull/69186"
+    "pr": "https://github.com/camunda/camunda/pull/69186",
+    "post_merge": {
+      "merged_at": "2026-11-12T15:44:16Z",
+      "nightlies": 6,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "clean",
+      "summary": "clean 6 night(s)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-12T00:45:07Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-18T06:24:32.914Z"
+    }
   },
   "b1ba4e19": {
     "version": "8.8",
@@ -186,7 +258,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43414305641",
     "updated_at": "2026-11-13T11:44:46Z",
     "cooldown_until": "2026-11-27T11:44:46Z",
-    "pr": "https://github.com/camunda/camunda/pull/69337"
+    "pr": "https://github.com/camunda/camunda/pull/69337",
+    "post_merge": {
+      "merged_at": "2026-11-13T14:12:55Z",
+      "nightlies": 5,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "clean",
+      "summary": "clean 5 night(s)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-12T00:36:58Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-18T06:24:32.914Z"
+    }
   },
   "3d80a605": {
     "version": "8.7",
@@ -200,7 +284,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43685046202",
     "updated_at": "2026-11-15T06:56:32Z",
     "cooldown_until": "2026-11-29T06:56:32Z",
-    "pr": "https://github.com/camunda/camunda/pull/69451"
+    "pr": "https://github.com/camunda/camunda/pull/69451",
+    "post_merge": {
+      "merged_at": "2026-11-16T14:27:14Z",
+      "nightlies": 2,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "clean",
+      "summary": "clean 2 night(s)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-12T00:36:58Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-18T06:24:32.914Z"
+    }
   },
   "35a13433": {
     "version": "main",
@@ -214,7 +310,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43685062727",
     "updated_at": "2026-11-15T07:20:46Z",
     "cooldown_until": "2026-11-29T07:20:46Z",
-    "pr": "https://github.com/camunda/camunda/pull/69452"
+    "pr": "https://github.com/camunda/camunda/pull/69452",
+    "post_merge": {
+      "merged_at": "2026-11-16T14:59:04Z",
+      "nightlies": 4,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "clean",
+      "summary": "clean 4 night(s)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-12T01:30:35Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-18T06:24:32.914Z"
+    }
   },
   "df6c1204": {
     "version": "8.10",
@@ -254,7 +362,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43817644767",
     "updated_at": "2026-11-16T07:39:57Z",
     "cooldown_until": "2026-11-30T07:39:57Z",
-    "pr": "https://github.com/camunda/camunda/pull/69477"
+    "pr": "https://github.com/camunda/camunda/pull/69477",
+    "post_merge": {
+      "merged_at": "2026-11-16T10:20:17Z",
+      "nightlies": 2,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "clean",
+      "summary": "clean 2 night(s)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-12T01:18:46Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-18T06:24:32.914Z"
+    }
   },
   "ef2bd44f": {
     "version": "8.8",
@@ -268,6 +388,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/44030771473",
     "updated_at": "2026-11-17T07:05:43Z",
     "cooldown_until": "2026-12-01T07:05:43Z",
-    "pr": "https://github.com/camunda/camunda/pull/69591"
+    "pr": "https://github.com/camunda/camunda/pull/69591",
+    "post_merge": {
+      "merged_at": "2026-11-17T08:04:48Z",
+      "nightlies": 1,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "clean",
+      "summary": "clean 1 night(s)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-12T00:52:39Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-18T06:24:32.914Z"
+    }
   }
 }
