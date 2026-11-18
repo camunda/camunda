@@ -32,7 +32,7 @@ import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 /** Checks the log bytes of single-partition scenarios. See {@link RecordSizeBaseline}. */
-public final class RecordSizeBaselineTest {
+public final class ProcessRecordSizeBaselineTest {
 
   private static final String PROCESS_ID = "process";
   private static final String JOB_TYPE = "task";

@@ -19,7 +19,7 @@ import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 /** Checks the log bytes of commands that the engine distributes. See {@link RecordSizeBaseline}. */
-public final class RecordSizeBaselineDistributionTest {
+public final class DistributionRecordSizeBaselineTest {
 
   @Rule public final EngineRule engine = EngineRule.multiplePartition(3);
 
