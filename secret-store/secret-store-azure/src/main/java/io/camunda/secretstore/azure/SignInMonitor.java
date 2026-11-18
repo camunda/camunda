@@ -118,7 +118,7 @@ final class SignInMonitor implements AutoCloseable {
           credential,
           reason(failure),
           SecretStoreMetricsDoc.SIGNIN_FAILURES.getName());
-    } else {
+    } else if (LOG.isDebugEnabled()) {
       LOG.debug(
           "Azure Key Vault store '{}' for '{}' failed to sign in with {} again: {}",
           storeId,
