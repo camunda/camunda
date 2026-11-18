@@ -1,0 +1,6 @@
+# Written by RecordSizeBaseline. Do not edit by hand.
+# <record type> <value type> <record count> <bytes of metadata and value>
+COMMAND JOB 1 1901
+COMMAND PROCESS_INSTANCE_CREATION 1 1413
+COMMAND_REJECTION JOB 1 1965
+COMMAND_REJECTION PROCESS_INSTANCE_CREATION 1 1490

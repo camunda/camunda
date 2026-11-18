@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -65,6 +66,7 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
@@ -126,12 +128,17 @@ public final class RecordToWrite implements LogAppendEntry {
 
   /** Like a command sent by a client through the gateway: user claims and request metadata. */
   public static RecordToWrite commandFromRequest(final String username) {
+    return commandFromRequest(AuthorizationUtil.getAuthInfo(username));
+  }
+
+  /** Like a command sent by a client through the gateway: the given claims and request metadata. */
+  public static RecordToWrite commandFromRequest(final AuthInfo authInfo) {
     return new RecordToWrite(
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
             .requestId(1L)
             .requestStreamId(1)
-            .authorization(AuthorizationUtil.getAuthInfo(username)));
+            .authorization(authInfo));
   }
 
   public static RecordToWrite event() {
@@ -320,6 +327,12 @@ public final class RecordToWrite implements LogAppendEntry {
       final GlobalListenerBatchIntent intent, final GlobalListenerBatchRecordValue value) {
     recordMetadata.valueType(ValueType.GLOBAL_LISTENER_BATCH).intent(intent);
     unifiedRecordValue = (GlobalListenerBatchRecord) value;
+    return this;
+  }
+
+  public RecordToWrite userTask(final UserTaskIntent intent, final UserTaskRecord value) {
+    recordMetadata.valueType(ValueType.USER_TASK).intent(intent);
+    unifiedRecordValue = value;
     return this;
   }
 
