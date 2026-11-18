@@ -64,7 +64,22 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
     final var userTaskKeys = resourceIdsByType.getOrDefault(USER_TASK.name(), List.of());
 
     // Property-based authorization
-    final var authorizationProperties = resolveAuthorizationProperties(resourceAccessChecks);
+    final var userTaskPropertyNames =
+        resourceAccessChecks
+            .getAuthorizedResourcePropertyNamesByType()
+            .getOrDefault(USER_TASK.name(), Set.of());
+    final var authorizationProperties =
+        resolveAuthorizationProperties(userTaskPropertyNames, resourceAccessChecks);
+
+    // Property grants that resolve to no value for this caller (e.g. no username or no groups)
+    // grant nothing. Without any other grant, no authorization predicate would be rendered and the
+    // query would be unrestricted, so fail closed like the Elasticsearch/OpenSearch search does.
+    if (!userTaskPropertyNames.isEmpty()
+        && processDefinitionIds.isEmpty()
+        && userTaskKeys.isEmpty()
+        && !authorizationProperties.hasAnyProperty()) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
 
     final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
@@ -101,10 +116,7 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
    * to user identity values from authentication context.
    */
   private UserTaskAuthorizationProperties resolveAuthorizationProperties(
-      final ResourceAccessChecks resourceAccessChecks) {
-
-    final var propertyNamesByType = resourceAccessChecks.getAuthorizedResourcePropertyNamesByType();
-    final var userTaskPropertyNames = propertyNamesByType.getOrDefault(USER_TASK.name(), Set.of());
+      final Set<String> userTaskPropertyNames, final ResourceAccessChecks resourceAccessChecks) {
 
     if (userTaskPropertyNames.isEmpty()) {
       return UserTaskAuthorizationProperties.EMPTY;
@@ -114,7 +126,7 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
     if (authentication == null) {
       LOG.warn(
           "Property-based authorization configured but no authentication context provided; "
-              + "property-based checks will not be applied.");
+              + "property-based grants resolve to no access.");
       return UserTaskAuthorizationProperties.EMPTY;
     }
 
