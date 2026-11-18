@@ -77,6 +77,17 @@ jobs:
           ./gradlew --profile --build-cache --console=plain \
             -Pskip.fe.build -Ptest.max.forks=2 test
 
+      - name: Upload Gradle test reports
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: gradle-test-reports
+          path: |
+            **/build/reports/tests/test/
+            **/build/test-results/test/*.xml
+          retention-days: 14
+          if-no-files-found: warn
+
       - name: Upload Gradle build reports
         if: always()
         uses: ./.github/actions/upload-artifact-with-retry
