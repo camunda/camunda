@@ -203,6 +203,7 @@ public final class BackgroundTaskManagerFactory {
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
         importPositionIndex.getFullQualifiedName(),
+        metadata::getLastFlushedPosition,
         asyncClient,
         executor,
         logger);
@@ -261,6 +262,7 @@ public final class BackgroundTaskManagerFactory {
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
         importPositionIndex.getFullQualifiedName(),
+        metadata::getLastFlushedPosition,
         asyncClient,
         executor,
         logger);

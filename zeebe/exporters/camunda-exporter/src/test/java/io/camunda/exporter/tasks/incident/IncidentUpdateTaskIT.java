@@ -53,6 +53,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
   private static final int BATCH_SIZE = 10;
 
   private ExporterMetadata exporterMetadata;
+  private volatile long exportedPosition;
   private IncidentNotifier incidentNotifier;
   private ErrorInjectingIncidentUpdateRepository errorInjectingRepository;
 
@@ -62,6 +63,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
     super.setup();
     incidentNotifier = mock(IncidentNotifier.class);
     exporterMetadata = new ExporterMetadata(TestObjectMapper.objectMapper());
+    exportedPosition = Long.MAX_VALUE;
     errorInjectingRepository = new ErrorInjectingIncidentUpdateRepository();
   }
 
@@ -455,6 +457,61 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
           verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(2);
           verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
+        });
+  }
+
+  @TestTemplate
+  void shouldNotUpdateIncidentAboveExportedPositionUntilItIsExported(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withTask(
+        config,
+        (job, resources) -> {
+          // given
+          final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
+          final ProcessInstanceForListViewEntity processInstance = newProcessInstance();
+          processInstance.setTreePath(String.format("PI_%d", processInstance.getKey()));
+          store(listViewTemplate, client, processInstance);
+
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+          final IncidentEntity incidentEntity =
+              newIncident()
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setFlowNodeInstanceKey(processInstance.getKey())
+                  .setState(IncidentState.PENDING);
+          store(incidentTemplate, client, incidentEntity);
+
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+          store(
+              postImporterTemplate,
+              client,
+              newPostImporterQueue()
+                  .setIntent("CREATED")
+                  .setKey(incidentEntity.getKey())
+                  .setPosition(5L));
+          client.refresh(testPrefix);
+
+          // when
+          exportedPosition = 4L;
+          final var updatedBeforeExport = job.execute();
+
+          // then
+          assertThat(updatedBeforeExport).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(0);
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
+          client.refresh(testPrefix);
+          assertThat(getFromIndex(incidentTemplate, client, incidentEntity).getState())
+              .isEqualTo(IncidentState.PENDING);
+
+          // when
+          exportedPosition = 5L;
+          final var updatedAfterExport = job.execute();
+
+          // then
+          assertThat(updatedAfterExport).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(2);
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(5L);
+          client.refresh(testPrefix);
+          assertThat(getFromIndex(incidentTemplate, client, incidentEntity).getState())
+              .isEqualTo(IncidentState.ACTIVE);
         });
   }
 
@@ -1487,6 +1544,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               flowNodeTemplate.getAlias(),
               operationTemplate.getAlias(),
               importPositionIndex.getFullQualifiedName(),
+              () -> exportedPosition,
               createAsyncESClient(config),
               executor,
               LOGGER));
@@ -1502,6 +1560,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               flowNodeTemplate.getAlias(),
               operationTemplate.getAlias(),
               importPositionIndex.getFullQualifiedName(),
+              () -> exportedPosition,
               createOSAsyncClient(config),
               executor,
               LOGGER));
