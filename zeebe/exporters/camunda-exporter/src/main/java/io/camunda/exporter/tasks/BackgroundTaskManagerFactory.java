@@ -73,7 +73,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongSupplier;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
@@ -99,7 +98,6 @@ public final class BackgroundTaskManagerFactory {
   private AuditLogArchiverRepository auditLogArchiverRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private final InstantSource clock;
-  private final LongSupplier exportedPosition;
 
   public BackgroundTaskManagerFactory(
       final int partitionId,
@@ -111,8 +109,7 @@ public final class BackgroundTaskManagerFactory {
       final ExporterMetadata metadata,
       final ObjectMapper objectMapper,
       final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache,
-      final InstantSource clock,
-      final LongSupplier exportedPosition) {
+      final InstantSource clock) {
     this.partitionId = partitionId;
     this.exporterId = exporterId;
     this.config = config;
@@ -123,7 +120,6 @@ public final class BackgroundTaskManagerFactory {
     this.objectMapper = objectMapper;
     this.processCache = processCache;
     this.clock = clock;
-    this.exportedPosition = exportedPosition;
   }
 
   public BackgroundTaskManager build() {
@@ -207,7 +203,7 @@ public final class BackgroundTaskManagerFactory {
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
         importPositionIndex.getFullQualifiedName(),
-        exportedPosition,
+        metadata::getLastFlushedPosition,
         asyncClient,
         executor,
         logger);
@@ -266,7 +262,7 @@ public final class BackgroundTaskManagerFactory {
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
         importPositionIndex.getFullQualifiedName(),
-        exportedPosition,
+        metadata::getLastFlushedPosition,
         asyncClient,
         executor,
         logger);
