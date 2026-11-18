@@ -2225,13 +2225,12 @@ jobs:
       - name: Import Secrets
         if: steps.check.outputs.has_flaky_tests == 'true'
         id: secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        uses: ./.github/actions/vault-action-with-retry
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
           secrets: |
             secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
 
@@ -2240,7 +2239,7 @@ jobs:
         id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
-          credentials_json: ${{ steps.secrets.outputs.gcloud_sa_key }}
+          credentials_json: ${{ fromJSON(steps.secrets.outputs.secrets).gcloud_sa_key }}
 
       - name: Setup Google Cloud SDK
         if: steps.check.outputs.has_flaky_tests == 'true'
@@ -2380,13 +2379,12 @@ jobs:
       # Nexus, so the snapshot resolution needs authenticated access via the nexus.camunda.cloud mirror.
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        uses: ./.github/actions/vault-action-with-retry
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
@@ -2397,8 +2395,8 @@ jobs:
           servers: |
             [{
               "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
-              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+              "username": "${{ fromJSON(steps.secrets.outputs.secrets).NEXUS_USR }}",
+              "password": "${{ fromJSON(steps.secrets.outputs.secrets).NEXUS_PSW }}"
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Submit Maven dependency snapshot
@@ -2839,13 +2837,12 @@ jobs:
         timeout-minutes: 3
         id: slack-secrets
         continue-on-error: true
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        uses: ./.github/actions/vault-action-with-retry
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/github-actions OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL;
       # Workflow Builder webhook: payload must be flat string variables (pr_url, run_url, reason), no nested blocks
@@ -2858,7 +2855,7 @@ jobs:
         continue-on-error: true
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
-          webhook: ${{ steps.slack-secrets.outputs.OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
+          webhook: ${{ fromJSON(steps.slack-secrets.outputs.secrets).OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
           webhook-type: webhook-trigger
           payload: |
             {"pr_url": "${{ github.event.pull_request.html_url }}", "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "reason": "${{ steps.check.outputs.status == 'breaking' && 'breaking changes found' || 'check errored' }}"}
@@ -3253,13 +3250,12 @@ jobs:
       - name: Import Nexus credentials
         if: steps.deploy-check.outputs.deploy == 'true'
         id: nexus-secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        uses: ./.github/actions/vault-action-with-retry
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
@@ -3267,8 +3263,8 @@ jobs:
         if: steps.deploy-check.outputs.deploy == 'true'
         id: snapshot-gate
         env:
-          NEXUS_USR: ${{ steps.nexus-secrets.outputs.NEXUS_USR }}
-          NEXUS_PSW: ${{ steps.nexus-secrets.outputs.NEXUS_PSW }}
+          NEXUS_USR: ${{ fromJSON(steps.nexus-secrets.outputs.secrets).NEXUS_USR }}
+          NEXUS_PSW: ${{ fromJSON(steps.nexus-secrets.outputs.secrets).NEXUS_PSW }}
           MIN_INTERVAL_HOURS: '3'
           MARKER_ARTIFACT: io/camunda/zeebe-protocol
         run: |
