@@ -189,12 +189,6 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
     )
     .versionRef("dmn-scala")
   library(
-      "org-camunda-bpm-model-camunda-bpmn-model",
-      "org.camunda.bpm.model",
-      "camunda-bpmn-model",
-    )
-    .versionRef("camunda")
-  library(
       "org-camunda-bpm-model-camunda-dmn-model",
       "org.camunda.bpm.model",
       "camunda-dmn-model",
