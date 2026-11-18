@@ -20,7 +20,9 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -29,6 +31,10 @@ import org.jspecify.annotations.NullMarked;
  * Once the last chunk is buffered, the processor starts applying the update with its first chunk.
  * It applies the update with the identifiers and chunk count that are buffered with the update,
  * which is the same count that decides whether every chunk is buffered.
+ *
+ * <p>Before the last chunk is buffered, the processor validates the whole update, all its chunks
+ * together, with {@link PolicyUpdateValidator}. If the update is invalid, it fails the update and
+ * rejects the chunk, so nothing of the update is applied.
  *
  * <p>Only one update is open at a time. The processor rejects a chunk without changing the open
  * update if it cannot belong to it.
@@ -44,7 +50,15 @@ import org.jspecify.annotations.NullMarked;
 public final class PolicyUpdateAppendChunkProcessor
     implements TypedRecordProcessor<PolicyUpdateRecord> {
 
+  /**
+   * The reasons of an invalid update that the failure names. The failure event and the rejection
+   * both carry them, and must fit into one batch together with the rejected chunk, however many
+   * entries of the update are invalid.
+   */
+  static final int MAX_REPORTED_ERRORS = 10;
+
   private final PolicyUpdateState policyUpdateState;
+  private final PolicyUpdateValidator validator;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -52,9 +66,11 @@ public final class PolicyUpdateAppendChunkProcessor
 
   public PolicyUpdateAppendChunkProcessor(
       final PolicyUpdateState policyUpdateState,
+      final PolicyUpdateValidator validator,
       final KeyGenerator keyGenerator,
       final Writers writers) {
     this.policyUpdateState = policyUpdateState;
+    this.validator = validator;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -82,6 +98,24 @@ public final class PolicyUpdateAppendChunkProcessor
       }
     } else if (!rejectOrFailForOpenUpdate(command, openUpdate.get())) {
       return;
+    }
+
+    // after the checks, the chunk is the next chunk of the open update, or opens it
+    final var updateOfChunk = openUpdate.map(PersistedPolicyUpdate::getUpdate).orElse(chunk);
+    final int bufferedChunkCount =
+        openUpdate.map(PersistedPolicyUpdate::getBufferedChunkCount).orElse(0);
+    if (bufferedChunkCount + 1 == updateOfChunk.getChunkCount()) {
+      final var errors = validator.validate(chunksOfUpdate(updateOfChunk, chunk));
+      if (!errors.isEmpty()) {
+        failUpdate(
+            command,
+            updateOfChunk,
+            RejectionType.INVALID_ARGUMENT,
+            "Expected policy update '%s' of policy '%s' to be applicable, but: %s"
+                .formatted(
+                    updateOfChunk.getUpdateId(), updateOfChunk.getPolicyId(), summarize(errors)));
+        return;
+      }
     }
 
     final long key = keyGenerator.nextKey();
@@ -161,6 +195,28 @@ public final class PolicyUpdateAppendChunkProcessor
             .setErrorMessage(reason);
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), PolicyUpdateIntent.FAILED, failed);
     rejectionWriter.appendRejection(command, rejectionType, reason);
+  }
+
+  private static String summarize(final List<String> errors) {
+    if (errors.size() <= MAX_REPORTED_ERRORS) {
+      return String.join("; ", errors);
+    }
+    return "%s; and %d more"
+        .formatted(
+            String.join("; ", errors.subList(0, MAX_REPORTED_ERRORS)),
+            errors.size() - MAX_REPORTED_ERRORS);
+  }
+
+  /** All chunks of the update, in their order: the buffered ones and the given new one. */
+  private List<PolicyUpdateRecord> chunksOfUpdate(
+      final PolicyUpdateRecord update, final PolicyUpdateRecord newChunk) {
+    return IntStream.range(0, update.getChunkCount())
+        .mapToObj(
+            index ->
+                index == newChunk.getChunkIndex()
+                    ? newChunk
+                    : policyUpdateState.getChunk(update.getUpdateId(), index).orElseThrow())
+        .toList();
   }
 
   /** The open update, if every one of its chunks is buffered. */

@@ -9,11 +9,14 @@ package io.camunda.zeebe.engine.processing.policy;
 
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.appliedRecord;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.apply;
+import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.rejectionOf;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.uid;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyDeleteEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,6 +24,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.PolicyDeleteEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyMembershipEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
@@ -261,6 +266,132 @@ public final class PolicyUpdateMultiChunkTest {
 
     // then
     assertThat(appliedRecord(secondUpdateId).getValue().getChunkIndex()).isZero();
+  }
+
+  @Test
+  public void shouldFailAnUpdateWhoseLastChunkIsInvalidWithoutApplyingAnyChunk() {
+    // given a valid first chunk, and a last chunk with a member of a role that doesn't exist
+    final var updateId = "update-" + uid();
+    final var validRoleId = "role-" + uid();
+    final var missingRoleId = "role-" + uid();
+    apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(validRoleId))));
+
+    // when
+    apply(
+        ENGINE,
+        chunk(updateId, 1, 2)
+            .setMemberships(
+                List.<PolicyMembershipEntryValue>of(
+                    new PolicyMembershipEntry()
+                        .setTargetType(PolicyUpdateEntityType.ROLE)
+                        .setTargetId(missingRoleId)
+                        .setMemberType(EntityType.CLIENT)
+                        .setMemberId("client-" + uid()))));
+
+    // then
+    final var rejection = rejectionOf(updateId);
+    assertThat(rejection.getValue().getChunkIndex()).isOne();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains(missingRoleId);
+    assertThat(
+            RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.FAILED)
+                .filter(record -> record.getValue().getUpdateId().equals(updateId))
+                .exists())
+        .isTrue();
+
+    // a later update, which can only open once the failed one is removed, marks the end marks the
+    // end of everything the invalid one could have caused
+    final var laterUpdateId = "update-" + uid();
+    apply(ENGINE, chunk(laterUpdateId, 0, 1));
+    final var recordsUntilLaterUpdateApplied =
+        RecordingExporter.records()
+            .limit(
+                record ->
+                    record.getIntent() == PolicyUpdateIntent.CHUNK_APPLIED
+                        && ((PolicyUpdateRecordValue) record.getValue())
+                            .getUpdateId()
+                            .equals(laterUpdateId))
+            .toList();
+    assertThat(recordsUntilLaterUpdateApplied)
+        .noneMatch(
+            record ->
+                record.getIntent() == PolicyUpdateIntent.APPLY_CHUNK
+                    && ((PolicyUpdateRecordValue) record.getValue()).getUpdateId().equals(updateId))
+        .noneMatch(
+            record ->
+                record.getValue() instanceof final RoleRecordValue role
+                    && role.getRoleId().equals(validRoleId));
+  }
+
+  @Test
+  public void shouldRejectAnUpdateThatUpsertsARoleInTwoChunks() {
+    // given
+    final var updateId = "update-" + uid();
+    final var roleId = "role-" + uid();
+    apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
+
+    // when
+    apply(ENGINE, chunk(updateId, 1, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
+
+    // then
+    final var rejection = rejectionOf(updateId);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains("role with ID '%s' appears more than once".formatted(roleId));
+  }
+
+  @Test
+  public void shouldFailAnUpdateThatRemovesAMemberWhichAnEarlierChunkDeletes() {
+    // given a group that is a member of a role
+    final var roleId = "role-" + uid();
+    final var groupId = "group-" + uid();
+    final var setupUpdateId = "update-" + uid();
+    apply(
+        ENGINE,
+        chunk(setupUpdateId, 0, 1)
+            .setRoles(List.<RoleRecordValue>of(role(roleId)))
+            .setGroups(
+                List.<GroupRecordValue>of(new GroupRecord().setGroupId(groupId).setName(groupId)))
+            .setMemberships(
+                List.<PolicyMembershipEntryValue>of(
+                    new PolicyMembershipEntry()
+                        .setTargetType(PolicyUpdateEntityType.ROLE)
+                        .setTargetId(roleId)
+                        .setMemberType(EntityType.GROUP)
+                        .setMemberId(groupId))));
+    appliedRecord(setupUpdateId);
+
+    // when the first chunk deletes the group, which removes it from the role, and the second
+    // chunk removes it from the role again
+    final var updateId = "update-" + uid();
+    apply(
+        ENGINE,
+        chunk(updateId, 0, 2)
+            .setDeletes(
+                List.<PolicyDeleteEntryValue>of(
+                    new PolicyDeleteEntry()
+                        .setEntityType(PolicyUpdateEntityType.GROUP)
+                        .setId(groupId))));
+    apply(
+        ENGINE,
+        chunk(updateId, 1, 2)
+            .setMembershipDeletes(
+                List.<PolicyMembershipEntryValue>of(
+                    new PolicyMembershipEntry()
+                        .setTargetType(PolicyUpdateEntityType.ROLE)
+                        .setTargetId(roleId)
+                        .setMemberType(EntityType.GROUP)
+                        .setMemberId(groupId))));
+
+    // then
+    final var rejection = rejectionOf(updateId);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains(groupId, roleId);
+    assertThat(
+            RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.FAILED)
+                .filter(record -> record.getValue().getUpdateId().equals(updateId))
+                .exists())
+        .isTrue();
   }
 
   private static PolicyUpdateRecord chunk(
