@@ -300,7 +300,7 @@ public class RoleController {
       @PathVariable final String roleId,
       @PathVariable final String mappingRuleId) {
     return mappingRuleMembershipPolicy
-        .requireManageable()
+        .requireManageable(physicalTenantId)
         .flatMap(
             manageable ->
                 roleMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE))
@@ -315,7 +315,7 @@ public class RoleController {
       @PathVariable final String roleId,
       @PathVariable final String mappingRuleId) {
     return mappingRuleMembershipPolicy
-        .requireManageable()
+        .requireManageable(physicalTenantId)
         .flatMap(
             manageable ->
                 roleMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE))
