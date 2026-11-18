@@ -9,11 +9,11 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
+import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
-import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import io.camunda.zeebe.util.Either;
 import java.util.HashMap;
 import java.util.Map;
