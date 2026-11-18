@@ -77,6 +77,7 @@ jobs:
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
       load-test-k6-changes: ${{ steps.filter.outputs.load-test-k6-changes }}
+      gradle-changes: ${{ steps.filter.outputs.gradle-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -589,13 +590,119 @@ jobs:
     # Gated on the union of all consumers' conditions so the artifact exists whenever one runs;
     # frontend-changes is included because the webapp back-end UTs run on it; rdbms-integration-tests
     # is included because its filter is a superset of java-code-changes (adds rdbms-change). See #52693.
-    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.rdbms-integration-tests == 'true'
+    # Gradle parity also consumes the Maven distball produced here.
+    if: >-
+      needs.detect-changes.outputs.camunda-docker-tests == 'true' ||
+      needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.frontend-changes == 'true' ||
+      needs.detect-changes.outputs.rdbms-integration-tests == 'true' ||
+      needs.detect-changes.outputs.gradle-changes == 'true'
     needs: [ detect-changes ]
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     uses: ./.github/workflows/ci-build-distball-reusable.yml
     secrets: inherit
+
+  gradle-compile-check:
+    name: "Gradle / Compile Check"
+    if: >-
+      needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.gradle-changes == 'true'
+    needs: [ detect-changes, build-distball ]
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    env:
+      TEST_PRODUCT: Gradle
+      TEST_TYPE: CI
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Check for fork
+        id: is-fork
+        uses: ./.github/actions/is-fork
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: ./.github/actions/setup-build
+        with:
+          skip-maven-cache: true
+          locale: C.UTF-8
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          # Only main and stable pushes warm the shared cache; all other runs only read it.
+          cache-read-only: >-
+            ${{
+              !(
+                github.event_name == 'push' &&
+                (
+                  github.ref == 'refs/heads/main' ||
+                  startsWith(github.ref, 'refs/heads/stable/')
+                )
+              )
+            }}
+      - name: Authenticate to GCS build-cache
+        if: steps.is-fork.outputs.is-fork != 'true'
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Download Maven distball
+        uses: ./.github/actions/download-shared-build-artifact
+        with:
+          artifact: distball
+          path: ${{ runner.temp }}/maven-distball
+      - name: Compile
+        run: |
+          ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
+            testClasses
+      - name: Package distribution
+        run: |
+          ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
+            -Pdist.tar.gzip=true :camunda-zeebe:distTar
+      - name: Write distribution dependency report
+        run: |
+          ./gradlew --no-configuration-cache --console=plain -Pskip.fe.build \
+            :camunda-zeebe:writeDistDependencyReport
+      - name: Compare Gradle and Maven distributions
+        run: |
+          set -euo pipefail
+          mapfile -t gradle_tars < <(find dist/build/distributions -maxdepth 1 -type f -name 'camunda-zeebe-*.tar.gz' -print)
+          mapfile -t maven_tars < <(find "$RUNNER_TEMP/maven-distball" -maxdepth 1 -type f -name 'camunda-zeebe-*.tar.gz' -print)
+          if [[ ${#gradle_tars[@]} -ne 1 || ${#maven_tars[@]} -ne 1 ]]; then
+            echo "::error::Expected one Gradle and one Maven distball; found ${#gradle_tars[@]} and ${#maven_tars[@]}"
+            exit 1
+          fi
+          python3 .github/scripts/gradle/compare-dist.py \
+            "${gradle_tars[0]}" "${maven_tars[0]}" \
+            --gradle-manifest dist/build/reports/dist-dependencies.json
+      - name: Upload Gradle build reports
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: gradle-build-reports
+          path: build/reports/profile/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   build-platform-frontend:
     # Runs when the frontend changed, OR on any non-PR event targeting main/stable
@@ -3115,6 +3222,7 @@ jobs:
       - docker-checks
       - general-unit-tests
       - generate-db-versions
+      - gradle-compile-check
       - history-tests
       - identity-frontend-tests
       - identity-tests
