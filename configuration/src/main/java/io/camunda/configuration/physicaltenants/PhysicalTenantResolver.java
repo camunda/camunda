@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.function.Function;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.core.env.Environment;
 
 /**
@@ -139,7 +140,25 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     CROSS_TENANT_VALIDATIONS.forEach(v -> v.validate(resolvedPhysicalTenants));
     PhysicalTenantDocumentAssignedValidation.validate(
         environment, resolvedPhysicalTenants, physicalTenantIds);
+    resolvedPhysicalTenants.forEach(ConfigurationSecretReferenceValidation::validate);
+    if (resolvedPhysicalTenants.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID) != camunda) {
+      // the root configuration is still read for the default tenant, next to its own declaration
+      ConfigurationSecretReferenceValidation.validate(
+          PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camunda);
+    }
     return new PhysicalTenantResolver(resolvedPhysicalTenants);
+  }
+
+  /**
+   * Whether the given tenant's own value of a property is read: a property that can't be overridden
+   * per tenant is only read from the root configuration.
+   *
+   * @param property relative to {@code camunda.}, such as {@code license.key}
+   */
+  public static boolean isReadFromTenant(final String physicalTenantId, final String property) {
+    return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)
+        || !PhysicalTenantOverridePolicyValidation.isNonOverridable(
+            ConfigurationPropertyName.adapt(property, '.'));
   }
 
   public Map<String, Camunda> getAll() {

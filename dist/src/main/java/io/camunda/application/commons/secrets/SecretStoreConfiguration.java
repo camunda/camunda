@@ -160,12 +160,6 @@ public class SecretStoreConfiguration {
     }
   }
 
-  @Bean
-  public ConfigurationSecretStores configurationSecretStores(
-      final PhysicalTenantResolver resolver) {
-    return ConfigurationSecretStores.of(resolver);
-  }
-
   /**
    * Fails if a job store of any tenant can reach the secrets of a tenant's configuration secrets
    * store: environment variables and the filesystem are shared by every tenant on the node, and
