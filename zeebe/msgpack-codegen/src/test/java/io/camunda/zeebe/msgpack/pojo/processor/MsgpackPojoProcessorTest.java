@@ -44,6 +44,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 /** Compiles small classes in memory with the processor and checks what it accepts and rejects. */
 final class MsgpackPojoProcessorTest {
 
+  private static final DirectBuffer EMPTY_DOCUMENT = new UnsafeBuffer(new byte[] {(byte) 0x80});
+
   @Test
   void shouldStoreAKeyThatNeedsEscapingInJava() throws Exception {
     // given a key with a quote, a backslash, a newline and a non-ASCII character
@@ -475,6 +477,117 @@ final class MsgpackPojoProcessorTest {
     assertThat(readValues).containsExactly(Arrays.stream(values).boxed().toArray(Integer[]::new));
   }
 
+  @Test
+  void shouldStoreADocumentAsABinaryAndReadItBack() throws Exception {
+    // given
+    final var codec = documentCodec();
+    final var source = codec.newInstance();
+    final var document = mapWithOneEntry("a", 1);
+    set(source, "doc", new UnsafeBuffer(document));
+
+    // when
+    final var bytes = codec.write(source);
+    final var read = codec.newInstance();
+    codec.read(read, bytes);
+
+    // then the document is a binary holding the map
+    assertThat(bytes).isEqualTo(documentMessage(document));
+    assertThat(get(read, "doc")).isEqualTo(new UnsafeBuffer(document));
+  }
+
+  @Test
+  void shouldReadAnEmptyOrNilDocumentAsTheEmptyMap() throws Exception {
+    // given
+    final var codec = documentCodec();
+    final var empty = documentMessage(new byte[0]);
+    final var nil = documentMessage(encoded(MsgPackWriter::writeNil));
+
+    // when - then
+    for (final var message : List.of(empty, nil)) {
+      final var read = codec.newInstance();
+      set(read, "doc", utf8("x"));
+      codec.read(read, message);
+      assertThat(get(read, "doc")).isEqualTo(EMPTY_DOCUMENT);
+    }
+  }
+
+  @Test
+  void shouldRejectADocumentThatIsNotAMap() throws Exception {
+    // given a document holding the integer 1
+    final var codec = documentCodec();
+    final var message = documentMessage(encoded(w -> w.writeInteger(1)));
+
+    // when
+    final ThrowingCallable read = () -> codec.read(codec.newInstance(), message);
+
+    // then
+    assertThatThrownBy(read)
+        .hasMessageContaining("Could not read property 'doc'")
+        .cause()
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("root level object");
+  }
+
+  @Test
+  void shouldRestoreTheDefaultDocumentOnReset() throws Exception {
+    // given
+    final var instance = documentCodec().newInstance();
+    set(instance, "doc", new UnsafeBuffer(mapWithOneEntry("a", 1)));
+
+    // when
+    instance.reset();
+
+    // then
+    assertThat(get(instance, "doc")).isEqualTo(EMPTY_DOCUMENT);
+  }
+
+  @Test
+  void shouldWrapAFinalUnsafeDocumentInPlace() throws Exception {
+    // given
+    final var codec =
+        codecOf("@Document final UnsafeBuffer doc = new UnsafeBuffer(new byte[] {(byte) 0x80});");
+    final var read = codec.newInstance();
+    final var field = get(read, "doc");
+    final var document = mapWithOneEntry("a", 1);
+
+    // when
+    codec.read(read, documentMessage(document));
+
+    // then
+    assertThat(get(read, "doc")).isSameAs(field).isEqualTo(new UnsafeBuffer(document));
+  }
+
+  @Test
+  void shouldKeepUnknownPropertiesNextToADocument() throws Exception {
+    // given a message with a key of a newer version before the document
+    final var codec = documentCodec();
+    final var message =
+        encoded(
+            w -> {
+              w.writeMapHeader(2);
+              w.writeString(utf8("future"));
+              w.writeInteger(5);
+              w.writeString(utf8("doc"));
+              w.writeBinary(new UnsafeBuffer(mapWithOneEntry("a", 1)));
+            });
+    final var read = codec.newInstance();
+
+    // when
+    codec.read(read, message);
+
+    // then the document is read and the unknown entry is written back after it
+    assertThat(get(read, "doc")).isEqualTo(new UnsafeBuffer(mapWithOneEntry("a", 1)));
+    final var written = codec.write(read);
+    assertThat(written).hasSize(message.length);
+    assertThat(written)
+        .containsSequence(
+            encoded(
+                w -> {
+                  w.writeString(utf8("future"));
+                  w.writeInteger(5);
+                }));
+  }
+
   // ---------------------------------------------------------------- helpers
 
   private static SampleCodec codecOf(final String fields, final Source... others) {
@@ -495,6 +608,20 @@ final class MsgpackPojoProcessorTest {
     } catch (final ClassNotFoundException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  private static SampleCodec documentCodec() {
+    return codecOf("@Document DirectBuffer doc = new UnsafeBuffer(new byte[] {(byte) 0x80});");
+  }
+
+  /** The message {@code {"doc": <binary>}} with the given document bytes. */
+  private static byte[] documentMessage(final byte[] document) {
+    return encoded(
+        w -> {
+          w.writeMapHeader(1);
+          w.writeString(utf8("doc"));
+          w.writeBinary(new UnsafeBuffer(document));
+        });
   }
 
   private static byte[] mapWithOneEntry(final String key, final long value) {

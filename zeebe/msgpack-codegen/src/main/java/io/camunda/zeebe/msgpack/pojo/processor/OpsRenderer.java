@@ -80,7 +80,7 @@ final class OpsRenderer {
       case NESTED -> "    target.$field.reset();\n";
       // checked on every reset: an exception in the static initializer is not reliably
       // propagated, as the class is initialized while Codecs resolves these ops
-      case STRING, BINARY, RAW ->
+      case STRING, BINARY, RAW, DOCUMENT ->
           p.inPlace()
               ? "    target.$field.wrap(DEFAULTS.$field);\n"
               : "    target.$field = requireDefault(DEFAULTS.$field, \"$field\");\n";

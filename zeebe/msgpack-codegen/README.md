@@ -37,14 +37,18 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 - The codec stores every non-static field under its field name, in declaration order. `@Ignore`
   excludes a field. `@Key("key")` sets a different key. The key names and their order are the
   stored format.
-- Supported field types: `long`, `int`, `boolean`, `DirectBuffer`/`UnsafeBuffer` (string, binary
-  or raw msgpack), enums (stored by `toString()`, read by `name()`, so `toString()` must
+- Supported field types: `long`, `int`, `boolean`, `DirectBuffer`/`UnsafeBuffer` (string, binary,
+  raw msgpack, or a document), enums (stored by `toString()`, read by `name()`, so `toString()` must
   not be overridden), `List<DirectBuffer>`, `List<Long>`, `List<Integer>` (read with the range
   check of an `int`), lists of these lists to any depth (`List<List<Long>>`, ...), agrona's
   `IntArrayList`/`LongArrayList` (unboxed, prefer them over `List<Long>`), other
   `@MsgpackPojo`s and `BaseValue`s.
-- `@Raw` embeds an already encoded msgpack value and replaces
-  `PackedProperty`.
+- `@Raw` embeds an already encoded msgpack value and replaces `PackedProperty`.
+- `@Document` replaces `DocumentProperty`. The codec stores the document as a msgpack binary that
+  holds a map. It reads a nil or empty value as the empty map, and it rejects any other value that
+  is not a map. The usual default is `DocumentValue.EMPTY_DOCUMENT`, which, like
+  every default buffer, must never be modified. A setter that has to keep the guarantee of
+  `DocumentProperty#setValue` calls `Decoding.document(buffer)`, which normalizes and validates.
 - The class must be top-level, its superclasses must not declare stored fields, and keys must be
   unique; compilation fails otherwise.
 - Fields are read and written directly, so they must not be `private`. Scalars, strings and enums

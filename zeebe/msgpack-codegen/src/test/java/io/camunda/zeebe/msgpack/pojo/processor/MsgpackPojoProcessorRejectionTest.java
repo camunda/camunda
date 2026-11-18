@@ -111,7 +111,18 @@ final class MsgpackPojoProcessorRejectionTest {
             "overrides toString()"),
         // agrona lists
         fields("IntArrayList key = new IntArrayList();", "key", "must be final"),
-        fields("LongArrayList key = new LongArrayList();", "key", "must be final"));
+        fields("LongArrayList key = new LongArrayList();", "key", "must be final"),
+        // documents
+        fields("@Document long doc;", "doc", "document requires a DirectBuffer"),
+        fields(
+            "@Document @Raw DirectBuffer doc = Decoding.EMPTY;",
+            "doc",
+            "document cannot be combined"),
+        fields(
+            "@Document @Binary DirectBuffer doc = Decoding.EMPTY;",
+            "doc",
+            "document cannot be combined"),
+        fields("@Document final DirectBuffer doc = Decoding.EMPTY;", "doc", "must not be final"));
   }
 
   @Test

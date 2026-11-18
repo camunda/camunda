@@ -14,6 +14,7 @@ enum Type {
   STRING(false),
   RAW(false),
   BINARY(false),
+  DOCUMENT(false),
   ENUM(false),
   /**
    * A {@code java.util.List}, or an agrona {@code IntArrayList} or {@code LongArrayList}, whose

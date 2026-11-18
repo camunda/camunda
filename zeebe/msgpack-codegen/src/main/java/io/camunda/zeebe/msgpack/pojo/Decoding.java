@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.msgpack.pojo;
 
+import io.camunda.zeebe.msgpack.spec.MsgPackCodes;
+import io.camunda.zeebe.msgpack.spec.MsgPackFormat;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.msgpack.spec.MsgPackType;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -76,6 +80,45 @@ public final class Decoding {
     final int start = reader.getOffset();
     reader.skipValue();
     target.wrap(reader.getBuffer(), start, reader.getOffset() - start);
+    return target;
+  }
+
+  /**
+   * Returns the document to store for {@code value}, like {@code DocumentValue#wrap} does: an empty
+   * or nil value is the empty document {@link DocumentValue#EMPTY_DOCUMENT} (shared, never modify
+   * it), a map is returned as it is. Call it in a setter of a {@code document} field to keep the
+   * guarantee of the {@code DocumentProperty} that only a map can be stored.
+   *
+   * @throws IllegalArgumentException if the value is not a msgpack map
+   */
+  public static DirectBuffer document(final DirectBuffer value) {
+    final int length = value.capacity();
+    if (length == 0 || (length == 1 && value.getByte(0) == MsgPackCodes.NIL)) {
+      return DocumentValue.EMPTY_DOCUMENT;
+    }
+    final MsgPackType type = MsgPackFormat.valueOf(value.getByte(0)).getType();
+    if (type != MsgPackType.MAP) {
+      throw new IllegalArgumentException(
+          "Expected document to be a root level object, but was '%s'".formatted(type.name()));
+    }
+    return value;
+  }
+
+  /**
+   * Reads a document, which is stored as a binary, as a new view on the source buffer, see {@link
+   * #readString} and {@link #document}.
+   */
+  public static UnsafeBuffer readDocument(final MsgPackReader reader) {
+    return readDocument(reader, new UnsafeBuffer(0, 0));
+  }
+
+  /** Wraps {@code target} around a document of the source buffer, see {@link #readDocument}. */
+  public static UnsafeBuffer readDocument(final MsgPackReader reader, final UnsafeBuffer target) {
+    readBinary(reader, target);
+    final DirectBuffer document = document(target);
+    if (document != target) {
+      target.wrap(document);
+    }
     return target;
   }
 

@@ -34,6 +34,7 @@ final class CodecRenderer {
             case STRING -> "    n += w.writeString($value);\n";
             case BINARY -> "    n += w.writeBinary($value);\n";
             case RAW -> "    n += w.writeRaw(requireRaw($value, $key));\n";
+            case DOCUMENT -> "    n += w.writeBinary(Decoding.document($value));\n";
             case ENUM ->
                 "    n += w.writeString(ENUM_NAMES_$i[requireEnum($value, $key).ordinal()]);\n";
             case LIST -> "$list";
@@ -75,6 +76,8 @@ final class CodecRenderer {
             case BINARY ->
                 "    n += MsgPackWriter.getEncodedBinaryValueLength($value.capacity());\n";
             case RAW -> "    n += requireRaw($value, $key).capacity();\n";
+            case DOCUMENT ->
+                "    n += MsgPackWriter.getEncodedBinaryValueLength(Decoding.document($value).capacity());\n";
             case ENUM ->
                 "    n += MsgPackWriter.getEncodedStringLength(ENUM_NAMES_$i[requireEnum($value, $key).ordinal()].capacity());\n";
             case LIST -> "$list";
@@ -118,6 +121,10 @@ final class CodecRenderer {
                 p.inPlace()
                     ? "Decoding.readBinary(r, target.$field);"
                     : "target.$field = Decoding.readBinary(r);";
+            case DOCUMENT ->
+                p.inPlace()
+                    ? "Decoding.readDocument(r, target.$field);"
+                    : "target.$field = Decoding.readDocument(r);";
             case ENUM -> "target.$field = Decoding.readEnum(r, ENUM_NAMES_$i, ENUM_VALUES_$i);";
             case LIST ->
                 """

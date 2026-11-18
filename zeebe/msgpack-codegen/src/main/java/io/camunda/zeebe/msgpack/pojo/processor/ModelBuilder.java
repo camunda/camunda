@@ -8,6 +8,7 @@
 package io.camunda.zeebe.msgpack.pojo.processor;
 
 import io.camunda.zeebe.msgpack.pojo.annotation.Binary;
+import io.camunda.zeebe.msgpack.pojo.annotation.Document;
 import io.camunda.zeebe.msgpack.pojo.annotation.Ignore;
 import io.camunda.zeebe.msgpack.pojo.annotation.Key;
 import io.camunda.zeebe.msgpack.pojo.annotation.MsgpackPojo;
@@ -137,6 +138,11 @@ final class ModelBuilder {
       }
       final var raw = field.getAnnotation(Raw.class) != null;
       final var binary = field.getAnnotation(Binary.class) != null;
+      final var document = field.getAnnotation(Document.class) != null;
+      if (document && (raw || binary)) {
+        throw new IllegalArgumentException(
+            "Field %s: document cannot be combined with raw or binary".formatted(fieldName));
+      }
       final var keyAnnotation = field.getAnnotation(Key.class);
       final var key = keyAnnotation == null ? fieldName : keyAnnotation.value();
       if (key.isEmpty()) {
@@ -147,7 +153,12 @@ final class ModelBuilder {
             "Field " + fieldName + " uses the key '" + key + "' of another field");
       }
       final var mirror = field.asType();
-      final var kind = typeOf(mirror, raw, binary, fieldName);
+      final var kind = typeOf(mirror, raw, binary, document, fieldName);
+      if (document && kind != Type.DOCUMENT) {
+        throw new IllegalArgumentException(
+            "Field %s: document requires a DirectBuffer or UnsafeBuffer field"
+                .formatted(fieldName));
+      }
       final var isFinal = field.getModifiers().contains(Modifier.FINAL);
       if (!isFinal && kind.container) {
         throw new IllegalArgumentException(
@@ -189,7 +200,11 @@ final class ModelBuilder {
   }
 
   private Type typeOf(
-      final TypeMirror mirror, final boolean raw, final boolean binary, final String field) {
+      final TypeMirror mirror,
+      final boolean raw,
+      final boolean binary,
+      final boolean document,
+      final String field) {
     switch (mirror.getKind()) {
       case LONG:
         return Type.LONG;
@@ -202,7 +217,7 @@ final class ModelBuilder {
         final var element = (TypeElement) declared.asElement();
         final var name = element.getQualifiedName().toString();
         if (name.equals(DIRECT_BUFFER) || name.equals(UNSAFE_BUFFER)) {
-          return raw ? Type.RAW : binary ? Type.BINARY : Type.STRING;
+          return raw ? Type.RAW : binary ? Type.BINARY : document ? Type.DOCUMENT : Type.STRING;
         }
         if (name.equals(INT_ARRAY_LIST)
             || name.equals(LONG_ARRAY_LIST)
