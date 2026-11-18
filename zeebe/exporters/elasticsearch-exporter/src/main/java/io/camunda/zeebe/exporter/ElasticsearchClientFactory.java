@@ -8,27 +8,21 @@
 package io.camunda.zeebe.exporter;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
-import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
-import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.search.connect.util.SecurityUtil;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
-import org.apache.hc.core5.http.Header;
+import java.util.List;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
-import org.apache.hc.core5.reactor.IOReactorConfig;
-import org.apache.hc.core5.util.Timeout;
 
+/**
+ * Creates the exporter's Elasticsearch client with the shared {@link ElasticsearchConnector}, from
+ * the exporter's own configuration.
+ */
 final class ElasticsearchClientFactory {
-
-  static final ElasticsearchClientFactory INSTANCE = new ElasticsearchClientFactory();
 
   private ElasticsearchClientFactory() {}
 
@@ -52,61 +46,61 @@ final class ElasticsearchClientFactory {
       final ElasticsearchExporterConfiguration config,
       final ObjectMapper objectMapper,
       final HttpRequestInterceptor... interceptors) {
-    final var restClient = INSTANCE.createRestClient(config, interceptors);
-    final var transport =
-        new Rest5ClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
-    return new ElasticsearchClient(transport);
+    return ElasticsearchConnector.builder()
+        .configuration(toConnectConfiguration(config))
+        .objectMapper(objectMapper)
+        // the exporter runs its client on a single I/O thread, as it has always done
+        .ioThreadCount(1)
+        // the exporter never set this, so it keeps the HTTP client's own default
+        .connectionRequestTimeoutMillis(null)
+        .requestInterceptors(interceptors)
+        // every partition builds a client, so a missing login would be logged for each of them
+        .warnOnMissingCredentials(false)
+        .build()
+        .createClient();
   }
 
-  private Rest5Client createRestClient(
-      final ElasticsearchExporterConfiguration config,
-      final HttpRequestInterceptor... interceptors) {
-    final HttpHost[] httpHosts = parseUrl(config);
-    final var defaultHeaders = new ArrayList<Header>();
-    // Credentials go out with every request instead of in answer to a 401 challenge. A server
-    // that lets anonymous users through for some requests never challenges them, so those
-    // requests would run as anonymous. The Elasticsearch 8 client sent credentials with every
-    // request, so do the same.
-    SecurityUtil.basicAuthorizationHeader(
-            config.getAuthentication().getUsername(), config.getAuthentication().getPassword())
-        .ifPresent(defaultHeaders::add);
-    final Rest5ClientBuilder builder =
-        Rest5Client.builder(httpHosts)
-            .setDefaultHeaders(defaultHeaders.toArray(Header[]::new))
-            .setConnectionConfigCallback(
-                b ->
-                    b.setConnectTimeout(Timeout.ofMilliseconds(config.requestTimeoutMs))
-                        .setSocketTimeout(Timeout.ofMilliseconds(config.requestTimeoutMs)))
-            .setHttpClientConfigCallback(b -> configureHttpClient(config, b, interceptors));
-
-    return builder.build();
-  }
-
-  HttpAsyncClientBuilder configureHttpClient(
-      final ElasticsearchExporterConfiguration config,
-      final HttpAsyncClientBuilder builder,
-      final HttpRequestInterceptor... interceptors) {
-    // use single thread for rest client; TCP keepalive guards against a firewall or NAT device in
-    // front of Elasticsearch silently dropping its tracking entry for a connection left idle
-    // between flushes, which would leave the exporter blocked on a dead socket until it times out.
-    // In HC5 it is active by default, but we keep it explicit in case the default ever changes.
-    builder.setIOReactorConfig(
-        IOReactorConfig.custom().setIoThreadCount(1).setSoKeepAlive(true).build());
+  /**
+   * Maps what the exporter's client needs onto the connector's configuration. The URL and proxy are
+   * validated here so that the exporter-specific messages are kept; the URL message in particular
+   * must not quote the unparseable text, which may hold credentials.
+   */
+  static ConnectConfiguration toConnectConfiguration(
+      final ElasticsearchExporterConfiguration config) {
+    final var connect = new ConnectConfiguration();
+    connect.setUrls(parseUrls(config));
+    connect.setUsername(config.getAuthentication().getUsername());
+    connect.setPassword(config.getAuthentication().getPassword());
+    // the exporter has one timeout for both
+    connect.setConnectTimeout(config.requestTimeoutMs);
+    connect.setSocketTimeout(config.requestTimeoutMs);
 
     if (config.hasProxyConfigured()) {
-      setupProxy(builder, config.getProxy());
-      addPreemptiveProxyAuthInterceptor(builder, config.getProxy());
+      connect.setProxy(toConnectProxy(config.getProxy()));
     }
-
-    for (final var interceptor : interceptors) {
-      builder.addRequestInterceptorLast(interceptor);
-    }
-
-    return builder;
+    return connect;
   }
 
-  private void setupProxy(
-      final HttpAsyncClientBuilder builder, final ProxyConfiguration proxyConfig) {
+  private static List<String> parseUrls(final ElasticsearchExporterConfiguration config) {
+    final var urls = config.url.split(",");
+    final var parsed = new ArrayList<String>(urls.length);
+
+    for (int i = 0; i < urls.length; i++) {
+      try {
+        HttpHost.create(urls[i]);
+        parsed.add(urls[i]);
+      } catch (final URISyntaxException | IllegalArgumentException e) {
+        // neither the url nor the cause is included: both quote the unparseable text, which may
+        // hold credentials
+        throw new IllegalArgumentException("Invalid Elasticsearch url at position " + i);
+      }
+    }
+
+    return parsed;
+  }
+
+  private static io.camunda.search.connect.configuration.ProxyConfiguration toConnectProxy(
+      final ProxyConfiguration proxyConfig) {
     final String host = proxyConfig.getHost();
     final Integer port = proxyConfig.getPort();
 
@@ -125,45 +119,13 @@ final class ElasticsearchClientFactory {
           "Elasticsearch exporter proxy port must be between 1 and 65535, but was: " + port);
     }
 
-    builder.setProxy(new HttpHost(proxyConfig.isSslEnabled() ? "https" : "http", host, port));
-  }
-
-  private void addPreemptiveProxyAuthInterceptor(
-      final HttpAsyncClientBuilder builder, final ProxyConfiguration proxyConfig) {
-    final String username = proxyConfig.getUsername();
-    final String password = proxyConfig.getPassword();
-
-    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
-      return;
-    }
-
-    final String credentials = username + ":" + password;
-    final String encodedCredentials =
-        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
-    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
-
-    builder.addRequestInterceptorFirst(
-        (request, entity, context) -> {
-          if (!request.containsHeader("Proxy-Authorization")) {
-            request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
-          }
-        });
-  }
-
-  private HttpHost[] parseUrl(final ElasticsearchExporterConfiguration config) {
-    final var urls = config.url.split(",");
-    final var hosts = new HttpHost[urls.length];
-
-    for (int i = 0; i < urls.length; i++) {
-      try {
-        hosts[i] = HttpHost.create(urls[i]);
-      } catch (final URISyntaxException | IllegalArgumentException e) {
-        // neither the url nor the cause is included: both quote the unparseable text, which may
-        // hold credentials
-        throw new IllegalArgumentException("Invalid Elasticsearch url at position " + i);
-      }
-    }
-
-    return hosts;
+    final var proxy = new io.camunda.search.connect.configuration.ProxyConfiguration();
+    proxy.setEnabled(true);
+    proxy.setHost(host);
+    proxy.setPort(port);
+    proxy.setSslEnabled(proxyConfig.isSslEnabled());
+    proxy.setUsername(proxyConfig.getUsername());
+    proxy.setPassword(proxyConfig.getPassword());
+    return proxy;
   }
 }
