@@ -210,11 +210,6 @@ public class AdHocSubProcessProcessor
               context.getElementInstanceKey(),
               context.getTenantId(),
               ExpressionLabel.adHocActiveElementsCollectionExpression(adHocSubProcess.getId()))
-          .mapLeft(
-              failure ->
-                  new Failure(
-                      "Failed to activate ad-hoc elements. " + failure.getMessage(),
-                      ErrorType.EXTRACT_VALUE_ERROR))
           .flatMap(
               elements ->
                   AdHocSubProcessUtils.validateActivateElementsExistInAdHocSubProcess(
@@ -378,11 +373,9 @@ public class AdHocSubProcessProcessor
               adHocSubProcessContext.getElementInstanceKey(),
               adHocSubProcessContext.getTenantId(),
               ExpressionLabel.adHocCompletionConditionExpression(adHocSubProcess.getId()))
-          .mapLeft(
-              failure ->
-                  new Failure(
-                      "Failed to evaluate completion condition. " + failure.getMessage(),
-                      ErrorType.EXTRACT_VALUE_ERROR));
+          // the incident is raised for the completing child: drop the evaluation's scope key
+          // (the ad-hoc sub-process) so the incident keeps the child's scope
+          .mapLeft(failure -> new Failure(failure.getMessage(), ErrorType.EXTRACT_VALUE_ERROR));
     }
 
     @Override

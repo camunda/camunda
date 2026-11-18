@@ -71,18 +71,19 @@ public class AdHocSubProcessIncidentTest {
             .create();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .getFirst()
-                .getValue())
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(incident)
         .hasElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Failed to activate ad-hoc elements. Expected result of the active elements \
-            collection expression 'activeElements' of ad-hoc sub-process 'ad-hoc' to be 'ARRAY', \
-            but was 'NULL'.""");
+            Expected result of the active elements collection expression 'activeElements' of \
+            ad-hoc sub-process 'ad-hoc' to be 'ARRAY', but was 'NULL'.""");
+    assertThat(incident.getVariableScopeKey()).isEqualTo(incident.getElementInstanceKey());
   }
 
   @Test
@@ -117,10 +118,9 @@ public class AdHocSubProcessIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Failed to activate ad-hoc elements. Expected result of the active elements \
-            collection expression 'activeElements' of ad-hoc sub-process 'ad-hoc' to be 'ARRAY' \
-            containing 'STRING' items, but was 'ARRAY' containing at least one non-'STRING' \
-            item.""");
+            Expected result of the active elements collection expression 'activeElements' of \
+            ad-hoc sub-process 'ad-hoc' to be 'ARRAY' containing 'STRING' items, but was \
+            'ARRAY' containing at least one non-'STRING' item.""");
   }
 
   @Test
@@ -283,9 +283,12 @@ public class AdHocSubProcessIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Failed to evaluate completion condition. Expected result of the completion \
-            condition expression 'completionCondition' of ad-hoc sub-process 'ad-hoc' to be \
-            'BOOLEAN', but was 'STRING'.""");
+            Expected result of the completion condition expression 'completionCondition' of \
+            ad-hoc sub-process 'ad-hoc' to be 'BOOLEAN', but was 'STRING'.""");
+
+    assertThat(incidentCreated.getValue().getVariableScopeKey())
+        .describedAs("the incident keeps the scope of the completing child")
+        .isEqualTo(incidentCreated.getValue().getElementInstanceKey());
 
     // when
     ENGINE
