@@ -22,7 +22,7 @@ import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.testmodel.instance.Animal;
 import org.camunda.bpm.model.xml.testmodel.instance.Animals;
 import org.camunda.bpm.model.xml.testmodel.instance.Bird;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestModelInstanceTest {
 

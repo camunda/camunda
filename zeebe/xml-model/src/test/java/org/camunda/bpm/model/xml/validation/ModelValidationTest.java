@@ -29,8 +29,8 @@ import org.camunda.bpm.model.xml.impl.validation.ModelValidationResultsImpl;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.testmodel.TestModelParser;
 import org.camunda.bpm.model.xml.testmodel.instance.Bird;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Daniel Meyer
@@ -39,7 +39,7 @@ public class ModelValidationTest {
 
   protected ModelInstance modelInstance;
 
-  @Before
+  @BeforeEach
   public void parseModel() {
     final TestModelParser modelParser = new TestModelParser();
     final String testXml = "org/camunda/bpm/model/xml/testmodel/instance/UnknownAnimalTest.xml";

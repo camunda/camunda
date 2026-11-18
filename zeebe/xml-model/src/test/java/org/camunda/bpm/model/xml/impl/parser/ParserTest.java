@@ -17,21 +17,18 @@
 package org.camunda.bpm.model.xml.impl.parser;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.InputStream;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.ModelParseException;
 import org.camunda.bpm.model.xml.testmodel.TestModelParser;
-import org.junit.Assume;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 public class ParserTest {
 
   private static final String ACCESS_EXTERNAL_SCHEMA_PROP = "javax.xml.accessExternalSchema";
-
-  @Rule public ExpectedException exception = ExpectedException.none();
 
   @Test
   public void shouldThrowExceptionForTooManyAttributes() {
@@ -53,7 +50,7 @@ public class ParserTest {
     // given
     // the external schema access property is not supported on certain
     // IBM JDK versions, in which case schema access cannot be restricted
-    Assume.assumeTrue(doesJdkSupportExternalSchemaAccessProperty());
+    assumeTrue(doesJdkSupportExternalSchemaAccessProperty());
 
     System.setProperty(ACCESS_EXTERNAL_SCHEMA_PROP, "");
 
@@ -63,12 +60,10 @@ public class ParserTest {
       final InputStream testXmlAsStream =
           this.getClass().getClassLoader().getResourceAsStream(testXml);
 
-      // then
-      exception.expect(ModelParseException.class);
-      exception.expectMessage("SAXException while parsing input stream");
-
-      // when
-      modelParser.parseModelFromStream(testXmlAsStream);
+      // when/then
+      assertThatThrownBy(() -> modelParser.parseModelFromStream(testXmlAsStream))
+          .isInstanceOf(ModelParseException.class)
+          .hasMessageContaining("SAXException while parsing input stream");
     } finally {
       System.clearProperty(ACCESS_EXTERNAL_SCHEMA_PROP);
     }

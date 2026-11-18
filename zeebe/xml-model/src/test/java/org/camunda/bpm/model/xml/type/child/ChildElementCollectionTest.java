@@ -18,14 +18,12 @@ package org.camunda.bpm.model.xml.type.child;
 
 import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
-import static org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.UnsupportedModelOperationException;
-import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
 import org.camunda.bpm.model.xml.impl.type.child.ChildElementCollectionImpl;
 import org.camunda.bpm.model.xml.impl.type.child.ChildElementImpl;
 import org.camunda.bpm.model.xml.testmodel.Gender;
@@ -33,8 +31,9 @@ import org.camunda.bpm.model.xml.testmodel.TestModelParser;
 import org.camunda.bpm.model.xml.testmodel.TestModelTest;
 import org.camunda.bpm.model.xml.testmodel.instance.*;
 import org.camunda.bpm.model.xml.type.ModelElementType;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * @author Sebastian Menski
@@ -49,12 +48,6 @@ public class ChildElementCollectionTest extends TestModelTest {
   private ChildElement<FlightInstructor> flightInstructorChild;
   private ChildElementCollection<FlightPartnerRef> flightPartnerRefCollection;
 
-  public ChildElementCollectionTest(
-      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
-    super(testName, testModelInstance, modelParser);
-  }
-
-  @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
     final Object[][] models = {createModel(), parseModel(ChildElementCollectionTest.class)};
     return Arrays.asList(models);
@@ -77,12 +70,11 @@ public class ChildElementCollectionTest extends TestModelTest {
     tweety.getFlightPartnerRefs().add(daisy);
     tweety.getFlightPartnerRefs().add(plucky);
 
-    return new Object[] {"created", modelInstance, modelParser};
+    return new Object[] {Named.of("created", modelInstance)};
   }
 
-  @Before
-  public void copyModelInstance() {
-    modelInstance = cloneModelInstance();
+  private void copyModelInstance(final ModelInstance testModelInstance) {
+    modelInstance = testModelInstance.clone();
 
     tweety = modelInstance.getModelElementById("tweety");
     daffy = modelInstance.getModelElementById("daffy");
@@ -96,8 +88,11 @@ public class ChildElementCollectionTest extends TestModelTest {
     flightPartnerRefCollection = FlyingAnimal.flightPartnerRefsColl.getReferenceSourceCollection();
   }
 
-  @Test
-  public void testImmutable() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testImmutable(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     assertThat(flightInstructorChild).isMutable();
     assertThat(flightPartnerRefCollection).isMutable();
 
@@ -112,34 +107,49 @@ public class ChildElementCollectionTest extends TestModelTest {
     assertThat(flightPartnerRefCollection).isMutable();
   }
 
-  @Test
-  public void testMinOccurs() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testMinOccurs(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     assertThat(flightInstructorChild).isOptional();
     assertThat(flightPartnerRefCollection).isOptional();
   }
 
-  @Test
-  public void testMaxOccurs() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testMaxOccurs(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     assertThat(flightInstructorChild).occursMaximal(1);
     assertThat(flightPartnerRefCollection).isUnbounded();
   }
 
-  @Test
-  public void testChildElementType() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testChildElementType(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     assertThat(flightInstructorChild).containsType(FlightInstructor.class);
     assertThat(flightPartnerRefCollection).containsType(FlightPartnerRef.class);
   }
 
-  @Test
-  public void testParentElementType() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testParentElementType(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     final ModelElementType flyingAnimalType = modelInstance.getModel().getType(FlyingAnimal.class);
 
     assertThat(flightInstructorChild).hasParentElementType(flyingAnimalType);
     assertThat(flightPartnerRefCollection).hasParentElementType(flyingAnimalType);
   }
 
-  @Test
-  public void testGetChildElements() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testGetChildElements(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     assertThat(flightInstructorChild).hasSize(tweety, 1);
     assertThat(flightPartnerRefCollection).hasSize(tweety, 2);
 
@@ -151,8 +161,11 @@ public class ChildElementCollectionTest extends TestModelTest {
     }
   }
 
-  @Test
-  public void testRemoveChildElements() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testRemoveChildElements(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     assertThat(flightInstructorChild).isNotEmpty(tweety);
     assertThat(flightPartnerRefCollection).isNotEmpty(tweety);
 
@@ -163,8 +176,11 @@ public class ChildElementCollectionTest extends TestModelTest {
     assertThat(flightPartnerRefCollection).isEmpty(tweety);
   }
 
-  @Test
-  public void testChildElementsCollection() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testChildElementsCollection(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     final Collection<FlightPartnerRef> flightPartnerRefs = flightPartnerRefCollection.get(tweety);
 
     final Iterator<FlightPartnerRef> iterator = flightPartnerRefs.iterator();

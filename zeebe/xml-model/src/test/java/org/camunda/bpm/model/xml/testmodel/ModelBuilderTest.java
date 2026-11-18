@@ -21,7 +21,7 @@ import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAME;
 
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelBuilder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Daniel Meyer

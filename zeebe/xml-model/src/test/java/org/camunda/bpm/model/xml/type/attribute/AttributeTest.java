@@ -17,12 +17,10 @@
 package org.camunda.bpm.model.xml.type.attribute;
 
 import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
-import static org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelInstance;
-import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
 import org.camunda.bpm.model.xml.impl.type.attribute.AttributeImpl;
 import org.camunda.bpm.model.xml.testmodel.Gender;
 import org.camunda.bpm.model.xml.testmodel.TestModelParser;
@@ -32,8 +30,9 @@ import org.camunda.bpm.model.xml.testmodel.instance.AnimalTest;
 import org.camunda.bpm.model.xml.testmodel.instance.Animals;
 import org.camunda.bpm.model.xml.testmodel.instance.Bird;
 import org.camunda.bpm.model.xml.type.ModelElementType;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * @author Sebastian Menski
@@ -45,12 +44,6 @@ public class AttributeTest extends TestModelTest {
   private Attribute<String> nameAttribute;
   private Attribute<String> fatherAttribute;
 
-  public AttributeTest(
-      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
-    super(testName, testModelInstance, modelParser);
-  }
-
-  @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
     final Object[][] models = {createModel(), parseModel(AnimalTest.class)};
     return Arrays.asList(models);
@@ -65,13 +58,12 @@ public class AttributeTest extends TestModelTest {
 
     createBird(modelInstance, "tweety", Gender.Female);
 
-    return new Object[] {"created", modelInstance, modelParser};
+    return new Object[] {Named.of("created", modelInstance)};
   }
 
-  @Before
   @SuppressWarnings("unchecked")
-  public void copyModelInstance() {
-    modelInstance = cloneModelInstance();
+  private void copyModelInstance(final ModelInstance testModelInstance) {
+    modelInstance = testModelInstance.clone();
 
     tweety = modelInstance.getModelElementById("tweety");
 
@@ -81,8 +73,11 @@ public class AttributeTest extends TestModelTest {
     fatherAttribute = (Attribute<String>) animalType.getAttribute("father");
   }
 
-  @Test
-  public void testOwningElementType() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testOwningElementType(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     final ModelElementType animalType = modelInstance.getModel().getType(Animal.class);
 
     assertThat(idAttribute).hasOwningElementType(animalType);
@@ -90,22 +85,31 @@ public class AttributeTest extends TestModelTest {
     assertThat(fatherAttribute).hasOwningElementType(animalType);
   }
 
-  @Test
-  public void testSetAttributeValue() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testSetAttributeValue(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     final String identifier = "new-" + tweety.getId();
     idAttribute.setValue(tweety, identifier);
     assertThat(idAttribute).hasValue(tweety, identifier);
   }
 
-  @Test
-  public void testSetAttributeValueWithoutUpdateReference() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testSetAttributeValueWithoutUpdateReference(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     final String identifier = "new-" + tweety.getId();
     idAttribute.setValue(tweety, identifier, false);
     assertThat(idAttribute).hasValue(tweety, identifier);
   }
 
-  @Test
-  public void testSetDefaultValue() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testSetDefaultValue(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     final String defaultName = "default-name";
     assertThat(tweety.getName()).isNull();
     assertThat(nameAttribute).hasNoDefaultValue();
@@ -123,8 +127,11 @@ public class AttributeTest extends TestModelTest {
     assertThat(nameAttribute).hasNoDefaultValue();
   }
 
-  @Test
-  public void testRequired() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testRequired(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     tweety.removeAttribute("name");
     assertThat(nameAttribute).isOptional();
 
@@ -134,8 +141,11 @@ public class AttributeTest extends TestModelTest {
     ((AttributeImpl<String>) nameAttribute).setRequired(false);
   }
 
-  @Test
-  public void testSetNamespaceUri() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testSetNamespaceUri(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     final String testNamespace = "http://camunda.org/test";
 
     ((AttributeImpl<String>) idAttribute).setNamespaceUri(testNamespace);
@@ -145,22 +155,31 @@ public class AttributeTest extends TestModelTest {
     assertThat(idAttribute).hasNoNamespaceUri();
   }
 
-  @Test
-  public void testIdAttribute() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testIdAttribute(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     assertThat(idAttribute).isIdAttribute();
     assertThat(nameAttribute).isNotIdAttribute();
     assertThat(fatherAttribute).isNotIdAttribute();
   }
 
-  @Test
-  public void testAttributeName() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testAttributeName(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     assertThat(idAttribute).hasAttributeName("id");
     assertThat(nameAttribute).hasAttributeName("name");
     assertThat(fatherAttribute).hasAttributeName("father");
   }
 
-  @Test
-  public void testRemoveAttribute() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testRemoveAttribute(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     tweety.setName("test");
     assertThat(tweety.getName()).isNotNull();
     assertThat(nameAttribute).hasValue(tweety);
@@ -170,15 +189,21 @@ public class AttributeTest extends TestModelTest {
     assertThat(nameAttribute).hasNoValue(tweety);
   }
 
-  @Test
-  public void testIncomingReferences() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testIncomingReferences(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     assertThat(idAttribute).hasIncomingReferences();
     assertThat(nameAttribute).hasNoIncomingReferences();
     assertThat(fatherAttribute).hasNoIncomingReferences();
   }
 
-  @Test
-  public void testOutgoingReferences() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void testOutgoingReferences(final ModelInstance testModelInstance) {
+    copyModelInstance(testModelInstance);
+
     assertThat(idAttribute).hasNoOutgoingReferences();
     assertThat(nameAttribute).hasNoOutgoingReferences();
     assertThat(fatherAttribute).hasOutgoingReferences();

@@ -31,9 +31,9 @@ import org.camunda.bpm.model.xml.instance.DomDocument;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.testmodel.TestModelParser;
 import org.camunda.bpm.model.xml.type.ModelElementType;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Sebastian Menski
@@ -45,7 +45,7 @@ public class UnknownAnimalTest {
   private ModelElementInstance wanda;
   private ModelElementInstance flipper;
 
-  @Before
+  @BeforeEach
   public void parseModel() {
     modelParser = new TestModelParser();
     final String testXml = this.getClass().getSimpleName() + ".xml";
@@ -55,7 +55,7 @@ public class UnknownAnimalTest {
     flipper = modelInstance.getModelElementById("flipper");
   }
 
-  @After
+  @AfterEach
   public void validateModel() {
     final DomDocument document = modelInstance.getDocument();
     modelParser.validateModel(document);

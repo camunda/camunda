@@ -23,16 +23,14 @@ import java.util.Collections;
 import java.util.List;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.ModelImpl;
-import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
 import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.testmodel.Gender;
 import org.camunda.bpm.model.xml.testmodel.TestModelConstants;
 import org.camunda.bpm.model.xml.testmodel.TestModelTest;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
@@ -44,33 +42,29 @@ public class AlternativeNsTest extends TestModelTest {
   private static final String MECHANICAL_NS = "http://camunda.org/mechanical";
   private static final String YET_ANOTHER_NS = "http://camunda.org/yans";
 
-  public AlternativeNsTest(
-      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
-    super(testName, testModelInstance, modelParser);
-  }
-
-  @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
     return Collections.singleton(parseModel(AlternativeNsTest.class));
   }
 
-  @Before
-  public void setUp() {
-    modelInstance = cloneModelInstance();
+  private void setUp(final ModelInstance testModelInstance) {
+    modelInstance = testModelInstance.clone();
     final ModelImpl modelImpl = (ModelImpl) modelInstance.getModel();
     modelImpl.declareAlternativeNamespace(MECHANICAL_NS, TestModelConstants.NEWER_NAMESPACE);
     modelImpl.declareAlternativeNamespace(YET_ANOTHER_NS, TestModelConstants.NEWER_NAMESPACE);
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
     final ModelImpl modelImpl = (ModelImpl) modelInstance.getModel();
     modelImpl.undeclareAlternativeNamespace(MECHANICAL_NS);
     modelImpl.undeclareAlternativeNamespace(YET_ANOTHER_NS);
   }
 
-  @Test
-  public void getUniqueChildElementByNameNsForAlternativeNs() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void getUniqueChildElementByNameNsForAlternativeNs(final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     final ModelElementInstance hedwig = modelInstance.getModelElementById("hedwig");
     assertThat(hedwig).isNotNull();
     final ModelElementInstance childElementByNameNs =
@@ -79,8 +73,12 @@ public class AlternativeNsTest extends TestModelTest {
     assertThat(childElementByNameNs.getTextContent()).isEqualTo("wusch");
   }
 
-  @Test
-  public void getUniqueChildElementByNameNsForSecondAlternativeNs() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void getUniqueChildElementByNameNsForSecondAlternativeNs(
+      final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     // givne
     final ModelElementInstance donald = modelInstance.getModelElementById("donald");
 
@@ -93,8 +91,11 @@ public class AlternativeNsTest extends TestModelTest {
     assertThat(childElementByNameNs.getTextContent()).isEqualTo("flappy");
   }
 
-  @Test
-  public void getChildElementsByTypeForAlternativeNs() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void getChildElementsByTypeForAlternativeNs(final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     final ModelElementInstance birdo = modelInstance.getModelElementById("birdo");
     assertThat(birdo).isNotNull();
     final Collection<Wings> elements = birdo.getChildElementsByType(Wings.class);
@@ -102,8 +103,11 @@ public class AlternativeNsTest extends TestModelTest {
     assertThat(elements.iterator().next().getTextContent()).isEqualTo("zisch");
   }
 
-  @Test
-  public void getChildElementsByTypeForSecondAlternativeNs() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void getChildElementsByTypeForSecondAlternativeNs(final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     // given
     final ModelElementInstance donald = modelInstance.getModelElementById("donald");
 
@@ -115,16 +119,22 @@ public class AlternativeNsTest extends TestModelTest {
     assertThat(elements.iterator().next().getTextContent()).isEqualTo("flappy");
   }
 
-  @Test
-  public void getAttributeValueNsForAlternativeNs() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void getAttributeValueNsForAlternativeNs(final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     final Bird plucky = modelInstance.getModelElementById("plucky");
     assertThat(plucky).isNotNull();
     final Boolean extendedWings = plucky.canHazExtendedWings();
     assertThat(extendedWings).isFalse();
   }
 
-  @Test
-  public void getAttributeValueNsForSecondAlternativeNs() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void getAttributeValueNsForSecondAlternativeNs(final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     // given
     final Bird donald = modelInstance.getModelElementById("donald");
 
@@ -135,8 +145,12 @@ public class AlternativeNsTest extends TestModelTest {
     assertThat(extendedWings).isTrue();
   }
 
-  @Test
-  public void modifyingAttributeWithAlternativeNamespaceKeepsAlternativeNamespace() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void modifyingAttributeWithAlternativeNamespaceKeepsAlternativeNamespace(
+      final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     final Bird plucky = modelInstance.getModelElementById("plucky");
     assertThat(plucky).isNotNull();
     // validate old value
@@ -149,8 +163,12 @@ public class AlternativeNsTest extends TestModelTest {
     assertThat(attributeValueNs).isEqualTo("true");
   }
 
-  @Test
-  public void modifyingAttributeWithSecondAlternativeNamespaceKeepsSecondAlternativeNamespace() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void modifyingAttributeWithSecondAlternativeNamespaceKeepsSecondAlternativeNamespace(
+      final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     // given
     final Bird donald = modelInstance.getModelElementById("donald");
 
@@ -163,8 +181,12 @@ public class AlternativeNsTest extends TestModelTest {
     assertThat(attributeValueNs).isEqualTo("false");
   }
 
-  @Test
-  public void modifyingAttributeWithNewNamespaceKeepsNewNamespace() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void modifyingAttributeWithNewNamespaceKeepsNewNamespace(
+      final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     final Bird bird = createBird(modelInstance, "waldo", Gender.Male);
     bird.setCanHazExtendedWings(true);
     final String attributeValueNs =
@@ -172,8 +194,12 @@ public class AlternativeNsTest extends TestModelTest {
     assertThat(attributeValueNs).isEqualTo("true");
   }
 
-  @Test
-  public void modifyingElementWithAlternativeNamespaceKeepsAlternativeNamespace() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void modifyingElementWithAlternativeNamespaceKeepsAlternativeNamespace(
+      final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     final Bird birdo = modelInstance.getModelElementById("birdo");
     assertThat(birdo).isNotNull();
     final Wings wings = birdo.getWings();
@@ -186,8 +212,12 @@ public class AlternativeNsTest extends TestModelTest {
     assertThat(childElementsByNameNs.get(0).getTextContent()).isEqualTo("kawusch");
   }
 
-  @Test
-  public void modifyingElementWithSecondAlternativeNamespaceKeepsSecondAlternativeNamespace() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void modifyingElementWithSecondAlternativeNamespaceKeepsSecondAlternativeNamespace(
+      final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     // given
     final Bird donald = modelInstance.getModelElementById("donald");
     final Wings wings = donald.getWings();
@@ -202,8 +232,12 @@ public class AlternativeNsTest extends TestModelTest {
     assertThat(childElementsByNameNs.get(0).getTextContent()).isEqualTo("kawusch");
   }
 
-  @Test
-  public void modifyingElementWithNewNamespaceKeepsNewNamespace() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void modifyingElementWithNewNamespaceKeepsNewNamespace(
+      final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     final Bird bird = createBird(modelInstance, "waldo", Gender.Male);
     bird.setWings(modelInstance.newInstance(Wings.class));
 
@@ -212,8 +246,11 @@ public class AlternativeNsTest extends TestModelTest {
     assertThat(childElementsByNameNs).hasSize(1);
   }
 
-  @Test
-  public void useExistingNamespace() {
+  @ParameterizedTest(name = "Model {0}")
+  @MethodSource("models")
+  public void useExistingNamespace(final ModelInstance testModelInstance) {
+    setUp(testModelInstance);
+
     assertThatThereIsNoNewerNamespaceUrl();
 
     final Bird plucky = modelInstance.getModelElementById("plucky");

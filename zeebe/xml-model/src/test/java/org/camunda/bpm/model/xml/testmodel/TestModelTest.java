@@ -20,41 +20,25 @@ import java.io.InputStream;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
 import org.camunda.bpm.model.xml.testmodel.instance.*;
-import org.junit.After;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Named;
 
 /**
  * @author Sebastian Menski
  */
-@RunWith(Parameterized.class)
 public abstract class TestModelTest {
 
-  protected final String testName;
+  private static final AbstractModelParser MODEL_PARSER = new TestModelParser();
 
   // cloned model instance for every test method (see subclasses)
   protected ModelInstance modelInstance;
-
-  private final ModelInstance testModelInstance;
-  private final AbstractModelParser modelParser;
-
-  public TestModelTest(
-      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
-    this.testName = testName;
-    this.testModelInstance = testModelInstance;
-    this.modelParser = modelParser;
-  }
-
-  public ModelInstance cloneModelInstance() {
-    return testModelInstance.clone();
-  }
 
   protected static Object[] parseModel(Class<?> test) {
     final TestModelParser modelParser = new TestModelParser();
     final String testXml = test.getSimpleName() + ".xml";
     final InputStream testXmlAsStream = test.getResourceAsStream(testXml);
     final ModelInstance modelInstance = modelParser.parseModelFromStream(testXmlAsStream);
-    return new Object[] {"parsed", modelInstance, modelParser};
+    return new Object[] {Named.of("parsed", modelInstance)};
   }
 
   public static Bird createBird(ModelInstance modelInstance, String id, Gender gender) {
@@ -89,8 +73,8 @@ public abstract class TestModelTest {
     return egg;
   }
 
-  @After
+  @AfterEach
   public void validateModel() {
-    modelParser.validateModel(modelInstance.getDocument());
+    MODEL_PARSER.validateModel(modelInstance.getDocument());
   }
 }
