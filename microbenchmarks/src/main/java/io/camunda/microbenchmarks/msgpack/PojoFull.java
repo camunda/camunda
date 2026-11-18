@@ -21,8 +21,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Plain data with every field type the generator supports and a generated codec. It stores the same
- * bytes as {@link UnpackedFull}. Like its properties, {@code blob} and {@code raw} have no default,
- * so reading checks that they are set.
+ * bytes as {@link UnpackedFull}. Unlike its properties, {@code blob} and {@code raw} have a
+ * default: without one they would be {@code @Nullable DirectBuffer} fields, which get a new view
+ * per read.
  */
 @MsgpackPojo
 public final class PojoFull extends MsgpackBufferValue<PojoFull> {
@@ -35,9 +36,9 @@ public final class PojoFull extends MsgpackBufferValue<PojoFull> {
   SampleKind kind = SampleKind.FIRST;
   final UnsafeBuffer text = new UnsafeBuffer(Decoding.EMPTY);
 
-  @Binary @Required final UnsafeBuffer blob = new UnsafeBuffer(Decoding.UNSET);
+  @Binary final UnsafeBuffer blob = new UnsafeBuffer(Decoding.EMPTY);
 
-  @Raw @Required final UnsafeBuffer raw = new UnsafeBuffer(Decoding.UNSET);
+  @Raw final UnsafeBuffer raw = new UnsafeBuffer(Decoding.EMPTY);
 
   final List<DirectBuffer> ids = new ArrayList<>();
   final PojoNested nested = new PojoNested();

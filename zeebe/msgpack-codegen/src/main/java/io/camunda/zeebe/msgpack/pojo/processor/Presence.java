@@ -14,10 +14,5 @@ enum Presence {
   /** A {@code @Nullable} field, unset while it is null. */
   NULLABLE,
   /** A {@code RequiredLong} or {@code RequiredInt} holder, unset until a value is set. */
-  HOLDER,
-  /**
-   * A {@code @Required} long, int or final {@code UnsafeBuffer}, unset while it holds its
-   * initializer.
-   */
-  SENTINEL
+  HOLDER
 }

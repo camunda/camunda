@@ -13,7 +13,6 @@ import io.camunda.zeebe.msgpack.pojo.annotation.Ignore;
 import io.camunda.zeebe.msgpack.pojo.annotation.Key;
 import io.camunda.zeebe.msgpack.pojo.annotation.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.annotation.Raw;
-import io.camunda.zeebe.msgpack.pojo.annotation.Required;
 import io.camunda.zeebe.msgpack.pojo.annotation.Sanitized;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -247,16 +246,6 @@ final class ModelBuilder {
                 .formatted(fieldName));
       }
       final var inPlace = isUnsafeBuffer(mirror);
-      final var sentinel = field.getAnnotation(Required.class) != null;
-      final var bufferKind =
-          kind == Type.STRING || kind == Type.RAW || kind == Type.BINARY || kind == Type.DOCUMENT;
-      if (sentinel && kind != Type.LONG && kind != Type.INT && !(inPlace && bufferKind)) {
-        throw new IllegalArgumentException(
-            ("Field %s: @Required only applies to a long or int, or to a final UnsafeBuffer, whose "
-                    + "initializer is the sentinel for unset. Use a @Nullable field for the other "
-                    + "types")
-                .formatted(fieldName));
-      }
       final var isFinal = field.getModifiers().contains(Modifier.FINAL);
       if (!isFinal && kind.container) {
         throw new IllegalArgumentException(
@@ -292,13 +281,11 @@ final class ModelBuilder {
           kind == Type.NESTED
               && ((DeclaredType) mirror).asElement().getAnnotation(MsgpackPojo.class) != null;
       final var presence =
-          sentinel
-              ? Presence.SENTINEL
-              : nullable
-                  ? Presence.NULLABLE
-                  : kind == Type.REQUIRED_LONG || kind == Type.REQUIRED_INT
-                      ? Presence.HOLDER
-                      : Presence.DEFAULT;
+          nullable
+              ? Presence.NULLABLE
+              : kind == Type.REQUIRED_LONG || kind == Type.REQUIRED_INT
+                  ? Presence.HOLDER
+                  : Presence.DEFAULT;
       properties.add(
           new Property(
               keyLiteral, kind, fieldName, javaType, inPlace, presence, sanitized, pojo, element));

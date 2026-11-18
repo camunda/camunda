@@ -20,13 +20,15 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Plain data with a generated codec, stores the same bytes as {@link UnpackedVariable}. Like its
- * properties, {@code key} and {@code value} have no default, so reading checks that they are set.
+ * property, {@code key} has no default, so reading checks that it is set. Unlike its property,
+ * {@code value} has a default: without one it would be a {@code @Nullable DirectBuffer}, which gets
+ * a new view per read.
  */
 @MsgpackPojo
 public final class PojoVariable extends MsgpackBufferValue<PojoVariable> {
   final RequiredLong key = new RequiredLong();
 
-  @Binary @Required final UnsafeBuffer value = new UnsafeBuffer(Decoding.UNSET);
+  @Binary final UnsafeBuffer value = new UnsafeBuffer(Decoding.EMPTY);
 
   final UnknownProperties unknownProperties = new UnknownProperties();
 

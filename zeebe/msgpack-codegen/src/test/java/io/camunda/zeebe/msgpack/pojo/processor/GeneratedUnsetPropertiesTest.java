@@ -29,15 +29,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Properties without a default, compiled in memory: every kind of them in one class, and what only
- * a {@code @Required} field does (its initializer is the sentinel for unset, so that value can be
- * neither written nor read). {@code BigRecordTest} compares the unset semantics with the legacy
- * record.
+ * Properties without a default, compiled in memory: every kind of them in one class. {@code
+ * BigRecordTest} compares the unset semantics with the legacy record.
  */
 final class GeneratedUnsetPropertiesTest {
-
-  private static final String UNSET_ON_WRITE =
-      "Expected a value or default value to be set before writing, but has nothing";
 
   private static Result compiled;
 
@@ -45,29 +40,12 @@ final class GeneratedUnsetPropertiesTest {
   static void compileSample() {
     compiled =
         compile(
-            pojo(
-                "Sentinels",
-                """
-                @Required long key;
-                @Required long version = -1L;
-                @Required int position = Integer.MIN_VALUE;
-                """),
-            pojo(
-                "RequiredBuffers",
-                """
-                @Required final UnsafeBuffer name = new UnsafeBuffer(Decoding.UNSET);
-                @Required @Binary final UnsafeBuffer payload = new UnsafeBuffer(Decoding.UNSET);
-                """),
-            pojo(
-                "WrongInitializer",
-                "@Required final UnsafeBuffer name = new UnsafeBuffer(new byte[0]);"),
             new Source("sample.Kind", "package sample; public enum Kind { ONE, TWO }"),
             pojo(
                 "Unset",
                 """
                 final RequiredLong key = new RequiredLong();
                 final RequiredInt count = new RequiredInt();
-                @Required long sentinel;
                 @Nullable Long boxedLong;
                 @Nullable Integer boxedInt;
                 @Nullable Boolean flag;
@@ -86,143 +64,11 @@ final class GeneratedUnsetPropertiesTest {
   }
 
   @Test
-  void shouldCheckEachFieldAgainstItsOwnSentinel() throws Exception {
-    // given fields of the same type, each holding the sentinel of another one
-    final var value = newInstance();
-    set(value, "key", Long.MIN_VALUE);
-    set(value, "version", 0L);
-    set(value, "position", -1);
-
-    // when
-    final var bytes = bytes(value);
-    final var read = newInstance();
-    read.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
-
-    // then the values are written and read back, as none is the sentinel of its own field
-    assertThat(read).isEqualTo(value);
-
-    // when a field holds its own sentinel
-    set(value, "version", -1L);
-
-    // then only that field is unset
-    assertThat(catchThrowable(() -> bytes(value)))
-        .hasMessage("Property 'version' is invalid: " + UNSET_ON_WRITE);
-  }
-
-  @Test
-  void shouldFailToReadAValueEqualToTheSentinel() throws Exception {
-    // given a message, written by a legacy property that accepts any value, holding the sentinel
-    final var message =
-        encoded(
-            w -> {
-              w.writeMapHeader(3);
-              w.writeString(utf8("key"));
-              w.writeInteger(1);
-              w.writeString(utf8("version"));
-              w.writeInteger(-1);
-              w.writeString(utf8("position"));
-              w.writeInteger(2);
-            });
-
-    // when
-    final var failure =
-        catchThrowable(() -> newInstance().wrap(new UnsafeBuffer(message), 0, message.length));
-
-    // then
-    assertThat(failure.getCause()).hasMessage("Property 'version' has no valid value");
-  }
-
-  @Test
-  void shouldTreatARequiredBufferAsUnsetUntilItHoldsAValue() throws Exception {
-    // given a new instance, whose buffers still hold the sentinel
-    final var value = newInstance("sample.RequiredBuffers");
-
-    // then it cannot be written
-    assertThat(catchThrowable(() -> bytes(value)))
-        .hasMessage("Property 'name' is invalid: " + UNSET_ON_WRITE);
-
-    // when both hold a value, an empty one included
-    set(value, "name", new UnsafeBuffer(new byte[0]));
-    set(value, "payload", utf8("bin"));
-    final var bytes = bytes(value);
-    final var read = newInstance("sample.RequiredBuffers");
-    read.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
-    final var copy = newInstance("sample.RequiredBuffers");
-    copy(read, copy);
-
-    // then they are written, read and copied
-    assertThat(read).isEqualTo(value);
-    assertThat(copy).isEqualTo(value);
-  }
-
-  @Test
-  void shouldKeepARequiredBufferUnsetWhenCopyingAndResetting() throws Exception {
-    // given a value that holds data and an unset one
-    final var unset = newInstance("sample.RequiredBuffers");
-    final var target = newInstance("sample.RequiredBuffers");
-    set(target, "name", utf8("abc"));
-    set(target, "payload", utf8("bin"));
-
-    // when the unset one is copied over the other
-    copy(unset, target);
-
-    // then the target is unset again
-    assertThat(catchThrowable(() -> bytes(target)))
-        .hasMessage("Property 'name' is invalid: " + UNSET_ON_WRITE);
-
-    // when a value that holds data is reset
-    set(target, "name", utf8("abc"));
-    set(target, "payload", utf8("bin"));
-    target.reset();
-
-    // then it is unset too
-    assertThat(catchThrowable(() -> bytes(target)))
-        .hasMessage("Property 'name' is invalid: " + UNSET_ON_WRITE);
-  }
-
-  @Test
-  void shouldFailToReadAMessageWithoutARequiredBuffer() throws Exception {
-    // given a message that has the name but not the payload
-    final var message =
-        encoded(
-            w -> {
-              w.writeMapHeader(1);
-              w.writeString(utf8("name"));
-              w.writeString(utf8("abc"));
-            });
-
-    // when
-    final var failure =
-        catchThrowable(
-            () ->
-                newInstance("sample.RequiredBuffers")
-                    .wrap(new UnsafeBuffer(message), 0, message.length));
-
-    // then
-    assertThat(failure.getCause()).hasMessageContaining("payload");
-  }
-
-  @Test
-  void shouldRejectARequiredBufferWithoutTheUnsetInitializer() {
-    // when the ops class is loaded
-    final var failure =
-        catchThrowable(
-            () -> compiled.load("sample.WrongInitializerOps").getField("INSTANCE").get(null));
-
-    // then
-    assertThat(failure)
-        .hasRootCauseInstanceOf(IllegalStateException.class)
-        .rootCause()
-        .hasMessageContaining("new UnsafeBuffer(Decoding.UNSET)");
-  }
-
-  @Test
   void shouldRoundTripEveryKindOfPropertyWithoutADefault() throws Exception {
     // given
     final var value = newInstance("sample.Unset");
     ((RequiredLong) get(value, "key")).set(0L);
     ((RequiredInt) get(value, "count")).set(-3);
-    set(value, "sentinel", 7L);
     set(value, "boxedLong", Long.MIN_VALUE);
     set(value, "boxedInt", Integer.MAX_VALUE);
     set(value, "flag", false);
@@ -248,6 +94,27 @@ final class GeneratedUnsetPropertiesTest {
     // then every property is unset again
     assertThat(read.toString()).isEqualTo("{}");
     assertThat(catchThrowable(() -> bytes(read))).hasMessageContaining("Property 'key' is invalid");
+  }
+
+  @Test
+  void shouldFailToReadAMessageWithoutAPropertyWithoutADefault() throws Exception {
+    // given a message that has the first property but not the others
+    final var message =
+        encoded(
+            w -> {
+              w.writeMapHeader(1);
+              w.writeString(utf8("first"));
+              w.writeInteger(1);
+            });
+
+    // when
+    final var failure =
+        catchThrowable(
+            () ->
+                newInstance("sample.Optional").wrap(new UnsafeBuffer(message), 0, message.length));
+
+    // then
+    assertThat(failure.getCause()).hasMessage("Property 'second' has no valid value");
   }
 
   @Test
@@ -283,9 +150,5 @@ final class GeneratedUnsetPropertiesTest {
   private static MsgpackBufferValue<?> newInstance(final String name)
       throws ReflectiveOperationException {
     return (MsgpackBufferValue<?>) compiled.load(name).getConstructor().newInstance();
-  }
-
-  private static MsgpackBufferValue<?> newInstance() throws ReflectiveOperationException {
-    return (MsgpackBufferValue<?>) compiled.load("sample.Sentinels").getConstructor().newInstance();
   }
 }

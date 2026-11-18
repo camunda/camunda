@@ -38,14 +38,9 @@ record Property(
     return Objects.requireNonNull(element);
   }
 
-  /** Holders, sentinels and {@code @Nullable} fields can be unset, a property without default. */
+  /** Holders and {@code @Nullable} fields can be unset, a property without default. */
   boolean canBeUnset() {
     return presence != Presence.DEFAULT;
-  }
-
-  /** The constant holding the initializer of a {@code @Required} field. */
-  String sentinelName() {
-    return "SENTINEL_" + field;
   }
 
   /** A non-nullable enum that is null cannot be written, whatever the reason. */
@@ -55,14 +50,12 @@ record Property(
 
   /** Java condition that is true if the property is unset in the object {@code v}. */
   String unset(final String v) {
-    final var condition =
-        switch (presence) {
-          case SENTINEL ->
-              inPlace ? "$v.$field.byteArray() == Decoding.UNSET_BYTES" : "$v.$field == $sentinel";
-          case HOLDER -> "!$v.$field.isSet()";
-          case NULLABLE, DEFAULT -> "$v.$field == null";
-        };
-    return fill(condition, "$v", v, "$field", field, "$sentinel", sentinelName());
+    return fill(
+        presence == Presence.HOLDER ? "!$v.$field.isSet()" : "$v.$field == null",
+        "$v",
+        v,
+        "$field",
+        field);
   }
 
   /** Java expression for the value of the property, which must not be unset. */

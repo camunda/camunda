@@ -150,13 +150,6 @@ final class MsgpackPojoProcessorRejectionTest {
         fields("@Nullable long key;", "key", "@Nullable"),
         fields("Long key;", "key", "@Nullable"),
         fields("Integer count;", "count", "@Nullable"),
-        fields("@Required boolean flag = false;", "flag", "@Required only applies"),
-        fields("@Required @Nullable Long flag;", "flag", "@Required only applies"),
-        fields("@Required @Nullable DirectBuffer flag;", "flag", "@Required only applies"),
-        fields(
-            "@Required final RequiredLong flag = new RequiredLong();",
-            "flag",
-            "@Required only applies"),
         fields("@Nullable final RequiredLong key = new RequiredLong();", "key", "@Nullable"),
         fields("RequiredLong key = new RequiredLong();", "key", "final"),
         fields("Boolean accepting;", "accepting", "@Nullable"),

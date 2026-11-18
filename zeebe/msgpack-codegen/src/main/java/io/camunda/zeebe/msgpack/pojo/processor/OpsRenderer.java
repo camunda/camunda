@@ -38,7 +38,6 @@ final class OpsRenderer {
 
               private static final $pojo DEFAULTS = new $pojo();
 
-            $sentinels\
               private $pojoOps() {}
 
               /** Restores the field initializers. */
@@ -99,8 +98,6 @@ final class OpsRenderer {
             m.pkg(),
             "$pojo",
             m.name(),
-            "$sentinels",
-            CodecRenderer.sentinels(m, true),
             "$reset",
             reset,
             "$copy",
@@ -160,17 +157,9 @@ final class OpsRenderer {
                     }
                 """;
             case STRING, BINARY, RAW, DOCUMENT ->
-                p.presence() == Presence.SENTINEL
-                    ? """
-                          if (source.$field.byteArray() == Decoding.UNSET_BYTES) {
-                            target.$field.wrap(Decoding.UNSET);
-                          } else {
-                            Decoding.copyInto(source.$field, target.$field);
-                          }
-                      """
-                    : p.inPlace()
-                        ? "    Decoding.copyInto(source.$field, target.$field);\n"
-                        : "    target.$field = Decoding.copy(source.$field);\n";
+                p.inPlace()
+                    ? "    Decoding.copyInto(source.$field, target.$field);\n"
+                    : "    target.$field = Decoding.copy(source.$field);\n";
             case LIST -> "    target.$field.clear();\n$list";
             case NESTED ->
                 p.pojo()

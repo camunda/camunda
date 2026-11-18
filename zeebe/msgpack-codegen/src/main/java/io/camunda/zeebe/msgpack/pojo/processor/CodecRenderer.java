@@ -11,7 +11,6 @@ import static io.camunda.zeebe.msgpack.pojo.processor.Templates.HEADER;
 import static io.camunda.zeebe.msgpack.pojo.processor.Templates.fill;
 import static io.camunda.zeebe.msgpack.pojo.processor.Templates.loop;
 
-import io.camunda.zeebe.msgpack.pojo.annotation.Required;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -186,7 +185,6 @@ final class CodecRenderer {
               public static final $pojoCodec INSTANCE = new $pojoCodec();
 
             $constants\
-            $sentinels\
 
               private $pojoCodec() {}
 
@@ -254,8 +252,6 @@ final class CodecRenderer {
             m.name(),
             "$constants",
             constants(m),
-            "$sentinels",
-            sentinels(m, false),
             "$count",
             count,
             "$verifyOnWrite",
@@ -427,40 +423,6 @@ final class CodecRenderer {
         "i" + depth,
         "$element",
         element.indent(2));
-  }
-
-  /**
-   * The initializers of the {@link Required} fields, the values that mean unset, as static finals:
-   * the JIT folds them into the comparison like a literal.
-   */
-  static String sentinels(final Model m, final boolean inOps) {
-    final var s = new StringBuilder();
-    for (final var p : m.properties()) {
-      if (p.presence() == Presence.SENTINEL && p.inPlace()) {
-        if (inOps) {
-          s.append(
-              fill(
-                  p,
-                  "  static {\n    Decoding.requireUnsetInitializer(DEFAULTS.$field, \"$field\");\n  }\n"));
-        }
-      } else if (p.presence() == Presence.SENTINEL) {
-        final var template =
-            inOps
-                ? "  static final $primitive $sentinel = DEFAULTS.$field;\n"
-                : "  static final $primitive $sentinel = $pojoOps.$sentinel;\n";
-        s.append(
-            fill(
-                p,
-                template,
-                "$primitive",
-                p.type() == Type.LONG ? "long" : "int",
-                "$sentinel",
-                p.sentinelName(),
-                "$pojo",
-                m.name()));
-      }
-    }
-    return s.isEmpty() ? "" : s + "\n";
   }
 
   private static String constants(final Model m) {

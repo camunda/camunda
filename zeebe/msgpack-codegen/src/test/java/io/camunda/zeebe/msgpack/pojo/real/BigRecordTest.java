@@ -26,10 +26,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * A big record with every supported field type, compiled by the build's annotation processor in
- * three variants (holder, boxed, sentinel for the required longs and ints) and compared with the
- * {@link LegacyBigRecord} it replaces: same bytes in both directions, same failures and the same
- * string when a property without a default is unset.
+ * A big record with every supported field type, compiled by the build's annotation processor in two
+ * variants (holder and boxed for the required longs and ints) and compared with the {@link
+ * LegacyBigRecord} it replaces: same bytes in both directions, same failures and the same string
+ * when a property without a default is unset.
  */
 final class BigRecordTest {
 
@@ -38,8 +38,7 @@ final class BigRecordTest {
 
   enum Variant {
     HOLDER(HolderBigRecord::new),
-    BOXED(BoxedBigRecord::new),
-    SENTINEL(SentinelBigRecord::new);
+    BOXED(BoxedBigRecord::new);
 
     private final Supplier<? extends MsgpackBufferValue<?>> factory;
 
