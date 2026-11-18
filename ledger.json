@@ -414,5 +414,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/44251159531",
     "updated_at": "2026-11-18T06:41:53Z",
     "cooldown_until": "2026-11-21T06:41:53Z"
+  },
+  "77fee478": {
+    "version": "8.9",
+    "file": "tests/api/v2/job/job-update-api-tests.spec.ts",
+    "titlePath": [
+      "Job Update API Tests",
+      "Update Job - success"
+    ],
+    "last_action": "open_pr",
+    "last_reason": "iter1 100% vs baseline 86.7% (+13.3pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44251136799",
+    "updated_at": "2026-11-18T07:04:04Z",
+    "cooldown_until": "2026-12-02T07:04:04Z",
+    "pr": "https://github.com/camunda/camunda/pull/69728"
   }
 }
