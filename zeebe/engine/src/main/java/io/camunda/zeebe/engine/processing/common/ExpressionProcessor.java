@@ -541,9 +541,7 @@ public final class ExpressionProcessor {
                       String.format(
                           "Expected result of the %s '%s'%s to be 'ARRAY' containing 'STRING' items,"
                               + " but was 'ARRAY' containing at least one non-'STRING' item.",
-                          label.hasKind() ? label.kind() : "expression",
-                          expression.getExpression(),
-                          label.describeTarget()),
+                          describeKind(label), expression.getExpression(), label.describeTarget()),
                       scopeKey));
             });
   }
@@ -669,7 +667,7 @@ public final class ExpressionProcessor {
               result,
               "Expected result of the %s '%s'%s to be '%s', but was '%s'."
                   .formatted(
-                      label.hasKind() ? label.kind() : "expression",
+                      describeKind(label),
                       result.getExpression(),
                       label.describeTarget(),
                       expectedResultType,
@@ -701,7 +699,7 @@ public final class ExpressionProcessor {
                     result,
                     "Expected result of the %s '%s'%s to be one of '%s', but was '%s'."
                         .formatted(
-                            label.hasKind() ? label.kind() : "expression",
+                            describeKind(label),
                             result.getExpression(),
                             label.describeTarget(),
                             expectedResultTypes,
@@ -870,6 +868,15 @@ public final class ExpressionProcessor {
             createFailureMessage(
                 result, withLabelContext(result.getFailureMessage(), label), variableScopeKey))
         : Either.right(result);
+  }
+
+  /**
+   * Describes what a failing expression is for use in a sentence like "Expected result of the
+   * {kind} 'x' ...", falling back to the generic "expression" for {@link ExpressionLabel#NONE}.
+   */
+  private static String describeKind(final ExpressionLabel label) {
+    final var kind = label.kind();
+    return kind != null ? kind : "expression";
   }
 
   /**
