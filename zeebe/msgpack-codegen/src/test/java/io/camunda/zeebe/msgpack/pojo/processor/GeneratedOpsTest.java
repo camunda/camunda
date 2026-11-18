@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.msgpack.Recyclable;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.pojo.Codecs;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
 import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
@@ -60,7 +59,6 @@ final class GeneratedOpsTest {
                 package sample;
                 import io.camunda.zeebe.msgpack.Recyclable;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.pojo.Codecs;
                 import io.camunda.zeebe.msgpack.property.IntegerProperty;
                 public final class Legacy extends UnpackedObject {
                   private final IntegerProperty value = new IntegerProperty("value", 3);
@@ -179,11 +177,11 @@ import io.camunda.zeebe.msgpack.pojo.Codecs;
   }
 
   @Test
-  void shouldOperateThroughTheOpsOfTheClass() throws Exception {
-    // given the ops found for the class, as code that is generic in the type uses them
-    @SuppressWarnings({"unchecked", "rawtypes"})
+  void shouldOperateThroughTheOpsInstance() throws Exception {
+    // given the ops instance, which code that is generic in the type uses
+    @SuppressWarnings("unchecked")
     final MsgpackOps<Recyclable> ops =
-        (MsgpackOps) Codecs.opsOf((Class) compiled.load("sample.Sample"));
+        (MsgpackOps<Recyclable>) compiled.load("sample.SampleOps").getField("INSTANCE").get(null);
     final var source = (Recyclable) read(message(0));
     final var target = (Recyclable) instance();
     final var other = (Recyclable) read(message(1));

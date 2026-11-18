@@ -34,25 +34,11 @@ public final class Codecs {
         }
       };
 
-  private static final ClassValue<MsgpackOps<?>> OPS =
-      new ClassValue<>() {
-        @Override
-        protected MsgpackOps<?> computeValue(final Class<?> type) {
-          return generated(type, "Ops", MsgpackOps.class);
-        }
-      };
-
   private Codecs() {}
 
   @SuppressWarnings("unchecked")
   public static <T extends Recyclable> MsgpackCodec<T> of(final Class<T> type) {
     return (MsgpackCodec<T>) CODECS.get(type);
-  }
-
-  /** Finds the generated {@code <Name>Ops}, which restores the field initializers. */
-  @SuppressWarnings("unchecked")
-  public static <T extends Recyclable> MsgpackOps<T> opsOf(final Class<T> type) {
-    return (MsgpackOps<T>) OPS.get(type);
   }
 
   private static <R> R generated(final Class<?> type, final String suffix, final Class<R> role) {
