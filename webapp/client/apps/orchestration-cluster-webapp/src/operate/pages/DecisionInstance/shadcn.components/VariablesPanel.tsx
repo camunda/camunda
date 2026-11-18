@@ -123,7 +123,7 @@ const VariablesPanelPending: React.FC = () => {
 				<div className="relative flex h-full items-center justify-center overflow-hidden">
 					<div data-testid="result-loading-spinner" role="status" aria-live="polite">
 						<LoaderCircle className="size-6 animate-spin" aria-hidden />
-						<span className="sr-only">{t('appStylesLoading')}</span>
+						<span className="sr-only">{t('operate.decisionInstance.ds.variablesPanel.loadingResult')}</span>
 					</div>
 				</div>
 			}
