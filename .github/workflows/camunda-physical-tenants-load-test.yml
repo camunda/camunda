@@ -1,0 +1,221 @@
+# description: Deploys the shared physical-tenants load test (mixed scenario of the noisy neighbour
+#              epic): a few saturating/heavy tenants next to many quiet tenants, each tenant with
+#              its own starter and worker. Computes the per-tenant traffic profiles from simple
+#              inputs and delegates the deployment to camunda-load-test.yml. Use the same inputs
+#              on every solution to compare results; a run without saturating tenants
+#              (saturating-tenant-count: 0) is the "no noisy neighbour" reference.
+# calls: camunda-load-test.yml
+# monitoring: https://dashboard.benchmark.camunda.cloud/
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda physical tenants load test
+run-name: "Physical tenants load test: ${{ inputs.name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Name of the load test (namespace suffix, c8- is added). Use a unique name per run, e.g. pt-baseline-<yyyymmdd>-<hhmm>'
+        type: string
+        required: true
+      tenant-count:
+        description: '── Tenants ───────────────────────── Number of physical tenants (pt1..ptN) next to the default tenant'
+        type: number
+        default: 10
+        required: false
+      saturating-tenant-count:
+        description: 'How many tenants send saturating-rate (the noisy neighbours, pt1..). Use 0 for the reference run without noise'
+        type: number
+        default: 1
+        required: false
+      heavy-tenant-count:
+        description: 'How many tenants send heavy-rate (placed after the saturating tenants). All remaining tenants and the default tenant are quiet'
+        type: number
+        default: 2
+        required: false
+      quiet-rate:
+        description: '── Traffic ───────────────────────── Process instances/s started by each quiet tenant'
+        type: number
+        default: 5
+        required: false
+      heavy-rate:
+        description: 'Process instances/s started by each heavy tenant'
+        type: number
+        default: 50
+        required: false
+      saturating-rate:
+        description: 'Process instances/s started by each saturating tenant (2-5x the allowance of a heavy tenant)'
+        type: number
+        default: 150
+        required: false
+      secondary-storage-type:
+        description: '── Cluster ───────────────────────── Secondary storage shared by all tenants'
+        type: choice
+        options:
+          - postgresql
+          - elasticsearch
+          - opensearch
+        default: postgresql
+        required: false
+      use-pgbouncer:
+        description: 'Put PgBouncer in front of PostgreSQL (ignored for other storages)'
+        type: boolean
+        default: true
+        required: false
+      platform-helm-values:
+        description: 'Extra Helm values for the Camunda chart, e.g. broker/partition count or resources (--set orchestration.clusterSize=3)'
+        type: string
+        default: ""
+        required: false
+      ref:
+        description: '── Build ─────────────────────────── Git ref to build the image from and to take the setup scripts from'
+        type: string
+        default: 'main'
+        required: false
+      target-version:
+        description: 'Setup folder under load-tests/setup/ (main, stable-810, ...). Baseline on 8.10: stable-810 together with orchestration-tag'
+        type: string
+        default: 'main'
+        required: false
+      orchestration-tag:
+        description: 'Official Docker Hub image tag (e.g. an 8.10.x release) instead of building ref. Needed to run an older target-version'
+        type: string
+        default: ""
+        required: false
+      reuse-tag:
+        description: 'Pre-built image tag from the internal registry, to skip the build (not with orchestration-tag)'
+        type: string
+        default: ""
+        required: false
+      ttl:
+        description: 'Days before the namespace is deleted automatically'
+        type: number
+        default: 1
+        required: false
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare:
+    name: Compute tenant profiles
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      profiles: ${{ steps.profiles.outputs.profiles }}
+      default-tenant-flags: ${{ steps.profiles.outputs.default-tenant-flags }}
+      use-pgbouncer: ${{ steps.profiles.outputs.use-pgbouncer }}
+    env:
+      TENANT_COUNT: ${{ inputs.tenant-count }}
+      SATURATING_COUNT: ${{ inputs.saturating-tenant-count }}
+      HEAVY_COUNT: ${{ inputs.heavy-tenant-count }}
+      QUIET_RATE: ${{ inputs.quiet-rate }}
+      HEAVY_RATE: ${{ inputs.heavy-rate }}
+      SATURATING_RATE: ${{ inputs.saturating-rate }}
+      STORAGE: ${{ inputs.secondary-storage-type }}
+      USE_PGBOUNCER: ${{ inputs.use-pgbouncer }}
+      ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
+      REUSE_TAG: ${{ inputs.reuse-tag }}
+      REF: ${{ inputs.ref }}
+      TARGET_VERSION: ${{ inputs.target-version }}
+    steps:
+      - name: Compute profiles
+        id: profiles
+        run: |-
+          for var in TENANT_COUNT SATURATING_COUNT HEAVY_COUNT QUIET_RATE HEAVY_RATE SATURATING_RATE; do
+            if [[ ! "${!var}" =~ ^[0-9]+$ ]]; then
+              echo "::error::${var} must be a non-negative integer, got '${!var}'"
+              exit 1
+            fi
+          done
+          if (( TENANT_COUNT < 1 )); then
+            echo "::error::tenant-count must be at least 1"
+            exit 1
+          fi
+          if (( SATURATING_COUNT + HEAVY_COUNT > TENANT_COUNT )); then
+            echo "::error::saturating-tenant-count + heavy-tenant-count (${SATURATING_COUNT} + ${HEAVY_COUNT}) exceeds tenant-count (${TENANT_COUNT})"
+            exit 1
+          fi
+          if (( QUIET_RATE < 1 || HEAVY_RATE < 1 || SATURATING_RATE < 1 )); then
+            echo "::error::rates must be at least 1"
+            exit 1
+          fi
+          # A target-version other than main runs setup scripts of main with an older setup folder,
+          # so the image must not be built from main.
+          if [[ "${TARGET_VERSION}" != "main" && -z "${ORCHESTRATION_TAG}" && -z "${REUSE_TAG}" && "${REF}" == "main" ]]; then
+            echo "::error::target-version '${TARGET_VERSION}' needs orchestration-tag (or reuse-tag, or a matching ref): building main would not match the setup folder"
+            exit 1
+          fi
+
+          # Worker replicas scale with the rate, using the ratio of the typical scenario (6 workers for 50 PI/s).
+          replicas() { echo $(( ($1 * 6 + 49) / 50 )); }
+
+          profiles=()
+          for ((i = 1; i <= TENANT_COUNT; i++)); do
+            if (( i <= SATURATING_COUNT )); then
+              rate=${SATURATING_RATE}
+            elif (( i <= SATURATING_COUNT + HEAVY_COUNT )); then
+              rate=${HEAVY_RATE}
+            else
+              rate=${QUIET_RATE}
+            fi
+            profiles+=("${rate}:$(replicas "${rate}")")
+          done
+
+          use_pgbouncer=false
+          if [[ "${STORAGE}" == "postgresql" && "${USE_PGBOUNCER}" == "true" ]]; then
+            use_pgbouncer=true
+          fi
+
+          {
+            echo "profiles=${profiles[*]}"
+            # The default tenant is quiet; these flags come after the scenario flags, so they win.
+            echo "default-tenant-flags=--set load-tester.starter.rate=${QUIET_RATE} --set load-tester.workers.worker.replicas=$(replicas "${QUIET_RATE}")"
+            echo "use-pgbouncer=${use_pgbouncer}"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Physical tenants load test: \`${{ inputs.name }}\`"
+            echo
+            echo "| Tenant | Role | Rate (PI/s) |"
+            echo "| --- | --- | --- |"
+            echo "| default | quiet | ${QUIET_RATE} |"
+            for ((i = 1; i <= TENANT_COUNT; i++)); do
+              if (( i <= SATURATING_COUNT )); then role=saturating
+              elif (( i <= SATURATING_COUNT + HEAVY_COUNT )); then role=heavy
+              else role=quiet; fi
+              echo "| pt${i} | ${role} | ${profiles[i-1]%%:*} |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Deploy load test
+    needs: prepare
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ inputs.name }}
+      ref: ${{ inputs.ref }}
+      target-version: ${{ inputs.target-version }}
+      orchestration-tag: ${{ inputs.orchestration-tag }}
+      reuse-tag: ${{ inputs.reuse-tag }}
+      ttl: ${{ inputs.ttl }}
+      scenario: typical
+      secondary-storage-type: ${{ inputs.secondary-storage-type }}
+      use-pgbouncer: ${{ needs.prepare.outputs.use-pgbouncer == 'true' }}
+      physical-tenant-count: ${{ inputs.tenant-count }}
+      physical-tenant-profiles: ${{ needs.prepare.outputs.profiles }}
+      load-test-load: ${{ needs.prepare.outputs.default-tenant-flags }}
+      platform-helm-values: ${{ inputs.platform-helm-values }}
+      # Non-spot VMs: node churn adds noise to the measurements (LT-1).
+      stable-vms: true
+      # Optimize is not part of the measurement and would add load of its own.
+      enable-optimize: false
+      enable-chaos: false
