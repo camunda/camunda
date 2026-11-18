@@ -16,6 +16,11 @@ import { loadData } from "./lib.data.js";
  * - `startInstances` (only if START_RATE > 0) starts START_RATE instances per second through
  *   the REST API, with START_PAYLOAD (a JSON object) as variables. Use it instead of the Java
  *   starter if the instances need specific start variables.
+ * - `writeFlow` (only if WRITE_FLOW_STAGES is set) measures the cost of writing user tasks, without
+ *   the search load of the other scenarios. Each iteration starts an instance, finds its user task
+ *   by the process instance key (a small search that does not depend on the user task indexes),
+ *   assigns it, and completes it. The rate goes through the stages, e.g. "50:10m,100:10m,150:10m".
+ *   Set USER_TASK_USERS=0 and API_RATE=0 to run it alone, and stop the Java starter.
  */
 
 const MODEL_FILE = __ENV.MODEL_FILE || "benchmark-process.bpmn";
@@ -73,6 +78,19 @@ const TEST_DURATION = __ENV.TEST_DURATION || "3h";
 const API_RATE = parseInt(__ENV.API_RATE || "1");
 const START_RATE = parseInt(__ENV.START_RATE || "0");
 const START_PAYLOAD = JSON.parse(__ENV.START_PAYLOAD || "{}");
+// Steps of the `writeFlow` rate as "rate:duration" pairs, e.g. "50:10m,100:10m". Empty: no scenario.
+const WRITE_FLOW_STAGES = parseWriteFlowStages(__ENV.WRITE_FLOW_STAGES || "");
+// Time that an iteration of `writeFlow` takes: the service tasks, the export of the user task
+// (1-2 s), and the wait for it in the search. It sizes the VUs: if an iteration takes longer, k6
+// drops iterations (`dropped_iterations`) and does not add VUs.
+const WRITE_FLOW_SECONDS_PER_ITERATION = parseFloat(
+  __ENV.WRITE_FLOW_SECONDS_PER_ITERATION || "5",
+);
+// Searches for the task of an instance, with a pause between them, before the iteration gives up.
+const WRITE_FLOW_LOOKUP_ATTEMPTS = parseInt(
+  __ENV.WRITE_FLOW_LOOKUP_ATTEMPTS || "40",
+);
+const WRITE_FLOW_LOOKUP_PAUSE_SECONDS = 0.5;
 // For requests where only the status counts: k6 does not keep the response body.
 const NO_BODY = { responseType: "none" };
 
@@ -87,6 +105,13 @@ const userTasksConflicts = new Counter("custom_model_user_tasks_conflicts");
 const userTasksFailed = new Counter("custom_model_user_tasks_failed");
 // Abandoned tasks that a user took over.
 const userTasksTakenOver = new Counter("custom_model_user_tasks_taken_over");
+// `writeFlow`: searches for the task of a started instance. More searches per task mean that the
+// export of the task is late.
+const writeFlowLookups = new Counter("custom_model_write_flow_lookups");
+// `writeFlow`: iterations that did not find the task of their instance.
+const writeFlowLookupTimeouts = new Counter(
+  "custom_model_write_flow_lookup_timeouts",
+);
 
 // A user works through the tasks of one search result before it searches again, like a person
 // with a task list. A result older than this is stale, so the user searches again.
@@ -114,17 +139,68 @@ let nextAbandonedCheck = null;
 export const options = {
   setupTimeout: "20m",
   scenarios: {
-    userTasks: {
-      exec: "workOnUserTask",
-      executor: "constant-vus",
-      vus: USER_TASK_USERS,
-      duration: TEST_DURATION,
-    },
+    ...userTasksScenario(USER_TASK_USERS),
     ...drainScenario(USER_TASK_DRAIN_RATE),
     ...apiMixScenario(API_RATE),
     ...startScenario(START_RATE),
+    ...writeFlowScenario(WRITE_FLOW_STAGES),
   },
 };
+
+/* No scenario if there are no users, for the runs that only write (see `writeFlow`). */
+export function userTasksScenario(users) {
+  if (users <= 0) {
+    return {};
+  }
+  return {
+    userTasks: {
+      exec: "workOnUserTask",
+      executor: "constant-vus",
+      vus: users,
+      duration: TEST_DURATION,
+    },
+  };
+}
+
+/* Parses "50:10m,100:10m" into [{ rate: 50, duration: "10m" }, ...]. */
+export function parseWriteFlowStages(value) {
+  if (value.trim() === "") {
+    return [];
+  }
+  return value.split(",").map((stage) => {
+    const match = /^\s*(\d+):(\d+(?:ms|s|m|h))\s*$/.exec(stage);
+    if (!match || parseInt(match[1]) <= 0) {
+      throw new Error(`Invalid write flow stage: ${stage}`);
+    }
+    return { rate: parseInt(match[1]), duration: match[2] };
+  });
+}
+
+/* One step per stage: a short rise to the rate, then the rate for the duration of the stage.
+ * The steps count from the start of k6, so two namespaces started at the same time have the same
+ * rate at the same time. */
+export function writeFlowScenario(stages) {
+  if (stages.length === 0) {
+    return {};
+  }
+  const peak = Math.max(...stages.map((stage) => stage.rate));
+  return {
+    writeFlow: {
+      exec: "writeFlow",
+      executor: "ramping-arrival-rate",
+      startRate: stages[0].rate,
+      timeUnit: "1s",
+      stages: stages.flatMap((stage) => [
+        { target: stage.rate, duration: "10s" },
+        { target: stage.rate, duration: stage.duration },
+      ]),
+      preAllocatedVUs: Math.ceil(
+        stages[0].rate * WRITE_FLOW_SECONDS_PER_ITERATION,
+      ),
+      maxVUs: Math.ceil(peak * WRITE_FLOW_SECONDS_PER_ITERATION),
+    },
+  };
+}
 
 /* No scenario if the rate is 0. A try takes about 100 ms, or up to 2 s after conflicts in a row
  * (CONFLICT_PAUSE_MAX_SECONDS), so maxVUs covers about 2 s per try. */
@@ -209,6 +285,59 @@ export function startInstance() {
     body.tenantId = TENANT_ID;
   }
   checkStatus(client.post("/v2/process-instances", body, NO_BODY), 200);
+}
+
+/* One iteration: starts an instance and works on its user task: assign, think, complete. The
+ * only read is the search for the task of this instance, by its process instance key. */
+export function writeFlow() {
+  const body = { processDefinitionId: PROCESS_ID, variables: START_PAYLOAD };
+  if (TENANT_ID) {
+    body.tenantId = TENANT_ID;
+  }
+  const start = client.post("/v2/process-instances", body);
+  if (!checkStatus(start, 200)) {
+    userTasksFailed.add(1, { step: "start", status: String(start.status) });
+    sleep(BACKOFF_SECONDS);
+    return;
+  }
+  const key = findUserTaskOf(ownCopy(start.json("processInstanceKey")));
+  if (key === undefined) {
+    writeFlowLookupTimeouts.add(1);
+    return;
+  }
+  const assignment = client.post(
+    `/v2/user-tasks/${key}/assignment`,
+    { assignee: `user-${__VU}`, allowOverride: false },
+    { ...NO_BODY, tags: { name: "/v2/user-tasks/{key}/assignment" } },
+  );
+  if (!checkStatus(assignment, 204)) {
+    onFailure("assign", assignment);
+    return;
+  }
+  sleep(thinkTime());
+  completeTask(key);
+}
+
+/* Waits for the user task of an instance: it shows in the search after the service tasks before
+ * it are done and the exporter has written it. Returns its key, or undefined after the attempts. */
+function findUserTaskOf(processInstanceKey) {
+  for (let attempt = 1; attempt <= WRITE_FLOW_LOOKUP_ATTEMPTS; attempt++) {
+    sleep(WRITE_FLOW_LOOKUP_PAUSE_SECONDS);
+    writeFlowLookups.add(1);
+    const search = client.post("/v2/user-tasks/search", {
+      filter: { processInstanceKey },
+      page: { limit: 1 },
+    });
+    if (!checkStatus(search, 200)) {
+      userTasksFailed.add(1, { step: "lookup", status: String(search.status) });
+      continue;
+    }
+    const items = search.json("items") || [];
+    if (items.length > 0) {
+      return ownCopy(items[0].userTaskKey);
+    }
+  }
+  return undefined;
 }
 
 /* One iteration: one user picks one task and works on it. */

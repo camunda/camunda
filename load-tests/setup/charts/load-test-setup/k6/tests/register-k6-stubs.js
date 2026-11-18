@@ -5,6 +5,7 @@ import { registerHooks } from "node:module";
 const stubs = {
   k6: new URL("./stubs/k6.js", import.meta.url).href,
   "k6/http": new URL("./stubs/k6-http.js", import.meta.url).href,
+  "k6/metrics": new URL("./stubs/k6-metrics.js", import.meta.url).href,
 };
 
 registerHooks({
