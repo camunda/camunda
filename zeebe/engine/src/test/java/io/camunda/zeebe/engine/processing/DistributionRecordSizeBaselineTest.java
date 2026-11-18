@@ -10,9 +10,6 @@ package io.camunda.zeebe.engine.processing;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordSizeBaseline;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
-import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,16 +28,10 @@ public final class DistributionRecordSizeBaselineTest {
     final var startPositions = RecordSizeBaseline.lastPositions(engine);
 
     // when
-    final long deploymentKey =
-        engine
-            .deployment()
-            .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
-            .deploy(RecordSizeBaseline.oidcClaims("demo"))
-            .getKey();
-    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-        .withDistributionIntent(DeploymentIntent.CREATE)
-        .withRecordKey(deploymentKey)
-        .await();
+    engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
+        .deploy(RecordSizeBaseline.oidcClaims("demo"));
 
     // then
     RecordSizeBaseline.assertMatches(engine, "deployment-distribution", startPositions);

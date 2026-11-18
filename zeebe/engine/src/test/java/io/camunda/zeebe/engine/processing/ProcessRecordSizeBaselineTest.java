@@ -55,7 +55,9 @@ public final class ProcessRecordSizeBaselineTest {
 
     // when
     final long processInstanceKey = createProcessInstance();
-    completeJob(jobKey(processInstanceKey, JOB_TYPE));
+    final long jobKey = jobKey(processInstanceKey, JOB_TYPE);
+    activateJob(JOB_TYPE);
+    completeJob(jobKey);
     awaitCompletion(processInstanceKey);
 
     // then
@@ -86,7 +88,9 @@ public final class ProcessRecordSizeBaselineTest {
         RecordToWrite.commandFromRequest(CLAIMS)
             .userTask(UserTaskIntent.COMPLETE, new UserTaskRecord().setUserTaskKey(userTaskKey))
             .key(userTaskKey));
-    completeJob(jobKey(processInstanceKey, "listener"));
+    final long listenerJobKey = jobKey(processInstanceKey, "listener");
+    activateJob("listener");
+    completeJob(listenerJobKey);
     awaitCompletion(processInstanceKey);
 
     // then
@@ -143,6 +147,7 @@ public final class ProcessRecordSizeBaselineTest {
     // when
     final long processInstanceKey = createProcessInstance();
     final long jobKey = jobKey(processInstanceKey, JOB_TYPE);
+    activateJob(JOB_TYPE);
     writeJobCommand(jobKey, JobIntent.FAIL, new JobRecord().setRetries(0).setErrorMessage("fail"));
     final long incidentKey =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -151,6 +156,7 @@ public final class ProcessRecordSizeBaselineTest {
             .getKey();
     writeJobCommand(jobKey, JobIntent.UPDATE_RETRIES, new JobRecord().setRetries(1));
     engine.incident().ofInstance(processInstanceKey).withKey(incidentKey).resolve(CLAIMS);
+    activateJob(JOB_TYPE);
     completeJob(jobKey);
     awaitCompletion(processInstanceKey);
 
@@ -209,6 +215,11 @@ public final class ProcessRecordSizeBaselineTest {
         .withType(type)
         .getFirst()
         .getKey();
+  }
+
+  /** A real worker activates the job before it completes or fails it. */
+  private void activateJob(final String type) {
+    engine.jobs().withType(type).withTimeout(Duration.ofHours(1).toMillis()).activate(CLAIMS);
   }
 
   private void completeJob(final long jobKey) {
