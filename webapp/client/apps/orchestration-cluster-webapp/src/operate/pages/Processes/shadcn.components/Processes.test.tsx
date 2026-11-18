@@ -282,13 +282,16 @@ describe('<Processes /> (design system)', () => {
 		await expect.element(screen.getByRole('group', {name: 'Variables'})).toHaveFocus();
 	});
 
-	it('should show the stored inline equals variable condition after a reload', async () => {
+	it('should summarize a single stored variable condition with an edit entry point after a reload', async () => {
 		setVariableConditions([{name: 'status', operator: 'equals', value: '"open"'}]);
 
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 
-		await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveValue('status');
-		await expect.element(screen.getByRole('textbox', {name: 'Value'})).toHaveValue('"open"');
+		await expect
+			.element(screen.getByRole('list', {name: 'Active variable filters'}).getByText('status equals "open"'))
+			.toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Edit conditions'})).toBeVisible();
+		await expect.element(screen.getByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
 	});
 
 	it('should clear the variable conditions when filters are reset', async () => {
@@ -297,7 +300,7 @@ describe('<Processes /> (design system)', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
 
-		await expect.element(screen.getByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('list', {name: 'Active variable filters'})).not.toBeInTheDocument();
 	});
 
 	it('should send the variable conditions in the instances request until the filters are reset', async ({worker}) => {

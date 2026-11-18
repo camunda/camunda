@@ -79,13 +79,8 @@ const VariableFilterModal: React.FC = () => {
 	const router = useRouter();
 	const isOpenedFromList = useLocation({select: ({state}) => state.operateVariableFilterOpenedFromList === true});
 	const storedConditions = useVariableConditions();
-	const inlineDraft = useLocation({select: ({state}) => state.operateVariableFilterDraft});
 	const [conditions, setConditions] = useState<VariableCondition[]>(() =>
-		inlineDraft !== undefined
-			? [{...inlineDraft, operator: 'equals'}]
-			: storedConditions.length > 0
-				? storedConditions
-				: [createDraft()],
+		storedConditions.length > 0 ? storedConditions : [createDraft()],
 	);
 	const [rowIds, setRowIds] = useState(() => createRowIds(conditions.length));
 	const [failedSubmit, setFailedSubmit] = useState<FailedSubmit | null>(null);

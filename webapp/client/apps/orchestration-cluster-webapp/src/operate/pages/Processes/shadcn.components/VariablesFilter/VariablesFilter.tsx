@@ -10,39 +10,35 @@ import {OPERATE_BASE} from '#/shared/operateBase';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {Button} from '@camunda/design-system';
-import {Pencil} from '@camunda/design-system/icons';
-import {getInlineCondition, isValueRequired, type VariableCondition} from '../../VariablesFilter/variableConditions';
+import {Pencil, Plus} from '@camunda/design-system/icons';
+import {isValueRequired, type VariableCondition} from '../../VariablesFilter/variableConditions';
 import {useVariableConditions} from '../../VariablesFilter/variableFilterStore';
 import {truncate} from '../../VariablesFilter/truncate';
-import {SingleConditionFields} from './SingleConditionFields';
 
 const VariablesFilter: React.FC = () => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const conditions = useVariableConditions();
-	const showInlineForm = conditions.length === 0 || getInlineCondition(conditions) !== undefined;
 
 	const getConditionLabel = ({name, operator, value}: VariableCondition) => {
 		const label = `${name} ${t(`operate.processes.variableFilter.operators.${operator}`)}`;
 		return isValueRequired(operator) ? `${label} ${truncate(value)}` : label;
 	};
 
-	if (showInlineForm) {
-		return <SingleConditionFields />;
-	}
-
 	return (
 		<div className="flex flex-col items-start gap-2">
-			<ul aria-label={t('operate.processes.variableFilter.activeConditions')} className="m-0 list-none p-0 text-sm">
-				{conditions.map((condition, index) => (
-					<li
-						key={`${index}-${condition.name}-${condition.operator}-${condition.value}`}
-						className="line-clamp-2 break-all"
-					>
-						{getConditionLabel(condition)}
-					</li>
-				))}
-			</ul>
+			{conditions.length > 0 && (
+				<ul aria-label={t('operate.processes.variableFilter.activeConditions')} className="m-0 list-none p-0 text-sm">
+					{conditions.map((condition, index) => (
+						<li
+							key={`${index}-${condition.name}-${condition.operator}-${condition.value}`}
+							className="line-clamp-2 break-all"
+						>
+							{getConditionLabel(condition)}
+						</li>
+					))}
+				</ul>
+			)}
 			<Button
 				variant="ghost"
 				size="sm"
@@ -54,8 +50,12 @@ const VariablesFilter: React.FC = () => {
 					})
 				}
 			>
-				<Pencil aria-hidden />
-				{t('operate.processes.variableFilter.editConditions')}
+				{conditions.length > 0 ? <Pencil aria-hidden /> : <Plus aria-hidden />}
+				{t(
+					conditions.length > 0
+						? 'operate.processes.variableFilter.editConditions'
+						: 'operate.processes.variableFilter.addCondition',
+				)}
 			</Button>
 		</div>
 	);

@@ -135,7 +135,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 			},
 			{
 				id: 'variable',
-				keys: ['variableName', 'variableValues'],
+				keys: [],
 				label: t('operate.processes.variableFilter.title'),
 				type: 'custom',
 				onRemove: () => setVariableConditions([]),
