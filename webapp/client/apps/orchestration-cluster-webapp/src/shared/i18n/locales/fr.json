@@ -1404,8 +1404,6 @@
 					"emptyMessage": "Aucune instance ne correspond à ce jeu de filtres",
 					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
 					"tableLabel": "Instances de processus",
-					"loadingPreviousPage": "Chargement des instances de processus précédentes",
-					"loadingNextPage": "Chargement des instances de processus suivantes",
 					"errorTitle": "Impossible de récupérer les données",
 					"errorDescription": "Une erreur s'est produite lors du chargement des instances. Réessayez."
 				},
@@ -1508,9 +1506,7 @@
 					"selectRow": "Sélectionner la ligne {{key}}",
 					"stateEvaluated": "Évaluée",
 					"stateFailed": "Échouée",
-					"tableLabel": "Instances de décision",
-					"loadingPreviousPage": "Chargement des instances de décision précédentes",
-					"loadingNextPage": "Chargement des instances de décision suivantes"
+					"tableLabel": "Instances de décision"
 				},
 				"toolbar": {
 					"delete": "Supprimer",
@@ -2147,9 +2143,7 @@
 					"date": "Date",
 					"result": "Résultat",
 					"actions": "Actions",
-					"tableLabel": "Journal des opérations",
-					"loadingPreviousPage": "Chargement des entrées précédentes du journal",
-					"loadingNextPage": "Chargement des entrées suivantes du journal"
+					"tableLabel": "Journal des opérations"
 				},
 				"emptyState": {
 					"noItemsTitle": "Aucune entrée dans le journal des opérations pour le moment",
@@ -2295,8 +2289,6 @@
 				"ds": {
 					"itemsTable": {
 						"tableLabel": "Éléments de l'opération par lots",
-						"loadingPreviousPage": "Chargement des éléments précédents",
-						"loadingNextPage": "Chargement d'autres éléments",
 						"expandFailure": "Afficher les détails de l'échec",
 						"collapseFailure": "Masquer les détails de l'échec",
 						"itemStatusPrefix": "Statut de l'élément"
@@ -2599,9 +2591,7 @@
 					"active_other": "{{count}} instances actives"
 				},
 				"sortableTable": {
-					"sortBy": "Trier par {{label}}",
-					"loadingPreviousPage": "Chargement des éléments précédents",
-					"loadingNextPage": "Chargement des éléments suivants"
+					"sortBy": "Trier par {{label}}"
 				}
 			}
 		}

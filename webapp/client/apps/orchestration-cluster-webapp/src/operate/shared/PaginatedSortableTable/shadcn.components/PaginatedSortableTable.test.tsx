@@ -45,8 +45,6 @@ async function renderTable(overrides: RenderOverrides = {}) {
 		ariaLabel: 'Process instances',
 		pagination: defaultPagination(),
 		'data-testid': 'table',
-		loadingPreviousPageLabel: 'Loading previous rows',
-		loadingNextPageLabel: 'Loading more rows',
 		...overrides,
 	} as React.ComponentProps<typeof PaginatedSortableTable<Row>>;
 	const rootRoute = createRootRoute();
@@ -79,20 +77,18 @@ describe('<PaginatedSortableTable />', () => {
 	describe('infinite scroll', () => {
 		const {getObserver} = setUpFakeIntersectionObserver();
 
+		function intersectSentinel(position: 'top' | 'bottom') {
+			getObserver().intersect(document.querySelector(`[data-slot="data-table-${position}-sentinel"]`)!);
+		}
+
 		it('should fetch the previous page when the top sentinel is reached', async () => {
 			// given
 			const fetchPreviousPage = vi.fn().mockResolvedValue(undefined);
 			const pagination = {...defaultPagination(), hasPreviousPage: true, fetchPreviousPage};
-			const screen = await renderTable({pagination, size: 'md'});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination, size: 'md'});
 
 			// when
-			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
-			observer.intersect(topSentinel);
+			intersectSentinel('top');
 
 			// then
 			await expect.poll(() => fetchPreviousPage.mock.calls.length).toBeGreaterThan(0);
@@ -102,16 +98,10 @@ describe('<PaginatedSortableTable />', () => {
 			// given
 			const fetchPreviousPage = vi.fn().mockResolvedValue(undefined);
 			const pagination = {...defaultPagination(), hasPreviousPage: false, fetchPreviousPage};
-			const screen = await renderTable({pagination});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination});
 
 			// when
-			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
-			observer.intersect(topSentinel);
+			intersectSentinel('top');
 
 			// then
 			expect(fetchPreviousPage).not.toHaveBeenCalled();
@@ -121,16 +111,10 @@ describe('<PaginatedSortableTable />', () => {
 			// given
 			const fetchNextPage = vi.fn().mockResolvedValue(undefined);
 			const pagination = {...defaultPagination(), hasNextPage: true, fetchNextPage};
-			const screen = await renderTable({pagination});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination});
 
 			// when
-			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
-			observer.intersect(bottomSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
-			observer.intersect(bottomSentinel);
+			intersectSentinel('bottom');
 
 			// then
 			expect(fetchNextPage).toHaveBeenCalled();
@@ -140,16 +124,10 @@ describe('<PaginatedSortableTable />', () => {
 			// given
 			const fetchNextPage = vi.fn().mockResolvedValue(undefined);
 			const pagination = {...defaultPagination(), hasNextPage: true, isFetchingNextPage: true, fetchNextPage};
-			const screen = await renderTable({pagination});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination});
 
 			// when
-			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
-			observer.intersect(bottomSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
-			observer.intersect(bottomSentinel);
+			intersectSentinel('bottom');
 
 			// then
 			expect(fetchNextPage).not.toHaveBeenCalled();
@@ -165,16 +143,10 @@ describe('<PaginatedSortableTable />', () => {
 				isFetchingNextPage: true,
 				fetchPreviousPage,
 			};
-			const screen = await renderTable({pagination});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination});
 
 			// when
-			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
-			observer.intersect(topSentinel);
+			intersectSentinel('top');
 
 			// then
 			expect(fetchPreviousPage).not.toHaveBeenCalled();
@@ -189,16 +161,10 @@ describe('<PaginatedSortableTable />', () => {
 				isFetchingPreviousPage: true,
 				fetchNextPage,
 			};
-			const screen = await renderTable({pagination});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination});
 
 			// when
-			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
-			observer.intersect(bottomSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
-			observer.intersect(bottomSentinel);
+			intersectSentinel('bottom');
 
 			// then
 			expect(fetchNextPage).not.toHaveBeenCalled();
