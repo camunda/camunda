@@ -28,7 +28,8 @@ class ClusterAdminBasicAuthPropertiesTest {
     final var env = env(Map.of());
 
     // when
-    final List<ClusterAdminUser> users = ClusterAdminBasicAuthProperties.loadAndValidate(env);
+    final List<ClusterAdminUser> users =
+        ClusterAdminBasicAuthProperties.loadAndValidate(env).getUsers();
 
     // then
     assertThat(users).isEmpty();
@@ -40,7 +41,8 @@ class ClusterAdminBasicAuthPropertiesTest {
     final var env = env(Map.of("camunda.security.cluster-admin.basic.users", ""));
 
     // when
-    final List<ClusterAdminUser> users = ClusterAdminBasicAuthProperties.loadAndValidate(env);
+    final List<ClusterAdminUser> users =
+        ClusterAdminBasicAuthProperties.loadAndValidate(env).getUsers();
 
     // then
     assertThat(users).isEmpty();
@@ -58,7 +60,8 @@ class ClusterAdminBasicAuthPropertiesTest {
                 "camunda.security.cluster-admin.basic.users[1].password", "secret2"));
 
     // when
-    final List<ClusterAdminUser> users = ClusterAdminBasicAuthProperties.loadAndValidate(env);
+    final List<ClusterAdminUser> users =
+        ClusterAdminBasicAuthProperties.loadAndValidate(env).getUsers();
 
     // then
     assertThat(users)

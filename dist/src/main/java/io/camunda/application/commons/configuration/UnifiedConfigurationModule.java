@@ -7,6 +7,9 @@
  */
 package io.camunda.application.commons.configuration;
 
+import io.camunda.application.commons.secrets.ConfigurationReferences;
+import io.camunda.application.commons.secrets.ConfigurationSecretStores;
+import io.camunda.application.commons.secrets.ConfigurationSecrets;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import org.springframework.context.annotation.Bean;
@@ -26,8 +29,25 @@ import org.springframework.core.env.Environment;
 public class UnifiedConfigurationModule {
 
   @Bean
+  public static ConfigurationSecrets configurationSecrets(final Environment environment) {
+    return new ConfigurationSecrets(environment);
+  }
+
+  @Bean
   public PhysicalTenantResolver physicalTenantResolver(
-      final Environment environment, final Camunda camunda) {
-    return PhysicalTenantResolver.of(environment, camunda);
+      final ConfigurationSecrets configurationSecrets, final Camunda camunda) {
+    return configurationSecrets.resolve(camunda);
+  }
+
+  @Bean
+  public ConfigurationSecretStores configurationSecretStores(
+      final ConfigurationSecrets configurationSecrets, final PhysicalTenantResolver resolver) {
+    return configurationSecrets.stores();
+  }
+
+  @Bean
+  public ConfigurationReferences configurationReferences(
+      final ConfigurationSecrets configurationSecrets, final PhysicalTenantResolver resolver) {
+    return configurationSecrets.references();
   }
 }

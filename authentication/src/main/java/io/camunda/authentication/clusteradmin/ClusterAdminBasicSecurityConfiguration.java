@@ -76,15 +76,22 @@ public class ClusterAdminBasicSecurityConfiguration {
       LoggerFactory.getLogger(ClusterAdminBasicSecurityConfiguration.class);
 
   @Bean
+  public ClusterAdminBasicAuthProperties clusterAdminBasicAuthProperties(
+      final Environment environment) {
+    return ClusterAdminBasicAuthProperties.loadAndValidate(environment);
+  }
+
+  @Bean
   @Order(ORDER_API)
   public SecurityFilterChain clusterAdminSecurityFilterChain(
       final HttpSecurity http,
-      final Environment environment,
+      final ClusterAdminBasicAuthProperties clusterAdminUsers,
       final PasswordEncoder passwordEncoder,
       final AuthFailureHandler authFailureHandler,
       final CamundaSecurityLibraryProperties properties)
       throws Exception {
-    http.authenticationManager(clusterAdminAuthenticationManager(environment, passwordEncoder));
+    http.authenticationManager(
+        clusterAdminAuthenticationManager(clusterAdminUsers, passwordEncoder));
 
     http.securityMatcher(CLUSTER_ADMIN_API_PATTERN)
         .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
@@ -125,8 +132,9 @@ public class ClusterAdminBasicSecurityConfiguration {
    * manager and a DB user could authenticate on {@code /cluster/v2/**}.
    */
   private AuthenticationManager clusterAdminAuthenticationManager(
-      final Environment environment, final PasswordEncoder passwordEncoder) {
-    final var users = ClusterAdminBasicAuthProperties.loadAndValidate(environment);
+      final ClusterAdminBasicAuthProperties clusterAdminUsers,
+      final PasswordEncoder passwordEncoder) {
+    final var users = clusterAdminUsers.getUsers();
 
     // The shared PasswordEncoder bean is present because this chain and that bean share the same
     // @ConditionalOnAuthenticationMethod(BASIC) gate. It encodes the configured passwords below and

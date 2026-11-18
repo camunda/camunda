@@ -160,12 +160,6 @@ public class SecretStoreConfiguration {
     }
   }
 
-  @Bean
-  public ConfigurationSecretStores configurationSecretStores(
-      final PhysicalTenantResolver resolver) {
-    return ConfigurationSecretStores.of(resolver);
-  }
-
   /**
    * The secrets configuration of every physical tenant, with the default tenant first: it is the
    * root configuration itself, which every other tenant inherits, so an invalid root value fails

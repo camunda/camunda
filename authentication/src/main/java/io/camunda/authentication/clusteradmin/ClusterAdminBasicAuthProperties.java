@@ -26,22 +26,31 @@ public final class ClusterAdminBasicAuthProperties {
 
   private static final String USERS_PROPERTY = "camunda.security.cluster-admin.basic.users";
 
-  private ClusterAdminBasicAuthProperties() {}
+  // Not final, so that the secret references in the users can be resolved in place.
+  private List<ClusterAdminUser> users;
+
+  private ClusterAdminBasicAuthProperties(final List<ClusterAdminUser> users) {
+    this.users = users;
+  }
 
   /**
    * Binds the configured cluster-admin Basic Auth users and validates them.
    *
    * @param environment the Spring {@link Environment} to bind from
-   * @return the validated list of configured users
+   * @return the validated configured users
    * @throws IllegalStateException if any entry has a blank/missing {@code name} or {@code
    *     password}, or if two entries share the same {@code name}
    */
-  public static List<ClusterAdminUser> loadAndValidate(final Environment environment) {
+  public static ClusterAdminBasicAuthProperties loadAndValidate(final Environment environment) {
     final List<ClusterAdminUser> users =
         Binder.get(environment)
             .bind(USERS_PROPERTY, Bindable.listOf(ClusterAdminUser.class))
             .orElse(List.of());
     validate(users);
+    return new ClusterAdminBasicAuthProperties(users);
+  }
+
+  public List<ClusterAdminUser> getUsers() {
     return users;
   }
 
