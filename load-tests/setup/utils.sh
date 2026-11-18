@@ -116,10 +116,17 @@ contains() {
 }
 
 # Parse and validate a Kubernetes DNS-1123 namespace label.
-# Adds "c8-" prefix if missing, then validates. On success, echoes the final
-# namespace name to stdout. Informational messages go to stderr. Exits on error.
+# Lowercases the input first, adds "c8-" prefix if missing, then validates.
+# On success, echoes the final namespace name to stdout. Informational messages
+# go to stderr. Exits on error.
 parse_namespace() {
-  local namespace="$1"
+  local original="$1"
+  local namespace
+  # Lowercase the input first (Kubernetes DNS-1123 labels require lowercase)
+  namespace=$(echo "$original" | tr '[:upper:]' '[:lower:]')
+  if [[ "$namespace" != "$original" ]]; then
+    echo "Namespace name lowercased: $original -> $namespace" >&2
+  fi
   if [[ ! "$namespace" =~ ^c8- ]]; then
     namespace="c8-$namespace"
     echo "Namespace prefix added: $namespace" >&2

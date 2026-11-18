@@ -103,7 +103,8 @@ Running `newLoadTest.sh` without arguments shows the `main` help:
 Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
 
 Arguments:
-  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
+  namespace          Base namespace name. Will be lowercased and prefixed with
+                     "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.

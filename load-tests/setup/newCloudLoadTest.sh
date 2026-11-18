@@ -9,7 +9,8 @@ usage() {
 Usage: newCloudLoadTest.sh <namespace>
 
 Arguments:
-  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
+  namespace          Base namespace name. Will be lowercased and prefixed with
+                     "c8-" if missing.
 
 Options:
   -h, --help         Show this help message.
@@ -37,6 +38,13 @@ fi
 
 
 namespace=$1
+
+# Normalize to lowercase (Kubernetes DNS-1123 labels require lowercase)
+original_namespace="$namespace"
+namespace=$(echo "$namespace" | tr '[:upper:]' '[:lower:]')
+if [[ "$namespace" != "$original_namespace" ]]; then
+  echo "Namespace name lowercased: $original_namespace -> $namespace"
+fi
 
 # Add c8- prefix if not present
 if [[ ! "$namespace" =~ ^c8- ]]; then
