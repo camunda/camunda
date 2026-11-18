@@ -22,6 +22,7 @@ import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.Definitions;
+import org.camunda.bpm.model.dmn.instance.ExtensionElements;
 import org.camunda.bpm.model.dmn.instance.LiteralExpression;
 import org.camunda.bpm.model.dmn.instance.Text;
 import org.slf4j.Logger;
@@ -29,10 +30,12 @@ import org.slf4j.LoggerFactory;
 
 public class MockDmnDecisionBuilderImpl implements MockDmnDecisionBuilder {
 
+  private static final String ZEEBE_NAMESPACE = "http://camunda.org/schema/zeebe/1.0";
   private static final Logger LOGGER = LoggerFactory.getLogger(MockDmnDecisionBuilderImpl.class);
 
   private final CamundaClient client;
   private String decisionId;
+  private String versionTag;
 
   public MockDmnDecisionBuilderImpl(final CamundaClient client) {
     this.client = client;
@@ -46,6 +49,7 @@ public class MockDmnDecisionBuilderImpl implements MockDmnDecisionBuilder {
 
   @Override
   public MockDmnDecisionBuilder withVersionTag(final String versionTag) {
+    this.versionTag = versionTag;
     return this;
   }
 
@@ -65,6 +69,15 @@ public class MockDmnDecisionBuilderImpl implements MockDmnDecisionBuilder {
     decision.setName(decisionId + "-decision-name");
     definitions.addChildElement(decision);
 
+    if (versionTag != null) {
+      final ExtensionElements extensionElements =
+          modelInstance.newInstance(ExtensionElements.class);
+      extensionElements
+          .addExtensionElement(ZEEBE_NAMESPACE, "versionTag")
+          .setAttributeValue("value", versionTag);
+      decision.setExtensionElements(extensionElements);
+    }
+
     final LiteralExpression literalExpression = modelInstance.newInstance(LiteralExpression.class);
     final Text text = modelInstance.newInstance(Text.class);
     text.setTextContent(jsonOutput);
@@ -72,8 +85,9 @@ public class MockDmnDecisionBuilderImpl implements MockDmnDecisionBuilder {
     decision.addChildElement(literalExpression);
 
     LOGGER.debug(
-        "Mock: Deploy a DMN [decisionId: '{}'] with decision output {}",
+        "Mock: Deploy a DMN [decisionId: '{}'] with version tag '{}' and decision output {}",
         decisionId,
+        versionTag,
         decisionOutput);
 
     final String resourceName = decisionId + ".dmn";
