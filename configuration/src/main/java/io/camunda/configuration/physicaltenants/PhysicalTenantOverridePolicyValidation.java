@@ -97,6 +97,8 @@ final class PhysicalTenantOverridePolicyValidation {
               "system.restore",
               // camunda.license.* — one license per installation
               "license.key",
+              // a policy of the whole node, which the static configuration of every tenant follows
+              "secrets.reject-literal-credentials",
               // camunda.api.* — a broker process has exactly one embedded gateway; a per-tenant
               // override of whether it runs at all, or of its bind address/port/SSL/long-polling
               // settings, is silently ignored (#56648): BrokerStartupProcess reads
