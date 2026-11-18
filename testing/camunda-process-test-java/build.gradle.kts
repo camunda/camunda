@@ -84,6 +84,7 @@ dependencies {
   implementation(project(":camunda-process-test-coverage"))
   api(libs.org.testcontainers.testcontainers)
   api(libs.org.testcontainers.testcontainers.elasticsearch)
+  implementation(libs.com.github.docker.java.docker.java.api)
   api(libs.org.junit.jupiter.junit.jupiter.api)
   api(libs.org.junit.platform.junit.platform.commons)
   api(libs.org.junit.jupiter.junit.jupiter.params)

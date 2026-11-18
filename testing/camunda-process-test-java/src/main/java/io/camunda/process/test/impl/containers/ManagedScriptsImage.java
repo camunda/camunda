@@ -213,7 +213,9 @@ public final class ManagedScriptsImage {
           String.format(
               "Managed scripts need Connectors %d.%d or later, but the Connectors Docker image"
                   + " version is '%s'. Set a newer version with"
-                  + " withConnectorsDockerImageVersion().",
+                  + " withConnectorsDockerImageVersion(), the property"
+                  + " 'connectorsDockerImageVersion' in camunda-container-runtime.properties, or"
+                  + " the Spring property 'camunda.process-test.connectors-docker-image-version'.",
               MIN_CONNECTORS_MAJOR_VERSION, MIN_CONNECTORS_MINOR_VERSION, connectorsVersion));
     }
   }

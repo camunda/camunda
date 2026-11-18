@@ -638,6 +638,10 @@ public class CamundaProcessTestExtension
    * Configure the Python version that managed scripts run with, such as {@code 3.13}. By default,
    * the latest version of the package repository of the Connectors image.
    *
+   * <p>Setting a version installs the package {@code python-3.X} of the package repository of
+   * {@code camunda/connectors-bundle}. It works only with a Connectors image based on {@code
+   * camunda/connectors-bundle}.
+   *
    * @param version the Python version, 3.10 or later
    * @return the extension builder
    */
@@ -649,6 +653,10 @@ public class CamundaProcessTestExtension
   /**
    * Configure the Node.js major version that managed scripts run with, such as {@code 22}. By
    * default, the latest version of the package repository of the Connectors image.
+   *
+   * <p>Setting a version installs the package {@code nodejs-NN} of the package repository of {@code
+   * camunda/connectors-bundle}. It works only with a Connectors image based on {@code
+   * camunda/connectors-bundle}.
    *
    * @param version the Node.js major version, 20 or later
    * @return the extension builder
