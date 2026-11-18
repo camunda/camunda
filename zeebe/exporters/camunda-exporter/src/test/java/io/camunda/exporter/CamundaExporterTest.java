@@ -401,11 +401,15 @@ final class CamundaExporterTest {
       testController.runScheduledTasks(Duration.ofSeconds(1));
       assertThat(testController.getPosition()).isEqualTo(whileMoved.getPosition());
 
-      // when — the clock is reset and a new record arrives
-      clock.advance(-120_000);
+      // a second record is buffered while the clock is still moved forward; the delay since
+      // the last flush has not elapsed, so export() does not flush it
       final var afterReset =
           protocolFactory.generateRecord(ValueType.VARIABLE, b -> b.withPosition(2L));
       exporter.export(afterReset);
+      assertThat(testController.getPosition()).isEqualTo(whileMoved.getPosition());
+
+      // when — the clock is reset; only the scheduled flush can export the buffered record
+      clock.advance(-120_000);
       clock.advance(1000);
       testController.runScheduledTasks(Duration.ofSeconds(1));
 
