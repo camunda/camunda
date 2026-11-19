@@ -72,6 +72,18 @@ final class EndpointManagerPhysicalTenantClaimsTest {
   }
 
   @Test
+  void shouldForwardEmptyGroupsWhenTheTenantConfiguresAGroupsClaim() {
+    // given the handler sets an empty list for a token without groups
+    final var endpointManager = endpointManager(oidcConfig(null, true), oidcConfig("groups", true));
+
+    // when
+    completeJob(endpointManager, observer(), List.of(), Map.of("sub", "alice"));
+
+    // then the engine must not fall back to the stored memberships of the principal
+    assertThat(sentClaims()).containsEntry(Authorization.USER_GROUPS_CLAIMS, List.of());
+  }
+
+  @Test
   void shouldForwardTokenClaimsWhenOnlyTheTenantEnablesAuthorizations() {
     // given
     final var endpointManager = endpointManager(oidcConfig(null, false), oidcConfig(null, true));
