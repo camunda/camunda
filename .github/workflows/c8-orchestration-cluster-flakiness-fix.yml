@@ -424,6 +424,8 @@ jobs:
           if [[ -n "$(jq -r '.ts // ""' <<< "$board")" ]]; then
             bash "$s/board-store.sh" publish "$date_key" > /dev/null \
               || echo "::warning::could not rewrite the daily board message"
+            bash "$s/board-store.sh" thread "$date_key" > /dev/null \
+              || echo "::warning::could not rewrite the merged-fixes reply"
             exit 0
           fi
 
@@ -438,6 +440,11 @@ jobs:
           bash "$s/board-store.sh" ts "$date_key" \
             "$(jq -r .ts <<< "$posted")" "$(jq -r .channel <<< "$posted")" > /dev/null \
             || echo "::warning::posted the board but could not store its message id"
+
+          # The merged fixes hang off the board as a thread reply, so the
+          # message itself stays about the day's own runs.
+          bash "$s/board-store.sh" thread "$date_key" > /dev/null \
+            || echo "::warning::could not post the merged-fixes reply"
 
       - name: Dispatch one run per test
         if: github.event_name == 'schedule' || inputs.dispatch

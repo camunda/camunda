@@ -6,8 +6,11 @@
 # chat.update needs that ID: handed the channel NAME it answers
 # channel_not_found, so a board posted by name would never update again.
 #
-#   board-slack.sh post   <channel>
+#   board-slack.sh post   <channel> [thread_ts]
 #   board-slack.sh update <channel> <ts>
+#
+# With a thread_ts the message is posted as a reply under that message instead
+# of into the channel.
 #
 # Requires SLACK_BOT_USER_OAUTH_TOKEN. A Slack error is reported and exits
 # non-zero so the caller can decide whether it is fatal -- for a fix run it is
@@ -22,8 +25,9 @@ text="$(cat)"
 case "$mode" in
   post)
     method=chat.postMessage
-    payload=$(jq -nc --arg channel "$channel" --arg text "$text" \
-      '{channel: $channel, text: $text, mrkdwn: true}')
+    payload=$(jq -nc --arg channel "$channel" --arg text "$text" --arg thread "${3-}" \
+      '{channel: $channel, text: $text, mrkdwn: true}
+       + (if $thread == "" then {} else {thread_ts: $thread} end)')
     ;;
   update)
     method=chat.update

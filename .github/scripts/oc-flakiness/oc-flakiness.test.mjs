@@ -4,7 +4,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {test} from 'node:test';
 
-import {initBoard, mergeTargets, render, setRow} from './board.mjs';
+import {initBoard, mergeTargets, render, renderPostMerge, setRow} from './board.mjs';
 import {cellForArtifact} from './cells.mjs';
 import {final, next} from './decide.mjs';
 import {pick} from './pick.mjs';
@@ -1064,7 +1064,7 @@ test('the board names every unsettled fix and sums up the ones that held', () =>
   });
 
   // when
-  const text = render(board, {now: new Date('2026-11-17T06:00:00Z')});
+  const text = renderPostMerge(board);
 
   // then
   assert.match(text, /Merged fixes — 5 under watch/);
@@ -1081,6 +1081,19 @@ test('the board names every unsettled fix and sums up the ones that held', () =>
     'the nights behind the count are what makes it worth reading',
   );
   assert.match(text, /1 of them merged before the report window starts/);
+  assert.doesNotMatch(
+    render(board, {now: new Date('2026-11-17T06:00:00Z')}),
+    /Merged fixes/,
+    'the board message carries the day\'s own runs; the merged fixes go in the thread',
+  );
+});
+
+test('there is no merged-fixes reply to post before anything has merged', () => {
+  // given
+  const board = initBoard({targets: [], date: '2026-11-17'});
+
+  // when / then
+  assert.equal(renderPostMerge(board), '');
 });
 
 test('a second pick in a day replaces the post-merge verdicts it carries', () => {

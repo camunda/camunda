@@ -28,7 +28,11 @@
 // "still running".
 //
 //   node board.mjs --render board.json [--now 2026-11-12T09:21:00Z]
-//     -> the Slack mrkdwn text
+//     -> the Slack mrkdwn text of the board message
+//
+//   node board.mjs --render-postmerge board.json
+//     -> the Slack mrkdwn text of the "Merged fixes" thread reply, or nothing
+//        when no merged fix is under watch
 //
 // A --set for a fingerprint the board does not carry is a no-op rather than an
 // error: a manually dispatched run names a board it was never listed on, and
@@ -192,7 +196,10 @@ function outcomeText(row) {
 }
 
 // The only part of the board measured outside the agent's own runs: for each
-// fix that merged, how the nightlies have treated the test since.
+// fix that merged, how the nightlies have treated the test since. It is a
+// thread reply rather than part of the board message: it grows with every fix
+// that merges and would otherwise push the day's own runs -- what the channel
+// opens the message for -- below the fold.
 //
 // A bare count answers nothing the channel asks -- "11 holding" reads the same
 // whether those fixes have survived six nights or one. So every fix that is
@@ -215,7 +222,6 @@ function postMergeLines(board) {
   if (early.length > 0) parts.push(`:hourglass: ${early.length} too early to tell`);
 
   const lines = [
-    '',
     `:shield: *Merged fixes — ${items.length} under watch*` +
       (parts.length > 0 ? ` — ${parts.join('  |  ')}` : ''),
   ];
@@ -249,6 +255,11 @@ function postMergeLines(board) {
   return lines;
 }
 
+// Empty when nothing has merged yet, which the caller reads as "post no reply".
+export function renderPostMerge(board) {
+  return postMergeLines(board).join('\n');
+}
+
 export function render(board, {now = new Date()} = {}) {
   const rows = board.rows ?? [];
   const stamp = new Date(now).toISOString().slice(11, 16);
@@ -261,7 +272,6 @@ export function render(board, {now = new Date()} = {}) {
     lines.push(
       ':seedling: *No test met the bar today* — every candidate was already covered by a fix branch or is still cooling down.',
     );
-    lines.push(...postMergeLines(board));
     if (board.run_url) {
       lines.push('', `<${board.run_url}|Pick run> :arrow_right:`);
     }
@@ -315,8 +325,6 @@ export function render(board, {now = new Date()} = {}) {
       ),
     );
   }
-
-  lines.push(...postMergeLines(board));
 
   if (board.run_url) {
     lines.push('', `<${board.run_url}|Pick run> :arrow_right:`);
@@ -372,6 +380,13 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
         ),
       )}\n`,
     );
+  } else if (args['render-postmerge'] !== undefined) {
+    const board = readJson(args['render-postmerge'], null);
+    if (!board) {
+      console.error(`board.mjs: cannot read ${args['render-postmerge']}`);
+      process.exit(2);
+    }
+    process.stdout.write(renderPostMerge(board));
   } else if (args.render !== undefined) {
     const board = readJson(args.render, null);
     if (!board) {
@@ -380,7 +395,9 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     }
     process.stdout.write(render(board, {now: args.now ? new Date(args.now) : new Date()}));
   } else {
-    console.error('board.mjs: one of --init, --set, --merge or --render is required');
+    console.error(
+      'board.mjs: one of --init, --set, --merge, --render or --render-postmerge is required',
+    );
     process.exit(2);
   }
 }
