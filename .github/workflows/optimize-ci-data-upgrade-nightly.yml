@@ -140,7 +140,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Retrigger job
-        uses: camunda/infra-global-github-actions/rerun-failed-run@6644ac7ceab8e1b32359cc25a5161c46156fc319 # rerun-failed-run-1.2.0
+        uses: camunda/infra-global-github-actions/rerun-failed-run@8be41360dabd3f6955420d8e5d7f230c3f6c27f7 # rerun-failed-run-1.2.1
         with:
           error-messages: |
             lost communication with the server
