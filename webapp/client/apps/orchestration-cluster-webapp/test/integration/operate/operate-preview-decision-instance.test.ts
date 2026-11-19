@@ -176,6 +176,22 @@ test.describe('Operate Decision Instance DS preview (/operate-preview/decisions/
 		await expect(decision).toBeInViewport({ratio: 1});
 	});
 
+	test('should keep the inputs, outputs and header reachable next to the DRD panel on a narrow screen', async ({
+		page,
+		operateDecisionInstancePage,
+	}) => {
+		await page.setViewportSize({width: 1024, height: 768});
+		await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_ID);
+		await expect(operateDecisionInstancePage.drdPanel).toBeVisible();
+
+		const inputs = await page.getByRole('heading', {name: 'Inputs'}).boundingBox();
+		const outputs = await page.getByRole('heading', {name: 'Outputs'}).boundingBox();
+		expect(outputs!.y).toBeGreaterThan(inputs!.y);
+		expect(outputs!.x).toBe(inputs!.x);
+
+		await page.getByTestId('instance-header').getByRole('link').last().hover({timeout: 5000});
+	});
+
 	test('should navigate to the related evaluated decision selected in the DRD', async ({
 		network,
 		page,

@@ -175,7 +175,7 @@ const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPa
 			<DecisionInstanceHeading />
 			<div className={cn('relative flex', isPending ? 'h-dvh' : 'h-full')}>
 				<div className="flex min-w-0 grow flex-col">
-					<div>{header}</div>
+					<div className="overflow-x-auto [&>header]:min-w-max">{header}</div>
 					<div ref={splitContainerRef} className="relative min-h-0 grow">
 						<ResizablePanel
 							panelId="decision-detail-vertical-panel"

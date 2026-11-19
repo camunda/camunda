@@ -78,13 +78,14 @@ describe('<VariablesPanel />', () => {
 
 			await expect.poll(() => panel.element().getBoundingClientRect().width).toBeGreaterThan(400);
 
-			const dragger = screen
-				.getByTestId('decision-instance-variables-panel')
-				.element()
-				.querySelector<HTMLElement>('.__dbk__dragger.Horizontal');
-			expect(dragger).not.toBeNull();
+			const findDragger = () =>
+				screen
+					.getByTestId('decision-instance-variables-panel')
+					.element()
+					.querySelector<HTMLElement>('.__dbk__dragger.Horizontal');
+			await expect.poll(findDragger).not.toBeNull();
 
-			await userEvent.dragAndDrop(dragger as HTMLElement, panel);
+			await userEvent.dragAndDrop(findDragger() as HTMLElement, panel);
 
 			await expect.poll(() => panel.element().getBoundingClientRect().width).toBeLessThan(360);
 			expect(panel.element().getBoundingClientRect().width).toBeGreaterThanOrEqual(
