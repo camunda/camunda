@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.record.InternalOperationType;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -78,6 +80,72 @@ class BufferedProcessingResultBuilderTest {
     final var response = result.getProcessingResponse().orElseThrow();
     final var responseEntry = response.responseValue();
     assertThat(responseEntry.recordMetadata().getBatchOperationReference()).isEqualTo(12345L);
+  }
+
+  @Test
+  void shouldAppendInternalOperationReferenceToFollowUps() {
+    // given
+    final var reference = InternalOperationReference.policyUpdate(123L);
+    final var builder = new BufferedProcessingResultBuilder(LARGE_BATCH_PREDICATE);
+    builder.appendInternalOperationReferenceToFollowUps(() -> reference);
+
+    // when
+    for (final var recordType :
+        List.of(RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND_REJECTION)) {
+      builder.appendRecordReturnEither(
+          1L,
+          new ProcessInstanceCreationRecord(),
+          new RecordMetadata().recordType(recordType).intent(ProcessInstanceCreationIntent.CREATE));
+    }
+
+    // then
+    assertThat(builder.build().getRecordBatch().entries())
+        .extracting(entry -> ((RecordBatchEntry) entry).recordMetadata().getInternalOperation())
+        .containsOnly(reference);
+  }
+
+  @Test
+  void shouldPassOnUnknownInternalOperationTypeCode() {
+    // given - a command written by a newer version with a type code this version doesn't know
+    final var reference = InternalOperationReference.ofStored(200, 123L);
+    final var builder = new BufferedProcessingResultBuilder(LARGE_BATCH_PREDICATE);
+    builder.appendInternalOperationReferenceToFollowUps(() -> reference);
+
+    // when
+    builder.appendRecordReturnEither(
+        1L,
+        new ProcessInstanceCreationRecord(),
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .intent(ProcessInstanceCreationIntent.CREATED));
+
+    // then
+    final var metadata =
+        ((RecordBatchEntry) builder.build().getRecordBatch().entries().getFirst()).recordMetadata();
+    assertThat(metadata.getInternalOperation().type()).isEqualTo(InternalOperationType.UNKNOWN);
+    assertThat(metadata.getInternalOperationTypeCode()).isEqualTo(200);
+  }
+
+  @Test
+  void shouldKeepInternalOperationReferenceOfFollowUp() {
+    // given
+    final var builder = new BufferedProcessingResultBuilder(LARGE_BATCH_PREDICATE);
+    builder.appendInternalOperationReferenceToFollowUps(
+        () -> InternalOperationReference.policyUpdate(123L));
+    final var ownReference = InternalOperationReference.policyUpdate(456L);
+
+    // when
+    builder.appendRecordReturnEither(
+        1L,
+        new ProcessInstanceCreationRecord(),
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(ProcessInstanceCreationIntent.CREATE)
+            .internalOperation(ownReference));
+
+    // then
+    final var entry = (RecordBatchEntry) builder.build().getRecordBatch().entries().getFirst();
+    assertThat(entry.recordMetadata().getInternalOperation()).isEqualTo(ownReference);
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/69323")

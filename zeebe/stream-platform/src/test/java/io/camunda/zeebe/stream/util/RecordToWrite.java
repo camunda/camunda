@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.util;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.record.InternalOperationType;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -78,6 +80,11 @@ public final class RecordToWrite implements LogAppendEntry {
   public static RecordToWrite rejection() {
     final RecordMetadata recordMetadata = new RecordMetadata();
     return new RecordToWrite(recordMetadata.recordType(RecordType.COMMAND_REJECTION));
+  }
+
+  public RecordToWrite internalOperation(final InternalOperationType type, final long reference) {
+    recordMetadata.internalOperation(InternalOperationReference.of(type, reference));
+    return this;
   }
 
   public RecordToWrite job(final JobIntent intent) {

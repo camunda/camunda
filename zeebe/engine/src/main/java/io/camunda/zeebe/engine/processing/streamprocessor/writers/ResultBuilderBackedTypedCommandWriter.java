@@ -65,7 +65,8 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
             .rejectionReason("")
             .operationReference(commandMetadata.operationReference())
             .batchOperationReference(commandMetadata.batchOperationReference())
-            .authorization(commandMetadata.authInfo());
+            .authorization(commandMetadata.authInfo())
+            .internalOperation(commandMetadata.internalOperationReference());
 
     resultBuilder().appendRecord(key, value, metadata);
   }
