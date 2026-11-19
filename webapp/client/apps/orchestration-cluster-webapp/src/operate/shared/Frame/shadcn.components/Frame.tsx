@@ -33,7 +33,7 @@ const Frame: React.FC<{frame?: FrameProps; children: React.ReactNode}> = ({frame
 				<div
 					className={cn(
 						typographyVariants({variant: 'body-sm'}),
-						'flex items-center bg-[var(--info-action-default)] pl-4 font-bold text-[var(--info-action-foreground)]',
+						'flex items-center bg-[var(--info-action-default)] pl-4 font-bold text-[var(--info-action-foreground)] dark:text-[var(--background)]',
 					)}
 				>
 					{headerTitle}
