@@ -160,10 +160,11 @@ public class CommandDistributionIdempotencyTest {
           ReflectionSupport.findAllClassesInPackage(
               "io.camunda.zeebe.engine.processing",
               // also the processors that extend an abstract distributed processor, like the
-              // identity processors
+              // identity processors; anonymous classes are test doubles, not engine processors
               c ->
                   DistributedTypedRecordProcessor.class.isAssignableFrom(c)
                       && !c.isInterface()
+                      && !c.isAnonymousClass()
                       && !Modifier.isAbstract(c.getModifiers()),
               ignored -> true));
 
