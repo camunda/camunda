@@ -135,7 +135,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.physicalTenantIds = requireNonNull(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
     backupReadRateLimiter =
-        BackupStoreFactory.createReadRateLimiter(configuration.getData().getBackup());
+        BackupStoreFactory.createReadRateLimiter(
+            configuration.getData().getBackup(),
+            this.physicalTenantContexts.values().stream()
+                .map(context -> context.config().getData().getBackup())
+                .toList());
   }
 
   @Override

@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -183,7 +184,7 @@ final class BackupStoreCfgTest {
     final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
 
     // when
-    final var limiter = BackupStoreFactory.createReadRateLimiter(backup);
+    final var limiter = BackupStoreFactory.createReadRateLimiter(backup, List.of());
 
     // then
     assertThat(backup.getMaxReadRate()).isNull();
@@ -198,7 +199,7 @@ final class BackupStoreCfgTest {
     backup.setMaxReadRate(DataSize.ofMegabytes(50));
 
     // when
-    final var limiter = BackupStoreFactory.createReadRateLimiter(backup);
+    final var limiter = BackupStoreFactory.createReadRateLimiter(backup, List.of());
 
     // then
     assertThat(limiter.isUnlimited()).isFalse();
@@ -213,8 +214,8 @@ final class BackupStoreCfgTest {
     backup.setMaxReadRate(DataSize.ofMegabytes(50));
 
     // when
-    final var first = BackupStoreFactory.createReadRateLimiter(backup);
-    final var second = BackupStoreFactory.createReadRateLimiter(backup);
+    final var first = BackupStoreFactory.createReadRateLimiter(backup, List.of());
+    final var second = BackupStoreFactory.createReadRateLimiter(backup, List.of());
 
     // then
     assertThat(first).isNotSameAs(second);
@@ -235,11 +236,27 @@ final class BackupStoreCfgTest {
       backup.setMaxReadRate(DataSize.ofMegabytes(50));
 
       // when
-      final var limiter = BackupStoreFactory.createReadRateLimiter(backup);
+      final var limiter = BackupStoreFactory.createReadRateLimiter(backup, List.of());
 
       // then
       assertThat(limiter.isUnlimited()).as("limiter for store %s", store).isTrue();
     }
+  }
+
+  @Test
+  void shouldLimitReadRateWhenOnlyAPhysicalTenantBacksUpToS3() {
+    // given - the store is set per physical tenant, while the read rate is broker-wide
+    final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
+    backup.setMaxReadRate(DataSize.ofMegabytes(50));
+    final var tenantBackup = new BackupCfg();
+    tenantBackup.setStore(BackupStoreType.S3);
+
+    // when
+    final var limiter = BackupStoreFactory.createReadRateLimiter(backup, List.of(tenantBackup));
+
+    // then - all partitions of the broker share one disk, whichever tenant they belong to
+    assertThat(backup.getStore()).isEqualTo(BackupStoreType.NONE);
+    assertThat(limiter.isUnlimited()).isFalse();
   }
 
   @Test
@@ -250,7 +267,7 @@ final class BackupStoreCfgTest {
     backup.setMaxReadRate(DataSize.ofBytes(BackupReadRateLimiter.MIN_BYTES_PER_SECOND - 1));
 
     // when - then
-    assertThatThrownBy(() -> BackupStoreFactory.createReadRateLimiter(backup))
+    assertThatThrownBy(() -> BackupStoreFactory.createReadRateLimiter(backup, List.of()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("at least " + BackupReadRateLimiter.MIN_BYTES_PER_SECOND);
   }
