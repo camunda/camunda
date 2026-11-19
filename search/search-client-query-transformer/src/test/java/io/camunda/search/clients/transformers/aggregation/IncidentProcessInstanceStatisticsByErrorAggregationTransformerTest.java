@@ -129,7 +129,7 @@ class IncidentProcessInstanceStatisticsByErrorAggregationTransformerTest {
             null,
             sort,
             new SearchQueryPage(
-                from, size, null, null, SearchQueryPage.SearchQueryResultType.PAGINATED));
+                from, size, null, null, SearchQueryPage.SearchQueryResultType.PAGINATED, null));
 
     // when
     final List<SearchAggregator> aggregations =

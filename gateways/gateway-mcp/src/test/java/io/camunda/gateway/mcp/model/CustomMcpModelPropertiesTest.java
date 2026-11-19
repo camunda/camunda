@@ -91,7 +91,7 @@ public class CustomMcpModelPropertiesTest {
         Arguments.argumentSet(
             "SearchQueryPageRequest",
             SearchQueryPageRequest.class,
-            Set.of("after", "before", "from", "limit")),
+            Set.of("after", "before", "from", "limit", "totalItemsAccuracy")),
         Arguments.argumentSet(
             "UserTaskFilter",
             UserTaskFilter.class,

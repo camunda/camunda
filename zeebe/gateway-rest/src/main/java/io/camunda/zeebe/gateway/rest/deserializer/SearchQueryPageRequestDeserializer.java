@@ -16,6 +16,7 @@ import io.camunda.gateway.protocol.model.LimitPagination;
 import io.camunda.gateway.protocol.model.OffsetPagination;
 import io.camunda.gateway.protocol.model.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -25,12 +26,14 @@ public class SearchQueryPageRequestDeserializer
   private static final String OFFSET_PAGINATION_FIELD = "from";
   private static final String AFTER_PAGINATION_KEY = "after";
   private static final String BEFORE_PAGINATION_KEY = "before";
+  private static final String TOTAL_ITEMS_ACCURACY_FIELD = "totalItemsAccuracy";
   private static final List<String> SUPPORTED_FIELDS =
       List.of(
           OFFSET_PAGINATION_FIELD,
           AFTER_PAGINATION_KEY,
           BEFORE_PAGINATION_KEY,
-          LIMIT_PAGINATION_FIELD);
+          LIMIT_PAGINATION_FIELD,
+          TOTAL_ITEMS_ACCURACY_FIELD);
 
   @Override
   protected List<String> getSupportedFields() {
@@ -50,8 +53,13 @@ public class SearchQueryPageRequestDeserializer
   }
 
   @Override
-  protected void validateFields(final Set<String> presentFields) {
+  protected void validateFields(final Set<String> allPresentFields) {
+    final Set<String> presentFields = new HashSet<>(allPresentFields);
+    presentFields.remove(TOTAL_ITEMS_ACCURACY_FIELD);
     if (presentFields.isEmpty()) {
+      if (allPresentFields.contains(TOTAL_ITEMS_ACCURACY_FIELD)) {
+        return;
+      }
       throw new DeserializationException(
           ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(getSupportedFields()));
     }

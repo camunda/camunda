@@ -33,6 +33,15 @@ components:
           default: 100
           minimum: 0
           maximum: 10000
+        totalItemsAccuracy:
+          description: |
+            Counts the response's `totalItems` accurately up to this many items. If more items match, `totalItems` equals this value and `hasMoreTotalItems` is true. Counting more items costs more, so request only what is needed; combine with `limit: 0` to count without fetching items. Omit it to use the data layer's default cap. Has no effect on data layers whose count is always accurate.
+          type: integer
+          format: int32
+          minimum: 1
+      x-properties-added-in-version:
+        - propertyName: totalItemsAccuracy
+          addedInVersion: "8.11"
 
     OffsetPagination:
       type: object
@@ -49,11 +58,19 @@ components:
           format: int32
           default: 100
           minimum: 0
+        totalItemsAccuracy:
+          description: |
+            Counts the response's `totalItems` accurately up to this many items. If more items match, `totalItems` equals this value and `hasMoreTotalItems` is true. Counting more items costs more, so request only what is needed; combine with `limit: 0` to count without fetching items. Omit it to use the data layer's default cap. Has no effect on data layers whose count is always accurate.
+          type: integer
+          format: int32
+          minimum: 1
       x-properties-added-in-version:
         - propertyName: from
           addedInVersion: "8.6"
         - propertyName: limit
           addedInVersion: "8.6"
+        - propertyName: totalItemsAccuracy
+          addedInVersion: "8.11"
 
     CursorForwardPagination:
       type: object
@@ -70,11 +87,19 @@ components:
           default: 100
           minimum: 0
           maximum: 10000
+        totalItemsAccuracy:
+          description: |
+            Counts the response's `totalItems` accurately up to this many items. If more items match, `totalItems` equals this value and `hasMoreTotalItems` is true. Counting more items costs more, so request only what is needed; combine with `limit: 0` to count without fetching items. Omit it to use the data layer's default cap. Has no effect on data layers whose count is always accurate.
+          type: integer
+          format: int32
+          minimum: 1
       x-properties-added-in-version:
         - propertyName: after
           addedInVersion: "8.8"
         - propertyName: limit
           addedInVersion: "8.6"
+        - propertyName: totalItemsAccuracy
+          addedInVersion: "8.11"
 
     CursorBackwardPagination:
       type: object
@@ -91,9 +116,17 @@ components:
           default: 100
           minimum: 0
           maximum: 10000
+        totalItemsAccuracy:
+          description: |
+            Counts the response's `totalItems` accurately up to this many items. If more items match, `totalItems` equals this value and `hasMoreTotalItems` is true. Counting more items costs more, so request only what is needed; combine with `limit: 0` to count without fetching items. Omit it to use the data layer's default cap. Has no effect on data layers whose count is always accurate.
+          type: integer
+          format: int32
+          minimum: 1
       x-properties-added-in-version:
         - propertyName: before
           addedInVersion: "8.8"
+        - propertyName: totalItemsAccuracy
+          addedInVersion: "8.11"
 
     SearchQueryResponse:
       type: object

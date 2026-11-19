@@ -241,6 +241,32 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldPassTotalItemsAccuracyToSearch() {
+    when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+            {
+              "page": { "limit": 0, "totalItemsAccuracy": 20000 }
+            }
+            """;
+
+    webClient
+        .post()
+        .uri(INCIDENT_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(incidentServices)
+        .search(
+            eq(new IncidentQuery.Builder().page(p -> p.size(0).trackTotalHits(20000)).build()),
+            any());
+  }
+
+  @Test
   void shouldSearchIncidentWithEmptyQuery() {
     // given
     when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);

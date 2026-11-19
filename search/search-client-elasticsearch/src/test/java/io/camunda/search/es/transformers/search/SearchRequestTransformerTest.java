@@ -63,6 +63,10 @@ public class SearchRequestTransformerTest {
                                     SearchQueryBuilders.exists("foo"),
                                     SearchQueryBuilders.exists("bar"))))),
             "{'query':{'bool':{'should':[{'exists':{'field':'foo'}},{'exists':{'field':'bar'}}]}}}"),
+        // WITH TRACK TOTAL HITS
+        Arguments.arguments(
+            SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").trackTotalHits(20000)),
+            "{'track_total_hits':20000}"),
         // WITH FROM
         Arguments.arguments(
             SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").from(1)), "{'from':1}"),

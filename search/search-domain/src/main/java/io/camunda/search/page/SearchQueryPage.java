@@ -11,7 +11,12 @@ import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
 public record SearchQueryPage(
-    Integer from, Integer size, String after, String before, SearchQueryResultType resultType) {
+    Integer from,
+    Integer size,
+    String after,
+    String before,
+    SearchQueryResultType resultType,
+    Integer trackTotalHits) {
 
   public static final Integer DEFAULT_FROM = 0;
   public static final Integer DEFAULT_SIZE = 100;
@@ -38,7 +43,13 @@ public record SearchQueryPage(
   }
 
   public SearchQueryPage sanitize() {
-    return new Builder().from(from).size(size).after(after).before(before).build();
+    return new Builder()
+        .from(from)
+        .size(size)
+        .after(after)
+        .before(before)
+        .trackTotalHits(trackTotalHits)
+        .build();
   }
 
   public static SearchQueryPage of(final Function<Builder, ObjectBuilder<SearchQueryPage>> fn) {
@@ -51,6 +62,7 @@ public record SearchQueryPage(
     private Integer size = DEFAULT_SIZE;
     private String after;
     private String before;
+    private Integer trackTotalHits;
 
     public Builder from(final Integer value) {
       from = value;
@@ -72,12 +84,22 @@ public record SearchQueryPage(
       return this;
     }
 
+    public Builder trackTotalHits(final Integer value) {
+      trackTotalHits = value;
+      return this;
+    }
+
     @Override
     public SearchQueryPage build() {
       final var sanitizedFrom = (from == null) ? DEFAULT_FROM : Math.max(0, from);
       final var sanitizedSize = (size == null) ? DEFAULT_SIZE : Math.max(0, size);
       return new SearchQueryPage(
-          sanitizedFrom, sanitizedSize, after, before, SearchQueryResultType.PAGINATED);
+          sanitizedFrom,
+          sanitizedSize,
+          after,
+          before,
+          SearchQueryResultType.PAGINATED,
+          trackTotalHits);
     }
   }
 

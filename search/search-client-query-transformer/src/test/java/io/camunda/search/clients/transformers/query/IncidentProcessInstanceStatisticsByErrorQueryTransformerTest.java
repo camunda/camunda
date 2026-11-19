@@ -182,7 +182,7 @@ public class IncidentProcessInstanceStatisticsByErrorQueryTransformerTest {
                     .sort(sort)
                     .page(
                         new SearchQueryPage(
-                            from, size, null, null, SearchQueryResultType.PAGINATED)));
+                            from, size, null, null, SearchQueryResultType.PAGINATED, null)));
 
     // when
     final var searchRequest = transformQuery(query);

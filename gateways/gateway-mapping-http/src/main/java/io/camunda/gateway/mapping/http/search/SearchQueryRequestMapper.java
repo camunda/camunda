@@ -1063,22 +1063,33 @@ public final class SearchQueryRequestMapper {
   private static SearchQueryPage innerToSearchQueryPage(
       final CursorBackwardPagination requestedPage) {
     return SearchQueryPage.of(
-        (p) -> p.size(requestedPage.getLimit()).before(requestedPage.getBefore()));
+        (p) ->
+            p.size(requestedPage.getLimit())
+                .before(requestedPage.getBefore())
+                .trackTotalHits(requestedPage.getTotalItemsAccuracy()));
   }
 
   private static SearchQueryPage innerToSearchQueryPage(
       final CursorForwardPagination requestedPage) {
     return SearchQueryPage.of(
-        (p) -> p.size(requestedPage.getLimit()).after(requestedPage.getAfter()));
+        (p) ->
+            p.size(requestedPage.getLimit())
+                .after(requestedPage.getAfter())
+                .trackTotalHits(requestedPage.getTotalItemsAccuracy()));
   }
 
   private static SearchQueryPage innerToSearchQueryPage(final OffsetPagination requestedPage) {
     return SearchQueryPage.of(
-        (p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom()));
+        (p) ->
+            p.size(requestedPage.getLimit())
+                .from(requestedPage.getFrom())
+                .trackTotalHits(requestedPage.getTotalItemsAccuracy()));
   }
 
   private static SearchQueryPage innerToSearchQueryPage(final LimitPagination requestedPage) {
-    return SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()));
+    return SearchQueryPage.of(
+        (p) ->
+            p.size(requestedPage.getLimit()).trackTotalHits(requestedPage.getTotalItemsAccuracy()));
   }
 
   private static Either<ProblemDetail, Void> validateProcessDefinitionIsLatestVersionConstraints(

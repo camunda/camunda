@@ -799,6 +799,28 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByText('Failed')).toBeVisible();
 	});
 
+	it('should show the exact count when the total is only a lower bound', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				schema: z.object({page: z.object({limit: z.literal(0), totalItemsAccuracy: z.number()})}),
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({page: {totalItems: 25000, hasMoreTotalItems: false}}),
+				),
+				failureResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1'})],
+						page: {totalItems: 10000, hasMoreTotalItems: true},
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
+		);
+
+		const screen = await renderInstancesTable();
+		const panel = screen.getByRole('region', {name: 'Process Instances Panel'});
+		await expect.element(panel.getByText(/25000 results/)).toBeVisible();
+	});
+
 	it('should not request another page when the reported total is exact', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({

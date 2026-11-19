@@ -30,6 +30,7 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {useProcessInstancesSearch} from './useProcessInstancesSearch';
+import {useExactProcessInstancesCount} from './useExactProcessInstancesCount';
 import {
 	batchOperationItemsForInstancesQueryOptions,
 	batchOperationItemsQueryOptions,
@@ -137,8 +138,9 @@ const InstancesTable: React.FC<Props> = ({
 	const {t} = useTranslation();
 	const {
 		processInstances,
-		totalCount,
-		hasMoreTotalItems,
+		totalCount: cappedTotalCount,
+		hasMoreTotalItems: cappedHasMoreTotalItems,
+		filter,
 		status,
 		isFetching,
 		isPlaceholderData,
@@ -149,6 +151,9 @@ const InstancesTable: React.FC<Props> = ({
 		hasNextPage,
 		fetchNextPage,
 	} = useProcessInstancesSearch(search, mode !== 'batch-modification');
+	const exactCount = useExactProcessInstancesCount(filter, cappedHasMoreTotalItems);
+	const totalCount = exactCount.data?.totalItems ?? cappedTotalCount;
+	const hasMoreTotalItems = exactCount.data?.hasMoreTotalItems ?? cappedHasMoreTotalItems;
 	const selection = useProcessInstancesSelection(search, processInstances, totalCount, hasMoreTotalItems);
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
