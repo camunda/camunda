@@ -24,15 +24,21 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.ResourceMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class ScriptResourceDeploymentTest {
 
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Test
   public void shouldReadIdAndVersionTagFromPythonHeader() {
@@ -468,7 +474,7 @@ public class ScriptResourceDeploymentTest {
     final var v1 = deployScript(scriptV1, "linked_script.py");
     deployScript(scriptV2, "linked_script.py");
 
-    engine
+    ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess("linked-script-process")
@@ -490,7 +496,7 @@ public class ScriptResourceDeploymentTest {
 
     // when
     final long processInstanceKey =
-        engine.processInstance().ofBpmnProcessId("linked-script-process").create();
+        ENGINE.processInstance().ofBpmnProcessId("linked-script-process").create();
 
     // then
     final var job =
@@ -508,13 +514,13 @@ public class ScriptResourceDeploymentTest {
 
   private ResourceMetadataValue deployScript(final String script, final String fileName) {
     final var deployment =
-        engine.deployment().withJsonResource(script.getBytes(UTF_8), fileName).deploy();
+        ENGINE.deployment().withJsonResource(script.getBytes(UTF_8), fileName).deploy();
     return deployment.getValue().getResourceMetadata().getFirst();
   }
 
   private Record<?> deployRejectedScript(final String script, final String fileName) {
     final var rejection =
-        engine
+        ENGINE
             .deployment()
             .withJsonResource(script.getBytes(UTF_8), fileName)
             .expectRejection()
