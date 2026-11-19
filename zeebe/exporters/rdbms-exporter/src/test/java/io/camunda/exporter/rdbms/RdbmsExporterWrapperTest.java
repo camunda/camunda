@@ -381,9 +381,11 @@ class RdbmsExporterWrapperTest {
     // then - verify that partition 1 specific handlers are NOT registered
     final var registeredHandlers = exporterWrapper.getExporter().getRegisteredHandlers();
 
+    // the PROCESS handler runs on every partition to fill the process cache from the distributed
+    // deployment; only the deployment partition writes the definition
     assertThat(registeredHandlers)
-        .as("Should not register PROCESS handler on partition 2")
-        .doesNotContainKey(ValueType.PROCESS);
+        .as("Should register PROCESS handler on partition 2 to fill the process cache")
+        .containsKey(ValueType.PROCESS);
     assertThat(registeredHandlers)
         .as("Should not register PROCESS_DEFINITION_SUSPENSION handler on partition 2")
         .doesNotContainKey(ValueType.PROCESS_DEFINITION_SUSPENSION);
