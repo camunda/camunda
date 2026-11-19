@@ -8,10 +8,12 @@
 package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.Scheduler;
 import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -66,7 +68,7 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldNotScheduleIfAlreadyScheduled() {
+  void shouldNotScheduleIfAlreadyScheduled() throws CheckedJournalException {
     // given
     final var journal = Mockito.mock(Journal.class);
     Mockito.when(journal.getLastIndex()).thenReturn(5L);
@@ -83,7 +85,7 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldCancelScheduledFlushOnClose() {
+  void shouldCancelScheduledFlushOnClose() throws CheckedJournalException {
     // given
     final var journal = Mockito.mock(Journal.class);
 
@@ -111,37 +113,71 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldRescheduleOnFlushError() throws CheckedJournalException {
+  void shouldNotRetryFailedFlush() throws CheckedJournalException {
     // given
     final var journal = Mockito.mock(Journal.class);
-    Mockito.doThrow(new UncheckedIOException(new IOException("Cannot allocate memory")))
+    Mockito.doThrow(new FlushException(new IOException("Input/output error")))
         .when(journal)
         .flush();
 
     // when
     flusher.flush(journal);
     scheduler.runNext();
-    Mockito.doNothing().when(journal).flush();
-    scheduler.runNext();
 
     // then
-    Mockito.verify(journal, Mockito.times(2)).flush();
+    assertThat(scheduler.operations).isEmpty();
+    Mockito.verify(journal, Mockito.times(1)).flush();
   }
 
   @Test
-  void shouldNotRescheduleOnFlushErrorIfClosed() throws CheckedJournalException {
+  void shouldFailLaterFlushesAfterFailedFlush() throws CheckedJournalException {
     // given
     final var journal = Mockito.mock(Journal.class);
-    Mockito.doThrow(new UncheckedIOException(new IOException("Cannot allocate memory")))
-        .when(journal)
-        .flush();
+    final var error = new FlushException(new IOException("Input/output error"));
+    Mockito.doThrow(error).when(journal).flush();
+    flusher.flush(journal);
+    scheduler.runNext();
+
+    // when
+    final var thrown = catchThrowable(() -> flusher.flush(journal));
+
+    // then
+    assertThat(thrown).isInstanceOf(FlushException.class).hasCause(error);
+    assertThat(scheduler.operations).isEmpty();
+  }
+
+  @Test
+  void shouldReportFailedFlushToListener() throws CheckedJournalException {
+    // given
+    final var journal = Mockito.mock(Journal.class);
+    final var error = new FlushException(new IOException("Input/output error"));
+    Mockito.doThrow(error).when(journal).flush();
+    final var reported = new ArrayList<Throwable>();
+    flusher.setAsyncFailureListener(reported::add);
 
     // when
     flusher.flush(journal);
-    flusher.close();
     scheduler.runNext();
 
     // then
+    assertThat(reported).containsExactly(error);
+  }
+
+  @Test
+  void shouldReportUncheckedFlushErrorToListener() throws CheckedJournalException {
+    // given - e.g. the meta store failing to store the last flushed index
+    final var journal = Mockito.mock(Journal.class);
+    final var error = new UncheckedIOException(new IOException("Input/output error"));
+    Mockito.doThrow(error).when(journal).flush();
+    final var reported = new ArrayList<Throwable>();
+    flusher.setAsyncFailureListener(reported::add);
+
+    // when
+    flusher.flush(journal);
+    scheduler.runNext();
+
+    // then
+    assertThat(reported).containsExactly(error);
     assertThat(scheduler.operations).isEmpty();
   }
 

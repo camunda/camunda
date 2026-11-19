@@ -994,10 +994,9 @@ public class PassiveRole extends InactiveRole {
       //     acknowledge
       flush(lastLogIndex, request.prevLogIndex());
     } catch (final Exception e) {
-      log.warn(
-          "Failed to flush appended entries to the log, cannot guarantee durability; leader will retry the append operation",
-          e);
-      // Flush failed, return error to the leader so we can retry.
+      log.warn("Failed to flush appended entries to the log, so they are not acknowledged", e);
+      // The journal fails every later flush too, so these entries are never acknowledged; the
+      // server fails once the journal reports the failure (RaftContext#onStorageFailure).
       failAppend(request.prevLogIndex(), future);
       return;
     }

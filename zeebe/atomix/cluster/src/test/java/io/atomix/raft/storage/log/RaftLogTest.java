@@ -17,6 +17,12 @@ package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -24,10 +30,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.metrics.RaftLogMetrics;
+import io.atomix.raft.protocol.ReplicatableJournalRecord;
+import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher.NoopFlusher;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
@@ -35,18 +44,28 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.atomix.utils.concurrent.SingleThreadContext;
 import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -255,6 +274,51 @@ class RaftLogTest {
   @Nested
   final class FlushTest {
     @Test
+    void shouldWaitForRunningDelayedFlushWhenClosing(@TempDir final File directory)
+        throws Exception {
+      // given - a healthy delayed flush, held just before it writes the last flushed index
+      final var storage = RaftStorage.builder(meterRegistry).withDirectory(directory).build();
+      final var writing = new CountDownLatch(1);
+      final var write = new CountDownLatch(1);
+      final var storageFailure = new AtomicReference<Throwable>();
+      try (final var metaStore = spy(storage.openMetaStore())) {
+        final var log =
+            RaftLog.builder(meterRegistry)
+                .withDirectory(directory)
+                .withName("test")
+                .withMetaStore(metaStore)
+                .withFlusher(
+                    new DelayedFlusher(
+                        new SingleThreadContext("delayed-flush"), Duration.ofMillis(1)))
+                .build();
+        log.setStorageFailureListener(storageFailure::set);
+        doAnswer(
+                call -> {
+                  writing.countDown();
+                  Uninterruptibles.awaitUninterruptibly(write);
+                  return call.callRealMethod();
+                })
+            .when(metaStore)
+            .write(any(), any(), anyBoolean());
+        final var appended = log.append(new RaftLogEntry(1, initialEntry));
+        log.flush();
+        writing.await();
+
+        // when - the log closes while the flush is running
+        final var closing = new Thread(log::close);
+        closing.start();
+        Awaitility.await("closing waits for the flush")
+            .until(() -> closing.getState() == Thread.State.WAITING || !closing.isAlive());
+        write.countDown();
+        closing.join();
+
+        // then - the flush completes instead of being interrupted, which would fail the journal
+        assertThat(storageFailure.get()).isNull();
+        assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(appended.index());
+      }
+    }
+
+    @Test
     void shouldUseFlusher() throws CheckedJournalException {
       // given
       final var journal = mock(Journal.class);
@@ -266,6 +330,57 @@ class RaftLogTest {
 
       // then
       verify(flusher, times(1)).flush(journal);
+    }
+
+    @Test
+    void shouldReportAsyncFlushFailuresOfFlusher() {
+      // given
+      final var flusher = mock(RaftLogFlusher.class);
+      final var log = new RaftLog(mock(Journal.class), flusher, new RaftLogMetrics(meterRegistry));
+      final Consumer<Throwable> listener = error -> {};
+
+      // when
+      log.setStorageFailureListener(listener);
+
+      // then
+      verify(flusher).setAsyncFailureListener(listener);
+    }
+
+    @Test
+    void shouldReportFailedFlush() throws CheckedJournalException {
+      // given - the caller may swallow the exception, e.g. in a future's callback
+      final var journal = mock(Journal.class);
+      final var error = new FlushException(new IOException("Input/output error"));
+      doThrow(error).when(journal).flush();
+      final var log = new RaftLog(journal, new DirectFlusher(), new RaftLogMetrics(meterRegistry));
+      final var reported = new ArrayList<Throwable>();
+      log.setStorageFailureListener(reported::add);
+
+      // when
+      final var thrown = catchThrowable(log::flush);
+
+      // then
+      assertThat(thrown).isSameAs(error);
+      assertThat(reported).containsExactly(error);
+    }
+
+    @Test
+    void shouldReportFailedSyncOnAppend() {
+      // given - e.g. syncing the directory after creating the next segment failed
+      final var journal = mock(Journal.class);
+      final var error = new SyncFailed("Failed to sync", new IOException("Input/output error"));
+      when(journal.append(anyLong(), any(byte[].class))).thenThrow(error);
+      final var log = new RaftLog(journal, new DirectFlusher(), new RaftLogMetrics(meterRegistry));
+      final var reported = new ArrayList<Throwable>();
+      log.setStorageFailureListener(reported::add);
+
+      // when
+      final var thrown =
+          catchThrowable(() -> log.append(new ReplicatableJournalRecord(1, 1, 1, new byte[1])));
+
+      // then
+      assertThat(thrown).isSameAs(error);
+      assertThat(reported).containsExactly(error);
     }
 
     @Test
