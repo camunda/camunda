@@ -24,6 +24,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import io.camunda.exporter.rdbms.handlers.AuditLogExportHandler;
+import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
@@ -53,8 +54,11 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditL
 import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -454,6 +458,67 @@ class RdbmsExporterWrapperTest {
     verify(rdbmsService).createWriter(configCaptor.capture());
 
     assertThat(configCaptor.getValue().physicalTenantId()).isEqualTo("mycustomtenant");
+  }
+
+  @Test
+  public void shouldTruncateTreePathsAtTreePathSizeInsteadOfErrorMessageSize() {
+    // given
+    final var configuration = new ExporterConfiguration();
+    final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
+    final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
+    when(rdbmsWriters.getErrorMessageSize()).thenReturn(4000);
+    when(rdbmsWriters.getTreePathSize()).thenReturn(8191);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
+        .thenReturn(rdbmsService);
+    when(context.getPartitionId()).thenReturn(1);
+    when(context.getPhysicalTenantId()).thenReturn("tenanta");
+    when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
+
+    final var exporterWrapper =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            mock(RdbmsSchemaManagerRegistry.class),
+            Map.of("tenanta", configuration));
+    exporterWrapper.configure(context);
+
+    final var handler =
+        exporterWrapper
+            .getExporter()
+            .getRegisteredHandlers()
+            .get(ValueType.PROCESS_INSTANCE)
+            .stream()
+            .filter(ProcessInstanceExportHandler.class::isInstance)
+            .map(ProcessInstanceExportHandler.class::cast)
+            .findFirst()
+            .orElseThrow();
+
+    // a deeply nested call hierarchy whose tree path is longer than 4000 but shorter than 8191
+    final var levels = 300;
+    final List<List<Long>> elementInstancePath = new ArrayList<>();
+    final List<Long> processDefinitionPath = new ArrayList<>();
+    final List<Integer> callingElementPath = new ArrayList<>();
+    for (int i = 0; i < levels; i++) {
+      elementInstancePath.add(List.of(100L + i));
+      processDefinitionPath.add(10L);
+      callingElementPath.add(0);
+    }
+    final var value = mock(ProcessInstanceRecordValue.class);
+    when(value.getElementInstancePath()).thenReturn(elementInstancePath);
+    when(value.getProcessDefinitionPath()).thenReturn(processDefinitionPath);
+    when(value.getCallingElementPath()).thenReturn(callingElementPath);
+    when(value.getProcessInstanceKey()).thenReturn(100L + levels - 1);
+    @SuppressWarnings("unchecked")
+    final Record<ProcessInstanceRecordValue> record = mock(Record.class);
+    when(record.getValue()).thenReturn(value);
+
+    // when
+    final var treePath = handler.createTreePath(record);
+
+    // then
+    assertThat(treePath.toString()).hasSizeGreaterThan(4000).hasSizeLessThan(8191);
+    assertThat(treePath.toTruncatedString()).isEqualTo(treePath.toString());
   }
 
   private void assertAuditLogExportPresent(

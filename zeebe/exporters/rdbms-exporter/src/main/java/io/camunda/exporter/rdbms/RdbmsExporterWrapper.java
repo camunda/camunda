@@ -294,7 +294,7 @@ public class RdbmsExporterWrapper implements Exporter {
         new IncidentExportHandler(
             rdbmsWriters.getIncidentWriter(),
             cacheRegistry.processCache(),
-            rdbmsWriters.getErrorMessageSize()));
+            rdbmsWriters.getTreePathSize()));
     builder.withHandler(
         ValueType.INCIDENT,
         new ProcessInstanceIncidentExportHandler(rdbmsWriters.getProcessInstanceWriter()));
@@ -307,7 +307,7 @@ public class RdbmsExporterWrapper implements Exporter {
             rdbmsWriters.getProcessInstanceWriter(),
             historyCleanupService,
             cacheRegistry.processCache(),
-            rdbmsWriters.getErrorMessageSize()));
+            rdbmsWriters.getTreePathSize()));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE_BUSINESS_ID,
         new ProcessInstanceBusinessIdExportHandler(rdbmsWriters.getProcessInstanceWriter()));
@@ -316,7 +316,7 @@ public class RdbmsExporterWrapper implements Exporter {
         new FlowNodeExportHandler(
             rdbmsWriters.getFlowNodeInstanceWriter(),
             cacheRegistry.processCache(),
-            rdbmsWriters.getErrorMessageSize()));
+            rdbmsWriters.getTreePathSize()));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new FlowNodeInstanceNameFromAdHocActivityHandler(
