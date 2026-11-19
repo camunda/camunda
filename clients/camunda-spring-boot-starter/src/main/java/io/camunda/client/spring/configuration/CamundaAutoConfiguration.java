@@ -37,6 +37,7 @@ import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationEventPublisher;
@@ -60,6 +61,11 @@ import org.springframework.core.env.Environment;
  */
 @AutoConfiguration
 @ConditionalOnCamundaClientEnabled
+@AutoConfigureAfter(
+    name = {
+      "org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration",
+      "org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration"
+    })
 @ImportAutoConfiguration({
   // full feature parity with the single-client path: job-worker registration, startup deployment,
   // @ClusterVariables, JsonMapper, the actuator endpoint and metrics. None of these define a
