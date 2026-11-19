@@ -165,7 +165,7 @@ describe('Optional Filters', () => {
 		await screen.getByTestId(`optional-filter-menuitem-${filter}`).click();
 
 		await expect.element(screen.getByLabelText(label, {exact: true})).toBeVisible();
-		await expect.element(screen.getByTestId('date-range-modal')).toHaveClass(/is-visible/);
+		await expect.element(screen.getByTestId('date-range-modal')).toBeVisible();
 
 		await screen.getByRole('button', {name: 'Cancel'}).click();
 

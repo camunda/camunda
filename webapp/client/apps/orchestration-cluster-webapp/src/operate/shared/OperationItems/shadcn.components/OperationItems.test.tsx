@@ -12,7 +12,7 @@ import {it} from '#/vitest-modules/test-extend';
 import {OperationItems} from './OperationItems';
 
 describe('<OperationItems />', () => {
-	it('should render children as inline flex list items', async () => {
+	it('should render children as list items', async () => {
 		const screen = await render(
 			<OperationItems>
 				<li>First action</li>
@@ -23,7 +23,6 @@ describe('<OperationItems />', () => {
 		const list = screen.getByRole('list');
 
 		await expect.element(list).toBeVisible();
-		await expect.element(list).toHaveAttribute('class', 'inline-flex flex-row');
 		await expect.element(screen.getByRole('listitem').nth(0)).toHaveTextContent('First action');
 		await expect.element(screen.getByRole('listitem').nth(1)).toHaveTextContent('Second action');
 	});

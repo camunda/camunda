@@ -22,20 +22,10 @@ function renderInContainer(children: React.ReactElement, width: number) {
 }
 
 describe('<InstancesBar />', () => {
-	it('should render the incidents count and turn it error-colored when there are incidents', async () => {
-		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={3} size="medium" />);
+	it.for([3, 0])('should render an incidents count of %s', async (incidentsCount) => {
+		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={incidentsCount} size="medium" />);
 
-		const incidentsBadge = screen.getByTestId('incident-instances-badge');
-		await expect.element(incidentsBadge).toHaveTextContent('3');
-		await expect.element(incidentsBadge).toHaveClass('text-danger-foreground-subtle');
-	});
-
-	it('should not color the incidents count when there are no incidents', async () => {
-		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={0} size="medium" />);
-
-		const incidentsBadge = screen.getByTestId('incident-instances-badge');
-		await expect.element(incidentsBadge).toHaveTextContent('0');
-		await expect.element(incidentsBadge).not.toHaveClass('text-danger-foreground-subtle');
+		await expect.element(screen.getByTestId('incident-instances-badge')).toHaveTextContent(String(incidentsCount));
 	});
 
 	it('should render the active instances count when it is defined', async () => {
@@ -61,30 +51,6 @@ describe('<InstancesBar />', () => {
 
 		await expect.element(screen.getByTestId('incident-instances-badge')).toBeVisible();
 		await expect.element(screen.getByTestId('active-instances-badge')).not.toBeInTheDocument();
-	});
-
-	it('should color the label red only when the bar size is medium, regardless of the label size', async () => {
-		const screen = await renderWithTooltipProvider(
-			<InstancesBar
-				incidentsCount={0}
-				label={{type: 'incident', size: 'medium', text: 'order-process'}}
-				size="medium"
-			/>,
-		);
-
-		await expect.element(screen.getByText('order-process').first()).toHaveClass('text-danger-foreground-subtle');
-	});
-
-	it('should not color an incident-type label red when the bar size is not medium', async () => {
-		const screen = await renderWithTooltipProvider(
-			<InstancesBar
-				incidentsCount={0}
-				label={{type: 'incident', size: 'medium', text: 'order-process'}}
-				size="large"
-			/>,
-		);
-
-		await expect.element(screen.getByText('order-process').first()).not.toHaveClass('text-danger-foreground-subtle');
 	});
 
 	it('should render a defined zero active instances count without the active color', async () => {

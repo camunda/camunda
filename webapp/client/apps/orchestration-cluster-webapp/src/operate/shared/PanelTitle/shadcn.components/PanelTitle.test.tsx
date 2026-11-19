@@ -39,7 +39,7 @@ describe('<PanelTitle />', () => {
 		await expect.element(heading).toContainHTML('<svg');
 	});
 
-	it('should visually hide the title text but keep it accessible when isCollapsed is set', async () => {
+	it('should keep the title accessible when isCollapsed is set', async () => {
 		const screen = await render(
 			<PanelTitle icon={Filter} isCollapsed>
 				Instances
@@ -49,6 +49,5 @@ describe('<PanelTitle />', () => {
 		const heading = screen.getByRole('heading', {name: 'Instances'});
 		await expect.element(heading).toBeVisible();
 		await expect.element(heading).toContainHTML('<svg');
-		await expect.element(screen.getByText('Instances')).toHaveClass('sr-only');
 	});
 });

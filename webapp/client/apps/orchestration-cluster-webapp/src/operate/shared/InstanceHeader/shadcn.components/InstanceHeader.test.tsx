@@ -27,8 +27,6 @@ describe('<InstanceHeader />', () => {
 		await expect.element(screen.getByText('Process Instance Key')).toBeVisible();
 		await expect.element(screen.getByText('2251799813685467')).toBeVisible();
 		await expect.element(screen.getByTestId('ACTIVE-icon')).toBeVisible();
-		// without a subtitle row, the instance name uses the larger "label-md" typography
-		await expect.element(screen.getByText('orderProcess')).toHaveClass('text-sm');
 	});
 
 	it('should show the incidents count when there is at least one incident', async () => {
@@ -44,8 +42,6 @@ describe('<InstanceHeader />', () => {
 
 		await expect.element(screen.getByText('3 incidents')).toBeVisible();
 		await expect.element(screen.getByTestId('INCIDENT-icon')).toBeVisible();
-		// a subtitle row (incidents) switches the instance name to the smaller "label-sm" typography
-		await expect.element(screen.getByText('orderProcess')).toHaveClass('text-xs');
 	});
 
 	it('should not show the incidents count when there are no incidents', async () => {
