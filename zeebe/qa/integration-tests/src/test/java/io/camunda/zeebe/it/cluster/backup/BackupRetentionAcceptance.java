@@ -102,6 +102,9 @@ public interface BackupRetentionAcceptance extends ClockSupport {
                   .contains(thirdBackup);
             });
 
+    // Stop the brokers so the store assertions cannot depend on partition leadership.
+    getTestCluster().shutdown();
+
     assertManifestPresentInStore(thirdBackup);
     assertManifestNotFoundFromStore(firstBackup);
     assertManifestNotFoundFromStore(secondBackup);
