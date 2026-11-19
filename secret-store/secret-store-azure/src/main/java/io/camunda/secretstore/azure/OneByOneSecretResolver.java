@@ -7,18 +7,24 @@
  */
 package io.camunda.secretstore.azure;
 
+import static io.camunda.secretstore.SecretErrorCode.INVALID_REF;
 import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 
+import com.azure.core.exception.HttpResponseException;
 import com.azure.core.exception.ResourceNotFoundException;
 import com.azure.security.keyvault.secrets.SecretClient;
+import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
+import com.azure.security.keyvault.secrets.models.SecretProperties;
 import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStoreUnavailableException;
+import java.time.InstantSource;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +37,15 @@ import org.slf4j.LoggerFactory;
  * value is returned unchanged; an empty value is reported as not found, as the environment-variable
  * store does.
  *
+ * <p>A reference is refused, without a call to the vault, as {@link
+ * io.camunda.secretstore.SecretErrorCode#INVALID_REF INVALID_REF} when {@code pathPrefix + name} is
+ * not a name Key Vault can hold ({@link AzureKeyVaultSecretStore#NAME_PATTERN}). Key Vault keeps
+ * returning a secret that is past its expiry date or before its activation date, as these dates are
+ * only informational there; this resolver refuses both. It also refuses a disabled secret, which
+ * Key Vault answers with 403 like a missing permission. All three are reported as {@link
+ * io.camunda.secretstore.SecretErrorCode#NOT_FOUND NOT_FOUND}, so a cached value is dropped and the
+ * incident resolves once the secret is fixed; the message names the reason.
+ *
  * <p>A secret the vault does not hold is reported as {@link
  * io.camunda.secretstore.SecretErrorCode#NOT_FOUND NOT_FOUND}; every other failure makes the vault
  * unavailable for the whole call. Listing is not implemented yet: no names are listed.
@@ -41,10 +56,16 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
 
   private final SecretClient client;
   private final String pathPrefix;
+  private final InstantSource clock;
 
-  OneByOneSecretResolver(final SecretClient client, final String pathPrefix) {
+  /**
+   * @param clock what the expiry and activation dates are compared with
+   */
+  OneByOneSecretResolver(
+      final SecretClient client, final String pathPrefix, final InstantSource clock) {
     this.client = client;
     this.pathPrefix = pathPrefix;
+    this.clock = clock;
   }
 
   @Override
@@ -59,15 +80,20 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
 
   private SecretResolutionResult resolveSingle(final String name) {
     final var secretName = pathPrefix + name;
-    final String value;
-    try {
-      value = client.getSecret(secretName).getValue();
-    } catch (final ResourceNotFoundException e) {
-      return notFound(secretName, e);
-    } catch (final RuntimeException e) {
-      throw new SecretStoreUnavailableException(
-          "Azure Key Vault is unavailable: " + e.getMessage(), e);
+    if (!AzureKeyVaultSecretStore.NAME_PATTERN.matcher(secretName).matches()) {
+      return invalidName(name, secretName);
     }
+    final KeyVaultSecret secret;
+    try {
+      secret = client.getSecret(secretName);
+    } catch (final RuntimeException e) {
+      return failedRead(secretName, e);
+    }
+    final var refusal = refusalByDate(secretName, secret.getProperties());
+    if (refusal != null) {
+      return refusal;
+    }
+    final var value = secret.getValue();
     if (value == null || value.isEmpty()) {
       return new Failed(
           NOT_FOUND, "Secret not found: " + secretName + " (its value is empty)", null);
@@ -75,8 +101,67 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
     return new Resolved(value);
   }
 
+  /**
+   * Throws {@link SecretStoreUnavailableException} unless the failure concerns this secret only.
+   */
+  private static Failed failedRead(final String secretName, final RuntimeException e) {
+    if (e instanceof final ResourceNotFoundException notFound) {
+      return notFound(secretName, notFound);
+    }
+    if (e instanceof final HttpResponseException response
+        && AzureKeyVaultErrors.isSecretDisabled(response)) {
+      return refused(secretName, "is disabled in Azure Key Vault", response);
+    }
+    throw unavailable(e);
+  }
+
+  /**
+   * Key Vault treats the expiry and activation dates as informational and still returns the value;
+   * the returned refusal must therefore never carry the secret.
+   */
+  private @Nullable Failed refusalByDate(
+      final String secretName, final SecretProperties properties) {
+    final var now = clock.instant();
+    final var expiresOn = properties.getExpiresOn();
+    if (expiresOn != null && !expiresOn.toInstant().isAfter(now)) {
+      return refused(secretName, "expired on " + expiresOn.toInstant(), null);
+    }
+    final var notBefore = properties.getNotBefore();
+    if (notBefore != null && notBefore.toInstant().isAfter(now)) {
+      return refused(secretName, "is not active until " + notBefore.toInstant(), null);
+    }
+    return null;
+  }
+
   private static Failed notFound(final String secretName, final Exception cause) {
     return new Failed(NOT_FOUND, "Secret not found: " + secretName, cause);
+  }
+
+  private static Failed refused(
+      final String secretName, final String reason, final @Nullable Exception cause) {
+    return new Failed(NOT_FOUND, "Secret " + secretName + " " + reason + " and is refused", cause);
+  }
+
+  private Failed invalidName(final String name, final String secretName) {
+    final var prefixed = pathPrefix.isEmpty() ? "" : " (with the path prefix '" + pathPrefix + "')";
+    return new Failed(
+        INVALID_REF,
+        "Invalid secret reference: "
+            + name
+            + ". Its Key Vault secret name '"
+            + secretName
+            + "'"
+            + prefixed
+            + " must be 1 to 127 letters, digits and hyphens ("
+            + AzureKeyVaultSecretStore.NAME_PATTERN.pattern()
+            + "), and names are never rewritten. To use this name, keep the secret as a field of"
+            + " one JSON container secret (containerSecretId)",
+        null);
+  }
+
+  private static SecretStoreUnavailableException unavailable(final RuntimeException e) {
+    return new SecretStoreUnavailableException(
+        "Azure Key Vault is unavailable: " + e.getMessage(), e);
   }
 
   @Override

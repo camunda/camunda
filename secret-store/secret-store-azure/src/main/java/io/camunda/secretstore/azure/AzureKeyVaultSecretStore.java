@@ -15,11 +15,13 @@ import com.azure.security.keyvault.secrets.SecretClientBuilder;
 import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStore;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -45,6 +47,14 @@ import org.jspecify.annotations.Nullable;
  * is thread-safe.
  */
 public final class AzureKeyVaultSecretStore implements SecretStore {
+
+  /**
+   * The Key Vault secret names a reference may map to: 1 to 127 letters, digits and hyphens, path
+   * prefix included. Deliberately stricter than the reference names Camunda accepts, so it is not
+   * part of the "same charset" check across stores: in one-by-one mode a reference outside it, such
+   * as {@code API_KEY}, is refused rather than rewritten.
+   */
+  static final Pattern NAME_PATTERN = Pattern.compile("[0-9A-Za-z-]{1,127}");
 
   private final AzureSecretResolver resolver;
   private final SecretClient client;
@@ -102,6 +112,27 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
       final MeterRegistry meterRegistry,
       final Configuration environment,
       final @Nullable HttpClient httpClient) {
+    return fromConfig(
+        physicalTenantId,
+        storeId,
+        config,
+        meterRegistry,
+        environment,
+        httpClient,
+        InstantSource.system());
+  }
+
+  /**
+   * @param clock what a secret's expiry and activation dates are compared with
+   */
+  static AzureKeyVaultSecretStore fromConfig(
+      final String physicalTenantId,
+      final String storeId,
+      final AzureKeyVaultStoreConfig config,
+      final MeterRegistry meterRegistry,
+      final Configuration environment,
+      final @Nullable HttpClient httpClient,
+      final InstantSource clock) {
     final var credentialExecutor = newCredentialExecutor();
     final var signInMonitor =
         new SignInMonitor(physicalTenantId, storeId, config.vaultUrl(), meterRegistry);
@@ -113,7 +144,7 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
       final var client = buildClient(config, credential, httpClient);
       store =
           new AzureKeyVaultSecretStore(
-              resolver(config, client), client, credentialExecutor, signInMonitor);
+              resolver(config, client, clock), client, credentialExecutor, signInMonitor);
     } catch (final RuntimeException e) {
       signInMonitor.close();
       credentialExecutor.shutdownNow();
@@ -131,12 +162,12 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
   }
 
   private static AzureSecretResolver resolver(
-      final AzureKeyVaultStoreConfig config, final SecretClient client) {
+      final AzureKeyVaultStoreConfig config, final SecretClient client, final InstantSource clock) {
     final var configuredPrefix = config.pathPrefix();
     final var pathPrefix = configuredPrefix == null ? "" : configuredPrefix;
     final var containerSecretId = config.containerSecretId();
     if (containerSecretId == null) {
-      return new OneByOneSecretResolver(client, pathPrefix);
+      return new OneByOneSecretResolver(client, pathPrefix, clock);
     }
     return new ContainerSecretResolver(client, pathPrefix + containerSecretId);
   }

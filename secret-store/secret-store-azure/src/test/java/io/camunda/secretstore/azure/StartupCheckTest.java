@@ -24,6 +24,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -438,7 +439,8 @@ final class StartupCheckTest {
 
     private final Runnable probe;
     // the wording needs no client
-    private final OneByOneSecretResolver wording = new OneByOneSecretResolver(null, "");
+    private final OneByOneSecretResolver wording =
+        new OneByOneSecretResolver(null, "", InstantSource.system());
 
     ProbingResolver(final Runnable probe) {
       this.probe = probe;
