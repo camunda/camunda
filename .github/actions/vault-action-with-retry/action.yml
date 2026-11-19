@@ -15,10 +15,19 @@ inputs:
     required: true
   roleId:
     description: see https://github.com/hashicorp/vault-action#roleid
-    required: true
+    required: false
   secretId:
     description: see https://github.com/hashicorp/vault-action#secretid
-    required: true
+    required: false
+  path:
+    description: see https://github.com/hashicorp/vault-action#path
+    required: false
+  role:
+    description: see https://github.com/hashicorp/vault-action#role
+    required: false
+  jwtGithubAudience:
+    description: see https://github.com/hashicorp/vault-action#jwtgithubaudience
+    required: false
   secrets:
     description: see https://github.com/hashicorp/vault-action#secrets
     required: true
@@ -56,6 +65,9 @@ runs:
       with:
         url: ${{ inputs.url }}
         method: ${{ inputs.method }}
+        path: ${{ inputs.path }}
+        role: ${{ inputs.role }}
+        jwtGithubAudience: ${{ inputs.jwtGithubAudience }}
         roleId: ${{ inputs.roleId }}
         secretId: ${{ inputs.secretId }}
         secrets: ${{ inputs.secrets }}
@@ -74,6 +86,9 @@ runs:
       with:
         url: ${{ inputs.url }}
         method: ${{ inputs.method }}
+        path: ${{ inputs.path }}
+        role: ${{ inputs.role }}
+        jwtGithubAudience: ${{ inputs.jwtGithubAudience }}
         roleId: ${{ inputs.roleId }}
         secretId: ${{ inputs.secretId }}
         secrets: ${{ inputs.secrets }}
@@ -91,6 +106,9 @@ runs:
       with:
         url: ${{ inputs.url }}
         method: ${{ inputs.method }}
+        path: ${{ inputs.path }}
+        role: ${{ inputs.role }}
+        jwtGithubAudience: ${{ inputs.jwtGithubAudience }}
         roleId: ${{ inputs.roleId }}
         secretId: ${{ inputs.secretId }}
         secrets: ${{ inputs.secrets }}
