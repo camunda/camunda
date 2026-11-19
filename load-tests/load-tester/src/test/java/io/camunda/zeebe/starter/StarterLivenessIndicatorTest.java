@@ -26,7 +26,6 @@ class StarterLivenessIndicatorTest {
 
   private StarterLivenessIndicator indicator() {
     final var properties = new StarterProperties();
-    properties.setLivenessMaxNoSuccessAge(Duration.ofSeconds(60));
     return new StarterLivenessIndicator(properties, clock);
   }
 
@@ -67,9 +66,9 @@ class StarterLivenessIndicatorTest {
     indicator.recordStarted();
 
     // when
-    advance(50);
+    advance(100);
     indicator.recordResult(null);
-    advance(50);
+    advance(100);
 
     // then
     assertThat(indicator.health().getStatus()).isEqualTo(Status.UP);
@@ -82,7 +81,7 @@ class StarterLivenessIndicatorTest {
     indicator.recordStarted();
 
     // when
-    advance(61);
+    advance(121);
 
     // then
     assertThat(indicator.health().getStatus()).isEqualTo(Status.DOWN);
@@ -95,7 +94,7 @@ class StarterLivenessIndicatorTest {
     indicator.recordStarted();
 
     // when
-    for (int i = 0; i < 61; i++) {
+    for (int i = 0; i < 121; i++) {
       advance(1);
       indicator.recordResult(
           new CompletionException(new StatusRuntimeException(io.grpc.Status.UNAUTHENTICATED)));
@@ -112,7 +111,7 @@ class StarterLivenessIndicatorTest {
     indicator.recordStarted();
 
     // when
-    for (int i = 0; i < 120; i++) {
+    for (int i = 0; i < 240; i++) {
       advance(1);
       indicator.recordResult(new StatusRuntimeException(io.grpc.Status.RESOURCE_EXHAUSTED));
     }
@@ -133,5 +132,38 @@ class StarterLivenessIndicatorTest {
 
     // then
     assertThat(indicator.health().getStatus()).isEqualTo(Status.UP);
+  }
+
+  private StarterLivenessIndicator lowRateIndicator() {
+    final var properties = new StarterProperties();
+    properties.setRate(2);
+    properties.setRateDuration(Duration.ofMinutes(10));
+    return new StarterLivenessIndicator(properties, clock);
+  }
+
+  @Test
+  void shouldBeUpUntilTwiceTheRequestIntervalAtLowRate() {
+    // given
+    final var indicator = lowRateIndicator();
+    indicator.recordStarted();
+
+    // when
+    advance(600);
+
+    // then
+    assertThat(indicator.health().getStatus()).isEqualTo(Status.UP);
+  }
+
+  @Test
+  void shouldBeDownAfterTwiceTheRequestIntervalAtLowRate() {
+    // given
+    final var indicator = lowRateIndicator();
+    indicator.recordStarted();
+
+    // when
+    advance(601);
+
+    // then
+    assertThat(indicator.health().getStatus()).isEqualTo(Status.DOWN);
   }
 }
