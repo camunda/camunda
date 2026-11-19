@@ -18,6 +18,7 @@ package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import java.util.NoSuchElementException;
 
 /** Raft log reader that reads only committed entries. */
@@ -29,16 +30,54 @@ public class RaftLogCommittedReader implements RaftLogReader {
   // inconsistencies when the log is truncated/compacted/etc.
   private long nextIndex;
   private final RaftLogUncommittedReader reader;
+  private final boolean failOnMissingCommittedEntry;
 
   RaftLogCommittedReader(final RaftLog log, final RaftLogUncommittedReader reader) {
+    this(log, reader, false);
+  }
+
+  /**
+   * @param failOnMissingCommittedEntry whether {@link #hasNext()} throws a {@link
+   *     CorruptedJournalException} when the log cannot return an entry at or below the commit
+   *     index, instead of reporting the end of the log
+   */
+  RaftLogCommittedReader(
+      final RaftLog log,
+      final RaftLogUncommittedReader reader,
+      final boolean failOnMissingCommittedEntry) {
     this.log = log;
     this.reader = reader;
+    this.failOnMissingCommittedEntry = failOnMissingCommittedEntry;
     nextIndex = log.getFirstIndex();
   }
 
   @Override
   public boolean hasNext() {
-    return nextIndex <= log.getCommitIndex() && reader.hasNext();
+    final long commitIndex = log.getCommitIndex();
+    if (nextIndex > commitIndex) {
+      return false;
+    }
+    if (reader.hasNext()) {
+      return true;
+    }
+    if (failOnMissingCommittedEntry && isMissingFromLog(nextIndex)) {
+      throw new CorruptedJournalException(
+          "Expected to read the committed entry at index %d (commit index %d), but the log has no entry at that index"
+              .formatted(nextIndex, commitIndex));
+    }
+    return false;
+  }
+
+  /**
+   * Tells a missing entry apart from a reader that has nothing to read because it was left behind:
+   * the segment it reads was compacted away, or the log was reset for a snapshot. Only a new reader
+   * shows which one it is, and it must not move this reader, which stays where it is until it is
+   * sought again.
+   */
+  private boolean isMissingFromLog(final long index) {
+    try (final var probe = log.openUncommittedReader()) {
+      return probe.seek(index) == index && !probe.hasNext();
+    }
   }
 
   @Override

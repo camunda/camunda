@@ -76,6 +76,18 @@ public final class RaftLog implements Closeable {
     return new RaftLogCommittedReader(this, new RaftLogUncommittedReader(journal.openReader()));
   }
 
+  /**
+   * Opens a reader that can only read committed entries, and that fails with a {@link
+   * io.camunda.zeebe.journal.CorruptedJournalException} instead of reporting the end of the log
+   * when a committed entry cannot be read back.
+   *
+   * @return the reader
+   */
+  public RaftLogReader openCommittedReaderFailingOnMissingEntries() {
+    return new RaftLogCommittedReader(
+        this, new RaftLogUncommittedReader(journal.openReader()), true);
+  }
+
   public boolean isOpen() {
     return journal.isOpen();
   }
