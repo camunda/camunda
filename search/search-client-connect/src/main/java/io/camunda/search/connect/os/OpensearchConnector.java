@@ -21,7 +21,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
@@ -34,6 +36,7 @@ import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
+import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.OpenSearchTransport;
@@ -45,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 public final class OpensearchConnector {
@@ -61,6 +65,13 @@ public final class OpensearchConnector {
 
   private final AwsCredentialsProvider credentialsProvider;
 
+  // the options below are null unless the connector was created through the builder
+  private final Supplier<HttpHost[]> httpHosts;
+  private final JsonpMapper jsonpMapper;
+  private final Supplier<Region> awsRegion;
+  private final AwsCredentialsProvider awsTransportCredentials;
+  private final TlsStrategy tlsStrategy;
+
   public OpensearchConnector(final ConnectConfiguration configuration) {
     this(
         configuration,
@@ -74,10 +85,41 @@ public final class OpensearchConnector {
       final ObjectMapper objectMapper,
       final AwsCredentialsProvider credentialsProvider,
       final PluginRepository pluginRepository) {
+    this(
+        configuration,
+        objectMapper,
+        credentialsProvider,
+        pluginRepository,
+        null,
+        new SearchRequestJacksonJsonpMapperWrapper(objectMapper),
+        null,
+        null,
+        null);
+  }
+
+  private OpensearchConnector(
+      final ConnectConfiguration configuration,
+      final ObjectMapper objectMapper,
+      final AwsCredentialsProvider credentialsProvider,
+      final PluginRepository pluginRepository,
+      final Supplier<HttpHost[]> httpHosts,
+      final JsonpMapper jsonpMapper,
+      final Supplier<Region> awsRegion,
+      final AwsCredentialsProvider awsTransportCredentials,
+      final TlsStrategy tlsStrategy) {
     this.configuration = configuration;
     this.objectMapper = objectMapper;
     this.credentialsProvider = credentialsProvider;
     this.pluginRepository = pluginRepository;
+    this.httpHosts = httpHosts;
+    this.jsonpMapper = jsonpMapper;
+    this.awsRegion = awsRegion;
+    this.awsTransportCredentials = awsTransportCredentials;
+    this.tlsStrategy = tlsStrategy;
+  }
+
+  public static Builder builder() {
+    return new Builder();
   }
 
   public OpenSearchClient createClient() {
@@ -111,20 +153,23 @@ public final class OpensearchConnector {
   }
 
   private OpenSearchTransport createAWSBasedTransport(final ConnectConfiguration configuration) {
-    final var hostname = getHttpHosts(configuration)[0].getHostName();
-    final var region = new DefaultAwsRegionProviderChain().getRegion();
+    final var hostname = hosts(configuration)[0].getHostName();
+    final var region =
+        awsRegion != null ? awsRegion.get() : new DefaultAwsRegionProviderChain().getRegion();
     final var httpClient = AwsCrtHttpClient.builder().build();
-    return new AwsSdk2Transport(
-        httpClient,
-        hostname,
-        region,
-        AwsSdk2TransportOptions.builder()
-            .setMapper(new SearchRequestJacksonJsonpMapperWrapper(objectMapper))
-            .build());
+    final var transportOptions = AwsSdk2TransportOptions.builder().setMapper(jsonpMapper);
+    if (awsTransportCredentials != null) {
+      transportOptions.setCredentials(awsTransportCredentials);
+    }
+    return new AwsSdk2Transport(httpClient, hostname, region, transportOptions.build());
+  }
+
+  private HttpHost[] hosts(final ConnectConfiguration configuration) {
+    return httpHosts != null ? httpHosts.get() : getHttpHosts(configuration);
   }
 
   private OpenSearchTransport createDefaultTransport(final ConnectConfiguration configuration) {
-    final var hosts = getHttpHosts(configuration);
+    final var hosts = hosts(configuration);
     final var builder = ApacheHttpClient5TransportBuilder.builder(hosts);
 
     builder.setHttpClientConfigCallback(
@@ -140,7 +185,6 @@ public final class OpensearchConnector {
           return requestConfigBuilder;
         });
 
-    final var jsonpMapper = new SearchRequestJacksonJsonpMapperWrapper(objectMapper);
     builder.setMapper(jsonpMapper);
 
     return builder.build();
@@ -299,13 +343,15 @@ public final class OpensearchConnector {
     final boolean poolConfigured =
         osConfig.getMaxConnections() != null || osConfig.getMaxConnectionsPerRoute() != null;
 
-    if (!securityEnabled && !poolConfigured) {
+    if (tlsStrategy == null && !securityEnabled && !poolConfigured) {
       return;
     }
 
     final var connectionManagerBuilder = PoolingAsyncClientConnectionManagerBuilder.create();
 
-    if (securityEnabled) {
+    if (tlsStrategy != null) {
+      connectionManagerBuilder.setTlsStrategy(tlsStrategy);
+    } else if (securityEnabled) {
       final var tlsStrategy = buildTlsStrategy(security);
       if (tlsStrategy != null) {
         connectionManagerBuilder.setTlsStrategy(tlsStrategy);
@@ -346,6 +392,103 @@ public final class OpensearchConnector {
     } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
       return null;
+    }
+  }
+
+  /**
+   * Builds a connector from a {@link ConnectConfiguration} plus the options that must not be bound
+   * from user properties. Unset options behave exactly like the constructors of {@link
+   * OpensearchConnector}.
+   */
+  public static final class Builder {
+    private ConnectConfiguration configuration;
+    private ObjectMapper objectMapper;
+    private AwsCredentialsProvider credentialsProvider;
+    private PluginRepository pluginRepository = new PluginRepository();
+    private Supplier<HttpHost[]> httpHosts;
+    private JsonpMapper jsonpMapper;
+    private Supplier<Region> awsRegion;
+    private AwsCredentialsProvider awsTransportCredentials;
+    private TlsStrategy tlsStrategy;
+
+    private Builder() {}
+
+    public Builder configuration(final ConnectConfiguration configuration) {
+      this.configuration = configuration;
+      return this;
+    }
+
+    /** Defaults to the mapper derived from the configuration. */
+    public Builder objectMapper(final ObjectMapper objectMapper) {
+      this.objectMapper = objectMapper;
+      return this;
+    }
+
+    /** Used to decide whether AWS is available; defaults to the default AWS provider chain. */
+    public Builder credentialsProvider(final AwsCredentialsProvider credentialsProvider) {
+      this.credentialsProvider = credentialsProvider;
+      return this;
+    }
+
+    public Builder pluginRepository(final PluginRepository pluginRepository) {
+      this.pluginRepository = pluginRepository;
+      return this;
+    }
+
+    /**
+     * The hosts to connect to, instead of the ones derived from the configuration's URLs. They are
+     * resolved only when the client is created, after the plugins have been loaded.
+     */
+    public Builder httpHosts(final Supplier<HttpHost[]> httpHosts) {
+      this.httpHosts = httpHosts;
+      return this;
+    }
+
+    /** Defaults to the mapper that also serializes search-after fields of search requests. */
+    public Builder jsonpMapper(final JsonpMapper jsonpMapper) {
+      this.jsonpMapper = jsonpMapper;
+      return this;
+    }
+
+    /**
+     * The AWS region, resolved only when the AWS transport is actually created; defaults to the one
+     * resolved by the default region provider chain.
+     */
+    public Builder awsRegion(final Supplier<Region> awsRegion) {
+      this.awsRegion = awsRegion;
+      return this;
+    }
+
+    /** Credentials the AWS transport signs with; defaults to the transport's own. */
+    public Builder awsTransportCredentials(final AwsCredentialsProvider awsTransportCredentials) {
+      this.awsTransportCredentials = awsTransportCredentials;
+      return this;
+    }
+
+    /** TLS setup to use, instead of the one derived from the configuration's security options. */
+    public Builder tlsStrategy(final TlsStrategy tlsStrategy) {
+      this.tlsStrategy = tlsStrategy;
+      return this;
+    }
+
+    public OpensearchConnector build() {
+      Objects.requireNonNull(configuration, "configuration is required");
+      final var mapper =
+          objectMapper != null
+              ? objectMapper
+              : new JacksonConfiguration(configuration).createObjectMapper();
+      return new OpensearchConnector(
+          configuration,
+          mapper,
+          credentialsProvider != null
+              ? credentialsProvider
+              : DefaultCredentialsProvider.builder().build(),
+          pluginRepository,
+          httpHosts,
+          jsonpMapper != null ? jsonpMapper : new SearchRequestJacksonJsonpMapperWrapper(mapper),
+          awsRegion,
+          awsTransportCredentials,
+          tlsStrategy);
     }
   }
 }
