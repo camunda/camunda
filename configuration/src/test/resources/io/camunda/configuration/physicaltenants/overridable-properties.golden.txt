@@ -370,6 +370,12 @@ data.secondary-storage.rdbms.rewrite-batched-statements
 data.secondary-storage.rdbms.url
 data.secondary-storage.rdbms.urls
 data.secondary-storage.rdbms.username
+data.secondary-storage.retention.deleter.delay-between-runs
+data.secondary-storage.retention.deleter.document-batch-size
+data.secondary-storage.retention.deleter.entity-batch-size
+data.secondary-storage.retention.deleter.max-delay-between-runs
+data.secondary-storage.retention.deleter.max-retry-attempts
+data.secondary-storage.retention.deleter.retry-delay
 data.secondary-storage.retention.enabled
 data.secondary-storage.retention.minimum-age
 data.secondary-storage.retention.usage-metrics-minimum-age
