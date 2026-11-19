@@ -17,9 +17,11 @@ package io.camunda.process.test.impl.testCases;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.mock.MockDmnDecisionBuilder;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockDmnDecisionInstruction;
 import io.camunda.process.test.api.testCases.instructions.MockDmnDecisionInstruction;
 import io.camunda.process.test.impl.testCases.instructions.MockDmnDecisionInstructionHandler;
@@ -38,6 +40,8 @@ public class MockDmnDecisionInstructionTest {
 
   @Mock private CamundaProcessTestContext processTestContext;
 
+  @Mock private MockDmnDecisionBuilder mockDmnDecisionBuilder;
+
   @Mock private CamundaClient camundaClient;
 
   @Mock private AssertionFacade assertionFacade;
@@ -48,6 +52,9 @@ public class MockDmnDecisionInstructionTest {
   @Test
   void shouldMockDmnDecisionWithoutVariables() {
     // given
+    when(processTestContext.mockDmnDecision()).thenReturn(mockDmnDecisionBuilder);
+    when(mockDmnDecisionBuilder.withDecisionId(DECISION_ID)).thenReturn(mockDmnDecisionBuilder);
+
     final MockDmnDecisionInstruction instruction =
         ImmutableMockDmnDecisionInstruction.builder().decisionDefinitionId(DECISION_ID).build();
 
@@ -55,14 +62,20 @@ public class MockDmnDecisionInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).mockDmnDecision(DECISION_ID, Collections.emptyMap());
+    verify(processTestContext).mockDmnDecision();
+    verify(mockDmnDecisionBuilder).withDecisionId(DECISION_ID);
+    verify(mockDmnDecisionBuilder).thenReturn(Collections.emptyMap());
 
-    verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade);
+    verifyNoMoreInteractions(
+        processTestContext, mockDmnDecisionBuilder, camundaClient, assertionFacade);
   }
 
   @Test
   void shouldMockDmnDecisionWithVariables() {
     // given
+    when(processTestContext.mockDmnDecision()).thenReturn(mockDmnDecisionBuilder);
+    when(mockDmnDecisionBuilder.withDecisionId(DECISION_ID)).thenReturn(mockDmnDecisionBuilder);
+
     final Map<String, Object> variables = new HashMap<>();
     variables.put("approved", true);
     variables.put("score", 750);
@@ -77,14 +90,20 @@ public class MockDmnDecisionInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).mockDmnDecision(DECISION_ID, variables);
+    verify(processTestContext).mockDmnDecision();
+    verify(mockDmnDecisionBuilder).withDecisionId(DECISION_ID);
+    verify(mockDmnDecisionBuilder).thenReturn(variables);
 
-    verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade);
+    verifyNoMoreInteractions(
+        processTestContext, mockDmnDecisionBuilder, camundaClient, assertionFacade);
   }
 
   @Test
   void shouldMockDmnDecisionWithDecisionOutput() {
     // given
+    when(processTestContext.mockDmnDecision()).thenReturn(mockDmnDecisionBuilder);
+    when(mockDmnDecisionBuilder.withDecisionId(DECISION_ID)).thenReturn(mockDmnDecisionBuilder);
+
     final MockDmnDecisionInstruction instruction =
         ImmutableMockDmnDecisionInstruction.builder()
             .decisionDefinitionId(DECISION_ID)
@@ -95,14 +114,20 @@ public class MockDmnDecisionInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).mockDmnDecision(DECISION_ID, 15);
+    verify(processTestContext).mockDmnDecision();
+    verify(mockDmnDecisionBuilder).withDecisionId(DECISION_ID);
+    verify(mockDmnDecisionBuilder).thenReturn(15);
 
-    verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade);
+    verifyNoMoreInteractions(
+        processTestContext, mockDmnDecisionBuilder, camundaClient, assertionFacade);
   }
 
   @Test
   void shouldFavorDecisionOutputOverVariables() {
     // given
+    when(processTestContext.mockDmnDecision()).thenReturn(mockDmnDecisionBuilder);
+    when(mockDmnDecisionBuilder.withDecisionId(DECISION_ID)).thenReturn(mockDmnDecisionBuilder);
+
     final MockDmnDecisionInstruction instruction =
         ImmutableMockDmnDecisionInstruction.builder()
             .decisionDefinitionId(DECISION_ID)
@@ -114,8 +139,38 @@ public class MockDmnDecisionInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).mockDmnDecision(DECISION_ID, 15);
+    verify(processTestContext).mockDmnDecision();
+    verify(mockDmnDecisionBuilder).withDecisionId(DECISION_ID);
+    verify(mockDmnDecisionBuilder).thenReturn(15);
 
-    verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade);
+    verifyNoMoreInteractions(
+        processTestContext, mockDmnDecisionBuilder, camundaClient, assertionFacade);
+  }
+
+  @Test
+  void shouldMockDmnDecisionWithVersionTag() {
+    // given
+    when(processTestContext.mockDmnDecision()).thenReturn(mockDmnDecisionBuilder);
+    when(mockDmnDecisionBuilder.withDecisionId(DECISION_ID)).thenReturn(mockDmnDecisionBuilder);
+    when(mockDmnDecisionBuilder.withVersionTag("1.3.0")).thenReturn(mockDmnDecisionBuilder);
+
+    final MockDmnDecisionInstruction instruction =
+        ImmutableMockDmnDecisionInstruction.builder()
+            .decisionDefinitionId(DECISION_ID)
+            .versionTag("1.3.0")
+            .decisionOutput(15)
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(processTestContext).mockDmnDecision();
+    verify(mockDmnDecisionBuilder).withDecisionId(DECISION_ID);
+    verify(mockDmnDecisionBuilder).withVersionTag("1.3.0");
+    verify(mockDmnDecisionBuilder).thenReturn(15);
+
+    verifyNoMoreInteractions(
+        processTestContext, mockDmnDecisionBuilder, camundaClient, assertionFacade);
   }
 }

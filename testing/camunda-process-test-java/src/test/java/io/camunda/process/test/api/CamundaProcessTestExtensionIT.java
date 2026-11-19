@@ -64,6 +64,7 @@ import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -1666,6 +1667,97 @@ public class CamundaProcessTestExtensionIT {
           .zeebeJobType("child-job")
           .endEvent("child-end")
           .done();
+    }
+  }
+
+  @Nested
+  class MockDmnDecisionTests {
+
+    @Test
+    void shouldMockDmnDecisionWithVersionTag() {
+      // given
+      final long processDefinitionKey =
+          deployProcessModel(
+              Bpmn.createExecutableProcess("process-with-version-tag-decision")
+                  .startEvent()
+                  .businessRuleTask(
+                      "call-decision",
+                      task ->
+                          task.zeebeCalledDecisionId("version-tag-decision")
+                              .zeebeBindingType(ZeebeBindingType.versionTag)
+                              .zeebeVersionTag("1.3.0")
+                              .zeebeResultVariable("result"))
+                  .endEvent()
+                  .done());
+
+      processTestContext
+          .mockDmnDecision()
+          .withDecisionId("version-tag-decision")
+          .withVersionTag("1.3.0")
+          .thenReturn("mocked-output");
+
+      // when
+      final ProcessInstanceEvent processInstanceEvent =
+          client
+              .newCreateInstanceCommand()
+              .processDefinitionKey(processDefinitionKey)
+              .send()
+              .join();
+
+      // then
+      assertThatProcessInstance(processInstanceEvent)
+          .isCompleted()
+          .hasVariable("result", "mocked-output");
+    }
+
+    @Test
+    void shouldMockDmnDecisionWithDifferentVersionTags() {
+      // given
+      final long processDefinitionKey =
+          deployProcessModel(
+              Bpmn.createExecutableProcess("process-with-two-version-tag-decisions")
+                  .startEvent()
+                  .businessRuleTask(
+                      "call-decision-1.2.0",
+                      task ->
+                          task.zeebeCalledDecisionId("two-version-tags-decision")
+                              .zeebeBindingType(ZeebeBindingType.versionTag)
+                              .zeebeVersionTag("1.2.0")
+                              .zeebeResultVariable("result120"))
+                  .businessRuleTask(
+                      "call-decision-1.3.0",
+                      task ->
+                          task.zeebeCalledDecisionId("two-version-tags-decision")
+                              .zeebeBindingType(ZeebeBindingType.versionTag)
+                              .zeebeVersionTag("1.3.0")
+                              .zeebeResultVariable("result130"))
+                  .endEvent()
+                  .done());
+
+      processTestContext
+          .mockDmnDecision()
+          .withDecisionId("two-version-tags-decision")
+          .withVersionTag("1.2.0")
+          .thenReturn("output-of-1.2.0");
+      processTestContext
+          .mockDmnDecision()
+          .withDecisionId("two-version-tags-decision")
+          .withVersionTag("1.3.0")
+          .thenReturn("output-of-1.3.0");
+
+      // when
+      final ProcessInstanceEvent processInstanceEvent =
+          client
+              .newCreateInstanceCommand()
+              .processDefinitionKey(processDefinitionKey)
+              .send()
+              .join();
+
+      // then
+      assertThatProcessInstance(processInstanceEvent)
+          .isCompleted()
+          .hasVariable("result120", "output-of-1.2.0")
+          .hasVariable("result130", "output-of-1.3.0");
     }
   }
 

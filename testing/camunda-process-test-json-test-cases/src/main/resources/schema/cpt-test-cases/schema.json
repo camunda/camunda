@@ -1076,6 +1076,10 @@
           "description": "The decision definition ID to mock.",
           "type": "string"
         },
+        "versionTag": {
+          "description": "The version tag to assign to the deployed stub decision. Optional. Required when the business rule task uses bindingType=\"versionTag\".",
+          "type": "string"
+        },
         "variables": {
           "description": "The variables to set as the decision output. Optional. Deprecated, use decisionOutput.",
           "type": "object",

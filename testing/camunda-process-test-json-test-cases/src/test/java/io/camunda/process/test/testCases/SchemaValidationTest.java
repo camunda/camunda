@@ -138,6 +138,26 @@ public class SchemaValidationTest {
   }
 
   @Test
+  void shouldRejectMockDmnDecisionWithNonStringVersionTag() {
+    // given
+    final String json =
+        "{\"testCases\":[{\"name\":\"mock dmn decision\",\"instructions\":[{"
+            + "\"type\":\"MOCK_DMN_DECISION\","
+            + "\"decisionDefinitionId\":\"credit-check-decision\","
+            + "\"versionTag\":123"
+            + "}]}]}";
+
+    // when
+    final List<Error> errors = jsonSchema.validate(json, InputFormat.JSON);
+
+    // then
+    assertThat(errors)
+        .extracting(error -> error.getInstanceLocation().toString(), Error::getMessage)
+        .contains(
+            tuple("/testCases/0/instructions/0/versionTag", "integer found, string expected"));
+  }
+
+  @Test
   void shouldRejectConditionalBehaviorWithEmptyActions() throws IOException {
     // given
     final String json =
