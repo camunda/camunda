@@ -19,7 +19,7 @@ const camundaEnv = () => ({
 
 // Mocks the k6 runtime modules, sets the Camunda environment, imports the module and registers the
 // `beforeEach` hook that resets the mocks. Call it once at the top level of a test file.
-export async function loadK6Module(path, { data } = {}) {
+export async function loadK6Module(path, { data, env = {} } = {}) {
   const http = { request: mock.fn(), post: mock.fn(), file: mock.fn() };
   const check = mock.fn();
   const sleep = mock.fn();
@@ -31,12 +31,12 @@ export async function loadK6Module(path, { data } = {}) {
     });
   }
 
-  globalThis.__ENV = camundaEnv();
+  globalThis.__ENV = { ...camundaEnv(), ...env };
 
   const script = await import(path);
 
   beforeEach(() => {
-    globalThis.__ENV = camundaEnv();
+    globalThis.__ENV = { ...camundaEnv(), ...env };
     http.request.mock.resetCalls();
     http.post.mock.resetCalls();
     http.file.mock.resetCalls();

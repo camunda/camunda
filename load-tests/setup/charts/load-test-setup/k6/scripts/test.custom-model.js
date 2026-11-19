@@ -21,12 +21,17 @@ import { loadData } from "./lib.data.js";
  *   by the process instance key (a small search that does not depend on the user task indexes),
  *   assigns it, and completes it. The rate goes through the stages, e.g. "50:10m+100:10m+150:10m".
  *   Set USER_TASK_USERS=0 and API_RATE=0 to run it alone, and stop the Java starter.
+ * - If PREFILL_SENTINEL_ASSIGNEE is set, setup() waits until a user task assigned to that user
+ *   exists. The `postgresql.prefill` Job inserts it after all the other rows, so the load starts
+ *   only when the table is full. Raise SETUP_TIMEOUT above the duration of the prefill.
  */
 
 const MODEL_FILE = __ENV.MODEL_FILE || "benchmark-process.bpmn";
 const PROCESS_ID = __ENV.PROCESS_ID || "benchmark-process";
 // Set when multi-tenancy checks are enabled, e.g. `<default>`.
 const TENANT_ID = __ENV.TENANT_ID || "";
+// Assignee of the last row inserted by the `postgresql.prefill` Job. Empty: do not wait.
+const PREFILL_SENTINEL_ASSIGNEE = __ENV.PREFILL_SENTINEL_ASSIGNEE || "";
 // Number of people that work on user tasks at the same time.
 const USER_TASK_USERS = parseInt(__ENV.USER_TASK_USERS || "10");
 // Time between assignment and completion, random in this range, e.g. "2s-8s" or "5s".
@@ -137,7 +142,7 @@ export function resetUserTaskState() {
 let nextAbandonedCheck = null;
 
 export const options = {
-  setupTimeout: "20m",
+  setupTimeout: __ENV.SETUP_TIMEOUT || "20m",
   scenarios: {
     ...userTasksScenario(USER_TASK_USERS),
     ...drainScenario(USER_TASK_DRAIN_RATE),
@@ -277,6 +282,35 @@ export function setup() {
     sleep(waitTime);
   }
   console.log(`Deployed ${MODEL_FILE}, process ID ${PROCESS_ID}.`);
+  waitForPrefill();
+}
+
+/* Waits for the sentinel user task of the prefill Job. The Job writes it last, after the
+ * VACUUM ANALYZE, so its presence means that the table is full and ready. */
+export function waitForPrefill() {
+  if (!PREFILL_SENTINEL_ASSIGNEE) {
+    return;
+  }
+  const pauseSeconds = 15;
+  for (let waited = 0; ; waited += pauseSeconds) {
+    const search = client.post("/v2/user-tasks/search", {
+      filter: { assignee: PREFILL_SENTINEL_ASSIGNEE },
+      page: { limit: 1 },
+    });
+    if (search.status === 200 && (search.json("items") || []).length > 0) {
+      console.log(
+        `Prefill done, found the sentinel user task after ${waited}s.`,
+      );
+      return;
+    }
+    // One line per 5 minutes: the prefill can take a long time.
+    if (waited % 300 === 0) {
+      console.log(
+        `Waiting for the prefill sentinel (assignee ${PREFILL_SENTINEL_ASSIGNEE}), ${waited}s so far.`,
+      );
+    }
+    sleep(pauseSeconds);
+  }
 }
 
 /* Starts one instance. A rejection (503 backpressure) is not retried: it shows as a failed
