@@ -690,6 +690,12 @@ jobs:
         run: |
           ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
             testClasses
+      # Strict compile check. Isolated projects works for building only, not for running tests,
+      # so this runs the compile lifecycle task and never a test task.
+      - name: Compile with isolated projects
+        run: |
+          ./gradlew --isolated-projects --console=plain -Pskip.fe.build \
+            testClasses
       - name: Package distribution
         run: |
           ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
