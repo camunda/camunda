@@ -72,6 +72,23 @@ class BackupReadRateLimiterTest {
   }
 
   @Test
+  void shouldKeepLimitingWhenTheClockWrapsAround() throws InterruptedException {
+    // given - System.nanoTime() may start anywhere, so its values can overflow while reading
+    clock.advance(Duration.ofNanos(Long.MAX_VALUE - Duration.ofMillis(150).toNanos()));
+    final var limiter =
+        new BackupReadRateLimiter(
+            10 * MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep, clock::schedule);
+
+    // when - 3 MiB in chunks of 1 MiB, across the overflow
+    for (int i = 0; i < 3; i++) {
+      acquire(limiter, MIB);
+    }
+
+    // then - the first chunk is free, the other two cost 100ms each
+    assertThat(clock.slept()).isEqualTo(Duration.ofMillis(200));
+  }
+
+  @Test
   void shouldNotAccumulateCreditWhileIdle() throws InterruptedException {
     // given
     final var limiter =

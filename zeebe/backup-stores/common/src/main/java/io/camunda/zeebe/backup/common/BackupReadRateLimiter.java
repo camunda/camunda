@@ -201,7 +201,8 @@ public final class BackupReadRateLimiter {
     final long costNanos = (long) ((double) bytes * TimeUnit.SECONDS.toNanos(1) / bytesPerSecond);
     synchronized (this) {
       final long now = nanoClock.getAsLong();
-      final long start = Math.max(now, nextFreeNanos);
+      // nanoTime values may overflow, so only their difference is meaningful
+      final long start = nextFreeNanos - now > 0 ? nextFreeNanos : now;
       nextFreeNanos = start + costNanos;
       return new Reservation(start - now, start + costNanos);
     }
