@@ -44,6 +44,29 @@ interface AzureSecretResolver {
     return Integer.MAX_VALUE;
   }
 
+  /**
+   * Makes the one call to the vault that this mode's minimal permission allows, so the startup
+   * check fails exactly when this mode cannot work.
+   *
+   * @throws RuntimeException as the SDK throws it, for {@link StartupCheck} to classify
+   */
+  void validateConnectivity();
+
+  /** What {@link #validateConnectivity()} does, as the end of "cannot ...", for the log. */
+  String probeDescription();
+
+  /**
+   * Tells the operator what to grant when the vault answers {@link #validateConnectivity()} with
+   * 403: the role, or the access-policy permission, this mode needs.
+   */
+  String accessDeniedHint();
+
+  /**
+   * Whether a 403 to {@link #validateConnectivity()} means that secrets fail to resolve too, rather
+   * than only that the probe is not permitted.
+   */
+  boolean accessDeniedFailsResolution();
+
   static Map<String, SecretResolutionResult> notFound(final Set<String> names) {
     return names.stream()
         .collect(

@@ -95,10 +95,6 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
       final MeterRegistry meterRegistry,
       final Configuration environment,
       final @Nullable HttpClient httpClient) {
-    final AzureSecretResolver resolver =
-        config.containerSecretId() != null
-            ? new ContainerSecretResolver()
-            : new OneByOneSecretResolver();
     final var credentialExecutor = newCredentialExecutor();
     final var signInMonitor =
         new SignInMonitor(physicalTenantId, storeId, config.vaultUrl(), meterRegistry);
@@ -106,13 +102,25 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
       final var credential =
           AzureCredentialChain.build(
               config, environment, httpClient, credentialExecutor, signInMonitor);
+      final var client = buildClient(config, credential, httpClient);
       return new AzureKeyVaultSecretStore(
-          resolver, buildClient(config, credential, httpClient), credentialExecutor, signInMonitor);
+          resolver(config, client), client, credentialExecutor, signInMonitor);
     } catch (final RuntimeException e) {
       signInMonitor.close();
       credentialExecutor.shutdownNow();
       throw e;
     }
+  }
+
+  private static AzureSecretResolver resolver(
+      final AzureKeyVaultStoreConfig config, final SecretClient client) {
+    final var containerSecretId = config.containerSecretId();
+    if (containerSecretId == null) {
+      return new OneByOneSecretResolver(client);
+    }
+    final var pathPrefix = config.pathPrefix();
+    return new ContainerSecretResolver(
+        client, (pathPrefix == null ? "" : pathPrefix) + containerSecretId);
   }
 
   /**

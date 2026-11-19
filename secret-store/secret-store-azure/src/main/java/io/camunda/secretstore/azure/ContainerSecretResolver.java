@@ -7,6 +7,7 @@
  */
 package io.camunda.secretstore.azure;
 
+import com.azure.security.keyvault.secrets.SecretClient;
 import io.camunda.secretstore.SecretResolutionResult;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,14 @@ import java.util.Set;
  */
 final class ContainerSecretResolver implements AzureSecretResolver {
 
+  private final SecretClient client;
+  private final String containerSecretName;
+
+  ContainerSecretResolver(final SecretClient client, final String containerSecretName) {
+    this.client = client;
+    this.containerSecretName = containerSecretName;
+  }
+
   @Override
   public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
     return AzureSecretResolver.notFound(names);
@@ -29,5 +38,27 @@ final class ContainerSecretResolver implements AzureSecretResolver {
   @Override
   public List<String> list() {
     return List.of();
+  }
+
+  /** Reads the container secret: the only call this mode makes, needing only {@code get}. */
+  @Override
+  public void validateConnectivity() {
+    client.getSecret(containerSecretName);
+  }
+
+  @Override
+  public String probeDescription() {
+    return "read its container secret '" + containerSecretName + "'";
+  }
+
+  @Override
+  public String accessDeniedHint() {
+    return "grant the identity the 'Key Vault Secrets User' role on the vault, or, if the vault uses"
+        + " access policies, the 'get' secret permission";
+  }
+
+  @Override
+  public boolean accessDeniedFailsResolution() {
+    return true;
   }
 }
