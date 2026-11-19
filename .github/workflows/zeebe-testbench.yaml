@@ -76,6 +76,8 @@ jobs:
           vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
           vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
           vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
       - id: image-tag
         name: Calculate image tag
@@ -182,3 +184,5 @@ jobs:
           secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
           secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
