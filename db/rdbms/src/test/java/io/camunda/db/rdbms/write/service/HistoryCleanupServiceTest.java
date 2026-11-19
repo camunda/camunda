@@ -109,6 +109,7 @@ class HistoryCleanupServiceTest {
     historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
     when(config.history()).thenReturn(historyConfig);
     when(historyConfig.defaultHistoryTTL()).thenReturn(Duration.ofDays(90));
+    when(historyConfig.defaultBatchOperationHistoryTTL()).thenReturn(Duration.ofDays(6));
     when(historyConfig.batchOperationCancelProcessInstanceHistoryTTL())
         .thenReturn(Duration.ofDays(2));
     when(historyConfig.batchOperationMigrateProcessInstanceHistoryTTL())
@@ -361,7 +362,7 @@ class HistoryCleanupServiceTest {
         .isEqualTo(Duration.ofDays(5));
 
     assertThat(historyCleanupService.resolveBatchOperationTTL(BatchOperationType.ADD_VARIABLE))
-        .isEqualTo(Duration.ofDays(90)); // default history TTL
+        .isEqualTo(Duration.ofDays(6)); // default batch operation history TTL
   }
 
   @Test
