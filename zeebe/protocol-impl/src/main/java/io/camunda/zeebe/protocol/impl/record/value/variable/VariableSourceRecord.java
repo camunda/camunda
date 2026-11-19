@@ -12,7 +12,10 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.protocol.record.value.VariableSourceValue;
+import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class VariableSourceRecord extends UnifiedRecordValue implements VariableSourceValue {
 
   //  public static final VariableSourceRecord API =
@@ -33,7 +36,7 @@ public class VariableSourceRecord extends UnifiedRecordValue implements Variable
 
   @Override
   public VariableOperationType getType() {
-    return typeProp.getValue();
+    return Objects.requireNonNull(typeProp.getValue());
   }
 
   public VariableSourceRecord setType(final VariableOperationType variableSourceType) {
