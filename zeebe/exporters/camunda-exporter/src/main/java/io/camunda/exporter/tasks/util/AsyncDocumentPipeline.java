@@ -242,15 +242,6 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     return new PipelineStats(totalRead.get(), totalProcessed.get(), totalTimeTakenMs.get());
   }
 
-  private static void verifyBatchSize(final int batchSize) {
-    if (batchSize > MAX_BATCH_SIZE) {
-      throw new IllegalArgumentException("Batch size cannot be greater than " + MAX_BATCH_SIZE);
-    }
-    if (batchSize <= 0) {
-      throw new IllegalArgumentException("Batch size must be greater than zero");
-    }
-  }
-
   public record DocumentBatch<D, T>(List<D> documents, T searchAfter) {
     public static <D, T> DocumentBatch<D, T> empty() {
       return new DocumentBatch<>(List.of(), null);
@@ -374,22 +365,6 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
     public CompletableFuture<PipelineStats> buildAndExecute() {
       final var pipeline = new AsyncDocumentPipeline<>(this);
       return pipeline.execute();
-    }
-
-    private void verifyMinBatchSize(final int minBatchSize, final int batchSize) {
-      if (minBatchSize > batchSize) {
-        throw new IllegalArgumentException(
-            "Min batch (" + minBatchSize + ") is greater than batch size (" + batchSize + ")");
-      }
-    }
-
-    private static void verifyBatchSize(final int batchSize) {
-      if (batchSize > MAX_BATCH_SIZE) {
-        throw new IllegalArgumentException("Batch size cannot be greater than " + MAX_BATCH_SIZE);
-      }
-      if (batchSize <= 0) {
-        throw new IllegalArgumentException("Batch size must be greater than zero");
-      }
     }
   }
 
