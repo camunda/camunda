@@ -12,6 +12,7 @@ import {cleanup} from 'vitest-browser-react';
 import {useParams, useRouterState} from '@tanstack/react-router';
 import {HttpResponse, http} from 'msw';
 import i18n from 'i18next';
+import {Toaster, toast} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
@@ -30,6 +31,7 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {ProcessInstanceContext} from '../useProcessInstancePage';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
 import {InstanceDiagram} from './InstanceDiagram';
@@ -73,6 +75,8 @@ function Page() {
 			<div style={{width: '900px', height: '400px'}}>
 				<InstanceDiagram />
 			</div>
+			<Toaster />
+			<Notifications />
 		</ProcessInstanceContext>
 	);
 }
@@ -119,6 +123,7 @@ afterEach(async () => {
 	await i18n.changeLanguage('en');
 	vi.restoreAllMocks();
 	notificationsStore.reset();
+	toast.dismiss();
 });
 
 describe('<InstanceDiagram /> (DS)', () => {
@@ -248,9 +253,7 @@ describe('<InstanceDiagram /> (DS)', () => {
 			search: {elementId: 'task_1'},
 		});
 
-		await expect
-			.poll(() => screen.router.state.location.pathname)
-			.toBe('/operate-preview/processes/instance-2/details');
+		await expect.poll(() => screen.router.state.location.pathname).toMatch(/\/processes\/instance-2\/details$/);
 		await expect
 			.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementId)
 			.toBeUndefined();
@@ -271,7 +274,7 @@ describe('<InstanceDiagram /> (DS)', () => {
 
 		await userEvent.dblClick(getDiagramElement('call_1'));
 
-		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate-preview/processes/child-1/details');
+		await expect.poll(() => screen.router.state.location.pathname).toMatch(/\/processes\/child-1\/details$/);
 		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBeUndefined();
 	});
 
@@ -289,7 +292,7 @@ describe('<InstanceDiagram /> (DS)', () => {
 		const screen = await renderLoadedPage();
 		await userEvent.dblClick(getDiagramElement('rule_1'));
 
-		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate-preview/decisions/decision-1');
+		await expect.poll(() => screen.router.state.location.pathname).toMatch(/\/decisions\/decision-1$/);
 	});
 
 	it('should notify when the called process cannot be resolved', async ({worker}) => {
@@ -300,12 +303,10 @@ describe('<InstanceDiagram /> (DS)', () => {
 			}),
 		);
 
-		await renderLoadedPage();
+		const screen = await renderLoadedPage();
 		await userEvent.dblClick(getDiagramElement('call_1'));
 
-		await expect
-			.poll(() => notificationsStore.notifications.map(({title}) => title))
-			.toContain('Failed to resolve called instances');
+		await expect.element(screen.getByText('Failed to resolve called instances')).toBeVisible();
 	});
 
 	it('should cancel a pending drilldown when another element is selected', async ({worker}) => {

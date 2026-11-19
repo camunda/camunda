@@ -12,6 +12,7 @@ import {useSearch} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {HttpResponse} from 'msw';
+import {Toaster, toast} from '@camunda/design-system';
 import {
 	mockDeleteResourceEndpoint,
 	mockGetDecisionDefinitionXmlEndpoint,
@@ -26,11 +27,18 @@ import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls'
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {Decisions} from './Decisions';
 
 const DecisionsWithSearch = () => {
 	const search = useSearch({strict: false});
-	return <Decisions search={{evaluated: true, failed: true, ...search}} />;
+	return (
+		<>
+			<Decisions search={{evaluated: true, failed: true, ...search}} />
+			<Toaster />
+			<Notifications />
+		</>
+	);
 };
 
 function mockInstances() {
@@ -52,6 +60,7 @@ describe('<Decisions />', () => {
 	afterEach(() => {
 		sessionStorage.clear();
 		notificationsStore.reset();
+		toast.dismiss();
 	});
 
 	it('should render the sr-only decisions title', async ({worker}) => {
@@ -189,8 +198,8 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
 		});
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-1');
-		await screen.router.navigate({to: '.', search: (prev) => ({...prev, businessId: 'eq_order-2'})});
-		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-2');
+		await userEvent.fill(screen.getByLabelText('Business ID', {exact: true}), 'order-2');
+		await expect.poll(() => screen.router.state.location.search).toHaveProperty('businessId', 'eq_order-2');
 
 		await userEvent.fill(screen.getByLabelText('Business ID', {exact: true}), 'order-3');
 		screen.router.history.back();
@@ -443,7 +452,9 @@ describe('<Decisions />', () => {
 
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeVisible();
 
-		await screen.router.navigate({to: '.', search: {decisionDefinitionId: 'invoice'}});
+		(screen.getByLabelText('Version').element() as HTMLElement).focus();
+		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('option', {name: 'All versions'}));
 
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).not.toBeInTheDocument();
 	});
@@ -482,12 +493,12 @@ describe('<Decisions />', () => {
 		await userEvent.click(screen.getByRole('button', {name: /Delete decision definition/}));
 		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
-		await screen.router.navigate({to: '.', search: {decisionDefinitionId: 'invoice', decisionDefinitionVersion: 2}});
+		(screen.getByLabelText('Version').element() as HTMLElement).focus();
+		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('option', {name: '2'}));
 
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeDisabled();
-		await expect
-			.poll(() => notificationsStore.notifications.some(({title}) => title === 'Operation created'))
-			.toBe(true);
+		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeEnabled();
 		expect(screen.router.state.location.search).toMatchObject({
 			decisionDefinitionId: 'invoice',

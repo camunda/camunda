@@ -101,13 +101,13 @@ describe('<DecisionFilters /> (design system)', () => {
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionId: 'invoice'});
 	});
 
-	it('should clear the selected name when the decision is removed from the URL', async () => {
+	it('should clear the selected name when navigating back', async () => {
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 		await userEvent.click(screen.getByLabelText('Name'));
 		await userEvent.click(screen.getByRole('option', {name: 'Invoice'}));
 		await expect.element(screen.getByLabelText('Name')).toHaveTextContent('Invoice');
 
-		await screen.router.navigate({to: '.', search: {decisionDefinitionId: undefined}});
+		screen.router.history.back();
 
 		await expect.element(screen.getByLabelText('Name')).not.toHaveTextContent('Invoice');
 	});

@@ -15,6 +15,7 @@ import type {SetupWorker} from 'msw/browser';
 import {z} from 'zod';
 import {useRouterState} from '@tanstack/react-router';
 import type {DocumentReference, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
+import {Toaster, toast} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -36,6 +37,7 @@ import {variableRow} from '#/shared-test-modules/variable-row';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createDocumentReference} from '#/shared-test-modules/api-mocks/documents';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {ProcessInstancePageProvider} from '../ProcessInstancePageProvider';
 import {ProcessInstanceVariables} from './ProcessInstanceVariables';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
@@ -49,6 +51,7 @@ const PROCESS_INSTANCE_ID = '2251799813685280';
 afterEach(async () => {
 	await cleanup();
 	notificationsStore.reset();
+	toast.dismiss();
 });
 
 function variablesResponse(
@@ -81,6 +84,8 @@ function renderVariables(
 				>
 					<ProcessInstanceVariables />
 				</ProcessInstancePageProvider>
+				<Toaster />
+				<Notifications />
 			</div>
 		);
 	}
@@ -392,9 +397,7 @@ describe('<ProcessInstanceVariables />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Copy payload'}));
 
-		await expect
-			.poll(() => notificationsStore.notifications.map(({title}) => title))
-			.toContain('Copied payload to clipboard');
+		await expect.element(screen.getByText('Copied payload to clipboard')).toBeVisible();
 	});
 
 	it('should open the full value of a variable', async ({worker}) => {
@@ -430,9 +433,7 @@ describe('<ProcessInstanceVariables />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Open'}));
 
-		await expect
-			.poll(() => notificationsStore.notifications.map(({title}) => title))
-			.toContain('Failed to fetch full amount');
+		await expect.element(screen.getByText('Failed to fetch full amount')).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Open'})).toHaveFocus();
 		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
 	});
@@ -877,9 +878,7 @@ describe('<ProcessInstanceVariables />', () => {
 			const screen = await renderVariables();
 			const row = variableRow(screen, 'files');
 			await userEvent.click(row.getByRole('button', {name: 'Open'}));
-			await expect
-				.poll(() => notificationsStore.notifications.map(({title}) => title))
-				.toContain('Failed to fetch full files');
+			await expect.element(screen.getByText('Failed to fetch full files')).toBeVisible();
 
 			await userEvent.click(row.getByRole('button', {name: /^View documents for variable /}));
 

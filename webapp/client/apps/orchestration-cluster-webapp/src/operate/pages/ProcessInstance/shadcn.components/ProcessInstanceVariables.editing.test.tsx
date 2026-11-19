@@ -14,6 +14,7 @@ import type {SetupWorker} from 'msw/browser';
 import {z} from 'zod';
 import {useRouterState} from '@tanstack/react-router';
 import type {ProcessInstance, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
+import {Toaster, toast} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -29,6 +30,7 @@ import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-t
 import {variableRow} from '#/shared-test-modules/variable-row';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {ProcessInstancePageProvider} from '../ProcessInstancePageProvider';
 import {ProcessInstanceVariables} from './ProcessInstanceVariables';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
@@ -43,6 +45,7 @@ const ELEMENT_INSTANCE_KEY = '2251799813685299';
 afterEach(async () => {
 	await cleanup();
 	notificationsStore.reset();
+	toast.dismiss();
 });
 
 function variablesResponse(items: Variable[]) {
@@ -79,8 +82,8 @@ async function appendToNewValue(group: Locator, text: string) {
 	await appendToEditor(group, text);
 }
 
-function notificationTitles() {
-	return notificationsStore.notifications.map(({title}) => title);
+function notifications(screen: Awaited<ReturnType<typeof renderVariables>>) {
+	return screen.getByRole('region', {name: /^Notifications/}).getByRole('button', {name: 'Dismiss'});
 }
 
 function SelectElementInstanceButton() {
@@ -117,6 +120,8 @@ function renderVariables({
 					<SelectElementInstanceButton />
 					<ProcessInstanceVariables />
 				</ProcessInstancePageProvider>
+				<Toaster />
+				<Notifications />
 			</div>
 		);
 	}
@@ -182,7 +187,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 			expect(getNextPageRequests()).toBe(3);
 			await expect.element(screen.getByRole('button', {name: 'Save'})).not.toBeInTheDocument();
 			await expect.element(screen.getByText('Add new variable "foo"')).not.toBeInTheDocument();
-			expect(notificationTitles()).toEqual([]);
+			await expect.element(notifications(screen)).not.toBeInTheDocument();
 		}
 
 		async function addDuplicateVariable(screen: Awaited<ReturnType<typeof renderVariables>>) {
@@ -237,7 +242,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		await appendToEditor(row.getByText('100', {exact: true}), '1', row);
 		await userEvent.click(row.getByRole('button', {name: 'Save'}));
 
-		await expect.poll(notificationTitles).toEqual(['Variable updated']);
+		await expect.element(screen.getByText('Variable updated')).toBeVisible();
 		await expect.element(row.getByRole('button', {name: /^Edit variable /})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeEnabled();
 	});
@@ -275,7 +280,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		await userEvent.type(screen.getByRole('searchbox', {name: 'Search variables by name'}), 'amount{Enter}');
 
 		await expect.element(row.getByRole('button', {name: 'Save'})).toBeEnabled();
-		expect(notificationTitles()).toEqual([]);
+		await expect.element(notifications(screen)).not.toBeInTheDocument();
 	});
 
 	it('should save the full value of an edited truncated variable', async ({worker}) => {
@@ -308,7 +313,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		await appendToEditor(row.getByText('1234567', {exact: true}), '8', row);
 		await userEvent.click(row.getByRole('button', {name: 'Save'}));
 
-		await expect.poll(notificationTitles).toEqual(['Variable updated']);
+		await expect.element(screen.getByText('Variable updated')).toBeVisible();
 	});
 
 	it('should add a new variable', async ({worker}) => {
@@ -332,7 +337,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		await appendToNewValue(screen.getByRole('group', {name: 'Value'}), '123');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
-		await expect.poll(notificationTitles).toEqual(['Variable added']);
+		await expect.element(screen.getByText('Variable added')).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeEnabled();
 		await expect.element(screen.getByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
 	});
@@ -380,7 +385,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 
 		await expect.element(screen.getByText('Name should be unique')).toBeVisible();
 		await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveValue('foo');
-		expect(notificationTitles()).toEqual([]);
+		await expect.element(notifications(screen)).not.toBeInTheDocument();
 	});
 
 	it('should not save a new variable with a value that is not JSON', async ({worker}) => {
@@ -405,7 +410,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 
 		await expect.element(row.getByRole('button', {name: 'Copy amount'})).toHaveTextContent('100');
 		await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeEnabled();
-		expect(notificationTitles()).toEqual([]);
+		await expect.element(notifications(screen)).not.toBeInTheDocument();
 	});
 
 	it('should discard a pending new variable when the scope changes', async ({worker}) => {
@@ -428,9 +433,9 @@ describe('<ProcessInstanceVariables /> editing', () => {
 	});
 
 	it.for([
-		{status: 500, kind: 'error', title: 'Variable could not be saved'},
-		{status: 403, kind: 'warning', title: "You don't have permission to perform this operation"},
-	])('should show a $kind notification when saving fails with $status', async ({status, kind, title}, {worker}) => {
+		{status: 500, title: 'Variable could not be saved'},
+		{status: 403, title: "You don't have permission to perform this operation"},
+	])('should notify when saving fails with $status', async ({status, title}, {worker}) => {
 		worker.use(
 			mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}),
 			mockUpdateElementInstanceVariablesEndpoint({
@@ -444,8 +449,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		await appendToNewValue(screen.getByRole('group', {name: 'Value'}), '1');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
-		await expect.poll(() => notificationsStore.notifications.map((notification) => notification.kind)).toEqual([kind]);
-		expect(notificationTitles()).toEqual([title]);
+		await expect.element(screen.getByText(title)).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeEnabled();
 	});
 
@@ -478,7 +482,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		await appendToEditor(screen.getByRole('dialog').getByText('100', {exact: true}), '5', screen.getByRole('dialog'));
 		await userEvent.click(screen.getByRole('button', {name: 'Apply'}));
 
-		await expect.poll(notificationTitles).toEqual(['Variable updated']);
+		await expect.element(screen.getByText('Variable updated')).toBeVisible();
 	});
 
 	it.for([
@@ -546,7 +550,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 
 		await userEvent.click(row.getByRole('button', {name: /^Edit variable /}));
 
-		await expect.poll(notificationTitles).toEqual(['Variable could not be fetched']);
+		await expect.element(screen.getByText('Variable could not be fetched')).toBeVisible();
 		await expect.element(row.getByRole('button', {name: 'Copy payload'})).toBeVisible();
 		await expect.element(row.getByRole('textbox', {name: 'payload'})).not.toBeInTheDocument();
 		await expect.element(row.getByRole('button', {name: 'Save'})).toBeDisabled();
