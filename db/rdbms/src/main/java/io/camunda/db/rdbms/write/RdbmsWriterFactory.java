@@ -26,6 +26,7 @@ import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
+import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 public class RdbmsWriterFactory {
@@ -104,7 +105,7 @@ public class RdbmsWriterFactory {
         flowNodeInstanceMapper,
         incidentMapper,
         processInstanceMapper,
-        purgeMapper,
+        new RdbmsPurger(sqlSessionFactory, vendorDatabaseProperties),
         userTaskMapper,
         variableMapper,
         vendorDatabaseProperties,

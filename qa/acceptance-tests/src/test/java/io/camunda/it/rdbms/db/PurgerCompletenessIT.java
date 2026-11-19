@@ -8,19 +8,14 @@
 package io.camunda.it.rdbms.db;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.PurgeMapper;
+import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
@@ -38,30 +33,23 @@ public class PurgerCompletenessIT {
 
   @Autowired JdbcTemplate jdbcTemplate;
 
-  @Autowired private PurgeMapper purgeMapper;
-  @Autowired private VendorDatabaseProperties vendorDatabaseProperties;
+  @Autowired private RdbmsService rdbmsService;
 
   @Test
   public void shouldFindWithSpecificFilter() {
-    final var spy = spy(purgeMapper);
-
-    final var rdbmsPurger = new RdbmsPurger(spy, vendorDatabaseProperties);
+    final var rdbmsPurger = rdbmsService.createWriter(1).getRdbmsPurger();
 
     rdbmsPurger.purgeRdbms();
 
     final var tablesToBeTruncated = getAllCamundaTableNames();
+    final var purgedTables = RdbmsPurger.TABLE_NAMES;
 
-    final ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
-    verify(spy, Mockito.atLeastOnce()).truncateTable(argumentCaptor.capture());
-
-    final var actuallyTruncated = argumentCaptor.getAllValues();
-
-    assertThat(actuallyTruncated)
+    assertThat(purgedTables)
         .describedAs("should truncate every Camunda table")
         .containsExactlyInAnyOrderElementsOf(tablesToBeTruncated);
     assertThat(tablesToBeTruncated)
         .describedAs("should only truncate Camunda tables")
-        .containsExactlyInAnyOrderElementsOf(actuallyTruncated);
+        .containsExactlyInAnyOrderElementsOf(purgedTables);
   }
 
   private List<String> getAllCamundaTableNames() {
