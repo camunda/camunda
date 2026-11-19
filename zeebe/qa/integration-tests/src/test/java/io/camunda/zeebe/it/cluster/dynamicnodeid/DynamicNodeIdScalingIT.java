@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.cluster.dynamicnodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import feign.FeignException;
 import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.cluster.NodeIdProvider.S3;
@@ -580,9 +581,12 @@ public class DynamicNodeIdScalingIT {
       clusterActuator.patchCluster(scaleDownRequest, false, false);
 
       // then - verify scale down operation completes
+      // the gateway may still route the query to the coordinator while it shuts down, which
+      // yields a 502 until the gateway learns that the broker has left
       Awaitility.await("Until scale down operation completes")
           .atMost(Duration.ofMinutes(2))
           .pollInterval(Duration.ofSeconds(2))
+          .ignoreException(FeignException.class)
           .untilAsserted(
               () -> assertConfigurationChangeCompleted(clusterActuator, targetClusterSize()));
 
