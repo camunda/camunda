@@ -42,7 +42,7 @@ runs:
       with:
         url: ${{ inputs.secret_vault_address }}
         method: ${{ inputs.secret_vault_jwtRole != '' && 'jwt' || 'approle' }}
-        path: ${{ inputs.secret_vault_jwtPath }}
+        path: ${{ inputs.secret_vault_jwtRole != '' && inputs.secret_vault_jwtPath || '' }}
         role: ${{ inputs.secret_vault_jwtRole }}
         jwtGithubAudience: ${{ inputs.secret_vault_jwtAudience }}
         roleId: ${{ inputs.secret_vault_jwtRole == '' && inputs.secret_vault_roleId || '' }}
