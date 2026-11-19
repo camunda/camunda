@@ -1,0 +1,110 @@
+{{- if and .Values.postgresql.enabled (gt (int .Values.postgresql.prefill.userTasks) 0) -}}
+---
+# Experiment for camunda/camunda#67171: fills `USER_TASK` with synthetic rows before the load, so
+# that the table and its indexes are big. The k6 `custom-model` test waits for the sentinel row
+# (see PREFILL_SENTINEL_ASSIGNEE in `k6/scripts/test.custom-model.js`) before it starts the load.
+#
+# Liquibase creates the table when Camunda starts, so the Job first waits for the table and for the
+# last index of the changeset that creates it. The rows come from a deterministic formula (no
+# random()), so two runs get the same data. Keys start at 1,000,000,000, far below the keys of Zeebe.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgresql-prefill
+  labels:
+    app: postgresql-prefill
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: postgresql-prefill
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        topology.kubernetes.io/zone: "{{ .Values.topologyZone }}"
+        {{- toYaml .Values.postgresql.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.postgresql.tolerations | nindent 8 }}
+      containers:
+        - name: prefill
+          image: {{ .Values.postgresql.image.registry }}/{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}
+          env:
+            - name: PGHOST
+              value: {{ .Values.postgresql.clusterName }}-rw
+            - name: PGDATABASE
+              value: {{ .Values.postgresql.database.name }}
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "load-test-setup.postgresql.cnpg-secret-name" . }}
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "load-test-setup.postgresql.cnpg-secret-name" . }}
+                  key: password
+            - name: ROWS
+              value: "{{ int .Values.postgresql.prefill.userTasks }}"
+            - name: BATCH
+              value: "{{ int .Values.postgresql.prefill.batchSize }}"
+            - name: SENTINEL
+              value: "{{ .Values.postgresql.prefill.sentinelAssignee }}"
+          command: ["/bin/bash", "-c"]
+          args:
+            - |-
+              set -eu
+              q() { psql -v ON_ERROR_STOP=1 -At "$@"; }
+
+              until [ "$(q -c "select to_regclass('public.user_task') is not null and to_regclass('public.idx_user_task_fni_key') is not null" 2>/dev/null || echo f)" = t ]; do
+                echo "Waiting for the user_task table and its indexes"
+                sleep 10
+              done
+
+              if [ "$(q -c "select count(*) from user_task where assignee = '$SENTINEL'")" != 0 ]; then
+                echo "Sentinel row found, the prefill is already done"
+                exit 0
+              fi
+
+              T0="$(q -c "select now()")"
+              # ON CONFLICT makes a restart of the Job safe: rows already inserted are skipped.
+              for ((start = 0; start < ROWS; start += BATCH)); do
+                end=$((start + BATCH))
+                [ "$end" -gt "$ROWS" ] && end=$ROWS
+                q -v t0="$T0" -v rows="$ROWS" -v s="$start" -v e="$end" <<'SQL'
+              INSERT INTO user_task (
+                user_task_key, element_id, name, process_definition_id, creation_date, completion_date,
+                assignee, state, process_definition_key, process_instance_key, root_process_instance_key,
+                element_instance_key, tenant_id, process_definition_version, priority, partition_id)
+              SELECT
+                1000000000 + g, 'user_task', 'Prefilled task', 'benchmark-process', ts,
+                CASE WHEN g % 100 < 97 THEN ts + interval '1 hour' END,
+                CASE WHEN g % 100 <> 97 AND g % 100 <> 98 THEN 'user-' || (g % 250) END,
+                CASE WHEN g % 100 < 97 THEN 'COMPLETED' ELSE 'CREATED' END,
+                1, 2000000000 + g, 2000000000 + g, 3000000000 + g, '<default>', 1, 50, 1
+              FROM (
+                SELECT g, :'t0'::timestamptz - interval '90 days' * (1 - g::float8 / :rows) AS ts
+                FROM generate_series(:s + 1, :e) AS g) x
+              ON CONFLICT (user_task_key) DO NOTHING;
+              SQL
+                echo "Inserted rows up to $end of $ROWS"
+              done
+
+              # The visibility map lets index-only scans skip the heap, as after the autovacuum of a real system.
+              q -c "VACUUM (ANALYZE) user_task"
+
+              # The sentinel goes last: when k6 finds it, the table is full and analyzed.
+              q -c "INSERT INTO user_task (user_task_key, element_id, name, process_definition_id, creation_date,
+                      completion_date, assignee, state, tenant_id, process_definition_version, priority, partition_id)
+                    VALUES (999999999, 'user_task', 'Prefill sentinel', 'benchmark-process', '$T0'::timestamptz,
+                      '$T0'::timestamptz, '$SENTINEL', 'COMPLETED', '<default>', 1, 50, 1)
+                    ON CONFLICT (user_task_key) DO NOTHING"
+              echo "Prefill done"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+{{- end -}}

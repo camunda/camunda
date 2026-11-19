@@ -408,6 +408,18 @@ postgresql:
     # (D), (E) and (H), all with `NULLS FIRST` on the `user_task_key` tie-breaker, as in the report.
     set: issue
 
+  # -- Fill `USER_TASK` with synthetic rows before the load (experiment for camunda/camunda#67171).
+  # Only a Job; set the k6 env PREFILL_SENTINEL_ASSIGNEE to the same `sentinelAssignee` so that the
+  # k6 `custom-model` test waits for it. 97% of the rows are `COMPLETED`, 2% unassigned and 1% assigned
+  # `CREATED`. Assumes no table prefix and the `public` schema.
+  prefill:
+    # -- Number of rows. 0: no Job.
+    userTasks: 0
+    # -- Rows per INSERT transaction.
+    batchSize: 500000
+    # -- Assignee of the last row, which tells k6 that the table is full.
+    sentinelAssignee: prefill-done
+
   # -- The UID and GID used by the PostgreSQL container.
   # This should match the UID/GID in use by the specified Docker image.
   postgresUID: 999
