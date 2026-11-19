@@ -24,6 +24,17 @@
       depNameTemplate: "camunda/camunda-platform-helm",
       versioningTemplate: "regex:(?<major>\\d+)(\\.(?<minor>\\d+))?(\\.(?<patch>\\d+))(-alpha(?<prerelease>.*))?$",
     },
+    {
+      description: "Track the Docker image tags pinned in the load test versions.yaml files.",
+      customType: "regex",
+      managerFilePatterns: [
+        "load-tests/setup/*/versions.yaml",
+      ],
+      matchStrings: [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+tag: \"(?<currentValue>[^\"]+)\"",
+      ],
+      versioningTemplate: "semver",
+    },
   ],
 
   packageRules: [
@@ -78,6 +89,12 @@
         "docker.io/camunda/zeebe",
         "docker.io/camunda/camunda",
       ],
+      allowedVersions: "<= {{{major}}}.{{{minor}}}",
+    },
+
+    {
+      // Bump the Docker image tags of the load test versions.yaml files ; keep the same major.minor
+      matchFileNames: ["load-tests/setup/*/versions.yaml"],
       allowedVersions: "<= {{{major}}}.{{{minor}}}",
     },
 
