@@ -502,6 +502,7 @@ describe('<Decisions />', () => {
 		await userEvent.click(screen.getByRole('button', {name: /Delete decision definition/}));
 		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
+		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
 		(screen.getByLabelText('Version').element() as HTMLElement).focus();
 		await expect.element(screen.getByLabelText('Version')).toHaveFocus();
 		await userEvent.keyboard('{Enter}');
@@ -527,6 +528,7 @@ describe('<Decisions />', () => {
 		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
 		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
+		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
 		(screen.getByLabelText('Version').element() as HTMLElement).focus();
 		await expect.element(screen.getByLabelText('Version')).toHaveFocus();
 		await userEvent.keyboard('{Enter}');
