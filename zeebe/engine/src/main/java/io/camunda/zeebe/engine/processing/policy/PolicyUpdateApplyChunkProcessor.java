@@ -16,11 +16,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.PolicyUpdateState;
-import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
-import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
@@ -108,11 +106,7 @@ public final class PolicyUpdateApplyChunkProcessor
                   String.join("; ", commands.getLeft())));
       return;
     }
-    final var identityMetadata =
-        FollowUpCommandMetadata.of(
-            builder ->
-                builder.internalOperationReference(
-                    InternalOperationReference.policyUpdate(openUpdate.get().getUpdateKey())));
+    final var identityMetadata = PolicyUpdateBehavior.metadataFor(openUpdate.get());
     commands
         .get()
         .forEach(
