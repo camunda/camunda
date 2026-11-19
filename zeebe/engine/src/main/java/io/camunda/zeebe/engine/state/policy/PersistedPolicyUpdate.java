@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.policy;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import org.jspecify.annotations.NullMarked;
@@ -24,10 +25,13 @@ public final class PersistedPolicyUpdate extends UnpackedObject implements DbVal
       new ObjectProperty<>("update", new PolicyUpdateRecord());
   private final IntegerProperty bufferedChunkCountProp =
       new IntegerProperty("bufferedChunkCount", 0);
+  private final LongProperty updateKeyProp = new LongProperty("updateKey", -1L);
 
   public PersistedPolicyUpdate() {
-    super(2);
-    declareProperty(updateProp).declareProperty(bufferedChunkCountProp);
+    super(3);
+    declareProperty(updateProp)
+        .declareProperty(bufferedChunkCountProp)
+        .declareProperty(updateKeyProp);
   }
 
   /** The identifiers of the update; its sections are empty. */
@@ -44,6 +48,20 @@ public final class PersistedPolicyUpdate extends UnpackedObject implements DbVal
         .setSeqNo(chunk.getSeqNo())
         .setUpdateId(chunk.getUpdateId())
         .setChunkCount(chunk.getChunkCount());
+    return this;
+  }
+
+  /**
+   * The key of the update, from its first buffered chunk. The identity commands of the update carry
+   * it as batch operation reference, so a rejection of one of them can be traced back to the
+   * update.
+   */
+  public long getUpdateKey() {
+    return updateKeyProp.getValue();
+  }
+
+  public PersistedPolicyUpdate setUpdateKey(final long updateKey) {
+    updateKeyProp.setValue(updateKey);
     return this;
   }
 
@@ -64,7 +82,8 @@ public final class PersistedPolicyUpdate extends UnpackedObject implements DbVal
   /**
    * Whether the update is being applied. Applying starts when its last chunk is buffered and ends
    * when its version is committed, which removes the update. While it is applied, its identity
-   * commands may already be written, and nothing can undo them, so the update must not fail.
+   * commands may already be written, and nothing can undo them, so a new chunk must not fail the
+   * update. The update still fails if one of its identity commands is rejected.
    */
   public boolean isApplying() {
     return hasAllChunksBuffered();

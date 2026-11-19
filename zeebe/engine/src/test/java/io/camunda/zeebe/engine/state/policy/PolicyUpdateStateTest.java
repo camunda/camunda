@@ -37,7 +37,7 @@ final class PolicyUpdateStateTest {
     final var chunk = chunk("update-1", 1, 3).setRoles(List.<RoleRecordValue>of(role("role-1")));
 
     // when
-    state.bufferChunk(chunk);
+    state.bufferChunk(1L, chunk);
 
     // then
     final var openUpdate = state.getOpenUpdate().orElseThrow();
@@ -56,11 +56,11 @@ final class PolicyUpdateStateTest {
   @Test
   void shouldCompleteTheUpdateWhenEveryChunkIsBuffered() {
     // given
-    state.bufferChunk(chunk("update-1", 2, 3));
-    state.bufferChunk(chunk("update-1", 0, 3));
+    state.bufferChunk(1L, chunk("update-1", 2, 3));
+    state.bufferChunk(1L, chunk("update-1", 0, 3));
 
     // when
-    state.bufferChunk(chunk("update-1", 1, 3));
+    state.bufferChunk(1L, chunk("update-1", 1, 3));
 
     // then
     final var openUpdate = state.getOpenUpdate().orElseThrow();
@@ -71,10 +71,12 @@ final class PolicyUpdateStateTest {
   @Test
   void shouldReplaceAChunkThatIsBufferedAgainWithoutCountingItTwice() {
     // given
-    state.bufferChunk(chunk("update-1", 0, 2).setRoles(List.<RoleRecordValue>of(role("role-a"))));
+    state.bufferChunk(
+        1L, chunk("update-1", 0, 2).setRoles(List.<RoleRecordValue>of(role("role-a"))));
 
     // when
-    state.bufferChunk(chunk("update-1", 0, 2).setRoles(List.<RoleRecordValue>of(role("role-b"))));
+    state.bufferChunk(
+        1L, chunk("update-1", 0, 2).setRoles(List.<RoleRecordValue>of(role("role-b"))));
 
     // then
     final var openUpdate = state.getOpenUpdate().orElseThrow();
@@ -88,8 +90,10 @@ final class PolicyUpdateStateTest {
   @Test
   void shouldReturnABufferedChunkWithItsPolicyData() {
     // given
-    state.bufferChunk(chunk("update-1", 0, 2).setRoles(List.<RoleRecordValue>of(role("role-0"))));
-    state.bufferChunk(chunk("update-1", 1, 2).setRoles(List.<RoleRecordValue>of(role("role-1"))));
+    state.bufferChunk(
+        1L, chunk("update-1", 0, 2).setRoles(List.<RoleRecordValue>of(role("role-0"))));
+    state.bufferChunk(
+        1L, chunk("update-1", 1, 2).setRoles(List.<RoleRecordValue>of(role("role-1"))));
 
     // when
     final var chunk = state.getChunk("update-1", 1);
@@ -105,7 +109,7 @@ final class PolicyUpdateStateTest {
   @Test
   void shouldNotReturnAChunkThatIsNotBuffered() {
     // given
-    state.bufferChunk(chunk("update-1", 0, 2));
+    state.bufferChunk(1L, chunk("update-1", 0, 2));
 
     // when
     final var chunk = state.getChunk("update-1", 1);
@@ -126,7 +130,7 @@ final class PolicyUpdateStateTest {
   @Test
   void shouldHaveNoOpenUpdateOnceAllAreRemoved() {
     // given
-    state.bufferChunk(chunk("update-1", 0, 1));
+    state.bufferChunk(1L, chunk("update-1", 0, 1));
 
     // when
     state.removeAll();
@@ -138,9 +142,9 @@ final class PolicyUpdateStateTest {
   @Test
   void shouldRemoveAllUpdatesAndTheirChunks() {
     // given
-    state.bufferChunk(chunk("update-1", 0, 2));
-    state.bufferChunk(chunk("update-1", 1, 2));
-    state.bufferChunk(chunk("update-10", 0, 1));
+    state.bufferChunk(1L, chunk("update-1", 0, 2));
+    state.bufferChunk(1L, chunk("update-1", 1, 2));
+    state.bufferChunk(1L, chunk("update-10", 0, 1));
 
     // when
     state.removeAll();
