@@ -183,6 +183,7 @@ describe('<Dashboard />', () => {
 			mockCurrentUserEndpoint({
 				successResponse: CURRENT_USER_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
@@ -206,6 +207,7 @@ describe('<Dashboard />', () => {
 			mockCurrentUserEndpoint({
 				successResponse: CURRENT_USER_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
@@ -233,10 +235,27 @@ describe('<Dashboard />', () => {
 					c8Links: {modeler: 'https://modeler.example.com'},
 				}),
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
 
 		await expect.element(screen.getByRole('link', {name: 'Go to Modeler'})).toBeVisible();
+	});
+
+	it('should render a skeleton in the metric panel before the count resolves', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: STATS_RESPONSE_WITH_INSTANCES,
+				delay: 'infinite',
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({successResponse: INCIDENTS_RESPONSE_WITH_ERRORS}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+		);
+
+		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
+
+		await expect.element(screen.getByTestId('instances-bar-skeleton')).toBeVisible();
+		await expect.element(screen.getByTestId('total-instances-link')).not.toBeInTheDocument();
 	});
 });

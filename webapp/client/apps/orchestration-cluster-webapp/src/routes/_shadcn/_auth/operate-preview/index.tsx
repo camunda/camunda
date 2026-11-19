@@ -12,8 +12,8 @@ import {runningInstancesCountQuery} from '#/operate/pages/Dashboard/useRunningIn
 import {Dashboard} from '#/operate/pages/Dashboard/shadcn.components/Dashboard';
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/')({
-	loader: async ({context: {queryClient}}) => {
-		await queryClient.ensureQueryData(runningInstancesCountQuery());
+	loader: ({context: {queryClient}}) => {
+		queryClient.prefetchQuery(runningInstancesCountQuery());
 	},
 	head: () => ({meta: [{title: t('operate.dashboard.pageTitle')}]}),
 	component: Dashboard,
