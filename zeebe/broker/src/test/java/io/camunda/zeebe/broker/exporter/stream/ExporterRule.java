@@ -15,11 +15,16 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
+import io.camunda.zeebe.broker.test.TestZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.util.TestStreams;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.logstreams.util.ListLogStorage;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -30,7 +35,12 @@ import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -62,7 +72,7 @@ public final class ExporterRule implements TestRule {
   private final ExporterMode exporterMode;
   private ZeebeDb<ZbColumnFamilies> capturedZeebeDb;
 
-  private TestStreams streams;
+  private TestLogStream logStream;
   private PartitionMessagingService partitionMessagingService = new SimplePartitionMessageService();
   private ExporterDirector director;
   private Duration distributionInterval = Duration.ofSeconds(15);
@@ -74,7 +84,7 @@ public final class ExporterRule implements TestRule {
     this.exporterMode = exporterMode;
     final SetupRule rule = new SetupRule(PARTITION_ID);
 
-    zeebeDbFactory = DefaultZeebeDbFactory.defaultFactory();
+    zeebeDbFactory = TestZeebeDbFactory.defaultFactory();
     chain =
         RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables).around(rule);
   }
@@ -127,8 +137,7 @@ public final class ExporterRule implements TestRule {
       final List<ExporterDescriptor> exporterDescriptors,
       final ExporterPhase phase,
       final Function<RecordExporter, RecordExporter> recordExporter) {
-    final var stream = streams.getLogStream(STREAM_NAME);
-    final var runtimeFolder = streams.createRuntimeFolder(stream);
+    final var runtimeFolder = createRuntimeFolder();
     capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile(), false));
 
     final var descriptorsWithInitializationInfo =
@@ -143,7 +152,7 @@ public final class ExporterRule implements TestRule {
             .partitionId(
                 new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_ID))
             .id(EXPORTER_PROCESSOR_ID)
-            .logStream(stream)
+            .logStream(logStream)
             .clock(StreamClock.system())
             .zeebeDb(capturedZeebeDb)
             .exporterMode(exporterMode)
@@ -185,24 +194,40 @@ public final class ExporterRule implements TestRule {
 
   public long writeRecord(
       final RecordType recordType, final Intent intent, final UnifiedRecordValue value) {
-    return streams
-        .newRecord(STREAM_NAME)
-        .recordType(recordType)
-        .intent(intent)
-        .event(value)
-        .write();
+    return append(newMetadata(recordType, intent, value), value);
   }
 
   /** Writes an event as though it had been written by a broker running {@code brokerVersion}. */
   public long writeEventWithBrokerVersion(
       final Intent intent, final UnifiedRecordValue value, final VersionInfo brokerVersion) {
-    return streams
-        .newRecord(STREAM_NAME)
-        .recordType(RecordType.EVENT)
+    return append(newMetadata(RecordType.EVENT, intent, value).brokerVersion(brokerVersion), value);
+  }
+
+  private static RecordMetadata newMetadata(
+      final RecordType recordType, final Intent intent, final UnifiedRecordValue value) {
+    return new RecordMetadata()
+        .protocolVersion(Protocol.PROTOCOL_VERSION)
+        .recordType(recordType)
         .intent(intent)
-        .event(value)
-        .brokerVersion(brokerVersion)
-        .write();
+        .valueType(value.valueType());
+  }
+
+  private long append(final RecordMetadata metadata, final UnifiedRecordValue value) {
+    return logStream
+        .newBlockingLogStreamWriter()
+        .tryWrite(WriteContext.internal(), LogAppendEntry.of(metadata, value))
+        .get();
+  }
+
+  private Path createRuntimeFolder() {
+    final var rootDirectory =
+        tempFolder.getRoot().toPath().resolve(logStream.getLogName()).resolve("state");
+    try {
+      Files.createDirectories(rootDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return rootDirectory.resolve("runtime");
   }
 
   public void closeExporterDirector() throws Exception {
@@ -221,8 +246,19 @@ public final class ExporterRule implements TestRule {
 
     @Override
     protected void before() {
-      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get(), clock);
-      streams.createLogStream(STREAM_NAME, partitionId);
+      final var logStorage = new ListLogStorage();
+      final var meterRegistry = new SimpleMeterRegistry();
+      logStream =
+          TestLogStream.builder()
+              .withLogName(STREAM_NAME)
+              .withLogStorage(logStorage)
+              .withPartitionId(partitionId)
+              .withClock(clock)
+              .withMeterRegistry(meterRegistry)
+              .build();
+      logStorage.setPositionListener(logStream::setLastWrittenPosition);
+      closeables.manage(logStream);
+      closeables.manage(() -> MicrometerUtil.close(meterRegistry));
     }
   }
 }

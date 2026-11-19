@@ -113,11 +113,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-expression-language</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-grpc</artifactId>
     </dependency>
 
@@ -174,6 +169,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-workflow-engine-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-workflow-engine-common</artifactId>
     </dependency>
 
     <dependency>
@@ -358,6 +358,14 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-test-util</artifactId>
       <scope>test</scope>
     </dependency>
@@ -371,14 +379,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-exporter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-workflow-engine</artifactId>
-      <classifier>tests</classifier>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
@@ -529,6 +529,7 @@
           </ignoredNonTestScopedDependencies>
           <usedDependencies>
             <dependency>net.jqwik:jqwik</dependency>
+            <dependency>io.camunda:zeebe-workflow-engine</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
