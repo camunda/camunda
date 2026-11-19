@@ -64,9 +64,13 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResumeProcessDefinitionRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResumeProcessDefinitionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendProcessDefinitionRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendProcessDefinitionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
@@ -479,6 +483,26 @@ public final class EndpointManager {
         request,
         RequestMapper::toDeleteResourceRequest,
         ResponseMapper::toDeleteResourceResponse,
+        responseObserver);
+  }
+
+  public void suspendProcessDefinition(
+      final SuspendProcessDefinitionRequest request,
+      final ServerStreamObserver<SuspendProcessDefinitionResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toSuspendProcessDefinitionRequest,
+        ResponseMapper::toSuspendProcessDefinitionResponse,
+        responseObserver);
+  }
+
+  public void resumeProcessDefinition(
+      final ResumeProcessDefinitionRequest request,
+      final ServerStreamObserver<ResumeProcessDefinitionResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toResumeProcessDefinitionRequest,
+        ResponseMapper::toResumeProcessDefinitionResponse,
         responseObserver);
   }
 
