@@ -89,7 +89,7 @@ test.describe('Operate Decision Instance DS preview (/operate-preview/decisions/
 		await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_ID);
 
 		await expect(page.getByTestId('instance-header')).toContainText(DECISION_INSTANCE_ID);
-		await expect(page).toHaveTitle(`Operate: Decision Instance ${DECISION_INSTANCE_ID} of Invoice Classification`);
+		await expect(page).toHaveTitle(`Operate: Decision instance ${DECISION_INSTANCE_ID} of Invoice Classification`);
 		await expect(operateDecisionInstancePage.decisionTableLabel).toBeVisible();
 		await expect(operateDecisionInstancePage.drdPanel.getByTestId('state-overlay-EVALUATED')).toBeVisible();
 		await expect(page.getByRole('tab', {name: 'Inputs and outputs'})).toBeVisible();

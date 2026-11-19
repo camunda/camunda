@@ -1625,6 +1625,8 @@
 					"unknownEvaluationFailure": "L'évaluation a échoué avec une erreur inconnue"
 				},
 				"ds": {
+					"title": "Instance de décision Operate",
+					"pageTitle": "Operate : Instance de décision {{decisionInstanceId}} de {{name}}",
 					"drd": {
 						"title": "Diagramme des exigences de décision",
 						"resize": "Redimensionner le panneau DRD",

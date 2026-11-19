@@ -1622,6 +1622,8 @@
 					"unknownEvaluationFailure": "La evaluación falló con un error desconocido"
 				},
 				"ds": {
+					"title": "Instancia de decisión de Operate",
+					"pageTitle": "Operate: Instancia de decisión {{decisionInstanceId}} de {{name}}",
 					"drd": {
 						"title": "Diagrama de requisitos de decisión",
 						"resize": "Cambiar tamaño del panel DRD",

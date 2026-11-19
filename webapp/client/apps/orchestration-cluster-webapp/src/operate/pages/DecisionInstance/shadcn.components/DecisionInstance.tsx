@@ -32,7 +32,7 @@ const DecisionInstanceHeading: React.FC = () => {
 
 	return (
 		<Heading as="h1" id="operate-decision-instance-heading" tabIndex={-1} className="sr-only">
-			{t('operate.decisionInstance.title')}
+			{t('operate.decisionInstance.ds.title')}
 		</Heading>
 	);
 };
