@@ -11,11 +11,13 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -73,25 +75,13 @@ final class SegmentLoader {
     try {
       descriptorSerializer.writeTo(descriptor, mappedSegment);
       mappedSegment.force();
-    } catch (final InternalError e) {
-      throw new JournalException(
-          String.format(
-              "Failed to ensure durability of segment %s with descriptor %s, rolling back",
-              segmentFile, descriptor),
+    } catch (final InternalError | UncheckedIOException e) {
+      throw new SyncFailed(
+          String.format("Failed to flush segment %s with descriptor %s", segmentFile, descriptor),
           e);
     }
 
-    // while flushing the file's contents ensures its data is present on disk on recovery, it's also
-    // necessary to flush the directory to ensure that the file itself is visible as an entry of
-    // that directory after recovery
-    try {
-      FileUtil.flushDirectory(segmentFile.getParent());
-    } catch (final IOException e) {
-      throw new JournalException(
-          String.format("Failed to flush journal directory after creating segment %s", segmentFile),
-          e);
-    }
-
+    flushDirectory(segmentFile);
     return loadSegment(
         segmentFile,
         mappedSegment,
@@ -112,16 +102,7 @@ final class SegmentLoader {
           String.format("Failed to create new segment file %s", segmentFile), e);
     }
 
-    // while flushing the file's contents ensures its data is present on disk on recovery, it's also
-    // necessary to flush the directory to ensure that the file itself is visible as an entry of
-    // that directory after recovery
-    try {
-      FileUtil.flushDirectory(segmentFile.getParent());
-    } catch (final IOException e) {
-      throw new JournalException(
-          String.format("Failed to flush journal directory after creating segment %s", segmentFile),
-          e);
-    }
+    flushDirectory(segmentFile);
     return new UninitializedSegment(
         new SegmentFile(segmentFile),
         descriptor.id(),
@@ -165,6 +146,22 @@ final class SegmentLoader {
   }
 
   /* ---- Internal methods ------ */
+
+  /**
+   * While flushing the file's contents ensures its data is present on disk on recovery, it's also
+   * necessary to flush the directory to ensure that the file itself is visible as an entry of that
+   * directory after recovery.
+   */
+  private void flushDirectory(final Path segmentFile) {
+    try {
+      FileUtil.flushDirectory(segmentFile.getParent());
+    } catch (final IOException e) {
+      throw new SyncFailed(
+          String.format("Failed to flush journal directory after creating segment %s", segmentFile),
+          e);
+    }
+  }
+
   private Segment loadSegment(
       final Path file,
       final MappedByteBuffer buffer,

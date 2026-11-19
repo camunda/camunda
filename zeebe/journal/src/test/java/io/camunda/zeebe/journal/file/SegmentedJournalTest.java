@@ -18,13 +18,20 @@ package io.camunda.zeebe.journal.file;
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 
+import com.google.common.util.concurrent.Uninterruptibles;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
+import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
@@ -32,12 +39,14 @@ import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import io.camunda.zeebe.util.CheckedRunnable;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -58,9 +67,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
@@ -103,6 +114,237 @@ class SegmentedJournalTest {
 
     // then - first ASQN should be 30 (first entry in segment 2)
     assertThat(tailSegments.firstAsqn()).isPresent().hasValue(30L);
+  }
+
+  @Test
+  void shouldKeepFlushedIndexWhenResetFails() throws Exception {
+    // given - a flushed record, and a first segment that cannot be renamed for deletion
+    journalFactory = new TestJournalFactory(5);
+    final var segments = journalFactory.segmentsManager(directory);
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    journal.flush();
+    final var renameTarget = segments.getFirstSegment().file().getFileMarkedForDeletion();
+    Files.createFile(renameTarget);
+
+    // when
+    assertThatThrownBy(() -> journal.reset(101))
+        .hasRootCauseInstanceOf(FileAlreadyExistsException.class);
+    Files.delete(renameTarget);
+    journal.close();
+
+    // then - closing flushed the old segment, without claiming index 100 as flushed
+    try (final var reopened = journalFactory.journal(journalFactory.segmentsManager(directory))) {
+      assertThat(reopened.getLastIndex()).isOne();
+    }
+  }
+
+  @Test
+  void shouldNotPublishDeletedRecordsWhenResetFailsHalfWay() throws Exception {
+    // given - three flushed records in three segments, and a second one that cannot be renamed
+    journalFactory = new TestJournalFactory(1);
+    final var segments = journalFactory.segmentsManager(directory);
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.flush();
+    final var lastSegmentFile = segments.getLastSegment().file().file();
+    final var renameTarget = segments.getNextSegment(1).file().getFileMarkedForDeletion();
+    Files.createFile(renameTarget);
+
+    // when - reset deletes the last segment, then fails to rename the second one
+    assertThatThrownBy(() -> journal.reset(101))
+        .hasRootCauseInstanceOf(FileAlreadyExistsException.class);
+    assertThat(lastSegmentFile).doesNotExist();
+    Files.delete(renameTarget);
+    journal.close();
+
+    // then - closing did not claim the deleted record as flushed
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isLessThanOrEqualTo(2);
+    try (final var reopened = journalFactory.journal(journalFactory.segmentsManager(directory))) {
+      assertThat(reopened.getLastIndex()).isEqualTo(2);
+    }
+  }
+
+  @Test
+  void shouldNotFlushAfterConcurrentTruncationFailsToSync() throws Exception {
+    // given - a truncation held in syncing the segment descriptor, which then fails
+    journalFactory = new TestJournalFactory(5);
+    final var loader = spy(journalFactory.segmentLoader());
+    doAnswer(call -> spy((Segment) call.callRealMethod()))
+        .when(loader)
+        .createSegment(any(), any(), anyLong(), any());
+    final var segments = journalFactory.segmentsManager(directory, loader);
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    journal.flush();
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    final var syncing = new CountDownLatch(1);
+    final var failSync = new CountDownLatch(1);
+    final var syncFailure = new SyncFailed("Failed to sync", new IOException("Input/output error"));
+    doAnswer(
+            call -> {
+              syncing.countDown();
+              Uninterruptibles.awaitUninterruptibly(failSync);
+              throw syncFailure;
+            })
+        .when(segments.getLastSegment())
+        .resetLastEntryInDescriptor();
+    final var truncation =
+        CompletableFuture.supplyAsync(() -> catchThrowable(() -> journal.deleteAfter(2)));
+    syncing.await();
+
+    // when - a flush, e.g. a delayed one, waits for the truncation
+    final var flushFailure = new AtomicReference<Throwable>();
+    final var flushing = new Thread(() -> flushFailure.set(catchThrowable(journal::flush)));
+    flushing.start();
+    Awaitility.await("flush waits for the truncation")
+        .until(() -> flushing.getState() == Thread.State.WAITING || !flushing.isAlive());
+    failSync.countDown();
+    flushing.join();
+
+    // then
+    assertThat(truncation.join()).isSameAs(syncFailure);
+    assertThat(flushFailure.get()).isInstanceOf(FlushException.class);
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isOne();
+  }
+
+  @Test
+  void shouldFailFlushWhenNextSegmentFailsToSync() throws Exception {
+    // given - creating the next segment in the background fails to sync its directory
+    journalFactory = new TestJournalFactory(2);
+    final var loader = spy(journalFactory.segmentLoader());
+    doAnswer(
+            call -> {
+              final Path segmentFile = call.getArgument(0);
+              try (final var fileUtil = mockStatic(FileUtil.class, CALLS_REAL_METHODS)) {
+                fileUtil
+                    .when(() -> FileUtil.flushDirectory(segmentFile.getParent()))
+                    .thenThrow(new IOException("Input/output error"));
+                return call.callRealMethod();
+              }
+            })
+        .when(loader)
+        .createUninitializedSegment(any(), any(), any());
+    final var segments = journalFactory.segmentsManager(directory, loader);
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.flush();
+    // the first record in the second segment starts preparing the third one
+    journal.append(journalFactory.entry());
+    Awaitility.await("next segment failed to sync")
+        .until(() -> segments.getBackgroundSyncFailure() != null);
+
+    // when - the second segment is far from full, so nothing requests the third one yet
+    final var flushFailure = catchThrowable(journal::flush);
+
+    // then
+    assertThat(flushFailure).isInstanceOf(FlushException.class);
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldRejectWritesAfterNextSegmentFailedToSync() throws Exception {
+    // given - creating the next segment in the background fails to sync its directory
+    journalFactory = new TestJournalFactory(3);
+    final var loader = spy(journalFactory.segmentLoader());
+    doAnswer(
+            call -> {
+              final Path segmentFile = call.getArgument(0);
+              try (final var fileUtil = mockStatic(FileUtil.class, CALLS_REAL_METHODS)) {
+                fileUtil
+                    .when(() -> FileUtil.flushDirectory(segmentFile.getParent()))
+                    .thenThrow(new IOException("Input/output error"));
+                return call.callRealMethod();
+              }
+            })
+        .when(loader)
+        .createUninitializedSegment(any(), any(), any());
+    final var segments = journalFactory.segmentsManager(directory, loader);
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    // the first record in the second segment starts preparing the third one
+    journal.append(journalFactory.entry());
+    Awaitility.await("next segment failed to sync")
+        .until(() -> segments.getBackgroundSyncFailure() != null);
+    assertThatThrownBy(journal::flush).isInstanceOf(FlushException.class);
+
+    // when - the second segment still has room, so the append does not need the third one
+    final var appendFailure = catchThrowable(() -> journal.append(journalFactory.entry()));
+
+    // then
+    assertThat(appendFailure).isInstanceOf(SyncFailed.class);
+    assertThat(journal.getLastIndex()).isEqualTo(4);
+  }
+
+  @Test
+  void shouldRejectWritesAfterDeletedSegmentsFailedToSync() {
+    // given - one entry per segment, deleted in the calling thread
+    journalFactory = new TestJournalFactory(1);
+    final var segments = journalFactory.segmentsManager(directory, Runnable::run);
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    try (final var fileUtil = mockStatic(FileUtil.class, CALLS_REAL_METHODS)) {
+      fileUtil
+          .when(() -> FileUtil.flushDirectory(any()))
+          .thenThrow(new IOException("Input/output error"));
+      journal.deleteUntil(2);
+    }
+    assertThatThrownBy(() -> journal.deleteUntil(4)).isInstanceOf(SyncFailed.class);
+
+    // when
+    final var appendFailure = catchThrowable(() -> journal.append(journalFactory.entry()));
+
+    // then
+    assertThat(appendFailure).isInstanceOf(SyncFailed.class);
+    assertThat(journal.getLastIndex()).isEqualTo(4);
+  }
+
+  @Test
+  void shouldNotStoreFlushedIndexPastConcurrentTruncation() throws Exception {
+    // given - a flush, e.g. a delayed one, held just before it stores the last flushed index 3
+    journalFactory = new TestJournalFactory(5);
+    final var segments = journalFactory.segmentsManager(directory);
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    final var storing = new CountDownLatch(1);
+    final var store = new CountDownLatch(1);
+    journalFactory
+        .metaStore()
+        .setOnStoreFlushedIndex(
+            () -> {
+              journalFactory.metaStore().setOnStoreFlushedIndex(null);
+              storing.countDown();
+              Uninterruptibles.awaitUninterruptibly(store);
+            });
+    final var flush = CompletableFuture.runAsync(CheckedRunnable.toUnchecked(journal::flush));
+    storing.await();
+
+    // when - the journal is truncated to index 1 meanwhile
+    final var truncating = new Thread(() -> journal.deleteAfter(1));
+    truncating.start();
+    Awaitility.await("truncation waits for the flush")
+        .until(() -> truncating.getState() == Thread.State.WAITING || !truncating.isAlive());
+    store.countDown();
+    flush.get();
+    truncating.join();
+
+    // then - after a crash, without another flush, the journal still starts
+    segments.getFirstSegment().flush();
+    segments.close();
+    try (final var reopened = journalFactory.journal(journalFactory.segmentsManager(directory))) {
+      assertThat(reopened.getLastIndex()).isOne();
+    }
   }
 
   @Test
@@ -1689,6 +1931,63 @@ class SegmentedJournalTest {
     final var restarted = restartFactory.journal(restartFactory.segmentsManager(flushed));
     closeables.add(restarted);
     assertThat(restarted.getLastIndex()).isEqualTo(11);
+  }
+
+  @Test
+  void shouldFailEveryFlushAfterFailingToSyncNewSegment() {
+    // given - preparing the second segment fails to sync, e.g. the zeroes written to allocate it
+    final var allocations = new AtomicInteger();
+    final var error = new SyncFailed("Failed to sync", new IOException("Input/output error"));
+    journalFactory =
+        new TestJournalFactory(
+            "test",
+            1,
+            (channel, fd, size) -> {
+              if (allocations.incrementAndGet() > 1) {
+                throw error;
+              }
+            });
+    journal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    closeables.add(journal);
+    journal.append(journalFactory.entry());
+
+    // when - the next append needs the second segment
+    final var thrown = catchThrowable(() -> journal.append(journalFactory.entry()));
+
+    // then - the segment is not created again, and the journal is never flushed again
+    assertThat(thrown).isSameAs(error);
+    assertThat(allocations).hasValue(2);
+    assertThatThrownBy(journal::flush).isInstanceOf(FlushException.class).hasCause(error);
+  }
+
+  @Test
+  void shouldRejectWritesAfterFailedSync() {
+    // given - preparing the second segment fails to sync
+    final var error = new SyncFailed("Failed to sync", new IOException("Input/output error"));
+    final var allocations = new AtomicInteger();
+    journalFactory =
+        new TestJournalFactory(
+            "test",
+            1,
+            (channel, fd, size) -> {
+              if (allocations.incrementAndGet() > 1) {
+                throw error;
+              }
+            });
+    journal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    closeables.add(journal);
+    journal.append(journalFactory.entry());
+    assertThatThrownBy(() -> journal.append(journalFactory.entry())).isSameAs(error);
+
+    // when - nothing written now could be persisted
+    final var append = catchThrowable(() -> journal.append(journalFactory.entry()));
+    final var deleteAfter = catchThrowable(() -> journal.deleteAfter(0));
+    final var reset = catchThrowable(() -> journal.reset(10));
+
+    // then
+    assertThat(List.of(append, deleteAfter, reset))
+        .allSatisfy(thrown -> assertThat(thrown).isInstanceOf(SyncFailed.class).hasCause(error));
+    assertThat(journal.getLastIndex()).isOne();
   }
 
   private SegmentedJournal openJournal(final int entriesPerSegment) {
