@@ -52,22 +52,21 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
 
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
 public class PassiveRoleTest {
 
-  @Rule public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
   private RaftLog log;
   private PassiveRole role;
   private RaftContext ctx;
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
-  @Before
+  @BeforeEach
   public void setup() throws IOException {
     ctx = mock(RaftContext.class);
 
