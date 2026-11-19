@@ -182,6 +182,29 @@ final class StartupCheckTest {
   }
 
   @Test
+  void shouldWarnThatTheVaultsNetworkRulesRefusedTheConnection() {
+    // given
+    final var failure =
+        new HttpResponseException(
+            "Forbidden",
+            response(403),
+            Map.of(
+                "error",
+                Map.of(
+                    "code",
+                    "Forbidden",
+                    "message",
+                    "Client address is not authorized",
+                    "innererror",
+                    Map.of("code", "ForbiddenByFirewall"))));
+
+    // then
+    assertThat(warningFor(failure))
+        .contains("network rules refused the connection", "Client address is not authorized")
+        .doesNotContain("'get' secret permission");
+  }
+
+  @Test
   void shouldLeaveAFailedSignInToTheSignInMonitor() {
     // given the monitor has already warned, naming the credential and the reason
     final var failure = new ClientAuthenticationException("AADSTS7000215", null);
@@ -468,7 +491,7 @@ final class StartupCheckTest {
     private final Runnable probe;
     // the wording needs no client
     private final OneByOneSecretResolver wording =
-        new OneByOneSecretResolver(null, "", InstantSource.system());
+        new OneByOneSecretResolver(null, "", InstantSource.system(), "test store", null);
 
     ProbingResolver(final Runnable probe) {
       this.probe = probe;

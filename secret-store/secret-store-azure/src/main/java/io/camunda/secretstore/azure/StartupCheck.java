@@ -39,9 +39,9 @@ import org.slf4j.LoggerFactory;
  * at DEBUG. A failed sign-in is the exception: {@link SignInMonitor} has already logged its WARN,
  * naming the credential and the reason, so it is not repeated here, and neither is the failure,
  * whose cause can quote the sign-in response. That includes a check that runs out of time while
- * sign-in keeps failing, as the SDK retries a failed sign-in with backoff. A check that runs out of
- * time before the store has signed in at all cannot tell the vault from the sign-in endpoint, so
- * its warning names both.
+ * sign-in keeps failing, as a sign-in that cannot reach Microsoft Entra ID is retried with backoff.
+ * A check that runs out of time before the store has signed in at all cannot tell the vault from
+ * the sign-in endpoint, so its warning names both.
  */
 final class StartupCheck {
 
@@ -183,19 +183,27 @@ final class StartupCheck {
                   "the vault rejected the identity's token, for example because the vault belongs"
                       + " to a different Microsoft Entra tenant",
                   true);
-          case 403 ->
-              AzureKeyVaultErrors.isSecretDisabled(http)
-                  ? new Diagnosis("the secret is disabled in Azure Key Vault", true)
-                  : new Diagnosis(
-                      "access denied: " + resolver.accessDeniedHint(),
-                      resolver.accessDeniedFailsResolution());
-          case 404 -> new Diagnosis("not found: " + firstLine(http.getMessage()), true);
+          case 403 -> {
+            if (AzureKeyVaultErrors.isRefusedByNetworkRules(http)) {
+              yield new Diagnosis(
+                  "the vault's network rules refused the connection: "
+                      + AzureKeyVaultErrors.describe(http),
+                  true);
+            }
+            yield AzureKeyVaultErrors.isSecretDisabled(http)
+                ? new Diagnosis("the secret is disabled in Azure Key Vault", true)
+                : new Diagnosis(
+                    "access denied: " + resolver.accessDeniedHint(),
+                    resolver.accessDeniedFailsResolution());
+          }
+          case 404 ->
+              new Diagnosis("not found: " + AzureKeyVaultErrors.firstLine(http.getMessage()), true);
           default ->
               new Diagnosis(
                   "the vault answered HTTP "
                       + http.getResponse().getStatusCode()
                       + ": "
-                      + firstLine(http.getMessage()),
+                      + AzureKeyVaultErrors.firstLine(http.getMessage()),
                   true);
         };
       }
@@ -212,15 +220,6 @@ final class StartupCheck {
       }
     }
     return new Diagnosis(failure.toString(), true);
-  }
-
-  // the SDK appends the whole JSON error body on further lines
-  private static String firstLine(final @Nullable String message) {
-    if (message == null) {
-      return "";
-    }
-    final int end = message.indexOf('\n');
-    return end < 0 ? message : message.substring(0, end);
   }
 
   /**
