@@ -10,6 +10,7 @@ dependencies {
   implementation(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-expression-language"))
   implementation(project(":zeebe-workflow-engine"))
+  implementation(project(":zeebe-db-api"))
   implementation(project(":zeebe-db"))
   implementation(project(":zeebe-stream-platform"))
   implementation(project(":zeebe-protocol"))

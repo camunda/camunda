@@ -29,6 +29,7 @@ dependencies {
   implementation(project(":zeebe-atomix-membership-api"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-atomix-utils"))
+  implementation(project(":zeebe-db-api"))
   implementation(project(":zeebe-db"))
   api(project(":zeebe-exporter-api"))
   implementation(project(":zeebe-exporter-config-support"))
