@@ -7,8 +7,17 @@
  */
 package io.camunda.db.rdbms.write;
 
+import static io.camunda.db.rdbms.write.RdbmsWriterMetricsDoc.RdbmsWriterKeyNames.CONTEXT_TYPE;
+import static io.camunda.db.rdbms.write.RdbmsWriterMetricsDoc.RdbmsWriterKeyNames.ENTITY;
+import static io.camunda.db.rdbms.write.RdbmsWriterMetricsDoc.RdbmsWriterKeyNames.REPLICA_ID;
+import static io.camunda.db.rdbms.write.RdbmsWriterMetricsDoc.RdbmsWriterKeyNames.STATEMENT_ID;
+import static io.camunda.db.rdbms.write.RdbmsWriterMetricsDoc.RdbmsWriterKeyNames.TRIGGER;
+
 import io.camunda.db.rdbms.read.replication.ReplicationStatus;
 import io.camunda.db.rdbms.write.queue.ContextType;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.collection.Table;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
@@ -22,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -29,13 +39,21 @@ import java.util.stream.Collectors;
 
 public class RdbmsWriterMetrics {
 
-  private static final String NAMESPACE = "zeebe.rdbms.exporter";
-
   private final MeterRegistry meterRegistry;
   private final Timer flushLatency;
   private final Timer recordExportingLatency;
   private final DistributionSummary queueMemoryDistribution;
+  private final Timer flushDuration;
+  private final DistributionSummary bulkSize;
+  private final Counter failedFlush;
   private Sample flushLatencyMeasurement;
+
+  private final Map<FlushTrigger, Counter> queueFlushes = new ConcurrentHashMap<>();
+  private final Map<String, Counter> enqueuedStatements = new ConcurrentHashMap<>();
+  private final Map<String, Counter> executedStatements = new ConcurrentHashMap<>();
+  private final Map<String, Counter> executedQueueItems = new ConcurrentHashMap<>();
+  private final Map<String, DistributionSummary> numBatches = new ConcurrentHashMap<>();
+  private final Table<ContextType, String, Counter> mergedQueueItems = Table.concurrent();
 
   private final AtomicInteger connectedReplicasValue = new AtomicInteger(0);
   private final AtomicInteger exporterPausedValue = new AtomicInteger(0);
@@ -46,156 +64,123 @@ public class RdbmsWriterMetrics {
     this.meterRegistry = meterRegistry;
 
     flushLatency =
-        Timer.builder(meterName("flush.latency"))
-            .description(
-                "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
+        Timer.builder(RdbmsWriterMetricsDoc.FLUSH_LATENCY.getName())
+            .description(RdbmsWriterMetricsDoc.FLUSH_LATENCY.getDescription())
             .publishPercentileHistogram()
             .register(meterRegistry);
 
     recordExportingLatency =
-        Timer.builder(meterName("record.exporting.latency"))
-            .description(
-                "Time from record creation to commit/flush to the database (end-to-end export latency)")
+        Timer.builder(RdbmsWriterMetricsDoc.RECORD_EXPORTING_LATENCY.getName())
+            .description(RdbmsWriterMetricsDoc.RECORD_EXPORTING_LATENCY.getDescription())
             .publishPercentileHistogram()
             .minimumExpectedValue(Duration.ofMillis(1))
             .register(meterRegistry);
 
     queueMemoryDistribution =
-        DistributionSummary.builder(meterName("queue.memory.bytes"))
-            .description("Estimated memory usage of the execution queue in bytes")
+        MicrometerUtil.buildSummary(RdbmsWriterMetricsDoc.QUEUE_MEMORY_BYTES)
             .baseUnit("bytes")
-            .serviceLevelObjectives(
-                1024, // 1KB
-                10240, // 10KB
-                102400, // 100KB
-                1048576, // 1MB
-                5242880, // 5MB
-                10485760, // 10MB
-                52428800, // 50MB
-                104857600) // 100MB
+            .register(meterRegistry);
+
+    flushDuration =
+        Timer.builder(RdbmsWriterMetricsDoc.FLUSH_DURATION.getName())
+            .description(RdbmsWriterMetricsDoc.FLUSH_DURATION.getDescription())
+            .publishPercentileHistogram()
+            .minimumExpectedValue(Duration.ofMillis(10))
+            .register(meterRegistry);
+
+    bulkSize = MicrometerUtil.buildSummary(RdbmsWriterMetricsDoc.BULK_SIZE).register(meterRegistry);
+
+    failedFlush =
+        Counter.builder(RdbmsWriterMetricsDoc.FAILED_FLUSH.getName())
+            .description(RdbmsWriterMetricsDoc.FAILED_FLUSH.getDescription())
             .register(meterRegistry);
 
     Gauge.builder(
-            meterName("replication.connected.replicas"), connectedReplicasValue, AtomicInteger::get)
-        .description("Number of currently connected read replicas")
-        .register(meterRegistry);
-
-    Gauge.builder(meterName("replication.paused"), exporterPausedValue, AtomicInteger::get)
-        .description(
-            "Whether the exporter is currently paused due to replication lag (1 = paused, 0 = running)")
+            RdbmsWriterMetricsDoc.REPLICATION_CONNECTED_REPLICAS.getName(),
+            connectedReplicasValue,
+            AtomicInteger::get)
+        .description(RdbmsWriterMetricsDoc.REPLICATION_CONNECTED_REPLICAS.getDescription())
         .register(meterRegistry);
 
     Gauge.builder(
-            meterName("replication.pending.positions"), pendingPositionsValue, AtomicLong::get)
-        .description(
-            "Number of exporter positions that have been flushed but not yet confirmed as replicated")
+            RdbmsWriterMetricsDoc.REPLICATION_PAUSED.getName(),
+            exporterPausedValue,
+            AtomicInteger::get)
+        .description(RdbmsWriterMetricsDoc.REPLICATION_PAUSED.getDescription())
+        .register(meterRegistry);
+
+    Gauge.builder(
+            RdbmsWriterMetricsDoc.REPLICATION_PENDING_POSITIONS.getName(),
+            pendingPositionsValue,
+            AtomicLong::get)
+        .description(RdbmsWriterMetricsDoc.REPLICATION_PENDING_POSITIONS.getDescription())
         .register(meterRegistry);
   }
 
-  public ResourceSample measureFlushDuration() {
-    return Timer.resource(meterRegistry, meterName("flush.duration.seconds"))
-        .description("Flush duration of bulk exporters in seconds")
-        .publishPercentileHistogram()
-        .minimumExpectedValue(Duration.ofMillis(10));
+  public CloseableSilently measureFlushDuration() {
+    return MicrometerUtil.timer(flushDuration, Timer.start(meterRegistry));
   }
 
-  public void recordBulkSize(final int bulkSize) {
-    DistributionSummary.builder(meterName("bulk.size"))
-        .description("Exporter bulk size")
-        .serviceLevelObjectives(1, 2, 5, 10, 20, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000)
-        .register(meterRegistry)
-        .record(bulkSize);
+  public void recordBulkSize(final int size) {
+    bulkSize.record(size);
   }
 
   public void registerCleanupBackoffDurationGauge(final Supplier<Number> supplier) {
-    Gauge.builder(meterName("historyCleanup.backoffDuration"), supplier)
-        .description("Current backoff duration for cleanup of entity")
+    Gauge.builder(RdbmsWriterMetricsDoc.HISTORY_CLEANUP_BACKOFF_DURATION.getName(), supplier)
+        .description(RdbmsWriterMetricsDoc.HISTORY_CLEANUP_BACKOFF_DURATION.getDescription())
         .register(meterRegistry);
   }
 
   public ResourceSample measureHistoryCleanupDuration() {
-    return Timer.resource(meterRegistry, meterName("historyCleanup.duration.seconds"))
-        .description("History cleanup duration of bulk exporters in seconds")
-        .publishPercentileHistogram()
-        .minimumExpectedValue(Duration.ofMillis(10));
+    return durationResource(RdbmsWriterMetricsDoc.HISTORY_CLEANUP_DURATION);
   }
 
   public ResourceSample measureUsageMetricsHistoryCleanupDuration() {
-    return Timer.resource(meterRegistry, meterName("historyCleanup.usageMetrics.duration.seconds"))
-        .description("Usage metrics history cleanup duration in seconds")
-        .publishPercentileHistogram()
-        .minimumExpectedValue(Duration.ofMillis(10));
+    return durationResource(RdbmsWriterMetricsDoc.HISTORY_CLEANUP_USAGE_METRICS_DURATION);
   }
 
   public ResourceSample measureJobBatchMetricsHistoryCleanupDuration() {
-    return Timer.resource(
-            meterRegistry, meterName("historyCleanup.jobBatchMetrics.duration.seconds"))
-        .description("Job batch metrics history cleanup duration in seconds")
-        .publishPercentileHistogram()
-        .minimumExpectedValue(Duration.ofMillis(10));
+    return durationResource(RdbmsWriterMetricsDoc.HISTORY_CLEANUP_JOB_BATCH_METRICS_DURATION);
   }
 
   public void recordHistoryCleanupEntities(final int bulkSize, final String entityName) {
-    DistributionSummary.builder(meterName("historyCleanup.bulk.size"))
-        .description("Exporter bulk size")
-        .tag("entity", entityName)
-        .serviceLevelObjectives(
-            1, 2, 5, 10, 20, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000,
-            100_000)
+    MicrometerUtil.buildSummary(RdbmsWriterMetricsDoc.HISTORY_CLEANUP_BULK_SIZE)
+        .tag(ENTITY.asString(), entityName)
         .register(meterRegistry)
         .record(bulkSize);
 
-    Counter.builder(meterName("historyCleanup.deletedEntities"))
-        .tags("entity", entityName)
-        .description("Number of removed rows of the given entity")
+    Counter.builder(RdbmsWriterMetricsDoc.HISTORY_CLEANUP_DELETED_ENTITIES.getName())
+        .tags(ENTITY.asString(), entityName)
+        .description(RdbmsWriterMetricsDoc.HISTORY_CLEANUP_DELETED_ENTITIES.getDescription())
         .register(meterRegistry)
         .increment(bulkSize);
   }
 
   public void recordFailedFlush() {
-    Counter.builder(meterName("failed.flush"))
-        .description("Number of failed flush operations")
-        .register(meterRegistry)
-        .increment();
+    failedFlush.increment();
   }
 
   public void recordMergedQueueItem(final ContextType contextType, final String statementId) {
-    Counter.builder(meterName("merged.queue.item"))
-        .tags(
-            "contextType", contextType.name(), "statementId", stripDefaultPackageName(statementId))
-        .description("Queue item merged into another item")
-        .register(meterRegistry)
+    mergedQueueItems
+        .computeIfAbsent(contextType, statementId, this::registerMergedQueueItemCounter)
         .increment();
   }
 
   public void recordEnqueuedStatement(final String statementId) {
-    Counter.builder(meterName("enqueued.statements"))
-        .tags("statementId", stripDefaultPackageName(statementId))
-        .description("Number of enqueued statements")
-        .register(meterRegistry)
+    enqueuedStatements
+        .computeIfAbsent(statementId, this::registerEnqueuedStatementCounter)
         .increment();
   }
 
   public void recordExecutedStatement(final String statementId, final int batchCount) {
-    Counter.builder(meterName("executed.statements"))
-        .tags("statementId", stripDefaultPackageName(statementId))
-        .description("Number of executed statements")
-        .register(meterRegistry)
+    executedStatements
+        .computeIfAbsent(statementId, this::registerExecutedStatementCounter)
         .increment();
-
-    Counter.builder(meterName("executed.queue.item"))
-        .tags("statementId", stripDefaultPackageName(statementId))
-        .description("Number of executed queue items")
-        .register(meterRegistry)
+    executedQueueItems
+        .computeIfAbsent(statementId, this::registerExecutedQueueItemCounter)
         .increment(batchCount);
-
-    DistributionSummary.builder(meterName("num.batches"))
-        .tags("statementId", stripDefaultPackageName(statementId))
-        .description("Exporter batch count")
-        .maximumExpectedValue(100.0)
-        .scale(100)
-        .serviceLevelObjectives(10, 50, 75, 85, 90, 95, 97, 98, 99, 100)
-        .register(meterRegistry)
+    numBatches
+        .computeIfAbsent(statementId, this::registerNumBatchesSummary)
         .record(1.0 - 1.0 / batchCount);
   }
 
@@ -229,11 +214,7 @@ public class RdbmsWriterMetrics {
    * @param trigger the flush trigger type (e.g., "count_limit", "memory_limit", "flush_interval")
    */
   public void recordQueueFlush(final FlushTrigger trigger) {
-    Counter.builder(meterName("flush"))
-        .tags("trigger", trigger.name())
-        .description("Count of queue flushes")
-        .register(meterRegistry)
-        .increment();
+    queueFlushes.computeIfAbsent(trigger, this::registerQueueFlushCounter).increment();
   }
 
   /**
@@ -270,15 +251,65 @@ public class RdbmsWriterMetrics {
   }
 
   private StatefulGauge registerReplicaLagGauge(final String replicaId) {
-    return StatefulGauge.builder(meterName("replication.lag.ms"))
-        .description(
-            "Currently observed replication lag per read replica in milliseconds as reported by the database")
-        .tag("replicaId", replicaId)
+    return StatefulGauge.builder(RdbmsWriterMetricsDoc.REPLICATION_LAG_MS.getName())
+        .description(RdbmsWriterMetricsDoc.REPLICATION_LAG_MS.getDescription())
+        .tag(REPLICA_ID.asString(), replicaId)
         .register(meterRegistry);
   }
 
-  private String meterName(final String name) {
-    return NAMESPACE + "." + name;
+  private Counter registerQueueFlushCounter(final FlushTrigger trigger) {
+    return Counter.builder(RdbmsWriterMetricsDoc.FLUSH.getName())
+        .tags(TRIGGER.asString(), trigger.name())
+        .description(RdbmsWriterMetricsDoc.FLUSH.getDescription())
+        .register(meterRegistry);
+  }
+
+  private Counter registerMergedQueueItemCounter(
+      final ContextType contextType, final String statementId) {
+    return Counter.builder(RdbmsWriterMetricsDoc.MERGED_QUEUE_ITEM.getName())
+        .tags(
+            CONTEXT_TYPE.asString(),
+            contextType.name(),
+            STATEMENT_ID.asString(),
+            stripDefaultPackageName(statementId))
+        .description(RdbmsWriterMetricsDoc.MERGED_QUEUE_ITEM.getDescription())
+        .register(meterRegistry);
+  }
+
+  private Counter registerEnqueuedStatementCounter(final String statementId) {
+    return Counter.builder(RdbmsWriterMetricsDoc.ENQUEUED_STATEMENTS.getName())
+        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
+        .description(RdbmsWriterMetricsDoc.ENQUEUED_STATEMENTS.getDescription())
+        .register(meterRegistry);
+  }
+
+  private Counter registerExecutedStatementCounter(final String statementId) {
+    return Counter.builder(RdbmsWriterMetricsDoc.EXECUTED_STATEMENTS.getName())
+        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
+        .description(RdbmsWriterMetricsDoc.EXECUTED_STATEMENTS.getDescription())
+        .register(meterRegistry);
+  }
+
+  private Counter registerExecutedQueueItemCounter(final String statementId) {
+    return Counter.builder(RdbmsWriterMetricsDoc.EXECUTED_QUEUE_ITEM.getName())
+        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
+        .description(RdbmsWriterMetricsDoc.EXECUTED_QUEUE_ITEM.getDescription())
+        .register(meterRegistry);
+  }
+
+  private DistributionSummary registerNumBatchesSummary(final String statementId) {
+    return MicrometerUtil.buildSummary(RdbmsWriterMetricsDoc.NUM_BATCHES)
+        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
+        .maximumExpectedValue(100.0)
+        .scale(100)
+        .register(meterRegistry);
+  }
+
+  private ResourceSample durationResource(final RdbmsWriterMetricsDoc doc) {
+    return Timer.resource(meterRegistry, doc.getName())
+        .description(doc.getDescription())
+        .publishPercentileHistogram()
+        .minimumExpectedValue(Duration.ofMillis(10));
   }
 
   private static String stripDefaultPackageName(final String statementId) {
