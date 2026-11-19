@@ -72,7 +72,7 @@ public class JobWriter extends ProcessInstanceDependant implements RdbmsWriter {
                   .retries(job.retries())
                   .priority(job.priority())
                   .hasFailedWithRetriesLeft(job.hasFailedWithRetriesLeft())
-                  .customHeaders(job.customHeaders())
+                  .customHeadersFrom(job)
                   .processDefinitionId(job.processDefinitionId())
                   .processDefinitionKey(job.processDefinitionKey())
                   .processInstanceKey(job.processInstanceKey())
