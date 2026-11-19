@@ -27,7 +27,9 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class EventTriggerBehavior {
 
   private final ProcessInstanceRecord eventRecord = new ProcessInstanceRecord();

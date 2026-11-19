@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * A behavior which allows processors to mutate the variable state. Use this anywhere where you
@@ -36,6 +37,7 @@ import org.agrona.DirectBuffer;
  * <p>Note that for {@link io.camunda.zeebe.engine.state.EventApplier}, you should just use the
  * mutable state directly.
  */
+@NullMarked
 public final class VariableBehavior {
 
   private final VariableState variableState;
