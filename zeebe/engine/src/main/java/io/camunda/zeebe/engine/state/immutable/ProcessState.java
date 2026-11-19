@@ -21,8 +21,9 @@ public interface ProcessState {
   DeployedProcess getLatestProcessVersionByProcessId(DirectBuffer processId, final String tenantId);
 
   /**
-   * Latest active version of this process id (see {@link DeployedProcess#isActive()}: {@code
-   * ACTIVE} or a stuck {@code PENDING_DELETION}). Skips draining versions.
+   * Latest active version of this process id: the highest version that is active (see {@link
+   * DeployedProcess#isActive()}: {@code ACTIVE} or a stuck {@code PENDING_DELETION}) and not
+   * suspended. Skips draining and suspended versions.
    *
    * <p>If the highest version in state is already active, that process is returned and older
    * versions are not inspected. {@link #getLatestProcessVersionByProcessId} still returns the
@@ -33,6 +34,13 @@ public interface ProcessState {
 
   DeployedProcess getProcessByProcessIdAndVersion(
       DirectBuffer processId, int version, final String tenantId);
+
+  /**
+   * Whether the given process definition version is suspended. Suspension is kept apart from the
+   * {@link DeployedProcess#getState() lifecycle state}, so {@link DeployedProcess#isActive()} does
+   * not reflect it.
+   */
+  boolean isSuspended(long processDefinitionKey);
 
   DeployedProcess getProcessByProcessIdAndVersionTag(
       DirectBuffer processId, String versionTag, final String tenantId);
