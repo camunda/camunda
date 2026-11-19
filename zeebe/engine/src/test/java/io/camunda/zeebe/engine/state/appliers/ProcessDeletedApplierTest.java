@@ -78,6 +78,34 @@ final class ProcessDeletedApplierTest {
         .isEqualTo(v1.getProcessDefinitionKey());
   }
 
+  @Test
+  void shouldRemoveSuspendedMarkerOnReplayOfVersion1() {
+    // given
+    processState.markSuspended(v1);
+
+    // when
+    eventAppliers.applyState(v1.getProcessDefinitionKey(), ProcessIntent.DELETED, v1, 1);
+
+    // then - the version is deleted, not draining, and leaves no marker behind
+    assertThat(processState.getProcessByKeyAndTenant(v1.getKey(), v1.getTenantId())).isNull();
+    assertThat(processState.isSuspended(v1.getProcessDefinitionKey())).isFalse();
+  }
+
+  @Test
+  void shouldRemoveSuspendedMarkerOnlyOfTheDeletedVersionOnVersion2() {
+    // given
+    processState.markSuspended(v1);
+    processState.markSuspended(v2);
+
+    // when
+    eventAppliers.applyState(v2.getProcessDefinitionKey(), ProcessIntent.DELETED, v2, 2);
+
+    // then - only the deleted version loses its marker
+    assertThat(processState.getProcessByKeyAndTenant(v2.getKey(), v2.getTenantId())).isNull();
+    assertThat(processState.isSuspended(v2.getProcessDefinitionKey())).isFalse();
+    assertThat(processState.isSuspended(v1.getProcessDefinitionKey())).isTrue();
+  }
+
   private ProcessRecord putProcessWithVersionTag(final int version) {
     final var processRecord =
         creatingProcessRecord(processingState, processId, version, VERSION_TAG);

@@ -37,7 +37,7 @@ public final class ProcessDefinitionSuspensionDeploymentTest {
     // given - the only version is suspended, and the suspension is rebuilt from the log on restart
     final var process = process(Strings.newRandomValidBpmnId());
     final var first = deployedProcess(engine.deployment().withXmlResource(process).deploy());
-    writeSuspended(first);
+    write(ProcessIntent.SUSPENDED, first);
     engine.stop();
     engine.start();
 
@@ -64,7 +64,25 @@ public final class ProcessDefinitionSuspensionDeploymentTest {
     assertThat(second.getProcessDefinitionKey()).isEqualTo(first.getProcessDefinitionKey());
   }
 
-  private void writeSuspended(final ProcessMetadataValue process) {
+  @Test
+  public void shouldTreatRedeployedIdenticalResourceAsDuplicateAfterTheLatestIsResumed() {
+    // given - the only version was suspended and resumed, rebuilt from the log on restart
+    final var process = process(Strings.newRandomValidBpmnId());
+    final var first = deployedProcess(engine.deployment().withXmlResource(process).deploy());
+    write(ProcessIntent.SUSPENDED, first);
+    write(ProcessIntent.RESUMED, first);
+    engine.stop();
+    engine.start();
+
+    // when
+    final var second = deployedProcess(engine.deployment().withXmlResource(process).deploy());
+
+    // then
+    assertThat(second.isDuplicate()).isTrue();
+    assertThat(second.getProcessDefinitionKey()).isEqualTo(first.getProcessDefinitionKey());
+  }
+
+  private void write(final ProcessIntent intent, final ProcessMetadataValue process) {
     final var record =
         new ProcessRecord()
             .setKey(process.getProcessDefinitionKey())
@@ -72,7 +90,7 @@ public final class ProcessDefinitionSuspensionDeploymentTest {
             .setVersion(process.getVersion())
             .setResourceName(process.getResourceName())
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    engine.writeRecords(RecordToWrite.event().process(ProcessIntent.SUSPENDED, record));
+    engine.writeRecords(RecordToWrite.event().process(intent, record));
   }
 
   private static ProcessMetadataValue deployedProcess(

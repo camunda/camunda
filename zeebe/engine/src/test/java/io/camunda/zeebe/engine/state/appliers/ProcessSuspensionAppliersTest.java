@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.deployment.ProcessStateTest;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -66,6 +67,22 @@ final class ProcessSuspensionAppliersTest {
     // then
     assertThat(processState.isSuspended(v1.getKey())).isFalse();
     assertThat(processState.isSuspended(v2.getKey())).isTrue();
+  }
+
+  @Test
+  void shouldMoveSuspendedVersionToDrainingAndRemoveItsMarker() {
+    // given
+    final var v1 = ProcessStateTest.creatingProcessRecord(processingState, "processId", 1);
+    processState.putProcess(v1.getKey(), v1);
+    processState.markSuspended(v1);
+
+    // when
+    new ProcessDrainingApplier(processingState).applyState(1L, v1);
+
+    // then
+    final var process = processState.getProcessByKeyAndTenant(v1.getKey(), v1.getTenantId());
+    assertThat(process.getState()).isEqualTo(PersistedProcessState.DRAINING);
+    assertThat(processState.isSuspended(v1.getKey())).isFalse();
   }
 
   @Test
