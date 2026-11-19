@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Timeout.ThreadMode;
  */
 final class SignInMonitorTest {
 
+  private static final String PHYSICAL_TENANT = "pt1";
   private static final String STORE_ID = "kv";
   private static final String VAULT_URL = "https://my-vault.vault.azure.net";
   private static final String CLIENT_SECRET = "sp-client-secret-value";
@@ -272,7 +273,7 @@ final class SignInMonitorTest {
             environment(Map.of()),
             http,
             executor,
-            new SignInMonitor(STORE_ID, VAULT_URL, meterRegistry));
+            new SignInMonitor(PHYSICAL_TENANT, STORE_ID, VAULT_URL, meterRegistry));
 
     try (final var log = LogCapturer.capturing(SignInMonitor.class, Level.WARN)) {
       // when
@@ -290,7 +291,7 @@ final class SignInMonitorTest {
   void shouldLogTheReasonOnASingleLine() {
     // given the chain's failure when no sign-in method is available, which joins the reason of
     // each method with a line break
-    final var monitor = new SignInMonitor(STORE_ID, VAULT_URL, meterRegistry);
+    final var monitor = new SignInMonitor(PHYSICAL_TENANT, STORE_ID, VAULT_URL, meterRegistry);
 
     try (final var log = LogCapturer.capturing(SignInMonitor.class, Level.WARN)) {
       // when
@@ -310,7 +311,7 @@ final class SignInMonitorTest {
   @Test
   void shouldIgnoreTokenRequestsEndingAfterClose() {
     // given a store shutting down, which interrupts the token requests still running
-    final var monitor = new SignInMonitor(STORE_ID, VAULT_URL, meterRegistry);
+    final var monitor = new SignInMonitor(PHYSICAL_TENANT, STORE_ID, VAULT_URL, meterRegistry);
     monitor.close();
 
     try (final var log = LogCapturer.capturing(SignInMonitor.class, Level.DEBUG)) {
@@ -325,7 +326,7 @@ final class SignInMonitorTest {
   @Test
   void shouldRemoveTheMeterOnClose() {
     // given
-    final var monitor = new SignInMonitor(STORE_ID, VAULT_URL, meterRegistry);
+    final var monitor = new SignInMonitor(PHYSICAL_TENANT, STORE_ID, VAULT_URL, meterRegistry);
 
     // when
     monitor.close();
@@ -345,7 +346,7 @@ final class SignInMonitorTest {
                 "AZURE_CLIENT_SECRET", CLIENT_SECRET)),
         http,
         executor,
-        new SignInMonitor(STORE_ID, VAULT_URL, meterRegistry));
+        new SignInMonitor(PHYSICAL_TENANT, STORE_ID, VAULT_URL, meterRegistry));
   }
 
   private static void signInFailing(final TokenCredential credential) {

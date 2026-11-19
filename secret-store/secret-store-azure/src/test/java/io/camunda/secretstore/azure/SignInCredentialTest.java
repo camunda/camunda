@@ -35,7 +35,7 @@ final class SignInCredentialTest {
             "ManagedIdentityCredential",
             "ManagedIdentityCredential (system-assigned identity)",
             request -> Mono.just(new AccessToken(TOKEN, OffsetDateTime.now().plusHours(1))),
-            new SignInMonitor("default", VAULT_URL, new SimpleMeterRegistry()));
+            new SignInMonitor("pt1", "default", VAULT_URL, new SimpleMeterRegistry()));
 
     try (final var log = LogCapturer.capturing(SignInMonitor.class, Level.INFO)) {
       // when — tokens fetched both ways and again, as the vault client refreshes them
@@ -62,7 +62,7 @@ final class SignInCredentialTest {
             "EnvironmentCredential",
             "EnvironmentCredential (service principal)",
             request -> Mono.error(unavailable),
-            new SignInMonitor("default", VAULT_URL, new SimpleMeterRegistry()));
+            new SignInMonitor("pt1", "default", VAULT_URL, new SimpleMeterRegistry()));
 
     try (final var log = LogCapturer.capturing(SignInMonitor.class, Level.INFO)) {
       // when / then

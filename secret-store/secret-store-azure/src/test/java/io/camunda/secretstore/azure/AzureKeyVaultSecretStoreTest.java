@@ -29,7 +29,7 @@ class AzureKeyVaultSecretStoreTest {
     // when
     final var store =
         AzureKeyVaultSecretStore.fromConfig(
-            "default", AzureKeyVaultStoreConfig.of(VAULT_URL), new SimpleMeterRegistry());
+            "pt1", "default", AzureKeyVaultStoreConfig.of(VAULT_URL), new SimpleMeterRegistry());
 
     // then
     assertThat(store.namesPerCall()).isEqualTo(1);
@@ -51,7 +51,7 @@ class AzureKeyVaultSecretStoreTest {
 
     // when
     final var store =
-        AzureKeyVaultSecretStore.fromConfig("default", config, new SimpleMeterRegistry());
+        AzureKeyVaultSecretStore.fromConfig("pt1", "default", config, new SimpleMeterRegistry());
 
     // then
     assertThat(store.namesPerCall()).isEqualTo(Integer.MAX_VALUE);
@@ -62,7 +62,7 @@ class AzureKeyVaultSecretStoreTest {
     // given
     final var store =
         AzureKeyVaultSecretStore.fromConfig(
-            "default", AzureKeyVaultStoreConfig.of(VAULT_URL), new SimpleMeterRegistry());
+            "pt1", "default", AzureKeyVaultStoreConfig.of(VAULT_URL), new SimpleMeterRegistry());
 
     // when
     final var results = store.resolve(Set.of("a", "b"));
@@ -92,6 +92,7 @@ class AzureKeyVaultSecretStoreTest {
                 "AZURE_CLIENT_SECRET", "sp-secret"));
     try (final var store =
         AzureKeyVaultSecretStore.fromConfig(
+            "pt1",
             "default",
             AzureKeyVaultStoreConfig.of(VAULT_URL),
             new SimpleMeterRegistry(),
@@ -114,6 +115,7 @@ class AzureKeyVaultSecretStoreTest {
     // given
     final var store =
         AzureKeyVaultSecretStore.fromConfig(
+            "pt1",
             "default",
             AzureKeyVaultStoreConfig.of(VAULT_URL),
             new SimpleMeterRegistry(),
@@ -135,6 +137,7 @@ class AzureKeyVaultSecretStoreTest {
     final var meterRegistry = new SimpleMeterRegistry();
     try (final var store =
         AzureKeyVaultSecretStore.fromConfig(
+            "pt1",
             "default",
             AzureKeyVaultStoreConfig.of(VAULT_URL),
             meterRegistry,
@@ -169,7 +172,7 @@ class AzureKeyVaultSecretStoreTest {
     final var meterRegistry = new SimpleMeterRegistry();
     final var store =
         AzureKeyVaultSecretStore.fromConfig(
-            "default", AzureKeyVaultStoreConfig.of(VAULT_URL), meterRegistry);
+            "pt1", "default", AzureKeyVaultStoreConfig.of(VAULT_URL), meterRegistry);
     assertThat(meterRegistry.find(SecretStoreMetricsDoc.SIGNIN_FAILURES.getName()).counter())
         .isNotNull();
 

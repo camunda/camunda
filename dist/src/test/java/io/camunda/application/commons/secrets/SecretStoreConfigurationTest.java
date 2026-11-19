@@ -758,7 +758,8 @@ class SecretStoreConfigurationTest {
     try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
       registries(resolver);
       factory.verify(
-          () -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()), times(2));
+          () -> AzureKeyVaultSecretStore.fromConfig(any(), any(), built.capture(), any()),
+          times(2));
     }
 
     // then the default tenant's store gets every setting, unchanged by pt1's overrides
@@ -796,7 +797,8 @@ class SecretStoreConfigurationTest {
     // when
     try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
       registries(resolver);
-      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()));
+      factory.verify(
+          () -> AzureKeyVaultSecretStore.fromConfig(any(), any(), built.capture(), any()));
     }
 
     // then the two modules' defaults have not drifted apart
@@ -838,7 +840,8 @@ class SecretStoreConfigurationTest {
     // when
     try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
       registries(resolver);
-      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()));
+      factory.verify(
+          () -> AzureKeyVaultSecretStore.fromConfig(any(), any(), built.capture(), any()));
     }
 
     // then
@@ -893,7 +896,8 @@ class SecretStoreConfigurationTest {
     try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
       registries(resolver);
       factory.verify(
-          () -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()), times(2));
+          () -> AzureKeyVaultSecretStore.fromConfig(any(), any(), built.capture(), any()),
+          times(2));
     }
 
     // then pt1's store gets the merged timeouts
@@ -916,7 +920,8 @@ class SecretStoreConfigurationTest {
     try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
       registries(resolver);
       factory.verify(
-          () -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()), times(2));
+          () -> AzureKeyVaultSecretStore.fromConfig(any(), any(), built.capture(), any()),
+          times(2));
     }
 
     // then startup succeeds, pt1's attempt bound follows its call bound and the root keeps 2s

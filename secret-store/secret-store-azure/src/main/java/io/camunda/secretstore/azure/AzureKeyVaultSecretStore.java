@@ -63,16 +63,24 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
    * Builds a store from configuration, with the resolver its container secret setting selects. It
    * signs in with the {@code AZURE_*} variables of this process's environment.
    *
+   * @param physicalTenantId the physical tenant the store belongs to, named in its log lines
    * @param storeId the ID the store is configured under, tagging its meters
    * @param meterRegistry where the store publishes {@link
    *     io.camunda.secretstore.SecretStoreMetricsDoc#SIGNIN_FAILURES}; the caller tags it with the
    *     physical tenant. The meter is removed again on {@link #close()}.
    */
   public static AzureKeyVaultSecretStore fromConfig(
+      final String physicalTenantId,
       final String storeId,
       final AzureKeyVaultStoreConfig config,
       final MeterRegistry meterRegistry) {
-    return fromConfig(storeId, config, meterRegistry, Configuration.getGlobalConfiguration(), null);
+    return fromConfig(
+        physicalTenantId,
+        storeId,
+        config,
+        meterRegistry,
+        Configuration.getGlobalConfiguration(),
+        null);
   }
 
   /**
@@ -81,6 +89,7 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
    *     null} for the SDK default
    */
   static AzureKeyVaultSecretStore fromConfig(
+      final String physicalTenantId,
       final String storeId,
       final AzureKeyVaultStoreConfig config,
       final MeterRegistry meterRegistry,
@@ -91,7 +100,8 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
             ? new ContainerSecretResolver()
             : new OneByOneSecretResolver();
     final var credentialExecutor = newCredentialExecutor();
-    final var signInMonitor = new SignInMonitor(storeId, config.vaultUrl(), meterRegistry);
+    final var signInMonitor =
+        new SignInMonitor(physicalTenantId, storeId, config.vaultUrl(), meterRegistry);
     try {
       final var credential =
           AzureCredentialChain.build(
