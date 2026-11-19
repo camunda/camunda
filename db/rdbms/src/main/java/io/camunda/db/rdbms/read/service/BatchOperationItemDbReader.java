@@ -15,6 +15,7 @@ import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import org.slf4j.Logger;
@@ -45,12 +46,22 @@ public class BatchOperationItemDbReader extends AbstractEntityReader<BatchOperat
             query.sort(),
             BatchOperationItemSearchColumn.BATCH_OPERATION_KEY,
             BatchOperationItemSearchColumn.ITEM_KEY);
-    if (noResourceAccess(resourceAccessChecks)) {
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.BATCH.name(), List.of());
     final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
-        BatchOperationItemDbQuery.of(b -> b.filter(query.filter()).sort(dbSort).page(dbPage));
+        BatchOperationItemDbQuery.of(
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(authorizedResourceIds)
+                    .sort(dbSort)
+                    .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for batch operation items with filter {}", dbQuery);
     return executePagedQuery(

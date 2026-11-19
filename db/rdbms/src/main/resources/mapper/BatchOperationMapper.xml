@@ -497,6 +497,14 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
+    <!-- authorization filters -->
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND BATCH_OPERATION_KEY IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        close=")">
+        #{resourceId}
+      </foreach>
+    </if>
     <!-- basic filters -->
     <if
       test="filter.batchOperationKeyOperations != null and !filter.batchOperationKeyOperations.isEmpty()">
@@ -568,6 +576,14 @@
 
   <sql id="itemSearchFilter">
     WHERE 1 = 1
+    <!-- authorization filters -->
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND bi.BATCH_OPERATION_KEY IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        close=")">
+        #{resourceId}
+      </foreach>
+    </if>
     <!-- basic filters -->
     <if
       test="filter.batchOperationKeyOperations != null and !filter.batchOperationKeyOperations.isEmpty()">
