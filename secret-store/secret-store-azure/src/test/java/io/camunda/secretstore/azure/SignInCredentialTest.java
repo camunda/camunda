@@ -18,6 +18,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.OffsetDateTime;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 
 final class SignInCredentialTest {
@@ -67,6 +68,24 @@ final class SignInCredentialTest {
     try (final var log = LogCapturer.capturing(SignInMonitor.class, Level.INFO)) {
       // when / then
       assertThatThrownBy(() -> credential.getTokenSync(VAULT_SCOPE)).isSameAs(unavailable);
+      assertThat(log.messages()).isEmpty();
+    }
+  }
+
+  @Test
+  void shouldNotReportATokenRequestInterruptedByTheCallTimeout() {
+    // given — the store interrupts a call past its timeout, which may be fetching a token
+    final var interrupted = Exceptions.propagate(new InterruptedException());
+    final var credential =
+        new SignInCredential(
+            "EnvironmentCredential",
+            "EnvironmentCredential (service principal)",
+            request -> Mono.error(interrupted),
+            new SignInMonitor("pt1", "default", VAULT_URL, new SimpleMeterRegistry()));
+
+    try (final var log = LogCapturer.capturing(SignInMonitor.class, Level.INFO)) {
+      // when / then
+      assertThatThrownBy(() -> credential.getTokenSync(VAULT_SCOPE)).isSameAs(interrupted);
       assertThat(log.messages()).isEmpty();
     }
   }
