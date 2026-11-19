@@ -107,15 +107,41 @@ final class BpmnProcessFilterTest {
         recordWithValue(valueWithBpmnProcessId(ProcessInstanceRecordValue.class, INCLUDED_ID));
     final var excludedRecord =
         recordWithValue(valueWithBpmnProcessId(ProcessInstanceRecordValue.class, EXCLUDED_ID));
+    final var otherRecord =
+        recordWithValue(valueWithBpmnProcessId(ProcessInstanceRecordValue.class, OTHER_ID));
 
     // when / then
     assertThat(filter.accept(includedRecord))
         .as("ID present in inclusion but not in exclusion should remain allowed")
         .isTrue();
+    assertThat(filter.accept(otherRecord))
+        .as("ID absent from a non-empty inclusion list should be rejected")
+        .isFalse();
     assertThat(filter.accept(excludedRecord))
         .as(
             "ID present in both inclusion and exclusion should be removed from allowed set "
                 + "and therefore rejected")
+        .isFalse();
+  }
+
+  @Test
+  void shouldRejectAllIdsWhenExclusionCoversEntireInclusion() {
+    // given
+    final var filter =
+        new BpmnProcessFilter(
+            /* inclusion */ List.of(INCLUDED_ID), /* exclusion */ List.of(INCLUDED_ID));
+
+    final var includedRecord =
+        recordWithValue(valueWithBpmnProcessId(ProcessInstanceRecordValue.class, INCLUDED_ID));
+    final var otherRecord =
+        recordWithValue(valueWithBpmnProcessId(ProcessInstanceRecordValue.class, OTHER_ID));
+
+    // when / then
+    assertThat(filter.accept(includedRecord))
+        .as("ID present in both inclusion and exclusion should be rejected")
+        .isFalse();
+    assertThat(filter.accept(otherRecord))
+        .as("ID not present in the inclusion list should be rejected")
         .isFalse();
   }
 
