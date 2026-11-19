@@ -19,6 +19,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Converts authentication information into the claims map embedded in broker requests.
@@ -57,13 +58,15 @@ public class BrokerRequestAuthorizationConverter {
     // is absent, so we only need to pass groups that came from the groups claim of the caller's
     // provider. Otherwise reading the field would trigger an avoidable provider call (and for a
     // provider without a groups claim, a DB lookup that the broker would never consume).
+    // A claim of a provider with a groups claim is passed even when it is empty: absent, the
+    // engine would give the user the stored memberships of its principal ID.
     final boolean readGroups =
         shouldIncludeAuthorizationClaims && readsGroupsFromClaim(authentication.claims());
     return convert(
         authentication.isAnonymous(),
         authentication.authenticatedUsername(),
         authentication.authenticatedClientId(),
-        readGroups ? authentication.authenticatedGroupIds() : List.of(),
+        readGroups ? authentication.authenticatedGroupIds() : null,
         authentication.claims());
   }
 
@@ -71,7 +74,7 @@ public class BrokerRequestAuthorizationConverter {
       final boolean isAnonymous,
       final String username,
       final String clientId,
-      final List<String> groups,
+      final @Nullable List<String> groups,
       final Map<String, Object> tokenClaims) {
 
     if (isAnonymous) {
@@ -89,7 +92,7 @@ public class BrokerRequestAuthorizationConverter {
     }
 
     if (shouldIncludeAuthorizationClaims) {
-      if (externalGroupsEnabled && !groups.isEmpty()) {
+      if (externalGroupsEnabled && groups != null) {
         claims.put(USER_GROUPS_CLAIMS, groups);
       }
 

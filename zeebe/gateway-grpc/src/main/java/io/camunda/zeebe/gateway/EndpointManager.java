@@ -626,13 +626,12 @@ public final class EndpointManager {
           "No security config registered for physical tenant: " + physicalTenantId);
     }
 
-    List<String> groups = List.of();
+    List<String> groups = null;
     Map<String, Object> tokenClaims = null;
     if (authorizationConverter.shouldIncludeAuthorizationClaims()) {
-      // the handler sets no groups when the tenant configures no groups claim
-      groups =
-          Objects.requireNonNullElse(
-              Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get), List.of());
+      // the handler sets groups only for a token whose provider has a groups claim, an empty list
+      // included, so null means that Camunda manages the groups of the user
+      groups = Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
       tokenClaims = Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
     }
 

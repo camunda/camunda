@@ -136,6 +136,25 @@ public class BrokerRequestAuthorizationConverterTest {
   }
 
   @Test
+  void shouldContainEmptyGroupsIfClaimConfiguredAndTheTokenHasNoGroups() {
+    // given
+    final var authentication = CamundaAuthentication.of(b -> b.groupIds(List.of()));
+
+    final var oidcConfiguration = new OidcConfiguration();
+    oidcConfiguration.setGroupsClaim("groups");
+    final var auth = new AuthenticationConfiguration();
+    auth.setOidc(oidcConfiguration);
+    auth.setMethod(OIDC);
+    final var converter = new BrokerRequestAuthorizationConverter(createEngineSecurityConfig(auth));
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then the engine must not fall back to the stored memberships of the principal
+    assertThat(brokerRequestAuth).containsEntry(USER_GROUPS_CLAIMS, List.of());
+  }
+
+  @Test
   void shouldIgnoreGroupsIfAuthenticationMethodNotOIDC() {
     // given
     final var groups = List.of("group1", "group2");
@@ -217,6 +236,22 @@ public class BrokerRequestAuthorizationConverterTest {
 
     // then
     assertThat(brokerRequestAuth).containsEntry(USER_GROUPS_CLAIMS, groups);
+  }
+
+  @Test
+  void shouldContainEmptyGroupsOfATokenOfAProviderWithAGroupsClaimInAMixedSetup() {
+    // given
+    final var authentication =
+        CamundaAuthentication.of(
+            b -> b.user("foo").groupIds(List.of()).claims(Map.of("iss", KEYCLOAK_ISSUER)));
+    final var converter =
+        new BrokerRequestAuthorizationConverter(createEngineSecurityConfig(mixedProviders()));
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then the stored memberships of a same-named user of the other provider must not apply
+    assertThat(brokerRequestAuth).containsEntry(USER_GROUPS_CLAIMS, List.of());
   }
 
   @Test

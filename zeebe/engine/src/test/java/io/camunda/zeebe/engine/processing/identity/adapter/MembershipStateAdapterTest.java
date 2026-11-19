@@ -152,6 +152,22 @@ final class MembershipStateAdapterTest {
   }
 
   @Test
+  void shouldNotFallBackToMembershipStateWhenGroupsClaimIsEmpty() {
+    // given — the token's provider has a groups claim and the token has no groups, while the same
+    // principal ID is a member of a group in the state
+    final var userId = Strings.newRandomValidIdentityId();
+    createGroupAndAssignEntity(userId, EntityType.USER);
+    final var query =
+        new MembershipQuery(Map.of(USER_GROUPS_CLAIMS, List.of()), userId, PrincipalType.USER);
+
+    // when
+    final var result = adapter.groupIds(query);
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
   void shouldReturnGroupIdsFromMatchedMappingRules() {
     // given — mapping rule assigned to a group; no USER_GROUPS_CLAIMS
     final var mappingRuleId = UUID.randomUUID().toString();
