@@ -128,6 +128,22 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchProcessDefinitionBySuspendedState() {
+    // when
+    client
+        .newProcessDefinitionSearchRequest()
+        .filter(f -> f.state(ProcessDefinitionState.SUSPENDED))
+        .send()
+        .join();
+
+    // then
+    final ProcessDefinitionSearchQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
+    assertThat(request.getFilter().getState())
+        .isEqualTo(ProcessDefinitionFilter.StateEnum.SUSPENDED);
+  }
+
+  @Test
   void shouldSearchProcessDefinitionWithFullSorting() {
     // when
     client

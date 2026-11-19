@@ -76,6 +76,10 @@ public class RestGatewayPaths {
   private static final String URL_MESSAGE_PUBLICATION = REST_API_PATH + "/messages/publication";
   private static final String URL_MESSAGE_CORRELATION = REST_API_PATH + "/messages/correlation";
   private static final String URL_PROCESS_DEFINITION = REST_API_PATH + "/process-definitions/%s";
+  private static final String URL_PROCESS_DEFINITIONS_SUSPENSION =
+      REST_API_PATH + "/process-definitions/suspension";
+  private static final String URL_PROCESS_DEFINITIONS_RESUMPTION =
+      REST_API_PATH + "/process-definitions/resumption";
   private static final String URL_PROCESS_DEFINITION_FORM =
       REST_API_PATH + "/process-definitions/%s/form";
   private static final String URL_PROCESS_INSTANCE = REST_API_PATH + "/process-instances/%s";
@@ -271,6 +275,14 @@ public class RestGatewayPaths {
 
   public static String getResumeProcessInstanceUrl(final long processInstanceKey) {
     return String.format(URL_PROCESS_INSTANCE_RESUMPTION, processInstanceKey);
+  }
+
+  public static String getSuspendProcessDefinitionsUrl() {
+    return URL_PROCESS_DEFINITIONS_SUSPENSION;
+  }
+
+  public static String getResumeProcessDefinitionsUrl() {
+    return URL_PROCESS_DEFINITIONS_RESUMPTION;
   }
 
   public static String getBroadcastSignalUrl() {

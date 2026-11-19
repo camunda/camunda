@@ -80,10 +80,12 @@ import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
 import io.camunda.client.api.command.ResolveSecretsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
+import io.camunda.client.api.command.ResumeProcessDefinitionCommandStep1;
 import io.camunda.client.api.command.ResumeProcessInstanceCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
+import io.camunda.client.api.command.SuspendProcessDefinitionCommandStep1;
 import io.camunda.client.api.command.SuspendProcessInstanceCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
@@ -498,6 +500,38 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   ResumeProcessInstanceCommandStep1 newResumeProcessInstanceCommand(long processInstanceKey);
+
+  /**
+   * Command to suspend process definitions, so that no new process instances can be created from
+   * them.
+   *
+   * <pre>
+   * camundaClient
+   *  .newSuspendProcessDefinitionCommand()
+   *  .processDefinitionId("my-process")
+   *  .version(2)
+   *  .includeProcessInstances(true)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  SuspendProcessDefinitionCommandStep1 newSuspendProcessDefinitionCommand();
+
+  /**
+   * Command to resume suspended process definitions, so that process instances can be created from
+   * them again.
+   *
+   * <pre>
+   * camundaClient
+   *  .newResumeProcessDefinitionCommand()
+   *  .processDefinitionKey(processDefinitionKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  ResumeProcessDefinitionCommandStep1 newResumeProcessDefinitionCommand();
 
   /**
    * Command to delete a process instance history.

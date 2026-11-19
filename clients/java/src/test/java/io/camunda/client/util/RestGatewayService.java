@@ -69,6 +69,8 @@ import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionResumptionResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionSuspensionResult;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
 import io.camunda.client.protocol.rest.ProcessInstanceWaitStateStatisticsQueryResult;
@@ -322,6 +324,14 @@ public class RestGatewayService {
 
   public void onCreateGroupRequest(final GroupCreateResult response) {
     registerPost(RestGatewayPaths.getGroupsUrl(), response);
+  }
+
+  public void onSuspendProcessDefinitionsRequest(final ProcessDefinitionSuspensionResult response) {
+    registerPost(RestGatewayPaths.getSuspendProcessDefinitionsUrl(), response);
+  }
+
+  public void onResumeProcessDefinitionsRequest(final ProcessDefinitionResumptionResult response) {
+    registerPost(RestGatewayPaths.getResumeProcessDefinitionsUrl(), response);
   }
 
   public void onCancelProcessInstancesRequest(final BatchOperationCreatedResult response) {
