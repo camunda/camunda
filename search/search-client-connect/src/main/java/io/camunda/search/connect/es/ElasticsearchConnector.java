@@ -156,6 +156,7 @@ public final class ElasticsearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConnectConfiguration configuration,
       final HttpRequestInterceptor... interceptors) {
+    httpAsyncClientBuilder.setIoReactorExceptionCallback(new IoReactorExceptionCallback());
     setupKeepAlive(httpAsyncClientBuilder);
 
     for (final HttpRequestInterceptor interceptor : interceptors) {
