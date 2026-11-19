@@ -34,6 +34,8 @@ public final class PersistedClusterConfiguration {
   private final Path topologyFile;
   private final ClusterConfigurationSerializer serializer;
   private ClusterConfiguration clusterConfiguration;
+  // whether loading the file returns this configuration; not after a failed write, see update
+  private boolean persisted = true;
 
   private PersistedClusterConfiguration(
       final Path topologyFile,
@@ -71,12 +73,24 @@ public final class PersistedClusterConfiguration {
     return clusterConfiguration;
   }
 
+  /**
+   * Persists the configuration, replacing the previous one.
+   *
+   * <p>After a failed write, the file may hold the previous configuration or the one that failed to
+   * be written, so the next update writes even a configuration equal to the one in memory. Retrying
+   * is safe: every write rewrites the whole configuration to a temporary file and renames it over
+   * the old one, so it never relies on syncing again what failed to sync.
+   *
+   * @throws IOException if writing fails
+   */
   public void update(final ClusterConfiguration clusterConfiguration) throws IOException {
-    if (this.clusterConfiguration.equals(clusterConfiguration)) {
+    if (persisted && this.clusterConfiguration.equals(clusterConfiguration)) {
       return;
     }
+    persisted = false;
     writeToFile(clusterConfiguration);
     this.clusterConfiguration = clusterConfiguration;
+    persisted = true;
   }
 
   public boolean isUninitialized() {
