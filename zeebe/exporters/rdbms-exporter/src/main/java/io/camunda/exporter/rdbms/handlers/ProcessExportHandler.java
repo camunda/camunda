@@ -19,12 +19,21 @@ import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader.StartForm
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 public class ProcessExportHandler implements RdbmsExportHandler<Process> {
+
+  private static final Map<Intent, ProcessDefinitionState> STATE_BY_INTENT =
+      Map.of(
+          ProcessIntent.DRAINING, ProcessDefinitionState.DRAINING,
+          ProcessIntent.FULLY_DELETED, ProcessDefinitionState.DELETED,
+          ProcessIntent.SUSPENDED, ProcessDefinitionState.SUSPENDED,
+          ProcessIntent.RESUMED, ProcessDefinitionState.ACTIVE);
 
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
@@ -60,24 +69,18 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
     }
 
     // only the deployment partition updates the definition state
-    return exportDefinition
-        && (intent == ProcessIntent.DRAINING || intent == ProcessIntent.FULLY_DELETED);
+    return exportDefinition && STATE_BY_INTENT.containsKey(intent);
   }
 
   @Override
   public void export(final Record<Process> record) {
-    if (record.getIntent() == ProcessIntent.FULLY_DELETED) {
-      processDefinitionWriter.updateState(
-          record.getValue().getProcessDefinitionKey(), ProcessDefinitionState.DELETED);
-      return;
-    }
-    if (record.getIntent() == ProcessIntent.DRAINING) {
-      processDefinitionWriter.updateState(
-          record.getValue().getProcessDefinitionKey(), ProcessDefinitionState.DRAINING);
+    final var value = record.getValue();
+    final var state = STATE_BY_INTENT.get(record.getIntent());
+    if (state != null) {
+      processDefinitionWriter.updateState(value.getProcessDefinitionKey(), state);
       return;
     }
 
-    final var value = record.getValue();
     final var processModelReader =
         ProcessModelReader.of(value.getResource(), value.getBpmnProcessId()).orElse(null);
 
