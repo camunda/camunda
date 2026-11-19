@@ -5251,7 +5251,7 @@ paths:
             schema:
               $ref: "#/components/schemas/DeleteResourceRequest"
       responses:
-        "200":
+        "204":
           description: The resource is deleted.
         "400":
           $ref: "#/components/responses/InvalidData"
