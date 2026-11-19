@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +73,56 @@ public class MapSerializerTest {
 
     // when
     final Map<String, String> deserialized = MapSerializer.deserialize(json);
+
+    // then
+    assertThat(deserialized).isNull();
+  }
+
+  @Test
+  public void shouldSerializeNonEmptyMapToCompactJson() {
+    // given
+    final Map<String, String> headers = new LinkedHashMap<>();
+    headers.put("b", "2");
+    headers.put("a", "x \"q\" \u00e4");
+
+    // when
+    final String serialized = MapSerializer.serialize(headers);
+
+    // then
+    assertThat(serialized).isEqualTo("{\"b\":\"2\",\"a\":\"x \\\"q\\\" \u00e4\"}");
+  }
+
+  @Test
+  public void shouldDeserializeNonStringValuesWithoutError() {
+    // given
+    final String json = "{\"n\":1,\"b\":true,\"s\":\"v\"}";
+
+    // when
+    final Map<String, ?> deserialized = MapSerializer.deserialize(json);
+
+    // then
+    assertThat(deserialized).containsOnlyKeys("n", "b", "s");
+    assertThat(deserialized.get("s")).isEqualTo("v");
+    assertThat(String.valueOf(deserialized.get("n"))).isEqualTo("1");
+    assertThat(String.valueOf(deserialized.get("b"))).isEqualTo("true");
+  }
+
+  @Test
+  public void shouldReturnNullForInvalidJson() {
+    // given
+    final String json = "{not json";
+
+    // when
+    final Map<String, String> deserialized = MapSerializer.deserialize(json);
+
+    // then
+    assertThat(deserialized).isNull();
+  }
+
+  @Test
+  public void shouldReturnNullForEmptyString() {
+    // when
+    final Map<String, String> deserialized = MapSerializer.deserialize("");
 
     // then
     assertThat(deserialized).isNull();
