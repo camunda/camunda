@@ -7,6 +7,7 @@
  */
 package io.camunda.secretstore.azure;
 
+import static io.camunda.secretstore.SecretErrorCode.INVALID_REF;
 import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -25,6 +26,8 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +42,8 @@ class AzureKeyVaultSecretStoreTest {
   private static final String PHYSICAL_TENANT = "pt1";
   private static final String STORE_ID = "default";
   private static final String VAULT_URL = "https://my-vault.vault.azure.net";
+  private static final Instant NOW = Instant.parse("2026-06-01T12:00:00Z");
+  private static final InstantSource CLOCK = InstantSource.fixed(NOW);
 
   @Test
   void shouldFanOutOneNamePerCallByDefault() {
@@ -197,6 +202,168 @@ class AzureKeyVaultSecretStoreTest {
       assertThat(missing.message()).isEqualTo("Secret not found: missing");
       assertThat(String.valueOf(missing) + log.messages())
           .doesNotContain("the-user", "the-password");
+    }
+  }
+
+  @Test
+  void shouldRefuseANameKeyVaultCannotHoldWithoutCallingTheVault() {
+    // given
+    final var names = Set.of("API_KEY", "has.dot", "tokén", "a/b");
+    final var http = signedIn().putSecret("api-key", "the-key");
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+
+      // when
+      final var results = store.resolve(names);
+
+      // then
+      assertThat(results).containsOnlyKeys(names);
+      results.forEach(
+          (name, result) -> {
+            assertThat(failure(result).code()).isEqualTo(INVALID_REF);
+            assertThat(failure(result).message())
+                .contains(
+                    name, AzureKeyVaultSecretStore.NAME_PATTERN.pattern(), "container secret");
+          });
+      assertThat(secretPathsRead(http)).isEmpty();
+    }
+  }
+
+  @Test
+  void shouldRefuseANameThatExceedsTheLengthLimitWithThePrefix() {
+    // given — "camunda-" leaves 119 characters for the name
+    final var longest = "a".repeat(119);
+    final var tooLong = "a".repeat(120);
+    final var http = signedIn().putSecret("camunda-" + longest, "the-key");
+    try (final var store = store(prefixed("camunda-"), http)) {
+
+      // when
+      final var results = store.resolve(Set.of(longest, tooLong));
+
+      // then
+      assertThat(results.get(longest)).isEqualTo(new Resolved("the-key"));
+      assertThat(failure(results.get(tooLong)).code()).isEqualTo(INVALID_REF);
+      assertThat(failure(results.get(tooLong)).message()).contains("'camunda-'");
+    }
+  }
+
+  @Test
+  void shouldRefuseAnExpiredSecretNamingItsExpiryDate() {
+    // given — Key Vault still returns the value of an expired secret
+    final var expiresOn = NOW.minusSeconds(60);
+    final var http = signedIn().putSecret("api-key", "the-key", null, expiresOn);
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http, CLOCK)) {
+
+      // when
+      final var result = failure(store.resolve(Set.of("api-key")).get("api-key"));
+
+      // then
+      assertThat(result.code()).isEqualTo(NOT_FOUND);
+      assertThat(result.message())
+          .isEqualTo("Secret api-key expired on 2026-06-01T11:59:00Z and is refused");
+    }
+  }
+
+  @Test
+  void shouldRefuseASecretNotActiveYetNamingItsActivationDate() {
+    // given
+    final var notBefore = NOW.plusSeconds(3600);
+    final var http = signedIn().putSecret("api-key", "the-key", notBefore, null);
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http, CLOCK)) {
+
+      // when
+      final var result = failure(store.resolve(Set.of("api-key")).get("api-key"));
+
+      // then
+      assertThat(result.code()).isEqualTo(NOT_FOUND);
+      assertThat(result.message())
+          .isEqualTo("Secret api-key is not active until 2026-06-01T13:00:00Z and is refused");
+    }
+  }
+
+  @Test
+  void shouldResolveASecretBetweenItsActivationAndExpiryDates() {
+    // given
+    final var http =
+        signedIn().putSecret("api-key", "the-key", NOW.minusSeconds(1), NOW.plusSeconds(1));
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http, CLOCK)) {
+
+      // when
+      final var results = store.resolve(Set.of("api-key"));
+
+      // then
+      assertThat(results).containsExactly(entry("api-key", new Resolved("the-key")));
+    }
+  }
+
+  @Test
+  void shouldRefuseASecretAtTheInstantItExpires() {
+    // given
+    final var http = signedIn().putSecret("api-key", "the-key", null, NOW);
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http, CLOCK)) {
+
+      // when
+      final var result = failure(store.resolve(Set.of("api-key")).get("api-key"));
+
+      // then
+      assertThat(result.message())
+          .isEqualTo("Secret api-key expired on 2026-06-01T12:00:00Z and is refused");
+    }
+  }
+
+  @Test
+  void shouldResolveASecretAtTheInstantItBecomesActive() {
+    // given
+    final var http = signedIn().putSecret("api-key", "the-key", NOW, null);
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http, CLOCK)) {
+
+      // when
+      final var results = store.resolve(Set.of("api-key"));
+
+      // then
+      assertThat(results).containsExactly(entry("api-key", new Resolved("the-key")));
+    }
+  }
+
+  @Test
+  void shouldRefuseADisabledSecretRatherThanReportAccessDenied() {
+    // given
+    final var http = signedIn().putDisabledSecret("api-key", "the-key");
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+
+      // when
+      final var result = failure(store.resolve(Set.of("api-key")).get("api-key"));
+
+      // then
+      assertThat(result.code()).isEqualTo(NOT_FOUND);
+      assertThat(result.message())
+          .isEqualTo("Secret api-key is disabled in Azure Key Vault and is refused")
+          .doesNotContainIgnoringCase("access denied");
+    }
+  }
+
+  @Test
+  void shouldRefuseDisabledExpiredAndInactiveSecretsAlikeWithoutLeakingTheirValues() {
+    // given
+    final var http =
+        signedIn()
+            .putDisabledSecret("disabled", "disabled-value")
+            .putSecret("expired", "expired-value", null, NOW.minusSeconds(1))
+            .putSecret("inactive", "inactive-value", NOW.plusSeconds(1), null);
+    try (final var log = LogCapturer.capturing(OneByOneSecretResolver.class, Level.TRACE);
+        final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http, CLOCK)) {
+
+      // when
+      final var results = store.resolve(Set.of("disabled", "expired", "inactive"));
+
+      // then
+      assertThat(results.values())
+          .hasSize(3)
+          .allSatisfy(result -> assertThat(failure(result).code()).isEqualTo(NOT_FOUND));
+      assertThat(results.values().stream().map(AzureKeyVaultSecretStoreTest::describe))
+          .allSatisfy(
+              failure ->
+                  assertThat(failure + log.messages())
+                      .doesNotContain("disabled-value", "expired-value", "inactive-value"));
     }
   }
 
@@ -474,6 +641,30 @@ class AzureKeyVaultSecretStoreTest {
 
   private static StubAzureHttpClient signedIn() {
     return StubAzureHttpClient.signingIn(3600);
+  }
+
+  private static AzureKeyVaultSecretStore store(
+      final AzureKeyVaultStoreConfig config,
+      final StubAzureHttpClient http,
+      final InstantSource clock) {
+    return AzureKeyVaultSecretStore.fromConfig(
+        PHYSICAL_TENANT,
+        STORE_ID,
+        config,
+        new SimpleMeterRegistry(),
+        StubAzureHttpClient.environment(Map.of()),
+        http,
+        clock);
+  }
+
+  /** A failure as an operator could see it: its message and every cause's message. */
+  private static String describe(final SecretResolutionResult result) {
+    final var failure = failure(result);
+    final var description = new StringBuilder(failure.message());
+    for (Throwable cause = failure.cause(); cause != null; cause = cause.getCause()) {
+      description.append('\n').append(cause);
+    }
+    return description.toString();
   }
 
   private static Failed failure(final @Nullable SecretResolutionResult result) {
