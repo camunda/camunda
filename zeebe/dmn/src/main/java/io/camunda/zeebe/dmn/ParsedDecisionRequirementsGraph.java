@@ -19,7 +19,8 @@ import org.jspecify.annotations.Nullable;
 public interface ParsedDecisionRequirementsGraph {
 
   /**
-   * @return the id of the DRG, or {@code null} if the DMN is not valid
+   * @return the id of the DRG, or {@code null} if the DMN is not valid or its definitions have no
+   *     id
    */
   @Nullable String getId();
 
