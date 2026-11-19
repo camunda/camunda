@@ -49,7 +49,8 @@ public class RoleProcessors {
             keyGenerator,
             permissionsBehavior,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            processingState.getPolicyUpdateState()));
     typedRecordProcessors.onCommand(
         ValueType.ROLE,
         RoleIntent.ADD_ENTITY,

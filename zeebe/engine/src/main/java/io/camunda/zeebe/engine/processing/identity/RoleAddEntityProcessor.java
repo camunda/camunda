@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -35,7 +34,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
+public class RoleAddEntityProcessor extends AbstractIdentityCommandProcessor<RoleRecord> {
 
   public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to update role with ID '%s', but a role with this ID does not exist.";
@@ -66,6 +65,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       final CommandDistributionBehavior commandDistributionBehavior,
       final EngineSecurityConfig securityConfig,
       final MembershipStateAdapter membershipStateAdapter) {
+    super(processingState.getPolicyUpdateState(), writers);
     roleState = processingState.getRoleState();
     mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
@@ -83,7 +83,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<RoleRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
     final var roleId = record.getRoleId();
     final var isAuthorized =
@@ -91,16 +91,14 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
             command, AuthorizationResourceType.ROLE, PermissionType.UPDATE, roleId);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
     final var persistedRecord = roleState.getRole(record.getRoleId());
     if (persistedRecord.isEmpty()) {
       final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
@@ -109,17 +107,14 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     if (!isEntityPresent(entityType, entityId)) {
       final var errorMessage =
           ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
     if (isEntityAssigned(record)) {
       final var errorMessage =
           ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.ALREADY_EXISTS, errorMessage);
+      rejectNewCommandAsAlreadyApplied(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 

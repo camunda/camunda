@@ -26,9 +26,10 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Applies one buffered chunk of a policy update, once all its chunks are buffered. The chunk is
  * turned into identity commands, which the identity processors apply and distribute to the other
- * partitions. Each identity processor validates its own command, so an entry that cannot be
- * applied, for example a delete of a missing role, is rejected on its own while the other entries
- * of the chunk apply.
+ * partitions. Each identity processor validates its own command. The commands carry the update's
+ * key as reference, so if one cannot be applied, for example adding a member to a missing role, the
+ * update fails and its remaining commands are rejected; see {@link PolicyUpdateBehavior}. The
+ * commands applied before the failure are not undone.
  *
  * <p>The processor then writes the command for the next chunk. Its identity commands are written
  * after those of this chunk, so the chunks are applied in order. After the last chunk, it instead
@@ -70,6 +71,19 @@ public final class PolicyUpdateApplyChunkProcessor
     }
 
     final var update = command.getValue();
+    final var openUpdate =
+        policyUpdateState
+            .getOpenUpdate()
+            .filter(open -> open.getUpdate().getUpdateId().equals(update.getUpdateId()));
+    if (openUpdate.isEmpty()) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.INVALID_STATE,
+          "Expected policy update '%s' to be open to apply chunk %d, but it failed or no longer exists"
+              .formatted(update.getUpdateId(), update.getChunkIndex()));
+      return;
+    }
+
     final var chunk = policyUpdateState.getChunk(update.getUpdateId(), update.getChunkIndex());
     if (chunk.isEmpty()) {
       rejectionWriter.appendRejection(
@@ -92,12 +106,13 @@ public final class PolicyUpdateApplyChunkProcessor
                   String.join("; ", commands.getLeft())));
       return;
     }
+    final var identityMetadata = PolicyUpdateBehavior.metadataFor(openUpdate.get());
     commands
         .get()
         .forEach(
             identityCommand ->
                 commandWriter.appendFollowUpCommand(
-                    NO_KEY, identityCommand.intent(), identityCommand.value()));
+                    NO_KEY, identityCommand.intent(), identityCommand.value(), identityMetadata));
 
     stateWriter.appendFollowUpEvent(
         keyGenerator.nextKey(),
@@ -117,5 +132,16 @@ public final class PolicyUpdateApplyChunkProcessor
           PolicyUpdateIntent.COMMIT_VERSION,
           PolicyUpdateRecords.withoutPolicyData(update, update.getChunkIndex()));
     }
+  }
+
+  /**
+   * The identity commands are processed in their own batches, not in the batch of this command. If
+   * an identity processor throws, only its own command is rolled back and handled by its own error
+   * handling, which fails the update. In this batch, the whole chunk would be rolled back and the
+   * error handled for this command, leaving the update open without a next command.
+   */
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
   }
 }

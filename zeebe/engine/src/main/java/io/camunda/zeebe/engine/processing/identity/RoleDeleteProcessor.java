@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -37,7 +36,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
+public class RoleDeleteProcessor extends AbstractIdentityCommandProcessor<RoleRecord> {
 
   public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete role with ID '%s', but a role with this ID doesn't exist.";
@@ -63,6 +62,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final MembershipStateAdapter membershipStateAdapter) {
+    super(state.getPolicyUpdateState(), writers);
     roleState = state.getRoleState();
     authorizationState = state.getAuthorizationState();
     membershipState = state.getMembershipState();
@@ -78,7 +78,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<RoleRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
     final String roleId = record.getRoleId();
     final var isAuthorized =
@@ -87,24 +87,20 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
 
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
     if (roleId != null && DefaultRole.ids().contains(roleId)) {
       final var errorMessage = ROLE_PROTECTED_ERROR_MESSAGE.formatted(roleId);
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.INVALID_STATE, errorMessage);
+      rejectNewCommand(command, RejectionType.INVALID_STATE, errorMessage);
       return;
     }
 
     final var persistedRecord = roleState.getRole(roleId);
     if (persistedRecord.isEmpty()) {
       final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(roleId);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommandAsAlreadyApplied(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 

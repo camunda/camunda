@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -38,7 +37,7 @@ import org.slf4j.Logger;
 
 @NullMarked
 public class AuthorizationDeleteProcessor
-    implements DistributedTypedRecordProcessor<AuthorizationRecord> {
+    extends AbstractIdentityCommandProcessor<AuthorizationRecord> {
 
   public static final String AUTHORIZATION_OWNER_PROTECTED_ERROR_MESSAGE =
       "Expected to delete authorization with key %s, but it belongs to default role '%s' "
@@ -62,6 +61,7 @@ public class AuthorizationDeleteProcessor
       final CommandDistributionBehavior distributionBehavior,
       final CslAuthorizationCheck cslCheck,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
+    super(processingState.getPolicyUpdateState(), writers);
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
     stateWriter = writers.state();
@@ -73,25 +73,33 @@ public class AuthorizationDeleteProcessor
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<AuthorizationRecord> command) {
     LOG.debug(
         "Processing DELETE authorization command for key {}",
         command.getValue().getAuthorizationKey());
-    permissionsBehavior
-        .isAuthorized(command, PermissionType.DELETE)
-        .flatMap(
-            authorizationRecord ->
-                permissionsBehavior.authorizationExists(
-                    authorizationRecord, AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION))
+    final var isAuthorized = permissionsBehavior.isAuthorized(command, PermissionType.DELETE);
+    if (isAuthorized.isLeft()) {
+      rejectNewCommand(command, isAuthorized.getLeft().type(), isAuthorized.getLeft().reason());
+      return;
+    }
+
+    final var persistedAuthorization =
+        permissionsBehavior.authorizationExists(
+            isAuthorized.get(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION);
+    if (persistedAuthorization.isLeft()) {
+      final var rejection = persistedAuthorization.getLeft();
+      rejectNewCommandAsAlreadyApplied(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    persistedAuthorization
         .flatMap(AuthorizationDeleteProcessor::rejectIfProtectedRoleOwner)
         .map(PersistedAuthorization::getAuthorizationKey)
         .ifRightOrLeft(
             authorizationKey -> writeEventAndDistribute(command, authorizationKey),
             (rejection) -> {
               LOG.debug("Rejecting DELETE authorization command: {}", rejection.reason());
-              rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectedResponseOnCommand(
-                  command, rejection.type(), rejection.reason());
+              rejectNewCommand(command, rejection.type(), rejection.reason());
             });
   }
 

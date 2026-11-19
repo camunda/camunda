@@ -35,7 +35,8 @@ public class MappingRuleProcessors {
             permissionsBehavior,
             keyGenerator,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            processingState.getPolicyUpdateState()));
     typedRecordProcessors.onCommand(
         ValueType.MAPPING_RULE,
         MappingRuleIntent.DELETE,
@@ -53,6 +54,7 @@ public class MappingRuleProcessors {
             permissionsBehavior,
             keyGenerator,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            processingState.getPolicyUpdateState()));
   }
 }
