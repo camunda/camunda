@@ -161,13 +161,17 @@ public final class BackupReadRateLimiter {
   /**
    * Lets the next stream open; called once by every stream returned by {@link #wrap}.
    *
-   * @param reservedUntilNanos when the budget of the last read of the stream is used up
+   * @param lastRead the last read the stream paid for, or {@code null} if it never read
    */
-  void streamClosed(final long reservedUntilNanos) {
+  void streamClosed(final @Nullable Reservation lastRead) {
     if (openStreams == null) {
       return;
     }
-    final long remainingNanos = reservedUntilNanos - nanoClock.getAsLong();
+    if (lastRead == null || lastRead == Reservation.FREE) {
+      openStreams.release();
+      return;
+    }
+    final long remainingNanos = lastRead.endNanos() - nanoClock.getAsLong();
     if (remainingNanos > 0) {
       scheduler.schedule(remainingNanos, openStreams::release);
     } else {
@@ -218,10 +222,12 @@ public final class BackupReadRateLimiter {
    * A paid read.
    *
    * @param waitNanos how long the read has to wait until the reads before it fit into the rate
-   * @param endNanos when the budget of the read is used up, on the limiter's clock
+   * @param endNanos when the budget of the read is used up, on the limiter's clock; only meaningful
+   *     when compared to that clock by subtraction, as {@link System#nanoTime()} values are
    */
   record Reservation(long waitNanos, long endNanos) {
-    static final Reservation FREE = new Reservation(0, Long.MIN_VALUE);
+    /** A read that took no budget, so it has no end; never compare its {@code endNanos}. */
+    static final Reservation FREE = new Reservation(0, 0);
   }
 
   @FunctionalInterface

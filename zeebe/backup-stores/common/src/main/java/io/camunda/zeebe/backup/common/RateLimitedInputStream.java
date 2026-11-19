@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.common;
 
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter.Reservation;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,6 +15,7 @@ import java.io.InterruptedIOException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import org.jspecify.annotations.Nullable;
 
 /** Pays for every byte read from or skipped in the wrapped stream with a shared limiter. */
 public final class RateLimitedInputStream extends FilterInputStream {
@@ -28,7 +30,7 @@ public final class RateLimitedInputStream extends FilterInputStream {
   private final BackupReadRateLimiter limiter;
   private final AtomicLong waitedNanos = new AtomicLong();
   private final AtomicBoolean closed = new AtomicBoolean();
-  private volatile long reservedUntilNanos = Long.MIN_VALUE;
+  private volatile @Nullable Reservation lastRead;
 
   RateLimitedInputStream(final InputStream in, final BackupReadRateLimiter limiter) {
     super(in);
@@ -77,14 +79,14 @@ public final class RateLimitedInputStream extends FilterInputStream {
       super.close();
     } finally {
       if (closed.compareAndSet(false, true)) {
-        limiter.streamClosed(reservedUntilNanos);
+        limiter.streamClosed(lastRead);
       }
     }
   }
 
   private void pay(final long bytes) throws InterruptedIOException {
     final var reservation = limiter.reserve(bytes);
-    reservedUntilNanos = reservation.endNanos();
+    lastRead = reservation;
     final long waitNanos = reservation.waitNanos();
     if (waitNanos <= 0) {
       return;

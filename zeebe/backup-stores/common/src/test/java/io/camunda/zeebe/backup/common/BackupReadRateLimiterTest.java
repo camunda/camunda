@@ -234,6 +234,21 @@ class BackupReadRateLimiterTest {
   }
 
   @Test
+  void shouldFreeTheSlotOfAStreamClosedBeforeItsFirstReadRightAway() throws Exception {
+    // given - System.nanoTime() is usually far from zero, e.g. the time since boot
+    clock.advance(Duration.ofDays(3));
+    final var limiter =
+        new BackupReadRateLimiter(MIB, 1, clock::nanos, clock::sleep, clock::schedule);
+    limiter.wrap(new ZeroInputStream(MIB)).close();
+
+    // when
+    final var second = CompletableFuture.supplyAsync(() -> wrapUnchecked(limiter));
+
+    // then - the closed stream never read, so nothing holds its slot
+    assertThat(second).succeedsWithin(Duration.ofSeconds(30));
+  }
+
+  @Test
   void shouldKeepTheSlotOfAClosedStreamUntilItsLastReadIsPaid() throws Exception {
     // given - a single slot, held by a stream that closes right after a read of 62.5 ms of budget
     final var limiter =
