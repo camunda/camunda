@@ -15,6 +15,8 @@ import static io.camunda.db.rdbms.write.RdbmsWriterMetricsDoc.RdbmsWriterKeyName
 
 import io.camunda.db.rdbms.read.replication.ReplicationStatus;
 import io.camunda.db.rdbms.write.queue.ContextType;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.collection.Table;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
@@ -29,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -40,7 +43,17 @@ public class RdbmsWriterMetrics {
   private final Timer flushLatency;
   private final Timer recordExportingLatency;
   private final DistributionSummary queueMemoryDistribution;
+  private final Timer flushDuration;
+  private final DistributionSummary bulkSize;
+  private final Counter failedFlush;
   private Sample flushLatencyMeasurement;
+
+  private final Map<FlushTrigger, Counter> queueFlushes = new ConcurrentHashMap<>();
+  private final Map<String, Counter> enqueuedStatements = new ConcurrentHashMap<>();
+  private final Map<String, Counter> executedStatements = new ConcurrentHashMap<>();
+  private final Map<String, Counter> executedQueueItems = new ConcurrentHashMap<>();
+  private final Map<String, DistributionSummary> numBatches = new ConcurrentHashMap<>();
+  private final Table<ContextType, String, Counter> mergedQueueItems = Table.concurrent();
 
   private final AtomicInteger connectedReplicasValue = new AtomicInteger(0);
   private final AtomicInteger exporterPausedValue = new AtomicInteger(0);
@@ -68,6 +81,20 @@ public class RdbmsWriterMetrics {
             .baseUnit("bytes")
             .register(meterRegistry);
 
+    flushDuration =
+        Timer.builder(RdbmsWriterMetricsDoc.FLUSH_DURATION.getName())
+            .description(RdbmsWriterMetricsDoc.FLUSH_DURATION.getDescription())
+            .publishPercentileHistogram()
+            .minimumExpectedValue(Duration.ofMillis(10))
+            .register(meterRegistry);
+
+    bulkSize = MicrometerUtil.buildSummary(RdbmsWriterMetricsDoc.BULK_SIZE).register(meterRegistry);
+
+    failedFlush =
+        Counter.builder(RdbmsWriterMetricsDoc.FAILED_FLUSH.getName())
+            .description(RdbmsWriterMetricsDoc.FAILED_FLUSH.getDescription())
+            .register(meterRegistry);
+
     Gauge.builder(
             RdbmsWriterMetricsDoc.REPLICATION_CONNECTED_REPLICAS.getName(),
             connectedReplicasValue,
@@ -90,14 +117,12 @@ public class RdbmsWriterMetrics {
         .register(meterRegistry);
   }
 
-  public ResourceSample measureFlushDuration() {
-    return durationResource(RdbmsWriterMetricsDoc.FLUSH_DURATION);
+  public CloseableSilently measureFlushDuration() {
+    return MicrometerUtil.timer(flushDuration, Timer.start(meterRegistry));
   }
 
-  public void recordBulkSize(final int bulkSize) {
-    MicrometerUtil.buildSummary(RdbmsWriterMetricsDoc.BULK_SIZE)
-        .register(meterRegistry)
-        .record(bulkSize);
+  public void recordBulkSize(final int size) {
+    bulkSize.record(size);
   }
 
   public void registerCleanupBackoffDurationGauge(final Supplier<Number> supplier) {
@@ -132,50 +157,30 @@ public class RdbmsWriterMetrics {
   }
 
   public void recordFailedFlush() {
-    Counter.builder(RdbmsWriterMetricsDoc.FAILED_FLUSH.getName())
-        .description(RdbmsWriterMetricsDoc.FAILED_FLUSH.getDescription())
-        .register(meterRegistry)
-        .increment();
+    failedFlush.increment();
   }
 
   public void recordMergedQueueItem(final ContextType contextType, final String statementId) {
-    Counter.builder(RdbmsWriterMetricsDoc.MERGED_QUEUE_ITEM.getName())
-        .tags(
-            CONTEXT_TYPE.asString(),
-            contextType.name(),
-            STATEMENT_ID.asString(),
-            stripDefaultPackageName(statementId))
-        .description(RdbmsWriterMetricsDoc.MERGED_QUEUE_ITEM.getDescription())
-        .register(meterRegistry)
+    mergedQueueItems
+        .computeIfAbsent(contextType, statementId, this::registerMergedQueueItemCounter)
         .increment();
   }
 
   public void recordEnqueuedStatement(final String statementId) {
-    Counter.builder(RdbmsWriterMetricsDoc.ENQUEUED_STATEMENTS.getName())
-        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
-        .description(RdbmsWriterMetricsDoc.ENQUEUED_STATEMENTS.getDescription())
-        .register(meterRegistry)
+    enqueuedStatements
+        .computeIfAbsent(statementId, this::registerEnqueuedStatementCounter)
         .increment();
   }
 
   public void recordExecutedStatement(final String statementId, final int batchCount) {
-    Counter.builder(RdbmsWriterMetricsDoc.EXECUTED_STATEMENTS.getName())
-        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
-        .description(RdbmsWriterMetricsDoc.EXECUTED_STATEMENTS.getDescription())
-        .register(meterRegistry)
+    executedStatements
+        .computeIfAbsent(statementId, this::registerExecutedStatementCounter)
         .increment();
-
-    Counter.builder(RdbmsWriterMetricsDoc.EXECUTED_QUEUE_ITEM.getName())
-        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
-        .description(RdbmsWriterMetricsDoc.EXECUTED_QUEUE_ITEM.getDescription())
-        .register(meterRegistry)
+    executedQueueItems
+        .computeIfAbsent(statementId, this::registerExecutedQueueItemCounter)
         .increment(batchCount);
-
-    MicrometerUtil.buildSummary(RdbmsWriterMetricsDoc.NUM_BATCHES)
-        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
-        .maximumExpectedValue(100.0)
-        .scale(100)
-        .register(meterRegistry)
+    numBatches
+        .computeIfAbsent(statementId, this::registerNumBatchesSummary)
         .record(1.0 - 1.0 / batchCount);
   }
 
@@ -209,11 +214,7 @@ public class RdbmsWriterMetrics {
    * @param trigger the flush trigger type (e.g., "count_limit", "memory_limit", "flush_interval")
    */
   public void recordQueueFlush(final FlushTrigger trigger) {
-    Counter.builder(RdbmsWriterMetricsDoc.FLUSH.getName())
-        .tags(TRIGGER.asString(), trigger.name())
-        .description(RdbmsWriterMetricsDoc.FLUSH.getDescription())
-        .register(meterRegistry)
-        .increment();
+    queueFlushes.computeIfAbsent(trigger, this::registerQueueFlushCounter).increment();
   }
 
   /**
@@ -253,6 +254,54 @@ public class RdbmsWriterMetrics {
     return StatefulGauge.builder(RdbmsWriterMetricsDoc.REPLICATION_LAG_MS.getName())
         .description(RdbmsWriterMetricsDoc.REPLICATION_LAG_MS.getDescription())
         .tag(REPLICA_ID.asString(), replicaId)
+        .register(meterRegistry);
+  }
+
+  private Counter registerQueueFlushCounter(final FlushTrigger trigger) {
+    return Counter.builder(RdbmsWriterMetricsDoc.FLUSH.getName())
+        .tags(TRIGGER.asString(), trigger.name())
+        .description(RdbmsWriterMetricsDoc.FLUSH.getDescription())
+        .register(meterRegistry);
+  }
+
+  private Counter registerMergedQueueItemCounter(
+      final ContextType contextType, final String statementId) {
+    return Counter.builder(RdbmsWriterMetricsDoc.MERGED_QUEUE_ITEM.getName())
+        .tags(
+            CONTEXT_TYPE.asString(),
+            contextType.name(),
+            STATEMENT_ID.asString(),
+            stripDefaultPackageName(statementId))
+        .description(RdbmsWriterMetricsDoc.MERGED_QUEUE_ITEM.getDescription())
+        .register(meterRegistry);
+  }
+
+  private Counter registerEnqueuedStatementCounter(final String statementId) {
+    return Counter.builder(RdbmsWriterMetricsDoc.ENQUEUED_STATEMENTS.getName())
+        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
+        .description(RdbmsWriterMetricsDoc.ENQUEUED_STATEMENTS.getDescription())
+        .register(meterRegistry);
+  }
+
+  private Counter registerExecutedStatementCounter(final String statementId) {
+    return Counter.builder(RdbmsWriterMetricsDoc.EXECUTED_STATEMENTS.getName())
+        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
+        .description(RdbmsWriterMetricsDoc.EXECUTED_STATEMENTS.getDescription())
+        .register(meterRegistry);
+  }
+
+  private Counter registerExecutedQueueItemCounter(final String statementId) {
+    return Counter.builder(RdbmsWriterMetricsDoc.EXECUTED_QUEUE_ITEM.getName())
+        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
+        .description(RdbmsWriterMetricsDoc.EXECUTED_QUEUE_ITEM.getDescription())
+        .register(meterRegistry);
+  }
+
+  private DistributionSummary registerNumBatchesSummary(final String statementId) {
+    return MicrometerUtil.buildSummary(RdbmsWriterMetricsDoc.NUM_BATCHES)
+        .tags(STATEMENT_ID.asString(), stripDefaultPackageName(statementId))
+        .maximumExpectedValue(100.0)
+        .scale(100)
         .register(meterRegistry);
   }
 
