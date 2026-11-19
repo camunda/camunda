@@ -16,8 +16,10 @@
 package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
@@ -32,6 +34,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -110,6 +113,66 @@ class RaftLogCommittedReaderMissingEntryTest {
   }
 
   @Test
+  void shouldFailWhenEntriesReadBackAsZerosAfterReaderPassedTheFirstOfThem() throws IOException {
+    // given - a reader in the middle of the entries that are zeroed afterwards
+    appendEntries(3);
+    final var segment = onlySegment();
+    final long from = endOfData(segment);
+    appendEntries(3);
+    final long until = endOfData(segment);
+    raftLog.setCommitIndex(6);
+    for (int index = 1; index <= 5; index++) {
+      assertThat(reader.next().index()).isEqualTo(index);
+    }
+
+    // when
+    zero(segment, from, until);
+
+    // then
+    assertThatThrownBy(reader::hasNext)
+        .isInstanceOf(CorruptedJournalException.class)
+        .hasMessageContaining("committed entry at index 6 (commit index 6)");
+  }
+
+  @Test
+  void shouldFailWhenSeekingToAsqnInZeroedCommittedEntries() throws IOException {
+    // given - every entry's ASQN is its index
+    appendEntries(3);
+    zeroEntriesAppendedBy(() -> appendEntries(3));
+    raftLog.setCommitIndex(6);
+
+    // when - then
+    assertThatThrownBy(() -> reader.seekToAsqn(5))
+        .isInstanceOf(CorruptedJournalException.class)
+        .hasMessageContaining("committed entry at index 4 (commit index 6)");
+  }
+
+  @Test
+  void shouldSeekToAsqnBeforeZeroedCommittedEntries() throws IOException {
+    // given - every entry's ASQN is its index
+    appendEntries(3);
+    zeroEntriesAppendedBy(() -> appendEntries(3));
+    raftLog.setCommitIndex(6);
+
+    // when - then
+    assertThat(reader.seekToAsqn(2)).isEqualTo(2);
+    assertThat(reader.next().index()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldSeekToLastCommittedEntryWhenAsqnIsNotCommittedYet() throws IOException {
+    // given - every entry's ASQN is its index
+    appendEntries(3);
+    zeroEntriesAppendedBy(() -> appendEntries(3));
+    raftLog.setCommitIndex(3);
+
+    // when - then
+    assertThat(reader.seekToAsqn(5)).isEqualTo(3);
+    assertThat(reader.next().index()).isEqualTo(3);
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
   void shouldNotFailOnZeroedEntriesThatAreNotCommitted() throws IOException {
     // given
     appendEntries(3);
@@ -178,6 +241,41 @@ class RaftLogCommittedReaderMissingEntryTest {
   }
 
   @Test
+  void shouldNotFailWhenLogIsCompactedWhileLookingForTheMissingEntry() {
+    // given - a reader left behind by a first compaction, at the first index that is kept
+    appendEntries(1000);
+    raftLog.setCommitIndex(1000);
+    final long firstIndexOfKeptSegment = raftLog.getTailSegments(400).firstAsqn().orElseThrow();
+    final var compactingLog = spy(raftLog);
+    doAnswer(
+            openReader -> {
+              final var probe = spy((RaftLogReader) openReader.callRealMethod());
+              doAnswer(
+                      seek -> {
+                        final var soughtIndex = seek.callRealMethod();
+                        // when - a second compaction removes that index after it was sought
+                        assertThat(raftLog.deleteUntil(800)).isTrue();
+                        return soughtIndex;
+                      })
+                  .when(probe)
+                  .seek(anyLong());
+              return probe;
+            })
+        .when(compactingLog)
+        .openUncommittedReader();
+    try (final var leftBehindReader = compactingLog.openCommittedReaderFailingOnMissingEntries()) {
+      while (leftBehindReader.next().index() < firstIndexOfKeptSegment - 1) {
+        // read on
+      }
+      assertThat(raftLog.deleteUntil(400)).isTrue();
+
+      // then
+      assertThat(leftBehindReader.hasNext()).isFalse();
+      assertThat(raftLog.getFirstIndex()).isGreaterThan(firstIndexOfKeptSegment);
+    }
+  }
+
+  @Test
   void shouldNotFailWhenLogIsResetForSnapshot() {
     // given
     appendEntries(5);
@@ -195,15 +293,15 @@ class RaftLogCommittedReaderMissingEntryTest {
   void shouldNotFailWhileEntriesAreAppendedCommittedAndCompactedConcurrently() throws Exception {
     // given
     final int entryCount = 20_000;
-    final var readerFailed = new AtomicBoolean();
+    final var stopped = new AtomicBoolean();
     final var lastReadIndex =
         CompletableFuture.supplyAsync(
             () -> {
               long lastIndex = 0;
               try {
-                while (lastIndex < entryCount) {
-                  if (reader.hasNext()) {
-                    final long index = reader.next().index();
+                while (lastIndex < entryCount && !stopped.get()) {
+                  final long index = readNextIndex();
+                  if (index > 0) {
                     assertThat(index).isGreaterThan(lastIndex);
                     lastIndex = index;
                   } else {
@@ -213,24 +311,41 @@ class RaftLogCommittedReaderMissingEntryTest {
                   }
                 }
                 return lastIndex;
-              } catch (final Throwable e) {
-                readerFailed.set(true);
-                throw e;
+              } finally {
+                stopped.set(true);
               }
             });
 
     // when
-    for (int index = 1; index <= entryCount && !readerFailed.get(); index++) {
-      appendEntries(1);
-      raftLog.setCommitIndex(index);
-      if (index % 1000 == 0) {
-        raftLog.deleteUntil(index - 500);
+    try {
+      for (int index = 1; index <= entryCount && !stopped.get(); index++) {
+        appendEntries(1);
+        raftLog.setCommitIndex(index);
+        if (index % 1000 == 0) {
+          raftLog.deleteUntil(index - 500);
+        }
       }
-    }
 
-    // then
-    assertThatCode(() -> lastReadIndex.get(30, TimeUnit.SECONDS)).doesNotThrowAnyException();
-    assertThat(lastReadIndex.join()).isEqualTo(entryCount);
+      // then
+      assertThat(lastReadIndex).succeedsWithin(30, TimeUnit.SECONDS).isEqualTo((long) entryCount);
+    } finally {
+      // the reader is closed after the test, so it must not be read any longer
+      stopped.set(true);
+      lastReadIndex.exceptionally(failure -> null).join();
+    }
+  }
+
+  /** Returns the index of the next entry, or 0 if there is none to read. */
+  private long readNextIndex() {
+    if (!reader.hasNext()) {
+      return 0;
+    }
+    try {
+      return reader.next().index();
+    } catch (final NoSuchElementException e) {
+      // compacted between hasNext and next
+      return 0;
+    }
   }
 
   private void appendEntries(final int count) {
@@ -251,7 +366,11 @@ class RaftLogCommittedReaderMissingEntryTest {
     append.run();
     final long until = endOfData(segment);
     assertThat(until).isGreaterThan(from);
+    zero(segment, from, until);
+  }
 
+  private static void zero(final Path segment, final long from, final long until)
+      throws IOException {
     try (final var channel = FileChannel.open(segment, StandardOpenOption.WRITE)) {
       final var zeros = ByteBuffer.allocate(Math.toIntExact(until - from));
       while (zeros.hasRemaining()) {
