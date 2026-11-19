@@ -1234,10 +1234,10 @@
     tabbable "^6.5.0"
     tailwind-merge "3.7.0"
 
-"@camunda8/orchestration-cluster-api@10.0.2":
-  version "10.0.2"
-  resolved "https://registry.yarnpkg.com/@camunda8/orchestration-cluster-api/-/orchestration-cluster-api-10.0.2.tgz#70fcf9b56bbff63cbeb78255f6e60a03f76d0827"
-  integrity sha512-PoEBYWOu0jSVRZPZnAl1KXjBUPMBd/KrCcVTFkALcHSLYnnHQzyHjgVRE+okzaxY6CfMpRsRJEtWBZcIpaE+wg==
+"@camunda8/orchestration-cluster-api@10.0.3":
+  version "10.0.3"
+  resolved "https://registry.yarnpkg.com/@camunda8/orchestration-cluster-api/-/orchestration-cluster-api-10.0.3.tgz#5e4c86c81f7d064aae0f5fb62b363015d27950f1"
+  integrity sha512-PYQdTSq/5JQ9RH7b3ZkuhgjJ4KZJcOY0PkPUGafRh8mYN90zUQ8Lo4SVkO4hlUyUlFsE5AIeKeoDQoj3yjclVQ==
   dependencies:
     typed-env "^2.0.0"
     zod "^4"
