@@ -133,4 +133,15 @@ public final class PolicyUpdateApplyChunkProcessor
           PolicyUpdateRecords.withoutPolicyData(update, update.getChunkIndex()));
     }
   }
+
+  /**
+   * The identity commands are processed in their own batches, not in the batch of this command. If
+   * an identity processor throws, only its own command is rolled back and handled by its own error
+   * handling, which fails the update. In this batch, the whole chunk would be rolled back and the
+   * error handled for this command, leaving the update open without a next command.
+   */
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
+  }
 }
