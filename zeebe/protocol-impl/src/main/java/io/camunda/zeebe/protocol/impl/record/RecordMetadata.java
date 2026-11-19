@@ -10,7 +10,9 @@ package io.camunda.zeebe.protocol.impl.record;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.record.ChannelType;
+import io.camunda.zeebe.protocol.record.InternalOperationType;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
@@ -68,6 +70,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private int recordVersion = DEFAULT_RECORD_VERSION;
   private long operationReference;
   private long batchOperationReference;
+  private long internalOperationReference;
+  private int internalOperationTypeCode;
 
   public RecordMetadata() {
     reset();
@@ -93,6 +97,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     rejectionType = decoder.rejectionType();
     operationReference = decoder.operationReference();
     batchOperationReference = decoder.batchOperationReference();
+    internalOperationReference = decoder.internalOperationReference();
+    internalOperationTypeCode = decoder.internalOperationType();
     final var requestChannelType = decoder.requestChannelType();
     if (requestChannelType != ChannelType.NULL_VAL
         && requestChannelType != ChannelType.SBE_UNKNOWN) {
@@ -180,7 +186,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         .recordVersion(recordVersion)
         .operationReference(operationReference)
         .batchOperationReference(batchOperationReference)
-        .requestChannelType(requestChannelType);
+        .requestChannelType(requestChannelType)
+        .internalOperationReference(internalOperationReference)
+        .internalOperationType((short) internalOperationTypeCode);
 
     encoder
         .brokerVersion()
@@ -380,6 +388,30 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return batchOperationReference;
   }
 
+  /**
+   * Marks the record as part of an internal operation, or clears it with {@link
+   * InternalOperationReference#NONE}.
+   */
+  public RecordMetadata internalOperation(final InternalOperationReference internalOperation) {
+    internalOperationTypeCode = internalOperation.typeCode();
+    internalOperationReference = internalOperation.key();
+    return this;
+  }
+
+  public InternalOperationReference getInternalOperation() {
+    return InternalOperationReference.ofStored(
+        internalOperationTypeCode, internalOperationReference);
+  }
+
+  public long getInternalOperationReference() {
+    return internalOperationReference;
+  }
+
+  /** The stored code of the internal operation type, including codes this version doesn't know. */
+  public int getInternalOperationTypeCode() {
+    return internalOperationTypeCode;
+  }
+
   public RecordMetadata reset() {
     recordType = RecordType.NULL_VAL;
     requestId = RecordMetadataEncoder.requestIdNullValue();
@@ -399,6 +431,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
     batchOperationReference = RecordMetadataEncoder.batchOperationReferenceNullValue();
+    internalOperationReference = RecordMetadataEncoder.internalOperationReferenceNullValue();
+    internalOperationTypeCode = InternalOperationType.UNSPECIFIED.code();
     return this;
   }
 
@@ -418,6 +452,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         recordVersion,
         operationReference,
         batchOperationReference,
+        internalOperationReference,
+        internalOperationTypeCode,
         agent,
         requestChannelType,
         requestToolName);
@@ -447,7 +483,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
-        && batchOperationReference == that.batchOperationReference;
+        && batchOperationReference == that.batchOperationReference
+        && internalOperationReference == that.internalOperationReference
+        && internalOperationTypeCode == that.internalOperationTypeCode;
   }
 
   @Override
@@ -480,6 +518,10 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     }
     if (batchOperationReference != RecordMetadataEncoder.batchOperationReferenceNullValue()) {
       builder.append(", batchOperationReference=").append(batchOperationReference);
+    }
+    final var internalOperation = getInternalOperation();
+    if (internalOperation.isPresent()) {
+      builder.append(", internalOperation=").append(internalOperation);
     }
     if (agent != null) {
       builder.append(", agent=").append(agent);
