@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -192,6 +193,31 @@ public final class PolicyUpdateApplyTest {
         .containsExactly(PermissionType.UPDATE_PROCESS_INSTANCE);
     assertThat(RecordingExporter.groupRecords(GroupIntent.DELETED).withGroupId(groupId).exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldReferenceTheUpdateOnItsIdentityCommands() {
+    // given
+    final var roleId = "role-" + uid();
+    final var update =
+        chunk()
+            .setRoles(List.<RoleRecordValue>of(new RoleRecord().setRoleId(roleId).setName(roleId)));
+
+    // when
+    apply(update);
+
+    // then
+    final var appended =
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.CHUNK_APPENDED)
+            .filter(record -> record.getValue().getUpdateId().equals(update.getUpdateId()))
+            .getFirst();
+    final var create =
+        RecordingExporter.roleRecords(RoleIntent.CREATE)
+            .onlyCommands()
+            .withRoleId(roleId)
+            .getFirst();
+    assertThat(InternalOperationReference.of(create))
+        .isEqualTo(InternalOperationReference.policyUpdate(appended.getKey()));
   }
 
   @Test

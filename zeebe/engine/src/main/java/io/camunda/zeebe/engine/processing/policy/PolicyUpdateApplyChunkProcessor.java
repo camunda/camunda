@@ -16,9 +16,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.PolicyUpdateState;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
@@ -28,7 +30,8 @@ import org.jspecify.annotations.NullMarked;
  * turned into identity commands, which the identity processors apply and distribute to the other
  * partitions. Each identity processor validates its own command, so an entry that cannot be
  * applied, for example a delete of a missing role, is rejected on its own while the other entries
- * of the chunk apply.
+ * of the chunk apply. The commands carry the update's key as internal operation reference, which
+ * links them to the update.
  *
  * <p>The processor then writes the command for the next chunk. Its identity commands are written
  * after those of this chunk, so the chunks are applied in order. After the last chunk, it instead
@@ -70,6 +73,19 @@ public final class PolicyUpdateApplyChunkProcessor
     }
 
     final var update = command.getValue();
+    final var openUpdate =
+        policyUpdateState
+            .getOpenUpdate()
+            .filter(open -> open.getUpdate().getUpdateId().equals(update.getUpdateId()));
+    if (openUpdate.isEmpty()) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.INVALID_STATE,
+          "Expected policy update '%s' to be open to apply chunk %d, but it failed or no longer exists"
+              .formatted(update.getUpdateId(), update.getChunkIndex()));
+      return;
+    }
+
     final var chunk = policyUpdateState.getChunk(update.getUpdateId(), update.getChunkIndex());
     if (chunk.isEmpty()) {
       rejectionWriter.appendRejection(
@@ -92,12 +108,17 @@ public final class PolicyUpdateApplyChunkProcessor
                   String.join("; ", commands.getLeft())));
       return;
     }
+    final var identityMetadata =
+        FollowUpCommandMetadata.of(
+            builder ->
+                builder.internalOperationReference(
+                    InternalOperationReference.policyUpdate(openUpdate.get().getUpdateKey())));
     commands
         .get()
         .forEach(
             identityCommand ->
                 commandWriter.appendFollowUpCommand(
-                    NO_KEY, identityCommand.intent(), identityCommand.value()));
+                    NO_KEY, identityCommand.intent(), identityCommand.value(), identityMetadata));
 
     stateWriter.appendFollowUpEvent(
         keyGenerator.nextKey(),

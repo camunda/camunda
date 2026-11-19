@@ -72,11 +72,11 @@ public final class DbPolicyUpdateState implements MutablePolicyUpdateState {
   }
 
   @Override
-  public void bufferChunk(final PolicyUpdateRecord chunk) {
+  public void bufferChunk(final long key, final PolicyUpdateRecord chunk) {
     updateId.wrapString(chunk.getUpdateId());
     final var update =
         Optional.ofNullable(updateColumnFamily.get(updateId, PersistedPolicyUpdate::new))
-            .orElseGet(() -> new PersistedPolicyUpdate().setUpdate(chunk));
+            .orElseGet(() -> new PersistedPolicyUpdate().setUpdate(chunk).setUpdateKey(key));
     chunkIndex.wrapInt(chunk.getChunkIndex());
     if (!chunkColumnFamily.exists(updateIdAndChunkIndex)) {
       update.setBufferedChunkCount(update.getBufferedChunkCount() + 1);
