@@ -39,8 +39,10 @@ import io.camunda.search.sort.JobErrorStatisticsSort;
 import io.camunda.search.sort.JobTimeSeriesStatisticsSort;
 import io.camunda.search.sort.JobTypeStatisticsSort;
 import io.camunda.search.sort.JobWorkerStatisticsSort;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -242,10 +244,15 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
         errorStatsReader.convertPaging(
             dbSort, Optional.ofNullable(query.page()).orElse(SearchQueryPage.DEFAULT));
 
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
     final var dbQuery =
         JobErrorStatisticsDbQuery.of(
             b ->
                 b.filter(query.filter())
+                    .authorizedResourceIds(authorizedResourceIds)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
                     .page(dbPage));
