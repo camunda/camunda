@@ -480,5 +480,19 @@
     "updated_at": "2026-11-19T07:35:58Z",
     "cooldown_until": "2026-12-03T07:35:58Z",
     "pr": "https://github.com/camunda/camunda/pull/69954"
+  },
+  "33abdb22": {
+    "version": "8.9",
+    "file": "tests/operate/processInstanceHistory.spec.ts",
+    "titlePath": [
+      "Process Instance History",
+      "Verify process Instance modification"
+    ],
+    "last_action": "open_pr",
+    "last_reason": "iter1 95% vs baseline 90% (+5pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44472113192",
+    "updated_at": "2026-11-19T07:46:30Z",
+    "cooldown_until": "2026-12-03T07:46:30Z",
+    "pr": "https://github.com/camunda/camunda/pull/69956"
   }
 }
