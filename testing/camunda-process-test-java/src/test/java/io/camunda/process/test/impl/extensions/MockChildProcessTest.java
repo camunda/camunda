@@ -46,9 +46,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -153,14 +157,11 @@ public class MockChildProcessTest {
             });
   }
 
-  @Test
-  void shouldMockChildProcessWithVariableSupplier() {
-    // given
-    final Function<Map<String, Object>, Map<String, Object>> variableSupplier =
-        inputVars -> Collections.singletonMap("result", inputVars.getOrDefault("input", "default"));
-
+  @ParameterizedTest
+  @MethodSource("mockChildProcessWithVariableSupplierCalls")
+  void shouldMockChildProcessWithVariableSupplier(final Consumer<CamundaProcessTestContext> mock) {
     // when
-    processTestContext.mockChildProcess(CHILD_PROCESS_ID, variableSupplier);
+    mock.accept(processTestContext);
 
     // then: a process with a service task for the variable supplier is deployed
     verify(camundaClient.newDeployResourceCommand())
@@ -189,37 +190,27 @@ public class MockChildProcessTest {
         .open();
   }
 
-  @Test
-  void shouldMockChildProcessWithVariableSupplierViaBuilder() {
-    // given
-    final Function<Map<String, Object>, Map<String, Object>> variableSupplier =
-        inputVars -> Collections.singletonMap("result", inputVars.getOrDefault("input", "default"));
-
-    // when
-    processTestContext
-        .mockChildProcess()
-        .withProcessId(CHILD_PROCESS_ID)
-        .thenComplete(variableSupplier);
-
-    // then: a process with a service task for the variable supplier is deployed
-    verify(camundaClient.newDeployResourceCommand())
-        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
-
-    final BpmnModelInstance deployedModel = processModelCaptor.getValue();
-
-    // the process has a service task used to supply variables
-    assertThat(deployedModel.getModelElementsByType(ServiceTask.class))
-        .hasSize(1)
-        .first()
-        .satisfies(
-            serviceTask ->
-                assertThat(
-                        serviceTask.getSingleExtensionElement(ZeebeTaskDefinition.class).getType())
-                    .isEqualTo("variableSupplier_" + CHILD_PROCESS_ID));
-
-    // and the worker for the variable supplier is opened
-    verify(camundaClient.newWorker().jobType("variableSupplier_" + CHILD_PROCESS_ID).handler(any()))
-        .open();
+  static Stream<Named<Consumer<CamundaProcessTestContext>>>
+      mockChildProcessWithVariableSupplierCalls() {
+    return Stream.of(
+        Named.of(
+            "by id and variable supplier",
+            context ->
+                context.mockChildProcess(
+                    CHILD_PROCESS_ID,
+                    inputVars ->
+                        Collections.singletonMap(
+                            "result", inputVars.getOrDefault("input", "default")))),
+        Named.of(
+            "builder",
+            context ->
+                context
+                    .mockChildProcess()
+                    .withProcessId(CHILD_PROCESS_ID)
+                    .thenComplete(
+                        inputVars ->
+                            Collections.singletonMap(
+                                "result", inputVars.getOrDefault("input", "default")))));
   }
 
   @Test
