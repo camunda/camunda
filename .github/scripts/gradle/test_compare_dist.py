@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -19,6 +20,18 @@ class DistributionComparisonTest(unittest.TestCase):
         with ZipFile(path, "w") as archive:
             for jar in jars:
                 archive.writestr(f"{root}/lib/{jar}", b"payload")
+        return path
+
+    def create_tar_archive(
+        self, directory: Path, name: str, root: str, jars: list[str]
+    ) -> Path:
+        path = directory / name
+        mode = "w:gz" if name.endswith(".gz") else "w"
+        with tarfile.open(path, mode) as archive:
+            for jar in jars:
+                source = directory / jar
+                source.write_bytes(b"payload")
+                archive.add(source, arcname=f"{root}/lib/{jar}")
         return path
 
     def create_manifest(self, directory: Path, jars: list[str], direct: bool = False) -> Path:
@@ -59,6 +72,30 @@ class DistributionComparisonTest(unittest.TestCase):
             )
 
             self.assertEqual(MODULE.compare(str(gradle), str(maven)), 0)
+
+    def test_should_accept_equal_jar_inventories_across_tar_and_tar_gz(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            gradle = self.create_tar_archive(
+                directory, "gradle.tar", "camunda-zeebe-1.0.0", ["example-1.0.0.jar"]
+            )
+            maven = self.create_tar_archive(
+                directory, "maven.tar.gz", "camunda-zeebe-1.0.0", ["example-1.0.0.jar"]
+            )
+
+            self.assertEqual(MODULE.compare(str(gradle), str(maven)), 0)
+
+    def test_should_report_jar_and_root_mismatches_across_tar_and_tar_gz(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            gradle = self.create_tar_archive(
+                directory, "gradle.tar", "camunda-zeebe-1.0.0", ["example-1.1.0.jar"]
+            )
+            maven = self.create_tar_archive(
+                directory, "maven.tar.gz", "camunda-zeebe-2.0.0", ["example-1.0.0.jar"]
+            )
+
+            self.assertEqual(MODULE.compare(str(gradle), str(maven)), 2)
 
     def test_should_load_metadata_variant_exceptions_from_json(self):
         self.assertEqual(
