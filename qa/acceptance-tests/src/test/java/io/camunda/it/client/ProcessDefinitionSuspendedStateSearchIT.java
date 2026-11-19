@@ -11,7 +11,6 @@ import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.ProcessDefinitionState;
@@ -22,6 +21,7 @@ import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -33,7 +33,6 @@ import java.util.Optional;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.opensearch.client.opensearch.OpenSearchClient;
 
 /**
  * Proves that a suspended process definition version is returned as {@code SUSPENDED} through the
@@ -120,7 +119,9 @@ class ProcessDefinitionSuspendedStateSearchIT {
     switch (databaseType.storageType()) {
       case ELASTICSEARCH ->
           BROKER
-              .bean(ElasticsearchClient.class)
+              .bean(SearchClients.class)
+              .esClients()
+              .get(physicalTenantId)
               .update(
                   u ->
                       u.index(processIndexName(physicalTenantId))
@@ -130,7 +131,9 @@ class ProcessDefinitionSuspendedStateSearchIT {
                   Object.class);
       case OPENSEARCH ->
           BROKER
-              .bean(OpenSearchClient.class)
+              .bean(SearchClients.class)
+              .osClients()
+              .get(physicalTenantId)
               .update(
                   u ->
                       u.index(processIndexName(physicalTenantId))
