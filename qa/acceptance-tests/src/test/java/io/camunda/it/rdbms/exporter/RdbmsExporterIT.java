@@ -29,7 +29,7 @@ import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.exporter.rdbms.RdbmsExporter;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
-import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
+import io.camunda.exporter.rdbms.handlers.FormExportHandler;
 import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
@@ -66,7 +66,6 @@ import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.api.ExporterException;
-import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -1518,8 +1517,8 @@ class RdbmsExporterIT {
   }
 
   @Test
-  public void shouldNotQueueProcessInstanceTwiceWhenLaterHandlerFailsAndRecordIsRetried() {
-    // given - the process instance handler succeeds, a handler registered after it fails once
+  public void shouldNotQueueFormTwiceWhenLaterHandlerFailsAndRecordIsRetried() {
+    // given - the form handler succeeds, a handler registered after it fails once
     final var retryController = new ExporterTestController();
     final var retryConfiguration =
         new ExporterConfiguration("handler-retry-test", Map.of("queueSize", 0))
@@ -1537,23 +1536,19 @@ class RdbmsExporterIT {
             rdbmsService.getHistoryDeletionDbReader(),
             rdbmsService.getProcessInstanceReader(),
             rdbmsService.getDecisionInstanceReader(),
-            new HistoryDeletionConfig(
-                retryConfiguration.getHistoryDeletion().getDelayBetweenRuns(),
-                retryConfiguration.getHistoryDeletion().getMaxDelayBetweenRuns(),
-                retryConfiguration.getHistoryDeletion().getQueueBatchSize(),
-                retryConfiguration.getHistoryDeletion().getDependentRowLimit()),
+            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10_000),
             InstantSource.system());
 
     final var failOnce = new AtomicBoolean(true);
-    final RdbmsExportHandler<ProcessInstanceRecordValue> failingOnceHandler =
+    final RdbmsExportHandler<Form> failingOnceHandler =
         new RdbmsExportHandler<>() {
           @Override
-          public boolean canExport(final Record<ProcessInstanceRecordValue> record) {
+          public boolean canExport(final Record<Form> record) {
             return true;
           }
 
           @Override
-          public void export(final Record<ProcessInstanceRecordValue> record) {
+          public void export(final Record<Form> record) {
             if (failOnce.getAndSet(false)) {
               throw new IllegalStateException("transient failure of a later handler");
             }
@@ -1571,28 +1566,22 @@ class RdbmsExporterIT {
             .historyCleanupService(historyCleanupService)
             .historyDeletionService(historyDeletionService)
             .replicationControllerFactory(ReplicationControllerFactory.noop())
-            .withHandler(
-                ValueType.PROCESS_INSTANCE,
-                new ProcessInstanceExportHandler(
-                    rdbmsWriters.getProcessInstanceWriter(),
-                    historyCleanupService,
-                    Mockito.mock(ExporterEntityCache.class),
-                    rdbmsWriters.getErrorMessageSize()))
-            .withHandler(ValueType.PROCESS_INSTANCE, failingOnceHandler)
+            .withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriters.getFormWriter()))
+            .withHandler(ValueType.FORM, failingOnceHandler)
             .build();
     retryExporter.open(retryController);
 
     try {
-      final var record = FIXTURES.getProcessInstanceStartedRecord();
+      final var record = FIXTURES.getFormCreatedRecord();
 
       // when - the first delivery fails in the second handler, the record is redelivered
       assertThatThrownBy(() -> retryExporter.export(record))
           .isInstanceOf(IllegalStateException.class);
       retryExporter.export(record);
 
-      // then - the flush succeeded (no duplicate key) and the instance exists once
-      final var key = ((ProcessInstanceRecordValue) record.getValue()).getProcessInstanceKey();
-      assertThat(rdbmsService.getProcessInstanceReader().findOne(key)).isNotEmpty();
+      // then - the flush succeeded (no duplicate key) and the form exists
+      final var formKey = ((Form) record.getValue()).getFormKey();
+      assertThat(rdbmsService.getFormReader().findOne(formKey)).isNotEmpty();
       assertThat(exporterPositionMapper.findOne(1).lastExportedPosition())
           .isEqualTo(record.getPosition());
     } finally {
