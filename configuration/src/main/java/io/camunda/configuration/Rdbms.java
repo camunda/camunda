@@ -98,6 +98,13 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   @NestedConfigurationProperty
   private RdbmsConnectionPool connectionPool = new RdbmsConnectionPool();
 
+  /**
+   * Connection pool used only by the RDBMS exporter, so that a backlog of search requests on the
+   * {@code connection-pool} cannot block exporting.
+   */
+  @NestedConfigurationProperty
+  private RdbmsConnectionPool exporterConnectionPool = new RdbmsConnectionPool();
+
   @NestedConfigurationProperty
   private SchemaManagerRetry retry =
       new SchemaManagerRetry(databaseName()).withoutLegacyProperties();
@@ -268,6 +275,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setConnectionPool(final RdbmsConnectionPool connectionPool) {
     this.connectionPool = connectionPool;
+  }
+
+  public RdbmsConnectionPool getExporterConnectionPool() {
+    return exporterConnectionPool;
+  }
+
+  public void setExporterConnectionPool(final RdbmsConnectionPool exporterConnectionPool) {
+    this.exporterConnectionPool = exporterConnectionPool;
   }
 
   public String getDatabaseVendorId() {
