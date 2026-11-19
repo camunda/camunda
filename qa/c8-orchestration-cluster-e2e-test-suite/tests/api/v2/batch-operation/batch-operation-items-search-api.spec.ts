@@ -60,7 +60,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
     request,
   }) => {
     const {processInstanceKey, incidentKeys} =
-      await createSingleIncidentProcessInstance({}, request);
+      await createSingleIncidentProcessInstance(request);
     const incidentKey = incidentKeys[0];
 
     expect(incidentKey).toBeDefined();
@@ -354,9 +354,8 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
   test('Search Batch Operation Items - by operationType - Success', async ({
     request,
   }) => {
-    const localState: Record<string, unknown> = {};
-    await createSingleIncidentProcessInstance(localState, request);
-    const processInstanceKey = localState.processInstanceKey as string;
+    const created = await createSingleIncidentProcessInstance(request);
+    const processInstanceKey = created.processInstanceKey;
     let processInstanceKeyToCancel: string;
     let batchOperationKey: string;
     processInstanceKeys.push(processInstanceKey);
@@ -377,7 +376,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
             headers: jsonHeaders(),
             data: {
               filter: {
-                processInstanceKey: localState.processInstanceKey,
+                processInstanceKey: created.processInstanceKey,
               },
             },
           },

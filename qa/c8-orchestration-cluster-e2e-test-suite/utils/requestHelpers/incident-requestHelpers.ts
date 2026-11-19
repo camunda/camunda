@@ -85,107 +85,94 @@ export async function searchIncidentByPIK(
   }[];
 }
 
+type CreatedIncidents = {
+  processInstanceKey: string;
+  incidentKeys: string[];
+};
+
+async function searchIncidentKeys(
+  request: APIRequestContext,
+  processInstanceKey: string,
+): Promise<string[]> {
+  return test.step('Search incident to get incidentKey', async () => {
+    const incidents = await searchIncidentByPIK(request, {processInstanceKey});
+    return incidents.map((incident) => incident.incidentKey);
+  });
+}
+
 /**
  * Create Instance of one process with two incidents of the same type
  */
 export async function createTwoIncidentsInOneProcess(
-  localState: Record<string, unknown>,
   request: APIRequestContext,
-) {
-  await test.step('Create process instance with an incident', async () => {
-    const instances = await createInstances('processWithAnError', 1, 1);
-    localState['processInstanceKey'] = instances[0].processInstanceKey;
-  });
-
-  await test.step('Search incident to get incidentKey', async () => {
-    const incidents = await searchIncidentByPIK(request, {
-      processInstanceKey: localState['processInstanceKey'] as string,
+): Promise<CreatedIncidents> {
+  const processInstanceKey =
+    await test.step('Create process instance with an incident', async () => {
+      const instances = await createInstances('processWithAnError', 1, 1);
+      return instances[0].processInstanceKey as string;
     });
-    localState['incidentKeys'] = incidents.map(
-      (incident) => incident.incidentKey,
-    );
-  });
+  const incidentKeys = await searchIncidentKeys(request, processInstanceKey);
+  return {processInstanceKey, incidentKeys};
 }
 
 /**
  * Create two process instances with incidents of different type
  */
 export async function createIncidentsInTwoProcesses(
-  localState: Record<string, unknown>,
   request: APIRequestContext,
-) {
-  await test.step('Create process instances with incidents', async () => {
-    const instances = [];
-    const processWithAnErrorInstance = await createSingleInstance(
-      'processWithAnError',
-      1,
+): Promise<{processInstanceKeys: string[]; incidentKeys: string[]}> {
+  const processInstanceKeys =
+    await test.step('Create process instances with incidents', async () => {
+      const processWithAnErrorInstance = await createSingleInstance(
+        'processWithAnError',
+        1,
+      );
+      const loanApprovalProcessInstance = await createSingleInstance(
+        'loanApprovalProcess',
+        1,
+      );
+      return [
+        processWithAnErrorInstance.processInstanceKey as string,
+        loanApprovalProcessInstance.processInstanceKey as string,
+      ];
+    });
+
+  const incidentKeys: string[] = [];
+  for (const processInstanceKey of processInstanceKeys) {
+    incidentKeys.push(
+      ...(await searchIncidentKeys(request, processInstanceKey)),
     );
-    instances.push(processWithAnErrorInstance.processInstanceKey);
-
-    const loanApprovalProcessInstance = await createSingleInstance(
-      'loanApprovalProcess',
-      1,
-    );
-    instances.push(loanApprovalProcessInstance.processInstanceKey);
-    localState['processInstanceKey'] = instances;
-  });
-
-  await test.step('Search incident to get incidentKey', async () => {
-    const allKeys: Array<number | string> = [];
-    for (const key of localState['processInstanceKey'] as string[]) {
-      const incidents = await searchIncidentByPIK(request, {
-        processInstanceKey: key,
-      });
-      allKeys.push(...(incidents ?? []).map((i) => i.incidentKey));
-    }
-
-    localState['incidentKeys'] = allKeys;
-  });
+  }
+  return {processInstanceKeys, incidentKeys};
 }
 
 /**
  * Create one process instance with two incidents of different type
  */
 export async function createTwoDifferentIncidentsInOneProcess(
-  localState: Record<string, unknown>,
   request: APIRequestContext,
-) {
-  await test.step('Create process instance with two different incidents', async () => {
-    const instance = await createSingleInstance('MultipleErrorTypesProcess', 1);
-    localState['processInstanceKey'] = instance.processInstanceKey;
-  });
-
-  await test.step('Search incident to get incidentKey', async () => {
-    const incidents = await searchIncidentByPIK(request, {
-      processInstanceKey: localState['processInstanceKey'] as string,
+): Promise<CreatedIncidents> {
+  const processInstanceKey =
+    await test.step('Create process instance with two different incidents', async () => {
+      const instance = await createSingleInstance(
+        'MultipleErrorTypesProcess',
+        1,
+      );
+      return instance.processInstanceKey as string;
     });
-    localState['incidentKeys'] = incidents.map(
-      (incident) => incident.incidentKey,
-    );
-  });
+  const incidentKeys = await searchIncidentKeys(request, processInstanceKey);
+  return {processInstanceKey, incidentKeys};
 }
 
 export async function createSingleIncidentProcessInstance(
-  localState: Record<string, unknown> = {},
   request: APIRequestContext,
-) {
+): Promise<CreatedIncidents> {
   const processInstanceKey =
     await test.step('Create process instance with single incidents', async () => {
       const instance = await createSingleInstance('singleIncidentProcess', 1);
-      localState['processInstanceKey'] = instance.processInstanceKey; // mutation left for backward-compatibility
-      return instance.processInstanceKey;
+      return instance.processInstanceKey as string;
     });
-
-  const incidentKeys =
-    await test.step('Search incident to get incidentKey', async () => {
-      const incidents = await searchIncidentByPIK(request, {
-        processInstanceKey,
-      });
-      const incidentKeys = incidents.map((incident) => incident.incidentKey);
-      localState['incidentKeys'] = incidentKeys; // mutation left for backward-compatibility
-      return incidentKeys;
-    });
-  // explicit object return removes parameter mutation and makes behaviour explicit and discoverable
+  const incidentKeys = await searchIncidentKeys(request, processInstanceKey);
   return {processInstanceKey, incidentKeys};
 }
 
@@ -193,11 +180,11 @@ export async function createSingleIncidentProcessInstance(
  * This function creates a process instance of a process that has a job,
  * so that we can later create an incident by setting retries to 0 on that job.
  */
-export async function createProcessInstanceWithAJob(
-  localState: Record<string, unknown>,
-) {
-  await test.step('Create process instance with a job', async () => {
+export async function createProcessInstanceWithAJob(): Promise<{
+  processInstanceKey: string;
+}> {
+  return test.step('Create process instance with a job', async () => {
     const instance = await createSingleInstance('ProcessFlakyWorker', 1);
-    localState['processInstanceKey'] = instance.processInstanceKey;
+    return {processInstanceKey: instance.processInstanceKey as string};
   });
 }

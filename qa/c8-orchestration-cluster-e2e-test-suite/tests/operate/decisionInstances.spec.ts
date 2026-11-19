@@ -11,7 +11,6 @@ import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {deploy} from 'utils/zeebeClient';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 import {
   createEligibilityIds,
   deployEligibilityForm,
@@ -20,6 +19,7 @@ import {
   searchDecisionInstancesByProcessInstanceKey,
   startEligibilityInstance,
   VIP_INPUT,
+  waitForLatestVersionTotalItems,
 } from '@requestHelpers';
 
 interface DecisionInfo {
@@ -32,7 +32,7 @@ let initialData: {
 };
 
 test.describe('Decision Instances', () => {
-  test.beforeAll(async ({}) => {
+  test.beforeAll(async ({request}) => {
     // Deploy decision versions 1 and 2
     const decisionV1Response = await deploy(['./resources/decisions_v_1.dmn']);
     const decisionV2Response = await deploy(['./resources/decisions_v_2.dmn']);
@@ -57,7 +57,14 @@ test.describe('Decision Instances', () => {
 
     initialData = {decisions};
 
-    await sleep(2000);
+    for (const {key} of decisions) {
+      await waitForLatestVersionTotalItems(
+        request,
+        '/decision-definitions/search',
+        {decisionDefinitionKey: key},
+        1,
+      );
+    }
   });
 
   test.beforeEach(async ({page, operateHomePage}) => {

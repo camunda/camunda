@@ -12,7 +12,6 @@ import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {sleep} from '../../utils/sleep';
 
 type ProcessInstance = {processInstanceKey: number};
 
@@ -246,7 +245,6 @@ test.describe('Process Instances Filters', () => {
         `${orderProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
       );
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
-      await sleep(200);
     });
 
     await test.step('Add Variable Filter via modal', async () => {
@@ -513,8 +511,6 @@ test.describe('Process Instances Filters', () => {
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
 
-      await sleep(1_000);
-
       await waitForAssertion({
         assertion: async () => {
           const variableProcessInstanceKeys = new Set<string>();
@@ -726,7 +722,6 @@ test.describe('Process Instances Filters', () => {
 
       await operateProcessesPage.clickGoToOperationDetailsButton();
 
-      await sleep(1_000);
       await expect(operateOperationsDetailsPage.state).toBeVisible();
       await waitForAssertion({
         assertion: async () => {

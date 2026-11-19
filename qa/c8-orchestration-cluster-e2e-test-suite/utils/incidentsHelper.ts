@@ -7,7 +7,6 @@
  */
 
 import {expect, type APIRequestContext} from '@playwright/test';
-import {sleep} from './sleep';
 
 function getAuthHeaders() {
   const username = process.env.TEST_USERNAME || 'demo';
@@ -51,8 +50,6 @@ export async function waitForIncidents(
       {timeout},
     )
     .toBe(expectedCount);
-
-  await sleep(2000);
 }
 
 export async function waitForProcessInstances(
@@ -87,6 +84,4 @@ export async function waitForProcessInstances(
       {timeout},
     )
     .toBe(expectedCount);
-
-  await sleep(2000);
 }

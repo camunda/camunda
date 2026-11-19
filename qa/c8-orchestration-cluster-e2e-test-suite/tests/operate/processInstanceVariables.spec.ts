@@ -14,11 +14,11 @@ import {
   createSingleInstance,
   generateManyVariables,
   createWorker,
+  waitForProcessInstanceState,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {expectInViewport} from 'utils/expectInViewport';
-import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
 const JSON_VARIABLE_NAME = 'jsonVar';
@@ -57,8 +57,7 @@ test.beforeAll(async () => {
   );
   completedInstanceKey = String(completedInstance.processInstanceKey);
 
-  // Wait for the worker to process and complete the job
-  await sleep(1000);
+  await waitForProcessInstanceState(completedInstanceKey, 'COMPLETED');
   await worker.close();
 
   await createInstances('jsonVariableProcess', 1, 1, {
@@ -90,7 +89,6 @@ test.describe('Process Instance Variables', () => {
       await operateProcessesPage.filterByProcessName(
         'variable scrolling process',
       );
-      await sleep(100);
       await operateProcessesPage.clickProcessInstanceLink();
       await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
     });

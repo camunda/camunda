@@ -8,10 +8,11 @@
 
 import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
-import {createInstances, deploy} from 'utils/zeebeClient';
+import {createInstances, deploy, waitForVariableValue} from 'utils/zeebeClient';
 import {completeTaskWithRetry, navigateToApp} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+
+let variableProcessInstance: {processInstanceKey: string};
 
 test.beforeAll(async () => {
   await deploy([
@@ -23,10 +24,9 @@ test.beforeAll(async () => {
     './resources/Start_Form_Process.bpmn',
     './resources/Zeebe_Priority_User_Task_Process.bpmn',
   ]);
-  await sleep(500);
   await createInstances('Job_Worker_Process', 1, 1);
   await createInstances('Zeebe_User_Task_Process', 1, 1);
-  await createInstances('Variable_Process', 1, 1, {
+  [variableProcessInstance] = await createInstances('Variable_Process', 1, 1, {
     testVariable: 'testValue',
   });
   await createInstances('Form_User_Task', 1, 1);
@@ -93,7 +93,11 @@ test.describe('HTO User Flow Tests', () => {
         timeout: 90000,
       });
       await expect(page.getByText('"updatedValue"')).toBeVisible();
-      await sleep(10000);
+      await waitForVariableValue(
+        variableProcessInstance.processInstanceKey,
+        'testVariable',
+        '"updatedValue"',
+      );
 
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
@@ -154,7 +158,7 @@ test.describe('HTO User Flow Tests', () => {
       await operateHomePage.clickProcessesTab();
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await operateFiltersPanelPage.clickActiveInstancesCheckbox();
-      await sleep(1000);
+      await expect(page).toHaveURL(/completed=true/);
       await operateProcessesPage.filterByProcessName('Form_User_Task');
       await operateProcessesPage.clickProcessInstanceLink();
       await operateProcessInstancePage.completedIconAssertion();
@@ -175,7 +179,7 @@ test.describe('HTO User Flow Tests', () => {
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
-      await sleep(1000);
+      await expect(page).toHaveURL(/completed=true/);
       await operateProcessesPage.filterByProcessName('Start_Form_Process');
       await operateProcessesPage.clickProcessInstanceLink();
       await operateProcessInstancePage.completedIconAssertion();
@@ -234,7 +238,7 @@ test.describe('HTO User Flow Tests', () => {
       await loginPage.login('demo', 'demo');
       await operateHomePage.clickProcessesTab();
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
-      await sleep(1000);
+      await expect(page).toHaveURL(/completed=true/);
       await operateProcessesPage.filterByProcessName(
         'Zeebe_Priority_User_Task_Process',
       );
@@ -276,7 +280,7 @@ test.describe('HTO User Flow Tests', () => {
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 120000});
       await operateHomePage.clickProcessesTab();
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
-      await sleep(1000);
+      await expect(page).toHaveURL(/completed=true/);
       await operateProcessesPage.filterByProcessName('Zeebe_User_Task_Process');
       await operateProcessesPage.clickProcessInstanceLink();
       await operateProcessInstancePage.completedIconAssertion();

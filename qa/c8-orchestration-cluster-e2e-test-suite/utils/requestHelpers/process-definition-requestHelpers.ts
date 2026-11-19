@@ -18,7 +18,6 @@ import {
   deployWithSubstitutions,
 } from '../zeebeClient';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
-import {sleep} from '../sleep';
 import {
   defaultAssertionOptions,
   extendedAssertionOptions,
@@ -142,36 +141,21 @@ export async function drainProcessDefinition(
 }
 
 /**
- * Starts an instance of a specific version, retrying while the create is
- * rejected `NOT_FOUND`.
- *
- * A deployment reaches the partitions asynchronously, so a create issued right
- * after one can land on a partition that has not applied it yet and be refused
- * as if the definition did not exist. Only that rejection is retried — a
- * `NOT_FOUND` from a definition already deleted would surface once the budget
- * runs out, and every other rejection is raised immediately.
+ * Starts an instance of a specific version once its deployment has reached
+ * the partitions. `createSingleInstance` itself retries the transient
+ * `NOT_FOUND` a create right after a deploy can hit; this name is kept so
+ * call sites still state that intent.
  */
 export async function createInstanceOnceDeployed(
   processDefinitionId: string,
   processDefinitionVersion: number,
   variables?: JSONDoc,
 ) {
-  const deadline = Date.now() + 30_000;
-  for (;;) {
-    try {
-      return await createSingleInstance(
-        processDefinitionId,
-        processDefinitionVersion,
-        variables,
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (!message.includes('NOT_FOUND') || Date.now() > deadline) {
-        throw error;
-      }
-      await sleep(500);
-    }
-  }
+  return createSingleInstance(
+    processDefinitionId,
+    processDefinitionVersion,
+    variables,
+  );
 }
 
 export async function deployProcessModel(

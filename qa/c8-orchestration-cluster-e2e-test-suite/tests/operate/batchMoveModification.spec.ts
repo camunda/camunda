@@ -8,14 +8,17 @@
 
 import {test} from '@fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances} from 'utils/zeebeClient';
+import {
+  deploy,
+  createInstances,
+  waitForProcessInstancesIndexed,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {
   navigateToAppHome,
   hideHelperModals,
   gotoProcessesPage,
 } from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
 const NUM_PROCESS_INSTANCES = 10;
@@ -24,9 +27,15 @@ const NUM_SELECTED_PROCESS_INSTANCES = 4;
 test.beforeAll(async () => {
   await deploy(['./resources/orderProcessBatchMod_v_1.bpmn']);
 
-  await createInstances('orderProcessBatchMod', 1, NUM_PROCESS_INSTANCES);
+  const instances = await createInstances(
+    'orderProcessBatchMod',
+    1,
+    NUM_PROCESS_INSTANCES,
+  );
 
-  await sleep(2000);
+  await waitForProcessInstancesIndexed(
+    instances.map((instance) => instance.processInstanceKey),
+  );
 });
 
 test.describe('Process Instance Batch Modification', () => {

@@ -8,8 +8,11 @@
 
 import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
-import {deploy, createInstances} from 'utils/zeebeClient';
-import {sleep} from 'utils/sleep';
+import {
+  deploy,
+  createInstances,
+  waitForProcessInstancesIndexed,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {clearAllProcessInstances} from '@requestHelpers';
@@ -23,17 +26,21 @@ test.beforeAll(async ({request}) => {
     './resources/usertask_for_scrolling_2.bpmn',
     './resources/usertask_for_scrolling_3.bpmn',
   ]);
-  await sleep(100);
 
-  await createInstances('usertask_for_scrolling_3', 1, 1);
-  await createInstances('usertask_for_scrolling_2', 1, 50);
-  await createInstances('usertask_for_scrolling_2', 1, 50);
-  await createInstances('usertask_for_scrolling_2', 1, 50);
-  await createInstances('usertask_for_scrolling_2', 1, 50);
-  await createInstances('usertask_for_scrolling_1', 1, 1);
-  await createInstances('usertask_to_be_assigned', 1, 1); // this task will be seen on top since it is created last
+  const instances = [
+    ...(await createInstances('usertask_for_scrolling_3', 1, 1)),
+    ...(await createInstances('usertask_for_scrolling_2', 1, 50)),
+    ...(await createInstances('usertask_for_scrolling_2', 1, 50)),
+    ...(await createInstances('usertask_for_scrolling_2', 1, 50)),
+    ...(await createInstances('usertask_for_scrolling_2', 1, 50)),
+    ...(await createInstances('usertask_for_scrolling_1', 1, 1)),
+    // this task will be seen on top since it is created last
+    ...(await createInstances('usertask_to_be_assigned', 1, 1)),
+  ];
 
-  await sleep(500);
+  await waitForProcessInstancesIndexed(
+    instances.map((instance) => instance.processInstanceKey),
+  );
 });
 
 test.describe('task panel page', () => {

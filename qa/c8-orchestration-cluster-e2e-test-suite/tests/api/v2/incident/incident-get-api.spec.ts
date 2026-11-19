@@ -40,12 +40,12 @@ test.describe.parallel('Search Incidents API Tests', () => {
   });
 
   test('Get Incident Success', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await createTwoDifferentIncidentsInOneProcess(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const created = await createTwoDifferentIncidentsInOneProcess(request);
+    processInstanceKeys.push(created.processInstanceKey);
     const expectedErrorTypes = ['CALLED_DECISION_ERROR', 'EXTRACT_VALUE_ERROR'];
 
-    for (const incidentKey of localState['incidentKeys'] as string[]) {
+    for (const incidentKey of created.incidentKeys) {
+      let json: {[key: string]: string} = {};
       await expect(async () => {
         const res = await request.get(
           buildUrl('/incidents/{incidentKey}', {incidentKey}),
@@ -63,23 +63,19 @@ test.describe.parallel('Search Incidents API Tests', () => {
           },
           res,
         );
-        localState['responseJson'] = await res.json();
+        json = await res.json();
       }).toPass(defaultAssertionOptions);
-      const json = localState['responseJson'] as {[key: string]: string};
       expect(json.incidentKey).toBe(incidentKey);
-      expect(json.processInstanceKey).toBe(
-        localState['processInstanceKey'] as string,
-      );
+      expect(json.processInstanceKey).toBe(created.processInstanceKey);
       expect(expectedErrorTypes).toContain(json.errorType);
     }
   });
 
   test('Get Incidents Unauthorized', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await createTwoIncidentsInOneProcess(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const created = await createTwoIncidentsInOneProcess(request);
+    processInstanceKeys.push(created.processInstanceKey);
 
-    const incidentKeys = localState['incidentKeys'] as string[];
+    const incidentKeys = created.incidentKeys;
     const firstIncidentKey = incidentKeys[0];
 
     await expect(async () => {

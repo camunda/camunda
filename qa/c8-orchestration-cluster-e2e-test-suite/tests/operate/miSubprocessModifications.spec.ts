@@ -12,10 +12,10 @@ import {
   deploy,
   createSingleInstance,
   cancelProcessInstance,
+  waitForProcessInstancesIndexed,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome, hideHelperModals} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
 type ProcessInstance = {
@@ -97,7 +97,20 @@ test.beforeAll(async () => {
     },
   );
 
-  await sleep(3000);
+  await waitForProcessInstancesIndexed(
+    [
+      seqMiInstance,
+      parMiInstance,
+      restrictionInstance,
+      miSubprocessTargetInstance,
+      crossMiInstance,
+      outwardMoveInstance,
+      moveAllInstance,
+      cancelTokenInstance,
+      addTokenInstance,
+      completedMiTaskInstance,
+    ].map((instance) => instance.processInstanceKey),
+  );
 });
 
 test.afterAll(async () => {

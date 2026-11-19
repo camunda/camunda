@@ -31,7 +31,6 @@ import {
   grantUserResourceAuthorization,
   createUser,
 } from '@requestHelpers';
-import {sleep} from 'utils/sleep';
 import {cleanupUsers} from 'utils/usersCleanup';
 
 test.describe('Element Instance Incident Search API', () => {
@@ -54,7 +53,6 @@ test.describe('Element Instance Incident Search API', () => {
           console.log(`State: ${JSON.stringify(state)}`);
         },
       );
-      await sleep(5000);
     });
 
     await test.step('Verify instance is created and search by processInstanceKey and element type returns element instance', async () => {

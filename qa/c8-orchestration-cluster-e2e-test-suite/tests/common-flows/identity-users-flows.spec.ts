@@ -15,13 +15,11 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {verifyAccess} from 'utils/accessVerification';
 import {waitForItemInList} from 'utils/waitForItemInList';
 import {createInstances, deploy} from 'utils/zeebeClient';
-import {sleep} from 'utils/sleep';
 import {cleanupUsers} from 'utils/usersCleanup';
 
 test.describe('Identity User Flows', () => {
   test.beforeAll(async () => {
     await deploy(['./resources/simpleProcessForIdentity.bpmn']);
-    await sleep(500);
     await createInstances('identityProcess', 1, 1);
   });
 
@@ -360,7 +358,9 @@ test.describe('Identity User Flows', () => {
       await identityHeader.logout();
       await loginPage.login(TEST_USER.username, TEST_USER.password);
       await expect(page).toHaveURL(new RegExp('admin'), {timeout: 10000});
-      await sleep(2000);
+      // A missing permission redirects to /forbidden only once the app has
+      // loaded, so wait for it to render before asserting there was none.
+      await expect(identityHeader.usersTab).toBeVisible();
       await verifyAccess(page, true);
     });
 

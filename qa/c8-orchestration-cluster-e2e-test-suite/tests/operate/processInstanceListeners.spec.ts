@@ -8,10 +8,14 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createSingleInstance, createWorker} from 'utils/zeebeClient';
+import {
+  deploy,
+  createSingleInstance,
+  createWorker,
+  waitForProcessInstancesIndexed,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 import {completeUserTask, findUserTask} from '@requestHelpers';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
@@ -50,8 +54,13 @@ test.beforeAll(async () => {
     userTaskProcessInstance,
   };
 
-  // Wait for deployment to be processed
-  await sleep(3000);
+  await waitForProcessInstancesIndexed(
+    [
+      processWithListenerInstance,
+      processWithListenerOnRootInstance,
+      userTaskProcessInstance,
+    ].map((instance) => instance.processInstanceKey),
+  );
 });
 
 test.describe('Process Instance Listeners', () => {
@@ -247,7 +256,6 @@ test.describe('Process Instance Listeners', () => {
         },
       });
 
-      await sleep(1000);
       await operateProcessInstancePage.clickInstanceHistoryElement(
         'Service Task B',
       );

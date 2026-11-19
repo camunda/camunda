@@ -38,6 +38,8 @@ test.beforeAll(async ({request}) => {
         .processInstanceKey,
     ),
   };
+  // Not a wait for the system: the start-date sort assertions need processA
+  // and processB_v_1 to have distinct start timestamps.
   await sleep(500);
   {
     processB_v_1 = {
@@ -47,7 +49,6 @@ test.beforeAll(async ({request}) => {
       ),
     };
     await deploy(['./resources/instancesTableProcessB_v_2.bpmn']);
-    await sleep(1000);
     processB_v_2 = {
       processInstanceKey: Number(
         (await createSingleInstance('instancesTableProcessB', 2))
@@ -398,7 +399,6 @@ test.describe('Process Instances Table', () => {
       await operateProcessesPage.scrollUntilElementIsVisible(
         page.getByRole('row', {name: `Instance ${descendingInstanceIds[150]}`}),
       );
-      await sleep(500);
       await expect(instanceRows).toHaveCount(200);
       await expect
         .poll(() => instanceRows.nth(0).innerText())
@@ -412,7 +412,6 @@ test.describe('Process Instances Table', () => {
       await page
         .getByRole('row', {name: `Instance ${descendingInstanceIds[199]}`})
         .scrollIntoViewIfNeeded();
-      await sleep(500);
       await expect(instanceRows).toHaveCount(250);
 
       await expect
@@ -428,12 +427,13 @@ test.describe('Process Instances Table', () => {
       await page
         .getByRole('row', {name: `Instance ${descendingInstanceIds[249]}`})
         .scrollIntoViewIfNeeded();
-      await sleep(500);
-      await expect(instanceRows).toHaveCount(250);
 
+      // The table already holds 250 rows before this page loads, so wait for
+      // the window to shift first; only then is the row count meaningful.
       await expect
         .poll(() => instanceRows.nth(0).innerText())
         .toContain(descendingInstanceIds[50].toString());
+      await expect(instanceRows).toHaveCount(250);
 
       await expect
         .poll(() => instanceRows.nth(249).innerText())

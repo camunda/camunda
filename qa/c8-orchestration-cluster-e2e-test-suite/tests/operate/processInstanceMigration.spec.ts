@@ -12,10 +12,11 @@ import {
   deploy,
   createInstances,
   cancelProcessInstance,
+  waitForProcessInstancesIndexed,
+  waitForLatestProcessVersion,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {
   CreateProcessInstanceResponse,
@@ -80,7 +81,17 @@ test.describe.serial('Process Instance Migration', () => {
       processV2,
       processV3,
     };
-    await sleep(2000);
+    await waitForProcessInstancesIndexed(
+      processes.flat().map((instance) => instance.processInstanceKey),
+    );
+    await waitForLatestProcessVersion(
+      processV2.bpmnProcessId,
+      processV2.version,
+    );
+    await waitForLatestProcessVersion(
+      processV3.bpmnProcessId,
+      processV3.version,
+    );
   });
 
   test.beforeEach(async ({page, operateHomePage}) => {
@@ -116,9 +127,6 @@ test.describe.serial('Process Instance Migration', () => {
 
     await test.step('Filter by process name and version', async () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
-
-      // Wait for the process to be selected and version dropdown to be populated
-      await sleep(1000);
 
       // Ensure we're selecting the correct source version (version 1)
       await operateFiltersPanelPage.selectVersion(sourceVersion);
@@ -303,8 +311,6 @@ test.describe.serial('Process Instance Migration', () => {
       ]);
 
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
-
-      await sleep(500);
     });
 
     await test.step('Verify 6 instances migrated to target version', async () => {
@@ -618,7 +624,6 @@ test.describe.serial('Process Instance Migration', () => {
         'MIGRATE',
       );
       await operateProcessMigrationModePage.clickMigrationConfirmationButton();
-      await sleep(2000);
     });
 
     await test.step('Verify 3 instances migrated to target version', async () => {
