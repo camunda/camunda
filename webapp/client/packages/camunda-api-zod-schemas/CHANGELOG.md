@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.98
+
+### 🚀 Enhancements
+
+- Add the 8.11 `secret` module: the `listSecrets` endpoint, its request with the optional `filter.status` (a status, or the advanced operators `$eq`, `$neq`, `$exists`, `$in`, `$notIn`, `$like`) and its response ([#68644](https://github.com/camunda/camunda/issues/68644))
+
+### ❤️ Contributors
+
+- Helene ([@HeleneW-dot](https://github.com/HeleneW-dot))
+
 ## v0.0.97
 
 ### 🚀 Enhancements
