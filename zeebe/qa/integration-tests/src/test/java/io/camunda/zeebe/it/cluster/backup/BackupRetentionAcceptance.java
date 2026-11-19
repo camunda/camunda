@@ -176,21 +176,22 @@ public interface BackupRetentionAcceptance extends ClockSupport {
   }
 
   default void assertManifestPresentInStore(final Long backupId) {
+    // A backup is stored under the broker that led the partition when it was taken, which may not
+    // be the leader after the cluster restart, so accept a completed backup from any broker.
     IntStream.rangeClosed(1, PARTITION_COUNT)
         .forEach(
-            partitionId -> {
-              try (final var node = getTestCluster().leaderForPartition(partitionId)) {
-                final var brokerId = Integer.parseInt(node.nodeId().id());
-                final var identifier = new BackupIdentifierImpl(brokerId, partitionId, backupId);
-                assertThat(getBackupStore().getStatus(identifier).join())
+            partitionId ->
+                assertThat(
+                        IntStream.range(0, BROKER_COUNT)
+                            .mapToObj(
+                                brokerId ->
+                                    new BackupIdentifierImpl(brokerId, partitionId, backupId))
+                            .map(identifier -> getBackupStore().getStatus(identifier).join())
+                            .map(BackupStatus::statusCode))
                     .withFailMessage(
-                        String.format(
-                            "Expected backup manifest for broker %d partition %d backupId %d to be present in store",
-                            brokerId, partitionId, backupId))
-                    .extracting(BackupStatus::statusCode)
-                    .isEqualTo(BackupStatusCode.COMPLETED);
-              }
-            });
+                        "Expected a completed backup manifest for partition %d backupId %d to be present in store",
+                        partitionId, backupId)
+                    .contains(BackupStatusCode.COMPLETED));
   }
 
   Consumer<Camunda> backupConfig();
