@@ -64,4 +64,51 @@ final class ExtendedProcessingScheduleServiceImplTest {
     Mockito.verify(async, Mockito.times(1))
         .runDelayed(Mockito.eq(Duration.ZERO), Mockito.<Runnable>any());
   }
+
+  @Test
+  void shouldNotScheduleFixedRateRunnableAsyncIfDisabled() {
+    // given
+    final var context = mock(AsyncScheduleServiceContext.class);
+    final var sync = mock(SimpleProcessingScheduleService.class);
+
+    final var schedulingService = new ExtendedProcessingScheduleServiceImpl(context, sync, false);
+
+    // when
+    schedulingService.runAtFixedRate(Duration.ZERO, () -> {});
+
+    // then
+    Mockito.verify(sync, Mockito.times(1))
+        .runAtFixedRate(Mockito.eq(Duration.ZERO), Mockito.<Runnable>any());
+    Mockito.verifyNoInteractions(context);
+  }
+
+  @Test
+  void shouldScheduleFixedRateRunnableAsyncIfEnabled() {
+    // given
+    final var sync = mock(SimpleProcessingScheduleService.class);
+    final var async = mock(SimpleProcessingScheduleService.class);
+    final var asyncControl = mock(AsyncProcessingScheduleServiceActor.class);
+    doAnswer(
+            invocation -> {
+              final var runnable = (Runnable) invocation.getArgument(0);
+              runnable.run();
+              return null;
+            })
+        .when(asyncControl)
+        .run(Mockito.any());
+
+    final var context = mock(AsyncScheduleServiceContext.class);
+    when(context.geAsyncActor(ASYNC_PROCESSING)).thenReturn(asyncControl);
+    when(asyncControl.getScheduleService()).thenReturn(async);
+
+    final var schedulingService = new ExtendedProcessingScheduleServiceImpl(context, sync, true);
+
+    // when
+    schedulingService.runAtFixedRate(Duration.ZERO, () -> {});
+
+    // then
+    Mockito.verify(async, Mockito.times(1))
+        .runAtFixedRate(Mockito.eq(Duration.ZERO), Mockito.<Runnable>any());
+    Mockito.verifyNoInteractions(sync);
+  }
 }
