@@ -403,17 +403,34 @@ test.describe('Process Instance History', () => {
 
     await test.step('Verify History has "Collect Money" 2 times', async () => {
       const nestedParentName = activityFirstSubprocess;
-      await operateProcessInstancePage.ensureElementExpandedInHistory(
-        nestedParentName,
-      );
-      const nestedParentGroupLocator =
-        await operateProcessInstancePage.getNestedGroupInHistoryLocator(
-          nestedParentName,
-        );
-      await expect(nestedParentGroupLocator).toBeVisible();
-      expect(
-        await nestedParentGroupLocator.getByLabel(activityCollectMoney).count(),
-      ).toBe(2);
+      // The Instance History tree and the diagram overlays are served by
+      // different queries with independent indexing latency. Right after the
+      // modification is applied the diagram already shows the two "Collect
+      // money" tokens while the history can still return the pre-modification
+      // shape, rendering "FirstSubprocess" as a childless leaf. The tree then
+      // flips back to a parent-with-group once indexing catches up. Re-run the
+      // whole expand-and-count against a reloaded history so a transient
+      // pre-indexing poll no longer fails the assertion.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessInstancePage.ensureElementExpandedInHistory(
+            nestedParentName,
+          );
+          const nestedParentGroupLocator =
+            await operateProcessInstancePage.getNestedGroupInHistoryLocator(
+              nestedParentName,
+            );
+          await expect(nestedParentGroupLocator).toBeVisible();
+          expect(
+            await nestedParentGroupLocator
+              .getByLabel(activityCollectMoney)
+              .count(),
+          ).toBe(2);
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Verify First Subprocess has state overlay 1', async () => {
