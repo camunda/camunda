@@ -8,13 +8,13 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
+import io.camunda.zeebe.engine.state.immutable.PolicyUpdateState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -26,7 +26,7 @@ import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public class MappingRuleCreateProcessor
-    implements DistributedTypedRecordProcessor<MappingRuleRecord> {
+    extends AbstractIdentityCommandProcessor<MappingRuleRecord> {
 
   private static final String MAPPING_RULE_NULL_VALUE_ERROR_MESSAGE =
       "Expected to create mapping rule with claimName '%s' and claimValue '%s' and name '%s' and mappingRuleId '%s', but at least one of them is null.";
@@ -48,7 +48,9 @@ public class MappingRuleCreateProcessor
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final PolicyUpdateState policyUpdateState) {
+    super(policyUpdateState, writers);
     this.mappingRuleState = mappingRuleState;
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
@@ -59,14 +61,13 @@ public class MappingRuleCreateProcessor
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<MappingRuleRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<MappingRuleRecord> command) {
     final var isAuthorized =
         permissionsBehavior.isAuthorized(
             command, AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -85,8 +86,7 @@ public class MappingRuleCreateProcessor
               record.getClaimValue(),
               record.getName(),
               record.getMappingRuleId());
-      rejectionWriter.appendRejection(command, RejectionType.NULL_VAL, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NULL_VAL, errorMessage);
+      rejectNewCommand(command, RejectionType.NULL_VAL, errorMessage);
       return;
     }
 
@@ -96,9 +96,7 @@ public class MappingRuleCreateProcessor
       final var errorMessage =
           MAPPING_RULE_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
               record.getClaimName(), record.getClaimValue());
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.ALREADY_EXISTS, errorMessage);
+      rejectNewCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 
@@ -106,9 +104,7 @@ public class MappingRuleCreateProcessor
     if (persistedMappingRuleWithSameId.isPresent()) {
       final var errorMessage =
           MAPPING_RULE_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getMappingRuleId());
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.ALREADY_EXISTS, errorMessage);
+      rejectNewCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 

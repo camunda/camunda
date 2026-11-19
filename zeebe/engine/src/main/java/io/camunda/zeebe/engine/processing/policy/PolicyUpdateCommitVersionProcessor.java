@@ -14,7 +14,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.PolicyUpdateState;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -31,15 +33,18 @@ import org.jspecify.annotations.NullMarked;
 public final class PolicyUpdateCommitVersionProcessor
     implements DistributedTypedRecordProcessor<PolicyUpdateRecord> {
 
+  private final PolicyUpdateState policyUpdateState;
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior distributionBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
   public PolicyUpdateCommitVersionProcessor(
+      final PolicyUpdateState policyUpdateState,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior distributionBehavior,
       final Writers writers) {
+    this.policyUpdateState = policyUpdateState;
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
     stateWriter = writers.state();
@@ -52,6 +57,23 @@ public final class PolicyUpdateCommitVersionProcessor
     if (notInternal.isPresent()) {
       rejectionWriter.appendRejection(
           command, notInternal.get().type(), notInternal.get().reason());
+      return;
+    }
+
+    // the commit follows the identity commands of the last chunk; if one of them was rejected, the
+    // update failed and must not be committed
+    final var updateId = command.getValue().getUpdateId();
+    final var isOpen =
+        policyUpdateState
+            .getOpenUpdate()
+            .filter(open -> open.getUpdate().getUpdateId().equals(updateId))
+            .isPresent();
+    if (!isOpen) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.INVALID_STATE,
+          "Expected policy update '%s' to be open to commit its version, but it failed or no longer exists"
+              .formatted(updateId));
       return;
     }
 

@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -36,7 +35,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
+public class GroupDeleteProcessor extends AbstractIdentityCommandProcessor<GroupRecord> {
 
   private static final String GROUP_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete group with ID '%s', but a group with this ID does not exist.";
@@ -60,6 +59,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final MembershipStateAdapter membershipStateAdapter) {
+    super(processingState.getPolicyUpdateState(), writers);
     groupState = processingState.getGroupState();
     authorizationState = processingState.getAuthorizationState();
     membershipState = processingState.getMembershipState();
@@ -75,7 +75,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<GroupRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
     final var groupId = record.getGroupId();
     final var isAuthorized =
@@ -83,16 +83,14 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
             command, AuthorizationResourceType.GROUP, PermissionType.DELETE, groupId);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
     final var persistedRecord = groupState.get(groupId);
     if (persistedRecord.isEmpty()) {
       final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupId);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommandAsAlreadyApplied(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 

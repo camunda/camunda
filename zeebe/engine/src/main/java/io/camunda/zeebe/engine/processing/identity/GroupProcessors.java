@@ -50,7 +50,8 @@ public class GroupProcessors {
             keyGenerator,
             permissionsBehavior,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            processingState.getPolicyUpdateState()));
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
         GroupIntent.ADD_ENTITY,

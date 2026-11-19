@@ -40,7 +40,8 @@ public class TenantProcessors {
                 permissionsBehavior,
                 keyGenerator,
                 writers,
-                commandDistributionBehavior))
+                commandDistributionBehavior,
+                processingState.getPolicyUpdateState()))
         .onCommand(
             ValueType.TENANT,
             TenantIntent.UPDATE,
@@ -49,7 +50,8 @@ public class TenantProcessors {
                 permissionsBehavior,
                 keyGenerator,
                 writers,
-                commandDistributionBehavior))
+                commandDistributionBehavior,
+                processingState.getPolicyUpdateState()))
         .onCommand(
             ValueType.TENANT,
             TenantIntent.ADD_ENTITY,

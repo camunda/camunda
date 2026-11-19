@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -31,7 +30,7 @@ import org.slf4j.Logger;
 
 @NullMarked
 public class AuthorizationUpdateProcessor
-    implements DistributedTypedRecordProcessor<AuthorizationRecord> {
+    extends AbstractIdentityCommandProcessor<AuthorizationRecord> {
 
   private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
@@ -53,6 +52,7 @@ public class AuthorizationUpdateProcessor
       final CslAuthorizationCheck cslCheck,
       final EngineSecurityConfig securityConfig,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
+    super(processingState.getPolicyUpdateState(), writers);
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
     stateWriter = writers.state();
@@ -65,7 +65,7 @@ public class AuthorizationUpdateProcessor
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<AuthorizationRecord> command) {
     LOG.debug(
         "Processing UPDATE authorization command for key {}",
         command.getValue().getAuthorizationKey());
@@ -88,9 +88,7 @@ public class AuthorizationUpdateProcessor
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
               LOG.debug("Rejecting UPDATE authorization command: {}", rejection.reason());
-              rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectedResponseOnCommand(
-                  command, rejection.type(), rejection.reason());
+              rejectNewCommand(command, rejection.type(), rejection.reason());
             });
   }
 

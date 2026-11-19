@@ -11,12 +11,11 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AbstractIdentityCommandProcessor;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
@@ -34,7 +33,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class TenantRemoveEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
+public class TenantRemoveEntityProcessor extends AbstractIdentityCommandProcessor<TenantRecord> {
 
   private final TenantState tenantState;
   private final MappingRuleState mappingRuleState;
@@ -42,7 +41,6 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final SideEffectWriter sideEffectWriter;
@@ -55,13 +53,13 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final MembershipStateAdapter membershipStateAdapter) {
+    super(state.getPolicyUpdateState(), writers);
     tenantState = state.getTenantState();
     mappingRuleState = state.getMappingRuleState();
     membershipState = state.getMembershipState();
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
-    rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
@@ -69,7 +67,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<TenantRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
     final var tenantId = record.getTenantId();
 
@@ -84,7 +82,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     final var persistedTenant = tenantState.getTenantById(tenantId);
 
     if (persistedTenant.isEmpty()) {
-      rejectCommand(
+      rejectNewCommandAsAlreadyApplied(
           command,
           RejectionType.NOT_FOUND,
           "Expected to remove entity from tenant '%s', but no tenant with this ID exists."
@@ -153,7 +151,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final String entityId,
       final EntityType entityType,
       final String tenantId) {
-    rejectCommand(
+    rejectNewCommandAsAlreadyApplied(
         command,
         RejectionType.NOT_FOUND,
         formatErrorMessage(entityType, entityId, tenantId, "doesn't exists"));
@@ -164,7 +162,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final String entityId,
       final EntityType entityType,
       final String tenantId) {
-    rejectCommand(
+    rejectNewCommandAsAlreadyApplied(
         command,
         RejectionType.NOT_FOUND,
         formatErrorMessage(entityType, entityId, tenantId, "is not assigned to this tenant"));
@@ -189,10 +187,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final TypedRecord<TenantRecord> command,
       final RejectionType type,
       final String errorMessage) {
-    rejectionWriter.appendRejection(command, type, errorMessage);
-    if (command.hasRequestMetadata()) {
-      responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
-    }
+    rejectNewCommand(command, type, errorMessage);
   }
 
   private void distributeCommand(final TypedRecord<TenantRecord> command) {
