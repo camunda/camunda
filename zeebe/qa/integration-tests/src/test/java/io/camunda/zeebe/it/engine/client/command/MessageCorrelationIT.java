@@ -47,14 +47,13 @@ final class MessageCorrelationIT {
 
   @AutoClose private CamundaClient client;
   private ZeebeResourcesHelper resourcesHelper;
+  private long processDefinitionKey;
+  private String correlationValue;
 
   private void createClient() {
     client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
-
-  private long processDefinitionKey;
-  private String correlationValue;
 
   @BeforeEach
   void init() {
