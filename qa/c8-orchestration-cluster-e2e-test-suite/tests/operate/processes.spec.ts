@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
@@ -72,14 +72,19 @@ test.beforeAll(async () => {
 
 test.describe('Processes', () => {
   test.beforeEach(async ({page, operateHomePage}) => {
-    // The worker-scoped session this spec inherits can be invalidated mid-run
-    // by a concurrent `demo` login on another worker (session eviction), after
-    // which /v2/authentication/me returns 401 (the stale cookie is still sent)
-    // and Operate redirects to the login screen -- leaving the header nav absent
-    // so clickProcessesTab() times out. Re-establish a fresh session on this
-    // context before navigating, seeding both the camunda-session cookie and the
-    // CSRF token, mirroring the logInViaApi pattern in
-    // multiInstanceSelection.spec.ts and processInstanceWaitStatesFlagOff.spec.ts.
+    // This spec uses publicTest, so the browser context carries no
+    // pre-authenticated worker session and the logInViaApi call below is the
+    // single source of browser authentication and CSRF initialization. An
+    // inherited worker-scoped session is deliberately avoided here: it can be
+    // invalidated mid-run by a concurrent `demo` login on another worker
+    // (session eviction), after which /v2/authentication/me returns 401 (the
+    // stale cookie is still sent) and Operate redirects to the login screen --
+    // leaving the header nav absent so clickProcessesTab() times out. It would
+    // also install a competing context-level CSRF init script whose ordering
+    // against this page-level one Playwright does not define, so a reload could
+    // restore the stale token. Establish a fresh session on this context before
+    // navigating, seeding both the camunda-session cookie and the CSRF token,
+    // mirroring the logInViaApi pattern in multiInstanceSelection.spec.ts.
     const baseURL = process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
     const {csrfToken} = await logInViaApi(page.context().request, baseURL, {
       username: process.env.TEST_USERNAME ?? 'demo',
