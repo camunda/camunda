@@ -15,29 +15,78 @@
  */
 package io.camunda.process.test.impl.cleanup;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ProblemDetail;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ClusterPurgeCleanupStrategyTest {
 
+  /** Partition id 1 in the upper bits, sequence number 1 in the lower bits. */
+  private static final long DEPLOYMENT_PARTITION_JOB_KEY = (1L << 51) | 1;
+
   @Mock private CamundaManagementClient managementClient;
 
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private CamundaClient camundaClient;
+
+  private final ClusterPurgeCleanupStrategy strategy = new ClusterPurgeCleanupStrategy();
+
   @Test
-  void shouldPurgeCluster() {
+  void shouldPurgeClusterBeforeProbingCommandApi() {
     // given
-    final ClusterPurgeCleanupStrategy strategy = new ClusterPurgeCleanupStrategy();
+    when(camundaClient.newCompleteCommand(anyLong()).useRest().send().join())
+        .thenThrow(problem(404));
 
     // when
-    strategy.cleanup(managementClient, () -> null, Instant.now());
+    strategy.cleanup(managementClient, () -> camundaClient, Instant.now());
 
     // then
-    verify(managementClient).purgeCluster();
+    final InOrder inOrder = inOrder(managementClient, camundaClient);
+    inOrder.verify(managementClient).purgeCluster();
+    inOrder.verify(camundaClient).newCompleteCommand(DEPLOYMENT_PARTITION_JOB_KEY);
+  }
+
+  @Test
+  void shouldRetryProbeWhileBrokerIsNotReady() {
+    // given
+    when(camundaClient.newCompleteCommand(anyLong()).useRest().send().join())
+        .thenThrow(problem(500), problem(503), problem(404));
+
+    // when
+    strategy.cleanup(managementClient, () -> camundaClient, Instant.now());
+
+    // then
+    verify(camundaClient, times(3)).newCompleteCommand(DEPLOYMENT_PARTITION_JOB_KEY);
+  }
+
+  @Test
+  void shouldFailOnUnexpectedClientError() {
+    // given
+    when(camundaClient.newCompleteCommand(anyLong()).useRest().send().join())
+        .thenThrow(problem(400));
+
+    // when / then
+    assertThatThrownBy(() -> strategy.cleanup(managementClient, () -> camundaClient, Instant.now()))
+        .isInstanceOf(ProblemException.class);
+  }
+
+  private static ProblemException problem(final int code) {
+    return new ProblemException(code, "reason", new ProblemDetail());
   }
 }
