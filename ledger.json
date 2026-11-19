@@ -466,5 +466,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/44472091141",
     "updated_at": "2026-11-19T06:46:41Z",
     "cooldown_until": "2026-11-22T06:46:41Z"
+  },
+  "9b552c5f": {
+    "version": "8.10",
+    "file": "tests/operate/processes.spec.ts",
+    "titlePath": [
+      "Processes",
+      "Processes Page Initial Load"
+    ],
+    "last_action": "open_pr",
+    "last_reason": "iter1 100% vs baseline 80% (+20pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44472069786",
+    "updated_at": "2026-11-19T07:35:58Z",
+    "cooldown_until": "2026-12-03T07:35:58Z",
+    "pr": "https://github.com/camunda/camunda/pull/69954"
   }
 }
