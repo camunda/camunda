@@ -284,7 +284,50 @@ class SegmentedJournalTest {
 
   @Test
   void shouldRejectWritesAfterDeletedSegmentsFailedToSync() {
-    // given - one entry per segment, deleted in the calling thread
+    // given
+    failToSyncDeletedSegments();
+
+    // when
+    final var appendFailure = catchThrowable(() -> journal.append(journalFactory.entry()));
+
+    // then
+    assertThat(appendFailure).isInstanceOf(SyncFailed.class);
+    assertThat(journal.getLastIndex()).isEqualTo(4);
+  }
+
+  @Test
+  void shouldRejectReplicatedRecordAfterDeletedSegmentsFailedToSync() {
+    // given
+    failToSyncDeletedSegments();
+    final var nextRecord = recordFromAnotherJournal(5);
+
+    // when
+    final var appendFailure = catchThrowable(() -> journal.append(nextRecord));
+
+    // then
+    assertThat(appendFailure).isInstanceOf(SyncFailed.class);
+    assertThat(journal.getLastIndex()).isEqualTo(4);
+  }
+
+  @Test
+  void shouldRejectSerializedRecordAfterDeletedSegmentsFailedToSync() {
+    // given
+    failToSyncDeletedSegments();
+    final var nextRecord = recordFromAnotherJournal(5);
+    final var serializedRecord = BufferUtil.bufferAsArray(nextRecord.serializedRecord());
+
+    // when
+    final var appendFailure =
+        catchThrowable(() -> journal.append(nextRecord.checksum(), serializedRecord));
+
+    // then
+    assertThat(appendFailure).isInstanceOf(SyncFailed.class);
+    assertThat(journal.getLastIndex()).isEqualTo(4);
+  }
+
+  /** Leaves {@link #journal} with entries 1 to 4, after compacting it failed to sync. */
+  private void failToSyncDeletedSegments() {
+    // one entry per segment, deleted in the calling thread
     journalFactory = new TestJournalFactory(1);
     final var segments = journalFactory.segmentsManager(directory, Runnable::run);
     journal = journalFactory.journal(segments);
@@ -299,13 +342,25 @@ class SegmentedJournalTest {
       journal.deleteUntil(2);
     }
     assertThatThrownBy(() -> journal.deleteUntil(4)).isInstanceOf(SyncFailed.class);
+  }
 
-    // when
-    final var appendFailure = catchThrowable(() -> journal.append(journalFactory.entry()));
-
-    // then
-    assertThat(appendFailure).isInstanceOf(SyncFailed.class);
-    assertThat(journal.getLastIndex()).isEqualTo(4);
+  /** A record a follower would replicate, valid as the next one of {@link #journal}. */
+  private JournalRecord recordFromAnotherJournal(final long index) {
+    final var sourceFactory = new TestJournalFactory();
+    try (final var source =
+        sourceFactory.journal(sourceFactory.segmentsManager(directory.resolve("source")))) {
+      JournalRecord record = null;
+      for (long i = 1; i <= index; i++) {
+        record = source.append(sourceFactory.entry());
+      }
+      final var persisted = (PersistedJournalRecord) record;
+      return new PersistedJournalRecord(
+          persisted.metadata(),
+          new RecordData(
+              persisted.index(), persisted.asqn(), BufferUtil.cloneBuffer(persisted.data())),
+          BufferUtil.cloneBuffer(persisted.serializedRecord()),
+          persisted.size());
+    }
   }
 
   @Test
