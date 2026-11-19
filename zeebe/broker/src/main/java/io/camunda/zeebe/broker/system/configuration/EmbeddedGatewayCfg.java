@@ -8,8 +8,6 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.netty.util.NetUtil;
-import java.util.Collections;
 
 public final class EmbeddedGatewayCfg extends GatewayCfg implements ConfigurationEntry {
 
@@ -22,12 +20,6 @@ public final class EmbeddedGatewayCfg extends GatewayCfg implements Configuratio
     final NetworkCfg networkCfg = globalConfig.getNetwork();
 
     init(networkCfg.getHost());
-
-    // ensure embedded gateway can access local broker
-    getCluster()
-        .setInitialContactPoints(
-            Collections.singletonList(
-                NetUtil.toSocketAddressString(networkCfg.getInternalApi().getAddress())));
 
     // configure embedded gateway based on broker config
     getNetwork().setPort(getNetwork().getPort() + (networkCfg.getPortOffset() * 10));
