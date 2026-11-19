@@ -32,7 +32,7 @@ public record EvaluatedDmnScalaInput(
   }
 
   private static @Nullable String determineInputName(final ParsedInput input) {
-    final @Nullable String inputName;
+    final String inputName;
     if (input.name() != null) {
       inputName = input.name();
     } else if (input.expression() instanceof FeelExpression feelExpression) {

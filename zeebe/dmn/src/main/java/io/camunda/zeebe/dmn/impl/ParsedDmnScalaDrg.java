@@ -100,7 +100,7 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
 
     final DmnModelInstance modelInstance = parsedDmn.model();
     final Definitions definitions = modelInstance.getDefinitions();
-    final @Nullable String id = definitions.getId();
+    final String id = definitions.getId();
     final String name = definitions.getName();
     final String namespace = definitions.getNamespace();
     final List<ParsedDecision> parsedDecisions = getParsedDecisions(parsedDmn);
