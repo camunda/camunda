@@ -10,7 +10,10 @@ package io.camunda.webapps.backup;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
-import io.camunda.webapps.backup.BackupException.*;
+import io.camunda.webapps.backup.BackupException.BackupAlreadyRunningException;
+import io.camunda.webapps.backup.BackupException.IndexNotFoundException;
+import io.camunda.webapps.backup.BackupException.InvalidRequestException;
+import io.camunda.webapps.backup.BackupException.ResourceNotFoundException;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -40,6 +43,7 @@ public class BackupServiceImpl implements BackupService {
   private final BackupRepositoryProps backupProps;
 
   /* arguments needed for the alias integrity check */
+  private final ClientAdapter clientAdapter;
   private final SearchEngineConfiguration searchEngineConfiguration;
   private final Collection<IndexDescriptor> indexDescriptors;
   private final Collection<IndexTemplateDescriptor> templateDescriptors;
@@ -47,6 +51,7 @@ public class BackupServiceImpl implements BackupService {
   public BackupServiceImpl(
       final Executor threadPoolTaskExecutor,
       final BackupWiring backupWiring,
+      final ClientAdapter clientAdapter,
       final SearchEngineConfiguration searchEngineConfiguration,
       final Collection<IndexDescriptor> indexDescriptors,
       final Collection<IndexTemplateDescriptor> templateDescriptors) {
@@ -54,6 +59,7 @@ public class BackupServiceImpl implements BackupService {
     backupPriorities = backupWiring.priorities();
     repository = backupWiring.repository();
     backupProps = backupWiring.repositoryProps();
+    this.clientAdapter = clientAdapter;
     this.searchEngineConfiguration = searchEngineConfiguration;
     this.indexDescriptors = indexDescriptors;
     this.templateDescriptors = templateDescriptors;
@@ -109,14 +115,13 @@ public class BackupServiceImpl implements BackupService {
   }
 
   private void performSchemaIntegrityChecks() throws IOException {
-    try (final ClientAdapter clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect());
-        final SchemaManager schemaManager =
-            new SchemaManager(
-                clientAdapter.getSearchEngineClient(),
-                indexDescriptors,
-                templateDescriptors,
-                searchEngineConfiguration,
-                clientAdapter.objectMapper())) {
+    try (final SchemaManager schemaManager =
+        new SchemaManager(
+            clientAdapter.getSearchEngineClient(),
+            indexDescriptors,
+            templateDescriptors,
+            searchEngineConfiguration,
+            clientAdapter.objectMapper())) {
       if (!schemaManager.validateIndices().isEmpty()) {
         throw new InvalidRequestException("Indexes validation failed when taking a backup");
       }

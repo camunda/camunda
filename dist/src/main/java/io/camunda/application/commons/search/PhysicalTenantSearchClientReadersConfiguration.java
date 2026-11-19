@@ -11,6 +11,7 @@ import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverr
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.cache.ProcessCache;
@@ -39,6 +40,19 @@ public class PhysicalTenantSearchClientReadersConfiguration {
         physicalTenantResolver.mapValues(
             physicalTenantCfg ->
                 new SearchEngineConnectPropertiesOverride.Converter(physicalTenantCfg).convert()));
+  }
+
+  @Bean
+  public Map<String, ClientAdapter> physicalTenantClientAdapters(
+      final SearchClients searchClients) {
+    final var adapters = new LinkedHashMap<String, ClientAdapter>();
+    searchClients
+        .esClients()
+        .forEach((tenantId, client) -> adapters.put(tenantId, ClientAdapter.of(client)));
+    searchClients
+        .osClients()
+        .forEach((tenantId, client) -> adapters.put(tenantId, ClientAdapter.of(client)));
+    return Map.copyOf(adapters);
   }
 
   @Bean

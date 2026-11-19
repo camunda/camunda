@@ -9,7 +9,9 @@ package io.camunda.webapps.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.backup.BackupException.BackupAlreadyRunningException;
@@ -81,6 +83,7 @@ public class BackupServiceImplTest {
     return new BackupServiceImpl(
         snapshotExecutor,
         new BackupWiring(backupPriorities, backupRepositoryProps, backupRepository),
+        mock(ClientAdapter.class),
         searchEngineConfiguration,
         List.of(),
         List.of());

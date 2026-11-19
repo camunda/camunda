@@ -8,6 +8,7 @@
 package io.camunda.exporter.adapters;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
@@ -34,13 +35,36 @@ class ElasticsearchAdapter implements ClientAdapter {
   private final ElasticsearchEngineClient searchEngineClient;
   private final ElasticsearchExporterEntityCacheProvider entityCacheLoader;
   private final ObjectMapper objectMapper;
+  private final boolean ownsClient;
 
   ElasticsearchAdapter(final ConnectConfiguration configuration) {
-    final var connector = new ElasticsearchConnector(configuration);
-    client = connector.createClient();
-    objectMapper = connector.objectMapper();
+    this(new ElasticsearchConnector(configuration));
+  }
+
+  private ElasticsearchAdapter(final ElasticsearchConnector connector) {
+    this(connector.createClient(), connector.objectMapper(), true);
+  }
+
+  /** Wraps a client owned by someone else; {@link #close()} leaves it open. */
+  ElasticsearchAdapter(final ElasticsearchClient client) {
+    this(client, objectMapperOf(client), false);
+  }
+
+  private ElasticsearchAdapter(
+      final ElasticsearchClient client, final ObjectMapper objectMapper, final boolean ownsClient) {
+    this.client = client;
+    this.objectMapper = objectMapper;
+    this.ownsClient = ownsClient;
     searchEngineClient = new ElasticsearchEngineClient(client, objectMapper);
     entityCacheLoader = new ElasticsearchExporterEntityCacheProvider(client);
+  }
+
+  private static ObjectMapper objectMapperOf(final ElasticsearchClient client) {
+    if (client._jsonpMapper() instanceof final JacksonJsonpMapper jackson) {
+      return jackson.objectMapper();
+    }
+    throw new IllegalArgumentException(
+        "Expected a client using JacksonJsonpMapper, but got " + client._jsonpMapper());
   }
 
   @Override
@@ -65,7 +89,9 @@ class ElasticsearchAdapter implements ClientAdapter {
 
   @Override
   public void close() throws IOException {
-    client.close();
+    if (ownsClient) {
+      client.close();
+    }
   }
 
   record ElasticsearchExporterEntityCacheProvider(ElasticsearchClient client)

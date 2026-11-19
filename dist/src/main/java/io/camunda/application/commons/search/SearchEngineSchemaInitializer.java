@@ -51,12 +51,8 @@ public class SearchEngineSchemaInitializer
   private final boolean holdsStartup;
   private final PerTenantSchemaInitialization initialization;
 
-  /**
-   * One entry per tenant that currently holds a client: added by the tenant's own task on its first
-   * attempt, removed when the schema is applied or when the node shuts down. A tenant that keeps
-   * failing keeps its entry, and its client, for its next attempt.
-   */
-  private final Map<String, ClientAdapter> clientsByTenant = new ConcurrentHashMap<>();
+  /** Adapters over the shared search clients; they are owned elsewhere and never closed here. */
+  private final Map<String, ClientAdapter> clientAdapters;
 
   private final Map<String, ReentrantLock> attemptLocks = new ConcurrentHashMap<>();
 
@@ -75,12 +71,14 @@ public class SearchEngineSchemaInitializer
   public SearchEngineSchemaInitializer(
       final Map<String, SearchEngineConfiguration> configsByTenant,
       final Map<String, IndexDescriptors> descriptorsByTenant,
+      final Map<String, ClientAdapter> clientAdaptersByTenant,
       final MeterRegistry meterRegistry,
       final boolean holdsStartup,
       final Predicate<String> recovering) {
     this(
         configsByTenant,
         descriptorsByTenant,
+        clientAdaptersByTenant,
         meterRegistry,
         holdsStartup,
         DeferralCheck.of(
@@ -93,12 +91,14 @@ public class SearchEngineSchemaInitializer
   public SearchEngineSchemaInitializer(
       final Map<String, SearchEngineConfiguration> configsByTenant,
       final Map<String, IndexDescriptors> descriptorsByTenant,
+      final Map<String, ClientAdapter> clientAdaptersByTenant,
       final MeterRegistry meterRegistry,
       final boolean holdsStartup,
       final SchemaInitializationRecoveryCheck recoveryCheck) {
     this(
         configsByTenant,
         descriptorsByTenant,
+        clientAdaptersByTenant,
         meterRegistry,
         holdsStartup,
         DeferralCheck.of(recoveryCheck::shouldDefer));
@@ -107,11 +107,13 @@ public class SearchEngineSchemaInitializer
   private SearchEngineSchemaInitializer(
       final Map<String, SearchEngineConfiguration> configsByTenant,
       final Map<String, IndexDescriptors> descriptorsByTenant,
+      final Map<String, ClientAdapter> clientAdaptersByTenant,
       final MeterRegistry meterRegistry,
       final boolean holdsStartup,
       final DeferralCheck deferral) {
     configs = configsByTenant;
     descriptors = descriptorsByTenant;
+    clientAdapters = clientAdaptersByTenant;
     this.meterRegistry = meterRegistry;
     this.holdsStartup = holdsStartup;
     initialization =
@@ -152,11 +154,7 @@ public class SearchEngineSchemaInitializer
 
   @Override
   public void destroy() {
-    // Stop the tasks before taking their clients away, so that a task still mid-attempt fails
-    // against a closed client only after it has already been told to stop, where the failure is
-    // logged as a shutdown and not as a degraded tenant.
     initialization.close();
-    clientsByTenant.keySet().forEach(this::releaseClientOf);
   }
 
   @Override
@@ -191,11 +189,8 @@ public class SearchEngineSchemaInitializer
   /**
    * One attempt at applying a tenant's schema. Any failure propagates to the retry loop.
    *
-   * <p>The client is built once per tenant and reused across that tenant's attempts, not rebuilt on
-   * each one: building it opens a connection pool and its I/O threads, and a tenant whose storage
-   * is down retries for as long as the node runs, so per-attempt rebuilding would churn both every
-   * backoff interval indefinitely. It is released as soon as the schema is applied, which is the
-   * only point at which this tenant has no further use for it.
+   * <p>The client is the application's shared one, so no attempt builds or releases a connection
+   * pool of its own.
    */
   @VisibleForTesting
   void initializeTenant(final String physicalTenantId) {
@@ -218,8 +213,12 @@ public class SearchEngineSchemaInitializer
           "No index descriptors are configured for physical tenant '" + physicalTenantId + "'");
     }
 
-    final ClientAdapter clientAdapter =
-        clientsByTenant.computeIfAbsent(physicalTenantId, id -> newClientAdapter(configuration));
+    final ClientAdapter clientAdapter = clientAdapters.get(physicalTenantId);
+    if (clientAdapter == null) {
+      // Like missing descriptors, a wiring defect that no retry can repair.
+      throw new TerminalSchemaInitializationException(
+          "No search client is available for physical tenant '" + physicalTenantId + "'");
+    }
     try (final SchemaManager schemaManager =
         new SchemaManager(
             clientAdapter.getSearchEngineClient(),
@@ -242,44 +241,6 @@ public class SearchEngineSchemaInitializer
               + physicalTenantId
               + "' after schema"
               + " initialization.");
-    }
-    releaseClientOf(physicalTenantId);
-  }
-
-  /**
-   * Releases a tenant's client, if it still holds one. Removing before closing is what makes this
-   * safe to call from the tenant's own task and from {@link #destroy()} concurrently: whichever
-   * gets the adapter closes it, and the other gets nothing.
-   */
-  private void releaseClientOf(final String physicalTenantId) {
-    final ClientAdapter clientAdapter = clientsByTenant.remove(physicalTenantId);
-    if (clientAdapter != null) {
-      closeQuietly(clientAdapter, physicalTenantId);
-    }
-  }
-
-  /**
-   * Building the client performs no I/O, so a failure here is a static misconfiguration — an
-   * unsupported database type, or connect settings that cannot be turned into a client. Retrying it
-   * would never succeed, hence the terminal marker.
-   */
-  private static ClientAdapter newClientAdapter(final SearchEngineConfiguration configuration) {
-    try {
-      return ClientAdapter.of(configuration.connect());
-    } catch (final Exception e) {
-      throw new TerminalSchemaInitializationException("Failed to build the search client", e);
-    }
-  }
-
-  @VisibleForTesting
-  static void closeQuietly(final ClientAdapter clientAdapter, final String physicalTenantId) {
-    try {
-      clientAdapter.close();
-    } catch (final Exception e) {
-      // A client that cannot be released does not invalidate a schema that was applied, and
-      // failing here would retry an initialization that already succeeded.
-      LOGGER.debug(
-          "Failed to close the search client of physical tenant '{}'", physicalTenantId, e);
     }
   }
 
