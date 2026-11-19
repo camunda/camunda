@@ -27,7 +27,6 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter;
 import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfiguration;
-import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
@@ -67,6 +66,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.verification.VerificationWithTimeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ExporterDirectorTest {
 
@@ -81,6 +82,11 @@ public final class ExporterDirectorTest {
 
   private final List<ControlledTestExporter> exporters = new ArrayList<>();
   private final List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
+
+  public static Logger getExporterLogger(final String exporterId) {
+    final String loggerName = String.format("io.camunda.zeebe.broker.exporter.%s", exporterId);
+    return LoggerFactory.getLogger(loggerName);
+  }
 
   @Before
   public void init() {
@@ -339,14 +345,14 @@ public final class ExporterDirectorTest {
     assertThat(exporterContext1.getConfiguration().getArguments())
         .isEqualTo(Collections.singletonMap("x", 1));
     assertThat(exporterContext1.getLogger().getName())
-        .isEqualTo(Loggers.getExporterLogger(EXPORTER_ID_1).getName());
+        .isEqualTo(getExporterLogger(EXPORTER_ID_1).getName());
 
     final Context exporterContext2 = exporters.get(1).getContext();
     assertThat(exporterContext2.getConfiguration().getId()).isEqualTo(EXPORTER_ID_2);
     assertThat(exporterContext2.getConfiguration().getArguments())
         .isEqualTo(Collections.singletonMap("y", 2));
     assertThat(exporterContext2.getLogger().getName())
-        .isEqualTo(Loggers.getExporterLogger(EXPORTER_ID_2).getName());
+        .isEqualTo(getExporterLogger(EXPORTER_ID_2).getName());
   }
 
   @Test
@@ -509,7 +515,7 @@ public final class ExporterDirectorTest {
 
     // then
     doRepeatedly(() -> rule.getClock().addTime(Duration.ofSeconds(1)))
-        .until((r) -> failCount.get() <= -2);
+        .until(r -> failCount.get() <= -2);
 
     Awaitility.await("Exporter %s has exported all records".formatted(EXPORTER_ID_1))
         .untilAsserted(
@@ -727,7 +733,7 @@ public final class ExporterDirectorTest {
     exporters.get(0).getController().updateLastExportedRecordPosition(1);
     final var firstPosition =
         Awaitility.await()
-            .until(() -> rule.getExportersState().getPosition("exporter-1"), (pos) -> pos > -1);
+            .until(() -> rule.getExportersState().getPosition("exporter-1"), pos -> pos > -1);
 
     // when
     exporters.get(0).getController().updateLastExportedRecordPosition(-1);
