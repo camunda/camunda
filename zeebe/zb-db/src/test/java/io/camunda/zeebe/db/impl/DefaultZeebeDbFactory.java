@@ -22,6 +22,8 @@ import java.util.function.Supplier;
 
 public final class DefaultZeebeDbFactory {
 
+  private static final long DEFAULT_MEMORY_LIMIT_BYTES = 512 * 1024 * 1024;
+
   public static <
           ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory() {
@@ -31,12 +33,28 @@ public final class DefaultZeebeDbFactory {
   public static <
           ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory(
+          final MemoryAllocationStrategy strategy, final long memoryLimitBytes) {
+    return create(SimpleMeterRegistry::new, strategy, memoryLimitBytes);
+  }
+
+  public static <
+          ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactory<ColumnFamilyType> getDefaultFactory(
           final Supplier<MeterRegistry> meterRegistry) {
+    return create(meterRegistry, MemoryAllocationStrategy.BROKER, DEFAULT_MEMORY_LIMIT_BYTES);
+  }
+
+  private static <
+          ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactory<ColumnFamilyType> create(
+          final Supplier<MeterRegistry> meterRegistry,
+          final MemoryAllocationStrategy strategy,
+          final long memoryLimitBytes) {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
     final var rocksDbConfiguration = new RocksDbConfiguration();
-    rocksDbConfiguration.setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
-    rocksDbConfiguration.setMemoryLimit(512 * 1024 * 1024);
+    rocksDbConfiguration.setMemoryAllocationStrategy(strategy);
+    rocksDbConfiguration.setMemoryLimit(memoryLimitBytes);
     return new ZeebeRocksDbFactory<>(
         rocksDbConfiguration,
         consistencyChecks,

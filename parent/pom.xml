@@ -519,6 +519,14 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-db</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+        <type>test-jar</type>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-build-tools</artifactId>
         <version>${project.version}</version>
       </dependency>
