@@ -110,6 +110,7 @@ The rebase audit identifies what changed. It does not replace the porting proced
 ### Gradle CI gates
 
 On an eligible Gradle CI path, `gradle-compile-check` runs the root `testClasses` lifecycle task,
+repeats it with `--isolated-projects` (CI enforces this strict compile check),
 builds `:camunda-zeebe:distTar`, and writes the distribution dependency report. The
 `gradle-distribution-parity-check` job then compares the Gradle TAR with the Maven distball
 TAR.GZ (downloaded through the shared build-artifact downloader) using `compare-dist.py`. It does
