@@ -23,7 +23,10 @@ public enum ProcessIntent implements Intent {
 
   DELETE_COMPLETE((short) 4),
   DELETE_COMPLETED((short) 5),
-  FULLY_DELETED((short) 6);
+  FULLY_DELETED((short) 6),
+
+  SUSPENDED((short) 7),
+  RESUMED((short) 8);
 
   private final short value;
 
@@ -51,6 +54,10 @@ public enum ProcessIntent implements Intent {
         return DELETE_COMPLETED;
       case 6:
         return FULLY_DELETED;
+      case 7:
+        return SUSPENDED;
+      case 8:
+        return RESUMED;
       default:
         return UNKNOWN;
     }

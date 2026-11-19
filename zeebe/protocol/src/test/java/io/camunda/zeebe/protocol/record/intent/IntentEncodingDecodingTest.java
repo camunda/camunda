@@ -68,6 +68,13 @@ final class IntentEncodingDecodingTest {
   }
 
   @Test
+  void shouldIdentifyProcessSuspensionIntentsAsEvents() {
+    // then
+    assertThat(ProcessIntent.SUSPENDED.isEvent()).isTrue();
+    assertThat(ProcessIntent.RESUMED.isEvent()).isTrue();
+  }
+
+  @Test
   void shouldIdentifyProbeCommandsAndEvents() {
     // when
     final Set<ProbeIntent> events =
