@@ -37,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      id-token: write # Vault JWT login
       contents: read
       actions: write
     steps:
@@ -52,8 +53,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Reads all supported RDBMS versions from .ci/db-versions.yml and generates
   # the test matrix. Add or remove versions there — this workflow updates automatically.
@@ -94,6 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      id-token: write # Vault JWT login
       contents: read
       actions: read
     steps:
@@ -117,9 +120,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
       - name: Send notification
@@ -143,9 +147,10 @@ jobs:
         with:
           job_name: "notify-build-distball-failure"
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   rdbms-integration-tests:
     name: "RDBMS ${{ matrix.database-name }}"
@@ -224,6 +229,10 @@ jobs:
   rerun-failed-jobs:
     needs: [ build-distball, rdbms-integration-tests, rdbms-history-tests, rdbms-identity-tests ]
     if: failure() && fromJSON(github.run_attempt) < 3
+    permissions:
+      actions: read
+      contents: read
+      id-token: write # Vault JWT login
     uses: ./.github/workflows/rerun-failed-jobs-reusable.yml
     with:
       test_owner: '@camunda/core-features'
