@@ -736,7 +736,8 @@ jobs:
 
   gradle-distribution-parity-check:
     name: "Gradle / Distribution Parity"
-    if: needs.detect-changes.outputs.gradle-changes == 'true'
+    # Fork PRs have no GCS access and keep only the compile check.
+    if: needs.detect-changes.outputs.gradle-changes == 'true' && github.event.pull_request.head.repo.fork != true
     needs: [ build-distball, detect-changes, gradle-compile-check ]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
