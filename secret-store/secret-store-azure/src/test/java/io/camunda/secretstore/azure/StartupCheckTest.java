@@ -440,7 +440,7 @@ final class StartupCheckTest {
     private final Runnable probe;
     // the wording needs no client
     private final OneByOneSecretResolver wording =
-        new OneByOneSecretResolver(null, "", InstantSource.system());
+        new OneByOneSecretResolver(null, "", InstantSource.system(), "test store");
 
     ProbingResolver(final Runnable probe) {
       this.probe = probe;
