@@ -27,8 +27,12 @@
  * the cause, and the cluster starts either way, see {@link
  * io.camunda.secretstore.azure.StartupCheck}.
  *
- * <p>Reading the vault is not implemented yet (camunda/camunda#67226): until then every name is
- * reported as not found and no names are listed.
+ * <p>In one-by-one mode, a reference reads the latest version of its Key Vault secret. The name is
+ * passed as written, with no case change and no mapping of {@code _} to {@code -}; since Key Vault
+ * names ignore case, two spellings of one name read the same secret. The value is returned
+ * unchanged, and an empty value is reported as not found. Container mode and listing are not
+ * implemented yet (camunda/camunda#67226): every name is reported as not found and no names are
+ * listed.
  *
  * <p>See {@link io.camunda.secretstore.azure.AzureKeyVaultStoreConfig} for every setting and its
  * default.
