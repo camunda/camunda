@@ -106,6 +106,7 @@ openApiGenerate {
       "MessageSubscriptionKeyFilterProperty" to "BasicStringFilterProperty",
       "ProcessDefinitionIdFilterProperty" to "StringFilterProperty",
       "ProcessDefinitionKeyFilterProperty" to "BasicStringFilterProperty",
+      "ProcessDefinitionNameFilterProperty" to "StringFilterProperty",
       "ProcessInstanceKeyFilterProperty" to "BasicStringFilterProperty",
       "ResourceKeyFilterProperty" to "BasicStringFilterProperty",
       "ScopeKeyFilterProperty" to "BasicStringFilterProperty",

@@ -18,6 +18,7 @@ import io.camunda.gateway.protocol.model.AdvancedIntegerFilter;
 import io.camunda.gateway.protocol.model.AdvancedMetadataValueFilter;
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.BasicStringFilter;
+import io.camunda.gateway.protocol.model.ProcessDefinitionNameFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import java.time.OffsetDateTime;
@@ -53,6 +54,12 @@ class AdvancedSearchFilterUtilTest {
       List.of(
           List.of(Operation.like("th%")),
           List.of(Operation.in("this", "that"), Operation.like("th%")));
+
+  private static final List<List<Operation<String>>> PROCESS_DEFINITION_NAME_OPERATIONS =
+      List.of(
+          List.of(Operation.likeIgnoreCase("Th%")),
+          List.of(Operation.like("th%"), Operation.likeIgnoreCase("%IS")),
+          List.of(Operation.in("this", "that"), Operation.likeIgnoreCase("th%")));
 
   private static final List<List<Operation<OffsetDateTime>>> DATE_TIME_OPERATIONS =
       List.of(
@@ -174,6 +181,9 @@ class AdvancedSearchFilterUtilTest {
         .forEach(streamBuilder::add);
     STRING_OPERATIONS.stream()
         .map(ops -> Arguments.of(AdvancedStringFilter.class, ops))
+        .forEach(streamBuilder::add);
+    PROCESS_DEFINITION_NAME_OPERATIONS.stream()
+        .map(ops -> Arguments.of(ProcessDefinitionNameFilter.class, ops))
         .forEach(streamBuilder::add);
     return streamBuilder.build();
   }

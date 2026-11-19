@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.search;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
+import io.camunda.gateway.protocol.model.ProcessDefinitionNameFilter;
 import io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter;
 import io.camunda.gateway.protocol.model.simple.ProcessDefinitionOrFilterFields;
 import java.util.List;
@@ -37,7 +38,7 @@ class SimpleSearchQueryMapperTest {
     assertThat(((AdvancedStringFilter) filter.get$Or().get(0).getProcessDefinitionId()).get$Eq())
         .isEqualTo("invoice");
     assertThat(filter.get$Or().get(0).getName()).isNull();
-    assertThat(((AdvancedStringFilter) filter.get$Or().get(1).getName()).get$Eq())
+    assertThat(((ProcessDefinitionNameFilter) filter.get$Or().get(1).getName()).get$Eq())
         .isEqualTo("Invoice");
     assertThat(filter.get$Or().get(1).getProcessDefinitionId()).isNull();
   }

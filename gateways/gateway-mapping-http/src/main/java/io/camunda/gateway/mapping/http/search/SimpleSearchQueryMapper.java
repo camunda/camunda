@@ -300,7 +300,7 @@ public class SimpleSearchQueryMapper {
         io.camunda.gateway.protocol.model.ProcessDefinitionFilter.Builder.create().build();
     if (filter != null) {
       ofNullable(filter.getName())
-          .map(SimpleSearchQueryMapper::getStringFilter)
+          .map(SimpleSearchQueryMapper::getProcessDefinitionNameFilter)
           .ifPresent(filterModel::name);
       ofNullable(filter.getIsLatestVersion()).ifPresent(filterModel::isLatestVersion);
       ofNullable(filter.getResourceName()).ifPresent(filterModel::resourceName);
@@ -325,7 +325,7 @@ public class SimpleSearchQueryMapper {
                                         .ProcessDefinitionOrFilterFields.Builder.create()
                                         .build();
                                 ofNullable(fields.getName())
-                                    .map(SimpleSearchQueryMapper::getStringFilter)
+                                    .map(SimpleSearchQueryMapper::getProcessDefinitionNameFilter)
                                     .ifPresent(mapped::name);
                                 ofNullable(fields.getProcessDefinitionId())
                                     .map(SimpleSearchQueryMapper::getStringFilter)
@@ -531,6 +531,13 @@ public class SimpleSearchQueryMapper {
 
   private static StringFilterProperty getStringFilter(final @Nullable String value) {
     return AdvancedStringFilter.Builder.create().$eq(value).build();
+  }
+
+  private static io.camunda.gateway.protocol.model.ProcessDefinitionNameFilterProperty
+      getProcessDefinitionNameFilter(final @Nullable String value) {
+    return io.camunda.gateway.protocol.model.ProcessDefinitionNameFilter.Builder.create()
+        .$eq(value)
+        .build();
   }
 
   private static BasicStringFilterProperty getBasicStringFilter(final @Nullable String value) {

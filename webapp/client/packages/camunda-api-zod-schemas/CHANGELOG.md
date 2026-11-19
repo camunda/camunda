@@ -7,6 +7,7 @@
 - Add `authenticatedCurrentUserSchema` and `AuthenticatedCurrentUser` to the 8.11 schemas, for a current user with `isAnonymous` set to `false` and a set `username` ([#66964](https://github.com/camunda/camunda/pull/66964))
 - Add the `PROBE` resource type and the `ANSWER` permission to the 8.11 authorization schemas ([#68863](https://github.com/camunda/camunda/issues/68863))
 - Add `$or` to the 8.11 process definition search filter, to match a process definition by ID or by name in one request [#40123](https://github.com/camunda/camunda/issues/40123)
+- Add `$likeIgnoreCase` to the 8.11 process definition search filter `name`, a case-insensitive `$like` [#64844](https://github.com/camunda/camunda/issues/64844)
 
 ### 🩹 Fixes
 

@@ -388,6 +388,7 @@
             <typeMapping>MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>ProcessDefinitionIdFilterProperty=StringFilterProperty</typeMapping>
             <typeMapping>ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>ProcessDefinitionNameFilterProperty=StringFilterProperty</typeMapping>
             <typeMapping>ProcessInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>ResourceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>ScopeKeyFilterProperty=BasicStringFilterProperty</typeMapping>
