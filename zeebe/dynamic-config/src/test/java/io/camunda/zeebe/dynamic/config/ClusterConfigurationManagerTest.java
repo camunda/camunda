@@ -9,7 +9,9 @@ package io.camunda.zeebe.dynamic.config;
 
 import static io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
@@ -37,8 +39,10 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -118,6 +122,32 @@ final class ClusterConfigurationManagerTest {
             Duration.ofMillis(200));
     clusterTopologyManager.setConfigurationGossiper(gossipHandler);
     return clusterTopologyManager;
+  }
+
+  @Test
+  void shouldPersistUnchangedConfigurationAfterFailedWrite() throws Exception {
+    // given - the new file replaced the old one, but syncing the directory failed
+    final var manager = startTopologyManager(successInitializer).join();
+    final var previous = persistedClusterConfiguration.getConfiguration();
+    final var updated =
+        previous.addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
+    try (final var fileUtil = mockStatic(FileUtil.class, CALLS_REAL_METHODS)) {
+      fileUtil
+          .when(() -> FileUtil.flushDirectory(tempDir))
+          .thenThrow(new IOException("Input/output error"));
+      assertThat(manager.updateClusterConfiguration(ignored -> updated).isCompletedExceptionally())
+          .isTrue();
+    }
+
+    // when - updating to the configuration in memory, which is not the one in the file
+    final var update = manager.updateClusterConfiguration(ignored -> previous);
+
+    // then
+    assertThat(update.isCompletedExceptionally()).isFalse();
+    assertThat(
+            PersistedClusterConfiguration.ofFile(tempDir.resolve("topology.temp"), serializer)
+                .getConfiguration())
+        .isEqualTo(previous);
   }
 
   @Test
