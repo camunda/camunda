@@ -491,7 +491,7 @@ If you need custom tuning, start with the closest `scenario` and then add target
 > Recent team learnings showed two easy-to-miss schema validation failures:
 >
 > - `orchestration.env[0].value=false` can fail with `got boolean, want string` when passed as a boolean-looking value.
-> - `orchestration.cpuThreadCount` is currently defined as a string in our default values (`"3"` in [`camunda-platform-values.yaml`](camunda-platform-values.yaml)), so `--set orchestration.cpuThreadCount=4` may fail while `--set-string 'orchestration.cpuThreadCount=4'` keeps the expected type.
+> - `orchestration.cpuThreadCount` is defined as a string in the Helm chart (default `"3"`), so `--set orchestration.cpuThreadCount=4` may fail while `--set-string 'orchestration.cpuThreadCount=4'` keeps the expected type.
 
 ##### Supported workload scenarios
 
