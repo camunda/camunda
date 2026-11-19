@@ -16,13 +16,37 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.ListSecretsResponse;
+import io.camunda.client.api.search.filter.SecretListFilter;
 import java.time.Duration;
+import java.util.function.Consumer;
 
 /**
- * Command to list the secret reference names the caller is authorized to see. The command takes no
- * input; filtering options are reserved for a future release.
+ * Command to list the secret reference names the caller is authorized to see. Without a filter, it
+ * lists the secrets in every state.
+ *
+ * <p>The filter is supported since 8.11. An older cluster rejects a request that sets a filter
+ * criterion with a {@code 400} response, which completes the command with a {@link
+ * ProblemException}.
  */
 public interface ListSecretsCommandStep1 extends FinalCommandStep<ListSecretsResponse> {
+
+  /**
+   * Narrows the listed references, for example to the expired secrets:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newListSecretsCommand()
+   *       .filter(f -&gt; f.status(SecretStatus.EXPIRED))
+   *       .send();
+   * </pre>
+   *
+   * <p>Supported since 8.11: an older cluster rejects a request that sets a criterion with a {@code
+   * 400} response. A filter without criteria is not sent. Each call replaces the previous filter.
+   *
+   * @param fn the consumer that sets the filter criteria
+   * @return the builder for this command
+   */
+  ListSecretsCommandStep1 filter(Consumer<SecretListFilter> fn);
 
   @Override
   ListSecretsCommandStep1 requestTimeout(Duration requestTimeout);

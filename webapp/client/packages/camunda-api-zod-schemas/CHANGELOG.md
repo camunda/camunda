@@ -6,6 +6,7 @@
 
 - Add `authenticatedCurrentUserSchema` and `AuthenticatedCurrentUser` to the 8.11 schemas, for a current user with `isAnonymous` set to `false` and a set `username` ([#66964](https://github.com/camunda/camunda/pull/66964))
 - Add the `PROBE` resource type and the `ANSWER` permission to the 8.11 authorization schemas ([#68863](https://github.com/camunda/camunda/issues/68863))
+- Add the 8.11 `secret` module: the `listSecrets` endpoint, its request with the optional `filter.status` (`ACTIVE`, `DISABLED`, `EXPIRED`, `NOT_YET_ACTIVE`) and its response ([#68644](https://github.com/camunda/camunda/issues/68644))
 
 ### 🩹 Fixes
 
@@ -13,6 +14,7 @@
 
 ### ❤️ Contributors
 
+- Helene ([@HeleneW-dot](https://github.com/HeleneW-dot))
 - Mathias Vandaele ([@mathias-vandaele](https://github.com/mathias-vandaele))
 - Tim Cline ([@timcline](https://github.com/timcline))
 - Vinícius Goulart ([@vsgoulart](https://github.com/vsgoulart))

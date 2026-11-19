@@ -23,6 +23,7 @@
 		"build": "vite build",
 		"format": "prettier --write .",
 		"typecheck": "tsc",
+		"test:unit": "vitest",
 		"prepare": "npm run download-specs -- --local -v current && npm run generate-schemas -- -v current && npm run build",
 		"download-specs": "node scripts/download-specs.js",
 		"generate-schemas": "node scripts/generate-schemas.js",
@@ -747,6 +748,12 @@
 				"default": "./dist/8.11/role.js"
 			}
 		},
+		"./8.11/secret": {
+			"import": {
+				"types": "./dist/8.11/secret.d.ts",
+				"default": "./dist/8.11/secret.js"
+			}
+		},
 		"./8.11/signal": {
 			"import": {
 				"types": "./dist/8.11/signal.d.ts",
@@ -833,6 +840,7 @@
 		"vite": "8.3.8",
 		"vite-plugin-circular-dependency": "0.6.0",
 		"vite-plugin-dts": "5.1.2",
+		"vitest": "5.1.0",
 		"yaml": "2.9.1",
 		"zod": "^4.6.7"
 	},

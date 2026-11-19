@@ -1904,7 +1904,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public ListSecretsCommandStep1 newListSecretsCommand() {
-    return new ListSecretsCommandImpl(httpClient);
+    return new ListSecretsCommandImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

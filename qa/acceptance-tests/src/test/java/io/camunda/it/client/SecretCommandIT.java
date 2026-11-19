@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.SecretErrorCode;
+import io.camunda.client.api.search.enums.SecretStatus;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -135,5 +136,33 @@ public class SecretCommandIT {
 
     // then the references the store knows are returned, names only
     assertThat(response.getReferences()).containsExactlyInAnyOrderElementsOf(ALL_KNOWN_REFERENCES);
+  }
+
+  @Test
+  void shouldListEveryReferenceWhenFilteringByActive() {
+    // when
+    final var response =
+        camundaClient
+            .newListSecretsCommand()
+            .filter(f -> f.status(SecretStatus.ACTIVE))
+            .send()
+            .join();
+
+    // then the file store reports no states, so every secret counts as active
+    assertThat(response.getReferences()).containsExactlyInAnyOrderElementsOf(ALL_KNOWN_REFERENCES);
+  }
+
+  @Test
+  void shouldListNoReferenceWhenFilteringByExpired() {
+    // when
+    final var response =
+        camundaClient
+            .newListSecretsCommand()
+            .filter(f -> f.status(SecretStatus.EXPIRED))
+            .send()
+            .join();
+
+    // then the file store reports every secret as active, so none is expired
+    assertThat(response.getReferences()).isEmpty();
   }
 }
