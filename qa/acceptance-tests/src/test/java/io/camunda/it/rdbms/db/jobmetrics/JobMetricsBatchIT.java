@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db.jobmetrics;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromResourceIds;
 import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.PARTITION_ID;
 import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.assertErrorStats;
@@ -27,6 +28,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
 import io.camunda.search.entities.JobEntity.JobState;
+import io.camunda.search.entities.JobErrorStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.filter.Operation;
@@ -38,6 +40,7 @@ import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -1705,6 +1708,51 @@ public class JobMetricsBatchIT {
             .findFirst()
             .orElseThrow();
     assertErrorStats(timeout, "TIMEOUT", "Connection timed out", 1);
+  }
+
+  @TestTemplate
+  public void shouldOnlyReturnErrorStatisticsOfAuthorizedProcessDefinitions() {
+    // given - one job error in an authorized process, one in another process
+    final var now = NOW;
+    final var jobType = "auth-error-job-" + CommonFixtures.generateRandomString(6);
+    final var authorizedProcessId = "auth-process-" + CommonFixtures.generateRandomString(6);
+    final var otherProcessId = "other-process-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .processDefinitionId(authorizedProcessId)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("AUTHORIZED_ERROR")
+                .errorMessage("visible")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(20)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .processDefinitionId(otherProcessId)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("OTHER_ERROR")
+                .errorMessage("not visible")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(10)));
+
+    // when
+    final var result =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))),
+            resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.PROCESS_DEFINITION, authorizedProcessId));
+
+    // then
+    assertThat(result.items())
+        .extracting(JobErrorStatisticsEntity::errorCode)
+        .containsExactly("AUTHORIZED_ERROR");
   }
 
   @TestTemplate
