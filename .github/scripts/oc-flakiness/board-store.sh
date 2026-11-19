@@ -21,9 +21,13 @@
 #                      board-store.sh ts      <date> <ts> <channel_id>
 #                      board-store.sh set     <date> <fp> <status> <detail> <pr> <run> <rate>
 #                      board-store.sh publish <date>
+#                      board-store.sh thread  <date>
 #
-# `init` and `set` only persist; `publish` is the one that talks to Slack, so a
-# caller that has nothing new to show can skip it.
+# `init` and `set` only persist; `publish` and `thread` are the ones that talk
+# to Slack, so a caller that has nothing new to show can skip them. `thread`
+# posts -- or, once it exists, rewrites -- the "Merged fixes" reply under the
+# board message; the pick measures those verdicts once a day, so no other
+# writer touches that reply.
 #
 # Required environment: TOKEN, REPO, STATE_BRANCH; SLACK_BOT_USER_OAUTH_TOKEN
 # for `publish`. SCRIPT_DIR defaults to this script's own directory.
@@ -82,6 +86,40 @@ publish() {
   return 0
 }
 
+# The "Merged fixes" section is a reply rather than part of the board message,
+# so that a list which grows with every merged fix cannot push the day's own
+# runs below the fold.
+if [[ "$mode" == "thread" ]]; then
+  sync_state
+  [[ -f "${state}/${file}" ]] || exit 0
+  board_ts=$(jq -r '.ts // ""' "${state}/${file}")
+  channel=$(jq -r '.channel // ""' "${state}/${file}")
+  pm_ts=$(jq -r '.pm_ts // ""' "${state}/${file}")
+  text=$(node "${script_dir}/board.mjs" --render-postmerge "${state}/${file}") || text=""
+  # No board message to reply under yet, or no merged fix to report.
+  if [[ -z "$board_ts" || -z "$channel" || -z "$text" ]]; then
+    cat "${state}/${file}"
+    exit 0
+  fi
+  if [[ -n "$pm_ts" ]]; then
+    printf '%s' "$text" \
+      | bash "${script_dir}/board-slack.sh" update "$channel" "$pm_ts" > /dev/null \
+      || echo "::warning::could not rewrite the merged-fixes reply" >&2
+    cat "${state}/${file}"
+    exit 0
+  fi
+  if ! posted=$(printf '%s' "$text" \
+    | bash "${script_dir}/board-slack.sh" post "$channel" "$board_ts"); then
+    echo "::warning::could not post the merged-fixes reply" >&2
+    cat "${state}/${file}"
+    exit 0
+  fi
+  # Recorded below, so a later pick on the same day rewrites this reply
+  # instead of adding a second one under the board.
+  mode=pm_ts
+  set -- pm_ts "$date_key" "$(jq -r '.ts // ""' <<< "$posted")"
+fi
+
 if [[ "$mode" == "publish" ]]; then
   publish
   cat "${state}/${file}" 2>/dev/null || true
@@ -121,6 +159,11 @@ for attempt in 1 2 3 4 5; do
       fi
       mv "${state}/${file}.tmp" "${state}/${file}"
       ;;
+    pm_ts)
+      jq -c --arg ts "${3:?}" '.pm_ts = $ts | .rev = ((.rev // 0) + 1)' \
+        "${state}/${file}" > "${state}/${file}.tmp"
+      mv "${state}/${file}.tmp" "${state}/${file}"
+      ;;
     ts)
       jq -c --arg ts "${3:?}" --arg channel "${4:?}" \
         '.ts = $ts | .channel = $channel | .rev = ((.rev // 0) + 1)' \
@@ -140,7 +183,7 @@ for attempt in 1 2 3 4 5; do
       mv "${state}/${file}.tmp" "${state}/${file}"
       ;;
     *)
-      echo "board-store.sh: mode must be init, ts, set or publish" >&2
+      echo "board-store.sh: mode must be init, ts, set, publish or thread" >&2
       exit 2
       ;;
   esac
