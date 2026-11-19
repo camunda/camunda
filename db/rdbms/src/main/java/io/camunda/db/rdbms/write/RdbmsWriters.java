@@ -26,7 +26,6 @@ import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
-import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
@@ -102,7 +101,7 @@ public class RdbmsWriters implements AutoCloseable {
       final IncidentMapper incidentMapper,
       final ProcessInstanceMapper processInstanceMapper,
       final ProcessDefinitionMapper processDefinitionMapper,
-      final PurgeMapper purgeMapper,
+      final RdbmsPurger rdbmsPurger,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
@@ -124,7 +123,7 @@ public class RdbmsWriters implements AutoCloseable {
     this.exporterPositionService = exporterPositionService;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.metrics = metrics;
-    rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
+    this.rdbmsPurger = rdbmsPurger;
 
     writers.put(
         AuditLogWriter.class,
