@@ -63,10 +63,12 @@ public final class RequestRetryHandler {
       final BrokerRequest<BrokerResponseT> request,
       final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
-    final Function<
-            BrokerRequest<BrokerResponseT>, CompletableFuture<BrokerResponse<BrokerResponseT>>>
-        requestSender = brokerClient::sendRequest;
-    sendRequestInternal(request, requestSender, responseConsumer, throwableConsumer);
+    sendRequestInternal(
+        request,
+        brokerClient::sendRequest,
+        brokerClient::sendRequestWithRetry,
+        responseConsumer,
+        throwableConsumer);
   }
 
   public <BrokerResponseT> void sendRequest(
@@ -74,10 +76,12 @@ public final class RequestRetryHandler {
       final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
       final Consumer<Throwable> throwableConsumer,
       final Duration requestTimeout) {
-    final Function<
-            BrokerRequest<BrokerResponseT>, CompletableFuture<BrokerResponse<BrokerResponseT>>>
-        requestSender = r -> brokerClient.sendRequest(r, requestTimeout);
-    sendRequestInternal(request, requestSender, responseConsumer, throwableConsumer);
+    sendRequestInternal(
+        request,
+        r -> brokerClient.sendRequest(r, requestTimeout),
+        r -> brokerClient.sendRequestWithRetry(r, requestTimeout),
+        responseConsumer,
+        throwableConsumer);
   }
 
   private <BrokerResponseT> void sendRequestInternal(
@@ -85,6 +89,9 @@ public final class RequestRetryHandler {
       final Function<
               BrokerRequest<BrokerResponseT>, CompletableFuture<BrokerResponse<BrokerResponseT>>>
           requestSender,
+      final Function<
+              BrokerRequest<BrokerResponseT>, CompletableFuture<BrokerResponse<BrokerResponseT>>>
+          fixedPartitionRequestSender,
       final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
     final var topology = topologyManager.getTopology(request.getPartitionGroup());
@@ -100,7 +107,11 @@ public final class RequestRetryHandler {
     final var requestStrategy = request.requestDispatchStrategy();
     if (requestStrategy.isPresent()) {
       sendRequestToFixedPartition(
-          request, requestSender, requestStrategy.get(), responseConsumer, throwableConsumer);
+          request,
+          fixedPartitionRequestSender,
+          requestStrategy.get(),
+          responseConsumer,
+          throwableConsumer);
       return;
     }
 
@@ -116,9 +127,9 @@ public final class RequestRetryHandler {
 
   /**
    * Sends a request to a fixed partition determined by the given dispatch strategy, without
-   * retrying on other partitions. This is used when the request must be routed to a specific
-   * partition (e.g., based on a business ID or correlation key hash) to preserve routing
-   * guarantees.
+   * retrying on other partitions (a leader mismatch is still resent to the partition's new leader).
+   * This is used when the request must be routed to a specific partition (e.g., based on a business
+   * ID or correlation key hash) to preserve routing guarantees.
    */
   private <BrokerResponseT> void sendRequestToFixedPartition(
       final BrokerRequest<BrokerResponseT> request,
