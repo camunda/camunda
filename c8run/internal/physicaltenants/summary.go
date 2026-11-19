@@ -18,6 +18,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/types"
 )
 
@@ -191,9 +192,26 @@ func PrintSummary(w io.Writer, settings types.C8RunSettings, results []ProbeResu
 	_, _ = fmt.Fprintf(w, "  - Java:            camunda.client.physicalTenantId=%s\n", example.ID)
 	_, _ = fmt.Fprintf(w, "  - Spring:          camunda.client.physical-tenant-id=%s\n", example.ID)
 	_, _ = fmt.Fprintf(w, "  - MCP:             %s\n", ex.MCP)
-	_, _ = fmt.Fprintf(w, "Each physical tenant has its own local secrets: `c8run secrets --physical-tenant %s set <NAME>`.\n", example.ID)
+	printSecretsHint(w, example.ID)
 	_, _ = fmt.Fprintln(w, "Manage physical tenants with `c8run physical-tenants list|add|remove`.")
 	_, _ = fmt.Fprintln(w)
+}
+
+// printSecretsHint tells where a physical tenant's secrets go in the current secrets mode. External
+// mode disables the local secret commands and its stores are configured elsewhere, so it prints nothing.
+func printSecretsHint(w io.Writer, id string) {
+	mode, err := localsecrets.Mode()
+	if err != nil {
+		return
+	}
+	switch mode {
+	case localsecrets.LocalMode:
+		_, _ = fmt.Fprintf(w, "Each physical tenant has its own local secrets: `c8run secrets --physical-tenant %s set <NAME>`.\n", id)
+	case localsecrets.EnvMode:
+		if prefix, err := localsecrets.EnvPrefix(); err == nil {
+			_, _ = fmt.Fprintf(w, "Each physical tenant has its own secrets: set %s<NAME> in the environment c8run starts from.\n", SecretVariablePrefix(prefix, id))
+		}
+	}
 }
 
 func orDemo(v string) string {

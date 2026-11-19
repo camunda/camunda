@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/camunda/camunda/c8run/internal/cliname"
+	localsecrets "github.com/camunda/camunda/c8run/internal/secrets"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -294,6 +295,7 @@ func TestEndpointsFor(t *testing.T) {
 }
 
 func TestPrintSummary(t *testing.T) {
+	t.Setenv(localsecrets.ModeEnv, "")
 	var buf bytes.Buffer
 	settings := types.C8RunSettings{Port: 8080, Username: "demo", PhysicalTenants: []types.PhysicalTenant{
 		{ID: "sales", Username: "demo", Connectors: true, ConnectorsPort: 8087},
@@ -320,6 +322,34 @@ func TestPrintSummary(t *testing.T) {
 	buf.Reset()
 	PrintSummary(&buf, types.C8RunSettings{}, nil, 8086)
 	assert.Empty(t, buf.String())
+}
+
+func TestPrintSummaryNamesTheSecretVariableInEnvMode(t *testing.T) {
+	// given
+	t.Setenv(localsecrets.ModeEnv, "env")
+	t.Setenv(localsecrets.EnvPrefixEnv, "C8_")
+	settings := types.C8RunSettings{Port: 8080, PhysicalTenants: []types.PhysicalTenant{{ID: "tenanta"}}}
+	var buf bytes.Buffer
+
+	// when
+	PrintSummary(&buf, settings, nil, 8086)
+
+	// then
+	assert.Contains(t, buf.String(), "set C8_TENANTA_<NAME> in the environment c8run starts from")
+	assert.NotContains(t, buf.String(), "c8run secrets")
+}
+
+func TestPrintSummaryOmitsTheSecretsHintInExternalMode(t *testing.T) {
+	// given
+	t.Setenv(localsecrets.ModeEnv, "external")
+	settings := types.C8RunSettings{Port: 8080, PhysicalTenants: []types.PhysicalTenant{{ID: "tenanta"}}}
+	var buf bytes.Buffer
+
+	// when
+	PrintSummary(&buf, settings, nil, 8086)
+
+	// then
+	assert.NotContains(t, buf.String(), "secrets")
 }
 
 func TestStoreConcurrentAddsAreNotLost(t *testing.T) {
