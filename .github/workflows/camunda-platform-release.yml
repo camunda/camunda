@@ -181,6 +181,8 @@ jobs:
           vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
           vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
           vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Maven Prepare Release
         id: maven-prepare-release
         run: |
@@ -446,6 +448,8 @@ jobs:
           vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
           vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
           vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
           github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
@@ -473,6 +477,8 @@ jobs:
           secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
           secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Docker image release jobs build and publish multi-platform Docker images for each Camunda component.
   # All Docker jobs follow the same pattern: build locally, verify, then sync to DockerHub.
@@ -620,6 +626,8 @@ jobs:
           secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
           secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   camunda-docker:
     needs: release
@@ -732,6 +740,8 @@ jobs:
           secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
           secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Snyk security monitoring job performs vulnerability scanning on Docker images and source code.
   # Only runs for stable releases (not alpha, rc, SNAPSHOT).
@@ -856,6 +866,7 @@ jobs:
     needs: [release, optimize-docker, camunda-docker]
     name: Github Release
     permissions:
+      issues: write
       contents: write
       id-token: write # Vault JWT login
     runs-on: ubuntu-latest
@@ -1016,6 +1027,8 @@ jobs:
           secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
           secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # This job waits for the existing FOSSA scan (triggered by check-licenses.yml on tag push)
   # then creates releases and generates attribution/SBOM reports for single-app only
@@ -1052,6 +1065,8 @@ jobs:
           secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
           secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1062,6 +1077,8 @@ jobs:
           secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
           secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Same as fossa-release, for the Optimize FOSSA project (separate scan from single-app).
   # Flags impact:
@@ -1100,6 +1117,8 @@ jobs:
           secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
           secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1110,6 +1129,8 @@ jobs:
           secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
           secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Slack notification jobs send release status updates to the team's Slack channel.
   # Both jobs are conditional and only run for actual releases (not dry runs or E2E testing).

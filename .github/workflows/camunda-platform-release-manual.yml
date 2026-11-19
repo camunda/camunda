@@ -42,7 +42,7 @@ jobs:
     permissions:
       actions: read
       contents: write
-      issues: read
+      issues: write
       pull-requests: read
       id-token: write # Vault JWT login
       security-events: write
