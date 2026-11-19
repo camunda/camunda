@@ -24,57 +24,57 @@ final class RestoreExitCodesTest {
   private final RestoreExitCodes exitCodes = new RestoreExitCodes();
 
   @Test
-  void shouldExitWithTwoForAnInvalidRequest() {
+  void shouldExitWithTenForAnInvalidRequest() {
     // when
     final var exitCode = exitCodes.getExitCode(new InvalidArgument("from is after to"));
 
     // then
-    assertThat(exitCode).isEqualTo(2);
+    assertThat(exitCode).isEqualTo(10);
   }
 
   @Test
-  void shouldExitWithTwoForAnInvalidConfiguration() {
+  void shouldExitWithTenForAnInvalidConfiguration() {
     // when
     final var exitCode =
         exitCodes.getExitCode(new InvalidState(Reason.INVALID_REQUEST, "no backup store"));
 
     // then
-    assertThat(exitCode).isEqualTo(2);
+    assertThat(exitCode).isEqualTo(10);
   }
 
   @Test
-  void shouldExitWithThreeForARestorePointTheBackupsCannotServe() {
+  void shouldExitWithElevenForARestorePointTheBackupsCannotServe() {
     // when
     final var exitCode =
         exitCodes.getExitCode(
             new InvalidState(Reason.RESTORE_POINT_UNAVAILABLE, "No usable range found"));
 
     // then
-    assertThat(exitCode).isEqualTo(3);
+    assertThat(exitCode).isEqualTo(11);
   }
 
   @Test
-  void shouldExitWithFiveForAMissingBackup() {
+  void shouldExitWithThirteenForAMissingBackup() {
     // when
     final var exitCode = exitCodes.getExitCode(new BackupNotFound("No completed backup found"));
 
     // then
-    assertThat(exitCode).isEqualTo(5);
+    assertThat(exitCode).isEqualTo(13);
   }
 
   @Test
-  void shouldExitWithFiveForInconsistentBackups() {
+  void shouldExitWithThirteenForInconsistentBackups() {
     // when
     final var exitCode =
         exitCodes.getExitCode(
             new InvalidState(Reason.BACKUPS_INCONSISTENT, "Unexpected data gaps between backups"));
 
     // then
-    assertThat(exitCode).isEqualTo(5);
+    assertThat(exitCode).isEqualTo(13);
   }
 
   @Test
-  void shouldExitWithFourForAnUnavailableBackupStore() {
+  void shouldExitWithTwelveForAnUnavailableBackupStore() {
     // when
     final var exitCode =
         exitCodes.getExitCode(
@@ -82,7 +82,7 @@ final class RestoreExitCodesTest {
                 Reason.BACKUP_STORE_UNAVAILABLE, new IOException("Connection refused")));
 
     // then
-    assertThat(exitCode).isEqualTo(4);
+    assertThat(exitCode).isEqualTo(12);
   }
 
   @Test
@@ -105,6 +105,6 @@ final class RestoreExitCodesTest {
     final var exitCode = exitCodes.getExitCode(failure);
 
     // then
-    assertThat(exitCode).isEqualTo(3);
+    assertThat(exitCode).isEqualTo(11);
   }
 }

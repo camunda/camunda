@@ -22,24 +22,28 @@ import org.springframework.stereotype.Component;
  *
  * <ul>
  *   <li>{@code 1} — any other failure
- *   <li>{@code 2} — the request or the configuration is invalid
- *   <li>{@code 3} — the backups do not cover the requested restore point
- *   <li>{@code 4} — the backup store is unavailable; retrying may succeed
- *   <li>{@code 5} — the backups are missing or inconsistent
+ *   <li>{@code 10} — the request or the configuration is invalid
+ *   <li>{@code 11} — the backups do not cover the requested restore point
+ *   <li>{@code 12} — the backup store is unavailable; retrying may succeed
+ *   <li>{@code 13} — the backups are missing or inconsistent
  * </ul>
  *
  * <p>Every code but {@code 1} comes from checks that run before the restore writes anything to the
  * data directory, so after one of them the restore can run again on the same volume.
+ *
+ * <p>The classified codes start at {@code 10} to stay clear of codes the JVM exits with on its own:
+ * {@code -XX:+ExitOnOutOfMemoryError}, which {@code bin/restore} sets, exits with {@code 3}, and an
+ * out-of-memory error can strike after the restore has written to the data directory.
  */
 @Component
 @NullMarked
 public final class RestoreExitCodes implements ExitCodeExceptionMapper {
 
   static final int UNEXPECTED_FAILURE = 1;
-  static final int INVALID_REQUEST = 2;
-  static final int RESTORE_POINT_UNAVAILABLE = 3;
-  static final int BACKUP_STORE_UNAVAILABLE = 4;
-  static final int BACKUPS_INCONSISTENT = 5;
+  static final int INVALID_REQUEST = 10;
+  static final int RESTORE_POINT_UNAVAILABLE = 11;
+  static final int BACKUP_STORE_UNAVAILABLE = 12;
+  static final int BACKUPS_INCONSISTENT = 13;
 
   @Override
   public int getExitCode(final Throwable exception) {
