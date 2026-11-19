@@ -87,6 +87,7 @@ val openApiGenerateSimple =
         "MessageSubscriptionKeyFilterProperty" to "String",
         "ProcessDefinitionIdFilterProperty" to "String",
         "ProcessDefinitionKeyFilterProperty" to "String",
+        "ProcessDefinitionNameFilterProperty" to "String",
         "ProcessInstanceKeyFilterProperty" to "String",
         "ResourceKeyFilterProperty" to "String",
         "ScopeKeyFilterProperty" to "String",
