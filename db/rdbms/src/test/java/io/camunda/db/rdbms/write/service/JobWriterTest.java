@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -27,6 +28,8 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.QueueItemMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
+import java.util.Map;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -147,6 +150,44 @@ class JobWriterTest {
     final var mergedJob =
         ((BatchInsertDto<JobDbModel>) mergedItem.parameter()).dbModels().getFirst();
     assertThat(mergedJob.errorMessage()).isEqualTo("this ");
+  }
+
+  @Test
+  void shouldCarryRawCustomHeadersThroughMergeWithoutReserializing() {
+    // given — an update whose serialized headers are not in Jackson's compact format, so a JSON
+    // round trip would rewrite them
+    when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(null);
+    when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(true);
+    final var rawHeaders = "{ \"b\": \"2\", \"a\": \"1\" }";
+    final var update =
+        Instancio.of(JobDbModel.class)
+            .set(field(JobDbModel::jobKey), 123L)
+            .set(field(JobDbModel::serializedCustomHeaders), rawHeaders)
+            .create();
+
+    // when
+    writer.update(update);
+
+    // then
+    final var mergerCaptor = ArgumentCaptor.forClass(QueueItemMerger.class);
+    verify(executionQueue).tryMergeWithExistingQueueItem(mergerCaptor.capture());
+    final var existingJob =
+        new JobDbModel.Builder().jobKey(123L).customHeaders(Map.of("old", "x")).build();
+    final var existingQueueItem =
+        new QueueItem(
+            ContextType.JOB,
+            WriteStatementType.INSERT,
+            -1L,
+            "io.camunda.db.rdbms.sql.JobMapper.insert",
+            new BatchInsertDto<>(existingJob));
+
+    final var mergedItem = mergerCaptor.getValue().merge(existingQueueItem);
+
+    @SuppressWarnings("unchecked")
+    final var mergedJob =
+        ((BatchInsertDto<JobDbModel>) mergedItem.parameter()).dbModels().getFirst();
+    assertThat(mergedJob.serializedCustomHeaders()).isEqualTo(rawHeaders);
   }
 
   @Test

@@ -261,6 +261,13 @@ public record JobDbModel(
       return this;
     }
 
+    // Copies the already serialized headers without parsing them again. Takes a model rather than
+    // a raw string, so there is still no public setter that aliases customHeaders(Map).
+    public Builder customHeadersFrom(final JobDbModel other) {
+      serializedCustomHeaders = other.serializedCustomHeaders();
+      return this;
+    }
+
     public Builder deadline(final OffsetDateTime deadline) {
       this.deadline = deadline;
       return this;
