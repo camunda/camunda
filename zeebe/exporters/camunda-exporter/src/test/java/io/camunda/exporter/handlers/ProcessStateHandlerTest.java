@@ -28,11 +28,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 
-class ProcessDrainingHandlerTest {
+class ProcessStateHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-process";
-  private final ProcessDrainingHandler underTest = new ProcessDrainingHandler(indexName);
+  private final ProcessStateHandler underTest = new ProcessStateHandler(indexName);
 
   @Test
   void testGetHandledValueType() {

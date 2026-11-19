@@ -21,8 +21,8 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.ProcessCreatedHandler;
 import io.camunda.exporter.handlers.ProcessDefinitionSuspensionHandler;
-import io.camunda.exporter.handlers.ProcessDrainingHandler;
 import io.camunda.exporter.handlers.ProcessFullyDeletedHandler;
+import io.camunda.exporter.handlers.ProcessStateHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
@@ -388,7 +388,7 @@ public class DefaultExporterResourceProviderTest {
   }
 
   @Test
-  void shouldRegisterProcessCreatedDrainingAndDeletionHandlersOnDeploymentPartition() {
+  void shouldRegisterProcessCreatedStateAndDeletionHandlersOnDeploymentPartition() {
     // given
     final var config = new ExporterConfiguration();
     final var provider = new DefaultExporterResourceProvider();
@@ -404,13 +404,13 @@ public class DefaultExporterResourceProviderTest {
 
     // then
     assertThat(handlers).anyMatch(ProcessCreatedHandler.class::isInstance);
-    assertThat(handlers).anyMatch(ProcessDrainingHandler.class::isInstance);
+    assertThat(handlers).anyMatch(ProcessStateHandler.class::isInstance);
     assertThat(handlers).anyMatch(ProcessFullyDeletedHandler.class::isInstance);
     assertThat(handlers).anyMatch(ProcessDefinitionSuspensionHandler.class::isInstance);
   }
 
   @Test
-  void shouldNotRegisterProcessDrainingOrDeletionHandlersOnNonDeploymentPartition() {
+  void shouldNotRegisterProcessStateOrDeletionHandlersOnNonDeploymentPartition() {
     // given
     final var config = new ExporterConfiguration();
     final var provider = new DefaultExporterResourceProvider();
@@ -426,7 +426,7 @@ public class DefaultExporterResourceProviderTest {
 
     // then
     assertThat(handlers).anyMatch(ProcessCreatedHandler.class::isInstance);
-    assertThat(handlers).noneMatch(ProcessDrainingHandler.class::isInstance);
+    assertThat(handlers).noneMatch(ProcessStateHandler.class::isInstance);
     assertThat(handlers).noneMatch(ProcessFullyDeletedHandler.class::isInstance);
     assertThat(handlers).noneMatch(ProcessDefinitionSuspensionHandler.class::isInstance);
   }

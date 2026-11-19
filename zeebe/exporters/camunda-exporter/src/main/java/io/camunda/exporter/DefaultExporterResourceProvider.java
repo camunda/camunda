@@ -59,8 +59,8 @@ import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessCreatedHandler;
 import io.camunda.exporter.handlers.ProcessDefinitionSuspensionHandler;
-import io.camunda.exporter.handlers.ProcessDrainingHandler;
 import io.camunda.exporter.handlers.ProcessFullyDeletedHandler;
+import io.camunda.exporter.handlers.ProcessStateHandler;
 import io.camunda.exporter.handlers.ResourceCreatedHandler;
 import io.camunda.exporter.handlers.ResourceDeletedHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
@@ -440,8 +440,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     // otherwise race.
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       exportHandlers.add(
-          new ProcessDrainingHandler(
-              indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()));
+          new ProcessStateHandler(indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()));
       exportHandlers.add(
           new ProcessFullyDeletedHandler(
               indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()));
