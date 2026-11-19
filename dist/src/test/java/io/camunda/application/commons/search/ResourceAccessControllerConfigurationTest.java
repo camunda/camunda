@@ -27,11 +27,19 @@ import io.camunda.security.core.authz.TenantAccessProvider;
 import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 
 public class ResourceAccessControllerConfigurationTest {
+
+  @AfterEach
+  void clearPinnedEnvironment() {
+    // The context runner pins its environment in UnifiedConfigurationHelper's static field;
+    // clear it so the legacy properties set here do not leak into later tests in the same JVM.
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
 
   private WebApplicationContextRunner baseRunner() {
     final var authReaderStub = mock(AuthorizationReader.class);
