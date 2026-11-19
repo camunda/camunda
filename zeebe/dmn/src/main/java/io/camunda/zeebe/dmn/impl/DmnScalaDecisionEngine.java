@@ -9,6 +9,7 @@ package io.camunda.zeebe.dmn.impl;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 import io.camunda.zeebe.dmn.DecisionContext;
 import io.camunda.zeebe.dmn.DecisionEngine;
@@ -22,7 +23,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.camunda.dmn.Audit.AuditLog;
@@ -107,7 +107,7 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
 
     requireNonNull(decisionRequirementsGraph);
     requireNonNull(decisionId);
-    final DecisionContext evalContext = Objects.requireNonNullElse(context, Map::of);
+    final DecisionContext evalContext = requireNonNullElse(context, Map::of);
 
     if (!decisionRequirementsGraph.isValid()) {
       return new EvaluationFailure(
