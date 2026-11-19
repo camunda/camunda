@@ -6,12 +6,15 @@ for subsequent steps.
 
 ## Inputs
 
-|        Input         |                    Description                    | Required |
-|----------------------|---------------------------------------------------|----------|
-| `vault-address`      | Vault URL to retrieve secrets from                | Yes      |
-| `vault-role-id`      | Vault Role ID to use                              | Yes      |
-| `vault-secret-id`    | Vault Secret ID to use                            | Yes      |
-| `opensearch-version` | OpenSearch version to configure (`2.19` or `3.5`) | Yes      |
+|        Input         |                                                       Description                                                        | Required |
+|----------------------|--------------------------------------------------------------------------------------------------------------------------|----------|
+| `vault-address`      | Vault URL to retrieve secrets from                                                                                       | Yes      |
+| `vault-role-id`      | Vault Role ID to use                                                                                                     | Yes      |
+| `vault-secret-id`    | Vault Secret ID to use                                                                                                   | Yes      |
+| `opensearch-version` | OpenSearch version to configure (`2.19` or `3.5`)                                                                        | Yes      |
+| `vault-jwt-role`     | Vault JWT role (`secrets.VAULT_JWT_ROLE`); when set, the action logs in via JWT/OIDC and the job needs `id-token: write` | No       |
+| `vault-jwt-path`     | Vault JWT auth backend path (`secrets.VAULT_JWT_PATH`)                                                                   | No       |
+| `vault-jwt-audience` | GitHub OIDC audience for the Vault JWT login (`secrets.VAULT_JWT_AUDIENCE`)                                              | No       |
 
 ## Outputs
 
@@ -28,8 +31,9 @@ steps:
     uses: ./.github/actions/setup-aws-opensearch-env
     with:
       vault-address: ${{ secrets.VAULT_ADDR }}
-      vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-      vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+      vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+      vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       opensearch-version: "2.19"
 
   - name: Use OpenSearch URL
