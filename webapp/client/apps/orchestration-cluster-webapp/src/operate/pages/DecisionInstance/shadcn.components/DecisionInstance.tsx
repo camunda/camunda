@@ -173,17 +173,19 @@ const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPa
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
 			<DecisionInstanceHeading />
-			<div className={cn('relative flex flex-col', isPending ? 'h-dvh' : 'h-full')}>
-				<div>{header}</div>
-				<div ref={splitContainerRef} className="relative min-h-0 grow">
-					<ResizablePanel
-						panelId="decision-detail-vertical-panel"
-						direction={SplitDirection.Vertical}
-						minHeights={[panelMinHeight, panelMinHeight]}
-					>
-						{topPanel ?? pendingTopPanel}
-						{bottomPanel ?? <VariablesPanelPending />}
-					</ResizablePanel>
+			<div className={cn('relative flex', isPending ? 'h-dvh' : 'h-full')}>
+				<div className="flex min-w-0 grow flex-col">
+					<div>{header}</div>
+					<div ref={splitContainerRef} className="relative min-h-0 grow">
+						<ResizablePanel
+							panelId="decision-detail-vertical-panel"
+							direction={SplitDirection.Vertical}
+							minHeights={[panelMinHeight, panelMinHeight]}
+						>
+							{topPanel ?? pendingTopPanel}
+							{bottomPanel ?? <VariablesPanelPending />}
+						</ResizablePanel>
+					</div>
 				</div>
 				{rightPanel}
 			</div>

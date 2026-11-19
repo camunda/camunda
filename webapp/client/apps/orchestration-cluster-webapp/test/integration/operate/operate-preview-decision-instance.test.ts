@@ -132,6 +132,30 @@ test.describe('Operate Decision Instance DS preview (/operate-preview/decisions/
 		await expect(operateDecisionInstancePage.drdPanel).toBeVisible();
 	});
 
+	test('should keep the full failure message reachable while the DRD panel is open', async ({
+		network,
+		page,
+		operateDecisionInstancePage,
+	}) => {
+		network.use(
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createDecisionInstance({
+						...DECISION_INSTANCE,
+						state: 'FAILED',
+						evaluationFailure: `Failed to evaluate expression 'amount > limit': ${'no variable found for name limit. '.repeat(20)}`,
+					}),
+				),
+			}),
+		);
+		await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_ID);
+		await expect(operateDecisionInstancePage.drdPanel).toBeVisible();
+
+		await page.getByRole('button', {name: 'Show full message'}).click();
+
+		await expect(page.getByRole('button', {name: 'Collapse message'})).toBeVisible();
+	});
+
 	test('should navigate to the related evaluated decision selected in the DRD', async ({
 		network,
 		page,
