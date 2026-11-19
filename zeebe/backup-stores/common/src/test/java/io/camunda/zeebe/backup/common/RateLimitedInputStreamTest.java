@@ -125,6 +125,20 @@ class RateLimitedInputStreamTest {
     assertThat(clock.slept()).isEqualTo(Duration.ofMillis(500));
   }
 
+  @Test
+  void shouldNotChargeReadsAfterItWasClosed() throws Exception {
+    // given - an upload can fail and close the stream while the SDK still reads from it
+    final var stream = limiter.wrap(new ByteArrayInputStream(new byte[200]));
+    stream.close();
+
+    // when - then
+    assertThatThrownBy(() -> stream.read(new byte[100]))
+        .isInstanceOf(IOException.class)
+        .hasMessageContaining("closed");
+    readOneMoreByte();
+    assertThat(clock.slept()).isZero();
+  }
+
   /** A read waits for the bytes charged before it, so one more read shows what was charged. */
   private void readOneMoreByte() throws IOException {
     limiter.wrap(new ByteArrayInputStream(new byte[1])).read();

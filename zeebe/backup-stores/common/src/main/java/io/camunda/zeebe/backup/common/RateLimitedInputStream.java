@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.jspecify.annotations.Nullable;
 
@@ -29,8 +28,10 @@ public final class RateLimitedInputStream extends FilterInputStream {
 
   private final BackupReadRateLimiter limiter;
   private final AtomicLong waitedNanos = new AtomicLong();
-  private final AtomicBoolean closed = new AtomicBoolean();
-  private volatile @Nullable Reservation lastRead;
+  // guarded by this, so that a stream that is closed takes no more budget and frees its slot only
+  // after the last read it paid for
+  private boolean closed;
+  private @Nullable Reservation lastRead;
 
   RateLimitedInputStream(final InputStream in, final BackupReadRateLimiter limiter) {
     super(in);
@@ -78,15 +79,31 @@ public final class RateLimitedInputStream extends FilterInputStream {
     try {
       super.close();
     } finally {
-      if (closed.compareAndSet(false, true)) {
-        limiter.streamClosed(lastRead);
-      }
+      freeSlot();
     }
   }
 
-  private void pay(final long bytes) throws InterruptedIOException {
-    final var reservation = limiter.reserve(bytes);
-    lastRead = reservation;
+  private void freeSlot() {
+    final Reservation last;
+    synchronized (this) {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      last = lastRead;
+    }
+    limiter.streamClosed(last);
+  }
+
+  private void pay(final long bytes) throws IOException {
+    final Reservation reservation;
+    synchronized (this) {
+      if (closed) {
+        throw new IOException("Expected to read from an open backup stream, but it was closed");
+      }
+      reservation = limiter.reserve(bytes);
+      lastRead = reservation;
+    }
     final long waitNanos = reservation.waitNanos();
     if (waitNanos <= 0) {
       return;
