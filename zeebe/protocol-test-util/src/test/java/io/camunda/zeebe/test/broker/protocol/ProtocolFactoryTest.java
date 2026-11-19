@@ -131,8 +131,8 @@ final class ProtocolFactoryTest {
     // when
     final var record = factory.generateRecord();
 
-    // then
-    assertThat(record).hasNoNullFieldsOrProperties();
+    // then - Immutables clears its internal InitShim once the record is built
+    assertThat(record).hasNoNullFieldsOrPropertiesExcept("initShim");
   }
 
   @Test
