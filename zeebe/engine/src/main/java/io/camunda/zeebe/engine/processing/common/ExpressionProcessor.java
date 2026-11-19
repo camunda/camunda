@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.expression.SecretReferenceEvaluationCo
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
@@ -919,7 +920,7 @@ public final class ExpressionProcessor {
   }
 
   private DirectBuffer wrapResult(final String result) {
-    resultView.wrap(result.getBytes());
+    resultView.wrap(result.getBytes(StandardCharsets.UTF_8));
     return resultView;
   }
 
