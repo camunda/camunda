@@ -40,17 +40,19 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
- * Reproduces #61277: a process definition the engine is draining can stay {@code ACTIVE} in
- * secondary storage.
+ * Verifies that a process definition state written by {@link
+ * io.camunda.exporter.handlers.ProcessStateHandler} on the deployment partition is not reset to
+ * {@code ACTIVE} when another partition exports its copy of {@code Process:CREATED} later (#61277,
+ * #70005).
  *
  * <p>{@code Process:CREATED} is distributed to every partition. {@link
  * io.camunda.exporter.handlers.ProcessCreatedHandler} still runs {@code updateEntity} everywhere so
- * the process cache stays warm, but only partition 1 may index the shared process document. {@link
- * io.camunda.exporter.handlers.ProcessStateHandler} is also partition-1-only. If another partition
- * indexed {@code CREATED} after partition 1 had already written {@code DRAINING}, the full-document
- * index would clobber state back to {@code ACTIVE}.
+ * the process cache stays warm, but only partition 1 may index the shared process document. {@code
+ * ProcessStateHandler} is also partition-1-only. If another partition indexed {@code CREATED} after
+ * partition 1 had already written {@code DRAINING} or {@code SUSPENDED}, the full-document index
+ * would reset the state to {@code ACTIVE}.
  */
-final class ProcessDrainingExportConsistencyIT {
+final class ProcessStateExportConsistencyIT {
 
   private static final long PROCESS_DEFINITION_KEY = 2_251_799_813_685_862L;
   private static final int DEPLOYMENT_PARTITION =
@@ -87,26 +89,50 @@ final class ProcessDrainingExportConsistencyIT {
   void shouldKeepDrainingWhenAnotherPartitionExportsCreatedLater(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
-    // given — partition 1 has already exported CREATED then DRAINING
+    verifyStateSurvivesLateCreated(
+        config, clientAdapter, ProcessIntent.DRAINING, ProcessDefinitionState.DRAINING);
+  }
+
+  @TestTemplate
+  void shouldKeepSuspendedWhenAnotherPartitionExportsCreatedLater(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    verifyStateSurvivesLateCreated(
+        config, clientAdapter, ProcessIntent.SUSPENDED, ProcessDefinitionState.SUSPENDED);
+  }
+
+  private void verifyStateSurvivesLateCreated(
+      final ExporterConfiguration config,
+      final SearchClientAdapter clientAdapter,
+      final ProcessIntent stateIntent,
+      final ProcessDefinitionState expected)
+      throws IOException {
+    // given — partition 1 has already exported CREATED then the state change
     prepareConfig(config);
     createSchemas(config);
-    final var processIndex = processIndexName(config);
 
     exportOnPartition(config, DEPLOYMENT_PARTITION, ProcessIntent.CREATED);
-    exportOnPartition(config, DEPLOYMENT_PARTITION, ProcessIntent.DRAINING);
+    exportOnPartition(config, DEPLOYMENT_PARTITION, stateIntent);
     clientAdapter.refresh(testPrefix);
 
-    assertThat(clientAdapter.get(documentId(), processIndex, ProcessEntity.class).getState())
-        .as("precondition: partition 1 left the definition DRAINING before the other CREATED")
-        .isEqualTo(ProcessDefinitionState.DRAINING);
+    assertThat(stateOf(config, clientAdapter))
+        .as("precondition: partition 1 left the definition %s before the other CREATED", expected)
+        .isEqualTo(expected);
 
     // when — a lagging partition exports its own copy of CREATED for the same definition
     exportOnPartition(config, OTHER_PARTITION, ProcessIntent.CREATED);
     clientAdapter.refresh(testPrefix);
 
-    // then — the late full-document index must not clobber DRAINING back to ACTIVE
-    assertThat(clientAdapter.get(documentId(), processIndex, ProcessEntity.class).getState())
-        .isEqualTo(ProcessDefinitionState.DRAINING);
+    // then — the late full-document index must not clobber the state back to ACTIVE
+    assertThat(stateOf(config, clientAdapter)).isEqualTo(expected);
+  }
+
+  private ProcessDefinitionState stateOf(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    return clientAdapter
+        .get(documentId(), processIndexName(config), ProcessEntity.class)
+        .getState();
   }
 
   private void prepareConfig(final ExporterConfiguration config) {
@@ -164,7 +190,7 @@ final class ProcessDrainingExportConsistencyIT {
 
   private static byte[] readBpmn() {
     try (final var in =
-        ProcessDrainingExportConsistencyIT.class
+        ProcessStateExportConsistencyIT.class
             .getClassLoader()
             .getResourceAsStream("process/test-process.bpmn")) {
       return Objects.requireNonNull(in).readAllBytes();
