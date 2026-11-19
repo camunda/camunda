@@ -37,6 +37,7 @@ import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationEventPublisher;
@@ -57,8 +58,25 @@ import org.springframework.core.env.Environment;
  * (job workers, deployment, {@code @ClusterVariables}, actuator, metrics, lifecycle events).
  *
  * <p>Disabled when {@code camunda.client.enabled} is {@code false}.
+ *
+ * <p>Ordered after Spring Boot's Jackson 2 auto-configurations, so the Jackson 2 {@code
+ * ObjectMapper} they provide is already registered when the {@link JsonMapper} is selected (see
+ * {@link JsonMapperConfiguration}) and the client uses a copy of it. The ordering is declared on
+ * this class because it is the auto-configuration that is registered; the JSON mapper
+ * configurations are only imported by it, so ordering annotations on them have no effect. The names
+ * are given as strings as the class names differ between Spring Boot versions.
+ *
+ * <p>Spring Boot 4's Jackson 3 auto-configuration is intentionally not listed: applications that
+ * only have Jackson 3 keep the default Jackson 2 mapper, as in 8.8.
  */
 @AutoConfiguration
+@AutoConfigureAfter(
+    name = {
+      // Spring Boot 4.x, Jackson 2 compatibility
+      "org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration",
+      // Spring Boot 3.x
+      "org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration"
+    })
 @ConditionalOnCamundaClientEnabled
 @ImportAutoConfiguration({
   // full feature parity with the single-client path: job-worker registration, startup deployment,
