@@ -460,7 +460,14 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
    * [[storeId | secretReference] | probeKey] -> ∅: the probes parked on a secret reference, as
    * {@link #JOBS_BY_SECRET_REFERENCE} for jobs. Cleared with {@link #SECRET_REFERENCES_BY_PROBE}.
    */
-  PROBES_BY_SECRET_REFERENCE(175, PARTITION_LOCAL);
+  PROBES_BY_SECRET_REFERENCE(175, PARTITION_LOCAL),
+
+  /**
+   * Marker for suspended process definition versions: processDefinitionKey -> nil. An entry means
+   * the version is suspended; it is only set and removed by event appliers. Global, so a partition
+   * added by scaling starts with the same suspended versions.
+   */
+  SUSPENDED_PROCESS_DEFINITIONS(176, GLOBAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
