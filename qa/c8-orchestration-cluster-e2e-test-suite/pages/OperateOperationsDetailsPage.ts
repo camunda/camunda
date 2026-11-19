@@ -78,16 +78,10 @@ export class OperateOperationsDetailsPage {
   }
 
   /**
-   * Drives the Suspend button until the suspend command is accepted.
-   *
-   * The button is driven by the read model, so it turns on before the freshly
-   * created batch is visible to the suspend command. An immediate click 404s
-   * ("Batch operation not found") and the UI does not retry (the original
-   * nightly failure). Re-issue Suspend across that eventual-consistency window,
-   * reloading between attempts (the detail view does not auto-refresh, #52021),
-   * until the state flips to Suspended. Throws immediately if the batch finishes
-   * cancelling first — a Completed/Failed batch can no longer be suspended, so
-   * further attempts would be pointless.
+   * Re-clicks Suspend until the state flips to Suspended. The button enables
+   * before the new batch is visible to the command (404, not retried by the UI),
+   * and the view needs a reload to refresh (#52021). Throws if the batch
+   * finishes first, since it can no longer be suspended.
    */
   async suspendUntilCommandAccepted(maxAttempts = 10): Promise<void> {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {

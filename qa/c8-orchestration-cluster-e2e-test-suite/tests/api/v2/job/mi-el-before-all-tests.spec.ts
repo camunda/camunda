@@ -233,7 +233,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
           extendedAssertionOptions,
         );
 
-        // ── Recovery: update retries + resolve incident ──────────────────────
+        // Recovery: update retries and resolve the incident.
         const updateRes = await request.patch(
           buildUrl('/jobs/{jobKey}', {jobKey}),
           {
@@ -538,8 +538,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
             }),
           );
 
-          // ⚠️ CRITICAL REGRESSION CHECK: count=1 means the start EL is being treated as
-          // "before all" — a regression introduced by the beforeAll feature.
+          // count=1 would mean the start EL runs as "before all" (regression).
           await expect(async () => {
             const count = await countJobsByType(request, piKey, startElJobType);
             if (count === 1) {
@@ -566,8 +565,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
 
           workers.push(createWorker(innerJobType));
 
-          // ⚠️ CRITICAL REGRESSION CHECK: count=1 means end EL has been collapsed to
-          // "after all" semantics — a regression.
+          // count=1 would mean the end EL runs as "after all" (regression).
           await expect(async () => {
             const count = await countJobsByType(request, piKey, endElJobType);
             if (count === 1) {

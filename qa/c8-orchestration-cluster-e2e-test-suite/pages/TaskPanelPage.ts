@@ -43,20 +43,9 @@ class TaskPanelPage {
       name: 'Filters',
       exact: true,
     });
-    // The header logo's accessible name is now just "Camunda logo" (the old
-    // Carbon header appended the product name, "Camunda logo Tasklist").
     this.taskListPageBanner = page.getByRole('link', {
       name: 'Camunda logo',
     });
-    // There is no page heading for the "Completed" filter post-redesign --
-    // that assumption dates back to the old Carbon sidebar, where each
-    // filter link routed to a page with its own <h1>. FilterSelect.tsx now
-    // renders every filter (including "Completed") as plain visible text
-    // inside the filter-select trigger button (id="filter-select"); the
-    // button's accessible name is the static `taskFiltersHeaderAria` string
-    // ("Filters"), not the filter's label, because it carries a static
-    // aria-label, so this has to be a text lookup scoped to that button
-    // rather than an accessible-name lookup.
     this.completedHeading = this.filterSelectButton.getByText('Completed', {
       exact: true,
     });
@@ -125,19 +114,6 @@ class TaskPanelPage {
     name: string,
     timeout: number,
   ): Promise<void> {
-    // The available-tasks list is virtualized: only the cards around the
-    // current scroll offset exist in the DOM, and the next (older) page is
-    // pulled in via fetchNextPage as the end of the loaded range is scrolled
-    // into view. So a task outside that window has to be *scrolled to* before
-    // it can be asserted on -- waiting on the locator alone, or reloading,
-    // only ever re-renders the same handful of cards at the top of the list.
-    // Under the parallel nightly load both cases occur: a task created in
-    // beforeAll is pushed down by newer ones, and a task that was just created
-    // or completed lands at the top of these newest-first lists only once it
-    // has been indexed. walkListFor() covers both -- it walks the list from
-    // the top to the end, then starts over from the top, so a task that shows
-    // up at the top mid-walk is picked up on the next pass without the reload
-    // that would throw away the pages walked so far.
     await waitForAssertion({
       assertion: async () => {
         await this.scrollListToTop();
@@ -225,9 +201,6 @@ class TaskPanelPage {
     const maxRetries = 5;
     while (retryCount < maxRetries) {
       try {
-        // Open the filter dropdown, then pick the option from the menu that
-        // appears. Unlike the old Carbon sidebar, the trigger is always
-        // visible — there's no separate expand/collapse step.
         await expect(this.filterSelectButton).toBeVisible({timeout: 10000});
         await this.filterSelectButton.click();
 
@@ -255,7 +228,6 @@ class TaskPanelPage {
               ? 'assigned-to-me'
               : option.toLowerCase().replace(/\s+/g, '-');
 
-          // Use regex to match the filter parameter to avoid matcher function issues
           const filterRegex = new RegExp(`filter=${expectedSegment}(?:&|$)`);
           await expect(this.page).toHaveURL(filterRegex, {timeout: 15000});
         }
