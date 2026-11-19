@@ -392,6 +392,16 @@ public class RdbmsWriters implements AutoCloseable {
     return vendorDatabaseProperties.errorMessageSize();
   }
 
+  /**
+   * Returns the tree path column size from vendor-specific database properties. Tree paths must be
+   * truncated to this length to fit into the {@code TREE_PATH} columns.
+   *
+   * @return the tree path column size in characters
+   */
+  public int getTreePathSize() {
+    return vendorDatabaseProperties.treePathSize();
+  }
+
   @Override
   public void close() throws Exception {
     try {
