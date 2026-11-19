@@ -37,7 +37,8 @@ import org.jspecify.annotations.Nullable;
  *     included. The background resolution calls this store from an IO-bound actor thread shared
  *     with every partition's exporter, so an unbounded call there stalls exporting broker-wide
  *     (camunda/camunda#62869)
- * @param attemptTimeout upper bound on a single HTTP attempt within a call
+ * @param attemptTimeout upper bound on a single HTTP attempt within a call, applied by the default
+ *     HTTP client only
  * @throws IllegalArgumentException if a setting can never work, naming the setting and the rule; no
  *     call is made to Azure
  */
