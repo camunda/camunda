@@ -26,7 +26,11 @@ func (c *secretsCommand) runEnvMode(baseDir string, args []string) error {
 	case "list":
 		return c.listFromEnvironment(baseDir, args[1:])
 	case "set", "delete":
-		return envModeUnavailableError(args[0], c.listTenant(), firstName(args[1:]))
+		name := firstName(args[1:])
+		if err := validateEnvironmentSecretName(name); err != nil {
+			return err
+		}
+		return envModeUnavailableError(args[0], c.listTenant(), name)
 	case "import", "path":
 		return envModeUnavailableError(args[0], c.listTenant(), "")
 	default:
@@ -45,6 +49,21 @@ func envModeUnavailableError(operation, tenant, name string) error {
 		name = "<NAME>"
 	}
 	return errors.New(message + fmt.Sprintf("Set %s%s in that environment instead, then restart c8run.", physicaltenants.SecretVariablePrefix(prefix, tenant), name))
+}
+
+// validateEnvironmentSecretName rejects a name no secret variable can hold, by the rules
+// environmentSecretNames applies, so the hint never names a variable c8run would ignore.
+func validateEnvironmentSecretName(name string) error {
+	if name == "" {
+		return nil
+	}
+	if len(name) > localsecrets.MaxNameLength {
+		return fmt.Errorf("invalid secret name %q: secret name must not exceed %d characters", name, localsecrets.MaxNameLength)
+	}
+	if !environmentSecretName.MatchString(name) {
+		return fmt.Errorf("invalid secret name %q: secret name may contain only letters, numbers, underscores, and dashes", name)
+	}
+	return nil
 }
 
 func firstName(args []string) string {

@@ -168,6 +168,29 @@ func TestEnvModeWriteCommandsNameTheVariableToSet(t *testing.T) {
 	}
 }
 
+func TestEnvModeWriteCommandsRejectAnInvalidName(t *testing.T) {
+	t.Setenv(localsecrets.ModeEnv, "env")
+	t.Setenv(localsecrets.EnvPrefixEnv, "C8_")
+	for _, args := range [][]string{
+		{"set", "tls.crt"},
+		{"delete", "bad name!", "--yes"},
+		{"--physical-tenant", "tenanta", "set", "tls.crt"},
+		{"set", strings.Repeat("a", localsecrets.MaxNameLength+1)},
+	} {
+		t.Run(fmt.Sprint(args), func(t *testing.T) {
+			// given
+			command, _, _ := testSecretsCommand("value\n", false)
+
+			// when
+			err := command.run(t.TempDir(), args)
+
+			// then
+			assert.ErrorContains(t, err, "invalid secret name")
+			assert.NotContains(t, err.Error(), "C8_")
+		})
+	}
+}
+
 func TestEnvModeWriteCommandsAskForThePrefixWhenUnset(t *testing.T) {
 	// given
 	t.Setenv(localsecrets.ModeEnv, "env")
