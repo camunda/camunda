@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.hub.HubUpdateReceiver;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -119,6 +120,13 @@ public interface BrokerStartupContext {
   void addJobStreamService(String physicalTenantId, JobStreamService service);
 
   void removeJobStreamService(String physicalTenantId);
+
+  /** The Hub receiver of the physical tenant, or null if the tenant is not connected to Hub. */
+  HubUpdateReceiver getHubUpdateReceiver(String physicalTenantId);
+
+  void addHubUpdateReceiver(String physicalTenantId, HubUpdateReceiver receiver);
+
+  void removeHubUpdateReceiver(String physicalTenantId);
 
   /** Returns all currently registered partition managers, keyed by physical tenant ID. */
   Map<String, PartitionManager> getPartitionManagers();
