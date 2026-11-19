@@ -31,7 +31,6 @@ public final class SecurityPaths {
           "/v2/license",
           "/v2/setup/user",
           "/v2/status",
-          "/v1/external/process/**",
           "/.well-known/oauth-protected-resource/**");
 
   // Served by CSL's unprotected-paths chain, which sits ahead of every authenticated chain and

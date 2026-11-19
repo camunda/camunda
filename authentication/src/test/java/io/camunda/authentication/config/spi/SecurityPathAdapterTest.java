@@ -35,7 +35,6 @@ class SecurityPathAdapterTest {
             "/v2/license",
             "/v2/setup/user",
             "/v2/status",
-            "/v1/external/process/**",
             "/.well-known/oauth-protected-resource/**");
   }
 
