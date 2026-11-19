@@ -35,6 +35,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: List maintained branches
+        id: branches
+        uses: ./.github/actions/list-maintained-branches
+        with:
+          min-version: '8.8'
+
       - name: Setup codeowners-cli
         uses: ./.github/actions/codeowners-setup-cli
 
@@ -69,6 +75,7 @@ jobs:
       - name: Create messages with BigQuery data
         env:
           GH_TOKEN: ${{ github.token }}
+          MAINTAINED_BRANCHES: ${{ steps.branches.outputs.branches }}
         shell: bash
         run: bash .github/scripts/test-stats-summary/build.sh failure "$RUNNER_TEMP/slack-messages.json"
 

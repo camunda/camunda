@@ -212,9 +212,14 @@ function Diagram({
 		}
 
 		hasObservedInitialSizeRef.current = false;
-		const observer = new ResizeObserver(() => {
-			if (!hasObservedInitialSizeRef.current) {
-				hasObservedInitialSizeRef.current = true;
+		const initialSize = container.getBoundingClientRect();
+		const observer = new ResizeObserver(([entry]) => {
+			const isInitialSize =
+				!hasObservedInitialSizeRef.current &&
+				entry?.contentRect.width === initialSize.width &&
+				entry.contentRect.height === initialSize.height;
+			hasObservedInitialSizeRef.current = true;
+			if (isInitialSize) {
 				return;
 			}
 			cancelAnimationFrame(resizeFrameRef.current);
@@ -278,6 +283,7 @@ function Diagram({
 			.forEach((element) => ['role', 'aria-label'].forEach((attribute) => element.removeAttribute(attribute)));
 
 		canvas.querySelectorAll('.op-non-selectable').forEach((element) => {
+			['tabindex', 'aria-pressed', 'aria-describedby'].forEach((attribute) => element.removeAttribute(attribute));
 			const label = getElementLabel(element);
 			element.setAttribute('role', 'img');
 			element.setAttribute(

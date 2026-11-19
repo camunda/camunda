@@ -50,11 +50,7 @@ export class IdentityRolesPage {
     });
     this.editRoleButton = (rowName) =>
       this.rolesList.getByRole('row', {name: rowName}).getByLabel('Edit role');
-    // The design-system list renders the destructive row action as a button
-    // labelled by its visible text, not by `aria-label` (`entityListV2` sets
-    // `iconOnly: !!Icon && !isDangerous`), so match it by role and accessible
-    // name, as `IdentityUsersPage.deleteUserButton` already does. Edit stays on
-    // `getByLabel` because it is icon-only and keeps its `aria-label`.
+    // Delete is labelled by its visible text; only Edit is icon-only with an aria-label.
     this.deleteRoleButton = (rowName) =>
       this.rolesList
         .getByRole('row', {name: rowName})
@@ -117,11 +113,7 @@ export class IdentityRolesPage {
     this.rolesHeading = this.page.getByRole('heading', {name: 'Roles'});
     this.assignUserButton = page.getByRole('button', {name: 'Assign user'});
     this.assignUserModal = page.getByRole('dialog', {name: 'Assign user'});
-    // Same design-system migration IdentityRolesDetailsPage.ts already
-    // accounts for: the search field is a cmdk combobox now, not a Carbon
-    // searchbox, and its results render in a Radix popover that portals as a
-    // *sibling* of the dialog (DS #496) -- scope the results to the page, not
-    // to the modal.
+    // Results portal outside the dialog (DS #496), so scope them to the page.
     this.searchBox = this.assignUserModal.getByRole('combobox', {
       name: 'Search by name, email, or username',
     });
@@ -167,19 +159,14 @@ export class IdentityRolesPage {
   }
 
   async assignUserToRole(userName: string) {
-    // The assign-user modal's cmdk search is debounced + server-driven, and
-    // the option for a just-created user is eventually consistent -- a single
-    // query can return empty and get cached, so waiting longer on one search
-    // does not recover. Mirror IdentityRolesDetailsPage.ts's remedy for the
-    // same modal: reload and retry the whole open-search-select flow.
+    // The search for a just-created user can return empty and get cached, so
+    // reload and retry the whole flow.
     const maxRetries = 3;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         await this.assignUserButton.click({timeout: 60000});
         await expect(this.assignUserModal).toBeVisible();
-        // The search field is a design-system MultiSelect: its closed trigger
-        // is a `combobox`-role div (not an input), so open it first, then type
-        // into the cmdk search box that mounts in the popover.
+        // The MultiSelect trigger is a div: open it, then type in the search box.
         await this.searchBox.click();
         await this.page.locator('[data-slot="command-input"]').fill(userName);
         // The option label is "<name> — <email>" and does not echo the
@@ -188,11 +175,7 @@ export class IdentityRolesPage {
         const options = this.searchBoxResult.getByRole('option');
         await expect(options).toHaveCount(1, {timeout: 30000});
         await options.first().click({timeout: 20000});
-        // The MultiSelect keeps its cmdk popover open after a selection so more
-        // users could be picked, and the open popover overlays the footer and
-        // intercepts the click on the confirm "Assign user" button. Dismiss it
-        // with Escape first -- that closes the top Radix layer (the popover),
-        // not the dialog underneath -- then wait for the listbox to unmount.
+        // The open popover covers the confirm button; Escape closes it, not the dialog.
         await this.page.keyboard.press('Escape');
         await expect(this.searchBoxResult).toBeHidden();
         await this.assignUserButtonModal.click();

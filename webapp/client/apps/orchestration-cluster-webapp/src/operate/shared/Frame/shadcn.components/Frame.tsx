@@ -26,14 +26,14 @@ const Frame: React.FC<{frame?: FrameProps; children: React.ReactNode}> = ({frame
 			data-testid="frame-container"
 			className={cn(
 				'h-full',
-				isVisible && 'grid grid-rows-[2rem_1fr] border-4 border-t-0 border-[var(--primary-action-default)]',
+				isVisible && 'grid grid-rows-[2rem_1fr] border-4 border-t-0 border-[var(--info-action-default)]',
 			)}
 		>
 			{isVisible && (
 				<div
 					className={cn(
 						typographyVariants({variant: 'body-sm'}),
-						'flex items-center bg-[var(--primary-action-default)] pl-4 font-bold text-[var(--primary-action-foreground)]',
+						'flex items-center bg-[var(--info-action-default)] pl-4 font-bold text-[var(--info-action-foreground)]',
 					)}
 				>
 					{headerTitle}

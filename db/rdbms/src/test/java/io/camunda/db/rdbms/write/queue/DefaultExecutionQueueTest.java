@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -580,6 +581,77 @@ class DefaultExecutionQueueTest {
     final var inOrder = Mockito.inOrder(session);
     inOrder.verify(session).update(eq("ms.update"), any());
     inOrder.verify(session).update(eq("ms.createIfNotExists"), any());
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ContextType.class,
+      names = {"GROUP", "MAPPING_RULE", "ROLE", "TENANT", "USER"})
+  public void shouldPreserveInsertionOrderForRecreatedIdentityEntities(
+      final ContextType contextType) {
+    // given - an identity entity is created, deleted and re-created with the same ID in one flush
+    executionQueue.executeInQueue(
+        new QueueItem(contextType, WriteStatementType.INSERT, "id", "identity.insert", "first"));
+    executionQueue.executeInQueue(
+        new QueueItem(contextType, WriteStatementType.DELETE, "id", "identity.delete", "id"));
+    executionQueue.executeInQueue(
+        new QueueItem(contextType, WriteStatementType.INSERT, "id", "identity.insert", "second"));
+
+    // when
+    executionQueue.flush();
+
+    // then - the DELETE runs between the INSERTs. Under the default INSERT-before-DELETE sort both
+    // INSERTs would run first and the second one would violate the primary key.
+    final var inOrder = Mockito.inOrder(session);
+    inOrder.verify(session).update("identity.insert", "first");
+    inOrder.verify(session).update("identity.delete", "id");
+    inOrder.verify(session).update("identity.insert", "second");
+  }
+
+  @Test
+  public void shouldGroupUserTaskStatementsOfDifferentUserTasksByStatementId() {
+    // given - three user task updates, each queuing update, deleteCandidateUsers and
+    // deleteCandidateGroups, as UserTaskWriter#update does
+    for (long key = 1; key <= 3; key++) {
+      queueUserTaskItem(key, WriteStatementType.UPDATE, "ut.update");
+      queueUserTaskItem(key, WriteStatementType.DELETE, "ut.deleteCandidateUsers");
+      queueUserTaskItem(key, WriteStatementType.DELETE, "ut.deleteCandidateGroups");
+    }
+
+    // when
+    executionQueue.flush();
+
+    // then - statements with the same ID run back to back, so MyBatis sends one JDBC batch each
+    final var inOrder = Mockito.inOrder(session);
+    inOrder.verify(session, Mockito.times(3)).update(eq("ut.update"), any());
+    inOrder.verify(session, Mockito.times(3)).update(eq("ut.deleteCandidateUsers"), any());
+    inOrder.verify(session, Mockito.times(3)).update(eq("ut.deleteCandidateGroups"), any());
+  }
+
+  @Test
+  public void shouldKeepTheOrderOfStatementsOfTheSameUserTask() {
+    // given - user task 1 replaces its candidate users, user task 2 only deletes them
+    queueUserTaskItem(1L, WriteStatementType.DELETE, "ut.deleteCandidateUsers");
+    queueUserTaskItem(1L, WriteStatementType.INSERT, "ut.insertCandidateUsers");
+    queueUserTaskItem(2L, WriteStatementType.INSERT, "ut.insertCandidateUsers");
+    queueUserTaskItem(2L, WriteStatementType.DELETE, "ut.deleteCandidateUsers");
+
+    // when
+    executionQueue.flush();
+
+    // then - each user task keeps its own order
+    final var inOrderTask1 = Mockito.inOrder(session);
+    inOrderTask1.verify(session).update("ut.deleteCandidateUsers", 1L);
+    inOrderTask1.verify(session).update("ut.insertCandidateUsers", 1L);
+    final var inOrderTask2 = Mockito.inOrder(session);
+    inOrderTask2.verify(session).update("ut.insertCandidateUsers", 2L);
+    inOrderTask2.verify(session).update("ut.deleteCandidateUsers", 2L);
+  }
+
+  private void queueUserTaskItem(
+      final long userTaskKey, final WriteStatementType type, final String statementId) {
+    executionQueue.executeInQueue(
+        new QueueItem(ContextType.USER_TASK, type, userTaskKey, statementId, userTaskKey));
   }
 
   @Test

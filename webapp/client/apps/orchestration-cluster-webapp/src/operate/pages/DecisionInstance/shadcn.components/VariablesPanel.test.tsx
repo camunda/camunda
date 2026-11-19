@@ -357,28 +357,18 @@ describe('<VariablesPanel />', () => {
 	});
 
 	it('should show a result loading spinner when the result tab is selected while fetching', async ({worker}) => {
-		let release: () => void = () => {};
-		const pending = new Promise<void>((resolve) => {
-			release = resolve;
-		});
 		worker.use(
-			http.get(
-				endpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey: ':decisionEvaluationInstanceKey'}),
-				async () => {
-					await pending;
-					return HttpResponse.json(createDecisionInstance());
-				},
-			),
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(createDecisionInstance()),
+				delay: 'infinite',
+			}),
 		);
 
 		const screen = await renderPanel();
 		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
-		await expect.element(screen.getByTestId('result-loading-spinner')).toBeVisible();
-		await expect.element(screen.getByTestId('results-json-viewer')).not.toBeInTheDocument();
 
-		release();
-		await expect.element(screen.getByTestId('result-loading-spinner')).not.toBeInTheDocument();
-		await expect.element(screen.getByTestId('results-json-viewer')).toBeVisible();
+		await expect.element(screen.getByRole('status')).toHaveTextContent('Loading result');
+		await expect.element(screen.getByTestId('results-json-viewer')).not.toBeInTheDocument();
 	});
 
 	it('should show numeric results without losing precision', async ({worker}) => {

@@ -81,6 +81,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
@@ -94,8 +95,10 @@ import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecord
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobMetricsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableStatusMetricsValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricsValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -123,6 +126,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -1529,32 +1533,130 @@ class RdbmsExporterIT {
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             InstantSource.system()));
     intervalExporter.open(intervalController);
+    try {
+      // a record with ValueType.TIMER has no registered handler: the exporter updates lastPosition
+      // for it but does not enqueue any data write operations (the record is skipped for data
+      // export)
+      final var skippedRecord =
+          ImmutableRecord.<RecordValue>builder()
+              .from(RecordFixtures.FACTORY.generateRecord(ValueType.TIMER))
+              .withPosition(42L)
+              .withPartitionId(2)
+              .withTimestamp(System.currentTimeMillis())
+              .build();
 
-    // a record with ValueType.TIMER has no registered handler: the exporter updates lastPosition
-    // for it but does not enqueue any data write operations (the record is skipped for data export)
-    final var skippedRecord =
-        ImmutableRecord.<RecordValue>builder()
-            .from(RecordFixtures.FACTORY.generateRecord(ValueType.TIMER))
-            .withPosition(42L)
-            .withPartitionId(2)
-            .withTimestamp(System.currentTimeMillis())
-            .build();
+      // when - export the record (no handler → no data queued, but lastPosition is still updated)
+      intervalExporter.export(skippedRecord);
 
-    // when - export the record (no handler → no data queued, but lastPosition is still updated)
-    intervalExporter.export(skippedRecord);
+      // then - trigger the scheduled interval flush (flushInterval defaults to 500ms)
+      intervalController.runScheduledTasks(Duration.ofSeconds(1));
 
-    // then - trigger the scheduled interval flush (flushInterval defaults to 500ms)
-    intervalController.runScheduledTasks(Duration.ofSeconds(1));
+      // then - broker position is updated even though no data handler processed the record
+      assertThat(intervalController.getPosition()).isEqualTo(42L);
 
-    // then - broker position is updated even though no data handler processed the record
-    assertThat(intervalController.getPosition()).isEqualTo(42L);
+      // then - RDBMS position is updated: the pre-flush listener adds the position update
+      // to the queue before the empty-queue check, so it is persisted even though the queue
+      // contained no data writes
+      final var rdbmsPosition = exporterPositionMapper.findOne(2);
+      assertThat(rdbmsPosition).isNotNull();
+      assertThat(rdbmsPosition.lastExportedPosition()).isEqualTo(42L);
+    } finally {
+      intervalExporter.close();
+    }
+  }
 
-    // then - RDBMS position is updated: the pre-flush listener adds the position update
-    // to the queue before the empty-queue check, so it is persisted even though the queue
-    // contained no data writes
-    final var rdbmsPosition = exporterPositionMapper.findOne(2);
-    assertThat(rdbmsPosition).isNotNull();
-    assertThat(rdbmsPosition.lastExportedPosition()).isEqualTo(42L);
+  @Test
+  public void shouldExportUserTaskUpdatesOfSeveralUserTasksWithinOneFlush() {
+    // given - an exporter that batches records into interval flushes instead of flushing each one
+    final var batchingController = new ExporterTestController();
+    final var batchingConfiguration =
+        new ExporterConfiguration("user-task-batching-test", Map.of("queueSize", 100));
+    final var batchingExporter =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            rdbmsSchemaManagerRegistry,
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                batchingConfiguration.instantiate(
+                    io.camunda.exporter.rdbms.ExporterConfiguration.class)));
+    batchingExporter.configure(
+        new ExporterContext(
+            null,
+            batchingConfiguration,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
+            "",
+            null,
+            Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
+            InstantSource.system()));
+    batchingExporter.open(batchingController);
+    try {
+      final var taskA = FIXTURES.getUserTaskCreatingRecord();
+      final var taskB = FIXTURES.getUserTaskCreatingRecord();
+
+      // when - both user tasks are created and their candidates are replaced, task A twice
+      batchingExporter.export(taskA);
+      batchingExporter.export(taskB);
+      batchingExporter.export(userTaskUpdated(taskA, "a1"));
+      batchingExporter.export(userTaskUpdated(taskB, "b1"));
+      batchingExporter.export(userTaskUpdated(taskA, "a2"));
+      batchingController.runScheduledTasks(Duration.ofSeconds(1));
+
+      // then - each user task has the candidates of its last update
+      assertThat(batchingController.getPosition()).isEqualTo(FIXTURES.currentPosition());
+      final var userTaskA = rdbmsService.getUserTaskReader().findOne(userTaskKey(taskA));
+      assertThat(userTaskA).isNotEmpty();
+      assertThat(userTaskA.get().candidateUsers()).containsExactly("a2-user");
+      assertThat(userTaskA.get().candidateGroups()).containsExactly("a2-group");
+      final var userTaskB = rdbmsService.getUserTaskReader().findOne(userTaskKey(taskB));
+      assertThat(userTaskB).isNotEmpty();
+      assertThat(userTaskB.get().candidateUsers()).containsExactly("b1-user");
+      assertThat(userTaskB.get().candidateGroups()).containsExactly("b1-group");
+    } finally {
+      batchingExporter.close();
+    }
+  }
+
+  @Test
+  public void shouldExportGroupRecreatedWithinOneFlush() {
+    // given - an exporter that batches records into interval flushes instead of flushing each one
+    final var batchingController = new ExporterTestController();
+    final var batchingConfiguration =
+        new ExporterConfiguration("recreate-in-flush-test", Map.of("queueSize", 100));
+    final var batchingExporter =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            rdbmsSchemaManagerRegistry,
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                batchingConfiguration.instantiate(
+                    io.camunda.exporter.rdbms.ExporterConfiguration.class)));
+    batchingExporter.configure(
+        new ExporterContext(
+            null,
+            batchingConfiguration,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
+            "",
+            null,
+            Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
+            InstantSource.system()));
+    batchingExporter.open(batchingController);
+    try {
+      final var groupId = "recreated-group-" + UUID.randomUUID();
+
+      // when - the group is created, deleted and created again before the next flush
+      batchingExporter.export(groupRecord(groupId, "first", GroupIntent.CREATED));
+      batchingExporter.export(groupRecord(groupId, "first", GroupIntent.DELETED));
+      batchingExporter.export(groupRecord(groupId, "second", GroupIntent.CREATED));
+      batchingController.runScheduledTasks(Duration.ofSeconds(1));
+
+      // then - the flush succeeded and the group exists with the values of the second creation
+      assertThat(batchingController.getPosition()).isEqualTo(FIXTURES.currentPosition());
+      final var group = rdbmsService.getGroupReader().findOne(groupId);
+      assertThat(group).isNotEmpty();
+      assertThat(group.get().name()).isEqualTo("second");
+    } finally {
+      batchingExporter.close();
+    }
   }
 
   @ParameterizedTest
@@ -1666,5 +1768,37 @@ class RdbmsExporterIT {
     return rdbmsService
         .getBatchOperationItemReader()
         .search(BatchOperationItemQuery.of(b -> b.filter(f -> f.itemKeys(itemKey))));
+  }
+
+  private static long userTaskKey(final ImmutableRecord<RecordValue> userTaskRecord) {
+    return ((UserTaskRecordValue) userTaskRecord.getValue()).getUserTaskKey();
+  }
+
+  private static ImmutableRecord<RecordValue> userTaskUpdated(
+      final ImmutableRecord<RecordValue> userTaskRecord, final String candidatePrefix) {
+    return ImmutableRecord.builder()
+        .from(userTaskRecord)
+        .withIntent(UserTaskIntent.UPDATED)
+        .withPosition(FIXTURES.nextPosition())
+        .withValue(
+            ImmutableUserTaskRecordValue.builder()
+                .from((UserTaskRecordValue) userTaskRecord.getValue())
+                .withCandidateUsersList(List.of(candidatePrefix + "-user"))
+                .withCandidateGroupsList(List.of(candidatePrefix + "-group"))
+                .build())
+        .build();
+  }
+
+  private static ImmutableRecord<RecordValue> groupRecord(
+      final String groupId, final String name, final GroupIntent intent) {
+    final var record = FIXTURES.getGroupRecord(groupId, intent);
+    return ImmutableRecord.builder()
+        .from(record)
+        .withValue(
+            ImmutableGroupRecordValue.builder()
+                .from((GroupRecordValue) record.getValue())
+                .withName(name)
+                .build())
+        .build();
   }
 }

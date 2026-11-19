@@ -146,6 +146,77 @@ final class ProbeStateTest {
     assertThat(probeState.forEachTimedOutProbe(Long.MAX_VALUE, (key, probe) -> true)).isEqualTo(-1);
   }
 
+  @Test
+  void shouldParkAProbeOnEachUncachedSecretAndNoLongerVisitIt() {
+    // given
+    probeState.create(1L, probe("probe-a", 1_000));
+
+    // when
+    probeState.park(1L, "default", "token");
+    probeState.park(1L, "default", "key");
+
+    // then
+    assertThat(probeState.getState(1L)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
+    assertThat(activatableKeys("probe-a")).isEmpty();
+    assertThat(parkedReferencesOf(1L)).containsExactlyInAnyOrder("default/token", "default/key");
+    assertThat(probesParkedOn("default", "token")).containsExactly(1L);
+  }
+
+  @Test
+  void shouldReleaseTheParkingWhenTheProbeIsActivatableAgain() {
+    // given
+    probeState.create(1L, probe("probe-a", 1_000));
+    probeState.park(1L, "default", "token");
+
+    // when
+    probeState.makeActivatable(1L);
+
+    // then
+    assertThat(probeState.getState(1L)).isEqualTo(State.ACTIVATABLE);
+    assertThat(activatableKeys("probe-a")).containsExactly(1L);
+    assertThat(parkedReferencesOf(1L)).isEmpty();
+    assertThat(probesParkedOn("default", "token")).isEmpty();
+  }
+
+  @Test
+  void shouldReleaseTheParkingWhenTheProbeEnds() {
+    // given - ANSWERED, TIMED_OUT and CANCELED all remove the probe
+    probeState.create(1L, probe("probe-a", 1_000));
+    probeState.create(2L, probe("probe-a", 1_000));
+    probeState.park(1L, "default", "token");
+    probeState.park(2L, "default", "token");
+
+    // when
+    probeState.remove(1L);
+
+    // then
+    assertThat(parkedReferencesOf(1L)).isEmpty();
+    assertThat(probesParkedOn("default", "token")).containsExactly(2L);
+  }
+
+  @Test
+  void shouldNotParkAProbeThatEnded() {
+    // when
+    probeState.park(1L, "default", "token");
+
+    // then
+    assertThat(probeState.getState(1L)).isEqualTo(State.NOT_FOUND);
+    assertThat(probesParkedOn("default", "token")).isEmpty();
+  }
+
+  private List<String> parkedReferencesOf(final long probeKey) {
+    final List<String> references = new ArrayList<>();
+    probeState.forEachSecretReferenceParkedOn(
+        probeKey, (storeId, reference) -> references.add(storeId + "/" + reference));
+    return references;
+  }
+
+  private List<Long> probesParkedOn(final String storeId, final String secretReference) {
+    final List<Long> keys = new ArrayList<>();
+    probeState.forEachProbeParkedOn(storeId, secretReference, keys::add);
+    return keys;
+  }
+
   private List<Long> activatableKeys(final String probeId) {
     final List<Long> keys = new ArrayList<>();
     probeState.forEachActivatableProbe(

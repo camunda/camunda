@@ -192,34 +192,51 @@ function outcomeText(row) {
 }
 
 // The only part of the board measured outside the agent's own runs: for each
-// fix that merged, how the nightlies have treated the test since. Only the
-// fixes that did not hold are named -- a fix that holds needs a number, not a
-// row of its own.
+// fix that merged, how the nightlies have treated the test since.
+//
+// A bare count answers nothing the channel asks -- "11 holding" reads the same
+// whether those fixes have survived six nights or one. So every fix that is
+// not yet settled is named with the nights behind it, and the ones that have
+// settled are summarised with the range they held for. Without the nights the
+// reader cannot tell evidence from an empty week.
 function postMergeLines(board) {
   const items = board.post_merge ?? [];
   if (items.length === 0) return [];
   const of = (verdict) => items.filter((i) => i.verdict === verdict);
   const reflaked = of('re-flaked');
   const holding = [...of('clean'), ...of('clean-in-window')];
-  const pending = of('pending');
+  // Not yet an answer either way: no nightly has run the test since the merge,
+  // or too few have to tell a fix from a quiet week.
+  const early = [...of('too-early'), ...of('pending')];
 
   const parts = [];
   if (holding.length > 0) parts.push(`:white_check_mark: ${holding.length} holding`);
   if (reflaked.length > 0) parts.push(`:warning: ${reflaked.length} re-flaked`);
-  if (pending.length > 0) parts.push(`:hourglass: ${pending.length} not run yet`);
+  if (early.length > 0) parts.push(`:hourglass: ${early.length} too early to tell`);
 
   const lines = [
     '',
     `:shield: *Merged fixes — ${items.length} under watch*` +
       (parts.length > 0 ? ` — ${parts.join('  |  ')}` : ''),
   ];
-  for (const item of reflaked) {
+  const describe = (icon, item) => {
     const prNumber = String(item.pr ?? '').match(/\/pull\/(\d+)/)?.[1];
     const pr = prNumber ? ` (${link(item.pr, `PR #${prNumber}`)})` : '';
     const title = item.title ? ` › ${escape(item.title)}` : '';
+    return (
+      `  ${icon} ${escape(item.version)} \`${escape(item.file)}\`${title}${pr}` +
+      ` — ${escape(item.post_merge?.summary ?? '')}`
+    );
+  };
+  lines.push(...reflaked.map((item) => describe(':warning:', item)));
+  lines.push(...early.map((item) => describe(':hourglass:', item)));
+  if (holding.length > 0) {
+    const nights = holding.map((i) => i.post_merge?.nightlies ?? 0);
+    const low = Math.min(...nights);
+    const high = Math.max(...nights);
     lines.push(
-      `  :warning: ${escape(item.version)} \`${escape(item.file)}\`${title}${pr}` +
-        ` — ${escape(item.post_merge?.summary ?? 're-flaked')}`,
+      `  :white_check_mark: ${holding.length} holding — clean` +
+        ` ${low === high ? `${low}` : `${low}–${high}`} night(s) each since the merge.`,
     );
   }
   const partial = of('clean-in-window').length;

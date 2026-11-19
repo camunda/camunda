@@ -188,8 +188,12 @@ platform_values += -f camunda-platform-physical-tenants.yaml
 _load_test_setup_flags += --set keycloak.hostname=keycloak
 endif
 
-# Disable Optimize if not enabled
-ifneq ($(enable_optimize),true)
+# Disable Optimize if not enabled (or when there is no secondary storage backend;
+# stable-branch workflows pass `enable_optimize=true` on the make command line,
+# which overrides the `enable_optimize ?= false` baked by newLoadTest.sh).
+ifeq ($(secondary_storage),none)
+	platform_values += --set optimize.enabled=false
+else ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
 else
 	platform_values += -f camunda-platform-values-optimize.yaml

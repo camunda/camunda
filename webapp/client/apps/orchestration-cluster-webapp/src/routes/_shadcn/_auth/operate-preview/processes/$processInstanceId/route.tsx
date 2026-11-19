@@ -6,8 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet, useLocation, useNavigate} from '@tanstack/react-router';
-import {useSuspenseQuery} from '@tanstack/react-query';
+import {
+	createFileRoute,
+	Outlet,
+	useLocation,
+	useNavigate,
+	useRouter,
+	type ErrorComponentProps,
+} from '@tanstack/react-router';
+import {useQueryClient, useSuspenseQuery} from '@tanstack/react-query';
 import {t} from 'i18next';
 import {ProcessInstance} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstance';
 import {ProcessInstanceWithVisibleTabs} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceWithVisibleTabs';
@@ -20,9 +27,14 @@ import {ProcessInstanceBreadcrumb} from '#/operate/pages/ProcessInstance/shadcn.
 import {InstanceHistory} from '#/operate/pages/ProcessInstance/shadcn.components/InstanceHistory';
 import {isWidthAboveBreakpoint, useMatchMedia} from '#/operate/shared/useMatchMedia';
 import {InstanceDiagram} from '#/operate/pages/ProcessInstance/shadcn.components/InstanceDiagram';
+import {ProcessInstanceError} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceError';
 import {ProcessInstanceHeader} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeader';
 import {ProcessInstanceHeaderSkeleton} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeaderSkeleton';
 import {ProcessInstanceOperations} from '#/operate/pages/ProcessInstance/ProcessInstanceOperations/shadcn.components/ProcessInstanceOperations';
+import {ProcessInstanceModificationFooter} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceModificationFooter';
+import {ModificationLeaveDialog} from '#/operate/pages/ProcessInstance/shadcn.components/ModificationLeaveDialog';
+import {useModificationController} from '#/operate/pages/ProcessInstance/useProcessInstanceModification';
+import {useModificationLeaveBlocker} from '#/operate/pages/ProcessInstance/useModificationLeaveBlocker';
 import {ProcessInstancePageProvider} from '#/operate/pages/ProcessInstance/ProcessInstancePageProvider';
 import {useCallHierarchy} from '#/operate/shared/Operations/Operations.queries';
 import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
@@ -60,6 +72,23 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 			header={<ProcessInstanceHeaderSkeleton />}
 		/>
 	),
+	errorComponent: function ProcessInstanceRouteError({error}: ErrorComponentProps) {
+		const {processInstanceId} = Route.useParams();
+		const router = useRouter();
+		const queryClient = useQueryClient();
+
+		if (error !== queryClient.getQueryState(processInstanceQuery(processInstanceId).queryKey)?.error) {
+			throw error;
+		}
+
+		return (
+			<ProcessInstanceError
+				error={error}
+				processInstanceId={processInstanceId}
+				onRetry={() => void router.invalidate({filter: (match) => match.routeId === Route.id})}
+			/>
+		);
+	},
 	component: function ProcessInstanceRoute() {
 		const {processInstanceId} = Route.useParams();
 		const search = Route.useSearch();
@@ -67,6 +96,9 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 		const {data: processInstance} = useSuspenseQuery(processInstanceQuery(processInstanceId));
 		const {data: hierarchy} = useCallHierarchy(processInstanceId, {enabled: true});
 		const {pathname} = useLocation();
+		const modification = useModificationController(processInstanceId);
+		const {isModificationModeEnabled} = modification;
+		const blocker = useModificationLeaveBlocker({processInstanceId, disabled: !isModificationModeEnabled});
 
 		const withoutTabSearch = <T extends {sort?: string; operationType?: unknown; entityType?: unknown}>(prev: T) => ({
 			...prev,
@@ -143,9 +175,13 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				processInstanceId={processInstanceId}
 				processInstance={processInstance}
 				search={search}
+				modification={modification}
 			>
 				<ProcessInstanceWithVisibleTabs
 					activeTab={getProcessInstanceTabFromPath(pathname)}
+					isModificationModeEnabled={isModificationModeEnabled}
+					isApplyingModifications={modification.state.status === 'applying-modifications'}
+					footer={isModificationModeEnabled ? <ProcessInstanceModificationFooter /> : undefined}
 					isDesktop={isDesktop}
 					onTabChange={(tab) => void changeTab(tab)}
 					breadcrumb={
@@ -159,6 +195,11 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				>
 					<Outlet />
 				</ProcessInstanceWithVisibleTabs>
+				<ModificationLeaveDialog
+					open={blocker.status === 'blocked'}
+					onStay={() => blocker.reset?.()}
+					onLeave={() => blocker.proceed?.()}
+				/>
 			</ProcessInstancePageProvider>
 		);
 	},

@@ -47,4 +47,17 @@ final class PermissionTypeTest {
     // given / when / then
     assertThat(PermissionType.ANSWER.isReadPermission()).isFalse();
   }
+
+  @Test
+  void shouldNotClassifySuspendProcessDefinitionPermissionAsReadPermission() {
+    // given / when / then
+    assertThat(PermissionType.SUSPEND_PROCESS_DEFINITION.isReadPermission()).isFalse();
+  }
+
+  @Test
+  void shouldSupportSuspendProcessDefinitionOnProcessDefinitionResourceType() {
+    // given / when / then
+    assertThat(AuthorizationResourceType.PROCESS_DEFINITION.getSupportedPermissionTypes())
+        .contains(PermissionType.SUSPEND_PROCESS_DEFINITION);
+  }
 }

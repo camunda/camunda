@@ -10,7 +10,9 @@ package io.camunda.service;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.SecretListEntry;
 import io.camunda.secretstore.SecretResolutionResult;
+import io.camunda.secretstore.SecretStatus;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import java.util.ArrayList;
@@ -22,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.jspecify.annotations.Nullable;
 
 /** Shared doubles for the tests of {@link SecretServices}. */
 final class SecretTestSupport {
@@ -57,6 +60,8 @@ final class SecretTestSupport {
     // names this store lists but holds no value for, so a test can list one the SPI's nullness
     // contract forbids
     private final List<String> additionalListedNames = new ArrayList<>();
+    private final Map<String, SecretStatus> statuses = new HashMap<>();
+    private boolean listsNullEntry;
     private int listCalls;
     private boolean unavailable;
     private boolean omitResults;
@@ -80,6 +85,38 @@ final class SecretTestSupport {
       final List<String> names = new ArrayList<>(values.keySet());
       names.addAll(additionalListedNames);
       return names;
+    }
+
+    @Override
+    public List<SecretListEntry> listEntries() {
+      final List<SecretListEntry> entries =
+          new ArrayList<>(
+              list().stream()
+                  .map(
+                      name ->
+                          new SecretListEntry(
+                              name,
+                              statuses.containsKey(name)
+                                  ? statuses.get(name)
+                                  : SecretStatus.ACTIVE))
+                  .toList());
+      if (listsNullEntry) {
+        entries.add(null);
+      }
+      return entries;
+    }
+
+    /** Makes the store list a null entry, which the SPI's nullness contract forbids. */
+    void listsNullEntry() {
+      listsNullEntry = true;
+    }
+
+    /**
+     * Makes the store report the given state for a secret it lists, as a store with states does.
+     */
+    TestSecretStore reportsStatus(final String name, final @Nullable SecretStatus status) {
+      statuses.put(name, status);
+      return this;
     }
 
     TestSecretStore holds(final String name, final String value) {

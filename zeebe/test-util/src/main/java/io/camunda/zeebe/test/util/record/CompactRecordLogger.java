@@ -725,6 +725,10 @@ public class CompactRecordLogger {
     if (jobKeys != null && !jobKeys.isEmpty()) {
       result.append(" jobs:").append(jobKeys.size());
     }
+    final var probeKeys = value.getProbeKeys();
+    if (probeKeys != null && !probeKeys.isEmpty()) {
+      result.append(" probes:").append(probeKeys.size());
+    }
 
     return result.toString();
   }

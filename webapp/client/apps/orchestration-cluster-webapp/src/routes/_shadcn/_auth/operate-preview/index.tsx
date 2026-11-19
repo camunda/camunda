@@ -7,6 +7,7 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {t} from 'i18next';
 import {runningInstancesCountQuery} from '#/operate/pages/Dashboard/useRunningInstancesCount';
 import {Dashboard} from '#/operate/pages/Dashboard/shadcn.components/Dashboard';
 
@@ -14,5 +15,6 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/')({
 	loader: async ({context: {queryClient}}) => {
 		await queryClient.ensureQueryData(runningInstancesCountQuery());
 	},
+	head: () => ({meta: [{title: t('operate.dashboard.pageTitle')}]}),
 	component: Dashboard,
 });

@@ -9,6 +9,7 @@ package io.camunda.zeebe.util.collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -98,6 +99,33 @@ final class TableTest {
     // then
     assertThat(value).isEqualTo(2);
     assertThat(table.get(Row.A, Column.E)).isEqualTo(2);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideImplementations")
+  void shouldIterateOverAllValues(final Table<Row, Column, Integer> table) {
+    // given
+    table.put(Row.A, Column.D, 1);
+    table.put(Row.A, Column.E, 2);
+    table.put(Row.C, Column.F, 3);
+    final var values = new ArrayList<Integer>();
+
+    // when
+    table.forEachValue(values::add);
+
+    // then
+    assertThat(values).containsExactlyInAnyOrder(1, 2, 3);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideImplementations")
+  void shouldNotIterateOnEmptyTable(final Table<Row, Column, Integer> table) {
+    // when
+    final var values = new ArrayList<Integer>();
+    table.forEachValue(values::add);
+
+    // then
+    assertThat(values).isEmpty();
   }
 
   private static Stream<Named<Table<Row, Column, Integer>>> provideImplementations() {

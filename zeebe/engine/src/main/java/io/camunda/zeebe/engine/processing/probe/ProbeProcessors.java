@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.probe;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
+import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -41,10 +42,10 @@ public final class ProbeProcessors {
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final ProbeNotifier probeNotifier,
+      final ProbeBehavior probeBehavior,
+      final SecretStoreRegistry secretStoreRegistry,
+      final SecretResolutionScheduler secretResolutionScheduler,
       final InstantSource clock) {
-    final var probeBehavior =
-        new ProbeBehavior(probeNotifier, processingState.getAsyncRequestState(), writers);
     final var timeoutChecker =
         new ProbeTimeoutCheckScheduler(scheduledTaskStateFactory.get().getProbeState(), clock);
 
@@ -69,6 +70,9 @@ public final class ProbeProcessors {
             ProbeBatchIntent.ACTIVATE,
             new ProbeBatchActivateProcessor(
                 processingState.getProbeState(),
+                probeBehavior,
+                secretStoreRegistry,
+                secretResolutionScheduler,
                 cslCheck,
                 tenantCheck,
                 keyGenerator,

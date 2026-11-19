@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.secretstore.InMemorySecretCache;
+import io.camunda.secretstore.SecretStatus;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -42,6 +43,8 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class SecretServicesTest {
 
@@ -755,6 +758,113 @@ public class SecretServicesTest {
   }
 
   @Test
+  void shouldListEverySecretOfAStoreWithoutStatesWhenFilteringByActive() {
+    // given a store that cannot report states, so every secret counts as ACTIVE
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+
+    // when
+    final var references = services.list(authentication, SecretStatus.ACTIVE).join();
+
+    // then
+    assertThat(references)
+        .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = SecretStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "ACTIVE")
+  void shouldListNothingOfAStoreWithoutStatesWhenFilteringByAnyOtherStatus(
+      final SecretStatus status) {
+    // given a store that cannot report states
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+
+    // when
+    final var references = services.list(authentication, status).join();
+
+    // then
+    assertThat(references).isEmpty();
+  }
+
+  @Test
+  void shouldListOnlySecretsInTheRequestedStatus() {
+    // given a store reporting a different state for each secret
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    store.reportsStatus("a", SecretStatus.DISABLED).reportsStatus("b", SecretStatus.EXPIRED);
+
+    // when
+    final var disabled = services.list(authentication, SecretStatus.DISABLED).join();
+    final var active = services.list(authentication, SecretStatus.ACTIVE).join();
+    final var expired = services.list(authentication, SecretStatus.EXPIRED).join();
+    final var notYetActive = services.list(authentication, SecretStatus.NOT_YET_ACTIVE).join();
+
+    // then
+    assertThat(disabled).containsExactly("camunda.secrets.a");
+    assertThat(expired).containsExactly("camunda.secrets.b");
+    assertThat(active).containsExactly("camunda.secrets.token");
+    assertThat(notYetActive).isEmpty();
+  }
+
+  @Test
+  void shouldListSecretsOfEveryStateWhenNoStatusIsRequested() {
+    // given a store reporting a different state for each secret
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    store.reportsStatus("a", SecretStatus.DISABLED).reportsStatus("b", SecretStatus.EXPIRED);
+
+    // when
+    final var references = services.list(authentication, null).join();
+
+    // then the filter is optional: nothing is left out
+    assertThat(references)
+        .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+  }
+
+  @Test
+  void shouldListAReferenceOnceWhenTwoStoresReportItInDifferentStatuses() {
+    // given two stores holding the same name, one reporting it DISABLED and one ACTIVE
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    final var disabled =
+        new TestSecretStore().holds("shared", "v").reportsStatus("shared", SecretStatus.DISABLED);
+    final var active = new TestSecretStore().holds("shared", "v");
+    final var stores = new LinkedHashMap<String, SecretStore>();
+    stores.put("first", disabled);
+    stores.put("second", active);
+    final var multiStore = newSecretServices(PHYSICAL_TENANT_ID, new SecretStoreRegistry(stores));
+
+    // when
+    final var disabledList = multiStore.list(authentication, SecretStatus.DISABLED).join();
+    final var activeList = multiStore.list(authentication, SecretStatus.ACTIVE).join();
+    final var all = multiStore.list(authentication, null).join();
+
+    // then each filter matches the store that reports that state, and an unfiltered list holds
+    // the reference once. A tenant has one store today, so this cannot happen in production;
+    // once several are allowed, resolve lets the first store decide and the list must follow
+    // (see listFromStores).
+    assertThat(disabledList).containsExactly("camunda.secrets.shared");
+    assertThat(activeList).containsExactly("camunda.secrets.shared");
+    assertThat(all).containsExactly("camunda.secrets.shared");
+  }
+
+  @Test
+  void shouldNotListAnUnreadableSecretInAnyStatus() {
+    // given a disabled and an active secret, the caller may read only the disabled one
+    authorizationsConfig.setEnabled(true);
+    grantRead("camunda.secrets.a");
+    store.reportsStatus("a", SecretStatus.DISABLED);
+
+    // when
+    final var active = services.list(authentication, SecretStatus.ACTIVE).join();
+    final var disabled = services.list(authentication, SecretStatus.DISABLED).join();
+
+    // then only the readable secret is listed, and only under its own status
+    assertThat(active).isEmpty();
+    assertThat(disabled).containsExactly("camunda.secrets.a");
+  }
+
+  @Test
   void shouldListFromTheStoreOfItsOwnPhysicalTenant() {
     // given another physical tenant whose store holds a different secret
     authorizationsConfig.setEnabled(true);
@@ -823,6 +933,40 @@ public class SecretServicesTest {
     // then the listing costs that one name rather than failing as an internal error
     assertThat(references)
         .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+  }
+
+  @Test
+  void shouldOmitANullEntryFromTheListingWithoutFailingIt() {
+    // given a store that lists a null entry, which the store SPI's nullness contract forbids but a
+    // third-party store could still do
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    store.listsNullEntry();
+
+    // when
+    final var references = services.list(authentication, SecretStatus.ACTIVE).join();
+
+    // then the listing costs that one entry rather than failing as an internal error
+    assertThat(references)
+        .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+  }
+
+  @Test
+  void shouldTreatAnEntryWithoutAStatusAsActive() {
+    // given a store listing a secret without a status, which the SPI forbids but a third-party
+    // store could still do
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    store.reportsStatus("a", null);
+
+    // when
+    final var active = services.list(authentication, SecretStatus.ACTIVE).join();
+    final var disabled = services.list(authentication, SecretStatus.DISABLED).join();
+
+    // then it is listed like any ACTIVE secret, and as in the unfiltered list
+    assertThat(active)
+        .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+    assertThat(disabled).isEmpty();
   }
 
   @Test

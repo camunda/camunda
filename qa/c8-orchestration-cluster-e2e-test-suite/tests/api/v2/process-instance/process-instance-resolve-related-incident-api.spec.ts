@@ -42,12 +42,8 @@ test.describe.serial('Resolve related incidents API Tests', () => {
   };
 
   test.beforeAll(async ({request}) => {
-    //**
-    // * Deplyed and instanciated process instance has two incidents related to it.
-    // * During test only one incident is fixed and actually resolved.
-    // * Use of the same process instance in unhappy paths tests does not cause any issue,
-    // * as process instance will always have at least one active incident.
-    // **
+    // The instance has two incidents and only one gets resolved, so the
+    // unhappy-path tests always see an active incident.
     await test.step('Setup - Deploy process and create instance to delete', async () => {
       await deploy(['./resources/MultipleErrorTypesProcess.bpmn']);
       const createdInstance = await createSingleInstance(

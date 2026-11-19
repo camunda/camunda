@@ -1643,7 +1643,8 @@
 					},
 					"variablesPanel": {
 						"tabsLabel": "Registerkarten des Variablenbereichs",
-						"inputsAndOutputs": "Eingaben und Ausgaben"
+						"inputsAndOutputs": "Eingaben und Ausgaben",
+						"loadingResult": "Ergebnis wird geladen"
 					},
 					"forbidden": {
 						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
@@ -1656,6 +1657,11 @@
 				}
 			},
 			"processInstance": {
+				"ds": {
+					"forbidden": {
+						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
+					}
+				},
 				"scaffold": {
 					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich",
 					"bottomPanelPlaceholder": "Platzhalter für den unteren Bereich"
@@ -2000,6 +2006,7 @@
 					"discard": "Verwerfen",
 					"discardDescription": "Alle hinzugefügten Änderungen für die Instanz {{processInstanceKey}} werden verworfen.",
 					"discardHint": "Klicken Sie auf „Verwerfen“, um fortzufahren.",
+					"applying": "Änderungen werden angewendet",
 					"leaveTitle": "Änderungsmodus verlassen",
 					"stay": "Bleiben",
 					"leave": "Verlassen",

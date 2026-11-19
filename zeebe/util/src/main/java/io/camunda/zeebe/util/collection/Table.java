@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
@@ -67,6 +68,13 @@ public interface Table<RowT, ColT, T> {
    * @return the value indexed at the row/column, or null if none
    */
   T computeIfAbsent(RowT rowKey, ColT columnKey, BiFunction<RowT, ColT, T> computer);
+
+  /**
+   * Calls the given consumer with every value stored in the table, in no particular order.
+   *
+   * @param consumer the consumer to call with each value
+   */
+  void forEachValue(Consumer<? super T> consumer);
 
   /**
    * Returns a basic implementation of a table. If using enums for row and column keys, use {@link
@@ -135,6 +143,11 @@ public interface Table<RowT, ColT, T> {
           .computeIfAbsent(rowKey, ignored -> (Map<ColT, T>) supplier.get())
           .computeIfAbsent(columnKey, ignored -> computer.apply(rowKey, columnKey));
     }
+
+    @Override
+    public void forEachValue(final Consumer<? super T> consumer) {
+      table.values().forEach(row -> row.values().forEach(consumer));
+    }
   }
 
   /**
@@ -187,6 +200,11 @@ public interface Table<RowT, ColT, T> {
       final var updated = computer.apply(rowKey, columnKey);
       marray.put(updated, rowKey.ordinal(), columnKey.ordinal());
       return updated;
+    }
+
+    @Override
+    public void forEachValue(final Consumer<? super T> consumer) {
+      marray.forEach(consumer);
     }
   }
 }

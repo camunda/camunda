@@ -12,8 +12,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Implementations must be thread-safe: {@link #resolve} and {@link #list} may be called
- * concurrently from multiple threads.
+ * Implementations must be thread-safe: {@link #resolve}, {@link #list} and {@link #listEntries} may
+ * be called concurrently from multiple threads.
  */
 public interface SecretStore extends AutoCloseable {
 
@@ -39,6 +39,23 @@ public interface SecretStore extends AutoCloseable {
    *     is malformed
    */
   List<String> list();
+
+  /**
+   * Lists all secrets known to this store together with their state.
+   *
+   * <p>The default reports every secret from {@link #list()} as {@link SecretStatus#ACTIVE}, so a
+   * store that cannot tell a secret's state needs no change. A store that can overrides this and
+   * must keep {@link #list()} naming the same secrets, whatever their state. Wrappers must delegate
+   * it, or the wrapped store's states are lost.
+   *
+   * <p>Implementations must be thread-safe.
+   *
+   * @throws SecretStoreUnavailableException if the backing store cannot be accessed or its content
+   *     is malformed
+   */
+  default List<SecretListEntry> listEntries() {
+    return list().stream().map(name -> new SecretListEntry(name, SecretStatus.ACTIVE)).toList();
+  }
 
   /**
    * Whether this is a store of the given type, seeing through any wrapper: a store wrapped for

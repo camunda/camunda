@@ -85,7 +85,7 @@ public class ProcessEventsClaimsTest {
   }
 
   @Test
-  public void shouldKeepOnlyActorClaimsOnFollowUpEvents() {
+  public void shouldKeepOnlyActorClaimsOnFollowUpRecords() {
     // given
     deployProcess();
     final var authInfo =
@@ -112,17 +112,47 @@ public class ProcessEventsClaimsTest {
                         && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK)
             .toList();
     assertThat(records)
-        .filteredOn(r -> r.getRecordType() == RecordType.EVENT)
-        .isNotEmpty()
+        .extracting(Record::getRecordType)
+        .contains(RecordType.COMMAND, RecordType.EVENT);
+    assertThat(records)
         .allSatisfy(
             r ->
                 assertThat(r.getAuthorizations())
                     .isEqualTo(
                         Map.of(Authorization.AUTHORIZED_USERNAME, DEFAULT_USER.getUsername())));
-    assertThat(records)
-        .filteredOn(r -> r.getRecordType() == RecordType.COMMAND)
-        .isNotEmpty()
-        .allSatisfy(r -> assertThat(r.getAuthorizations()).isEqualTo(authInfo.toClaimsMap()));
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATE)
+                .onlyCommands()
+                .getFirst()
+                .getAuthorizations())
+        .as("client command")
+        .isEqualTo(authInfo.toClaimsMap());
+  }
+
+  @Test
+  public void shouldKeepOnlyActorClaimsOnRejections() {
+    // given
+    final var authInfo =
+        AuthInfo.ofClaims(
+            Map.of(
+                Authorization.AUTHORIZED_USERNAME,
+                DEFAULT_USER.getUsername(),
+                Authorization.USER_GROUPS_CLAIMS,
+                List.of("group"),
+                Authorization.USER_TOKEN_CLAIMS,
+                Map.of("sub", DEFAULT_USER.getUsername())));
+
+    // when
+    engine.processInstance().ofBpmnProcessId("unknownProcess").expectRejection().create(authInfo);
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .onlyCommandRejections()
+                .getFirst()
+                .getAuthorizations())
+        .isEqualTo(Map.of(Authorization.AUTHORIZED_USERNAME, DEFAULT_USER.getUsername()));
   }
 
   @Test

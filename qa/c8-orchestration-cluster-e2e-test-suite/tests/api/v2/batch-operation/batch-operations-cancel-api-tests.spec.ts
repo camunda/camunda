@@ -40,14 +40,8 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   test('Cancel active batch operation returns 204 and status becomes CANCELED', async ({
     request,
   }) => {
-    // Use a large instance count so the batch stays ACTIVE long enough for the
-    // cancel command to catch it in flight. Cancellation time scales with the
-    // instance count: a 3-instance batch completes in ~2.5s, so a 30-instance
-    // batch can reach a terminal state between the accepted create and the
-    // first cancel retry, and cancelling a finished batch correctly returns a
-    // permanent 404 that the 240s retry budget cannot recover from. Mirrors the
-    // instance count the sibling suspend suite already relies on for the same
-    // reason.
+    // Large batch so it is still ACTIVE when the command lands; 30 instances
+    // can finish first.
     const key =
       await test.step('Create cancelable batch operation', async () => {
         return createCancellationBatch(request, 500);

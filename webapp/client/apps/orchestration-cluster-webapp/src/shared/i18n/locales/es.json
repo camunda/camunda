@@ -1643,7 +1643,8 @@
 					},
 					"variablesPanel": {
 						"tabsLabel": "Pestañas del panel de variables",
-						"inputsAndOutputs": "Entradas y salidas"
+						"inputsAndOutputs": "Entradas y salidas",
+						"loadingResult": "Cargando resultado"
 					},
 					"forbidden": {
 						"heading": "No tiene permiso para ver esta información"
@@ -1656,6 +1657,11 @@
 				}
 			},
 			"processInstance": {
+				"ds": {
+					"forbidden": {
+						"heading": "No tiene permiso para ver esta información"
+					}
+				},
 				"scaffold": {
 					"diagramPanelPlaceholder": "Marcador de posición del panel de diagrama",
 					"bottomPanelPlaceholder": "Marcador de posición del panel inferior"
@@ -2000,6 +2006,7 @@
 					"discard": "Descartar",
 					"discardDescription": "Se van a descartar todas las modificaciones añadidas para la instancia {{processInstanceKey}}.",
 					"discardHint": "Haz clic en «Descartar» para continuar.",
+					"applying": "Aplicando modificaciones",
 					"leaveTitle": "Salir del modo de modificación",
 					"stay": "Quedarse",
 					"leave": "Salir",

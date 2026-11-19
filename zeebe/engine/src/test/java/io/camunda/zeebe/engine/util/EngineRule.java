@@ -512,6 +512,11 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.events();
   }
 
+  /** Like {@link #events()}, for the given partition. */
+  public RecordStream events(final int partitionId) {
+    return environmentRule.events(partitionId);
+  }
+
   /**
    * Returns the process message subscriptions waiting for a reply from the message partition. They
    * are kept in a thread-safe map in memory, so unlike the rest of the processing state they can be

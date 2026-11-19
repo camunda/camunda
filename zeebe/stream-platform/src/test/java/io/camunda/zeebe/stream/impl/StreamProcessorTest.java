@@ -642,6 +642,34 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  void shouldNotRunFixedRateRunnableWhilePaused() {
+    // given
+    final var runs = new AtomicInteger();
+    doAnswer(
+            invocation -> {
+              final var context = (ReadonlyStreamProcessorContext) invocation.getArgument(0);
+              context
+                  .getScheduleService()
+                  .runAtFixedRate(Duration.ofMillis(50), runs::incrementAndGet);
+              return invocation.callRealMethod();
+            })
+        .when(streamPlatform.getMockProcessorLifecycleAware())
+        .onRecovered(any());
+    streamPlatform.startStreamProcessor();
+    Awaitility.await().untilAsserted(() -> assertThat(runs.get()).isPositive());
+
+    // when
+    streamPlatform.pauseProcessing();
+    final var runsWhenPaused = runs.get();
+
+    // then
+    Awaitility.await()
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> assertThat(runs.get()).isLessThanOrEqualTo(runsWhenPaused + 1));
+  }
+
+  @Test
   public void shouldProcessEvenIfAsyncSchedulingBlocks() throws InterruptedException {
     // given
     final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();

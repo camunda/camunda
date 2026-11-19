@@ -115,6 +115,34 @@ describe('<ProcessInstanceOperations /> (DS)', () => {
 		}
 	});
 
+	it('should offer migration for active instances only', async () => {
+		const active = createInstance('ACTIVE');
+		const activeScreen = await renderOperations(active);
+
+		await expect
+			.element(activeScreen.getByRole('button', {name: `Migrate Instance ${active.processInstanceKey}`}))
+			.toBeEnabled();
+		await cleanup();
+
+		const completed = createInstance('COMPLETED');
+		const completedScreen = await renderOperations(completed);
+
+		await expect
+			.element(completedScreen.getByRole('button', {name: `Migrate Instance ${completed.processInstanceKey}`}))
+			.not.toBeInTheDocument();
+	});
+
+	it('should show the migration helper and close it without migrating', async () => {
+		const instance = createInstance('ACTIVE');
+		const screen = await renderOperations(instance);
+
+		await userEvent.click(screen.getByRole('button', {name: `Migrate Instance ${instance.processInstanceKey}`}));
+		await expect.element(screen.getByRole('dialog', {name: 'Migrate process instance versions'})).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+
+		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
+	});
+
 	it('should show the lifecycle of a suspend operation', async ({worker}) => {
 		const instance = createInstance('ACTIVE');
 		worker.use(
@@ -160,7 +188,7 @@ describe('<ProcessInstanceOperations /> (DS)', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Actions'}));
 
-		for (const label of ['Retry', 'Suspend', 'Cancel']) {
+		for (const label of ['Retry', 'Suspend', 'Cancel', 'Migrate']) {
 			await expect.element(screen.getByRole('menuitem', {name: label})).toBeEnabled();
 		}
 		await userEvent.keyboard('{Escape}');

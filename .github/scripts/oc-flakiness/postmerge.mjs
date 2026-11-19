@@ -20,7 +20,7 @@
 //   <dir>/<version>/<cell>/<run_id>/meta.json      {"created_at": "<iso>"}
 //   <dir>/<version>/<cell>/<run_id>/**/results.json
 //
-// A "night" here is one nightly run that actually ran the test: a run of a
+// A "night" here is one calendar night that actually ran the test: a run of a
 // cell the test does not live in says nothing about it, and counting it would
 // dilute the result towards clean.
 //
@@ -87,6 +87,45 @@ function runsOf(reportsDir, version) {
   return [...runs.values()];
 }
 
+// The nightly runs of one version folded into the nights they ran on.
+//
+// A version can have several nightly workflows -- 8.9, 8.10 and main run the
+// same API tests against Elasticsearch and against RDBMS -- and each is its
+// own run id. Counting those as separate nights inflates every number this
+// script reports: a fix merged two nights ago reads as "clean 4 night(s)".
+// What the reader is asking is how many times the nightlies have had a chance
+// to catch the test since the fix landed, and that is counted in nights.
+// A night keeps, per test, the runs that actually ran it, each with its own
+// start time. The night cannot carry one timestamp of its own: the workflows
+// of a night start minutes apart, and a merge landing between them would then
+// be compared against a run that never touched this test -- discarding a
+// post-merge re-flake, which is the one thing this measurement exists to find.
+function nightsOf(reportsDir, version) {
+  const nights = new Map();
+  const runs = runsOf(reportsDir, version)
+    .filter((run) => run.createdAt)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  for (const run of runs) {
+    const key = run.createdAt.slice(0, 10);
+    let night = nights.get(key);
+    if (!night) {
+      night = {night: key, observations: new Map()};
+      nights.set(key, night);
+    }
+    for (const fp of run.ran) {
+      // Runs are folded oldest first, so each list stays in start order.
+      const seen = night.observations.get(fp) ?? [];
+      seen.push({
+        runId: run.runId,
+        createdAt: run.createdAt,
+        flaked: run.flaked.has(fp),
+      });
+      night.observations.set(fp, seen);
+    }
+  }
+  return [...nights.values()];
+}
+
 // The verdict, and the sentence the Slack board and the PR comment both read.
 //
 // `confirmed` is sticky: once a night has shown the fix failing, that stays
@@ -95,10 +134,22 @@ function runsOf(reportsDir, version) {
 // a fix known to have failed would read as holding a week later, which is the
 // one thing this measurement exists to prevent.
 //
+// A fix measured over one or two nights has not been measured: the tests this
+// agent picks flake in a minority of nights, so a couple of green ones are the
+// likeliest reading of a fix that changed nothing. Those are `too-early`, and
+// the board keeps them out of the holding count rather than claiming a result
+// nobody can act on.
+//
 // `clean-in-window` is the honest answer when the fix merged further back than
 // the report window reaches: the nights we can see were clean, but the ones
 // between the merge and the start of the window were never looked at, so
 // calling it clean outright would overstate what was measured.
+export const MIN_NIGHTS = 3;
+
+// Stamped on every record this script writes, so a later run can tell what
+// `confirmed` counts.
+const NIGHTS = 'nights';
+
 export function verdictOf({nightlies, flaked, confirmed = flaked, windowCoversMerge}) {
   if (flaked > 0) {
     return {
@@ -120,6 +171,14 @@ export function verdictOf({nightlies, flaked, confirmed = flaked, windowCoversMe
       summary: 'no nightly has run this test since the merge',
     };
   }
+  if (nightlies < MIN_NIGHTS) {
+    return {
+      verdict: 'too-early',
+      summary:
+        `clean ${nightlies} night(s) — too few to call it yet ` +
+        `(${MIN_NIGHTS} needed)`,
+    };
+  }
   if (windowCoversMerge) {
     return {verdict: 'clean', summary: `clean ${nightlies} night(s)`};
   }
@@ -133,17 +192,17 @@ export function verdictOf({nightlies, flaked, confirmed = flaked, windowCoversMe
 
 export function postMerge({reportsDir, ledger = {}, merged = {}, now}) {
   const checkedAt = now ?? new Date().toISOString();
-  const runsByVersion = new Map();
+  const nightsByVersion = new Map();
   const out = [];
 
   for (const [fp, mergedAt] of Object.entries(merged)) {
     const entry = ledger[fp];
     if (!entry || !mergedAt) continue;
     const version = entry.version;
-    if (!runsByVersion.has(version)) {
-      runsByVersion.set(version, runsOf(reportsDir, version));
+    if (!nightsByVersion.has(version)) {
+      nightsByVersion.set(version, nightsOf(reportsDir, version));
     }
-    const runs = runsByVersion.get(version).filter((r) => r.createdAt);
+    const nights = nightsByVersion.get(version);
     const mergedMs = Date.parse(mergedAt);
 
     // The window is only as old as the oldest night that actually ran this
@@ -151,16 +210,22 @@ export function postMerge({reportsDir, ledger = {}, merged = {}, now}) {
     // directories a failed artifact download leaves behind -- say nothing
     // about it, so letting them start the window would report a fix as clean
     // on the strength of nights that never exercised it.
-    const informative = runs.filter((r) => r.ran.has(fp));
+    const seenIn = (night) => night.observations.get(fp) ?? [];
+    const informative = nights.filter((n) => n.observations.has(fp));
     const windowStart = informative
-      .map((r) => r.createdAt)
+      .map((n) => seenIn(n)[0].createdAt)
       .sort()
       .at(0);
     const windowCoversMerge =
       windowStart !== undefined && Date.parse(windowStart) <= mergedMs;
 
-    const after = informative.filter((r) => Date.parse(r.createdAt) > mergedMs);
-    const hits = after.filter((r) => r.flaked.has(fp));
+    // A night counts once the test ran in it after the merge. A night that
+    // straddles the merge -- one workflow before it, another after -- is such
+    // a night, and a re-flake in the later run is a re-flake of this fix.
+    const sinceMerge = (night) =>
+      seenIn(night).filter((o) => Date.parse(o.createdAt) > mergedMs);
+    const after = informative.filter((n) => sinceMerge(n).length > 0);
+    const hits = after.filter((n) => sinceMerge(n).some((o) => o.flaked));
     // Evidence from earlier runs, but only for this same merge: a new PR
     // resets the measurement, and `decide` drops `post_merge` when it records
     // one.
@@ -169,8 +234,13 @@ export function postMerge({reportsDir, ledger = {}, merged = {}, now}) {
       (entry.post_merge.merged_at ?? mergedAt) === mergedAt
         ? entry.post_merge
         : undefined;
+    // Only a count this script wrote in nights can be carried forward as one.
+    // Before the calendar-night fold `confirmed` counted workflow runs, so an
+    // entry without the marker is worth one night -- all it still proves is
+    // that the fix failed at least once.
     const priorConfirmed =
-      prior?.confirmed ?? (prior?.verdict === 're-flaked' ? 1 : 0);
+      (prior?.unit === NIGHTS ? prior.confirmed : undefined) ??
+      (prior?.verdict === 're-flaked' ? 1 : 0);
     // A lower bound, not a sum: nights still inside the window were already
     // counted by the run that recorded `confirmed`.
     const confirmed = Math.max(priorConfirmed, hits.length);
@@ -194,6 +264,7 @@ export function postMerge({reportsDir, ledger = {}, merged = {}, now}) {
       verdict,
       needs_flag: verdict === 're-flaked' && flaggedAt === '',
       post_merge: {
+        unit: NIGHTS,
         merged_at: mergedAt,
         nightlies: after.length,
         flaked: hits.length,
@@ -203,9 +274,10 @@ export function postMerge({reportsDir, ledger = {}, merged = {}, now}) {
         window_covers_merge: windowCoversMerge,
         window_start: windowStart ?? '',
         last_flake_run_id:
-          hits.sort((a, b) => a.createdAt.localeCompare(b.createdAt))[
-            hits.length - 1
-          ]?.runId ??
+          hits
+            .flatMap((n) => sinceMerge(n).filter((o) => o.flaked))
+            .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+            .at(-1)?.runId ??
           prior?.last_flake_run_id ??
           '',
         checked_at: checkedAt,

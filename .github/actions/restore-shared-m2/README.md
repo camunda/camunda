@@ -40,15 +40,17 @@ steps:
   - uses: ./.github/actions/setup-build
     with:
       vault-address: ${{ secrets.VAULT_ADDR }}
-      vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-      vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+      vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+      vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
   - name: Authenticate to GCS build-cache  # authenticates gcloud for the restore below
     timeout-minutes: 3
     uses: ./.github/actions/gcs-build-cache-auth
     with:
       vault-addr: ${{ secrets.VAULT_ADDR }}
-      vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-      vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+      vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+      vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
   - uses: ./.github/actions/restore-shared-m2
 ```
 

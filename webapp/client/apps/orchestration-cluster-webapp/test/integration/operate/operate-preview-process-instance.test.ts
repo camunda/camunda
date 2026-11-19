@@ -19,6 +19,7 @@ import {
 	mockQueryElementInstancesEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,
+	mockQueryElementInstanceInspectionEndpoint,
 	mockQueryVariablesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -33,7 +34,11 @@ import {
 	createElementInstance,
 	createQueryElementInstancesResponse,
 } from '#/shared-test-modules/api-mocks/element-instances';
-import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {
+	createElementInstanceInspection,
+	createQueryElementInstanceInspectionResponse,
+} from '#/shared-test-modules/api-mocks/element-instance-inspection';
+import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-instance-diagram-handlers';
@@ -311,11 +316,21 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 					createPaginatedResponse({items: [{elementId: 'my-process', waitingCount: 1}]}),
 				),
 			}),
+			mockQueryElementInstanceInspectionEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryElementInstanceInspectionResponse([
+						createElementInstanceInspection({elementInstanceKey: PROCESS_INSTANCE_ID}),
+					]),
+				),
+			}),
 		);
 
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
 		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/details`);
+		await expect(
+			operatePreviewProcessInstancePage.tabPanel.getByText('Waiting for message: payment-received'),
+		).toBeVisible();
 	});
 
 	test('should not request wait states and should redirect to variables when the flag is off', async ({
@@ -490,5 +505,60 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 
 			await expect(operatePreviewProcessInstancePage.tab('Incidents')).toHaveAttribute('aria-selected', 'true');
 		});
+	});
+
+	test('should show the permission message when access to the instance is forbidden', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		network.use(
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 403}), {status: 403}),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+		await expect(
+			page.getByRole('heading', {name: 'You do not have permission to view this information'}),
+		).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.header).not.toBeVisible();
+	});
+
+	test('should notify and redirect to the process list when the instance does not exist', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		network.use(
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+		await expect(page).toHaveURL(/\/operate-preview\/processes\?/);
+		await expect(page.getByText(`Instance ${PROCESS_INSTANCE_ID} could not be found`)).toBeVisible();
+	});
+
+	test('should offer a retry that recovers from a generic error', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		network.use(mockGetProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await expect(page.getByRole('button', {name: 'Try again'})).toBeVisible();
+
+		network.use(
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
+			}),
+		);
+		await page.getByRole('button', {name: 'Try again'}).click();
+
+		await expect(operatePreviewProcessInstancePage.header).toBeVisible();
 	});
 });

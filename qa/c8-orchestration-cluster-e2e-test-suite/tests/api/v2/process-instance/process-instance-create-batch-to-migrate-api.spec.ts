@@ -421,15 +421,6 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
     );
   };
 
-  // Used after migration to confirm instances reached the target element.
-  // Two-phase: element-instance search first (engine-level, fast) then
-  // user-task search (secondary-storage). Per the migration docs, the existing
-  // user task is preserved through migration with only its elementId updated —
-  // it is NOT deleted and recreated — so verifying the user-task API reflects
-  // the new elementId is a valid assertion. Gating on element-instance first
-  // means the secondary-storage pipeline is already partially caught up, so
-  // a 120s budget for the user-task check is sufficient and stays within the
-  // 2-minute limit.
   const verifyBothInstancesMigratedToElement = async (
     request: APIRequestContext,
     processInstanceKey1: string,

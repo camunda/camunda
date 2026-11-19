@@ -22,8 +22,8 @@ import java.util.Set;
  *       either a bearer JWT or the webapp session (the chain installs the session filter and uses
  *       {@code SessionCreationPolicy.NEVER}, so an existing session is restored but never created).
  *       The public API and ingestion paths are the exception: {@link OptimizePublicApiAccessFilter}
- *       accepts only a bearer token with the public API audience there. {@code
- *       /api/authentication/**} is deliberately absent: on CCSM the OIDC callback lives at {@code
+ *       accepts only an API client's bearer token there. {@code /api/authentication/**} is
+ *       deliberately absent: on CCSM the OIDC callback lives at {@code
  *       /api/authentication/callback}, and the API chain disables {@code oauth2Login}, so claiming
  *       it here would stop the callback ever reaching the webapp chain and break login.
  *   <li>{@link #unprotectedApiPaths()} = the public subset of {@link #apiPaths()} (the subset
@@ -48,7 +48,7 @@ public final class OptimizeSecurityPathAdapter implements SecurityPathPort {
   public Set<String> apiPaths() {
     return Set.of(
         // Bearer-only surface for public API clients: OptimizePublicApiAccessFilter rejects the
-        // session and tokens without the public API audience on these two paths.
+        // session and users' tokens on these two paths.
         OptimizePublicApiAccessFilter.PUBLIC_API_PATTERN,
         OptimizePublicApiAccessFilter.INGESTION_VARIABLE_PATTERN,
         // Internal API, reachable with a bearer token as well as the session.

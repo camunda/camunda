@@ -14,7 +14,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -326,12 +325,8 @@ public class DefaultExecutionQueue implements ExecutionQueue {
    * First the queue is grouped by the {@link ContextType}. Here the order of the items inside this
    * group is still preserved.<br>
    * <br>
-   * In the second step the items inside the groups are sorted by the {@link WriteStatementType}
-   * (natural order), then {@link QueueItem#order()} (default {@code 0}), then {@link
-   * QueueItem#statementId()}. The {@code order} field lets an individual item be placed before or
-   * after the others it would otherwise tie with, without changing how any other item in the group
-   * is sorted. For some entities this step will lead to errors. Therefore, this second step can be
-   * deactivated in the {@link ContextType}.
+   * In the second step the items inside each group are ordered by the {@link QueueOrdering} of its
+   * {@link ContextType}.
    *
    * @param items queue of items
    * @return optimized queue of items
@@ -342,17 +337,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
     final List<QueueItem> resultList = new ArrayList<>();
     for (final var entry : itemsByContextType.entrySet()) {
-      final var contextType = entry.getKey();
-      if (contextType.preserveOrder()) {
-        resultList.addAll(entry.getValue());
-      } else {
-        final var contextItems = new ArrayList<>(entry.getValue());
-        contextItems.sort(
-            Comparator.comparing(QueueItem::statementType)
-                .thenComparing(QueueItem::order)
-                .thenComparing(QueueItem::statementId));
-        resultList.addAll(contextItems);
-      }
+      resultList.addAll(entry.getKey().ordering().apply(entry.getValue()));
     }
 
     return resultList;

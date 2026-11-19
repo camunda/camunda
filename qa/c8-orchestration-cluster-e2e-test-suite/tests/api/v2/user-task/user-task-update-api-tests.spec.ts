@@ -398,8 +398,6 @@ test.describe.parallel('Update User Task Tests', () => {
   });
 
   test('Update user task - not found', async ({request}) => {
-    // Valid partition-1 key (routable) with a counter no real task will reach,
-    // so the command reaches the engine and is rejected with NOT_FOUND (404).
     const unknownUserTaskKey = '4503599627370495';
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey: unknownUserTaskKey}),
@@ -422,9 +420,6 @@ test.describe.parallel('Update User Task Tests', () => {
   test.skip('Update user task - out-of-range partition key', async ({
     request,
   }) => {
-    // Key decodes to a partition that does not exist in the cluster, so the
-    // command cannot be routed and currently returns a retryable 503 instead
-    // of a permanent 404.
     const outOfRangeUserTaskKey = '9999999999999999';
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {

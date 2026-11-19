@@ -605,7 +605,6 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
       });
       const json = await res.json();
 
-      // Find our deployed decisions in the results
       const def1Index = json.items.findIndex(
         (item: {decisionDefinitionKey: string}) =>
           item.decisionDefinitionKey ===
@@ -617,7 +616,6 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
           decisionDefinition2.decisionDefinitionKey,
       );
 
-      // Verify both exist
       expect(def1Index).toBeGreaterThanOrEqual(0);
       expect(def2Index).toBeGreaterThanOrEqual(0);
 
@@ -668,7 +666,6 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
       });
       const json = await res.json();
 
-      // Find our deployed decisions in the results
       const def1Index = json.items.findIndex(
         (item: {decisionDefinitionKey: string}) =>
           item.decisionDefinitionKey ===
@@ -680,7 +677,6 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
           decisionDefinition2.decisionDefinitionKey,
       );
 
-      // Verify both exist
       expect(def1Index).toBeGreaterThanOrEqual(0);
       expect(def2Index).toBeGreaterThanOrEqual(0);
 

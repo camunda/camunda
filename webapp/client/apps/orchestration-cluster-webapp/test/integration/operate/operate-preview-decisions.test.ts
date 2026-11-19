@@ -57,7 +57,7 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () => {
-	test('should render the placeholder shell', async ({network, operatePreviewDecisionsPage}) => {
+	test('should render the placeholder shell', async ({network, operatePreviewDecisionsPage, page}) => {
 		network.use(
 			mockQueryDecisionInstancesEndpoint({
 				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
@@ -66,6 +66,7 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		await operatePreviewDecisionsPage.goto();
 
 		await expect(operatePreviewDecisionsPage.heading).toBeAttached();
+		await expect(page).toHaveTitle('Operate: Decision Instances');
 		await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
 		await expect(operatePreviewDecisionsPage.decisionPanel).toBeVisible();
 		await expect(operatePreviewDecisionsPage.decisionPanel.getByText('There is no decision selected')).toBeVisible();

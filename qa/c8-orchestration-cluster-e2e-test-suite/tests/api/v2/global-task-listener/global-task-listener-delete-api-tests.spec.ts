@@ -29,14 +29,12 @@ test.describe.parallel('Global Task Listener API Tests - Delete', () => {
   test('Delete Global Task Listener - success', async ({request}) => {
     const created = await createGlobalTaskListener(request);
 
-    // Delete the listener
     const deleteRes = await request.delete(
       buildUrl('/global-task-listeners/{id}', {id: created.id}),
       {headers: jsonHeaders()},
     );
     await assertStatusCode(deleteRes, 204);
 
-    // Verify it no longer exists
     await expect(async () => {
       const getRes = await request.get(
         buildUrl('/global-task-listeners/{id}', {id: created.id}),
@@ -72,14 +70,12 @@ test.describe.parallel('Global Task Listener API Tests - Delete', () => {
   }) => {
     const created = await createGlobalTaskListener(request);
 
-    // First delete should succeed
     const firstDelete = await request.delete(
       buildUrl('/global-task-listeners/{id}', {id: created.id}),
       {headers: jsonHeaders()},
     );
     await assertStatusCode(firstDelete, 204);
 
-    // Second delete on the same id should return 404
     await expect(async () => {
       const secondDelete = await request.delete(
         buildUrl('/global-task-listeners/{id}', {id: created.id}),

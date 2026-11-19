@@ -718,6 +718,7 @@ test('should call a merged fix clean once nightlies have run it without flaking'
     night('1', '2026-11-01T02:00:00Z', [flaky]),
     night('2', '2026-11-03T02:00:00Z', [passed]),
     night('3', '2026-11-04T02:00:00Z', [passed]),
+    night('4', '2026-11-05T02:00:00Z', [passed]),
   ]);
 
   // when
@@ -725,19 +726,19 @@ test('should call a merged fix clean once nightlies have run it without flaking'
     reportsDir: dir,
     ledger: mergedLedger(),
     merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
-    now: '2026-11-05T06:00:00Z',
+    now: '2026-11-06T06:00:00Z',
   });
 
   // then
   assert.equal(rest.length, 0);
   assert.equal(result.verdict, 'clean');
   assert.equal(result.needs_flag, false);
-  assert.equal(result.post_merge.nightlies, 2);
+  assert.equal(result.post_merge.nightlies, 3);
   assert.equal(result.post_merge.flaked, 0);
-  assert.equal(result.post_merge.summary, 'clean 2 night(s)');
+  assert.equal(result.post_merge.summary, 'clean 3 night(s)');
   assert.equal(result.post_merge.window_covers_merge, true);
   assert.equal(result.post_merge.merged_at, '2026-11-02T09:00:00Z');
-  assert.equal(result.post_merge.checked_at, '2026-11-05T06:00:00Z');
+  assert.equal(result.post_merge.checked_at, '2026-11-06T06:00:00Z');
 });
 
 test('should report a fix that re-flaked and ask for the PR to be flagged', () => {
@@ -796,6 +797,7 @@ test('should not claim clean when the fix merged before the report window starts
   const dir = nightlyDir([
     night('1', '2026-11-03T02:00:00Z', [passed]),
     night('2', '2026-11-04T02:00:00Z', [passed]),
+    night('3', '2026-11-05T02:00:00Z', [passed]),
   ]);
 
   // when
@@ -803,14 +805,14 @@ test('should not claim clean when the fix merged before the report window starts
     reportsDir: dir,
     ledger: mergedLedger(),
     merged: {[MERGED_FP]: '2026-10-20T09:00:00Z'},
-    now: '2026-11-05T06:00:00Z',
+    now: '2026-11-06T06:00:00Z',
   });
 
   // then
   assert.equal(result.verdict, 'clean-in-window');
   assert.equal(result.post_merge.window_covers_merge, false);
   assert.equal(result.post_merge.window_start, '2026-11-03T02:00:00Z');
-  assert.match(result.post_merge.summary, /^clean 2 night\(s\) — /);
+  assert.match(result.post_merge.summary, /^clean 3 night\(s\) — /);
 });
 
 test('should keep a re-flake after the night that showed it leaves the window', () => {
@@ -826,6 +828,7 @@ test('should keep a re-flake after the night that showed it leaves the window', 
     reportsDir: dir,
     ledger: mergedLedger({
       post_merge: {
+        unit: 'nights',
         merged_at: '2026-11-05T09:00:00Z',
         verdict: 're-flaked',
         confirmed: 2,
@@ -846,10 +849,46 @@ test('should keep a re-flake after the night that showed it leaves the window', 
   assert.equal(result.needs_flag, false);
 });
 
+test('should not carry a pre-fold re-flake count forward as nights', () => {
+  // given — an entry written before the calendar-night fold, whose `confirmed`
+  // counts workflow runs: both workflows of one night failing was stored as 2.
+  // All it still proves is that the fix failed, so it is worth one night.
+  const dir = nightlyDir([night('7', '2026-11-16T02:00:00Z', [passed])]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger({
+      post_merge: {
+        merged_at: '2026-11-05T09:00:00Z',
+        verdict: 're-flaked',
+        confirmed: 2,
+        pr_flagged_at: '2026-11-08T06:00:00Z',
+      },
+    }),
+    merged: {[MERGED_FP]: '2026-11-05T09:00:00Z'},
+    now: '2026-11-18T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 're-flaked');
+  assert.equal(result.post_merge.confirmed, 1);
+  assert.equal(result.post_merge.unit, 'nights');
+  assert.equal(
+    result.post_merge.summary,
+    're-flaked in 1 night(s) since the merge; those nights have since left ' +
+      'the report window',
+  );
+});
+
 test('should not inherit a re-flake recorded for a different merge', () => {
   // given — `decide` drops `post_merge` when it records a new PR, but a stale
   // record from the previous fix must not condemn this one either way.
-  const dir = nightlyDir([night('9', '2026-11-17T02:00:00Z', [passed])]);
+  const dir = nightlyDir([
+    night('9', '2026-11-15T02:00:00Z', [passed]),
+    night('10', '2026-11-16T02:00:00Z', [passed]),
+    night('11', '2026-11-17T02:00:00Z', [passed]),
+  ]);
 
   // when
   const [result] = postMerge({
@@ -862,7 +901,7 @@ test('should not inherit a re-flake recorded for a different merge', () => {
         pr_flagged_at: '2026-10-02T06:00:00Z',
       },
     }),
-    merged: {[MERGED_FP]: '2026-11-16T09:00:00Z'},
+    merged: {[MERGED_FP]: '2026-11-14T09:00:00Z'},
     now: '2026-11-18T06:00:00Z',
   });
 
@@ -924,7 +963,7 @@ test('should count only the nights that actually ran the test', () => {
   // then
   assert.equal(rest.length, 0);
   assert.equal(result.post_merge.nightlies, 1);
-  assert.equal(result.verdict, 'clean');
+  assert.equal(result.verdict, 'too-early', 'one night is not a measurement');
 });
 
 test('should not count an interrupted nightly as a re-flake', () => {
@@ -933,6 +972,8 @@ test('should not count an interrupted nightly as a re-flake', () => {
     night('1', '2026-11-01T02:00:00Z', [passed]),
     night('2', '2026-11-03T02:00:00Z', [interrupted]),
     night('3', '2026-11-04T02:00:00Z', [passed]),
+    night('4', '2026-11-05T02:00:00Z', [passed]),
+    night('5', '2026-11-06T02:00:00Z', [passed]),
   ]);
 
   // when
@@ -940,12 +981,12 @@ test('should not count an interrupted nightly as a re-flake', () => {
     reportsDir: dir,
     ledger: mergedLedger(),
     merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
-    now: '2026-11-05T06:00:00Z',
+    now: '2026-11-07T06:00:00Z',
   });
 
   // then
   assert.equal(result.verdict, 'clean');
-  assert.equal(result.post_merge.nightlies, 1, 'the interrupted night measured nothing');
+  assert.equal(result.post_merge.nightlies, 3, 'the interrupted night measured nothing');
   assert.equal(result.post_merge.flaked, 0);
 });
 
@@ -964,7 +1005,7 @@ test('should ignore a PR that has not merged and an entry the ledger lost', () =
   );
 });
 
-test('the board names the fixes that did not hold and counts the rest', () => {
+test('the board names every unsettled fix and sums up the ones that held', () => {
   // given
   const postMergeRows = [
     {
@@ -976,7 +1017,15 @@ test('the board names the fixes that did not hold and counts the rest', () => {
       verdict: 're-flaked',
       post_merge: {summary: 're-flaked in 2 of 3 night(s) since the merge'},
     },
-    {fp: 'bbbbbbbb', version: '8.9', file: FILE, title: '', pr: '', verdict: 'clean'},
+    {
+      fp: 'bbbbbbbb',
+      version: '8.9',
+      file: FILE,
+      title: '',
+      pr: '',
+      verdict: 'clean',
+      post_merge: {nightlies: 6},
+    },
     {
       fp: 'cccccccc',
       version: '8.8',
@@ -984,8 +1033,29 @@ test('the board names the fixes that did not hold and counts the rest', () => {
       title: '',
       pr: '',
       verdict: 'clean-in-window',
+      post_merge: {nightlies: 3},
     },
-    {fp: 'dddddddd', version: 'main', file: FILE, title: '', pr: '', verdict: 'pending'},
+    {
+      fp: 'dddddddd',
+      version: 'main',
+      file: FILE,
+      title: '',
+      pr: '',
+      verdict: 'pending',
+      post_merge: {summary: 'no nightly has run this test since the merge'},
+    },
+    {
+      fp: 'eeeeeeee',
+      version: '8.7',
+      file: FILE,
+      title: '',
+      pr: '',
+      verdict: 'too-early',
+      post_merge: {
+        nightlies: 1,
+        summary: 'clean 1 night(s) — too few to call it yet (3 needed)',
+      },
+    },
   ];
   const board = initBoard({
     targets: [],
@@ -997,14 +1067,20 @@ test('the board names the fixes that did not hold and counts the rest', () => {
   const text = render(board, {now: new Date('2026-11-17T06:00:00Z')});
 
   // then
-  assert.match(text, /Merged fixes — 4 under watch/);
+  assert.match(text, /Merged fixes — 5 under watch/);
   assert.match(text, /2 holding/);
   assert.match(text, /1 re-flaked/);
-  assert.match(text, /1 not run yet/);
+  assert.match(text, /2 too early to tell/);
   assert.match(text, /PR #42/);
   assert.match(text, /re-flaked in 2 of 3 night\(s\) since the merge/);
+  assert.match(text, /no nightly has run this test since the merge/);
+  assert.match(text, /too few to call it yet/);
+  assert.match(
+    text,
+    /2 holding — clean 3–6 night\(s\) each since the merge/,
+    'the nights behind the count are what makes it worth reading',
+  );
   assert.match(text, /1 of them merged before the report window starts/);
-  assert.ok(!text.includes('bbbbbbbb'), 'a fix that held needs a number, not a row');
 });
 
 test('a second pick in a day replaces the post-merge verdicts it carries', () => {
@@ -1056,6 +1132,139 @@ test('should count one nightly that uploaded several cells as a single night', (
   );
 });
 
+test('should count two nightly workflows of one night as a single night', () => {
+  // given — 8.9, 8.10 and main each run the same API tests against
+  // Elasticsearch and against RDBMS, as two workflows and so two run ids on
+  // the same night.
+  const pair = (date) => [
+    {
+      version: '8.10',
+      cell: 'api-all-in-one',
+      runId: `es-${date}`,
+      createdAt: `${date}T01:30:00Z`,
+      tests: [passed],
+    },
+    {
+      version: '8.10',
+      cell: 'rdbms-postgres-all-in-one',
+      runId: `rdbms-${date}`,
+      createdAt: `${date}T01:35:00Z`,
+      tests: [passed],
+    },
+  ];
+  const dir = nightlyDir([...pair('2026-11-17'), ...pair('2026-11-18')]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-16T14:59:00Z'},
+    now: '2026-11-18T06:00:00Z',
+  });
+
+  // then — two nights, not the four runs that measured them.
+  assert.equal(result.post_merge.nightlies, 2);
+  assert.equal(result.verdict, 'too-early');
+});
+
+test('should link the run of the night that saw the flake, not the night', () => {
+  // given — the test passed against Elasticsearch and flaked against RDBMS on
+  // the same night, which is one night, and a night it flaked in.
+  const dir = nightlyDir([
+    {
+      version: '8.10',
+      cell: 'api-all-in-one',
+      runId: 'es-1',
+      createdAt: '2026-11-17T01:30:00Z',
+      tests: [passed],
+    },
+    {
+      version: '8.10',
+      cell: 'rdbms-postgres-all-in-one',
+      runId: 'rdbms-1',
+      createdAt: '2026-11-17T01:35:00Z',
+      tests: [flaky],
+    },
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-16T14:59:00Z'},
+    now: '2026-11-18T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 're-flaked');
+  assert.equal(result.post_merge.nightlies, 1);
+  assert.equal(result.post_merge.flaked, 1);
+  assert.equal(result.post_merge.last_flake_run_id, 'rdbms-1');
+});
+
+test('should measure a night by the runs that ran the test, not the night', () => {
+  // given — the API nightly starts at 01:30 and never runs this spec, the fix
+  // merges at 01:40, and the E2E nightly re-flakes it at 01:45. The night
+  // straddles the merge, and the re-flake is this fix's.
+  const dir = nightlyDir([
+    {
+      version: '8.10',
+      cell: 'api-all-in-one',
+      runId: 'api-1',
+      createdAt: '2026-11-17T01:30:00Z',
+      tests: [passed],
+      opts: {file: 'api/v2/other.spec.ts', title: 'something else'},
+    },
+    {
+      version: '8.10',
+      cell: 'e2e-v2',
+      runId: 'e2e-1',
+      createdAt: '2026-11-17T01:45:00Z',
+      tests: [flaky],
+    },
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-17T01:40:00Z'},
+    now: '2026-11-18T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 're-flaked');
+  assert.equal(result.post_merge.nightlies, 1);
+  assert.equal(result.post_merge.flaked, 1);
+  assert.equal(result.post_merge.last_flake_run_id, 'e2e-1');
+});
+
+test('should not call a fix clean on one or two nights', () => {
+  // given — the tests this agent picks flake in a minority of nights, so a
+  // couple of green ones are as likely to be a quiet week as a fix.
+  const dir = nightlyDir([
+    night('1', '2026-11-03T02:00:00Z', [passed]),
+    night('2', '2026-11-04T02:00:00Z', [passed]),
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 'too-early');
+  assert.equal(result.post_merge.nightlies, 2);
+  assert.equal(
+    result.post_merge.summary,
+    'clean 2 night(s) — too few to call it yet (3 needed)',
+  );
+  assert.equal(result.needs_flag, false);
+});
+
 test('should start the window at the oldest night that ran the test', () => {
   // given — a report holding nothing about this test (another cell, or the
   // husk of a failed download) from before the merge, and two nights that did
@@ -1070,6 +1279,7 @@ test('should start the window at the oldest night that ran the test', () => {
     },
     night('2', '2026-11-03T02:00:00Z', [passed]),
     night('3', '2026-11-04T02:00:00Z', [passed]),
+    night('4', '2026-11-05T02:00:00Z', [passed]),
   ]);
 
   // when
@@ -1077,7 +1287,7 @@ test('should start the window at the oldest night that ran the test', () => {
     reportsDir: dir,
     ledger: mergedLedger(),
     merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
-    now: '2026-11-05T06:00:00Z',
+    now: '2026-11-06T06:00:00Z',
   });
 
   // then — the nights before the merge were never measured, so this is not
@@ -1085,5 +1295,5 @@ test('should start the window at the oldest night that ran the test', () => {
   assert.equal(result.verdict, 'clean-in-window');
   assert.equal(result.post_merge.window_covers_merge, false);
   assert.equal(result.post_merge.window_start, '2026-11-03T02:00:00Z');
-  assert.equal(result.post_merge.nightlies, 2);
+  assert.equal(result.post_merge.nightlies, 3);
 });

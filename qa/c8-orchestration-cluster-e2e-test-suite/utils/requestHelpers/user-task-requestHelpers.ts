@@ -262,18 +262,6 @@ export async function expectUserTaskUnassigned(
   }).toPass(assertionOptions);
 }
 
-/**
- * Waits until the user task reports the expected assignee.
- *
- * The task-details view flips its assignment toggle ("Assign to me" vs.
- * "Unassign") only once this endpoint reports the assignee, and the read model
- * lags — and briefly oscillates between the old and new value — while the
- * assignment command propagates through secondary storage. A test that assigns
- * a task and then navigates before this endpoint has settled sees the stale
- * unassigned state and never finds the "Unassign" button. Waiting here on the
- * same endpoint the view reads, with the propagation budget, gates the UI flow
- * on the assignment actually being visible rather than on a fixed sleep.
- */
 export async function expectUserTaskAssigned(
   request: APIRequestContext,
   userTaskKey: string,

@@ -21,15 +21,10 @@ global:
       # See load-tests/setup/charts/load-test-setup/templates/elasticsearch.yaml for the resource definition.
       host: elasticsearch-es-http
 
-orchestration:
-  # Secondary storage configuration is not configured here, but in the
-  # Elasticsearch values file.
+zeebe:
   env:
-    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
-      value: "1"
-
-    ## The values below are duplicated from
-    ## camunda-platform-values-defaults.yaml. Keep them in sync.
+    ## The values below are duplicated from camunda-platform-values-defaults.yaml
+    ## because Helm replaces lists as a whole. Keep them in sync.
     # Enable JSON logging for google cloud stackdriver
     - name: ZEEBE_LOG_APPENDER
       value: Stackdriver
@@ -44,4 +39,6 @@ orchestration:
     - name: SPRING_CONFIG_ADDITIONALLOCATION
       # application-override.yml is listed second so it has higher priority and can override application.yml.
       # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
-      value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml"
+      value: "/usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml"
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
+      value: "1"
