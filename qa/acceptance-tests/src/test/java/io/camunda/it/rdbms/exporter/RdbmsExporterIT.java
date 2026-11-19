@@ -59,6 +59,7 @@ import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -76,6 +77,8 @@ import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -87,6 +90,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
@@ -97,6 +101,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobMetricsValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableStatusMetricsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricsValue;
@@ -116,9 +121,11 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.time.OffsetDateTime;
@@ -1554,6 +1561,89 @@ class RdbmsExporterIT {
           .isEqualTo(record.getPosition());
     } finally {
       retryExporter.close();
+    }
+  }
+
+  @Test
+  public void shouldFillElementNameFromDistributedDeploymentOnOtherPartition() {
+    // given - an exporter on a partition other than the deployment partition; the process
+    // definition is not in the database, as if partition 1 had not flushed it yet. Partition 4,
+    // as other tests export to partitions 1 to 3 and the exporter skips already exported positions
+    final var partitionId = 4;
+    final var otherPartitionController = new ExporterTestController();
+    final var otherPartitionExporter =
+        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
+    otherPartitionExporter.configure(
+        new ExporterContext(
+            null,
+            new ExporterConfiguration("other-partition-test", Map.of("queueSize", 0)),
+            partitionId,
+            Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
+            null));
+    otherPartitionExporter.open(otherPartitionController);
+
+    try {
+      final var processDefinitionKey = nextKey();
+      final var bpmnProcessId = "distributed-process-" + processDefinitionKey;
+      final var model =
+          Bpmn.createExecutableProcess(bpmnProcessId)
+              .startEvent("start")
+              .serviceTask("task")
+              .name("Distributed task")
+              .zeebeJobType("work")
+              .endEvent()
+              .done();
+      // explicit positions: this exporter runs on its own partition, so the shared fixture
+      // position counter (checked for partition 1 in tearDown) must not advance
+      final var generatedProcess = RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS);
+      final var processRecord =
+          ImmutableRecord.<RecordValue>builder()
+              .from(generatedProcess)
+              .withIntent(ProcessIntent.CREATED)
+              .withPosition(1L)
+              .withPartitionId(partitionId)
+              .withTimestamp(System.currentTimeMillis())
+              .withValue(
+                  ImmutableProcess.builder()
+                      .from((Process) generatedProcess.getValue())
+                      .withProcessDefinitionKey(processDefinitionKey)
+                      .withBpmnProcessId(bpmnProcessId)
+                      .withVersion(1)
+                      .withResource(Bpmn.convertToString(model).getBytes(StandardCharsets.UTF_8))
+                      .build())
+              .build();
+      final var generatedElement =
+          RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
+      final var elementRecord =
+          ImmutableRecord.<RecordValue>builder()
+              .from(generatedElement)
+              .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+              .withPosition(2L)
+              .withPartitionId(partitionId)
+              .withTimestamp(System.currentTimeMillis())
+              .withValue(
+                  ImmutableProcessInstanceRecordValue.builder()
+                      .from((ProcessInstanceRecordValue) generatedElement.getValue())
+                      .withProcessDefinitionKey(processDefinitionKey)
+                      .withBpmnProcessId(bpmnProcessId)
+                      .withElementId("task")
+                      .withBpmnElementType(BpmnElementType.SERVICE_TASK)
+                      .withVersion(1)
+                      .withElementInstancePath(List.of(List.of(1L, 2L)))
+                      .build())
+              .build();
+
+      // when - the distributed deployment and then an element of the process are exported
+      otherPartitionExporter.export(processRecord);
+      otherPartitionExporter.export(elementRecord);
+
+      // then - the element got its name, and only the deployment partition writes the definition
+      assertThat(rdbmsService.getFlowNodeInstanceReader().findOne(elementRecord.getKey()))
+          .hasValueSatisfying(
+              element -> assertThat(element.flowNodeName()).isEqualTo("Distributed task"));
+      assertThat(rdbmsService.getProcessDefinitionReader().findOne(processDefinitionKey)).isEmpty();
+    } finally {
+      otherPartitionExporter.close();
     }
   }
 
