@@ -20,7 +20,8 @@ jobs:
     name: "Type check"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -46,15 +47,17 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   oxlint:
     name: "oxlint"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -80,15 +83,17 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   knip:
     name: "Knip"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -114,15 +119,17 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   prettier:
     name: "Prettier"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -148,15 +155,17 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   build:
     name: "Build"
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -182,9 +191,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   unit:
     name: "Unit (${{ matrix.component }})"
@@ -193,7 +203,8 @@ jobs:
       TEST_OWNER: ${{ matrix.owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     strategy:
       fail-fast: false
       matrix:
@@ -250,9 +261,10 @@ jobs:
           job_name: "webapp-client/unit-${{ matrix.component }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   unit-packages:
     name: "Unit (packages)"
@@ -260,7 +272,8 @@ jobs:
       TEST_TYPE: Unit
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     container:
       image: mcr.microsoft.com/playwright:v1.65.1
       options: --user 1001:1000
@@ -293,9 +306,10 @@ jobs:
           job_name: "webapp-client/unit-packages"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   integration:
     name: "Integration (${{ matrix.component }})"
@@ -304,7 +318,8 @@ jobs:
       TEST_OWNER: ${{ matrix.owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     strategy:
       fail-fast: false
       matrix:
@@ -356,9 +371,10 @@ jobs:
           job_name: "webapp-client/integration-${{ matrix.component }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   a11y:
     name: "Accessibility (${{ matrix.component }})"
@@ -367,7 +383,8 @@ jobs:
       TEST_OWNER: ${{ matrix.owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     strategy:
       fail-fast: false
       matrix:
@@ -421,9 +438,10 @@ jobs:
           job_name: "webapp-client/a11y-${{ matrix.component }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   visual:
     name: "Visual Regression (${{ matrix.component }})"
@@ -432,7 +450,8 @@ jobs:
       TEST_OWNER: ${{ matrix.owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 21
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     strategy:
       fail-fast: false
       matrix:
@@ -484,6 +503,7 @@ jobs:
           job_name: "webapp-client/visual-${{ matrix.component }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
