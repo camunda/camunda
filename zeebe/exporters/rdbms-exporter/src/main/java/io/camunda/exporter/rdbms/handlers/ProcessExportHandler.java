@@ -49,11 +49,19 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
   @Override
   public boolean canExport(final Record<Process> record) {
-    return record.getValueType() == ValueType.PROCESS
-        && (record.getIntent() == ProcessIntent.CREATED
-            || exportDefinition
-                && (record.getIntent() == ProcessIntent.DRAINING
-                    || record.getIntent() == ProcessIntent.FULLY_DELETED));
+    if (record.getValueType() != ValueType.PROCESS) {
+      return false;
+    }
+
+    final var intent = record.getIntent();
+    if (intent == ProcessIntent.CREATED) {
+      // every partition fills its process cache
+      return true;
+    }
+
+    // only the deployment partition updates the definition state
+    return exportDefinition
+        && (intent == ProcessIntent.DRAINING || intent == ProcessIntent.FULLY_DELETED);
   }
 
   @Override
