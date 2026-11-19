@@ -121,6 +121,10 @@ public class RdbmsWriterMetrics {
     return MicrometerUtil.timer(flushDuration, Timer.start(meterRegistry));
   }
 
+  public ResourceSample measureBatchOperationLockDuration() {
+    return durationResource(RdbmsWriterMetricsDoc.BATCH_OPERATION_LOCK_DURATION);
+  }
+
   public void recordBulkSize(final int size) {
     bulkSize.record(size);
   }

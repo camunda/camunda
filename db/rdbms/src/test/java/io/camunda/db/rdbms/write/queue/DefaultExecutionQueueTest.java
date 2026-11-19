@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import java.sql.Connection;
 import java.sql.Statement;
@@ -38,6 +40,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 class DefaultExecutionQueueTest {
+
+  private static final String CREATE_BATCH_OPERATION =
+      "io.camunda.db.rdbms.sql.BatchOperationMapper.createIfNotExists";
 
   private SqlSession session;
   private SqlSessionFactory sqlSessionFactory;
@@ -927,5 +932,228 @@ class DefaultExecutionQueueTest {
 
     verify(sqlSessionFactory)
         .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
+  }
+
+  @Test
+  public void shouldLockEachBatchOperationOnceInSortedOrderBeforeExecutingStatements() {
+    // given - two partitions would queue the same keys in different orders; this queue has
+    // "c" before "a" and a duplicate "c"
+    final var mapper = mock(BatchOperationMapper.class);
+    when(session.getMapper(BatchOperationMapper.class)).thenReturn(mapper);
+    executionQueue.executeInQueue(batchOperationItem("c", "BatchOperationMapper.updateCompleted"));
+    executionQueue.executeInQueue(batchOperationItem("a", "BatchOperationMapper.updateCompleted"));
+    executionQueue.executeInQueue(batchOperationItem("b", "BatchOperationMapper.activate"));
+    executionQueue.executeInQueue(batchOperationItem("c", "BatchOperationMapper.activate"));
+
+    // when
+    executionQueue.flush();
+
+    // then - locks are taken sorted and distinct, and before the first statement is executed
+    final var inOrder = inOrder(mapper, session);
+    inOrder.verify(mapper).lockForUpdate("a");
+    inOrder.verify(mapper).lockForUpdate("b");
+    inOrder.verify(mapper).lockForUpdate("c");
+    inOrder.verify(session, Mockito.atLeastOnce()).update(any(String.class), any());
+    verify(mapper, times(3)).lockForUpdate(any());
+  }
+
+  @Test
+  public void shouldOnlyLockBatchOperationsWhenQueueMixesContextTypes() {
+    // given
+    final var mapper = mock(BatchOperationMapper.class);
+    when(session.getMapper(BatchOperationMapper.class)).thenReturn(mapper);
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, "z", "statement1", "p"));
+    executionQueue.executeInQueue(batchOperationItem("a", "BatchOperationMapper.updateCompleted"));
+
+    // when
+    executionQueue.flush();
+
+    // then
+    verify(mapper).lockForUpdate("a");
+    verify(mapper, times(1)).lockForUpdate(any());
+  }
+
+  @Test
+  public void shouldNotLockAnythingWhenQueueHasNoBatchOperationItems() {
+    // given
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", "p"));
+
+    // when
+    executionQueue.flush();
+
+    // then
+    verify(session, never()).getMapper(BatchOperationMapper.class);
+    verify(session).commit();
+  }
+
+  @Test
+  public void shouldRollbackWithoutExecutingStatementsWhenLockingFails() {
+    // given
+    final var mapper = mock(BatchOperationMapper.class);
+    when(session.getMapper(BatchOperationMapper.class)).thenReturn(mapper);
+    final var lockFailure = new IllegalStateException("deadlock victim");
+    Mockito.doThrow(lockFailure).when(mapper).lockForUpdate("a");
+    executionQueue.executeInQueue(batchOperationItem("a", "BatchOperationMapper.updateCompleted"));
+
+    // when + then
+    assertThatThrownBy(() -> executionQueue.flush()).isEqualTo(lockFailure);
+
+    verify(session, never()).update(any(String.class), any());
+    verify(session, never()).commit();
+    verify(session).rollback();
+    verify(session).close();
+    assertThat(executionQueue.getQueue()).hasSize(1);
+  }
+
+  @Test
+  public void shouldTakeAllLocksAfterTheTransactionHooksAndBeforeAnyStatement() {
+    // given
+    final var events = new java.util.ArrayList<String>();
+    final var mapper = mock(BatchOperationMapper.class);
+    when(session.getMapper(BatchOperationMapper.class)).thenReturn(mapper);
+    Mockito.doAnswer(
+            invocation -> {
+              events.add("lock:" + invocation.getArgument(0));
+              return null;
+            })
+        .when(mapper)
+        .lockForUpdate(any());
+    Mockito.doAnswer(
+            invocation -> {
+              events.add("update");
+              return 1;
+            })
+        .when(session)
+        .update(any(String.class), any());
+    executionQueue.registerInTransactionHook(session -> events.add("hook"));
+    executionQueue.executeInQueue(batchOperationItem("b", "BatchOperationMapper.updateCompleted"));
+    executionQueue.executeInQueue(batchOperationItem("a", "BatchOperationMapper.activate"));
+
+    // when
+    executionQueue.flush();
+
+    // then - no statement may run before every lock is held
+    assertThat(events).containsExactly("hook", "lock:a", "lock:b", "update", "update");
+  }
+
+  @Test
+  public void shouldLockBatchOperationsThatOnlyHaveInsertItemsInTheQueue() {
+    // given - e.g. a flush that only creates the batch operation and inserts its items
+    final var mapper = mock(BatchOperationMapper.class);
+    when(session.getMapper(BatchOperationMapper.class)).thenReturn(mapper);
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.INSERT,
+            "k1",
+            "BatchOperationMapper.insertItems",
+            "items"));
+
+    // when
+    executionQueue.flush();
+
+    // then
+    verify(mapper).lockForUpdate("k1");
+  }
+
+  @Test
+  public void shouldLockAgainWhenTheFlushIsRetriedAfterAFailedLock() {
+    // given
+    final var mapper = mock(BatchOperationMapper.class);
+    when(session.getMapper(BatchOperationMapper.class)).thenReturn(mapper);
+    Mockito.doThrow(new IllegalStateException("deadlock victim"))
+        .doReturn("a")
+        .when(mapper)
+        .lockForUpdate("a");
+    executionQueue.executeInQueue(batchOperationItem("a", "BatchOperationMapper.updateCompleted"));
+    executionQueue.executeInQueue(batchOperationItem("b", "BatchOperationMapper.updateCompleted"));
+    final var postFlushListener = mock(PostFlushListener.class);
+    executionQueue.registerPostFlushListener(postFlushListener);
+
+    // when
+    assertThatThrownBy(() -> executionQueue.flush()).isInstanceOf(IllegalStateException.class);
+    verify(postFlushListener, never()).onPostFlush();
+    executionQueue.flush();
+
+    // then - the retained queue is flushed with the full lock set the second time
+    verify(mapper, times(2)).lockForUpdate("a");
+    verify(mapper, times(1)).lockForUpdate("b");
+    verify(postFlushListener).onPostFlush();
+    assertThat(executionQueue.getQueue()).isEmpty();
+  }
+
+  @Test
+  public void shouldCreateBatchOperationsAtTheirPositionInTheLockOrder() {
+    // given - "b" is created by this flush, "a" and "c" only exist
+    final var mapper = mock(BatchOperationMapper.class);
+    when(session.getMapper(BatchOperationMapper.class)).thenReturn(mapper);
+    executionQueue.executeInQueue(batchOperationItem("c", "BatchOperationMapper.updateCompleted"));
+    executionQueue.executeInQueue(createBatchOperationItem("b"));
+    executionQueue.executeInQueue(batchOperationItem("a", "BatchOperationMapper.updateCompleted"));
+
+    // when
+    executionQueue.flush();
+
+    // then - the create runs where "b" falls in the order, followed by the lock on its row
+    final var inOrder = inOrder(session, mapper);
+    inOrder.verify(mapper).lockForUpdate("a");
+    inOrder.verify(session).update(eq(CREATE_BATCH_OPERATION), any());
+    inOrder.verify(session).flushStatements();
+    inOrder.verify(mapper).lockForUpdate("b");
+    inOrder.verify(mapper).lockForUpdate("c");
+    inOrder.verify(session, times(2)).update(eq("BatchOperationMapper.updateCompleted"), any());
+  }
+
+  @Test
+  public void shouldExecuteACreateOnlyOnce() {
+    // given
+    final var mapper = mock(BatchOperationMapper.class);
+    when(session.getMapper(BatchOperationMapper.class)).thenReturn(mapper);
+    executionQueue.executeInQueue(createBatchOperationItem("new"));
+    executionQueue.executeInQueue(batchOperationItem("new", "BatchOperationMapper.activate"));
+
+    // when
+    final var flushed = executionQueue.flush();
+
+    // then
+    verify(session, times(1)).update(eq(CREATE_BATCH_OPERATION), any());
+    verify(session, times(1)).update(eq("BatchOperationMapper.activate"), any());
+    verify(session).commit();
+    assertThat(flushed).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldCreateAndLockWhenTheFlushOnlyCreatesBatchOperations() {
+    // given
+    final var mapper = mock(BatchOperationMapper.class);
+    when(session.getMapper(BatchOperationMapper.class)).thenReturn(mapper);
+    executionQueue.executeInQueue(createBatchOperationItem("new"));
+
+    // when
+    executionQueue.flush();
+
+    // then
+    final var inOrder = inOrder(session, mapper);
+    inOrder.verify(session).update(eq(CREATE_BATCH_OPERATION), any());
+    inOrder.verify(mapper).lockForUpdate("new");
+    verify(session).commit();
+  }
+
+  private static QueueItem createBatchOperationItem(final String key) {
+    return new QueueItem(
+        ContextType.BATCH_OPERATION,
+        WriteStatementType.INSERT,
+        key,
+        CREATE_BATCH_OPERATION,
+        "model");
+  }
+
+  private static QueueItem batchOperationItem(final String key, final String statementId) {
+    return new QueueItem(
+        ContextType.BATCH_OPERATION, WriteStatementType.UPDATE, key, statementId, key);
   }
 }

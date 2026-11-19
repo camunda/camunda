@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.queue;
 
+import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.util.PerMessageThrottledLogger;
@@ -35,6 +36,8 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   private static final PerMessageThrottledLogger THROTTLED_LOG =
       new PerMessageThrottledLogger(LOG, Duration.ofMinutes(5));
   private static final long BYTES_PER_MB = 1024L * 1024L;
+  private static final String CREATE_BATCH_OPERATION_STATEMENT =
+      "io.camunda.db.rdbms.sql.BatchOperationMapper.createIfNotExists";
   private static final Set<Pattern> IGNORE_EMPTY_UPDATES =
       Set.of(
           Pattern.compile(".*update.*HistoryCleanupDate$"),
@@ -261,25 +264,16 @@ public class DefaultExecutionQueue implements ExecutionQueue {
         }
       }
 
-      for (final var entry : optimizedItems) {
+      final var remainingItems = lockBatchOperationsInKeyOrder(session, optimizedItems);
+      flushedElements += optimizedItems.size() - remainingItems.size();
+
+      for (final var entry : remainingItems) {
         LOG.trace("[RDBMS ExecutionQueue, Partition {}] Executing entry: {}", partitionId, entry);
         session.update(entry.statementId(), entry.parameter());
         flushedElements++;
       }
 
-      final var batchResult = session.flushStatements();
-      for (final BatchResult singleBatchResult : batchResult) {
-        if (hasUnexpectedZeroRowUpdate(singleBatchResult.getUpdateCounts())
-            && !shouldIgnoreWhenNoRowsAffected(singleBatchResult.getMappedStatement().getId())) {
-          THROTTLED_LOG.warn(
-              "[RDBMS ExecutionQueue, Partition {}] Some statements with ID {} have not affected any rows. Either add them to the ignore list or check why no rows were affected.",
-              partitionId,
-              singleBatchResult.getMappedStatement().getId());
-        }
-        metrics.recordExecutedStatement(
-            singleBatchResult.getMappedStatement().getId(),
-            singleBatchResult.getParameterObjects().size());
-      }
+      recordBatchResults(session.flushStatements());
 
       session.commit();
 
@@ -312,6 +306,79 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       throw e;
     } finally {
       session.close();
+    }
+  }
+
+  /**
+   * Batch operation rows are written by the exporters of every partition (e.g. suspend, resume and
+   * cancel are distributed to all partitions). Each partition queues its updates in the order in
+   * which its own records arrived, so two concurrent flushes can acquire the row locks in opposite
+   * order and deadlock. Taking the locks up front in a global (sorted) order makes lock acquisition
+   * order identical for every flush; item statements of the same batch operation are then
+   * serialized behind the parent row lock as well.
+   *
+   * <p>A batch operation that this flush creates is created at its position in that order, and
+   * locked right after. The create has to come first because the row may not exist yet, and a
+   * {@code SELECT ... FOR UPDATE} on a missing row takes a gap lock on MySQL/MariaDB, which would
+   * make two partitions creating the same batch operation deadlock on their inserts. It must not be
+   * left to the regular statement loop either: every partition exports the creation, so the row
+   * usually exists already, and the create on an existing row takes no lock on some databases (e.g.
+   * {@code ON CONFLICT DO NOTHING}) and a lock on others, so its lock would be taken out of order.
+   *
+   * @return the items that still have to be executed, i.e. without the creates executed here
+   */
+  private List<QueueItem> lockBatchOperationsInKeyOrder(
+      final SqlSession session, final List<QueueItem> items) {
+    final var batchOperationItems =
+        items.stream().filter(item -> item.contextType() == ContextType.BATCH_OPERATION).toList();
+    if (batchOperationItems.isEmpty()) {
+      return items;
+    }
+    final var createsByKey =
+        batchOperationItems.stream()
+            .filter(item -> CREATE_BATCH_OPERATION_STATEMENT.equals(item.statementId()))
+            .collect(Collectors.groupingBy(item -> String.valueOf(item.id())));
+    final var batchOperationKeys =
+        batchOperationItems.stream()
+            .map(item -> String.valueOf(item.id()))
+            .distinct()
+            .sorted()
+            .toList();
+    final var mapper = session.getMapper(BatchOperationMapper.class);
+    for (final var batchOperationKey : batchOperationKeys) {
+      final var creates = createsByKey.getOrDefault(batchOperationKey, List.of());
+      for (final var create : creates) {
+        session.update(create.statementId(), create.parameter());
+      }
+      if (!creates.isEmpty()) {
+        // the batch executor only sends statements on flush; without this the lock below could
+        // reach the database before the row exists
+        recordBatchResults(session.flushStatements());
+      }
+      try (final var ignored = metrics.measureBatchOperationLockDuration()) {
+        mapper.lockForUpdate(batchOperationKey);
+      }
+    }
+    return items.stream()
+        .filter(
+            item ->
+                item.contextType() != ContextType.BATCH_OPERATION
+                    || !CREATE_BATCH_OPERATION_STATEMENT.equals(item.statementId()))
+        .toList();
+  }
+
+  private void recordBatchResults(final List<BatchResult> batchResults) {
+    for (final BatchResult singleBatchResult : batchResults) {
+      if (hasUnexpectedZeroRowUpdate(singleBatchResult.getUpdateCounts())
+          && !shouldIgnoreWhenNoRowsAffected(singleBatchResult.getMappedStatement().getId())) {
+        THROTTLED_LOG.warn(
+            "[RDBMS ExecutionQueue, Partition {}] Some statements with ID {} have not affected any rows. Either add them to the ignore list or check why no rows were affected.",
+            partitionId,
+            singleBatchResult.getMappedStatement().getId());
+      }
+      metrics.recordExecutedStatement(
+          singleBatchResult.getMappedStatement().getId(),
+          singleBatchResult.getParameterObjects().size());
     }
   }
 

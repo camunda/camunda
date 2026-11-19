@@ -24,6 +24,12 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
 
   void createIfNotExists(BatchOperationDbModel batchOperationDbModel);
 
+  /**
+   * Acquires an exclusive row lock on the batch operation. Used to take the locks of all batch
+   * operations touched by a flush in a deterministic order.
+   */
+  String lockForUpdate(String batchOperationKey);
+
   void insertItems(BatchOperationItemsDto items);
 
   void insertErrors(BatchOperationErrorsDto error);

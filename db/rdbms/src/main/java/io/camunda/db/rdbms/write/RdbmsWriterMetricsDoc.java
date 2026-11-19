@@ -61,6 +61,11 @@ public enum RdbmsWriterMetricsDoc implements ExtendedMeterDocumentation {
   FLUSH_DURATION(
       "flush.duration.seconds", Type.TIMER, "Flush duration of bulk exporters in seconds"),
 
+  BATCH_OPERATION_LOCK_DURATION(
+      "flush.batchOperation.lock.duration.seconds",
+      Type.TIMER,
+      "Time spent waiting for one batch operation row lock at the start of a flush, in seconds"),
+
   BULK_SIZE(
       "bulk.size",
       Type.DISTRIBUTION_SUMMARY,

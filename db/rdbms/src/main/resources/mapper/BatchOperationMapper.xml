@@ -249,6 +249,23 @@
     SELECT 1 FROM DUAL
   </insert>
 
+  <select id="lockForUpdate" parameterType="java.lang.String" resultType="java.lang.String"
+    databaseId="mssql">
+    SELECT BATCH_OPERATION_KEY
+    FROM ${prefix}BATCH_OPERATION WITH (UPDLOCK, ROWLOCK)
+    <!-- The driver sends strings as NVARCHAR. Against the VARCHAR key this turns the lookup into a
+    clustered index scan (CONVERT_IMPLICIT on the column) on SQL collations, which would lock every
+    row it passes. The cast keeps it a seek on the single row. -->
+    WHERE BATCH_OPERATION_KEY = CAST(#{batchOperationKey} AS VARCHAR(255))
+  </select>
+
+  <select id="lockForUpdate" parameterType="java.lang.String" resultType="java.lang.String">
+    SELECT BATCH_OPERATION_KEY
+    FROM ${prefix}BATCH_OPERATION
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+    FOR UPDATE
+  </select>
+
   <update id="activate"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationActivateDto">
     UPDATE ${prefix}BATCH_OPERATION
