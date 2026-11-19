@@ -42,6 +42,9 @@ test.beforeEach(({network}) => {
 		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
 			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+		}),
 	);
 });
 

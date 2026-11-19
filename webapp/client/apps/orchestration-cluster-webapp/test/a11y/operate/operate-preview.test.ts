@@ -54,6 +54,9 @@ test('should have no accessibility violations in the no-instances empty state', 
 		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
 			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+		}),
 	);
 
 	await operatePreviewPage.goto();
