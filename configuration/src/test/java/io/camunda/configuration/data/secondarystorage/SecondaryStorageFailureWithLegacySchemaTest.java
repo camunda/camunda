@@ -14,6 +14,7 @@ import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.operate.OperatePropertiesOverride;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -47,6 +48,13 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               "camunda.operate.database=elasticsearch",
               "camunda.tasklist.database=elasticsearch",
               "camunda.database.url=http://some-legacy-url:/1234");
+
+  @AfterEach
+  void clearPinnedEnvironment() {
+    // The context runner pins its environment in UnifiedConfigurationHelper's static field;
+    // clear it so the legacy properties set here do not leak into later tests in the same JVM.
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
 
   @Test
   void testBrokerShouldFailWhenUsingLegacyDatabaseProperties() {

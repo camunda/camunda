@@ -15,6 +15,7 @@ import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.PreAllocationStrategy;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -30,6 +31,13 @@ public class RaftTest {
               BrokerBasedPropertiesOverride.class,
               UnifiedConfigurationHelper.class)
           .withPropertyValues("spring.profiles.active=broker");
+
+  @AfterEach
+  void clearPinnedEnvironment() {
+    // The context runner pins its environment in UnifiedConfigurationHelper's static field;
+    // clear it so the legacy properties set here do not leak into later tests in the same JVM.
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
 
   private static Stream<Arguments> segmentPreallocationStrategies() {
     return Stream.of(PreAllocationStrategy.values()).map(s -> Arguments.of(s.name(), s));

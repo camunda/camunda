@@ -20,6 +20,7 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.test.appender.ListAppender;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -52,6 +53,13 @@ class ExporterIsolationValidationTest {
               UnifiedConfiguration.class,
               UnifiedConfigurationHelper.class,
               BrokerBasedPropertiesOverride.class);
+
+  @AfterEach
+  void clearPinnedEnvironment() {
+    // The context runner pins its environment in UnifiedConfigurationHelper's static field;
+    // clear it so the legacy properties set here do not leak into later tests in the same JVM.
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
 
   private static List<LogEvent> runAndCaptureLogs(final ApplicationContextRunner runner) {
     final var loggerName = ExporterIsolationValidation.class.getName();
