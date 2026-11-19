@@ -133,10 +133,18 @@ public final class JobPollerImpl implements JobPoller {
         .send()
         .whenComplete(
             (activateJobsResponse, throwable) -> {
-              if (throwable != null) {
-                onPollFailure(throwable);
-              } else {
-                onPollResponse(activateJobsResponse.getJobs());
+              try {
+                if (throwable != null) {
+                  onPollFailure(throwable);
+                } else {
+                  onPollResponse(activateJobsResponse.getJobs());
+                }
+              } catch (final Throwable e) {
+                LOG.warn(
+                    "Failed to handle the result of activating jobs for worker {} and job type {}",
+                    workerName,
+                    jobType,
+                    e);
               }
             });
   }
