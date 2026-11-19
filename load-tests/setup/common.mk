@@ -119,7 +119,7 @@ endif
 # Construct platform values files based on configuration
 # Starting with the defaults, which are always applied and set common baseline configuration for all
 # set ups. The other values files are focused and only contain the necessary overrides for each storage type.
-platform_values = -f camunda-platform-values-defaults.yaml
+platform_values = -f camunda-platform-values-defaults.yaml -f versions.yaml
 
 # The configuration for the "load test setup" local Helm Chart
 helm_chart_load_test_setup = charts/load-test-setup

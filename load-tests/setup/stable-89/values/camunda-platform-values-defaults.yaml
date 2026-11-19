@@ -149,7 +149,6 @@ orchestration:
   image:
     registry: docker.io
     repository: camunda/camunda
-    tag: 8.9.28
   # Resources of the orchestration cluster
   # CUSTOMIZATION: cluster sizing baseline, 4 CPU and 4Gi with request = limit (a Guaranteed pod, as customers run it).
   # 3 CPU is throttled 50 to 90% and reaches about 450 PI/s, 4 CPU reaches about 695 PI/s (as fast as 6 CPU).

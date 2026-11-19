@@ -188,7 +188,7 @@ mkdir -p "$TARGET_DIRECTORY"
 
 # Scaffold the always-copied files into the namespace folder root: the
 # Makefile, the resources/ manifests, four storage-agnostic values files
-# (defaults + override + load-test + stable), and the matching
+# (defaults + override + load-test + stable), versions.yaml, and the matching
 # camunda-platform-values-${secondary_storage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
 cp -v  "$VERSION_DIR/Makefile"                                                  "$TARGET_DIRECTORY/"
@@ -198,6 +198,7 @@ cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-defaults.yaml"                 
 cp -v  "$VERSION_DIR/values/values-stable.yaml"                                 "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-realistic-benchmark.yaml"      "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-defaults.yaml"              "$TARGET_DIRECTORY/"
+cp -v  "$VERSION_DIR/versions.yaml"                                             "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"   "$TARGET_DIRECTORY/"
 
 # Don't configure Elasticsearch unless specifically enabled (secondary storage,
