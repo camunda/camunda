@@ -48,8 +48,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   private final Runnable retryRecorder;
   private final Consumer<PipelineStats> statsConsumer;
 
-  private final AtomicReference<DocumentBatch<DocType, SearchAfterFieldType>> lastSearchResponse =
-      new AtomicReference<>(null);
+  private final AtomicReference<SearchAfterFieldType> lastSearchAfter = new AtomicReference<>(null);
   private final AtomicBoolean finished = new AtomicBoolean(false);
   private final AtomicLong totalRead = new AtomicLong(0L);
   private final AtomicLong totalProcessed = new AtomicLong(0L);
@@ -150,7 +149,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
     // advance search position only after batch processed successfully
     // so we can retry the batch if we want
-    lastSearchResponse.set(batch);
+    lastSearchAfter.set(batch.searchAfter());
 
     retryCount.set(0);
   }
@@ -185,8 +184,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
   }
 
   private SearchAfterFieldType getLastSearchPosition() {
-    final var lstResponse = lastSearchResponse.get();
-    return lstResponse == null ? null : lstResponse.searchAfter();
+    return lastSearchAfter.get();
   }
 
   private void adjustBatchSize(final Throwable ex) {
