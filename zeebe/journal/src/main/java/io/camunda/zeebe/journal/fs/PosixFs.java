@@ -11,10 +11,14 @@ import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.io.RandomAccessFile;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.nio.file.Path;
 import jnr.constants.platform.Errno;
 import jnr.ffi.Platform;
+import jnr.ffi.Platform.CPU;
+import jnr.ffi.Platform.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,6 +140,57 @@ public final class PosixFs {
     }
 
     throwExceptionFromErrno(offset, length, error);
+  }
+
+  /**
+   * Asks the kernel to drop the cached pages of the given file, via {@code
+   * posix_fadvise(POSIX_FADV_DONTNEED)}, so that reading it afterwards reads what is on disk.
+   *
+   * <p>After a failed sync, the page cache can hold data which never reached the disk, and serve it
+   * to anyone reading the file. Dropping the pages before reading a file at startup makes a restart
+   * on the same node behave like a restart on another node. Only clean pages which are not mapped
+   * are dropped, so call this before mapping the file.
+   *
+   * <p>This is best effort: the call is only made on Linux, and some file systems (e.g. network or
+   * FUSE file systems) may ignore the advice. Failures are logged, but not reported.
+   *
+   * <p><a href="https://man7.org/linux/man-pages/man2/posix_fadvise.2.html">See the man pages for
+   * posix_fadvise</a>
+   *
+   * @param file the file whose cached pages should be dropped
+   * @return true if the kernel accepted the advice, false otherwise
+   */
+  public boolean dropPageCache(final Path file) {
+    final var fileDescriptorFdField = FILE_DESCRIPTOR_FD_FIELD;
+    if (fileDescriptorFdField == null || !isDropPageCacheSupported()) {
+      return false;
+    }
+
+    try (final var raf = new RandomAccessFile(file.toFile(), "r")) {
+      final int fd = (int) fileDescriptorFdField.get(raf.getFD());
+      final int result = libC.posix_fadvise(fd, 0, 0, posixFadviseDontNeed());
+      if (result != 0) {
+        LOGGER.debug(
+            "Failed to drop cached pages of {}: posix_fadvise failed with {}",
+            file,
+            Errno.valueOf(result));
+        return false;
+      }
+      return true;
+    } catch (final IOException | RuntimeException e) {
+      LOGGER.debug("Failed to drop cached pages of {}", file, e);
+      return false;
+    }
+  }
+
+  private boolean isDropPageCacheSupported() {
+    return FILE_DESCRIPTOR_FD_FIELD != null
+        && Platform.getNativePlatform().getOS().equals(OS.LINUX);
+  }
+
+  private static int posixFadviseDontNeed() {
+    // the value of POSIX_FADV_DONTNEED differs between architectures on Linux
+    return Platform.getNativePlatform().getCPU() == CPU.S390X ? 6 : 4;
   }
 
   private void throwExceptionFromErrno(final long offset, final long length, final Errno error)

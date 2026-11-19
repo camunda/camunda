@@ -8,7 +8,10 @@
 package io.camunda.zeebe.broker.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -180,5 +183,24 @@ final class BrokerDataDirectoryCopierTest {
     final var targetKey = Files.readAttributes(target, BasicFileAttributes.class).fileKey();
 
     return sourceKey != null && targetKey != null && sourceKey.equals(targetKey);
+  }
+
+  @Test
+  void shouldDropPageCacheOfSourceFilesBeforeCopying() throws Exception {
+    // given
+    final var source = tempDir.resolve("source");
+    final var target = tempDir.resolve("target");
+    final var segment = source.resolve("partitions/1/journal-1.log");
+    Files.createDirectories(segment.getParent());
+    Files.writeString(segment, "content");
+    final var posixFs = mock(PosixFs.class);
+    final var copier = new BrokerDataDirectoryCopier(posixFs);
+
+    // when
+    copier.copy(source, target, MARKER_FILE, false);
+
+    // then
+    verify(posixFs).dropPageCache(segment);
+    assertThat(target.resolve("partitions/1/journal-1.log")).hasContent("content");
   }
 }
