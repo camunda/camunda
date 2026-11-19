@@ -61,6 +61,25 @@ class ZeebeAgentInstanceDataDtoTest {
     assertThat(dto.getTools()).hasSize(1);
     assertThat(dto.getTools().get(0).getName()).isEqualTo("my-tool");
     assertThat(dto.getHistory()).isNull();
+    assertThat(dto.getLimits().getMaxTokens()).isEqualTo(1000L);
+    assertThat(dto.getLimits().getMaxModelCalls()).isEqualTo(10);
+    assertThat(dto.getLimits().getMaxToolCalls()).isEqualTo(10);
+  }
+
+  @Test
+  void shouldDefaultToNoLimitsWhenRecordHasNone() throws Exception {
+    // given — the agent run import treats -1 as "no limit", so a record without limits must not
+    // read as a limit of 0 that every run reaches
+    final String json = "{\"agentInstanceKey\":1}";
+
+    // when
+    final ZeebeAgentInstanceDataDto dto =
+        new ObjectMapper().readValue(json, ZeebeAgentInstanceDataDto.class);
+
+    // then
+    assertThat(dto.getLimits().getMaxTokens()).isEqualTo(-1L);
+    assertThat(dto.getLimits().getMaxModelCalls()).isEqualTo(-1);
+    assertThat(dto.getLimits().getMaxToolCalls()).isEqualTo(-1);
   }
 
   // ── changedAttributes deserialization ─────────────────────────────────────

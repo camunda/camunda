@@ -35,6 +35,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   private String jobLeaseToken;
   private AgentInstanceStatus status;
   private AgentDefinitionValueDto definition = new AgentDefinitionValueDto();
+  private AgentLimitsValueDto limits = new AgentLimitsValueDto();
   private AgentMetricsValueDto metrics = new AgentMetricsValueDto();
   private List<AgentToolValueDto> tools = new ArrayList<>();
   private List<String> changedAttributes = new ArrayList<>();
@@ -199,12 +200,13 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     this.definition = definition;
   }
 
-  // Not tracked — Optimize's import doesn't need the configured limits. Ignored by Jackson so
-  // a real exporter record carrying this field doesn't fail as an unrecognized property (#62414).
   @Override
-  @JsonIgnore
-  public AgentInstanceLimitsValue getLimits() {
-    return null;
+  public AgentLimitsValueDto getLimits() {
+    return limits;
+  }
+
+  public void setLimits(final AgentLimitsValueDto limits) {
+    this.limits = limits;
   }
 
   @Override
@@ -251,6 +253,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         jobLeaseToken,
         status,
         definition,
+        limits,
         metrics,
         tools,
         changedAttributes);
@@ -276,6 +279,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         && Objects.equals(jobLeaseToken, that.jobLeaseToken)
         && Objects.equals(status, that.status)
         && Objects.equals(definition, that.definition)
+        && Objects.equals(limits, that.limits)
         && Objects.equals(metrics, that.metrics)
         && Objects.equals(tools, that.tools)
         && Objects.equals(changedAttributes, that.changedAttributes);
@@ -307,6 +311,8 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         + status
         + ", definition="
         + definition
+        + ", limits="
+        + limits
         + ", metrics="
         + metrics
         + ", tools="
@@ -332,6 +338,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     public static final String jobLeaseToken = "jobLeaseToken";
     public static final String status = "status";
     public static final String definition = "definition";
+    public static final String limits = "limits";
     public static final String metrics = "metrics";
     public static final String tools = "tools";
     public static final String changedAttributes = "changedAttributes";
@@ -388,6 +395,70 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     @Override
     public String toString() {
       return "AgentDefinitionValueDto(model=" + model + ", provider=" + provider + ")";
+    }
+  }
+
+  public static class AgentLimitsValueDto implements AgentInstanceLimitsValue {
+
+    // -1 means no limit, the same default the engine uses.
+    private long maxTokens = -1L;
+    private int maxModelCalls = -1;
+    private int maxToolCalls = -1;
+
+    public AgentLimitsValueDto() {}
+
+    @Override
+    public long getMaxTokens() {
+      return maxTokens;
+    }
+
+    public void setMaxTokens(final long maxTokens) {
+      this.maxTokens = maxTokens;
+    }
+
+    @Override
+    public int getMaxModelCalls() {
+      return maxModelCalls;
+    }
+
+    public void setMaxModelCalls(final int maxModelCalls) {
+      this.maxModelCalls = maxModelCalls;
+    }
+
+    @Override
+    public int getMaxToolCalls() {
+      return maxToolCalls;
+    }
+
+    public void setMaxToolCalls(final int maxToolCalls) {
+      this.maxToolCalls = maxToolCalls;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(maxTokens, maxModelCalls, maxToolCalls);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final AgentLimitsValueDto that = (AgentLimitsValueDto) o;
+      return maxTokens == that.maxTokens
+          && maxModelCalls == that.maxModelCalls
+          && maxToolCalls == that.maxToolCalls;
+    }
+
+    @Override
+    public String toString() {
+      return "AgentLimitsValueDto(maxTokens="
+          + maxTokens
+          + ", maxModelCalls="
+          + maxModelCalls
+          + ", maxToolCalls="
+          + maxToolCalls
+          + ")";
     }
   }
 
