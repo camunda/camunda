@@ -42,6 +42,7 @@ dependencies {
   api(libs.com.fasterxml.jackson.core.jackson.annotations)
   api(libs.com.fasterxml.jackson.core.jackson.core)
   api(libs.com.fasterxml.jackson.core.jackson.databind)
+  implementation(libs.com.fasterxml.jackson.dataformat.jackson.dataformat.toml)
   implementation(project(":camunda-search-client"))
   implementation(project(":camunda-search-domain"))
   testImplementation(project(":zeebe-scheduler"))
