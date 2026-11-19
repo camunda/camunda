@@ -16,31 +16,43 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ListSecretsCommandStep1;
 import io.camunda.client.api.response.ListSecretsResponse;
+import io.camunda.client.api.search.filter.SecretListFilter;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ListSecretsResponseImpl;
+import io.camunda.client.impl.search.filter.SecretListFilterImpl;
+import io.camunda.client.protocol.rest.SecretListRequest;
 import io.camunda.client.protocol.rest.SecretListResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class ListSecretsCommandImpl implements ListSecretsCommandStep1 {
 
-  /**
-   * The endpoint takes no input, but it only accepts JSON. An empty object is sent rather than no
-   * body at all, because a request without a body carries no content type and is rejected as an
-   * unsupported media type.
-   */
-  private static final String EMPTY_JSON_BODY = "{}";
-
+  private final SecretListRequest request = new SecretListRequest();
+  private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public ListSecretsCommandImpl(final HttpClient httpClient) {
+  public ListSecretsCommandImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
     this.httpClient = httpClient;
+    this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
+  }
+
+  @Override
+  public ListSecretsCommandStep1 filter(final Consumer<SecretListFilter> fn) {
+    ArgumentUtil.ensureNotNull("fn", fn);
+    final SecretListFilterImpl filter = new SecretListFilterImpl();
+    fn.accept(filter);
+    // A filter without criteria is left out: it lists every state anyway, and clusters before 8.11
+    // reject the filter property itself, so sending it would fail there for nothing.
+    request.setFilter(filter.isEmpty() ? null : filter.getProtocolObject());
+    return this;
   }
 
   @Override
@@ -53,9 +65,12 @@ public class ListSecretsCommandImpl implements ListSecretsCommandStep1 {
   public CamundaFuture<ListSecretsResponse> send() {
     final HttpCamundaFuture<ListSecretsResponse> result = new HttpCamundaFuture<>();
     final String path = "/secrets/list";
+    // Always sent as a JSON body, an empty object without a filter: the endpoint only accepts
+    // JSON, and a request without a body carries no content type, so it would be rejected as an
+    // unsupported media type.
     httpClient.post(
         path,
-        EMPTY_JSON_BODY,
+        jsonMapper.toJson(request),
         httpRequestConfig.build(),
         SecretListResult.class,
         ListSecretsResponseImpl::new,

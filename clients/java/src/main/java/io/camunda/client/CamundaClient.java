@@ -3858,6 +3858,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *   camundaClient
    *       .newListSecretsCommand()
+   *       .filter(f -&gt; f.status(SecretStatus.EXPIRED))
    *       .send();
    * </pre>
    *
