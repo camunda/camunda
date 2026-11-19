@@ -179,7 +179,7 @@ public class UnpackedObjectTest {
           .isEqualTo(
               """
           {"arrayProp":[1],"binaryProp":"Zm9v","booleanProp":true,"documentProp":"gaNmb28C","enumProp":"BAR",\
-          "intProp":42,"longProp":4242,"objectProp":{"foo":243},"packedProp":[packed value (length=12)],"stringProp":"string-value"}""");
+          "intProp":42,"longProp":4242,"objectProp":{"foo":243},"packedProp":"[packed value (length=12)]","stringProp":"string-value"}""");
     }
   }
 

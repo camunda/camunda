@@ -77,7 +77,7 @@ final class ObjectValueTest {
 
     // then the undeclared property follows the declared one with a separator
     final var expected =
-        "{\"declared-property\":1,\"undeclared-property\":[packed value (length=1)]}";
+        "{\"declared-property\":1,\"undeclared-property\":\"[packed value (length=1)]\"}";
     assertThat(builder.toString()).isEqualTo(expected);
     assertThat(objectValue.toString()).isEqualTo(expected);
   }
@@ -98,7 +98,7 @@ final class ObjectValueTest {
     final String result = objectValue.toString();
 
     // then
-    assertThat(result).isEqualTo("{\"undeclared-property\":[packed value (length=1)]}");
+    assertThat(result).isEqualTo("{\"undeclared-property\":\"[packed value (length=1)]\"}");
   }
 
   private static final class TestObjectValueWithUndeclaredProperty extends UnpackedObject {
