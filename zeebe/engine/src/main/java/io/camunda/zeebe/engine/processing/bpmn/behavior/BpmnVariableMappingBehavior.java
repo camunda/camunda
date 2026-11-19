@@ -132,7 +132,9 @@ public final class BpmnVariableMappingBehavior {
    */
   public Either<Failure, Void> applyOutputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
-    return applyOutputMappings(context, element, unknownSource, unknownSource, unknownSource);
+    final var payloadSource =
+        eventTriggerBehavior.eventPayloadSource(element, context.getElementInstanceKey());
+    return applyOutputMappings(context, element, payloadSource, payloadSource, unknownSource);
   }
 
   public Either<Failure, Void> applyUserTaskOutputMappings(
