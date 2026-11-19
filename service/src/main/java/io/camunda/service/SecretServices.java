@@ -10,7 +10,9 @@ package io.camunda.service;
 import static io.camunda.service.authorization.Authorizations.SECRET_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.SECRET_REVEAL_AUTHORIZATION;
 
+import io.camunda.secretstore.SecretListEntry;
 import io.camunda.secretstore.SecretResolutionResult;
+import io.camunda.secretstore.SecretStatus;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreException;
 import io.camunda.secretstore.SecretStoreRegistry;
@@ -350,6 +352,18 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * <p>Runs the enumeration on the API executor, for the same reason {@link #resolve} does.
    */
   public CompletableFuture<List<String>> list(final CamundaAuthentication authentication) {
+    return list(authentication, null);
+  }
+
+  /**
+   * Lists the references the caller holds {@code SECRET:READ} on, like {@link
+   * #list(CamundaAuthentication)}, narrowed to the secrets whose store reports {@code status}. A
+   * store that cannot report states reports every secret as {@link SecretStatus#ACTIVE}.
+   *
+   * @param status the state to keep, or {@code null} to list every secret whatever its state
+   */
+  public CompletableFuture<List<String>> list(
+      final CamundaAuthentication authentication, final @Nullable SecretStatus status) {
     try {
       final var authorizedScopes =
           retrieveAuthorizedScopes(authentication, SECRET_READ_AUTHORIZATION);
@@ -357,7 +371,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
         return CompletableFuture.completedFuture(List.of());
       }
       return CompletableFuture.supplyAsync(
-          () -> listFromStores().stream().filter(authorizedScopes::authorizes).toList(),
+          () -> listFromStores(status).stream().filter(authorizedScopes::authorizes).toList(),
           executorProvider.getExecutor());
     } catch (final Exception ex) {
       return CompletableFuture.failedFuture(ErrorMapper.mapError(ex));
@@ -365,20 +379,39 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   }
 
   /**
-   * Enumerates the references of every configured store, sorted and without duplicates. A store's
-   * {@code list()} deliberately bypasses what it has cached: that is the values read so far, which
-   * is not the tenant's set of secrets.
+   * Enumerates the references of every configured store, sorted and without duplicates, keeping
+   * only those in {@code status} when one is given. A store's {@code listEntries()} deliberately
+   * bypasses what it has cached: that is the values read so far, which is not the tenant's set of
+   * secrets.
+   *
+   * <p>A reference is kept or dropped by the status its own store reports for it. Resolving lets
+   * the first store that answers decide, and a tenant has only one store today, so the two cannot
+   * disagree. Once several stores per tenant are allowed, a name two stores report in different
+   * statuses would be listed under both filters while {@link #resolve} reads only the first; the
+   * listing has to follow the same rule then.
    *
    * <p>A listed reference is usable verbatim with {@link #resolve}, but not always in a FEEL
    * expression: a name FEEL does not accept as a bare identifier — a dashed one above all — has to
    * be backtick-escaped there, {@code =camunda.secrets.`db-password`}. The endpoint's description
    * in {@code secrets.yaml} says so, since the caller cannot see this method.
    */
-  private List<String> listFromStores() {
+  private List<String> listFromStores(final @Nullable SecretStatus status) {
     final var references = new TreeSet<String>();
     try {
       for (final var store : secretStoreRegistry.getStores().entrySet()) {
-        for (final var name : store.getValue().list()) {
+        for (final var entry : store.getValue().listEntries()) {
+          if (entry == null) {
+            // a store is third-party code: a null entry costs the caller that entry, not the
+            // listing
+            LOG.debug(
+                "Omitting a null entry of store '{}' from the listing: it names no secret",
+                store.getKey());
+            continue;
+          }
+          if (!hasStatus(entry, status)) {
+            continue;
+          }
+          final var name = entry.name();
           if (isResolvableName(name)) {
             references.add(REFERENCE_PREFIX + name);
           } else {
@@ -400,6 +433,20 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
           "Failed to read the configured secret store.", ServiceException.Status.UNAVAILABLE);
     }
     return List.copyOf(references);
+  }
+
+  /**
+   * Whether the entry is in the wanted status, where no wanted status keeps every entry. An entry
+   * of a faulty store without a status counts as {@link SecretStatus#ACTIVE}, as a store that
+   * cannot tell does, so it is listed under the same filters in every case.
+   */
+  private static boolean hasStatus(
+      final SecretListEntry entry, final @Nullable SecretStatus status) {
+    if (status == null) {
+      return true;
+    }
+    final SecretStatus reported = entry.status() == null ? SecretStatus.ACTIVE : entry.status();
+    return reported == status;
   }
 
   /**
