@@ -14,6 +14,7 @@ dependencies {
   implementation(project(":camunda-search-client-connect"))
   implementation(project(":zeebe-rebalance"))
   implementation(project(":camunda-service"))
+  implementation(project(":camunda-secret-store-api"))
   implementation(project(":zeebe-backup"))
   implementation(project(":camunda-search-domain"))
   implementation(project(":camunda-spring-utils"))

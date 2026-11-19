@@ -11,6 +11,7 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.validator.SecretRequestValidator;
 import io.camunda.gateway.protocol.model.SecretListRequest;
 import io.camunda.gateway.protocol.model.SecretResolveRequest;
+import io.camunda.secretstore.SecretStatus;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -61,19 +63,34 @@ public class SecretController {
   @CamundaPostMapping(path = "/list")
   public CompletableFuture<ResponseEntity<Object>> listSecrets(
       @PhysicalTenantId final String physicalTenantId,
-      @RequestBody(required = false) final SecretListRequest request) {
+      @RequestBody(required = false) final @Nullable SecretListRequest request) {
     return SecretRequestValidator.validateSecretListRequest(request)
         .<CompletableFuture<ResponseEntity<Object>>>map(
             RestErrorMapper::mapProblemToCompletedResponse)
-        .orElseGet(() -> list(physicalTenantId));
+        .orElseGet(() -> list(physicalTenantId, toSecretStatus(request)));
   }
 
-  private CompletableFuture<ResponseEntity<Object>> list(final String physicalTenantId) {
+  private CompletableFuture<ResponseEntity<Object>> list(
+      final String physicalTenantId, final @Nullable SecretStatus status) {
     final var secretServices = serviceRegistry.secretServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> secretServices.list(authentication),
+        () -> secretServices.list(authentication, status),
         ResponseMapper::toSecretListResult,
         HttpStatus.OK);
+  }
+
+  private static @Nullable SecretStatus toSecretStatus(final @Nullable SecretListRequest request) {
+    final var filter = request == null ? null : request.getFilter();
+    final var status = filter == null ? null : filter.getStatus();
+    if (status == null) {
+      return null;
+    }
+    return switch (status) {
+      case ACTIVE -> SecretStatus.ACTIVE;
+      case DISABLED -> SecretStatus.DISABLED;
+      case EXPIRED -> SecretStatus.EXPIRED;
+      case NOT_YET_ACTIVE -> SecretStatus.NOT_YET_ACTIVE;
+    };
   }
 }

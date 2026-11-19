@@ -11,11 +11,13 @@ import static io.camunda.gateway.mapping.http.validator.SecretRequestValidator.M
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.SecretStatus;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.SecretServices;
@@ -32,6 +34,8 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -272,7 +276,7 @@ public class SecretControllerTest extends RestControllerTest {
   @Test
   void shouldReturnAuthorizedReferences() {
     // given
-    when(secretServices.list(any()))
+    when(secretServices.list(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(List.of("camunda.secrets.a")));
 
     // when / then only reference names are returned; the schema has no value field to leak
@@ -295,7 +299,8 @@ public class SecretControllerTest extends RestControllerTest {
   @Test
   void shouldReturnEmptyReferencesWhenNoneAuthorized() {
     // given
-    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when / then
     webClient
@@ -317,7 +322,8 @@ public class SecretControllerTest extends RestControllerTest {
   @Test
   void shouldTreatNullListRequestBodyAsNoFilters() {
     // given a literal JSON null body (deserialized as a null request)
-    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when / then the body is optional, so a null body applies no filters and still reaches the
     // service rather than being rejected
@@ -330,13 +336,14 @@ public class SecretControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isOk();
-    verify(secretServices).list(any());
+    verify(secretServices).list(any(), isNull());
   }
 
   @Test
   void shouldTreatMissingListRequestBodyAsNoFilters() {
     // given no request body at all
-    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when / then the body is optional, so omitting it applies no filters and still reaches the
     // service — clients need not send an empty object
@@ -347,13 +354,14 @@ public class SecretControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isOk();
-    verify(secretServices).list(any());
+    verify(secretServices).list(any(), isNull());
   }
 
   @Test
   void shouldForwardAuthenticationToServiceOnList() {
     // given
-    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
     webClient
@@ -367,10 +375,103 @@ public class SecretControllerTest extends RestControllerTest {
         .isOk();
 
     // then
-    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT));
+    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), isNull());
+  }
+
+  @ParameterizedTest
+  @EnumSource(SecretStatus.class)
+  void shouldListSecretsInRequestedStatus(final SecretStatus status) {
+    // given
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of("camunda.secrets.a")));
+
+    // when / then the response keeps the shape of an unfiltered listing
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": { \"status\": \"%s\" } }".formatted(status.name()))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            { "references": ["camunda.secrets.a"] }""",
+            JsonCompareMode.STRICT);
+
+    // then the requested status reaches the service
+    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), eq(status));
+  }
+
+  @Test
+  void shouldListSecretsInEveryStatusWhenFilterIsEmpty() {
+    // given
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": {} }")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then a filter without a status narrows nothing
+    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), isNull());
+  }
+
+  @Test
+  void shouldRejectUnknownStatus() {
+    // when / then the 400 names the allowed values, and the service is never asked
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": { \"status\": \"BROKEN\" } }")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "Unexpected value 'BROKEN' for enum field 'status'. Use any of the following values: [ACTIVE, DISABLED, EXPIRED, NOT_YET_ACTIVE]",
+              "instance": "%s"
+            }"""
+                .formatted(LIST_URL),
+            JsonCompareMode.STRICT);
+    verifyNoInteractions(secretServices);
+  }
+
+  @Test
+  void shouldRejectUnknownFilterProperty() {
+    // when / then the filter takes only the properties the spec declares
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": { \"name\": \"camunda.secrets.a\" } }")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+    verifyNoInteractions(secretServices);
   }
 
   private static String referencesJson(final int count) {
+
     return IntStream.rangeClosed(1, count)
         .mapToObj(i -> "\"camunda.secrets.s" + i + "\"")
         .collect(Collectors.joining(","));

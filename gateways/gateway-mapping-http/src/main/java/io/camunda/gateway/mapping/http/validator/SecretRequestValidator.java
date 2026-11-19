@@ -14,6 +14,7 @@ import io.camunda.gateway.protocol.model.SecretListRequest;
 import io.camunda.gateway.protocol.model.SecretResolveRequest;
 import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
 
 public final class SecretRequestValidator {
@@ -52,10 +53,11 @@ public final class SecretRequestValidator {
         });
   }
 
-  public static Optional<ProblemDetail> validateSecretListRequest(final SecretListRequest request) {
-    // The list request body is optional: a missing or null body (and the empty object) means "no
-    // filters", so there is nothing to reject here yet. Kept as the extension point for validating
-    // the filtering options this request is reserved to carry in the future.
+  public static Optional<ProblemDetail> validateSecretListRequest(
+      final @Nullable SecretListRequest request) {
+    // Nothing to reject: the body, its filter and the filter's status are all optional, and an
+    // unknown status never gets here, since deserializing the request already fails on it and
+    // GlobalControllerExceptionHandler answers 400 with the allowed values.
     return validate(violations -> {});
   }
 }
