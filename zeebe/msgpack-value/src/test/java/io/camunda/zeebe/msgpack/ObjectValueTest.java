@@ -75,12 +75,30 @@ final class ObjectValueTest {
     final var builder = new StringBuilder();
     objectValue.writeJSON(builder);
 
-    // then the undeclared property follows the declared one with a separator, printed as the raw
-    // value it holds
+    // then the undeclared property follows the declared one with a separator
     final var expected =
         "{\"declared-property\":1,\"undeclared-property\":[packed value (length=1)]}";
     assertThat(builder.toString()).isEqualTo(expected);
     assertThat(objectValue.toString()).isEqualTo(expected);
+  }
+
+  @Test
+  void shouldNotStartWithASeparatorWhenOnlyUndeclaredPropertiesHaveAValue() {
+    // given a buffer with a property the class does not declare
+    final var objectValue = new UnpackedObject(0);
+    objectValue.wrap(
+        encodeMsgPack(
+            writer -> {
+              writer.writeMapHeader(1);
+              writer.writeString(wrapString("undeclared-property"));
+              writer.writeInteger(2L);
+            }));
+
+    // when
+    final String result = objectValue.toString();
+
+    // then
+    assertThat(result).isEqualTo("{\"undeclared-property\":[packed value (length=1)]}");
   }
 
   private static final class TestObjectValueWithUndeclaredProperty extends UnpackedObject {
