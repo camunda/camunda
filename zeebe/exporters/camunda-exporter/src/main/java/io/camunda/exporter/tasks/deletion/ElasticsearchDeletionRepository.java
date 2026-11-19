@@ -32,6 +32,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
+import io.micrometer.core.instrument.Timer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -45,6 +46,7 @@ public class ElasticsearchDeletionRepository extends ElasticsearchRepository
   private final int partitionId;
   private final HistoryConfiguration config;
   private final IndexTemplateDescriptor listViewTemplate;
+  private final CamundaExporterMetrics metrics;
 
   public ElasticsearchDeletionRepository(
       final int partitionId,
@@ -58,6 +60,7 @@ public class ElasticsearchDeletionRepository extends ElasticsearchRepository
     this.partitionId = partitionId;
     this.config = config;
     listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    this.metrics = metrics;
 
     pipeline = new DeleteByIdPipeline(config.getRetention().getDeleter(), this, metrics, logger);
   }
@@ -99,8 +102,10 @@ public class ElasticsearchDeletionRepository extends ElasticsearchRepository
                     s -> s.field(f -> f.field(ListViewTemplate.END_DATE).order(SortOrder.Asc))))
             .build();
 
+    final var timer = Timer.start();
     return client
         .search(request, ProcessInstanceForListViewEntity.class)
+        .whenCompleteAsync((ignored, error) -> metrics.measureDeletionSearch(timer), executor)
         .thenApplyAsync(
             response ->
                 ProcessInstanceDeletionBatch.from(
@@ -139,8 +144,11 @@ public class ElasticsearchDeletionRepository extends ElasticsearchRepository
       ((SearchAfterES) searchAfter).apply(requestBuilder);
     }
 
+    final var timer = Timer.start();
     return client
         .search(requestBuilder.build())
+        .whenCompleteAsync(
+            (response, error) -> metrics.measureDeletionDocIdsSearchDuration(timer), executor)
         .thenApply(
             response -> {
               final List<Hit<Void>> hits = response.hits().hits();
@@ -172,9 +180,12 @@ public class ElasticsearchDeletionRepository extends ElasticsearchRepository
 
     final var request = new BulkRequest.Builder().operations(operations).build();
 
+    final var timer = Timer.start();
     return client
         .bulk(request)
         .thenApplyAsync(this::getDeletedDocCount, executor)
+        .whenCompleteAsync(
+            (deleted, error) -> metrics.measureDeletionDelete(deleted, timer), executor)
         .thenApply(Math::toIntExact);
   }
 

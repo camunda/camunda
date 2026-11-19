@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.deletion;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchSupplier;
@@ -15,6 +16,7 @@ import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.PipelineStats;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.exporter.tasks.util.SearchAfter;
 import io.camunda.search.schema.config.DeleterConfiguration;
+import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,6 +43,7 @@ class DeleteByIdPipeline {
 
   CompletableFuture<Void> deleteDocumentsById(
       final String indexName, final FilterByKeysQuery<?> filter, final Executor executor) {
+    final var timer = Timer.start();
     final var statsConsumer = new AtomicReference<PipelineStats>();
     final BatchSupplier<DocToDelete, SearchAfter> idsSupplier =
         (searchAfter, batchSize) ->
@@ -62,6 +65,12 @@ class DeleteByIdPipeline {
                   indexName,
                   stats.totalDocumentsProcessed(),
                   stats.totalTimeTakenMs() / 1000);
+
+              // tag with the main index name, so all ordinal indices share the same metrics
+              metrics.measureDeletionIndexDuration(
+                  TargetIndex.getIndexFamilyFromName(indexName).name(),
+                  timer,
+                  stats.totalDocumentsProcessed());
             })
         .whenComplete(
             (val, err) -> {

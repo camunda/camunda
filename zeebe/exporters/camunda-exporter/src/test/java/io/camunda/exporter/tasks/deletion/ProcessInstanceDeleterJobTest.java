@@ -8,8 +8,11 @@
 package io.camunda.exporter.tasks.deletion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -69,6 +72,61 @@ class ProcessInstanceDeleterJobTest {
 
     verify(repository).getProcessInstancesNextBatch();
     verifyNoMoreInteractions(repository);
+  }
+
+  @Test
+  void shouldMeasureDurationButNotRecordDeletedWhenBatchEmpty() {
+    // given
+    when(repository.getProcessInstancesNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(ProcessInstanceDeletionBatch.empty()));
+
+    // when
+    final var future = job.execute();
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+    verify(metrics).measureDeletionDuration(any());
+    verify(metrics, never()).recordProcessInstancesDeleting(anyInt());
+    verify(metrics, never()).recordProcessInstancesDeleted(anyInt());
+  }
+
+  @Test
+  void shouldRecordDeletingThenDeletedAndMeasureDuration() {
+    // given
+    when(repository.getProcessInstancesNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new ProcessInstanceDeletionBatch(1, List.of(1L, 2L), List.of(3L))));
+
+    // when
+    final var future = job.execute();
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+    final var inOrder = inOrder(metrics);
+    inOrder.verify(metrics).recordProcessInstancesDeleting(3);
+    inOrder.verify(metrics).recordProcessInstancesDeleted(3);
+    inOrder.verify(metrics).measureDeletionDuration(any());
+  }
+
+  @Test
+  void shouldNotRecordDeletedButMeasureDurationWhenDeletingFails() {
+    // given
+    when(repository.getProcessInstancesNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new ProcessInstanceDeletionBatch(1, List.of(1L), List.of())));
+    when(repository.deleteDocumentsById(any(), any(), any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("expected")));
+
+    // when
+    final var future = job.execute();
+
+    // then
+    assertThat(future).failsWithin(Duration.ofSeconds(5));
+    verify(metrics).recordProcessInstancesDeleting(1);
+    verify(metrics, never()).recordProcessInstancesDeleted(anyInt());
+    verify(metrics).measureDeletionDuration(any());
   }
 
   @Test
