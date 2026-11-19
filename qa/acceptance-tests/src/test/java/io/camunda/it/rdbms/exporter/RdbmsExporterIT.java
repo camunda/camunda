@@ -22,8 +22,15 @@ import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
+import io.camunda.db.rdbms.write.service.HistoryDeletionService;
+import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.exporter.rdbms.RdbmsExporter;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
+import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
+import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
@@ -59,6 +66,7 @@ import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -127,6 +135,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -1506,6 +1515,86 @@ class RdbmsExporterIT {
     assertThat(auditLog.operationType()).isEqualTo(AuditLogOperationType.CREATE);
     assertThat(auditLog.result()).isEqualTo(AuditLogOperationResult.SUCCESS);
     assertThat(auditLog.category()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
+  }
+
+  @Test
+  public void shouldNotQueueProcessInstanceTwiceWhenLaterHandlerFailsAndRecordIsRetried() {
+    // given - the process instance handler succeeds, a handler registered after it fails once
+    final var retryController = new ExporterTestController();
+    final var retryConfiguration =
+        new ExporterConfiguration("handler-retry-test", Map.of("queueSize", 0))
+            .instantiate(io.camunda.exporter.rdbms.ExporterConfiguration.class);
+    final var writerConfig =
+        retryConfiguration.createRdbmsWriterConfig(
+            1, DEFAULT_PHYSICAL_TENANT_ID, InstantSource.system());
+    final var rdbmsWriters = rdbmsService.createWriter(writerConfig);
+    final var historyCleanupService =
+        new HistoryCleanupService(
+            writerConfig, rdbmsWriters, rdbmsService.getProcessInstanceReader());
+    final var historyDeletionService =
+        new HistoryDeletionService(
+            rdbmsWriters,
+            rdbmsService.getHistoryDeletionDbReader(),
+            rdbmsService.getProcessInstanceReader(),
+            rdbmsService.getDecisionInstanceReader(),
+            new HistoryDeletionConfig(
+                retryConfiguration.getHistoryDeletion().getDelayBetweenRuns(),
+                retryConfiguration.getHistoryDeletion().getMaxDelayBetweenRuns(),
+                retryConfiguration.getHistoryDeletion().getQueueBatchSize(),
+                retryConfiguration.getHistoryDeletion().getDependentRowLimit()),
+            InstantSource.system());
+
+    final var failOnce = new AtomicBoolean(true);
+    final RdbmsExportHandler<ProcessInstanceRecordValue> failingOnceHandler =
+        new RdbmsExportHandler<>() {
+          @Override
+          public boolean canExport(final Record<ProcessInstanceRecordValue> record) {
+            return true;
+          }
+
+          @Override
+          public void export(final Record<ProcessInstanceRecordValue> record) {
+            if (failOnce.getAndSet(false)) {
+              throw new IllegalStateException("transient failure of a later handler");
+            }
+          }
+        };
+
+    final var retryExporter =
+        new RdbmsExporter.Builder()
+            .partitionId(1)
+            .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
+            .flushInterval(retryConfiguration.getFlushInterval())
+            .queueSize(0)
+            .rdbmsWriter(rdbmsWriters)
+            .rdbmsSchemaManagerRegistry(rdbmsSchemaManagerRegistry)
+            .historyCleanupService(historyCleanupService)
+            .historyDeletionService(historyDeletionService)
+            .replicationControllerFactory(ReplicationControllerFactory.noop())
+            .withHandler(
+                ValueType.PROCESS_INSTANCE,
+                new ProcessInstanceExportHandler(
+                    rdbmsWriters.getProcessInstanceWriter(),
+                    historyCleanupService,
+                    Mockito.mock(ExporterEntityCache.class),
+                    rdbmsWriters.getErrorMessageSize()))
+            .withHandler(ValueType.PROCESS_INSTANCE, failingOnceHandler)
+            .build();
+    retryExporter.open(retryController);
+
+    final var record = FIXTURES.getProcessInstanceStartedRecord();
+
+    // when - the first delivery fails in the second handler, the record is redelivered
+    assertThatThrownBy(() -> retryExporter.export(record))
+        .isInstanceOf(IllegalStateException.class);
+    retryExporter.export(record);
+    retryExporter.close();
+
+    // then - the flush succeeded (no duplicate key) and the instance exists once
+    final var key = ((ProcessInstanceRecordValue) record.getValue()).getProcessInstanceKey();
+    assertThat(rdbmsService.getProcessInstanceReader().findOne(key)).isNotEmpty();
+    assertThat(exporterPositionMapper.findOne(1).lastExportedPosition())
+        .isEqualTo(record.getPosition());
   }
 
   @Test
