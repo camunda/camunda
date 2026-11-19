@@ -20,7 +20,9 @@ import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
+import io.camunda.zeebe.protocol.record.InternalOperationType;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
@@ -76,8 +78,8 @@ final class ElasticsearchExporterIT {
   private static TestClient testClient;
   private static ExporterTestContext exporterTestContext;
   private static String previousTestMethod = null;
-  // omit authorizations, agent, requestChannelType and requestToolName since they are removed from
-  // the records during serialization
+  // omit authorizations, agent, requestChannelType, requestToolName and the internal operation
+  // since they are removed from the records during serialization
   private final ProtocolFactory factory =
       new ProtocolFactory(b -> b.withAuthorizations(Map.of()))
           .registerRandomizer(
@@ -85,7 +87,13 @@ final class ElasticsearchExporterIT {
                   "agent".equals(field.getName())
                       || "requestChannelType".equals(field.getName())
                       || "requestToolName".equals(field.getName()),
-              random -> null);
+              random -> null)
+          .registerRandomizer(
+              field -> "internalOperationReference".equals(field.getName()),
+              random -> RecordMetadataDecoder.internalOperationReferenceNullValue())
+          .registerRandomizer(
+              field -> "internalOperationType".equals(field.getName()),
+              random -> InternalOperationType.UNSPECIFIED.code());
 
   @BeforeEach
   public void beforeEach(final TestInfo testInfo) {
