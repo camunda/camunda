@@ -70,7 +70,7 @@ public final class ProcessDefinitionSuspensionTest extends GatewayTest {
     assertThat(value.getProcessDefinitionKey()).isEqualTo(PROCESS_DEFINITION_KEY);
     assertThat(value.getBpmnProcessId()).isEmpty();
     assertThat(value.getVersion()).isEqualTo(-1);
-    assertThat(value.getTenantId()).isEmpty();
+    assertThat(value.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(value.isIncludeProcessInstances()).isTrue();
 
     assertThat(response.getProcessDefinitionsList())
@@ -134,7 +134,7 @@ public final class ProcessDefinitionSuspensionTest extends GatewayTest {
   }
 
   @Test
-  public void shouldLeaveBatchOperationKeyUnsetWithoutCascade() {
+  public void shouldLeaveBatchOperationKeyUnsetWithoutProcessInstances() {
     // given
     stubSuspension(
         suspensionRecord(
@@ -301,10 +301,19 @@ public final class ProcessDefinitionSuspensionTest extends GatewayTest {
     assertThat(value.isIncludeProcessInstances()).isTrue();
 
     assertThat(response.getProcessDefinitionsList())
-        .extracting(ResumeProcessDefinitionResponse.ProcessDefinitionVersion::getOutcome)
+        .extracting(
+            ResumeProcessDefinitionResponse.ProcessDefinitionVersion::getProcessDefinitionKey,
+            ResumeProcessDefinitionResponse.ProcessDefinitionVersion::getVersion,
+            ResumeProcessDefinitionResponse.ProcessDefinitionVersion::getOutcome)
         .containsExactly(
-            ResumeProcessDefinitionResponse.ProcessDefinitionVersion.Outcome.RESUMED,
-            ResumeProcessDefinitionResponse.ProcessDefinitionVersion.Outcome.ALREADY_RESUMED);
+            tuple(
+                PROCESS_DEFINITION_KEY,
+                1,
+                ResumeProcessDefinitionResponse.ProcessDefinitionVersion.Outcome.RESUMED),
+            tuple(
+                OTHER_PROCESS_DEFINITION_KEY,
+                2,
+                ResumeProcessDefinitionResponse.ProcessDefinitionVersion.Outcome.ALREADY_RESUMED));
     assertThat(response.getBatchOperationKey()).isEqualTo(String.valueOf(BATCH_OPERATION_KEY));
   }
 
@@ -329,6 +338,44 @@ public final class ProcessDefinitionSuspensionTest extends GatewayTest {
     assertThat(value.getBpmnProcessId()).isEqualTo(BPMN_PROCESS_ID);
     assertThat(value.getVersion()).isEqualTo(2);
     assertThat(value.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(value.isIncludeProcessInstances()).isFalse();
+  }
+
+  @Test
+  public void shouldLeaveBatchOperationKeyUnsetWithoutProcessInstancesOnResumption() {
+    // given
+    stubResumption(
+        suspensionRecord(
+            -1L,
+            resolvedVersion(
+                PROCESS_DEFINITION_KEY, 1, ProcessDefinitionSuspensionOutcome.RESUMED)));
+    final var request =
+        ResumeProcessDefinitionRequest.newBuilder()
+            .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
+            .build();
+
+    // when
+    final var response = client.resumeProcessDefinition(request);
+
+    // then
+    assertThat(response.hasBatchOperationKey()).isFalse();
+  }
+
+  @Test
+  public void shouldResumeAllVersionsWhenVersionIsOmitted() {
+    // given
+    stubResumption(suspensionRecord(-1L));
+    final var request =
+        ResumeProcessDefinitionRequest.newBuilder().setBpmnProcessId(BPMN_PROCESS_ID).build();
+
+    // when
+    client.resumeProcessDefinition(request);
+
+    // then
+    final BrokerResumeProcessDefinitionRequest brokerRequest =
+        brokerClient.getSingleBrokerRequest();
+    final ProcessDefinitionSuspensionRecord value = brokerRequest.getRequestWriter();
+    assertThat(value.getVersion()).isEqualTo(-1);
   }
 
   @Test
@@ -430,8 +477,14 @@ public final class ProcessDefinitionSuspensionTest extends GatewayTest {
 
     // then
     assertThat(response.getProcessDefinitionsList())
-        .extracting(version -> version.getOutcome().name())
-        .containsExactlyElementsOf(outcomes.stream().map(Enum::name).toList());
+        .extracting(
+            ResumeProcessDefinitionResponse.ProcessDefinitionVersion::getProcessDefinitionKey,
+            ResumeProcessDefinitionResponse.ProcessDefinitionVersion::getVersion,
+            version -> version.getOutcome().name())
+        .containsExactlyElementsOf(
+            outcomes.stream()
+                .map(outcome -> tuple(PROCESS_DEFINITION_KEY, 1, outcome.name()))
+                .toList());
   }
 
   private static ProcessDefinitionSuspensionRecord suspensionRecord(
