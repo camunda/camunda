@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from 'utils/sleep';
+import {logInViaApi} from 'utils/logInViaApi';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -71,6 +72,23 @@ test.beforeAll(async () => {
 
 test.describe('Processes', () => {
   test.beforeEach(async ({page, operateHomePage}) => {
+    // The worker-scoped session this spec inherits can be invalidated mid-run
+    // by a concurrent `demo` login on another worker (session eviction), after
+    // which /v2/authentication/me returns 401 (the stale cookie is still sent)
+    // and Operate redirects to the login screen -- leaving the header nav absent
+    // so clickProcessesTab() times out. Re-establish a fresh session on this
+    // context before navigating, seeding both the camunda-session cookie and the
+    // CSRF token, mirroring the logInViaApi pattern in
+    // multiInstanceSelection.spec.ts and processInstanceWaitStatesFlagOff.spec.ts.
+    const baseURL = process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
+    const {csrfToken} = await logInViaApi(page.context().request, baseURL, {
+      username: process.env.TEST_USERNAME ?? 'demo',
+      password: process.env.TEST_PASSWORD ?? 'demo',
+    });
+    await page.addInitScript((token) => {
+      sessionStorage.setItem('X-CSRF-TOKEN', token);
+    }, csrfToken);
+
     await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
