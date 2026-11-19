@@ -137,6 +137,7 @@ import {
 	unassignMappingFromRole,
 	queryMappingRulesByRole,
 } from './role';
+import {listSecrets} from './secret';
 import {broadcastSignal} from './signal';
 import {
 	createTenant,
@@ -317,6 +318,7 @@ const endpoints = {
 	assignMappingToRole,
 	unassignMappingFromRole,
 	queryMappingRulesByRole,
+	listSecrets,
 	broadcastSignal,
 	createTenant,
 	getTenant,
@@ -972,6 +974,16 @@ export {
 	type QueryMappingRulesByRoleRequestBody,
 	type QueryMappingRulesByRoleResponseBody,
 } from './role';
+export {
+	secretStatusSchema,
+	listSecretsFilterSchema,
+	listSecretsRequestBodySchema,
+	listSecretsResponseBodySchema,
+	type SecretStatus,
+	type ListSecretsFilter,
+	type ListSecretsRequestBody,
+	type ListSecretsResponseBody,
+} from './secret';
 export {
 	broadcastSignalRequestBodySchema,
 	broadcastSignalResponseBodySchema,
