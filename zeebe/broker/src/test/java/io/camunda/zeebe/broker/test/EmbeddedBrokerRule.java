@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.test;
 
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.DISABLE_EMBEDDED_GATEWAY;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setCommandApiPort;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
@@ -118,6 +119,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
+    DISABLE_EMBEDDED_GATEWAY.accept(brokerCfg);
     setCommandApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
     setInternalApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
   }
