@@ -344,7 +344,7 @@ describe('AppHeader (nav V2)', () => {
   it('should allow collapsing Operations while on an Operations page', async () => {
     const {user} = render(<AppHeader />, {wrapper: OperationsWrapper});
     const toggle = await screen.findByRole('button', {
-      name: 'Toggle Operations',
+      name: 'Operations',
     });
 
     expect(toggle).toHaveAttribute('aria-expanded', 'true');

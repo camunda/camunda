@@ -101,16 +101,14 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
         },
       },
       {
-        type: 'group-item',
+        type: 'group',
         key: 'operations',
         label: 'Operations',
         icon: Activity,
-        isActive: isOperationsPage,
         isExpanded: operationsExpanded,
         onToggleExpand: (expanded) => {
           setOperationsExpansion({page: currentPage, expanded});
         },
-        linkProps: {to: Paths.batchOperations()},
         children: [
           {
             type: 'item',
@@ -143,13 +141,7 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
         ],
       },
     ];
-  }, [
-    forbidden,
-    hideNavLinks,
-    currentPage,
-    isOperationsPage,
-    operationsExpanded,
-  ]);
+  }, [forbidden, hideNavLinks, currentPage, operationsExpanded]);
 }
 
 export {useSidebarChildren};

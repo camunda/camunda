@@ -62,12 +62,10 @@ export default function useSidebarChildren(noActions?: boolean): SidebarNode[] {
         !isCurrentPage(['/dashboard/instant/*'], pathname),
     },
     {
-      type: 'group-item',
+      type: 'group',
       key: 'analysis',
       label: t('navigation.analysis').toString(),
       icon: navIcon(ChartLineSmooth),
-      linkProps: {to: '/analysis'},
-      isActive: isAnalysis,
       isExpanded: analysisExpanded,
       onToggleExpand: (expanded) => setExpansion({section: isAnalysis, expanded}),
       children: [
