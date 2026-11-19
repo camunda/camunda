@@ -92,6 +92,9 @@ jobs:
       )
     name: Build Camunda
     needs: [resolve-image-tag]
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
     steps:
@@ -106,8 +109,9 @@ jobs:
         dockerhub-readonly: true
         harbor: true
         vault-address: ${{ secrets.VAULT_ADDR }}
-        vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-        vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+        vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+        vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+        vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         minimus: true
 
     - uses: ./.github/actions/build-zeebe
@@ -133,8 +137,9 @@ jobs:
         build_status: ${{ job.status }}
         job_name: preview-env-build-camunda
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   build-optimize:
     # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
@@ -148,6 +153,9 @@ jobs:
       )
     name: Build Optimize
     needs: [resolve-image-tag]
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     uses: ./.github/workflows/optimize-ci-build-reusable.yml
     secrets: inherit
     with:
@@ -233,9 +241,10 @@ jobs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
 
@@ -287,8 +296,9 @@ jobs:
         build_status: ${{ job.status }}
         job_name: preview-env-deploy-preview
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   conflicts:
     if: >
@@ -298,6 +308,11 @@ jobs:
           contains(github.event.pull_request.labels.*.name, 'deploy-preview')
         )
       )
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -320,8 +335,9 @@ jobs:
         build_status: ${{ job.status }}
         job_name: preview-env-conflicts
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   clean:
     if: >
@@ -343,6 +359,11 @@ jobs:
       needs.deploy-preview.result != 'cancelled' &&
       github.event_name == 'pull_request'
     name: Create Deployment Result Summary
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [deploy-preview]
@@ -362,5 +383,6 @@ jobs:
         build_status: ${{ job.status }}
         job_name: preview-env-comment
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}

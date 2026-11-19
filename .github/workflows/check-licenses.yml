@@ -53,6 +53,7 @@ jobs:
     name: "Analyze ${{ matrix.project.name }} dependencies"
     needs: [detect-changes]
     permissions:
+      id-token: write # Vault JWT login
       # Needed for camunda/infra-global-github-actions/fossa/info
       actions: read
       contents: read
@@ -97,9 +98,10 @@ jobs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
 
@@ -107,8 +109,9 @@ jobs:
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
       with:
         vault-address: ${{ secrets.VAULT_ADDR }}
-        vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-        vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+        vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+        vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+        vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
     - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       if: matrix.project.name == 'c8run'
@@ -194,14 +197,16 @@ jobs:
         job_name: "analyze/${{ matrix.project.name }}"
         build_status: ${{ job.status }}
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   observe-aborted-jobs:
     needs:
     - analyze
     if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     permissions:
+      id-token: write # Vault JWT login
       actions: read # required to read raw job logs for runner-abort detection
       checks: read
     runs-on: ubuntu-latest
@@ -214,6 +219,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
