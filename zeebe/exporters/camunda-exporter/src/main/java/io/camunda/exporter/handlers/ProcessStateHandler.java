@@ -15,12 +15,19 @@ import io.camunda.webapps.schema.entities.ProcessDefinitionState;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.List;
 import java.util.Map;
 
 public class ProcessStateHandler implements MainIndexExporterHandler<ProcessEntity, Process> {
+
+  private static final Map<Intent, ProcessDefinitionState> STATE_BY_INTENT =
+      Map.of(
+          ProcessIntent.DRAINING, ProcessDefinitionState.DRAINING,
+          ProcessIntent.SUSPENDED, ProcessDefinitionState.SUSPENDED,
+          ProcessIntent.RESUMED, ProcessDefinitionState.ACTIVE);
 
   private final String indexName;
 
@@ -40,7 +47,7 @@ public class ProcessStateHandler implements MainIndexExporterHandler<ProcessEnti
 
   @Override
   public boolean handlesRecord(final Record<Process> record) {
-    return record.getIntent() == ProcessIntent.DRAINING;
+    return STATE_BY_INTENT.containsKey(record.getIntent());
   }
 
   @Override
@@ -55,15 +62,14 @@ public class ProcessStateHandler implements MainIndexExporterHandler<ProcessEnti
 
   @Override
   public void updateEntity(final Record<Process> record, final ProcessEntity entity) {
-    entity.setState(ProcessDefinitionState.DRAINING);
+    entity.setState(STATE_BY_INTENT.get(record.getIntent()));
   }
 
   @Override
   public void flush(
       final TargetIndex index, final ProcessEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.update(
-        index, entity.getId(), Map.of(ProcessIndex.STATE, ProcessDefinitionState.DRAINING));
+    batchRequest.update(index, entity.getId(), Map.of(ProcessIndex.STATE, entity.getState()));
   }
 
   @Override
