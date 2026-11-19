@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -365,6 +366,93 @@ class ProcessingScheduleServiceTest {
   }
 
   @Test
+  void shouldScheduleRunnableOnFixedRate() {
+    // given
+    final var mockedTask = mock(Runnable.class);
+
+    // when
+    scheduleService.runRunnableAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    actorScheduler.workUntilDone();
+    for (int i = 0; i < 5; i++) {
+      actorScheduler.updateClock(Duration.ofSeconds(1));
+      actorScheduler.workUntilDone();
+    }
+
+    // then
+    verify(mockedTask, times(5)).run();
+  }
+
+  @Test
+  void shouldNotExecuteFixedRateRunnableIfAborted() {
+    // given
+    lifecycleSupplier.isAborted = true;
+    final var mockedTask = mock(Runnable.class);
+
+    // when
+    scheduleService.runRunnableAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(1));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(mockedTask, never()).run();
+  }
+
+  @Test
+  void shouldNotExecuteFixedRateRunnableIfNotInProcessingPhase() {
+    // given
+    lifecycleSupplier.currentPhase = Phase.PAUSED;
+    final var mockedTask = mock(Runnable.class);
+
+    // when
+    scheduleService.runRunnableAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(1));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(mockedTask, never()).run();
+  }
+
+  @Test
+  void shouldKeepFixedRateRunnableScheduledWhileNotInProcessingPhase() {
+    // given
+    lifecycleSupplier.currentPhase = Phase.PAUSED;
+    final var mockedTask = mock(Runnable.class);
+    scheduleService.runRunnableAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(1));
+    actorScheduler.workUntilDone();
+
+    // when
+    lifecycleSupplier.currentPhase = Phase.PROCESSING;
+    actorScheduler.updateClock(Duration.ofSeconds(1));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(mockedTask, times(1)).run();
+  }
+
+  @Test
+  void shouldStopFixedRateRunnableOnceAborted() {
+    // given
+    final var mockedTask = mock(Runnable.class);
+    scheduleService.runRunnableAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    actorScheduler.workUntilDone();
+    lifecycleSupplier.isAborted = true;
+    actorScheduler.updateClock(Duration.ofSeconds(1));
+    actorScheduler.workUntilDone();
+
+    // when
+    lifecycleSupplier.isAborted = false;
+    actorScheduler.updateClock(Duration.ofSeconds(1));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(mockedTask, never()).run();
+  }
+
+  @Test
   void shouldNotRunScheduledTasksAfterClosed() {
     // given
     final var mockedTask = spy(new DummyTask());
@@ -701,6 +789,10 @@ class ProcessingScheduleServiceTest {
                           scheduledTask.cancel();
                         }
                       }));
+    }
+
+    public void runRunnableAtFixedRate(final Duration delay, final Runnable task) {
+      actor.submit(() -> processingScheduleService.runAtFixedRate(delay, task));
     }
 
     public void runAtFixedRate(final Duration delay, final Task task) {
