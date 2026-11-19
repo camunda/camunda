@@ -12,6 +12,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClass.Predicates;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -66,10 +67,12 @@ public class AuthorizationArchTest {
       @Override
       public boolean test(final JavaClass javaClass) {
         return Predicates.implement(TypedRecordProcessor.class)
-            // Not all processors use the TypedRecordProcessor interface. We also need to check the
-            // UserTaskCommandProcessor interface.
-            .or(Predicates.implement(UserTaskCommandProcessor.class))
-            .test(javaClass);
+                // Not all processors use the TypedRecordProcessor interface. We also need to
+                // check the UserTaskCommandProcessor interface.
+                .or(Predicates.implement(UserTaskCommandProcessor.class))
+                .test(javaClass)
+            // An abstract processor is never registered; its subclasses are checked instead.
+            && !javaClass.getModifiers().contains(JavaModifier.ABSTRACT);
       }
     };
   }
