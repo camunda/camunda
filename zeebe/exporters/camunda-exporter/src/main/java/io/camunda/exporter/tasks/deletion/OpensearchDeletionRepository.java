@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
+import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -44,6 +45,7 @@ public class OpensearchDeletionRepository extends OpensearchRepository
   private final int partitionId;
   private final HistoryConfiguration config;
   private final IndexTemplateDescriptor listViewTemplate;
+  private final CamundaExporterMetrics metrics;
 
   public OpensearchDeletionRepository(
       final int partitionId,
@@ -57,6 +59,7 @@ public class OpensearchDeletionRepository extends OpensearchRepository
     this.partitionId = partitionId;
     this.config = config;
     listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    this.metrics = metrics;
 
     pipeline = new DeleteByIdPipeline(config.getRetention().getDeleter(), this, metrics, logger);
   }
@@ -102,9 +105,11 @@ public class OpensearchDeletionRepository extends OpensearchRepository
                             field -> field.field(ListViewTemplate.END_DATE).order(SortOrder.Asc))))
             .build();
 
+    final var timer = Timer.start();
     try {
       return client
           .search(request, ProcessInstanceForListViewEntity.class)
+          .whenCompleteAsync((ignored, error) -> metrics.measureDeletionSearch(timer), executor)
           .thenApplyAsync(
               response ->
                   ProcessInstanceDeletionBatch.from(
@@ -146,9 +151,12 @@ public class OpensearchDeletionRepository extends OpensearchRepository
       ((SearchAfterOS) searchAfter).apply(requestBuilder);
     }
 
+    final var timer = Timer.start();
     try {
       return client
           .search(requestBuilder.build(), Object.class)
+          .whenCompleteAsync(
+              (response, error) -> metrics.measureDeletionDocIdsSearchDuration(timer), executor)
           .thenApply(
               response -> {
                 final List<Hit<Object>> hits = response.hits().hits();
@@ -185,10 +193,13 @@ public class OpensearchDeletionRepository extends OpensearchRepository
 
     final BulkRequest request = BulkRequest.of(b -> b.operations(operations));
 
+    final var timer = Timer.start();
     try {
       return client
           .bulk(request)
           .thenApplyAsync(this::getDeletedDocCount, executor)
+          .whenCompleteAsync(
+              (deleted, error) -> metrics.measureDeletionDelete(deleted, timer), executor)
           .thenApply(Math::toIntExact);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);

@@ -14,6 +14,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
+import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -59,9 +60,13 @@ public class ProcessInstanceDeleterJob implements BackgroundTask {
 
   @Override
   public CompletableFuture<Integer> execute() {
+    final var timer = Timer.start();
+
     return deletionRepository
         .getProcessInstancesNextBatch()
-        .thenComposeAsync(this::deleteBatch, executor);
+        .thenComposeAsync(this::deleteBatch, executor)
+        // measured after the whole run, so it includes searching and deleting
+        .whenCompleteAsync((val, err) -> metrics.measureDeletionDuration(timer), executor);
   }
 
   private CompletableFuture<Integer> deleteBatch(final ProcessInstanceDeletionBatch batch) {
@@ -69,6 +74,9 @@ public class ProcessInstanceDeleterJob implements BackgroundTask {
       logger.trace("No more process instances to delete.");
       return CompletableFuture.completedFuture(0);
     }
+
+    logger.trace("Following process instances are found for deleting: {}", batch);
+    metrics.recordProcessInstancesDeleting(batch.size());
 
     return deleteDependants(batch)
         .thenComposeAsync(
@@ -91,6 +99,8 @@ public class ProcessInstanceDeleterJob implements BackgroundTask {
     return delete(processInstanceDeletes, batch)
         .thenApply(
             ignored -> {
+              // recorded before the future completes, so before the task is rescheduled
+              metrics.recordProcessInstancesDeleted(batch.size());
               return batch.size();
             });
   }
