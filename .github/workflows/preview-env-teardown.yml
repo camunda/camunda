@@ -109,6 +109,9 @@ jobs:
       always() &&
         needs.teardown-preview.result != 'skipped' &&
         github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login in the called workflow
     uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
     needs: [teardown-preview]
     secrets: inherit
