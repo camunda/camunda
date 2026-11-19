@@ -101,6 +101,8 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
                 return CompletableFuture.completedFuture(0);
               }
 
+              // batch is read so record the count of docs read, even if we fail to process them
+              // this can mean total read is higher than total processed due to retries
               totalRead.accumulateAndGet(batch.documents.size(), Long::sum);
 
               return processBatch(batch)
