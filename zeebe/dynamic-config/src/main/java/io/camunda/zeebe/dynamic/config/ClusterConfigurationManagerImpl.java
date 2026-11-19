@@ -522,11 +522,14 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
 
   private Either<Exception, CurrentClusterConfiguration> updateLocalCurrentConfiguration(
       final CurrentClusterConfiguration configuration) {
-    if (configuration.equals(persistedCurrentConfiguration.getConfiguration())) {
-      return Either.right(configuration);
-    }
+    final var unchanged = configuration.equals(persistedCurrentConfiguration.getConfiguration());
     try {
+      // even an unchanged configuration goes through the store: after a failed write, the file may
+      // hold another configuration than the one in memory, and the store then writes it again
       persistedCurrentConfiguration.update(configuration);
+      if (unchanged) {
+        return Either.right(configuration);
+      }
       if (currentConfigurationGossiper != null) {
         currentConfigurationGossiper.accept(configuration);
       }
