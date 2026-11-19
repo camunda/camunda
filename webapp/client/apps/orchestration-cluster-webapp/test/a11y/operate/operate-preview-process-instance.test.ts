@@ -16,7 +16,6 @@ import {
 	mockGetProcessInstanceEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockLicenseEndpoint,
-	mockOperateClientConfigEndpoint,
 	mockQueryAuditLogsEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryJobsEndpoint,
@@ -29,7 +28,6 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
-import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/operate-client-config';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
@@ -61,9 +59,6 @@ test('should have no accessibility violations in the process instance diagram sh
 		}),
 		mockSystemConfigurationEndpoint({
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
-		}),
-		mockOperateClientConfigEndpoint({
-			successResponse: HttpResponse.text(createOperateClientConfigScript()),
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),

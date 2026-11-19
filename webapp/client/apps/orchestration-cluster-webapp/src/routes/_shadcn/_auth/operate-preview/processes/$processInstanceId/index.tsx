@@ -12,16 +12,15 @@ import {
 	processInstanceWaitStateStatisticsQuery,
 } from '#/operate/pages/ProcessInstance/processInstance.queries';
 import {getDefaultProcessInstanceTab} from '#/operate/pages/ProcessInstance/processInstanceSearch';
-import {loadOperateClientConfig} from '#/operate/shared/queries/loadOperateClientConfig';
+import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isInstanceRunning} from '#/operate/shared/utils/processInstance';
 import {hasProcessLevelWaitState} from '#/operate/shared/utils/waitStates';
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$processInstanceId/')({
 	beforeLoad: async ({context: {queryClient}, params, search, location}) => {
 		const processInstance = await queryClient.ensureQueryData(processInstanceQuery(params.processInstanceId));
-		const {waitStatesEnabled} = await loadOperateClientConfig(queryClient);
 		const waitStateStatistics =
-			waitStatesEnabled && isInstanceRunning(processInstance)
+			getClientConfig().deployment.isWaitStatesEnabled && isInstanceRunning(processInstance)
 				? await queryClient.ensureQueryData(processInstanceWaitStateStatisticsQuery(params.processInstanceId))
 				: [];
 		const tab = getDefaultProcessInstanceTab(processInstance, search, {

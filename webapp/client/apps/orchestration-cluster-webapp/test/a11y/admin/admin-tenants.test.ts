@@ -43,7 +43,12 @@ test.beforeEach(({network}) => {
 				createSystemConfiguration({
 					components: {active: ['admin']},
 					authentication: {canLogout: true, isLoginDelegated: false, isCamundaGroupsEnabled: true},
-					deployment: {isMultiTenancyEnabled: false, isTenantsApiEnabled: true, maxRequestSize: 0},
+					deployment: {
+						isMultiTenancyEnabled: false,
+						isTenantsApiEnabled: true,
+						isWaitStatesEnabled: true,
+						maxRequestSize: 0,
+					},
 				}),
 			),
 		}),

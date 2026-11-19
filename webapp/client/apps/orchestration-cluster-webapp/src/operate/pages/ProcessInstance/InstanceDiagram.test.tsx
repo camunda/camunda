@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, onTestFinished, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup, render} from 'vitest-browser-react';
 import {
@@ -31,6 +31,8 @@ import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-ins
 import {createAgentInstance} from '#/shared-test-modules/api-mocks/agent-instances';
 import {createProcessDefinitionStatistic} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {storeSessionState} from '#/shared/browser-storage/session-storage';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessInstanceStatisticsEndpoint,
@@ -205,6 +207,10 @@ function handlers({
 		}),
 	] as const;
 }
+
+beforeEach(() => {
+	storeSessionState('clientConfig', createSystemConfiguration());
+});
 
 afterEach(async () => {
 	await cleanup();

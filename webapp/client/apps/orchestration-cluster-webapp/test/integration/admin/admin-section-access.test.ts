@@ -48,7 +48,12 @@ test.describe('Admin section access', () => {
 				successResponse: HttpResponse.json(
 					createSystemConfiguration({
 						components: {active: ['admin']},
-						deployment: {isMultiTenancyEnabled: false, isTenantsApiEnabled: true, maxRequestSize: 0},
+						deployment: {
+							isMultiTenancyEnabled: false,
+							isTenantsApiEnabled: true,
+							isWaitStatesEnabled: true,
+							maxRequestSize: 0,
+						},
 					}),
 				),
 			}),

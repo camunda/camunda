@@ -87,8 +87,8 @@ public class SystemController {
   @CamundaGetMapping(path = "/configuration")
   public ResponseEntity<SystemConfigurationResponse> getSystemConfiguration(
       @PhysicalTenantId final String physicalTenantId) {
-    final var jobMetrics =
-        tenantRestConfigProvider.forPhysicalTenant(physicalTenantId).getJobMetrics();
+    final var tenantConfig = tenantRestConfigProvider.forPhysicalTenant(physicalTenantId);
+    final var jobMetrics = tenantConfig.getJobMetrics();
     final var jobMetricsResponse =
         JobMetricsConfigurationResponse.Builder.create()
             .enabled(jobMetrics.isEnabled())
@@ -103,7 +103,7 @@ public class SystemController {
         SystemConfigurationResponse.Builder.create()
             .jobMetrics(jobMetricsResponse)
             .components(buildComponentsConfiguration())
-            .deployment(buildDeploymentConfiguration())
+            .deployment(buildDeploymentConfiguration(tenantConfig.isWaitStatesEnabled()))
             .authentication(buildAuthenticationConfiguration(physicalTenantId))
             .cloud(buildCloudConfiguration())
             .build());
@@ -118,7 +118,8 @@ public class SystemController {
         .build();
   }
 
-  private DeploymentConfigurationResponse buildDeploymentConfiguration() {
+  private DeploymentConfigurationResponse buildDeploymentConfiguration(
+      final boolean waitStatesEnabled) {
     final boolean isMultiTenancyEnabled =
         cslProperties != null
             && cslProperties.getMultiTenancy() != null
@@ -131,6 +132,7 @@ public class SystemController {
     return DeploymentConfigurationResponse.Builder.create()
         .isMultiTenancyEnabled(isMultiTenancyEnabled)
         .isTenantsApiEnabled(isTenantsApiEnabled)
+        .isWaitStatesEnabled(waitStatesEnabled)
         .maxRequestSize(maxRequestSizeBytes)
         .build();
   }

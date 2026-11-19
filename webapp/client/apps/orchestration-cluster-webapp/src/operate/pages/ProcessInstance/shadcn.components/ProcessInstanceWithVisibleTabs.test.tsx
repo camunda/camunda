@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
@@ -25,11 +25,17 @@ import {
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {storeSessionState} from '#/shared/browser-storage/session-storage';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {ProcessInstancePageProvider} from '../ProcessInstancePageProvider';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
 import {ProcessInstanceWithVisibleTabs} from './ProcessInstanceWithVisibleTabs';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
+
+beforeEach(() => {
+	storeSessionState('clientConfig', createSystemConfiguration());
+});
 
 afterEach(async () => {
 	await cleanup();

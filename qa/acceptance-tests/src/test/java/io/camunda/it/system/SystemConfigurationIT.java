@@ -96,6 +96,7 @@ public class SystemConfigurationIT {
     final JsonNode deployment = root.get("deployment");
     assertThat(deployment).isNotNull();
     assertThat(deployment.get("isMultiTenancyEnabled").booleanValue()).isFalse();
+    assertThat(deployment.get("isWaitStatesEnabled").booleanValue()).isTrue();
     assertThat(deployment.get("maxRequestSize").longValue()).isPositive();
 
     final JsonNode authentication = root.get("authentication");

@@ -393,7 +393,12 @@ function registerElementFilterTests() {
 			'should not use another tenant XML when a process ID exists in different tenants at version $otherTenantVersion',
 			async ({otherTenantVersion}, {worker}) => {
 				clientConfig = createSystemConfiguration({
-					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+					deployment: {
+						isMultiTenancyEnabled: true,
+						isTenantsApiEnabled: true,
+						isWaitStatesEnabled: true,
+						maxRequestSize: 0,
+					},
 				});
 				worker.use(
 					mockCurrentUserEndpoint({
@@ -455,7 +460,12 @@ function registerElementFilterTests() {
 
 		it('should offer elements from a tenant-scoped definition', async ({worker}) => {
 			clientConfig = createSystemConfiguration({
-				deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				deployment: {
+					isMultiTenancyEnabled: true,
+					isTenantsApiEnabled: true,
+					isWaitStatesEnabled: true,
+					maxRequestSize: 0,
+				},
 			});
 			worker.use(
 				mockCurrentUserEndpoint({
@@ -498,7 +508,12 @@ function registerElementFilterTests() {
 
 		it('should wait for every selected-process page before allowing XML from any tenant', async ({worker}) => {
 			clientConfig = createSystemConfiguration({
-				deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				deployment: {
+					isMultiTenancyEnabled: true,
+					isTenantsApiEnabled: true,
+					isWaitStatesEnabled: true,
+					maxRequestSize: 0,
+				},
 			});
 			const tenantB = createProcessDefinition({
 				name: 'Orders',

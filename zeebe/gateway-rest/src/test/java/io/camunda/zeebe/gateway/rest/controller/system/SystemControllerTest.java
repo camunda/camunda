@@ -695,6 +695,7 @@ public class SystemControllerTest extends RestControllerTest {
               "deployment": {
                 "isMultiTenancyEnabled": false,
                 "isTenantsApiEnabled": false,
+                "isWaitStatesEnabled": true,
                 "maxRequestSize": 4194304
               },
               "authentication": {
@@ -704,6 +705,33 @@ public class SystemControllerTest extends RestControllerTest {
               },
               "cloud": {
                 "stage": null
+              }
+            }
+            """,
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldReturnWaitStatesDisabledForPhysicalTenant() {
+    // given
+    final var tenantCfg = new GatewayRestConfiguration();
+    tenantCfg.setWaitStatesEnabled(false);
+    when(tenantRestConfigProvider.forPhysicalTenant(any())).thenReturn(tenantCfg);
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "deployment": {
+                "isWaitStatesEnabled": false
               }
             }
             """,

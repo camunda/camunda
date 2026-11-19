@@ -45,7 +45,12 @@ function mockSystem({isOidc}: {isOidc: boolean}) {
 				createSystemConfiguration({
 					components: {active: ['admin']},
 					authentication: {canLogout: true, isLoginDelegated: isOidc, isCamundaGroupsEnabled: true},
-					deployment: {isMultiTenancyEnabled: false, isTenantsApiEnabled: true, maxRequestSize: 0},
+					deployment: {
+						isMultiTenancyEnabled: false,
+						isTenantsApiEnabled: true,
+						isWaitStatesEnabled: true,
+						maxRequestSize: 0,
+					},
 				}),
 			),
 		}),

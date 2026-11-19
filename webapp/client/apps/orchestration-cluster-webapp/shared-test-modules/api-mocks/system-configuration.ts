@@ -24,6 +24,7 @@ function createSystemConfiguration(
 		deployment: {
 			isMultiTenancyEnabled: false,
 			isTenantsApiEnabled: false,
+			isWaitStatesEnabled: true,
 			maxRequestSize: 0,
 		},
 		authentication: {canLogout: true, isLoginDelegated: false, isCamundaGroupsEnabled: true},

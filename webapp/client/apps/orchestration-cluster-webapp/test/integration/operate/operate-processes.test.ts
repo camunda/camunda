@@ -18,7 +18,6 @@ import {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
-	mockOperateClientConfigEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
@@ -41,7 +40,6 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
-import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/operate-client-config';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {
 	createProcessDefinition,
@@ -96,22 +94,13 @@ function getProcessInstanceShellHandlers({
 	] as const;
 }
 
-test.beforeEach(async ({network, page}) => {
-	await page.route('**/operate/client-config.js', (route) =>
-		route.fulfill({
-			contentType: 'text/javascript',
-			body: createOperateClientConfigScript(),
-		}),
-	);
+test.beforeEach(async ({network}) => {
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser()),
 		}),
 		mockSystemConfigurationEndpoint({
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
-		}),
-		mockOperateClientConfigEndpoint({
-			successResponse: HttpResponse.text(createOperateClientConfigScript()),
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
@@ -471,7 +460,12 @@ test.describe('Operate processes page', () => {
 				successResponse: HttpResponse.json(
 					createSystemConfiguration({
 						components: {active: ['operate']},
-						deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+						deployment: {
+							isMultiTenancyEnabled: true,
+							isTenantsApiEnabled: true,
+							isWaitStatesEnabled: true,
+							maxRequestSize: 0,
+						},
 					}),
 				),
 			}),
@@ -642,7 +636,12 @@ test.describe('Operate processes page', () => {
 				successResponse: HttpResponse.json(
 					createSystemConfiguration({
 						components: {active: ['operate']},
-						deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+						deployment: {
+							isMultiTenancyEnabled: true,
+							isTenantsApiEnabled: true,
+							isWaitStatesEnabled: true,
+							maxRequestSize: 0,
+						},
 					}),
 				),
 			}),
@@ -1151,10 +1150,19 @@ test.describe('Operate processes page', () => {
 		network,
 		page,
 	}) => {
-		await page.route('**/operate/client-config.js', (route) =>
-			route.fulfill({
-				contentType: 'text/javascript',
-				body: createOperateClientConfigScript({waitStatesEnabled: false}),
+		network.use(
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({
+						components: {active: ['operate']},
+						deployment: {
+							isMultiTenancyEnabled: false,
+							isTenantsApiEnabled: false,
+							isWaitStatesEnabled: false,
+							maxRequestSize: 0,
+						},
+					}),
+				),
 			}),
 		);
 		const statisticsRequests: string[] = [];

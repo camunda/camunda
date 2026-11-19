@@ -42,7 +42,12 @@ const enableMultiTenancy = () =>
 		'clientConfig',
 		JSON.stringify(
 			createSystemConfiguration({
-				deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+				deployment: {
+					isMultiTenancyEnabled: true,
+					isTenantsApiEnabled: true,
+					isWaitStatesEnabled: true,
+					maxRequestSize: 0,
+				},
 			}),
 		),
 	);
