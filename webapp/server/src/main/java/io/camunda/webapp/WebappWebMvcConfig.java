@@ -7,10 +7,10 @@
  */
 package io.camunda.webapp;
 
-import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.spring.utils.SegmentStrippingResolver;
 import java.time.Duration;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -23,14 +23,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  *
  * <p>Forever-caching is safe because the FE build emits hash-suffixed filenames (cache-busting via
  * filename change). The shell {@code index.html} is intentionally NOT covered here: it is served
- * via {@link io.camunda.webapp.controllers.WebappIndexController} and inherits the no-cache headers
- * applied by the Spring Security filter chain, so a redeploy with a new bundle hash is picked up on
- * the next reload.
+ * via the index controllers in {@code io.camunda.webapp.controllers} and inherits the no-cache
+ * headers applied by the Spring Security filter chain, so a redeploy with a new bundle hash is
+ * picked up on the next reload.
  *
- * <p>Gated identically to {@link io.camunda.webapp.controllers.WebappIndexController} for symmetry.
+ * <p>Registered when at least one app served by the unified webapp is enabled, see {@link
+ * OnAnyWebappUiEnabledCondition}.
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnWebappUiEnabled("tasklist")
+@Conditional(OnAnyWebappUiEnabledCondition.class)
 public class WebappWebMvcConfig implements WebMvcConfigurer {
 
   static final String ASSETS_PATH_PATTERN = "/assets/**";

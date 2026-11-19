@@ -25,7 +25,7 @@ env-up:
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run \
 		-Dspring-boot.run.mainClass="io.camunda.application.StandaloneCamunda" \
-		-Dspring-boot.run.profiles=tasklist,broker,dev,dev-data,consolidated-auth
+		-Dspring-boot.run.profiles=tasklist,operate,broker,dev,dev-data,consolidated-auth
 
 .PHONY: env-down
 env-down:
