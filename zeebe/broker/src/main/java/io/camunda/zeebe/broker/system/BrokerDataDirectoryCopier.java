@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system;
 
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
+import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -43,6 +44,16 @@ public final class BrokerDataDirectoryCopier {
 
   private static final Logger LOG = LoggerFactory.getLogger(BrokerDataDirectoryCopier.class);
 
+  private final PosixFs posixFs;
+
+  public BrokerDataDirectoryCopier() {
+    this(new PosixFs());
+  }
+
+  BrokerDataDirectoryCopier(final PosixFs posixFs) {
+    this.posixFs = posixFs;
+  }
+
   public void copy(
       final Path source, final Path target, final String markerFileName, final boolean useHardLinks)
       throws IOException {
@@ -70,6 +81,11 @@ public final class BrokerDataDirectoryCopier {
 
             final var targetFile = target.resolve(relative);
             Files.createDirectories(targetFile.getParent());
+
+            // The copy reads the source through the page cache, which can hold data that never
+            // reached the disk after a failed sync; drop it first to copy what is on disk. Best
+            // effort, see PosixFs#dropPageCache.
+            posixFs.dropPageCache(file);
 
             if (useHardLinks || isSnapshotFile(relative)) {
               hardLinkOrCopy(file, targetFile);

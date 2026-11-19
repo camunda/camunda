@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -36,12 +37,22 @@ final class SegmentLoader {
   private final SegmentAllocator allocator;
   private final long minFreeDiskSpace;
   private final JournalMetrics metrics;
+  private final PosixFs posixFs;
 
   SegmentLoader(
       final long minFreeDiskSpace, final JournalMetrics metrics, final SegmentAllocator allocator) {
+    this(minFreeDiskSpace, metrics, allocator, new PosixFs());
+  }
+
+  SegmentLoader(
+      final long minFreeDiskSpace,
+      final JournalMetrics metrics,
+      final SegmentAllocator allocator,
+      final PosixFs posixFs) {
     this.minFreeDiskSpace = minFreeDiskSpace;
     this.metrics = metrics;
     this.allocator = allocator;
+    this.posixFs = posixFs;
   }
 
   Segment createSegment(
@@ -122,6 +133,10 @@ final class SegmentLoader {
   Segment loadExistingSegment(
       final Path segmentFile, final long lastWrittenAsqn, final JournalIndex journalIndex) {
     final var descriptorSerializer = SegmentDescriptorSerializer.currentSerializer();
+    // After a failed flush, the page cache may hold records that never reached the disk, and a
+    // restart on the same node would read them. Drop them before mapping the segment, so that it is
+    // read from disk, like on another node. Best effort, see PosixFs#dropPageCache.
+    posixFs.dropPageCache(segmentFile);
     try (final var channel =
         FileChannel.open(segmentFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
       MappedByteBuffer mappedSegment;
