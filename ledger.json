@@ -453,5 +453,18 @@
       "last_flake_run_id": "",
       "checked_at": "2026-11-19T06:25:19.865Z"
     }
+  },
+  "8819ad24": {
+    "version": "8.8",
+    "file": "api/v2/batch-operation/batch-operations-suspend-api-tests.spec.ts",
+    "titlePath": [
+      "Suspend & Resume Batch Operation Tests",
+      "Suspend batch operation twice fails on second request, finally resumes"
+    ],
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 20 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44472091141",
+    "updated_at": "2026-11-19T06:46:41Z",
+    "cooldown_until": "2026-11-22T06:46:41Z"
   }
 }
