@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.record.InternalOperationType;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -31,8 +33,8 @@ final class FaultToleranceIT {
 
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
-  // omit authorizations, agent, requestChannelType and requestToolName since they are removed from
-  // the records during serialization
+  // omit authorizations, agent, requestChannelType, requestToolName and the internal operation
+  // since they are removed from the records during serialization
   private final ProtocolFactory factory =
       new ProtocolFactory(b -> b.withAuthorizations(Map.of()))
           .registerRandomizer(
@@ -40,7 +42,13 @@ final class FaultToleranceIT {
                   "agent".equals(field.getName())
                       || "requestChannelType".equals(field.getName())
                       || "requestToolName".equals(field.getName()),
-              random -> null);
+              random -> null)
+          .registerRandomizer(
+              field -> "internalOperationReference".equals(field.getName()),
+              random -> RecordMetadataDecoder.internalOperationReferenceNullValue())
+          .registerRandomizer(
+              field -> "internalOperationType".equals(field.getName()),
+              random -> InternalOperationType.UNSPECIFIED.code());
   private final ExporterTestController controller = new ExporterTestController();
   private final ElasticsearchExporter exporter = new ElasticsearchExporter();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
