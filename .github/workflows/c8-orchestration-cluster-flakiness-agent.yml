@@ -286,6 +286,8 @@ jobs:
           1. Read /tmp/flaky-agent-manual.md: "Product-Bug Escalation" and the constraints of
              "Nightly Fix Agent" apply. Never mask a failure, never weaken or delete an
              assertion, never add test.skip / test.fixme / .only, never raise retries.
+             Any code comment you add follows its "Code Comments" section: no narration,
+             history or emphasis banners; the reasoning goes in /tmp/flaky-fix-summary.md.
           2. Find the ROOT CAUSE of the intermittent failure (race, missing wait on the
              right condition, shared data between parallel workers, eventual consistency
              of search/exporter, order dependence) and fix that. A longer timeout alone is
