@@ -28,9 +28,27 @@ import org.immutables.value.Value;
 public interface VariableSourceValue extends RecordValue {
 
   /**
-   * @return the source of the variable operation. This is used to distinguish between variable
-   *     operations that are triggered by the API and those that are triggered by other sources
-   *     (e.g., internal operations).
+   * @return the type of the variable operation, which tells what wrote the value. See {@link
+   *     VariableOperationType} for all types.
    */
   VariableOperationType getType();
+
+  /**
+   * @return the key of the element instance that caused the variable operation, or {@code -1} if
+   *     the operation has no causing element. For example, this is the job's element instance for a
+   *     job completion.
+   */
+  @Value.Default
+  default long getElementInstanceKey() {
+    return -1L;
+  }
+
+  /**
+   * @return the id of the element that caused the variable operation, or an empty string if the
+   *     operation has no causing element.
+   */
+  @Value.Default
+  default String getElementId() {
+    return "";
+  }
 }

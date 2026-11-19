@@ -8,11 +8,15 @@
 package io.camunda.zeebe.protocol.impl.record.value.variable;
 
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.protocol.record.value.VariableSourceValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Objects;
+import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -24,14 +28,20 @@ public class VariableSourceRecord extends UnifiedRecordValue implements Variable
   //      new VariableSourceRecord().setType(VariableOperationType.UNKNOWN);
 
   private static final StringValue TYPE_KEY = new StringValue("type");
+  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
+  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
 
-  // possible enhancements documented in https://github.com/camunda/camunda/issues/46970
   private final EnumProperty<VariableOperationType> typeProp =
       new EnumProperty<>(TYPE_KEY, VariableOperationType.class, VariableOperationType.UNKNOWN);
+  private final LongProperty elementInstanceKeyProp =
+      new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
+  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
 
   public VariableSourceRecord() {
-    super(1);
-    declareProperty(typeProp);
+    super(3);
+    declareProperty(typeProp)
+        .declareProperty(elementInstanceKeyProp)
+        .declareProperty(elementIdProp);
   }
 
   @Override
@@ -44,8 +54,36 @@ public class VariableSourceRecord extends UnifiedRecordValue implements Variable
     return this;
   }
 
+  @Override
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
+  }
+
+  public VariableSourceRecord setElementInstanceKey(final long elementInstanceKey) {
+    elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
+  }
+
+  @Override
+  public String getElementId() {
+    return BufferUtil.bufferAsString(elementIdProp.getValue());
+  }
+
+  public VariableSourceRecord setElementId(final String elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  /** Sets the element id. The record references the buffer, so it must not change afterwards. */
+  public VariableSourceRecord setElementId(final DirectBuffer elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
+
   public void wrap(final VariableSourceRecord variableSourceRecord) {
     setType(variableSourceRecord.getType());
+    setElementInstanceKey(variableSourceRecord.getElementInstanceKey());
+    elementIdProp.setValue(variableSourceRecord.elementIdProp.getValue());
   }
 
   public static VariableSourceRecord api() {

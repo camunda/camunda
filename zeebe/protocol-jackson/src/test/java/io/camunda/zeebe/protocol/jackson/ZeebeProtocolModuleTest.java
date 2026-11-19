@@ -17,9 +17,12 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping.Mapping;
+import io.camunda.zeebe.protocol.record.value.VariableOperationType;
+import io.camunda.zeebe.protocol.record.value.VariableSourceValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -80,6 +83,20 @@ final class ZeebeProtocolModuleTest {
 
     // then
     assertThat(deserialized).isEqualTo(value);
+  }
+
+  @Test
+  void shouldDeserializeVariableSourceWithoutCausingElement() throws IOException {
+    // given a source as exported before it had a causing element
+    final String json = "{\"type\":\"API\"}";
+
+    // when
+    final VariableSourceValue source = MAPPER.readValue(json, VariableSourceValue.class);
+
+    // then
+    assertThat(source.getType()).isEqualTo(VariableOperationType.API);
+    assertThat(source.getElementInstanceKey()).isEqualTo(-1L);
+    assertThat(source.getElementId()).isEmpty();
   }
 
   private static Stream<ValueType> provideValueTypes() {

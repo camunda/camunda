@@ -24,6 +24,9 @@ package io.camunda.zeebe.protocol.record.value;
  * value, such as {@link #OUTPUT_MAPPING} or {@link #MULTI_INSTANCE_LOOP_COUNTER}. {@link #UNKNOWN}
  * is used for records written before the source was tracked and for anything not covered by another
  * type.
+ *
+ * <p>The element that caused the write is on the variable source, see {@link
+ * VariableSourceValue#getElementInstanceKey()} and {@link VariableSourceValue#getElementId()}.
  */
 public enum VariableOperationType {
 

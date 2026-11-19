@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
+import io.camunda.zeebe.protocol.record.value.ImmutableVariableSourceValue;
+import io.camunda.zeebe.protocol.record.value.VariableSourceValue;
 import java.util.EnumSet;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -107,6 +109,19 @@ final class ProtocolFactoryTest {
 
     // then
     assertThat(recordValue).hasNoNullFieldsOrProperties();
+  }
+
+  @Test
+  void shouldGenerateValuesWhoseGettersMatchTheirFields() {
+    // given a type with several default attributes, for which Immutables generates an internal
+    // init shim that must not be populated
+
+    // when
+    final var source = factory.generateObject(VariableSourceValue.class);
+
+    // then
+    final var rebuiltFromGetters = ImmutableVariableSourceValue.builder().from(source).build();
+    assertThat(rebuiltFromGetters).isEqualTo(source);
   }
 
   @Test
