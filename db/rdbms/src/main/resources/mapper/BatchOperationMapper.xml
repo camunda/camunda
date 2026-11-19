@@ -91,12 +91,13 @@
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
     databaseId="postgresql">
     INSERT INTO ${prefix}BATCH_OPERATION_ITEM
-    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
+    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE, ERROR_MESSAGE)
     VALUES (#{batchOperationKey},
     #{itemKey},
     #{processInstanceKey},
     #{processedDate},
-    #{state})
+    #{state},
+    #{errorMessage})
     ON CONFLICT (BATCH_OPERATION_KEY, ITEM_KEY) DO UPDATE SET
     STATE          = #{state},
     PROCESSED_DATE = #{processedDate},
@@ -107,12 +108,13 @@
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
     databaseId="mariadb">
     INSERT INTO ${prefix}BATCH_OPERATION_ITEM
-    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
+    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE, ERROR_MESSAGE)
     VALUES (#{batchOperationKey},
     #{itemKey},
     #{processInstanceKey},
     #{processedDate},
-    #{state})
+    #{state},
+    #{errorMessage})
     ON DUPLICATE KEY UPDATE
     STATE = #{state}, PROCESSED_DATE = #{processedDate}, ERROR_MESSAGE = #{errorMessage}
   </insert>
