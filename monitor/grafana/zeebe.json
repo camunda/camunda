@@ -42718,7 +42718,7 @@
           }
         }
       },
-      "panel-812": {
+      "panel-814": {
         "kind": "Panel",
         "spec": {
           "data": {
@@ -42751,7 +42751,7 @@
             }
           },
           "description": "Compacted segments that wait for deletion. A value that stays above zero shows a slow or failing deletion.",
-          "id": 812,
+          "id": 814,
           "links": [],
           "title": "Segments pending deletion",
           "vizConfig": {
@@ -45056,7 +45056,7 @@
                       "spec": {
                         "element": {
                           "kind": "ElementReference",
-                          "name": "panel-812"
+                          "name": "panel-814"
                         },
                         "height": 7,
                         "width": 12,
