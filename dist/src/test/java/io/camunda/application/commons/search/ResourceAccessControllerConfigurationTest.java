@@ -17,10 +17,18 @@ import io.camunda.search.clients.auth.DefaultTenantAccessProvider;
 import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.TenantAccessProvider;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 
 public class ResourceAccessControllerConfigurationTest {
+
+  @AfterEach
+  void clearPinnedEnvironment() {
+    // The context runner pins its environment in UnifiedConfigurationHelper's static field;
+    // clear it so the legacy properties set here do not leak into later tests in the same JVM.
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
 
   private WebApplicationContextRunner baseRunner() {
     return new WebApplicationContextRunner()
