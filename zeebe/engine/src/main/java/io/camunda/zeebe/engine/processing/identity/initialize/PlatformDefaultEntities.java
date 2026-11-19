@@ -107,6 +107,11 @@ public class PlatformDefaultEntities {
         // We shouldn't add empty permissions for an unspecified resource type
         continue;
       }
+      if (resourceType == AuthorizationResourceType.PROBE) {
+        // PROBE exists only to mirror CSL. The REST API can't represent it yet, and older nodes
+        // can't read it, so granting it would break the authorization search and rolling updates.
+        continue;
+      }
 
       setupRecord.addAuthorization(
           new AuthorizationRecord()
