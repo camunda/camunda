@@ -25,9 +25,11 @@ distribution-parity checks when Java, Maven, Gradle, or relevant CI build inputs
 specified in ADR D4. These checks supplement rather than replace the existing Maven CI path.
 
 The focused compile and distribution-parity check in Unified CI is part of `check-results` and
-blocks pull requests and merge groups. It runs on GCP and downloads the Maven SNAPSHOT archive;
-fork PRs without GCS credentials use the GitHub artifact fallback. The Gradle check extracts the
-attached Maven distribution ZIP and compares it with Gradle's `distZip` output. The separate
+blocks pull requests and merge groups. It runs on GCP. `gradle-compile-check` uploads Gradle's
+`distTar` output and dependency report to run-scoped GCS. `gradle-distribution-parity-check`
+downloads them, plus the Maven distball (`camunda-zeebe-*.tar.gz`) that `build-distball` shares,
+and compares the two archives directly. Nothing is extracted or restored from SNAPSHOTs. Fork PRs
+without GCS credentials use the GitHub artifact fallback for both sides. The separate
 experimental isolated-project check in `gradle-ci.yml` remains non-blocking; failures on `main`
 send a Slack notification (see the ADR).
 
@@ -46,8 +48,9 @@ merge groups, protected-branch pushes, schedules, and manual runs.
    finished until it completes successfully. This catches failures in other Gradle modules that
    are not exercised by the affected module's compile task.
 5. For every Gradle change, build the Gradle distribution and compare its archive with the Maven
-   archive using `compare-dist.py`. The CI gate compiles `testClasses`, packages `distZip`, and
-   uploads the Gradle outputs, and `gradle-distribution-parity-check` compares the archives.
+   archive using `compare-dist.py`. The CI gate compiles `testClasses`, packages `distTar`, and
+   uploads the Gradle outputs, and `gradle-distribution-parity-check` compares the Gradle TAR with
+   the Maven distball TAR.GZ.
 6. Preserve already-fixed conventions; avoid regressions.
 
 ### Rebase onto main before Gradle parity work
@@ -107,9 +110,10 @@ The rebase audit identifies what changed. It does not replace the porting proced
 ### Gradle CI gates
 
 On an eligible Gradle CI path, `gradle-compile-check` runs the root `testClasses` lifecycle task,
-builds `:camunda-zeebe:distZip`, and writes the distribution dependency report. The
-`gradle-distribution-parity-check` job then compares them with the attached Maven distribution ZIP
-from the SNAPSHOT archive using `compare-dist.py`. These jobs form the Gradle build gate; do not describe this path as a full Gradle test-suite run.
+builds `:camunda-zeebe:distTar`, and writes the distribution dependency report. The
+`gradle-distribution-parity-check` job then compares the Gradle TAR with the Maven distball
+TAR.GZ (downloaded through the shared build-artifact downloader) using `compare-dist.py`. It does
+not use the Maven SNAPSHOT archive or a ZIP. These jobs form the Gradle build gate; do not describe this path as a full Gradle test-suite run.
 
 **Before investigating CI failures: always rebase onto main first.** CI runs on the merge
 commit, so Gradle build files apply against main's Java sources, which may differ from the
@@ -362,7 +366,7 @@ routinely. Prefer running it per module on the module you're fixing.
 
 Compares the packaged distribution produced by the `dist/` project between Gradle and Maven.
 `compare-module-deps.py` diffs a single module's resolved classpath; `compare-dist.py` checks
-the actual shipped distribution. In ZIP mode it compares the versioned root and JAR
+the actual shipped distribution. In archive mode (ZIP, TAR, TAR.GZ) it compares the versioned root and JAR
 names/versions under `lib/`; other file-content differences are intentionally ignored. When
 `dist/build/reports/dist-dependencies.json` is present or passed with `--gradle-manifest`,
 patch-only JAR differences are ignored only for Gradle-transitive artifacts. In the legacy
@@ -371,7 +375,13 @@ exceptions are listed in `.github/scripts/gradle/distribution-parity-exceptions.
 file rather than hardcoding another exception in the comparator.
 
 ```bash
-# Full ZIP archive comparison
+# Full archive comparison, as in CI (Gradle distTar vs Maven distball TAR.GZ)
+python3 .github/scripts/gradle/compare-dist.py \
+    dist/build/distributions/camunda-zeebe-*.tar \
+    dist/target/camunda-zeebe-*.tar.gz \
+    --gradle-manifest dist/build/reports/dist-dependencies.json
+
+# ZIP archive comparison (local only; CI does not build ZIPs)
 python3 .github/scripts/gradle/compare-dist.py \
     dist/build/distributions/camunda-zeebe-*.zip \
     dist/target/camunda-zeebe-*.zip
@@ -387,7 +397,7 @@ in the shipped distribution, and to catch packaging gaps that per-module classpa
 (e.g. a dep present on a classpath but excluded from the assembly). Generate the Gradle
 manifest before comparing when the distribution was not built by the CI packaging command. The task
 is supplied by the `buildlogic.distribution-dependency-report-conventions` plugin and is
-intentionally not part of `assembleDist` or `distZip`; each packaged distribution can configure its
+intentionally not part of `assembleDist` or `distTar`; each packaged distribution can configure its
 exclusions or filename mappings:
 
 ```bash
