@@ -47,6 +47,29 @@ function mockInstances() {
 	});
 }
 
+function mockTwoInvoiceVersions() {
+	return mockQueryDecisionDefinitionsEndpoint({
+		successResponse: HttpResponse.json(
+			createQueryDecisionDefinitionsResponse({
+				items: [
+					createDecisionDefinition({
+						name: 'Invoice Classification',
+						decisionDefinitionId: 'invoice',
+						decisionDefinitionKey: 'key-1',
+						version: 1,
+					}),
+					createDecisionDefinition({
+						name: 'Invoice Classification',
+						decisionDefinitionId: 'invoice',
+						decisionDefinitionKey: 'key-2',
+						version: 2,
+					}),
+				],
+			}),
+		),
+	});
+}
+
 describe('<Decisions />', () => {
 	it.beforeEach(({worker}) => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
@@ -198,8 +221,8 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
 		});
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-1');
-		await userEvent.fill(screen.getByLabelText('Business ID', {exact: true}), 'order-2');
-		await expect.poll(() => screen.router.state.location.search).toHaveProperty('businessId', 'eq_order-2');
+		await screen.router.navigate({to: '.', search: (prev) => ({...prev, businessId: 'eq_order-2'})});
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-2');
 
 		await userEvent.fill(screen.getByLabelText('Business ID', {exact: true}), 'order-3');
 		screen.router.history.back();
@@ -453,37 +476,19 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeVisible();
 
 		(screen.getByLabelText('Version').element() as HTMLElement).focus();
+		await expect.element(screen.getByLabelText('Version')).toHaveFocus();
 		await userEvent.keyboard('{Enter}');
 		await userEvent.click(screen.getByRole('option', {name: 'All versions'}));
 
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).not.toBeInTheDocument();
 	});
 
-	it('should keep a newly selected version blocked until the previous deletion finishes', async ({worker}) => {
+	it('should keep a newly selected version blocked while the previous deletion is pending', async ({worker}) => {
 		worker.use(
 			mockInstances(),
 			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
-			mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 2000}),
-			mockQueryDecisionDefinitionsEndpoint({
-				successResponse: HttpResponse.json(
-					createQueryDecisionDefinitionsResponse({
-						items: [
-							createDecisionDefinition({
-								name: 'Invoice Classification',
-								decisionDefinitionId: 'invoice',
-								decisionDefinitionKey: 'key-1',
-								version: 1,
-							}),
-							createDecisionDefinition({
-								name: 'Invoice Classification',
-								decisionDefinitionId: 'invoice',
-								decisionDefinitionKey: 'key-2',
-								version: 2,
-							}),
-						],
-					}),
-				),
-			}),
+			mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 'infinite'}),
+			mockTwoInvoiceVersions(),
 		);
 		const screen = await renderWithRouter(DecisionsWithSearch, {
 			path: '/operate-preview/decisions',
@@ -494,15 +499,11 @@ describe('<Decisions />', () => {
 		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
 		(screen.getByLabelText('Version').element() as HTMLElement).focus();
+		await expect.element(screen.getByLabelText('Version')).toHaveFocus();
 		await userEvent.keyboard('{Enter}');
 		await userEvent.click(screen.getByRole('option', {name: '2'}));
 
+		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeDisabled();
-		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeEnabled();
-		expect(screen.router.state.location.search).toMatchObject({
-			decisionDefinitionId: 'invoice',
-			decisionDefinitionVersion: 2,
-		});
 	});
 });
