@@ -467,18 +467,7 @@ public class WaitStateJobIT {
     // cleanup — cancel the instance so the wait state is removed and doesn't leak into other tests
     camundaClient.newCancelInstanceCommand(pik).execute();
     waitForProcessInstanceToBeTerminated(camundaClient, pik);
-    Awaitility.await("wait state should be removed after cleanup")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        camundaClient
-                            .newElementInstanceWaitStateSearchRequest()
-                            .filter(f -> f.processInstanceKey(pik))
-                            .send()
-                            .join()
-                            .items())
-                    .isEmpty());
+    waitForWaitStatesToBeRemoved(pik);
   }
 
   @Test
@@ -580,9 +569,11 @@ public class WaitStateJobIT {
                   .isEqualTo(0);
             });
 
-    // cleanup — cancel the incident-stalled instance so it doesn't interfere with other tests
+    // cleanup — cancel the incident-stalled instance so the wait state is removed and doesn't leak
+    // into other tests
     camundaClient.newCancelInstanceCommand(pik).execute();
     waitForProcessInstanceToBeTerminated(camundaClient, pik);
+    waitForWaitStatesToBeRemoved(pik);
   }
 
   @Test
@@ -683,9 +674,11 @@ public class WaitStateJobIT {
                   .isEqualTo(2);
             });
 
-    // cleanup — cancel the incident-stalled instance so it doesn't interfere with other tests
+    // cleanup — cancel the incident-stalled instance so the wait state is removed and doesn't leak
+    // into other tests
     camundaClient.newCancelInstanceCommand(pik).execute();
     waitForProcessInstanceToBeTerminated(camundaClient, pik);
+    waitForWaitStatesToBeRemoved(pik);
   }
 
   /**
@@ -731,5 +724,20 @@ public class WaitStateJobIT {
                   camundaClient.newElementInstanceWaitStateSearchRequest().send().join().items();
               assertThat(items).hasSize(expectedCount);
             });
+  }
+
+  private static void waitForWaitStatesToBeRemoved(final long processInstanceKey) {
+    Awaitility.await("wait state should be removed after cleanup")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceWaitStateSearchRequest()
+                            .filter(f -> f.processInstanceKey(processInstanceKey))
+                            .send()
+                            .join()
+                            .items())
+                    .isEmpty());
   }
 }
