@@ -51,15 +51,12 @@ public class TruncateUtil {
       return original;
     }
 
-    var truncatedVariable = original;
-
-    while (truncatedVariable.getBytes(StandardCharsets.UTF_8).length > maxBytes) {
-      truncatedVariable = truncatedVariable.substring(0, truncatedVariable.length() - 1);
-
-      if (truncatedVariable.getBytes(StandardCharsets.UTF_8).length <= maxBytes) {
-        return truncatedVariable;
-      }
+    // cut at maxBytes, then step back over UTF-8 continuation bytes (10xxxxxx) so the cut never
+    // lands inside a character
+    int end = maxBytes;
+    while (end > 0 && (bytes[end] & 0xC0) == 0x80) {
+      end--;
     }
-    return "";
+    return new String(bytes, 0, end, StandardCharsets.UTF_8);
   }
 }
