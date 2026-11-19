@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.metrics;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.DistributionMetricsDoc.DistributionMetricKeyNames;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -17,12 +19,23 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.collection.Tuple;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import java.util.Arrays;
+import java.util.UUID;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestWatcher;
 
 public class CommandDistributionMetricsTest {
+
+  // values of the bounded queue tag which are not declared in DistributionQueue
+  private static final String NO_QUEUE = "NONE";
+  private static final String OTHER_QUEUE = "OTHER";
 
   private final TestWatcher watcher = new RecordingExporterTestWatcher();
   private final EngineRule engine = EngineRule.multiplePartition(2);
@@ -112,6 +125,20 @@ public class CommandDistributionMetricsTest {
             metrics -> assertThat(metrics.active).isEqualTo(2),
             metrics -> assertThat(metrics.pending).isEqualTo(2),
             metrics -> assertThat(metrics.inflight).isEqualTo(1));
+    assertThat(
+            getGaugeValue(
+                1,
+                DistributionMetricsDoc.PENDING_COMMAND_DISTRIBUTIONS.getName(),
+                2,
+                DistributionQueue.DEPLOYMENT.getQueueId()))
+        .isEqualTo(2);
+    assertThat(
+            getGaugeValue(
+                1,
+                DistributionMetricsDoc.INFLIGHT_COMMAND_DISTRIBUTIONS.getName(),
+                2,
+                DistributionQueue.DEPLOYMENT.getQueueId()))
+        .isOne();
 
     // when
     engine.resumeProcessing(2);
@@ -174,6 +201,101 @@ public class CommandDistributionMetricsTest {
     return reset.getKey();
   }
 
+  @Test
+  public void shouldTrackClusterVariableDistributionsUnderOtherQueue() {
+    // given - cluster variables use their (user-supplied) name as distribution queue id
+    engine.pauseProcessing(2);
+    final var names =
+        IntStream.range(0, 3)
+            .mapToObj(i -> "var_" + UUID.randomUUID().toString().replace("-", ""))
+            .toList();
+
+    // when
+    names.forEach(
+        name ->
+            engine
+                .clusterVariables()
+                .withName(name)
+                .setGlobalScope()
+                .withValue("\"value\"")
+                .create());
+
+    // then - all user-controlled queue ids share the bounded OTHER tag
+    final var pending = DistributionMetricsDoc.PENDING_COMMAND_DISTRIBUTIONS.getName();
+    final var inflight = DistributionMetricsDoc.INFLIGHT_COMMAND_DISTRIBUTIONS.getName();
+    assertThat(getGaugeValue(1, pending, 2, OTHER_QUEUE)).isEqualTo(3);
+    assertThat(getGaugeValue(1, inflight, 2, OTHER_QUEUE)).isEqualTo(3);
+
+    final var allowedQueues =
+        Stream.concat(
+                Arrays.stream(DistributionQueue.getValues()).map(DistributionQueue::getQueueId),
+                Stream.of(NO_QUEUE, OTHER_QUEUE))
+            .toList();
+    assertThat(engine.getMeterRegistry(1).find(pending).gauges())
+        .extracting(gauge -> gauge.getId().getTag(DistributionMetricKeyNames.QUEUE.asString()))
+        .isNotEmpty()
+        .are(new Condition<>(allowedQueues::contains, "a bounded queue tag"));
+
+    // when
+    engine.resumeProcessing(2);
+
+    // then
+    RecordingExporter.await()
+        .untilAsserted(
+            () -> {
+              assertThat(getGaugeValue(1, pending, 2, OTHER_QUEUE)).isZero();
+              assertThat(getGaugeValue(1, inflight, 2, OTHER_QUEUE)).isZero();
+              assertThat(
+                      getCounterValue(
+                          1,
+                          DistributionMetricsDoc.RECEIVED_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS
+                              .getName(),
+                          2,
+                          OTHER_QUEUE))
+                  .isEqualTo(3);
+            });
+  }
+
+  @Test
+  public void shouldTrackDistributionWithoutQueueUnderNoneQueue() {
+    // given
+    engine.pauseProcessing(2);
+
+    // when - signals are distributed without a queue
+    final var signal =
+        engine.signal().withSignalName("signal_" + UUID.randomUUID().toString()).broadcast();
+
+    // then
+    final var pending = DistributionMetricsDoc.PENDING_COMMAND_DISTRIBUTIONS.getName();
+    assertThat(getGaugeValue(1, pending, 2, NO_QUEUE)).isOne();
+
+    // when
+    engine.resumeProcessing(2);
+
+    // then - the acknowledgement is received on the origin, and sent from the target partition
+    waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, signal.getKey());
+    RecordingExporter.await()
+        .untilAsserted(
+            () -> {
+              assertThat(getGaugeValue(1, pending, 2, NO_QUEUE)).isZero();
+              assertThat(
+                      getCounterValue(
+                          1,
+                          DistributionMetricsDoc.RECEIVED_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS
+                              .getName(),
+                          2,
+                          NO_QUEUE))
+                  .isOne();
+              assertThat(
+                      getCounterValue(
+                          2,
+                          DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getName(),
+                          1,
+                          NO_QUEUE))
+                  .isOne();
+            });
+  }
+
   private long triggerQueuedDistribution() {
     final var deploy =
         engine
@@ -221,12 +343,37 @@ public class CommandDistributionMetricsTest {
   }
 
   private double getCounterValue(final int partition, final String metricName) {
-    final var counter = engine.getMeterRegistry(partition).find(metricName).counter();
-    return counter != null ? counter.count() : 0.0;
+    // sums all series, as metrics are additionally tagged by target partition and queue
+    return engine.getMeterRegistry(partition).find(metricName).counters().stream()
+        .mapToDouble(Counter::count)
+        .sum();
   }
 
   private double getGaugeValue(final int partition, final String metricName) {
-    final var gauge = engine.getMeterRegistry(partition).find(metricName).gauge();
+    return engine.getMeterRegistry(partition).find(metricName).gauges().stream()
+        .mapToDouble(Gauge::value)
+        .sum();
+  }
+
+  private double getCounterValue(
+      final int partition, final String metricName, final int targetPartition, final String queue) {
+    final var counter =
+        engine
+            .getMeterRegistry(partition)
+            .find(metricName)
+            .tags(DistributionMetricKeyNames.tags(targetPartition, queue))
+            .counter();
+    return counter != null ? counter.count() : 0.0;
+  }
+
+  private double getGaugeValue(
+      final int partition, final String metricName, final int targetPartition, final String queue) {
+    final var gauge =
+        engine
+            .getMeterRegistry(partition)
+            .find(metricName)
+            .tags(DistributionMetricKeyNames.tags(targetPartition, queue))
+            .gauge();
     return gauge != null ? gauge.value() : 0.0;
   }
 

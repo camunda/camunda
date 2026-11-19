@@ -7,19 +7,41 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.util.collection.Table;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
-import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public final class DistributionMetrics {
 
+  /** Tag value for distributions which are not part of any queue. */
+  private static final String NO_QUEUE = "NONE";
+
+  /**
+   * Tag value for queues which are not declared in {@link DistributionQueue}. Queue ids can also be
+   * user-controlled (e.g. cluster variable names), so they must never be used as a tag value as
+   * that would make the number of time series unbounded.
+   */
+  private static final String OTHER_QUEUE = "OTHER";
+
+  private static final Set<String> KNOWN_QUEUES =
+      Arrays.stream(DistributionQueue.getValues())
+          .map(DistributionQueue::getQueueId)
+          .collect(Collectors.toUnmodifiableSet());
+
   private final MeterRegistry meterRegistry;
-  private final Map<Integer, PartitionDistributionMetrics> partitionMetrics =
-      new ConcurrentHashMap<>();
+
+  /** Metrics by target partition id and (bounded) queue tag. */
+  private final Table<Integer, String, PartitionDistributionMetrics> partitionMetrics =
+      Table.concurrent();
 
   // Metrics
   private final StatefulGauge activeDistributionsGauge;
@@ -45,7 +67,7 @@ public final class DistributionMetrics {
 
   public void reset() {
     activeDistributionsGauge.set(0);
-    partitionMetrics.values().forEach(PartitionDistributionMetrics::resetGauges);
+    partitionMetrics.forEachValue(PartitionDistributionMetrics::resetGauges);
   }
 
   public void startedDistribution() {
@@ -60,31 +82,36 @@ public final class DistributionMetrics {
     activeDistributionsGauge.decrement();
   }
 
-  public void addPendingDistribution(final int targetPartitionId) {
-    getPartitionMetrics(targetPartitionId).addPendingDistribution();
+  public void addPendingDistribution(final int targetPartitionId, final @Nullable String queueId) {
+    getPartitionMetrics(targetPartitionId, queueId).addPendingDistribution();
   }
 
-  public void removePendingDistribution(final int targetPartitionId) {
-    getPartitionMetrics(targetPartitionId).removePendingDistribution();
+  public void removePendingDistribution(
+      final int targetPartitionId, final @Nullable String queueId) {
+    getPartitionMetrics(targetPartitionId, queueId).removePendingDistribution();
   }
 
-  public void addInflightDistribution(final int targetPartitionId) {
-    getPartitionMetrics(targetPartitionId).addInflightDistribution();
+  public void addInflightDistribution(final int targetPartitionId, final @Nullable String queueId) {
+    getPartitionMetrics(targetPartitionId, queueId).addInflightDistribution();
   }
 
-  public void removeInflightDistribution(final int targetPartitionId) {
-    getPartitionMetrics(targetPartitionId).removeInflightDistribution();
+  public void removeInflightDistribution(
+      final int targetPartitionId, final @Nullable String queueId) {
+    getPartitionMetrics(targetPartitionId, queueId).removeInflightDistribution();
   }
 
   /**
    * This method is called on the target partition when a distribution command has been successfully
    * processed and an acknowledgement is sent back to the origin partition.
    *
+   * <p>The queue is only known to the origin partition, so this is always tagged with {@link
+   * #NO_QUEUE}.
+   *
    * @param originPartitionId the source partition id of the distribution (where the distribution
    *     was started)
    */
   public void sentAcknowledgeDistribution(final int originPartitionId) {
-    getPartitionMetrics(originPartitionId).sentAcknowledgeDistribution();
+    getPartitionMetrics(originPartitionId, null).sentAcknowledgeDistribution();
   }
 
   /**
@@ -94,8 +121,9 @@ public final class DistributionMetrics {
    * @param targetPartitionId the source partition id of the distribution (where the distribution
    *     was started)
    */
-  public void receivedAcknowledgeDistribution(final int targetPartitionId) {
-    getPartitionMetrics(targetPartitionId).receivedAcknowledgeDistribution();
+  public void receivedAcknowledgeDistribution(
+      final int targetPartitionId, final @Nullable String queueId) {
+    getPartitionMetrics(targetPartitionId, queueId).receivedAcknowledgeDistribution();
   }
 
   /**
@@ -105,19 +133,33 @@ public final class DistributionMetrics {
    *
    * @param targetPartitionId the target partition id of the distribution
    */
-  public void retryInflightDistribution(final int targetPartitionId) {
-    getPartitionMetrics(targetPartitionId).retryInflightDistribution();
+  public void retryInflightDistribution(
+      final int targetPartitionId, final @Nullable String queueId) {
+    getPartitionMetrics(targetPartitionId, queueId).retryInflightDistribution();
   }
 
-  private PartitionDistributionMetrics getPartitionMetrics(final int targetPartitionId) {
+  private PartitionDistributionMetrics getPartitionMetrics(
+      final int targetPartitionId, final @Nullable String queueId) {
     return partitionMetrics.computeIfAbsent(
-        targetPartitionId, id -> new PartitionDistributionMetrics(id, meterRegistry));
+        targetPartitionId,
+        toQueueTag(queueId),
+        (partitionId, queueTag) ->
+            new PartitionDistributionMetrics(partitionId, queueTag, meterRegistry));
+  }
+
+  /** Maps the queue id to a tag value out of a bounded set: known queues, NONE, or OTHER. */
+  private static String toQueueTag(final @Nullable String queueId) {
+    if (queueId == null) {
+      return NO_QUEUE;
+    }
+    return KNOWN_QUEUES.contains(queueId) ? queueId : OTHER_QUEUE;
   }
 
   private static class PartitionDistributionMetrics {
 
     private final MeterRegistry meterRegistry;
     private final int targetPartitionId;
+    private final String queueId;
 
     // Metrics
     private final StatefulGauge pendingDistributionsGauge;
@@ -127,34 +169,35 @@ public final class DistributionMetrics {
     private final Counter sentAcknowledgeDistributionsCounter;
 
     public PartitionDistributionMetrics(
-        final int targetPartitionId, final MeterRegistry meterRegistry) {
+        final int targetPartitionId, final String queueId, final MeterRegistry meterRegistry) {
       this.targetPartitionId = targetPartitionId;
+      this.queueId = queueId;
       this.meterRegistry = meterRegistry;
 
       pendingDistributionsGauge =
           StatefulGauge.builder(DistributionMetricsDoc.PENDING_COMMAND_DISTRIBUTIONS.getName())
               .description(DistributionMetricsDoc.PENDING_COMMAND_DISTRIBUTIONS.getDescription())
-              .tags(DistributionMetricsKeyNames.tags(targetPartitionId))
+              .tags(tags())
               .register(meterRegistry);
 
       inflightDistributionsGauge =
           StatefulGauge.builder(DistributionMetricsDoc.INFLIGHT_COMMAND_DISTRIBUTIONS.getName())
               .description(DistributionMetricsDoc.INFLIGHT_COMMAND_DISTRIBUTIONS.getDescription())
-              .tags(DistributionMetricsKeyNames.tags(targetPartitionId))
+              .tags(tags())
               .register(meterRegistry);
 
       retryInflightDistributionsCounter =
           Counter.builder(DistributionMetricsDoc.RETRY_INFLIGHT_COMMAND_DISTRIBUTIONS.getName())
               .description(
                   DistributionMetricsDoc.RETRY_INFLIGHT_COMMAND_DISTRIBUTIONS.getDescription())
-              .tags(DistributionMetricsKeyNames.tags(targetPartitionId))
+              .tags(tags())
               .register(meterRegistry);
 
       sentAcknowledgeDistributionsCounter =
           Counter.builder(DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getName())
               .description(
                   DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getDescription())
-              .tags(DistributionMetricsKeyNames.tags(targetPartitionId))
+              .tags(tags())
               .register(meterRegistry);
 
       receivedAcknowledgeDistributionsCounter =
@@ -163,8 +206,12 @@ public final class DistributionMetrics {
               .description(
                   DistributionMetricsDoc.RECEIVED_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS
                       .getDescription())
-              .tags(DistributionMetricsKeyNames.tags(targetPartitionId))
+              .tags(tags())
               .register(meterRegistry);
+    }
+
+    private Tags tags() {
+      return DistributionMetricsDoc.DistributionMetricKeyNames.tags(targetPartitionId, queueId);
     }
 
     public void resetGauges() {
@@ -198,20 +245,6 @@ public final class DistributionMetrics {
 
     public void receivedAcknowledgeDistribution() {
       receivedAcknowledgeDistributionsCounter.increment();
-    }
-
-    public enum DistributionMetricsKeyNames implements KeyName {
-      /** The ID of the partition associated to the metric */
-      TARGET_PARTITION {
-        @Override
-        public String asString() {
-          return "targetPartition";
-        }
-      };
-
-      public static Tags tags(final int partitionId) {
-        return Tags.of(TARGET_PARTITION.asString(), String.valueOf(partitionId));
-      }
     }
   }
 }
