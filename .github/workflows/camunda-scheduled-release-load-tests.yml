@@ -1,8 +1,7 @@
 # description: Orchestrates weekday release load tests across all active stable branches and main.
-#              Each branch has a pinned release tag in the `versions` job outputs. Renovate bumps
-#              the patch version (e.g., 8.8.17 -> 8.8.18) to avoid version skew between the
-#              load-test client and the pinned server tag.
-# calls: camunda-release-load-test.yaml (one call per branch),
+#              Each branch deploys the image tags pinned in the versions.yaml of its
+#              load-tests/setup folder, through camunda-deploy-release-load-test.yml.
+# calls: camunda-deploy-release-load-test.yml (one call per branch),
 #        camunda-verify-and-cleanup-load-test.yml (verify + delete namespace per branch)
 # notifications: Slack (#reliability-testing-alerts) with per-branch results
 # type: CI
@@ -25,91 +24,72 @@ env:
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
 jobs:
-  # Single definition of the tested release tags. Job outputs are used instead of `env` because
-  # the `env` context is not available in `jobs.<id>.with` of reusable workflow calls.
-  versions:
-    name: Tested versions
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions: {}
-    outputs:
-      # renovate: datasource=docker depName=docker.io/camunda/camunda
-      v8-7: '8.7.45'
-      # renovate: datasource=docker depName=docker.io/camunda/camunda
-      v8-8: '8.8.46'
-      # renovate: datasource=docker depName=docker.io/camunda/camunda
-      v8-9: '8.9.28'
-      # renovate: datasource=docker depName=docker.io/camunda/camunda
-      v8-10: '8.10.9'
-      # renovate: datasource=docker depName=docker.io/camunda/camunda depType=main
-      main: '8.11.0-alpha1-rc2'
-    steps:
-      - run: 'true' # a job requires at least one step
-
-  # Stable branch load tests — one job per active branch.
+  # Release load tests — one job per active branch. The image tags come from
+  # load-tests/setup/<folder>/versions.yaml.
   #
   # When to update:
-  # - A new minor version is released (e.g., 8.10): add a new job and update verify-and-cleanup/notify
+  # - A new minor version is released (e.g., 8.10): add the version to camunda-deploy-release-load-test.yml,
+  #   add a new job here and update verify-and-cleanup/notify
   # - A stable branch is deprecated: remove the corresponding job and update verify-and-cleanup/notify
   release-load-test-8-7:
-    needs: [versions]
     name: Release load test (stable/8.7)
     permissions:
       contents: read
       id-token: write # Teleport auth in called workflow
-    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.7
+    uses: ./.github/workflows/camunda-deploy-release-load-test.yml
     secrets: inherit
     with:
-      name: schedule-release-8-7-x
-      tag: ${{ needs.versions.outputs.v8-7 }}
+      versions: '8.7'
+      name-prefix: schedule-release
+      notify-on-failure: false
 
   release-load-test-8-8:
-    needs: [versions]
     name: Release load test (stable/8.8)
     permissions:
       contents: read
       id-token: write # Teleport auth in called workflow
-    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.8
+    uses: ./.github/workflows/camunda-deploy-release-load-test.yml
     secrets: inherit
     with:
-      name: schedule-release-8-8-x
-      tag: ${{ needs.versions.outputs.v8-8 }}
+      versions: '8.8'
+      name-prefix: schedule-release
+      notify-on-failure: false
 
   release-load-test-8-9:
-    needs: [versions]
     name: Release load test (stable/8.9)
     permissions:
       contents: read
       id-token: write # Teleport auth in called workflow
-    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.9
+    uses: ./.github/workflows/camunda-deploy-release-load-test.yml
     secrets: inherit
     with:
-      name: schedule-release-8-9-x
-      tag: ${{ needs.versions.outputs.v8-9 }}
+      versions: '8.9'
+      name-prefix: schedule-release
+      notify-on-failure: false
 
   release-load-test-8-10:
-    needs: [versions]
     name: Release load test (stable/8.10)
     permissions:
       contents: read
       id-token: write # Teleport auth in called workflow
-    uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.10
+    uses: ./.github/workflows/camunda-deploy-release-load-test.yml
     secrets: inherit
     with:
-      name: schedule-release-8-10-x
-      tag: ${{ needs.versions.outputs.v8-10 }}
+      versions: '8.10'
+      name-prefix: schedule-release
+      notify-on-failure: false
 
   release-load-test-main:
-    needs: [versions]
     name: Release load test (main)
     permissions:
       contents: read
       id-token: write # Teleport auth in called workflow
-    uses: ./.github/workflows/camunda-release-load-test.yaml
+    uses: ./.github/workflows/camunda-deploy-release-load-test.yml
     secrets: inherit
     with:
-      name: schedule-release-main
-      tag: ${{ needs.versions.outputs.main }}
+      versions: 'main'
+      name-prefix: schedule-release
+      notify-on-failure: false
 
   # Verify and cleanup jobs — one per branch, run in parallel.
   # Each job waits for pods + gateway connectivity, then deletes the namespace.
@@ -177,7 +157,6 @@ jobs:
     name: Notify on success
     runs-on: ubuntu-latest
     needs:
-      - versions
       - verify-and-cleanup-8-7
       - verify-and-cleanup-8-8
       - verify-and-cleanup-8-9
@@ -223,12 +202,12 @@ jobs:
                 text:
                   type: mrkdwn
                   text: |-
-                    *Tested versions:*
-                    • stable/8.7: `${{ needs.versions.outputs.v8-7 }}` (${{ needs.verify-and-cleanup-8-7.result }})
-                    • stable/8.8: `${{ needs.versions.outputs.v8-8 }}` (${{ needs.verify-and-cleanup-8-8.result }})
-                    • stable/8.9: `${{ needs.versions.outputs.v8-9 }}` (${{ needs.verify-and-cleanup-8-9.result }})
-                    • stable/8.10: `${{ needs.versions.outputs.v8-10 }}` (${{ needs.verify-and-cleanup-8-10.result }})
-                    • main: `${{ needs.versions.outputs.main }}` (${{ needs.verify-and-cleanup-main.result }})
+                    *Job results:*
+                    • stable/8.7: ${{ needs.verify-and-cleanup-8-7.result }}
+                    • stable/8.8: ${{ needs.verify-and-cleanup-8-8.result }}
+                    • stable/8.9: ${{ needs.verify-and-cleanup-8-9.result }}
+                    • stable/8.10: ${{ needs.verify-and-cleanup-8-10.result }}
+                    • main: ${{ needs.verify-and-cleanup-main.result }}
 
               - type: context
                 elements:
