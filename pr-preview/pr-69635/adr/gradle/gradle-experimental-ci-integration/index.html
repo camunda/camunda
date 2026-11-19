@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Keep Maven authoritative while evaluating a parallel Gradle build | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-69635/adr/gradle/gradle-experimental-ci-integration/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Keep Maven authoritative while evaluating a parallel Gradle build | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Carlo Sana"><meta data-rh="true" property="og:description" content="DRI: Carlo Sana"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-69635/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-69635/adr/gradle/gradle-experimental-ci-integration/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-69635/adr/gradle/gradle-experimental-ci-integration/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-69635/adr/gradle/gradle-experimental-ci-integration/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-69635/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-69635/assets/js/runtime~main.226f198c.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-69635/assets/js/main.55523c31.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-69635/assets/js/runtime~main.e2b0ebc5.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-69635/assets/js/main.b21796bf.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -172,8 +172,10 @@ failing integration test therefore neither triggers the alert nor hides a real G
 notification is an implementation detail and can change without changing this decision.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="temporary-soft-integration">Temporary soft integration<a href="#temporary-soft-integration" class="hash-link" aria-label="Direct link to Temporary soft integration" title="Direct link to Temporary soft integration" translate="no">​</a></h2>
 <p>The temporary soft-integration period has ended. Focused Gradle compilation and distribution-parity
-checks now run in Unified CI and are included in <code>check-results</code>. The separate <code>gradle-ci.yml</code>
-workflow remains non-blocking for the experimental isolated-project compatibility check;
+checks now run in Unified CI and are included in <code>check-results</code>. <code>gradle-compile-check</code> also
+compiles with <code>--isolated-projects</code> as a strict, blocking compile check. Isolated projects works
+for building only, not for running tests, so that run never executes test tasks. The separate
+<code>gradle-ci.yml</code> workflow remains non-blocking for the experimental isolated-project compatibility check;
 failures on a push to <code>main</code> send a Slack notification. Gradle unit-test execution will be added
 separately.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="deferred-work">Deferred work<a href="#deferred-work" class="hash-link" aria-label="Direct link to Deferred work" title="Direct link to Deferred work" translate="no">​</a></h2>
