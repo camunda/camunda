@@ -885,6 +885,37 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
+  void shouldNameTheRootPropertyWhenAnInheritedRootAzureSettingIsInvalid() {
+    // given an invalid root vault url, inherited by two declared physical tenants
+    final var properties = new HashMap<String, Object>();
+    properties.put("camunda.secrets.stores.azure.default.vault-url", "http://root.vault.azure.net");
+    properties.putAll(physicalTenant("tenanta"));
+    properties.putAll(physicalTenant("tenantb"));
+    final var resolver = resolverFor(properties);
+
+    // when / then — the operator is pointed at the root property they wrote, not a tenant's
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageStartingWith("camunda.secrets.stores.azure.default.vault-url must be");
+  }
+
+  @Test
+  void shouldNameTheRootPropertyWhenAnInheritedRootAzureStoreHasNoVaultUrl() {
+    // given a root azure store without a vault url, inherited by a declared physical tenant
+    final var properties = new HashMap<String, Object>();
+    properties.put("camunda.secrets.stores.azure.default.max-retries", "1");
+    properties.putAll(physicalTenant("tenanta"));
+    final var resolver = resolverFor(properties);
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessage(
+            "Azure Key Vault store 'default' for physical tenant 'default' has no"
+                + " camunda.secrets.stores.azure.default.vault-url configured");
+  }
+
+  @Test
   void shouldRefuseAzureStoreOverPlainHttpForThePhysicalTenantThatConfiguresIt() {
     // given pt1 pointing its azure store at a vault over plain http
     final var resolver =
@@ -1345,9 +1376,15 @@ class SecretStoreConfigurationTest {
       final String storeProperty,
       final String value) {
     final var tenant = "camunda.physical-tenants." + tenantId;
+    final var properties = new HashMap<>(physicalTenant(tenantId));
+    properties.put(tenant + ".secrets.stores." + storeType + ".default." + storeProperty, value);
+    return properties;
+  }
+
+  /** The settings every declared physical tenant requires. */
+  private static Map<String, Object> physicalTenant(final String tenantId) {
+    final var tenant = "camunda.physical-tenants." + tenantId;
     return Map.of(
-        tenant + ".secrets.stores." + storeType + ".default." + storeProperty,
-        value,
         tenant + ".security.initialization.default-roles.admin.users[0]",
         tenantId + "-admin",
         tenant + ".data.secondary-storage.elasticsearch.index-prefix",

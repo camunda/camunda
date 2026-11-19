@@ -39,6 +39,7 @@ import io.micrometer.core.instrument.Tags;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,13 +97,19 @@ public class SecretStoreConfiguration {
     final var resources = new SecretStoreResources();
     final var timeSource = new ActorClockInstantSource(clockService);
     try {
-      resolver
-          .mapValues(Camunda::getSecrets)
-          .forEach(
-              (tenantId, secrets) ->
+      // the default tenant goes first: it is the root configuration itself, which every other
+      // tenant inherits, so an invalid root value fails here under the root property the operator
+      // wrote rather than under the first declared tenant's property, where it was only inherited
+      resolver.mapValues(Camunda::getSecrets).entrySet().stream()
+          .sorted(
+              Comparator.comparing(
+                  entry -> !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(entry.getKey())))
+          .forEachOrdered(
+              entry ->
                   registries.put(
-                      tenantId,
-                      buildRegistry(tenantId, secrets, resources, timeSource, meterRegistry)));
+                      entry.getKey(),
+                      buildRegistry(
+                          entry.getKey(), entry.getValue(), resources, timeSource, meterRegistry)));
     } catch (final Throwable e) {
       try {
         resources.close();
