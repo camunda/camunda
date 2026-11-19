@@ -523,6 +523,10 @@ public final class ProtocolFactory {
         // still limit it to avoid errors/issues with nested collections
         .randomizationDepth(8)
         .excludeField(excludedRecordFields)
+        // Immutables generates an InitShim to compute @Value.Default attributes while building.
+        // It is an inner class, so a randomized instance has no enclosing record and throws when
+        // a getter consults it. A built record always has it cleared to null.
+        .excludeField(FieldPredicates.named("initShim"))
         // force the default ordinal so random records will always target the main index and
         // not ordinal indexes (unless we need to verify that in tests)
         .randomize(field -> field.getName().equals("storageOrdinal"), () -> 0);
