@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, onTestFinished} from 'vitest';
+import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {useSearch} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {HttpResponse} from 'msw';
+import {Toaster, toast} from '@camunda/design-system';
 import {
 	mockDeleteResourceEndpoint,
 	mockGetDecisionDefinitionXmlEndpoint,
@@ -26,16 +27,46 @@ import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls'
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {Decisions} from './Decisions';
 
 const DecisionsWithSearch = () => {
 	const search = useSearch({strict: false});
-	return <Decisions search={{evaluated: true, failed: true, ...search}} />;
+	return (
+		<>
+			<Decisions search={{evaluated: true, failed: true, ...search}} />
+			<Toaster />
+			<Notifications />
+		</>
+	);
 };
 
 function mockInstances() {
 	return mockQueryDecisionInstancesEndpoint({
 		successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
+	});
+}
+
+function mockTwoInvoiceVersions() {
+	return mockQueryDecisionDefinitionsEndpoint({
+		successResponse: HttpResponse.json(
+			createQueryDecisionDefinitionsResponse({
+				items: [
+					createDecisionDefinition({
+						name: 'Invoice Classification',
+						decisionDefinitionId: 'invoice',
+						decisionDefinitionKey: 'key-1',
+						version: 1,
+					}),
+					createDecisionDefinition({
+						name: 'Invoice Classification',
+						decisionDefinitionId: 'invoice',
+						decisionDefinitionKey: 'key-2',
+						version: 2,
+					}),
+				],
+			}),
+		),
 	});
 }
 
@@ -50,8 +81,10 @@ describe('<Decisions />', () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		sessionStorage.clear();
 		notificationsStore.reset();
+		toast.dismiss();
 	});
 
 	it('should render the sr-only decisions title', async ({worker}) => {
@@ -189,8 +222,11 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
 		});
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-1');
-		await screen.router.navigate({to: '.', search: (prev) => ({...prev, businessId: 'eq_order-2'})});
-		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-2');
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+		await userEvent.fill(screen.getByLabelText('Business ID', {exact: true}), 'order-2');
+		await vi.advanceTimersByTimeAsync(750);
+		vi.useRealTimers();
+		await expect.poll(() => screen.router.state.location.search).toHaveProperty('businessId', 'eq_order-2');
 
 		await userEvent.fill(screen.getByLabelText('Business ID', {exact: true}), 'order-3');
 		screen.router.history.back();
@@ -443,36 +479,20 @@ describe('<Decisions />', () => {
 
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeVisible();
 
-		await screen.router.navigate({to: '.', search: {decisionDefinitionId: 'invoice'}});
+		(screen.getByLabelText('Version').element() as HTMLElement).focus();
+		await expect.element(screen.getByLabelText('Version')).toHaveFocus();
+		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('option', {name: 'All versions'}));
 
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).not.toBeInTheDocument();
 	});
 
-	it('should keep a newly selected version blocked until the previous deletion finishes', async ({worker}) => {
+	it('should keep a newly selected version blocked while the previous deletion is pending', async ({worker}) => {
 		worker.use(
 			mockInstances(),
 			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
-			mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 500}),
-			mockQueryDecisionDefinitionsEndpoint({
-				successResponse: HttpResponse.json(
-					createQueryDecisionDefinitionsResponse({
-						items: [
-							createDecisionDefinition({
-								name: 'Invoice Classification',
-								decisionDefinitionId: 'invoice',
-								decisionDefinitionKey: 'key-1',
-								version: 1,
-							}),
-							createDecisionDefinition({
-								name: 'Invoice Classification',
-								decisionDefinitionId: 'invoice',
-								decisionDefinitionKey: 'key-2',
-								version: 2,
-							}),
-						],
-					}),
-				),
-			}),
+			mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 'infinite'}),
+			mockTwoInvoiceVersions(),
 		);
 		const screen = await renderWithRouter(DecisionsWithSearch, {
 			path: '/operate-preview/decisions',
@@ -482,16 +502,49 @@ describe('<Decisions />', () => {
 		await userEvent.click(screen.getByRole('button', {name: /Delete decision definition/}));
 		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
-		await screen.router.navigate({to: '.', search: {decisionDefinitionId: 'invoice', decisionDefinitionVersion: 2}});
+		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
+		(screen.getByLabelText('Version').element() as HTMLElement).focus();
+		await expect.element(screen.getByLabelText('Version')).toHaveFocus();
+		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('option', {name: '2'}));
 
+		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeDisabled();
-		await expect
-			.poll(() => notificationsStore.notifications.some(({title}) => title === 'Operation created'))
-			.toBe(true);
-		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeEnabled();
-		expect(screen.router.state.location.search).toMatchObject({
-			decisionDefinitionId: 'invoice',
-			decisionDefinitionVersion: 2,
+	});
+
+	it('should keep the newly selected version and unblock it once the previous deletion finishes', async ({worker}) => {
+		worker.use(
+			mockInstances(),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+			mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 1000}),
+			mockTwoInvoiceVersions(),
+		);
+		const screen = await renderWithRouter(DecisionsWithSearch, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
+
+		await userEvent.click(screen.getByRole('button', {name: /Delete decision definition/}));
+		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
+		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
+		(screen.getByLabelText('Version').element() as HTMLElement).focus();
+		await expect.element(screen.getByLabelText('Version')).toHaveFocus();
+		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('option', {name: '2'}));
+		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
+		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeDisabled();
+
+		await expect
+			.poll(async () => {
+				await vi.advanceTimersByTimeAsync(1000);
+				return screen.getByText('Operation created', {exact: true}).query();
+			})
+			.toBeTruthy();
+		vi.useRealTimers();
+
+		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeEnabled();
+		expect(screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
 	});
 });

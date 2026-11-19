@@ -9,14 +9,18 @@
 import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {render} from 'vitest-browser-react';
+import {Toaster, toast} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {CopiableContent} from './CopiableContent';
 
 describe('<CopiableContent />', () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
 		vi.useRealTimers();
+		notificationsStore.reset();
+		toast.dismiss();
 	});
 
 	it('should render the content as a copy button', async () => {
@@ -69,15 +73,18 @@ describe('<CopiableContent />', () => {
 
 	it('should not show feedback and should notify when copying fails', async () => {
 		vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
-		notificationsStore.reset();
 
-		const screen = await render(<CopiableContent content="invoice-classification" copyButtonDescription="Copy ID" />);
+		const screen = await render(
+			<>
+				<CopiableContent content="invoice-classification" copyButtonDescription="Copy ID" />
+				<Toaster />
+				<Notifications />
+			</>,
+		);
 		await userEvent.click(screen.getByRole('button', {name: 'Copy ID: invoice-classification'}));
 
+		await expect.element(screen.getByText("Couldn't copy to clipboard")).toBeVisible();
 		await expect.element(screen.getByRole('status')).toBeEmptyDOMElement();
-		expect(notificationsStore.notifications).toEqual([
-			expect.objectContaining({kind: 'error', title: "Couldn't copy to clipboard"}),
-		]);
 	});
 
 	it('should not keep the feedback when the content changes', async () => {
