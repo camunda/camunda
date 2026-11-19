@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationRe
 
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.ChannelType;
@@ -39,6 +40,22 @@ public interface ProcessingSession {
     if (batchOperationReference != batchOperationReferenceNullValue()) {
       appendMetadataToFollowUps(
           metadata -> metadata.batchOperationReference(batchOperationReference));
+    }
+  }
+
+  /**
+   * Marks the follow-ups as part of the same internal operation. A follow-up that already names an
+   * internal operation keeps it.
+   */
+  default void appendInternalOperationReferenceToFollowUps(
+      final InternalOperationReference internalOperationReference) {
+    if (internalOperationReference.isPresent()) {
+      appendMetadataToFollowUps(
+          metadata -> {
+            if (!metadata.getInternalOperation().isPresent()) {
+              metadata.internalOperation(internalOperationReference);
+            }
+          });
     }
   }
 

@@ -123,6 +123,16 @@ public class UnwrittenRecord implements TypedRecord {
   }
 
   @Override
+  public long getInternalOperationReference() {
+    return metadata.getInternalOperationReference();
+  }
+
+  @Override
+  public int getInternalOperationType() {
+    return metadata.getInternalOperationTypeCode();
+  }
+
+  @Override
   public long getKey() {
     return key;
   }

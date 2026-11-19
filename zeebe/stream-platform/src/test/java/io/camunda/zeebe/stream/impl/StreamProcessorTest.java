@@ -35,6 +35,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.record.InternalOperationType;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -562,6 +563,59 @@ public final class StreamProcessorTest {
       assertThat(followupMetadata.getOperationReference())
           .as("Followup records should contain the same operation reference of the initial command")
           .isEqualTo(operationReference);
+    }
+  }
+
+  @Test
+  public void shouldPropagateInternalOperationReferenceToFollowUps() {
+    // given
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var resultBuilderCaptor = ArgumentCaptor.forClass(ProcessingResultBuilder.class);
+    when(defaultRecordProcessor.process(any(), resultBuilderCaptor.capture()))
+        .thenAnswer(
+            (invocation) -> {
+              final var resultBuilder = resultBuilderCaptor.getValue();
+              resultBuilder.appendRecordReturnEither(
+                  1,
+                  Records.processInstance(1),
+                  new RecordMetadata()
+                      .recordType(RecordType.EVENT)
+                      .intent(ACTIVATE_ELEMENT)
+                      .rejectionType(RejectionType.NULL_VAL)
+                      .rejectionReason(""));
+              resultBuilder.appendRecordReturnEither(
+                  2,
+                  Records.processInstance(1),
+                  new RecordMetadata()
+                      .recordType(RecordType.COMMAND)
+                      .intent(ACTIVATE_ELEMENT)
+                      .rejectionType(RejectionType.NULL_VAL)
+                      .rejectionReason(""));
+              return resultBuilder.build();
+            })
+        .thenAnswer(invocation -> resultBuilderCaptor.getValue().build());
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command()
+            .internalOperation(InternalOperationType.POLICY_UPDATE, 123L)
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    await("Last written position should be updated")
+        .untilAsserted(
+            () -> assertThat(streamPlatform.getLogStream().getLastWrittenPosition()).isEqualTo(3));
+    final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
+    logStreamReader.seekToFirstEvent();
+    logStreamReader.next(); // command
+    while (logStreamReader.hasNext()) {
+      final var followupMetadata = new RecordMetadata();
+      logStreamReader.next().readMetadata(followupMetadata);
+      assertThat(followupMetadata.getInternalOperation().type())
+          .as("Follow-ups should belong to the internal operation of the command")
+          .isEqualTo(InternalOperationType.POLICY_UPDATE);
+      assertThat(followupMetadata.getInternalOperationReference()).isEqualTo(123L);
     }
   }
 

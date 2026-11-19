@@ -64,7 +64,8 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
             .valueType(valueType)
             .operationReference(metadata.operationReference())
             .batchOperationReference(metadata.batchOperationReference())
-            .authorization(metadata.authInfo());
+            .authorization(metadata.authInfo())
+            .internalOperation(metadata.internalOperationReference());
     final var either = mutableRecordBatch.appendRecord(key, recordMetadata, -1, value);
 
     either.ifRight(ok -> cache.add(intent, key));

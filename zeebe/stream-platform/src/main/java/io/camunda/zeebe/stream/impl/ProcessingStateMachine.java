@@ -18,6 +18,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -866,6 +867,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
 
     builder.appendOperationReferenceToFollowUps(command.getOperationReference());
     builder.appendBatchOperationReferenceToFollowUps(command.getBatchOperationReference());
+    builder.appendInternalOperationReferenceToFollowUps(InternalOperationReference.of(command));
 
     // Ensure auth information is forwarded also to all follow-up commands & events
     // e.g. to attribute changes to the right actor in the audit log
