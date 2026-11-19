@@ -165,7 +165,9 @@
 
   <!-- The batch operation insert can happen concurrently on multiple partitions.
   The more common MERGE INTO of MSSQL is not safe here and still can cause a PK violation.
-  This is what we want to avoid. This IGNORE_ROW_ON_DUPKEY_INDEX hint will explicitly ignore the PK violation. -->
+  This is what we want to avoid. This IGNORE_ROW_ON_DUPKEY_INDEX hint will explicitly ignore the PK violation.
+  The NOT EXISTS keeps rows that exist already away from the hint: on an existing row that another
+  partition is modifying, the hint alone failed with ORA-00600 and dropped the connection. -->
   <insert id="createIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
     databaseId="oracle">
@@ -173,16 +175,19 @@
     INTO ${prefix}BATCH_OPERATION
     (BATCH_OPERATION_KEY, STATE, OPERATION_TYPE, START_DATE, END_DATE, ACTOR_TYPE, ACTOR_ID,
     OPERATIONS_TOTAL_COUNT, OPERATIONS_FAILED_COUNT, OPERATIONS_COMPLETED_COUNT)
-    VALUES (#{batchOperationKey},
+    SELECT #{batchOperationKey},
     #{state},
     #{operationType},
-    #{startDate},
-    #{endDate},
+    #{startDate, jdbcType=TIMESTAMP},
+    #{endDate, jdbcType=TIMESTAMP},
     #{actorType},
     #{actorId},
     #{operationsTotalCount},
     #{operationsFailedCount},
-    #{operationsCompletedCount})
+    #{operationsCompletedCount}
+    FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM ${prefix}BATCH_OPERATION
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey})
   </insert>
 
   <insert id="createIfNotExists"

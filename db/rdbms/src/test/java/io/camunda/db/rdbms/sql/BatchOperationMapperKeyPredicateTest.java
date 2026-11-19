@@ -120,6 +120,19 @@ class BatchOperationMapperKeyPredicateTest {
     assertThat(sqlOf(parseMapper("oracle"), "lockForUpdate", "key")).contains("FOR UPDATE");
   }
 
+  /**
+   * Every partition exports the creation, so the row usually exists already. The index hint alone
+   * fails with an internal error (ORA-00600) when it meets an existing row that another partition
+   * is modifying, so existing rows must be filtered out before the hint is reached. The hint still
+   * covers two partitions inserting a new row at the same time.
+   */
+  @Test
+  void shouldOnlyInsertMissingBatchOperationsOnOracle() {
+    assertThat(sqlOf(parseMapper("oracle"), "createIfNotExists", "key"))
+        .contains("IGNORE_ROW_ON_DUPKEY_INDEX")
+        .contains("WHERE NOT EXISTS");
+  }
+
   private static String sqlOf(
       final Configuration configuration, final String statement, final Object parameter) {
     return configuration
