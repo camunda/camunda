@@ -1582,19 +1582,22 @@ class RdbmsExporterIT {
             .build();
     retryExporter.open(retryController);
 
-    final var record = FIXTURES.getProcessInstanceStartedRecord();
+    try {
+      final var record = FIXTURES.getProcessInstanceStartedRecord();
 
-    // when - the first delivery fails in the second handler, the record is redelivered
-    assertThatThrownBy(() -> retryExporter.export(record))
-        .isInstanceOf(IllegalStateException.class);
-    retryExporter.export(record);
-    retryExporter.close();
+      // when - the first delivery fails in the second handler, the record is redelivered
+      assertThatThrownBy(() -> retryExporter.export(record))
+          .isInstanceOf(IllegalStateException.class);
+      retryExporter.export(record);
 
-    // then - the flush succeeded (no duplicate key) and the instance exists once
-    final var key = ((ProcessInstanceRecordValue) record.getValue()).getProcessInstanceKey();
-    assertThat(rdbmsService.getProcessInstanceReader().findOne(key)).isNotEmpty();
-    assertThat(exporterPositionMapper.findOne(1).lastExportedPosition())
-        .isEqualTo(record.getPosition());
+      // then - the flush succeeded (no duplicate key) and the instance exists once
+      final var key = ((ProcessInstanceRecordValue) record.getValue()).getProcessInstanceKey();
+      assertThat(rdbmsService.getProcessInstanceReader().findOne(key)).isNotEmpty();
+      assertThat(exporterPositionMapper.findOne(1).lastExportedPosition())
+          .isEqualTo(record.getPosition());
+    } finally {
+      retryExporter.close();
+    }
   }
 
   @Test
