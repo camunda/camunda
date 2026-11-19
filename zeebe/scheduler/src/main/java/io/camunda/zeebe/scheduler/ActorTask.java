@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.ActorMetrics.ActorMetricsScoped;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Loggers;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -33,6 +34,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("restriction")
 public class ActorTask {
   private static final Logger LOG = LoggerFactory.getLogger(ActorTask.class);
+  private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
   private static final AtomicReferenceFieldUpdater<ActorTask, ActorLifecyclePhase>
       LIFECYCLE_UPDATER =
           AtomicReferenceFieldUpdater.newUpdater(
@@ -61,6 +63,8 @@ public class ActorTask {
   private volatile Queue<ActorJob> submittedJobs = new ClosedQueue();
 
   private ActorMetricsScoped metrics = ActorMetricsScoped.NOOP;
+  // never reset: FAILED is terminal, so a failed task is never scheduled again
+  private boolean resumedAfterFailure;
 
   public ActorTask(final Actor actor) {
     this.actor = actor;
@@ -248,7 +252,8 @@ public class ActorTask {
     // we need to work on a copy - otherwise we would get a ConcurrentModificationException
     // since some subscriptions remove them self on cancel
     final var actorSubscriptions = new ArrayList<>(subscriptions);
-    actorSubscriptions.forEach(ActorSubscription::cancel);
+    actorSubscriptions.forEach(
+        subscription -> runGuarded(subscription::cancel, "cancel a subscription"));
     subscriptions = new ArrayList<>();
 
     final Queue<ActorJob> activeJobsQueue = submittedJobs;
@@ -261,6 +266,15 @@ public class ActorTask {
       failJob(j);
     }
     metrics.close();
+  }
+
+  private void runGuarded(final Runnable action, final String description) {
+    try {
+      action.run();
+    } catch (final Throwable e) {
+      FATAL_ERROR_HANDLER.handleError(e);
+      LOG.error("Actor {} failed to {}", actor.getName(), description, e);
+    }
   }
 
   private void failJob(final ActorJob job) {
@@ -302,12 +316,62 @@ public class ActorTask {
         closeFuture.completeExceptionally(failure);
       }
       case STARTED -> {
-        actor.handleFailure(failure);
         currentJob.failFuture(failure);
+        actor.handleFailure(failure);
       }
       default -> {
         // do nothing
       }
+    }
+  }
+
+  /**
+   * Fails the actor, or finishes closing it, after an exception escaped {@link #execute}; returns
+   * whether to resubmit.
+   */
+  boolean onUnhandledFailure(final Throwable failure) {
+    final var state = schedulingState.get();
+    if (state == TaskSchedulingState.NOT_SCHEDULED) {
+      // escaped onClosed(), which has already released the task
+      runGuarded(() -> completeExceptionallyIfPending(closeFuture, failure), "complete closing");
+      return false;
+    }
+
+    if (lifecyclePhase == ActorLifecyclePhase.CLOSED) {
+      // the actor has already closed, so only releasing the task and completing closing are left
+      runGuarded(this::onClosed, "close");
+      runGuarded(() -> completeExceptionallyIfPending(closeFuture, failure), "complete closing");
+      return false;
+    }
+
+    if (currentJob != null) {
+      final var pendingJob = currentJob;
+      runGuarded(() -> pendingJob.failFuture(failure), "fail its current job");
+      currentJob = null;
+    }
+
+    if (lifecyclePhase != ActorLifecyclePhase.FAILED) {
+      final var failingJob = new ActorJob();
+      failingJob.setRunnable(() -> fail(failure));
+      failingJob.onJobAddedToTask(this);
+      currentJob = failingJob;
+      return true;
+    }
+
+    // already failed: carry on once to run any jobs scheduled while failing, then close
+    if (!resumedAfterFailure) {
+      resumedAfterFailure = true;
+      currentJob = fastLaneJobs.poll();
+      return true;
+    }
+    runGuarded(this::onClosed, "close");
+    return false;
+  }
+
+  private static void completeExceptionallyIfPending(
+      final CompletableActorFuture<Void> future, final Throwable failure) {
+    if (!future.isDone()) {
+      future.completeExceptionally(failure);
     }
   }
 
@@ -356,12 +420,23 @@ public class ActorTask {
      * up right away.
      */
     if ((lifecyclePhase == ActorLifecyclePhase.STARTED && !submittedJobs.isEmpty())
-        || pollSubscriptionsWithoutAddingJobs(subscriptionsRef)) {
+        || hasTriggeredSubscriptions(subscriptionsRef)) {
       // could be that another thread already woke up this task
       return casState(TaskSchedulingState.WAITING, TaskSchedulingState.WAKING_UP);
     }
 
     return false;
+  }
+
+  private boolean hasTriggeredSubscriptions(final List<ActorSubscription> subscriptions) {
+    try {
+      return pollSubscriptionsWithoutAddingJobs(subscriptions);
+    } catch (final Throwable e) {
+      // another thread may already own the task, so wake it up to poll again as its owner
+      FATAL_ERROR_HANDLER.handleError(e);
+      LOG.error("Actor {} failed to poll its subscriptions", actor.getName(), e);
+      return true;
+    }
   }
 
   public boolean tryWakeup() {
@@ -522,9 +597,7 @@ public class ActorTask {
       startingFuture.completeExceptionally(error);
     }
 
-    if (previousPhase != ActorLifecyclePhase.CLOSED) {
-      closeFuture.completeExceptionally(error);
-    }
+    completeExceptionallyIfPending(closeFuture, error);
 
     discardNextJobs();
     actor.onActorFailed();

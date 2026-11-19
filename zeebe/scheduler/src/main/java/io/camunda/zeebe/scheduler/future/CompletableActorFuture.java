@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.FutureUtil;
 import io.camunda.zeebe.util.Loggers;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.Collection;
@@ -36,6 +37,8 @@ import org.jspecify.annotations.Nullable;
 
 /** Completable future implementation that is garbage free and reusable */
 public final class CompletableActorFuture<V extends @Nullable Object> implements ActorFuture<V> {
+  private static final FatalErrorHandler FATAL_ERROR_HANDLER =
+      FatalErrorHandler.withLogger(Loggers.ACTOR_LOGGER);
   private static final VarHandle STATE;
 
   private static final int AWAITING_RESULT = 1;
@@ -318,7 +321,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
       // Due to happens-before order guarantee between write to volatile field state and
       // non-volatile fields value and failureCause, we can read value and failureCause without
       // locks.
-      checkedConsumer.accept(value, failureCause);
+      notifyCallback(checkedConsumer);
     }
   }
 
@@ -373,16 +376,19 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   public <U extends @Nullable Object> ActorFuture<U> andThen(
       final BiFunction<V, @Nullable Throwable, ActorFuture<U>> next, final Executor executor) {
     final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
-    onComplete(
+    continueOn(
+        this,
         (thisResult, thisError) -> {
           try {
             final var future = next.apply(thisResult, thisError);
-            future.onComplete(nextFuture, executor);
-          } catch (final Exception e) {
+            continueOn(future, nextFuture, executor, nextFuture);
+          } catch (final Throwable e) {
+            FATAL_ERROR_HANDLER.handleError(e);
             nextFuture.completeExceptionally(e);
           }
         },
-        executor);
+        executor,
+        nextFuture);
     return nextFuture;
   }
 
@@ -390,7 +396,8 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   public <U extends @Nullable Object> ActorFuture<U> thenApply(
       final Function<V, U> next, final Executor executor) {
     final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
-    onComplete(
+    continueOn(
+        this,
         (value, error) -> {
           if (error != null) {
             nextFuture.completeExceptionally(error);
@@ -399,12 +406,32 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
           try {
             nextFuture.complete(next.apply(value));
-          } catch (final Exception e) {
+          } catch (final Throwable e) {
+            FATAL_ERROR_HANDLER.handleError(e);
             nextFuture.completeExceptionally(new CompletionException(e));
           }
         },
-        executor);
+        executor,
+        nextFuture);
     return nextFuture;
+  }
+
+  /** Fails the dependent future if the executor rejects the continuation. */
+  private static <T extends @Nullable Object> void continueOn(
+      final ActorFuture<T> source,
+      final BiConsumer<T, @Nullable Throwable> continuation,
+      final Executor executor,
+      final ActorFuture<?> dependent) {
+    source.onComplete(
+        (value, error) -> {
+          try {
+            executor.execute(() -> continuation.accept(value, error));
+          } catch (final Throwable e) {
+            FATAL_ERROR_HANDLER.handleError(e);
+            dependent.completeExceptionally(e);
+          }
+        },
+        Runnable::run);
   }
 
   @Override
@@ -444,8 +471,17 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     while (!blockedCallbacks.isEmpty()) {
       final var callBack = blockedCallbacks.poll();
       if (callBack != null) {
-        callBack.accept(value, failureCause);
+        notifyCallback(callBack);
       }
+    }
+  }
+
+  private void notifyCallback(final BiConsumer<V, @Nullable Throwable> callback) {
+    try {
+      callback.accept(value, failureCause);
+    } catch (final Throwable e) {
+      FATAL_ERROR_HANDLER.handleError(e);
+      Loggers.ACTOR_LOGGER.error("Uncaught exception in a callback of a completed future", e);
     }
   }
 
