@@ -94,10 +94,15 @@ spec:
               q -c "VACUUM (ANALYZE) user_task"
 
               # The sentinel goes last: when k6 finds it, the table is full and analyzed.
+              # Camunda reads this row through the search API, which fails on a null process definition,
+              # process instance or element instance key: set them as the rows above do.
               q -c "INSERT INTO user_task (user_task_key, element_id, name, process_definition_id, creation_date,
-                      completion_date, assignee, state, tenant_id, process_definition_version, priority, partition_id)
+                      completion_date, assignee, state, process_definition_key, process_instance_key,
+                      root_process_instance_key, element_instance_key, tenant_id, process_definition_version,
+                      priority, partition_id)
                     VALUES (999999999, 'user_task', 'Prefill sentinel', 'benchmark-process', '$T0'::timestamptz,
-                      '$T0'::timestamptz, '$SENTINEL', 'COMPLETED', '<default>', 1, 50, 1)
+                      '$T0'::timestamptz, '$SENTINEL', 'COMPLETED', 1, 1999999999, 1999999999, 2999999999,
+                      '<default>', 1, 50, 1)
                     ON CONFLICT (user_task_key) DO NOTHING"
               echo "Prefill done"
           resources:
