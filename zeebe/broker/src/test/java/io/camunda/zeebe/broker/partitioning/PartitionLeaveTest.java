@@ -86,7 +86,10 @@ final class PartitionLeaveTest {
       ((PartitionManagerImpl) broker1.getBrokerContext().getPartitionManager()).leave(1).join();
 
       // then -- request can still be processed because quorum is still available
-      client.sendRequestWithRetry(new TestPublishMessageRequest("msg", "key")).join();
+      client
+          .sendRequestWithRetry(new TestPublishMessageRequest("msg", "key"))
+          .join()
+          .getResponseOrThrow();
     } finally {
       broker0.close();
       broker1.close();

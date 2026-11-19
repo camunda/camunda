@@ -89,10 +89,10 @@ public class BrokerSnapshotTest {
   }
 
   private long publishMaxMessageSizeMessage(final int key) {
-    return client
-        .sendRequestWithRetry(new TestPublishMessageRequest("msg", "msg-" + key))
-        .join()
-        .getKey();
+    final var response =
+        client.sendRequestWithRetry(new TestPublishMessageRequest("msg", "msg-" + key)).join();
+    response.getResponseOrThrow();
+    return response.getKey();
   }
 
   private SnapshotId waitForSnapshotAtBroker(
