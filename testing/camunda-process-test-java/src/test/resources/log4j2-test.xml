@@ -5,12 +5,16 @@
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
     </Console>
+    <!-- A stalled stdout must not block the threads that log. -->
+    <Async name="AsyncConsole" bufferSize="16384">
+      <AppenderRef ref="Console"/>
+    </Async>
   </Appenders>
 
   <Loggers>
 
     <Root level="info">
-      <AppenderRef ref="Console"/>
+      <AppenderRef ref="AsyncConsole"/>
     </Root>
 
     <Logger name="io.camunda.process.test" level="info"/>

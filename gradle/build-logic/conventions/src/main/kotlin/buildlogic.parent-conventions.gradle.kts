@@ -127,6 +127,9 @@ dependencies {
     "testRuntimeOnly",
     versionCatalog.findLibrary("org-apache-logging-log4j-log4j-slf4j2-impl").get(),
   )
+  // The log4j2.component.properties that Maven gets from zeebe-build-tools, which the Gradle build
+  // does not use.
+  add("testRuntimeOnly", files(layout.settingsDirectory.dir("build-tools/src/main/resources")))
 }
 
 // Force versions in the same way they are pinned by maven.

@@ -7,6 +7,10 @@
       <PatternLayout
         pattern="%d{HH:mm:ss.SSS} [%t] [%X{actor-name}] %-5level %logger{36} - %msg%n"/>
     </Console>
+    <!-- A stalled stdout must not block the threads that log. -->
+    <Async name="AsyncConsole" bufferSize="16384">
+      <AppenderRef ref="Console"/>
+    </Async>
   </Appenders>
 
   <Loggers>
@@ -14,7 +18,7 @@
     <!-- <Logger name="io.camunda.zeebe.db" level="trace"/> -->
 
     <Root level="info">
-      <AppenderRef ref="Console"/>
+      <AppenderRef ref="AsyncConsole"/>
     </Root>
   </Loggers>
 

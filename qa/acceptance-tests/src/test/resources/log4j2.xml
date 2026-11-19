@@ -12,6 +12,10 @@
     <Console name="STDOUT" target="SYSTEM_OUT">
       <PatternLayout pattern="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
     </Console>
+    <!-- A stalled stdout must not block the threads that log. -->
+    <Async name="AsyncStdout" bufferSize="16384">
+      <AppenderRef ref="STDOUT"/>
+    </Async>
   </Appenders>
 
   <Loggers>
@@ -34,7 +38,7 @@
     <Logger name="io.camunda.zeebe.gateway.rest" level="debug"/>
 
     <Root level="${sys:root.logging.level:-INFO}">
-      <AppenderRef ref="STDOUT"/>
+      <AppenderRef ref="AsyncStdout"/>
     </Root>
   </Loggers>
 </Configuration>
