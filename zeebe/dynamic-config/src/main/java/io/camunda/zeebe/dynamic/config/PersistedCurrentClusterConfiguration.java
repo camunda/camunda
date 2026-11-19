@@ -9,12 +9,14 @@ package io.camunda.zeebe.dynamic.config;
 
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32C;
 import org.jspecify.annotations.NullMarked;
@@ -162,13 +164,22 @@ public final class PersistedCurrentClusterConfiguration {
             .put(VERSION)
             .putLong(checksum)
             .put(body);
+    // Write a new file and replace the old one with it, rather than overwriting the old one in
+    // place: a write that fails, and a restart before the next one, would otherwise leave neither
+    // the old nor the new configuration on disk.
+    final var tempFile = configurationFile.resolveSibling(configurationFile.getFileName() + ".tmp");
     Files.write(
-        configurationFile,
+        tempFile,
         buffer.array(),
         StandardOpenOption.CREATE,
         StandardOpenOption.WRITE,
         StandardOpenOption.TRUNCATE_EXISTING,
         StandardOpenOption.DSYNC);
+    FileUtil.moveDurably(
+        tempFile,
+        configurationFile,
+        StandardCopyOption.ATOMIC_MOVE,
+        StandardCopyOption.REPLACE_EXISTING);
   }
 
   private static long checksum(final byte[] bytes, final int offset, final int length) {

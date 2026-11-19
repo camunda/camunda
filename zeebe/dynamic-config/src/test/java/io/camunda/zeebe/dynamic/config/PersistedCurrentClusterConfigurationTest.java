@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.ChecksumMismatch;
@@ -69,6 +70,27 @@ final class PersistedCurrentClusterConfigurationTest {
     // then
     assertThat(reloaded.isUninitialized()).isFalse();
     assertThat(reloaded.getConfiguration()).isEqualTo(config);
+  }
+
+  @Test
+  void shouldKeepPreviousConfigurationOnDiskWhenWriteFails() throws IOException {
+    // given - a persisted configuration, and a write of the next one that fails
+    final var file = tmp.resolve("config.meta");
+    final var previous = sampleConfiguration();
+    final var persisted = PersistedCurrentClusterConfiguration.ofFile(file, serializer);
+    persisted.update(previous);
+    // the new file cannot be created if a directory is in its place
+    Files.createDirectory(tmp.resolve("config.meta.tmp"));
+
+    // when
+    final var thrown =
+        catchThrowable(() -> persisted.update(CurrentClusterConfiguration.uninitialized()));
+
+    // then - neither used nor gossiped, and still on disk after a restart
+    assertThat(thrown).isInstanceOf(IOException.class);
+    assertThat(persisted.getConfiguration()).isEqualTo(previous);
+    assertThat(PersistedCurrentClusterConfiguration.ofFile(file, serializer).getConfiguration())
+        .isEqualTo(previous);
   }
 
   @Test
