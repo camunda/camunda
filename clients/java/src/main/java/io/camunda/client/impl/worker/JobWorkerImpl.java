@@ -277,6 +277,11 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void onPollSuccess(final JobPoller jobPoller, final int activatedJobs) {
+    if (!isOpen()) {
+      releaseJobPoller(jobPoller);
+      return;
+    }
+
     // Read the refusals before releasing the poller: once it is free, a job that finishes can start
     // the next poll, and that poll resets the count.
     final int refusedJobs = refusedJobsInPoll.get();
@@ -339,6 +344,12 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void onPollError(final JobPoller jobPoller, final Throwable error) {
+    if (!isOpen()) {
+      // no backoff or next poll: on client close, the scheduler is already shut down
+      releaseJobPoller(jobPoller);
+      return;
+    }
+
     // While polls fail, nothing can take the reserved slots, for example when the poll goes over
     // REST and only the gRPC stream works. The next refused poll reserves the lane again.
     releasePollLane();
