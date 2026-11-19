@@ -11,7 +11,7 @@ import {userEvent} from 'vitest/browser';
 import {useSearch} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {HttpResponse, http} from 'msw';
+import {HttpResponse} from 'msw';
 import {Toaster, toast} from '@camunda/design-system';
 import {
 	mockDeleteResourceEndpoint,
@@ -27,7 +27,6 @@ import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls'
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {endpoints} from '#/shared/http/endpoints';
 import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {Decisions} from './Decisions';
 
@@ -513,18 +512,10 @@ describe('<Decisions />', () => {
 	});
 
 	it('should keep the newly selected version and unblock it once the previous deletion finishes', async ({worker}) => {
-		let releaseDeletion!: () => void;
-		const pendingDeletion = new Promise<void>((resolve) => {
-			releaseDeletion = resolve;
-		});
-		onTestFinished(releaseDeletion);
 		worker.use(
 			mockInstances(),
 			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
-			http.post(endpoints.deleteResource(':resourceKey', {}).url, async () => {
-				await pendingDeletion;
-				return HttpResponse.json({});
-			}),
+			mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 1000}),
 			mockTwoInvoiceVersions(),
 		);
 		const screen = await renderWithRouter(DecisionsWithSearch, {
@@ -534,6 +525,7 @@ describe('<Decisions />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: /Delete decision definition/}));
 		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
 		(screen.getByLabelText('Version').element() as HTMLElement).focus();
 		await expect.element(screen.getByLabelText('Version')).toHaveFocus();
@@ -541,9 +533,15 @@ describe('<Decisions />', () => {
 		await userEvent.click(screen.getByRole('option', {name: '2'}));
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeDisabled();
-		releaseDeletion();
 
-		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
+		await expect
+			.poll(async () => {
+				await vi.advanceTimersByTimeAsync(1000);
+				return screen.getByText('Operation created', {exact: true}).query();
+			})
+			.toBeTruthy();
+		vi.useRealTimers();
+
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeEnabled();
 		expect(screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
 	});
