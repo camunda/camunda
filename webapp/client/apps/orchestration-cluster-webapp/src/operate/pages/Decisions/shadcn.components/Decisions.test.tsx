@@ -463,7 +463,7 @@ describe('<Decisions />', () => {
 		worker.use(
 			mockInstances(),
 			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
-			mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 500}),
+			mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 2000}),
 			mockQueryDecisionDefinitionsEndpoint({
 				successResponse: HttpResponse.json(
 					createQueryDecisionDefinitionsResponse({
