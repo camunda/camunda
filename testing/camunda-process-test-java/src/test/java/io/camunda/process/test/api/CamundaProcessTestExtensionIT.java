@@ -1705,8 +1705,9 @@ public class CamundaProcessTestExtensionIT {
               .join();
 
       // then
-      assertThatProcessInstance(processInstanceEvent).isCompleted();
-      assertThatProcessInstance(processInstanceEvent).hasVariable("result", "mocked-output");
+      assertThatProcessInstance(processInstanceEvent)
+          .isCompleted()
+          .hasVariable("result", "mocked-output");
     }
 
     @Test
@@ -1753,8 +1754,8 @@ public class CamundaProcessTestExtensionIT {
               .join();
 
       // then
-      assertThatProcessInstance(processInstanceEvent).isCompleted();
       assertThatProcessInstance(processInstanceEvent)
+          .isCompleted()
           .hasVariable("result120", "output-of-1.2.0")
           .hasVariable("result130", "output-of-1.3.0");
     }
