@@ -15,6 +15,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -116,6 +117,87 @@ class RdbmsExporterTest {
 
     // then
     verify(executionQueue).addEstimatedBytes(RECORD_LENGTH);
+  }
+
+  @Test
+  void shouldNotRerunSucceededHandlersWhenRecordIsRetriedAfterHandlerFailure() {
+    // given
+    final var firstHandler = mockHandler(ValueType.JOB);
+    final var failingHandler = mockHandler(ValueType.JOB);
+    doThrow(new IllegalStateException("transient failure"))
+        .doNothing()
+        .when(failingHandler)
+        .export(any());
+    final var lastHandler = mockHandler(ValueType.JOB);
+    final var record = mockRecord(ValueType.JOB, 1);
+
+    createExporter(
+        b ->
+            b.withHandler(ValueType.JOB, firstHandler)
+                .withHandler(ValueType.JOB, failingHandler)
+                .withHandler(ValueType.JOB, lastHandler));
+
+    // when
+    assertThatThrownBy(() -> exporter.export(record)).isInstanceOf(IllegalStateException.class);
+    exporter.export(record);
+
+    // then
+    verify(firstHandler, times(1)).export(record);
+    verify(failingHandler, times(2)).export(record);
+    verify(lastHandler, times(1)).export(record);
+  }
+
+  @Test
+  void shouldNotRerunSucceededHandlersWhenCanExportOfSucceededHandlerFailsOnRetry() {
+    // given
+    final RdbmsExportHandler firstHandler = mock(RdbmsExportHandler.class);
+    when(firstHandler.canExport(any()))
+        .thenReturn(true)
+        .thenThrow(new IllegalStateException("transient failure"))
+        .thenReturn(true);
+    final var failingHandler = mockHandler(ValueType.JOB);
+    doThrow(new IllegalStateException("transient failure"))
+        .doNothing()
+        .when(failingHandler)
+        .export(any());
+    final var record = mockRecord(ValueType.JOB, 1);
+
+    createExporter(
+        b -> b.withHandler(ValueType.JOB, firstHandler).withHandler(ValueType.JOB, failingHandler));
+
+    // when
+    assertThatThrownBy(() -> exporter.export(record)).isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> exporter.export(record)).isInstanceOf(IllegalStateException.class);
+    exporter.export(record);
+
+    // then
+    verify(firstHandler, times(1)).export(record);
+    verify(failingHandler, times(2)).export(record);
+  }
+
+  @Test
+  void shouldRunAllHandlersForNextRecordAfterRetriedRecordSucceeded() {
+    // given
+    final var firstHandler = mockHandler(ValueType.JOB);
+    final var failingHandler = mockHandler(ValueType.JOB);
+    doThrow(new IllegalStateException("transient failure"))
+        .doNothing()
+        .when(failingHandler)
+        .export(any());
+    final var record = mockRecord(ValueType.JOB, 1);
+    final var nextRecord = mockRecord(ValueType.JOB, 2);
+
+    createExporter(
+        b -> b.withHandler(ValueType.JOB, firstHandler).withHandler(ValueType.JOB, failingHandler));
+
+    // when
+    assertThatThrownBy(() -> exporter.export(record)).isInstanceOf(IllegalStateException.class);
+    exporter.export(record);
+    exporter.export(nextRecord);
+
+    // then
+    verify(firstHandler).export(nextRecord);
+    verify(failingHandler).export(nextRecord);
   }
 
   @Test
