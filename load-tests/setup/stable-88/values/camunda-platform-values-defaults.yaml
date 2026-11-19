@@ -189,6 +189,7 @@ orchestration:
     runAsUser: 1000
     capabilities:
       add: ["NET_ADMIN"]
+  # CUSTOMIZATION: javaOpts replaces the chart default as a whole, so the chart flags for the heap dump and exit on out of memory are repeated here. We add native memory tracking, which the JFR memory metrics need, and the GC log.
   javaOpts: >-
     -XX:MaxRAMPercentage=25.0
     -XX:+ExitOnOutOfMemoryError
@@ -228,6 +229,7 @@ orchestration:
       camunda.database.retention.enabled: "true"
       camunda.database.retention.policyName: "camunda-retention-policy"
       #Metrics:
+      # CUSTOMIZATION: JFR metrics are off by default, we enable them for the memory metrics (RSS and native memory), which need NativeMemoryTracking in javaOpts.
       camunda.flags.jfr.metrics: "true"
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max)

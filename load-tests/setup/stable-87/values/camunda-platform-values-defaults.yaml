@@ -222,6 +222,7 @@ zeebe:
     runAsUser: 1000
     capabilities:
       add: ["NET_ADMIN"]
+  # CUSTOMIZATION: javaOpts replaces the chart default as a whole, so the chart flags for the heap dump and exit on out of memory are repeated here. We add the GC log.
   javaOpts: >-
     -XX:MaxRAMPercentage=25.0
     -XX:+ExitOnOutOfMemoryError
