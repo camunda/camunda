@@ -59,7 +59,7 @@ final class RestoreAppExitCodeTest {
         .hasMessageContaining("but got both");
 
     // then
-    assertThat(exitCodes).containsExactly(2);
+    assertThat(exitCodes).containsExactly(10);
     assertDataDirectoryIsUntouched();
   }
 
@@ -74,7 +74,7 @@ final class RestoreAppExitCodeTest {
         .hasMessageContaining("No usable range found for partition 1");
 
     // then
-    assertThat(exitCodes).containsExactly(3);
+    assertThat(exitCodes).containsExactly(11);
     assertDataDirectoryIsUntouched();
   }
 
@@ -85,7 +85,7 @@ final class RestoreAppExitCodeTest {
         .hasMessage("No completed backup found with backup id 42");
 
     // then
-    assertThat(exitCodes).containsExactly(5);
+    assertThat(exitCodes).containsExactly(13);
     assertDataDirectoryIsUntouched();
   }
 
