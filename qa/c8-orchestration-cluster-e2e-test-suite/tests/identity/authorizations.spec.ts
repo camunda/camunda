@@ -168,6 +168,35 @@ test.describe.serial('component authorizations CRUD', () => {
     });
   });
 
+  test('filters the authorizations list by owner ID', async ({
+    page,
+    identityHeader,
+    identityAuthorizationsPage,
+  }) => {
+    await identityHeader.navigateToAuthorizations();
+    await identityAuthorizationsPage.selectResourceType(
+      NEW_COMPONENT_AUTHORIZATION.resourceType,
+    );
+    await expect(
+      identityAuthorizationsPage.getAuthorizationCell(NEW_AUTH_ROLE.id),
+    ).toBeVisible();
+
+    await identityAuthorizationsPage.ownerIdSearchInput.fill(
+      `${NEW_AUTH_ROLE.id}-no-match`,
+    );
+    await expect(
+      page.getByText('No results found', {exact: true}),
+    ).toBeVisible();
+    await expect(
+      identityAuthorizationsPage.getAuthorizationCell(NEW_AUTH_ROLE.id),
+    ).toBeHidden();
+
+    await identityAuthorizationsPage.ownerIdSearchInput.fill(NEW_AUTH_ROLE.id);
+    await expect(
+      identityAuthorizationsPage.getAuthorizationCell(NEW_AUTH_ROLE.id),
+    ).toBeVisible();
+  });
+
   test('delete component authorization for role', async ({
     page,
     identityHeader,
