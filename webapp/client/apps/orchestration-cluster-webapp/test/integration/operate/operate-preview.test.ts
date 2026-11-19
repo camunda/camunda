@@ -154,4 +154,26 @@ test.describe('Operate Dashboard DS preview (/operate-preview)', () => {
 		await expect(operatePreviewPage.processesByNameRow('Process One')).toBeVisible();
 		await expect(operatePreviewPage.incidentsByErrorRow('Payment gateway request timed out')).toBeVisible();
 	});
+
+	test('should keep the Dashboard visible when the process statistics fail', async ({network, operatePreviewPage}) => {
+		network.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: new HttpResponse(null, {status: 500}),
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: HttpResponse.json(INCIDENTS_WITH_ERRORS),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+			}),
+		);
+
+		await operatePreviewPage.goto();
+
+		await expect(operatePreviewPage.metricPanel.getByText('Process statistics could not be fetched')).toBeVisible({
+			timeout: 15_000,
+		});
+		await expect(operatePreviewPage.processesByNameTile).toBeVisible();
+		await expect(operatePreviewPage.incidentsByErrorRow('Payment gateway request timed out')).toBeVisible();
+	});
 });

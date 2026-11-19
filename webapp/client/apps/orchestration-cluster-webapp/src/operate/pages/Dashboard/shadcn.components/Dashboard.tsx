@@ -7,11 +7,12 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {DataTable, Heading, PageLayout, Separator, type DataTableColumn} from '@camunda/design-system';
+import {DataTable, Heading, PageLayout, Separator, Skeleton, type DataTableColumn} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {useRunningInstancesCount} from '#/operate/pages/Dashboard/useRunningInstancesCount';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 import {MetricPanel} from '#/operate/pages/Dashboard/MetricPanel/shadcn.components/MetricPanel';
+import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
 import {InstancesByProcess} from '#/operate/pages/Dashboard/InstancesByProcess/shadcn.components/InstancesByProcess';
 import {IncidentsByError} from '#/operate/pages/Dashboard/IncidentsByError/shadcn.components/IncidentsByError';
 
@@ -23,8 +24,8 @@ const noInstancesTableSkeletonColumns = (header: string): DataTableColumn<NoInst
 
 const Dashboard: React.FC = () => {
 	const {t} = useTranslation();
-	const {data: count} = useRunningInstancesCount();
-	const hasNoInstances = count.total === 0;
+	const {data: count, isPending, isError, isSuccess} = useRunningInstancesCount();
+	const hasNoInstances = count?.total === 0;
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
@@ -33,7 +34,9 @@ const Dashboard: React.FC = () => {
 					{t('operate.dashboard.title')}
 				</Heading>
 				<div data-testid="metric-panel">
-					<MetricPanel count={count} />
+					{isError && <ErrorMessage message={t('operate.dashboard.metricFetchError')} />}
+					{isPending && <Skeleton data-testid="instances-bar-skeleton" className="h-24 w-full" />}
+					{isSuccess && <MetricPanel count={count} />}
 				</div>
 				<Separator className="my-2" />
 				<div className={cn('grid flex-1 gap-4 overflow-hidden', !hasNoInstances && 'grid-cols-2')}>

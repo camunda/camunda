@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {queryOptions, useSuspenseQuery} from '@tanstack/react-query';
+import {queryOptions, useQuery} from '@tanstack/react-query';
 import type {
 	GetProcessDefinitionInstanceStatisticsRequestBody,
 	GetProcessDefinitionInstanceStatisticsResponseBody,
@@ -68,7 +68,7 @@ const runningInstancesCountQuery = () =>
 	});
 
 function useRunningInstancesCount() {
-	return useSuspenseQuery({
+	return useQuery({
 		...runningInstancesCountQuery(),
 		refetchInterval: 5000,
 	});
