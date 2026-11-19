@@ -19,4 +19,7 @@ public interface RawAccessibleDb<ColumnFamilyType extends Enum<? extends EnumVal
 
   /** Direct access to the committed state, bypassing transactions. */
   RawDbAccess rawAccess();
+
+  /** The consistency checks that this DB runs, which a layer on top of it must run as well. */
+  ConsistencyChecksSettings consistencyChecksSettings();
 }
