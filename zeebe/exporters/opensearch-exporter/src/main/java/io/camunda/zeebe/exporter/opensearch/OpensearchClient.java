@@ -71,7 +71,7 @@ public class OpensearchClient implements AutoCloseable {
     this(
         configuration,
         new BulkIndexRequest(),
-        OpensearchConnector.of(configuration).createClient(),
+        OpensearchClientFactory.of(configuration).createClient(),
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration.index),
         new OpensearchMetrics(meterRegistry));

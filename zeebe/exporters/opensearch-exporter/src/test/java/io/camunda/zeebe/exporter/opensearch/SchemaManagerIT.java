@@ -48,7 +48,7 @@ public class SchemaManagerIT {
   @BeforeAll
   static void setup() {
     CONFIG.url = CONTAINER.getHttpHostAddress();
-    openSearchClient = OpensearchConnector.of(CONFIG).createClient();
+    openSearchClient = OpensearchClientFactory.of(CONFIG).createClient();
   }
 
   @Test

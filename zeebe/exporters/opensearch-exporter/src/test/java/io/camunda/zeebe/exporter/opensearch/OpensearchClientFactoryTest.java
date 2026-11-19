@@ -14,8 +14,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.BasicCredentials;
@@ -26,26 +24,25 @@ import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.ProxyConfiguration;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Map;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.ArgumentCaptor;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
 import org.opensearch.client.transport.httpclient5.internal.Node;
 
 @Execution(ExecutionMode.SAME_THREAD)
-final class OpensearchConnectorTest {
+final class OpensearchClientFactoryTest {
 
   private static final String BASIC_USERNAME = "username";
   private static final String BASIC_PASSWORD = "password";
@@ -83,7 +80,7 @@ final class OpensearchConnectorTest {
     config.url = "http://admin:s3 cr3t@localhost:9200";
 
     // when / then
-    assertThatThrownBy(() -> OpensearchConnector.of(config).createClient())
+    assertThatThrownBy(() -> OpensearchClientFactory.of(config).createClient())
         .hasMessage("Error in url at position 0")
         .hasNoCause();
   }
@@ -94,7 +91,7 @@ final class OpensearchConnectorTest {
     config.url = "http://localhost:9201,http://localhost:9202";
 
     // when
-    final var client = OpensearchConnector.of(config).createClient();
+    final var client = OpensearchClientFactory.of(config).createClient();
     final var transport = (ApacheHttpClient5Transport) client._transport();
 
     // then
@@ -108,17 +105,103 @@ final class OpensearchConnectorTest {
   }
 
   @Test
-  void shouldEnableTcpKeepAlive() {
-    // given
-    final var builder = mock(HttpAsyncClientBuilder.class);
+  void shouldTrustASelfSignedCertificateWhenConfigured(@TempDir final Path tempDir)
+      throws Exception {
+    // given - a TLS server with a self-signed certificate issued for localhost
+    final var keystore = selfSignedKeystoreForLocalhost(tempDir);
+    final var tlsServer =
+        new WireMockServer(
+            WireMockConfiguration.options()
+                .dynamicPort()
+                .dynamicHttpsPort()
+                .keystorePath(keystore.toString())
+                .keystoreType("PKCS12")
+                .keystorePassword("changeit")
+                .keyManagerPassword("changeit"));
+    tlsServer.start();
+    try {
+      stubClusterInfo(tlsServer);
+      config.url = "https://localhost:" + tlsServer.httpsPort();
+      config.getSecurity().setEnabled(true);
+      config.getSecurity().setSelfSigned(true);
+      final var client = OpensearchClientFactory.of(config).createClient();
 
-    // when
-    OpensearchConnector.of(config).configureHttpClient(builder, config);
+      // when
+      final var info = client.info();
 
-    // then
-    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
-    verify(builder).setIOReactorConfig(captor.capture());
-    assertThat(captor.getValue().isSoKeepAlive()).isTrue();
+      // then - the handshake and the request succeed, so the certificate is trusted
+      assertThat(info.clusterName()).isEqualTo("wiremock-cluster");
+      client._transport().close();
+    } finally {
+      tlsServer.stop();
+    }
+  }
+
+  @Test
+  void shouldRejectASelfSignedCertificateByDefault() throws Exception {
+    // given - the same server, but self-signed certificates are not trusted
+    final var tlsServer =
+        new WireMockServer(WireMockConfiguration.options().dynamicPort().dynamicHttpsPort());
+    tlsServer.start();
+    try {
+      stubClusterInfo(tlsServer);
+      config.url = "https://localhost:" + tlsServer.httpsPort();
+      config.getSecurity().setEnabled(true);
+      final var client = OpensearchClientFactory.of(config).createClient();
+
+      // when / then
+      assertThatThrownBy(client::info)
+          .isInstanceOf(IOException.class)
+          .hasStackTraceContaining("PKIX path building failed");
+      client._transport().close();
+    } finally {
+      tlsServer.stop();
+    }
+  }
+
+  private static void stubClusterInfo(final WireMockServer server) {
+    server.stubFor(
+        any(anyUrl())
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(CLUSTER_INFO_RESPONSE)));
+  }
+
+  /** Creates a keystore holding a self-signed certificate that is valid for localhost. */
+  private static Path selfSignedKeystoreForLocalhost(final Path directory) throws Exception {
+    final var keystore = directory.resolve("keystore.p12");
+    final var keytool = Path.of(System.getProperty("java.home"), "bin", "keytool").toString();
+    final var process =
+        new ProcessBuilder(
+                keytool,
+                "-genkeypair",
+                "-alias",
+                "localhost",
+                "-keyalg",
+                "RSA",
+                "-keysize",
+                "2048",
+                "-dname",
+                "CN=localhost",
+                "-ext",
+                "san=dns:localhost,ip:127.0.0.1",
+                "-validity",
+                "1",
+                "-storetype",
+                "PKCS12",
+                "-keystore",
+                keystore.toString(),
+                "-storepass",
+                "changeit",
+                "-keypass",
+                "changeit")
+            .redirectErrorStream(true)
+            .start();
+    final var output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+    assertThat(process.waitFor()).describedAs("keytool output: %s", output).isZero();
+    return keystore;
   }
 
   @Nested
@@ -311,7 +394,7 @@ final class OpensearchConnectorTest {
     }
 
     private void sendRequest() {
-      final OpenSearchClient client = OpensearchConnector.of(config).createClient();
+      final OpenSearchClient client = OpensearchClientFactory.of(config).createClient();
       try {
         client.info();
       } catch (final OpenSearchException | IOException e) {

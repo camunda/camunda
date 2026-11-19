@@ -17,8 +17,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.unauthorized;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
@@ -31,20 +29,13 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.impl.BasicEntityDetails;
 import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.apache.hc.core5.http.message.BasicHttpRequest;
-import org.apache.hc.core5.http.protocol.HttpCoreContext;
-import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ElasticsearchClientFactoryTest {
@@ -73,6 +64,18 @@ final class ElasticsearchClientFactoryTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Invalid Elasticsearch url at position 0")
         .hasNoCause();
+  }
+
+  @Test
+  void shouldRejectAUrlWithoutAnyHost() {
+    // given - a value made only of separators splits into no host at all; the connector would
+    // silently use its default host (localhost:9200) instead of failing
+    config.url = ",";
+
+    // when / then
+    assertThatThrownBy(() -> ElasticsearchClientFactory.of(config))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Invalid Elasticsearch url: no host is configured");
   }
 
   @Test
@@ -156,43 +159,124 @@ final class ElasticsearchClientFactoryTest {
   }
 
   @Test
-  void shouldApplyRequestInterceptorsInOrder()
-      throws IOException, org.apache.hc.core5.http.HttpException {
-    // given
-    final var context = HttpCoreContext.create();
-    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+  void shouldApplyRequestInterceptorsInOrder() throws IOException {
+    // given - both interceptors set the same header, so the last one wins
+    config.url = esServer.getRuntimeInfo().getHttpBaseUrl();
+    esServer.stubFor(get(urlEqualTo("/interceptors")).willReturn(ok()));
 
     // when
-    ElasticsearchClientFactory.INSTANCE.configureHttpClient(
-        config,
-        builder,
-        (req, entity, ctx) -> ctx.setAttribute("foo", "bar"),
-        (req, entity, ctx) -> ctx.setAttribute("foo", "baz"));
-
-    final var interceptorCaptor =
-        ArgumentCaptor.forClass(org.apache.hc.core5.http.HttpRequestInterceptor.class);
-    Mockito.verify(builder, Mockito.times(2))
-        .addRequestInterceptorLast(interceptorCaptor.capture());
-    for (final var interceptor : interceptorCaptor.getAllValues()) {
-      interceptor.process(
-          new BasicHttpRequest("GET", "localhost"), new BasicEntityDetails(0, null), context);
+    try (final var client =
+        ElasticsearchClientFactory.of(
+            config,
+            (request, entity, context) -> request.setHeader("foo", "bar"),
+            (request, entity, context) -> request.setHeader("foo", "baz"))) {
+      extractRestClient(client).performRequest(new Request("GET", "/interceptors"));
     }
 
     // then
-    assertThat(context.getAttribute("foo")).isEqualTo("baz");
+    esServer.verify(getRequestedFor(urlEqualTo("/interceptors")).withHeader("foo", equalTo("baz")));
   }
 
   @Test
-  void shouldEnableTcpKeepAlive() {
+  void shouldUseTheRequestTimeoutForBothConnectAndSocketTimeouts() {
     // given
-    final var builder = mock(HttpAsyncClientBuilder.class);
+    config.requestTimeoutMs = 12_345;
 
     // when
-    ElasticsearchClientFactory.INSTANCE.configureHttpClient(config, builder);
+    final var connect = ElasticsearchClientFactory.toConnectConfiguration(config);
 
     // then
-    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
-    verify(builder).setIOReactorConfig(captor.capture());
-    assertThat(captor.getValue().isSoKeepAlive()).isTrue();
+    assertThat(connect.getConnectTimeout()).isEqualTo(12_345);
+    assertThat(connect.getSocketTimeout()).isEqualTo(12_345);
+  }
+
+  @Test
+  void shouldMapEveryUrlOfTheCommaSeparatedList() {
+    // given
+    config.url = "http://localhost:9201,https://localhost:9202";
+
+    // when
+    final var connect = ElasticsearchClientFactory.toConnectConfiguration(config);
+
+    // then
+    assertThat(connect.getUrls())
+        .containsExactly("http://localhost:9201", "https://localhost:9202");
+  }
+
+  @Test
+  void shouldMapCredentialsAndLeaveTheOtherConnectionOptionsUnset() {
+    // given
+    config.getAuthentication().setUsername("someUser");
+    config.getAuthentication().setPassword("somePassword");
+
+    // when
+    final var connect = ElasticsearchClientFactory.toConnectConfiguration(config);
+
+    // then - the exporter never configured TLS or a connection pool
+    assertThat(connect.getUsername()).isEqualTo("someUser");
+    assertThat(connect.getPassword()).isEqualTo("somePassword");
+    assertThat(connect.getSecurity().isEnabled()).isFalse();
+    assertThat(connect.getMaxConnections()).isNull();
+    assertThat(connect.getMaxConnectionsPerRoute()).isNull();
+  }
+
+  @Test
+  void shouldMapTheProxy() {
+    // given
+    config.getProxy().setEnabled(true);
+    config.getProxy().setHost("proxy.local");
+    config.getProxy().setPort(8080);
+    config.getProxy().setSslEnabled(true);
+    config.getProxy().setUsername("proxyUser");
+    config.getProxy().setPassword("proxyPassword");
+
+    // when
+    final var proxy = ElasticsearchClientFactory.toConnectConfiguration(config).getProxy();
+
+    // then
+    assertThat(proxy.isEnabled()).isTrue();
+    assertThat(proxy.getHost()).isEqualTo("proxy.local");
+    assertThat(proxy.getPort()).isEqualTo(8080);
+    assertThat(proxy.isSslEnabled()).isTrue();
+    assertThat(proxy.getUsername()).isEqualTo("proxyUser");
+    assertThat(proxy.getPassword()).isEqualTo("proxyPassword");
+  }
+
+  @Test
+  void shouldRejectAnEnabledProxyWithoutHost() {
+    // given
+    config.getProxy().setEnabled(true);
+    config.getProxy().setPort(8080);
+
+    // when / then
+    assertThatThrownBy(() -> ElasticsearchClientFactory.of(config))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Elasticsearch exporter proxy is enabled but no proxy host is configured");
+  }
+
+  @Test
+  void shouldRejectAnEnabledProxyWithoutPort() {
+    // given
+    config.getProxy().setEnabled(true);
+    config.getProxy().setHost("proxy.local");
+
+    // when / then
+    assertThatThrownBy(() -> ElasticsearchClientFactory.of(config))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Elasticsearch exporter proxy is enabled but no proxy port is configured");
+  }
+
+  @Test
+  void shouldRejectAnEnabledProxyWithAnOutOfRangePort() {
+    // given
+    config.getProxy().setEnabled(true);
+    config.getProxy().setHost("proxy.local");
+    config.getProxy().setPort(70_000);
+
+    // when / then
+    assertThatThrownBy(() -> ElasticsearchClientFactory.of(config))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Elasticsearch exporter proxy port must be between 1 and 65535, but was: 70000");
   }
 }
