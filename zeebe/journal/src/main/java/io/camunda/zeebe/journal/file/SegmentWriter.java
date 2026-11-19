@@ -23,6 +23,7 @@ import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
+import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.record.JournalRecordSerializer;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import java.io.UncheckedIOException;
 import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -323,7 +325,12 @@ final class SegmentWriter {
    * marker that recovery relies on.
    */
   void flushEndOfRecords() {
-    buffer.force(buffer.position(), FrameUtil.getLength());
+    try {
+      buffer.force(buffer.position(), FrameUtil.getLength());
+    } catch (final UncheckedIOException e) {
+      throw new SyncFailed(
+          "Failed to flush the end of the records at index %d".formatted(getLastIndex()), e);
+    }
   }
 
   private void jumpToLastEntry(final int lastPosition, final long lastIndex) {

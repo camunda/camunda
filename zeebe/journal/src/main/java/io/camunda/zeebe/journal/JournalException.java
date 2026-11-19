@@ -68,6 +68,18 @@ public sealed class JournalException extends RuntimeException {
     }
   }
 
+  /**
+   * Exception thrown when syncing a write to disk failed. The write may not be on disk, but as the
+   * kernel reports such a failure only once, a later sync of the same file may succeed without
+   * writing it. Nothing written to the journal can be considered durable anymore, so every later
+   * flush of the journal fails.
+   */
+  public static final class SyncFailed extends JournalException {
+    public SyncFailed(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
+
   /** Exception thrown when the segment is too small to fit even one record */
   public static final class SegmentSizeTooSmall extends JournalException {
     public SegmentSizeTooSmall(final String message) {

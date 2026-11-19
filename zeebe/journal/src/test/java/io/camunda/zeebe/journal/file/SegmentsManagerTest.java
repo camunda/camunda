@@ -11,9 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,6 +68,29 @@ class SegmentsManagerTest {
               p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
           .isDirectoryContaining(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p));
     }
+  }
+
+  @Test
+  void shouldFailCompactionAfterDeletingSegmentsFailedToSync() {
+    // given - one entry per segment, deleted in the calling thread
+    segments = journalFactory.segmentsManager(directory, Runnable::run);
+    final var journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    try (final var fileUtil = mockStatic(FileUtil.class, CALLS_REAL_METHODS)) {
+      fileUtil
+          .when(() -> FileUtil.flushDirectory(any()))
+          .thenThrow(new IOException("Input/output error"));
+      journal.deleteUntil(2);
+    }
+
+    // when
+    final var compaction = catchThrowable(() -> journal.deleteUntil(4));
+
+    // then - syncing again may succeed without persisting the rename that failed to sync
+    assertThat(compaction).isInstanceOf(SyncFailed.class);
   }
 
   @Test

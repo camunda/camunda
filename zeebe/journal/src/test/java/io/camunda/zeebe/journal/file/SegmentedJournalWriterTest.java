@@ -10,14 +10,17 @@ package io.camunda.zeebe.journal.file;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
@@ -25,6 +28,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -272,5 +278,118 @@ final class SegmentedJournalWriterTest {
 
     // then
     assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(15L);
+  }
+
+  @Test
+  void shouldFailEveryFlushAfterAFailedFlush() throws FlushException {
+    // given - like a failed fsync, the segment reports its flush error only once
+    final var error = new FlushException(new IOException("Input/output error"));
+    final var failingSegment = Mockito.mock(FlushableSegment.class);
+    when(failingSegment.lastIndex()).thenReturn(30L);
+    Mockito.doThrow(error).doNothing().when(failingSegment).flush();
+    final SortedMap<Long, FlushableSegment> sortedMap = new TreeMap<>();
+    sortedMap.put(1L, new TestSegment(15));
+    sortedMap.put(2L, failingSegment);
+    final var segmentJournal = journalWithSegments(sortedMap, journalFactory.metaStore());
+    assertThatCode(segmentJournal::flush).isSameAs(error);
+
+    // when
+    final var thrown = catchThrowable(segmentJournal::flush);
+
+    // then - the flush is not retried, and nothing after the failed flush counts as flushed
+    assertThat(thrown).isInstanceOf(FlushException.class).hasCause(error);
+    Mockito.verify(failingSegment, Mockito.times(1)).flush();
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(15L);
+  }
+
+  @Test
+  void shouldFailEveryFlushAfterFailingToStoreLastFlushedIndex() {
+    // given
+    final var error = new UncheckedIOException(new IOException("Input/output error"));
+    final var metaStore = Mockito.mock(JournalMetaStore.class);
+    Mockito.doThrow(error).when(metaStore).storeLastFlushedIndex(anyLong());
+    final SortedMap<Long, FlushableSegment> sortedMap = new TreeMap<>();
+    sortedMap.put(1L, new TestSegment(15));
+    final var segmentJournal = journalWithSegments(sortedMap, metaStore);
+    assertThatThrownBy(segmentJournal::flush).isInstanceOf(FlushException.class).hasCause(error);
+
+    // when
+    final var thrown = catchThrowable(segmentJournal::flush);
+
+    // then
+    assertThat(thrown).isInstanceOf(FlushException.class).hasRootCause(error.getCause());
+    Mockito.verify(metaStore, Mockito.times(1)).storeLastFlushedIndex(anyLong());
+  }
+
+  @Test
+  void shouldNotFlushAgainWhileAnotherFlushFails() throws InterruptedException {
+    // given - a flush, e.g. a delayed one, that is about to fail; like a failed fsync, the error is
+    // reported once, and the next flush of the same segment would succeed without writing it
+    final var error = new FlushException(new IOException("Input/output error"));
+    final var flushes = new AtomicInteger();
+    final var failing = new CountDownLatch(1);
+    final var fail = new CountDownLatch(1);
+    final FlushableSegment segment =
+        new FlushableSegment() {
+          @Override
+          public long lastIndex() {
+            return 30;
+          }
+
+          @Override
+          public void flush() throws FlushException {
+            if (flushes.incrementAndGet() == 1) {
+              failing.countDown();
+              awaitUninterruptibly(fail);
+              throw error;
+            }
+          }
+        };
+    final SortedMap<Long, FlushableSegment> sortedMap = new TreeMap<>();
+    sortedMap.put(1L, segment);
+    final var segmentJournal = journalWithSegments(sortedMap, journalFactory.metaStore());
+    final var firstResult = new AtomicReference<Throwable>();
+    final var first = new Thread(() -> firstResult.set(catchThrowable(segmentJournal::flush)));
+    first.start();
+    failing.await();
+
+    // when - another flush, e.g. the one when closing, starts before the first one failed
+    final var secondResult = new AtomicReference<Throwable>();
+    final var second = new Thread(() -> secondResult.set(catchThrowable(segmentJournal::flush)));
+    second.start();
+    while (second.getState() != Thread.State.WAITING && flushes.get() < 2) {
+      Thread.onSpinWait();
+    }
+    fail.countDown();
+    first.join();
+    second.join();
+
+    // then - it waits for the first one, and fails instead of syncing the same pages again
+    assertThat(firstResult.get()).isSameAs(error);
+    assertThat(secondResult.get()).isInstanceOf(FlushException.class).hasCause(error);
+    assertThat(flushes).hasValue(1);
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isNotEqualTo(30L);
+  }
+
+  private static void awaitUninterruptibly(final CountDownLatch latch) {
+    try {
+      latch.await();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException(e);
+    }
+  }
+
+  private SegmentedJournal journalWithSegments(
+      final SortedMap<Long, FlushableSegment> flushableSegments, final JournalMetaStore metaStore) {
+    final var segments = Mockito.mock(SegmentsManager.class);
+    final var segment = Mockito.mock(Segment.class);
+    when(segment.index()).thenReturn(1L);
+    when(segment.writer()).thenReturn(Mockito.mock(SegmentWriter.class));
+    when(segments.getLastSegment()).thenReturn(segment);
+    when(segments.getFirstSegment()).thenReturn(segment);
+    when(segments.getTailSegments(anyLong())).thenAnswer(invocation -> flushableSegments);
+    return new SegmentedJournal(
+        new SparseJournalIndex(1), segments, journalFactory.metrics(), metaStore);
   }
 }

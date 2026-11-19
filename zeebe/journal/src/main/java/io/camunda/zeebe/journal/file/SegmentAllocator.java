@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -79,7 +80,11 @@ public interface SegmentAllocator {
         final FileChannel channel, final FileDescriptor fileDescriptor, final long segmentSize)
         throws IOException {
       IoUtil.fill(channel, 0, segmentSize, (byte) 0);
-      channel.force(true);
+      try {
+        channel.force(true);
+      } catch (final IOException e) {
+        throw new SyncFailed("Failed to flush the zeroes written to allocate a segment", e);
+      }
     }
   }
 }

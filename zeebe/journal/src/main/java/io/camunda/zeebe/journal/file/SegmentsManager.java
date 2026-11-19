@@ -13,6 +13,7 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
+import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.io.IOException;
@@ -49,11 +50,14 @@ final class SegmentsManager implements AutoCloseable {
 
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
-  private @Nullable CompletableFuture<UninitializedSegment> nextSegment = null;
+  // read when flushing, which may run on another thread
+  private volatile @Nullable CompletableFuture<UninitializedSegment> nextSegment = null;
   // the deletion stops at the first failed segment and retries it later, so that the log on disk
   // never has a gap
   private final Queue<Segment> segmentsToDelete = new ConcurrentLinkedQueue<>();
   private CompletableFuture<Void> pendingDeletion = CompletableFuture.completedFuture(null);
+  // set by the background deletion, see onDeletionFailed
+  private volatile @Nullable SyncFailed deletionSyncFailure;
 
   private final JournalMetrics journalMetrics;
   private final JournalIndex journalIndex;
@@ -156,6 +160,12 @@ final class SegmentsManager implements AutoCloseable {
         currentSegment =
             nextSegment.join().initializeForUse(nextSegmentIndex, lastWrittenAsqn, journalMetrics);
       } catch (final CompletionException e) {
+        if (e.getCause() instanceof final SyncFailed syncFailed) {
+          // creating the segment again would sync the same directory again, which may succeed
+          // without writing what failed to sync
+          nextSegment = null;
+          throw syncFailed;
+        }
         LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
         nextSegment = null;
         currentSegment = createSegment(descriptor, lastWrittenAsqn);
@@ -168,6 +178,32 @@ final class SegmentsManager implements AutoCloseable {
     segments.put(descriptor.index(), currentSegment);
     journalMetrics.incSegmentCount();
     return currentSegment;
+  }
+
+  /**
+   * Returns why a sync in the background failed, if one did: creating the next segment, which
+   * nothing requests until the current one is full, or deleting compacted segments, which only the
+   * next compaction would notice.
+   */
+  @Nullable SyncFailed getBackgroundSyncFailure() {
+    final var deletionFailure = deletionSyncFailure;
+    if (deletionFailure != null) {
+      return deletionFailure;
+    }
+
+    final var prepared = nextSegment;
+    if (prepared == null || !prepared.isCompletedExceptionally()) {
+      return null;
+    }
+
+    try {
+      prepared.join();
+    } catch (final CompletionException e) {
+      if (e.getCause() instanceof final SyncFailed syncFailed) {
+        return syncFailed;
+      }
+    }
+    return null;
   }
 
   @Nullable Segment getNextSegment(final long index) {
@@ -196,6 +232,13 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   boolean deleteUntil(final long index) {
+    final var previousFailure = deletionSyncFailure;
+    if (previousFailure != null) {
+      throw new SyncFailed(
+          "Expected to delete segments, but deleting compacted segments failed to sync",
+          previousFailure);
+    }
+
     final Map.Entry<Long, Segment> segmentEntry = segments.floorEntry(index);
     if (segmentEntry == null) {
       scheduleQueuedDeletion();
@@ -249,6 +292,12 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   private @Nullable Void onDeletionFailed(final Throwable error) {
+    final var cause = error instanceof CompletionException ? error.getCause() : error;
+    if (cause instanceof final SyncFailed syncFailed) {
+      // deleting the segment again would sync the same directory again, which may succeed without
+      // persisting the rename that failed to sync
+      deletionSyncFailure = syncFailed;
+    }
     LOG.error(
         "{} - Failed to delete segment {}. The next compaction tries again.",
         name,
@@ -298,9 +347,10 @@ final class SegmentsManager implements AutoCloseable {
       // underlying buffer
       //noinspection resource
       final var segment = it.next();
-      segment.delete();
+      // remove it first, as it is closed even if deleting it fails
       it.remove();
       journalMetrics.decSegmentCount();
+      segment.delete();
     }
 
     final SegmentDescriptor descriptor =
