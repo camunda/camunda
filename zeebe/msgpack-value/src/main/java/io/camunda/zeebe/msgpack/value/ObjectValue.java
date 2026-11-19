@@ -71,10 +71,9 @@ public class ObjectValue extends BaseValue {
   @Override
   public void writeJSON(final StringBuilder builder) {
     builder.append("{");
-
-    writeJson(builder, declaredProperties, false);
-    writeJson(builder, undeclaredProperties, false);
-
+    final int start = builder.length();
+    writeJson(builder, start, declaredProperties, false);
+    writeJson(builder, start, undeclaredProperties, false);
     builder.append("}");
   }
 
@@ -147,10 +146,9 @@ public class ObjectValue extends BaseValue {
   public String toString() {
     final StringBuilder builder = new StringBuilder();
     builder.append("{");
-
-    writeJson(builder, declaredProperties, true);
-    writeJson(builder, undeclaredProperties, true);
-
+    final int start = builder.length();
+    writeJson(builder, start, declaredProperties, true);
+    writeJson(builder, start, undeclaredProperties, true);
     builder.append("}");
     return builder.toString();
   }
@@ -164,18 +162,28 @@ public class ObjectValue extends BaseValue {
     }
   }
 
+  /**
+   * Appends the properties that have a value, separated by commas. A property without a value is
+   * left out, so its separator is left out too.
+   *
+   * @param start the builder length right after the opening brace; anything written beyond it is a
+   *     previous property, which needs a separator
+   */
   private <T extends BaseProperty<?>> void writeJson(
-      final StringBuilder builder, final List<T> properties, final boolean maskSanitized) {
+      final StringBuilder builder,
+      final int start,
+      final List<T> properties,
+      final boolean maskSanitized) {
     for (int i = 0; i < properties.size(); i++) {
-      if (i > 0) {
+      final BaseProperty<? extends BaseValue> prop = properties.get(i);
+      if (!prop.hasValue()) {
+        continue;
+      }
+
+      if (builder.length() > start) {
         builder.append(",");
       }
-
-      final BaseProperty<? extends BaseValue> prop = properties.get(i);
-
-      if (prop.hasValue()) {
-        prop.writeJSON(builder, maskSanitized);
-      }
+      prop.writeJSON(builder, maskSanitized);
     }
   }
 
