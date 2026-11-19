@@ -64,6 +64,7 @@ public class GatewayRestPropertiesOverride {
     public void applyTo(final GatewayRestConfiguration override) {
       populateFromJobMetrics(override);
       populateFromValidators(override);
+      override.setWaitStatesEnabled(camunda.getData().getWaitStates().isEnabled());
     }
 
     private void populateFromJobMetrics(final GatewayRestConfiguration override) {

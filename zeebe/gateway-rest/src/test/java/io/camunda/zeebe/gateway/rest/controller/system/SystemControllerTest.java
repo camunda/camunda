@@ -40,13 +40,11 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
@@ -713,30 +711,30 @@ public class SystemControllerTest extends RestControllerTest {
             JsonCompareMode.LENIENT);
   }
 
-  @Nested
-  @TestPropertySource(properties = "camunda.data.wait-states.enabled=false")
-  class WaitStatesDisabled {
+  @Test
+  void shouldReturnWaitStatesDisabledForPhysicalTenant() {
+    // given
+    final var tenantCfg = new GatewayRestConfiguration();
+    tenantCfg.setWaitStatesEnabled(false);
+    when(tenantRestConfigProvider.forPhysicalTenant(any())).thenReturn(tenantCfg);
 
-    @Test
-    void shouldReturnWebappConfigurationWithWaitStatesDisabled() {
-      // when/then
-      webClient
-          .get()
-          .uri(SYSTEM_CONFIGURATION_URL)
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isOk()
-          .expectBody()
-          .json(
-              """
-              {
-                "deployment": {
-                  "isWaitStatesEnabled": false
-                }
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "deployment": {
+                "isWaitStatesEnabled": false
               }
-              """,
-              JsonCompareMode.LENIENT);
-    }
+            }
+            """,
+            JsonCompareMode.LENIENT);
   }
 }
