@@ -548,7 +548,8 @@ public final class RequestMapper extends RequestUtil {
    * Selects the process definition versions to suspend or resume. A key identifies exactly one
    * version, so the version and tenant can only be set together with the BPMN process id. Without a
    * version, all versions of the BPMN process id are selected, which the broker expects as {@code
-   * -1}. The tenant of a key request stays empty, because the key already determines the tenant.
+   * -1}. A key request keeps the default tenant id, like the REST path, because the key already
+   * determines the tenant.
    */
   private static ProcessDefinitionSelection toValidProcessDefinitionSelection(
       final String commandName,
@@ -577,7 +578,8 @@ public final class RequestMapper extends RequestUtil {
             "Expected to %s by process definition key without a version or tenant id, but one was provided. The version and tenant id can only be set together with a BPMN process id"
                 .formatted(commandName));
       }
-      return new ProcessDefinitionSelection(processDefinitionKey, "", -1, "");
+      return new ProcessDefinitionSelection(
+          processDefinitionKey, "", -1, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     }
 
     if (hasVersion && version < 1) {
