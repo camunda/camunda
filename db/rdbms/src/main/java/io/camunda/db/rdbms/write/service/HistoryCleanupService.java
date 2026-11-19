@@ -106,7 +106,9 @@ public class HistoryCleanupService {
                 "correlatedMessageSubscription",
                 rdbmsWriters.getCorrelatedMessageSubscriptionWriter()),
             Map.entry("auditLog", rdbmsWriters.getAuditLogWriter()),
-            Map.entry("waitState", rdbmsWriters.getWaitStateWriter()));
+            Map.entry("waitState", rdbmsWriters.getWaitStateWriter()),
+            Map.entry("agentInstance", rdbmsWriters.getAgentInstanceWriter()),
+            Map.entry("agentHistory", rdbmsWriters.getAgentHistoryWriter()));
   }
 
   public void scheduleProcessForHistoryCleanup(
