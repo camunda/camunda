@@ -112,6 +112,11 @@ public final class ProcessDefinitionSuspensionRecord extends UnifiedRecordValue
     return this;
   }
 
+  public ProcessDefinitionSuspensionRecord clearResolvedVersions() {
+    resolvedVersionsProp.reset();
+    return this;
+  }
+
   @Override
   public long getBatchOperationKey() {
     return batchOperationKeyProp.getValue();
