@@ -41,7 +41,7 @@ namespace=$1
 
 # Normalize to lowercase (Kubernetes DNS-1123 labels require lowercase)
 original_namespace="$namespace"
-namespace=$(echo "$namespace" | tr '[:upper:]' '[:lower:]')
+namespace=$(printf '%s' "$namespace" | tr '[:upper:]' '[:lower:]')
 if [[ "$namespace" != "$original_namespace" ]]; then
   echo "Namespace name lowercased: $original_namespace -> $namespace"
 fi
