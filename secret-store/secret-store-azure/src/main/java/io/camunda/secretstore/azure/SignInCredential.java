@@ -11,6 +11,7 @@ import com.azure.core.credential.AccessToken;
 import com.azure.core.credential.TokenCredential;
 import com.azure.core.credential.TokenRequestContext;
 import com.azure.identity.CredentialUnavailableException;
+import java.util.concurrent.CancellationException;
 import reactor.core.publisher.Mono;
 
 /**
@@ -56,10 +57,23 @@ record SignInCredential(
     return token;
   }
 
+  // a call past its timeout is cancelled by interrupting it: that says nothing about the sign-in
   private void report(final Throwable failure) {
-    if (!(failure instanceof CredentialUnavailableException)) {
+    if (!(failure instanceof CredentialUnavailableException) && !isInterruption(failure)) {
       monitor.failed(description, failure);
     }
+  }
+
+  private static boolean isInterruption(final Throwable failure) {
+    if (Thread.currentThread().isInterrupted()) {
+      return true;
+    }
+    for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+      if (cause instanceof InterruptedException || cause instanceof CancellationException) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override

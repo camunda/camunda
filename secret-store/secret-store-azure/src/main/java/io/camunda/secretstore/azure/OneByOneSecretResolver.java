@@ -7,30 +7,29 @@
  */
 package io.camunda.secretstore.azure;
 
+import static io.camunda.secretstore.SecretErrorCode.ACCESS_DENIED;
 import static io.camunda.secretstore.SecretErrorCode.INVALID_REF;
 import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 
-import com.azure.core.exception.HttpResponseException;
-import com.azure.core.exception.ResourceNotFoundException;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import com.azure.security.keyvault.secrets.models.SecretProperties;
 import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
-import io.camunda.secretstore.SecretStoreUnavailableException;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Resolves every reference as its own Key Vault secret, named {@code pathPrefix + name}, reading
- * its latest version with one {@code getSecret} request per name.
+ * its latest version with one {@code getSecret} call per name, which the SDK may retry.
  *
  * <p>The name is passed as written: its case is kept and {@code _} is not mapped to {@code -}. Key
  * Vault compares names case-insensitively, so two spellings of one name read the same secret. The
@@ -46,9 +45,10 @@ import org.slf4j.LoggerFactory;
  * io.camunda.secretstore.SecretErrorCode#NOT_FOUND NOT_FOUND}, so a cached value is dropped and the
  * incident resolves once the secret is fixed; the message names the reason.
  *
- * <p>A secret the vault does not hold is reported as {@link
- * io.camunda.secretstore.SecretErrorCode#NOT_FOUND NOT_FOUND}; every other failure makes the vault
- * unavailable for the whole call. Listing is not implemented yet: no names are listed.
+ * <p>Every other failure is mapped by {@link AzureKeyVaultErrors#classify}. The first 403 also logs
+ * one WARN for the store, as it may mean the identity lacks its role on the whole vault, which
+ * would otherwise show only as one incident per reference. Listing is not implemented yet: no names
+ * are listed.
  */
 final class OneByOneSecretResolver implements AzureSecretResolver {
 
@@ -57,15 +57,22 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
   private final SecretClient client;
   private final String pathPrefix;
   private final InstantSource clock;
+  private final String storeDescription;
+  private final AtomicBoolean accessDeniedLogged = new AtomicBoolean();
 
   /**
    * @param clock what the expiry and activation dates are compared with
+   * @param storeDescription names the store in its log lines
    */
   OneByOneSecretResolver(
-      final SecretClient client, final String pathPrefix, final InstantSource clock) {
+      final SecretClient client,
+      final String pathPrefix,
+      final InstantSource clock,
+      final String storeDescription) {
     this.client = client;
     this.pathPrefix = pathPrefix;
     this.clock = clock;
+    this.storeDescription = storeDescription;
   }
 
   @Override
@@ -101,18 +108,19 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
     return new Resolved(value);
   }
 
-  /**
-   * Throws {@link SecretStoreUnavailableException} unless the failure concerns this secret only.
-   */
-  private static Failed failedRead(final String secretName, final RuntimeException e) {
-    if (e instanceof final ResourceNotFoundException notFound) {
-      return notFound(secretName, notFound);
+  private Failed failedRead(final String secretName, final RuntimeException e) {
+    if (AzureKeyVaultErrors.isSecretDisabled(e)) {
+      return refused(
+          secretName, "is disabled in Azure Key Vault", AzureKeyVaultErrors.causeToKeep(e));
     }
-    if (e instanceof final HttpResponseException response
-        && AzureKeyVaultErrors.isSecretDisabled(response)) {
-      return refused(secretName, "is disabled in Azure Key Vault", response);
+    final var code = AzureKeyVaultErrors.classify(e);
+    if (code == ACCESS_DENIED) {
+      warnOnceAboutAccess(secretName, e);
     }
-    throw unavailable(e);
+    return new Failed(
+        code,
+        AzureKeyVaultErrors.messageFor(code, "secret", secretName, e),
+        AzureKeyVaultErrors.causeToKeep(e));
   }
 
   /**
@@ -131,10 +139,6 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
       return refused(secretName, "is not active until " + notBefore.toInstant(), null);
     }
     return null;
-  }
-
-  private static Failed notFound(final String secretName, final Exception cause) {
-    return new Failed(NOT_FOUND, "Secret not found: " + secretName, cause);
   }
 
   private static Failed refused(
@@ -159,9 +163,17 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
         null);
   }
 
-  private static SecretStoreUnavailableException unavailable(final RuntimeException e) {
-    return new SecretStoreUnavailableException(
-        "Azure Key Vault is unavailable: " + e.getMessage(), e);
+  // with RBAC scoped per secret, a 403 can be genuine for this one secret: hence "may"
+  private void warnOnceAboutAccess(final String secretName, final Exception e) {
+    if (accessDeniedLogged.compareAndSet(false, true)) {
+      LOG.warn(
+          "{} was denied access to secret '{}' ({}). The identity may lack the 'Key Vault Secrets"
+              + " User' role on the vault or, if the vault uses access policies, the 'get' secret"
+              + " permission. Further denials of this store are not logged again",
+          storeDescription,
+          secretName,
+          AzureKeyVaultErrors.describe(e));
+    }
   }
 
   @Override

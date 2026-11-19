@@ -9,18 +9,30 @@ package io.camunda.secretstore.azure;
 
 import com.azure.core.credential.TokenCredential;
 import com.azure.core.http.HttpClient;
+import com.azure.core.http.policy.ExponentialBackoffOptions;
+import com.azure.core.http.policy.RetryOptions;
 import com.azure.core.util.Configuration;
+import com.azure.core.util.HttpClientOptions;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.SecretClientBuilder;
 import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStore;
+import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
@@ -43,6 +55,35 @@ import org.jspecify.annotations.Nullable;
  * {@link io.camunda.secretstore.CachingSecretStore} and {@link
  * io.camunda.secretstore.ConcurrentSecretStore}, which fans a request out one name per call.
  *
+ * <p>Each {@link #resolve} or {@link #list} call is bounded by {@code callTimeout}, retries
+ * included: it runs on the credential executor, and the caller stops waiting past that time and
+ * requests an interrupt, so a slow vault cannot stall the IO thread resolution shares with the
+ * exporters (camunda/camunda#62869). Within it, each HTTP attempt of the default HTTP client is
+ * bounded by {@code attemptTimeout} (an injected client keeps its own timeouts), and the SDK
+ * retries up to {@code maxRetries} times on transient failures only (408, 429, 500, 502 to 504,
+ * network errors and timeouts), honouring {@code Retry-After}. The backoff between retries is
+ * scaled to fit in half of {@code callTimeout}, so a vault that keeps failing fast is reported with
+ * its own answer rather than as a timeout.
+ *
+ * <p>Key Vault's answers map to the shared error codes as follows ({@link AzureKeyVaultErrors}):
+ *
+ * <table>
+ *   <caption>Key Vault answer to error code</caption>
+ *   <tr><th>Answer</th><th>Result</th></tr>
+ *   <tr><td>404</td><td>{@link io.camunda.secretstore.SecretErrorCode#NOT_FOUND NOT_FOUND}</td></tr>
+ *   <tr><td>403 with inner error code {@code SecretDisabled}, or an expired or not yet active
+ *       secret</td><td>{@link io.camunda.secretstore.SecretErrorCode#NOT_FOUND NOT_FOUND}</td></tr>
+ *   <tr><td>403</td>
+ *       <td>{@link io.camunda.secretstore.SecretErrorCode#ACCESS_DENIED ACCESS_DENIED}</td></tr>
+ *   <tr><td>400, or a name Key Vault cannot hold</td>
+ *       <td>{@link io.camunda.secretstore.SecretErrorCode#INVALID_REF INVALID_REF}</td></tr>
+ *   <tr><td>401, 408, 429, 5xx, any other status, no response (a failed sign-in or a network
+ *       error), past {@code callTimeout}</td>
+ *       <td>{@link io.camunda.secretstore.SecretStoreUnavailableException}</td></tr>
+ * </table>
+ *
+ * <p>Every failure message carries Key Vault's own status, error code and message, never a value.
+ *
  * <p>This class is thread-safe: its resolvers keep no mutable state, and its {@link SignInMonitor}
  * is thread-safe.
  */
@@ -56,20 +97,26 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
    */
   static final Pattern NAME_PATTERN = Pattern.compile("[0-9A-Za-z-]{1,127}");
 
+  // the SDK's own base delay, kept when it already fits
+  private static final Duration SDK_BASE_DELAY = Duration.ofMillis(800);
+
   private final AzureSecretResolver resolver;
   private final SecretClient client;
   private final ExecutorService credentialExecutor;
   private final SignInMonitor signInMonitor;
+  private final Duration callTimeout;
 
   AzureKeyVaultSecretStore(
       final AzureSecretResolver resolver,
       final SecretClient client,
       final ExecutorService credentialExecutor,
-      final SignInMonitor signInMonitor) {
+      final SignInMonitor signInMonitor,
+      final Duration callTimeout) {
     this.resolver = resolver;
     this.client = client;
     this.credentialExecutor = credentialExecutor;
     this.signInMonitor = signInMonitor;
+    this.callTimeout = callTimeout;
   }
 
   /**
@@ -142,9 +189,16 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
           AzureCredentialChain.build(
               config, environment, httpClient, credentialExecutor, signInMonitor);
       final var client = buildClient(config, credential, httpClient);
+      final var storeDescription =
+          "Azure Key Vault store '%s' of physical tenant '%s' at '%s'"
+              .formatted(storeId, physicalTenantId, config.vaultUrl());
       store =
           new AzureKeyVaultSecretStore(
-              resolver(config, client, clock), client, credentialExecutor, signInMonitor);
+              resolver(config, client, clock, storeDescription),
+              client,
+              credentialExecutor,
+              signInMonitor,
+              config.callTimeout());
     } catch (final RuntimeException e) {
       signInMonitor.close();
       credentialExecutor.shutdownNow();
@@ -162,12 +216,15 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
   }
 
   private static AzureSecretResolver resolver(
-      final AzureKeyVaultStoreConfig config, final SecretClient client, final InstantSource clock) {
+      final AzureKeyVaultStoreConfig config,
+      final SecretClient client,
+      final InstantSource clock,
+      final String storeDescription) {
     final var configuredPrefix = config.pathPrefix();
     final var pathPrefix = configuredPrefix == null ? "" : configuredPrefix;
     final var containerSecretId = config.containerSecretId();
     if (containerSecretId == null) {
-      return new OneByOneSecretResolver(client, pathPrefix, clock);
+      return new OneByOneSecretResolver(client, pathPrefix, clock, storeDescription);
     }
     return new ContainerSecretResolver(client, pathPrefix + containerSecretId);
   }
@@ -189,12 +246,40 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
       final AzureKeyVaultStoreConfig config,
       final TokenCredential credential,
       final @Nullable HttpClient httpClient) {
-    final var builder =
-        new SecretClientBuilder().vaultUrl(config.vaultUrl()).credential(credential);
-    if (httpClient != null) {
-      builder.httpClient(httpClient);
+    // only transient failures are retried by the SDK's default condition; Retry-After is honoured
+    final var retryOptions = new RetryOptions(backoff(config.maxRetries(), config.callTimeout()));
+    final var attemptOptions =
+        new HttpClientOptions()
+            .setConnectTimeout(config.attemptTimeout())
+            .setResponseTimeout(config.attemptTimeout())
+            .setReadTimeout(config.attemptTimeout());
+    return new SecretClientBuilder()
+        .vaultUrl(config.vaultUrl())
+        .credential(credential)
+        .retryOptions(retryOptions)
+        .httpClient(httpClient != null ? httpClient : HttpClient.createDefault(attemptOptions))
+        .buildClient();
+  }
+
+  /**
+   * The SDK's exponential backoff, its delays summing to at most half of {@code callTimeout}. The
+   * SDK's defaults (0.8s doubling, 5.6s over three retries) would outlast the default 5s call
+   * timeout, so a fast failing vault would be reported as a timeout, without its answer.
+   */
+  private static ExponentialBackoffOptions backoff(
+      final int maxRetries, final Duration callTimeout) {
+    final var options = new ExponentialBackoffOptions().setMaxRetries(maxRetries);
+    if (maxRetries == 0) {
+      return options;
     }
-    return builder.buildClient();
+    final long budget = callTimeout.toNanos() / 2;
+    // the n-th retry waits baseDelay * 2^(n-1), so all of them wait baseDelay * (2^maxRetries - 1)
+    final long baseDelay =
+        Math.max(
+            1, Math.min(SDK_BASE_DELAY.toNanos(), (long) (budget / (Math.pow(2, maxRetries) - 1))));
+    return options
+        .setBaseDelay(Duration.ofNanos(baseDelay))
+        .setMaxDelay(Duration.ofNanos(Math.max(baseDelay, budget)));
   }
 
   /** The client {@link #resolve} and {@link #list} read the vault with. */
@@ -208,12 +293,63 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
 
   @Override
   public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
-    return resolver.resolve(names);
+    return withinCallTimeout(
+        "resolve " + names.size() + " secret references", () -> resolver.resolve(names));
   }
 
   @Override
   public List<String> list() {
-    return resolver.list();
+    return withinCallTimeout("list its secrets", resolver::list);
+  }
+
+  /**
+   * Runs {@code call} on the credential executor, as the SDK's synchronous calls take no overall
+   * timeout, and stops waiting past {@link #callTimeout}, requesting an interrupt of the call.
+   *
+   * @param what what the call does, for the message; never the names, which the message would
+   *     otherwise repeat for every reference of a large call
+   * @throws SecretStoreUnavailableException past the call timeout, or if the store is closed
+   */
+  private <T> T withinCallTimeout(final String what, final Callable<T> call) {
+    final Future<T> future;
+    try {
+      future = credentialExecutor.submit(call);
+    } catch (final RejectedExecutionException e) {
+      throw new SecretStoreUnavailableException(
+          "Azure Key Vault store is closed: cannot " + what, e);
+    }
+    try {
+      return future.get(callTimeout.toNanos(), TimeUnit.NANOSECONDS);
+    } catch (final TimeoutException e) {
+      future.cancel(true);
+      throw new SecretStoreUnavailableException(
+          "Azure Key Vault is unavailable: it did not "
+              + what
+              + " within the call timeout of "
+              + callTimeout,
+          e);
+    } catch (final InterruptedException e) {
+      future.cancel(true);
+      Thread.currentThread().interrupt();
+      throw new SecretStoreUnavailableException(
+          "Interrupted while waiting for Azure Key Vault to " + what, e);
+    } catch (final ExecutionException e) {
+      final var cause = e.getCause();
+      // rethrown from this thread, so the stack trace shows the caller rather than the pool's
+      if (cause instanceof final SecretStoreUnavailableException unavailable) {
+        throw new SecretStoreUnavailableException(
+            Objects.requireNonNullElse(unavailable.getMessage(), "Azure Key Vault is unavailable"),
+            unavailable);
+      }
+      if (cause instanceof final RuntimeException runtime) {
+        throw runtime;
+      }
+      if (cause instanceof final Error error) {
+        throw error;
+      }
+      throw new SecretStoreUnavailableException(
+          "Azure Key Vault is unavailable: cannot " + what, cause);
+    }
   }
 
   @Override
