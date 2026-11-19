@@ -11,7 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
@@ -62,7 +64,9 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -135,6 +139,33 @@ final class ClusterConfigurationManagerImplTest {
 
   private CurrentClusterConfiguration configuration(final ClusterConfigurationManagerImpl manager) {
     return manager.getMultiConfiguration().join();
+  }
+
+  @Test
+  void shouldPersistUnchangedConfigurationAfterFailedWrite() throws Exception {
+    // given - the new file replaced the old one, but syncing the directory failed
+    final var manager = newManager(MEMBER_0);
+    final var previous = configuration(manager);
+    final var updated =
+        previous.initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_1)))));
+    try (final var fileUtil = mockStatic(FileUtil.class, CALLS_REAL_METHODS)) {
+      fileUtil
+          .when(() -> FileUtil.flushDirectory(tmp))
+          .thenThrow(new IOException("Input/output error"));
+      assertThat(manager.updateMultiConfiguration(ignored -> updated).isCompletedExceptionally())
+          .isTrue();
+    }
+
+    // when - updating to the configuration in memory, which is not the one in the file
+    final var update = manager.updateMultiConfiguration(ignored -> previous);
+
+    // then
+    assertThat(update.isCompletedExceptionally()).isFalse();
+    assertThat(
+            PersistedCurrentClusterConfiguration.ofFile(
+                    tmp.resolve("config-0.meta"), new ProtoBufSerializer())
+                .getConfiguration())
+        .isEqualTo(previous);
   }
 
   @Test

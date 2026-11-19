@@ -9,7 +9,10 @@ package io.camunda.zeebe.dynamic.config.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
@@ -23,6 +26,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -107,6 +111,29 @@ final class PersistedCurrentClusterConfigurationTest {
 
     // then — the first header byte is the new version
     assertThat(Files.readAllBytes(file)[0]).isEqualTo(PersistedCurrentClusterConfiguration.VERSION);
+  }
+
+  @Test
+  void shouldRewriteUnchangedConfigurationAfterFailedWrite() throws IOException {
+    // given - the new file replaced the old one, but syncing the directory failed
+    final var file = tmp.resolve("config.meta");
+    final var previous = sampleConfiguration();
+    final var persisted = PersistedCurrentClusterConfiguration.ofFile(file, serializer);
+    persisted.update(previous);
+    try (final var fileUtil = mockStatic(FileUtil.class, CALLS_REAL_METHODS)) {
+      fileUtil
+          .when(() -> FileUtil.flushDirectory(tmp))
+          .thenThrow(new IOException("Input/output error"));
+      assertThatThrownBy(() -> persisted.update(CurrentClusterConfiguration.uninitialized()))
+          .isInstanceOf(IOException.class);
+    }
+
+    // when - updating to the configuration in memory, which is not the one in the file
+    persisted.update(previous);
+
+    // then
+    assertThat(PersistedCurrentClusterConfiguration.ofFile(file, serializer).getConfiguration())
+        .isEqualTo(previous);
   }
 
   @Test
