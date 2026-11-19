@@ -266,9 +266,7 @@ public class ScriptResourceDeploymentTest {
 
     // then
     assertThat(rejection.getRejectionReason())
-        .contains(
-            "Failed to read the header of script 'blank_id.py': expected the resource id to be"
-                + " filled, but it is blank");
+        .contains("Expected 'id' in [tool.camunda] of 'blank_id.py' to be filled, but it is blank");
   }
 
   @Test
@@ -288,8 +286,8 @@ public class ScriptResourceDeploymentTest {
     // then
     assertThat(rejection.getRejectionReason())
         .contains(
-            "Failed to read the header of script 'numeric_id.js': expected 'id' and 'versionTag'"
-                + " to be strings");
+            "Expected 'id' in [tool.camunda] of 'numeric_id.js' to be a string, but got number"
+                + " (42)");
   }
 
   @Test
@@ -308,7 +306,8 @@ public class ScriptResourceDeploymentTest {
 
     // then
     assertThat(rejection.getRejectionReason())
-        .contains("Failed to read the header of script 'invalid_toml.py': the header is not valid");
+        .contains(
+            "Expected the 'script' header block of 'invalid_toml.py' to be valid TOML, but got:");
   }
 
   @Test
@@ -329,8 +328,9 @@ public class ScriptResourceDeploymentTest {
     // then
     assertThat(rejection.getRejectionReason())
         .contains(
-            "Failed to read the header of script 'unclosed.py': the 'script' header block is not"
-                + " closed");
+            "Expected the 'script' header block of 'unclosed.py' that starts at line 1 to end with"
+                + " a '# ///' line, but line 4 ('def execute(variables, context):') does not"
+                + " start with '# '. Each line of the block must be '#' or start with '# '");
   }
 
   @Test
@@ -354,9 +354,7 @@ public class ScriptResourceDeploymentTest {
 
     // then
     assertThat(rejection.getRejectionReason())
-        .contains(
-            "Failed to read the header of script 'two_blocks.py': expected at most one 'script'"
-                + " header block, but found many");
+        .contains("Expected at most one 'script' header block in 'two_blocks.py', but found 2");
   }
 
   @Test
@@ -383,7 +381,67 @@ public class ScriptResourceDeploymentTest {
 
     // then
     assertThat(rejection.getRejectionReason())
-        .contains("Failed to read the header of script 'long_unclosed.py': the 'script' header");
+        .contains(
+            "Expected the 'script' header block of 'long_unclosed.py' that starts at line 1 to end"
+                + " with a '# ///' line, but reached the end of the file");
+  }
+
+  @Test
+  public void shouldReadHeaderWithTrailingWhitespaceOnMarkers() {
+    // given - trailing whitespace is invisible in most editors
+    final var script =
+        "# /// script \n# [tool.camunda]\n# id = \"trailing-space\"\n# versionTag = \"1.0.0\"\n#"
+            + " ///\t\ndef execute(variables, context): ...\n";
+
+    // when
+    final var metadata = deployScript(script, "trailing_space.py");
+
+    // then
+    Assertions.assertThat(metadata).hasResourceId("trailing-space").hasVersionTag("1.0.0");
+  }
+
+  @Test
+  public void shouldRejectBlockWithLineMissingSpaceAfterCommentPrefix() {
+    // given
+    final var script =
+        """
+        // /// script
+        // [tool.camunda]
+        //id = "missing-space"
+        // ///
+        """;
+
+    // when
+    final var rejection = deployRejectedScript(script, "missing_space.js");
+
+    // then
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            "Expected the 'script' header block of 'missing_space.js' that starts at line 1 to end"
+                + " with a '// ///' line, but line 3 ('//id = \"missing-space\"') does not start"
+                + " with '// '. Each line of the block must be '//' or start with '// '");
+  }
+
+  @Test
+  public void shouldRejectNonStringVersionTag() {
+    // given
+    final var script =
+        """
+        # /// script
+        # [tool.camunda]
+        # id = "numeric-version-tag"
+        # versionTag = 2
+        # ///
+        """;
+
+    // when
+    final var rejection = deployRejectedScript(script, "numeric_version_tag.py");
+
+    // then
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            "Expected 'versionTag' in [tool.camunda] of 'numeric_version_tag.py' to be a string,"
+                + " but got number (2)");
   }
 
   @Test
