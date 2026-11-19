@@ -153,9 +153,13 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
 
   @Override
   public void runAtFixedRate(final Duration delay, final Runnable task) {
-    final var actor = context.geAsyncActor(ASYNC_PROCESSING);
-    final var actorService = actor.getScheduleService();
-    actor.run(() -> actorService.runAtFixedRate(delay, task));
+    if (alwaysAsync) {
+      final var actor = context.geAsyncActor(ASYNC_PROCESSING);
+      final var actorService = actor.getScheduleService();
+      actor.run(() -> actorService.runAtFixedRate(delay, task));
+    } else {
+      processorActorService.runAtFixedRate(delay, task);
+    }
   }
 
   /**
