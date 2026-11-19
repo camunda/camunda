@@ -230,7 +230,7 @@ public class ProcessDefinitionServiceTest {
     // given
     final var captor = ArgumentCaptor.forClass(BrokerSuspendProcessDefinitionRequest.class);
     final var response = new ProcessDefinitionSuspensionRecord().setBatchOperationKey(42L);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(response)));
     final var request =
         new ProcessDefinitionSuspensionRequest(-1L, "invoice-review", 2, TENANT_ID, true);
@@ -255,7 +255,7 @@ public class ProcessDefinitionServiceTest {
   public void shouldSendResumptionByKeyToBroker() {
     // given
     final var captor = ArgumentCaptor.forClass(BrokerResumeProcessDefinitionRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new BrokerResponse<>(new ProcessDefinitionSuspensionRecord())));

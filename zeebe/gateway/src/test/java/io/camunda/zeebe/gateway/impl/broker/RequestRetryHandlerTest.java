@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.net.ConnectException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -88,6 +89,20 @@ final class RequestRetryHandlerTest {
     // then - the error is propagated without retrying on other partitions
     assertThat(error.get()).isInstanceOf(ConnectException.class);
     assertThat(brokerClient.sendCount.get()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldResendToFixedPartitionLeaderOnLeaderMismatch() {
+    // given
+    final var request = new TestBrokerRequest(Optional.of((__, partitionGroup) -> 2));
+    brokerClient.setResponse(new BrokerResponse<>("result", 2, 1));
+
+    // when
+    retryHandler.sendRequest(request, (key, response) -> {}, error -> {});
+    retryHandler.sendRequest(request, (key, response) -> {}, error -> {}, Duration.ofSeconds(5));
+
+    // then
+    assertThat(brokerClient.sendWithRetryCount).hasValue(2);
   }
 
   @Test
@@ -230,6 +245,7 @@ final class RequestRetryHandlerTest {
 
   private static final class TestBrokerClient implements BrokerClient {
     final AtomicInteger sendCount = new AtomicInteger(0);
+    final AtomicInteger sendWithRetryCount = new AtomicInteger(0);
     final List<Integer> partitionsHit = new ArrayList<>();
     private BrokerResponse<String> response;
     private Throwable error;
@@ -282,12 +298,14 @@ final class RequestRetryHandlerTest {
     @Override
     public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
         final BrokerRequest<T> request) {
+      sendWithRetryCount.incrementAndGet();
       return sendRequest(request);
     }
 
     @Override
     public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
         final BrokerRequest<T> request, final java.time.Duration requestTimeout) {
+      sendWithRetryCount.incrementAndGet();
       return sendRequest(request);
     }
 

@@ -271,7 +271,7 @@ public final class ProcessInstanceServiceTest {
     record.setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
@@ -304,7 +304,7 @@ public final class ProcessInstanceServiceTest {
     record.setBatchOperationType(BatchOperationType.SUSPEND_PROCESS_INSTANCE);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
@@ -337,7 +337,7 @@ public final class ProcessInstanceServiceTest {
     record.setBatchOperationType(BatchOperationType.RESUME_PROCESS_INSTANCE);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
@@ -371,7 +371,7 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.getProcessInstance(any(Long.class))).thenReturn(entity);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
@@ -507,7 +507,7 @@ public final class ProcessInstanceServiceTest {
     record.setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
@@ -539,7 +539,7 @@ public final class ProcessInstanceServiceTest {
     record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     final var request =
@@ -588,7 +588,7 @@ public final class ProcessInstanceServiceTest {
     record.setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     final var request =
@@ -702,7 +702,7 @@ public final class ProcessInstanceServiceTest {
     record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
@@ -742,7 +742,7 @@ public final class ProcessInstanceServiceTest {
             .setProcessId(processId)
             .setTenantId(tenantId);
     final var captor = ArgumentCaptor.forClass(BrokerDeleteHistoryRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
@@ -786,7 +786,7 @@ public final class ProcessInstanceServiceTest {
             .setProcessInstanceKey(processInstanceKey)
             .setBusinessId(businessId);
     final var captor = ArgumentCaptor.forClass(BrokerAssignProcessInstanceBusinessIdRequest.class);
-    when(brokerClient.sendRequest(captor.capture()))
+    when(brokerClient.sendRequestWithRetry(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
@@ -1137,7 +1137,7 @@ public final class ProcessInstanceServiceTest {
       // given - businessId is set, so a fixed dispatch strategy is used (no retry across
       // partitions)
       final var request = createProcessInstanceRequest("my-business-id");
-      when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceRequest.class)))
+      when(brokerClient.sendRequestWithRetry(any(BrokerCreateProcessInstanceRequest.class)))
           .thenReturn(CompletableFuture.failedFuture(new ConnectException("connection refused")));
 
       // when / then - only one attempt, error propagated directly without retrying other
@@ -1145,7 +1145,8 @@ public final class ProcessInstanceServiceTest {
       assertThatThrownBy(() -> services.createProcessInstance(request, authentication).join())
           .isInstanceOf(CompletionException.class)
           .hasCauseInstanceOf(ServiceException.class);
-      verify(brokerClient, times(1)).sendRequest(any(BrokerCreateProcessInstanceRequest.class));
+      verify(brokerClient, times(1))
+          .sendRequestWithRetry(any(BrokerCreateProcessInstanceRequest.class));
     }
 
     @Test
@@ -1187,7 +1188,8 @@ public final class ProcessInstanceServiceTest {
     void shouldNotRetryCreateProcessInstanceWithResultWhenBusinessIdIsSet() {
       // given - businessId is set, so a fixed dispatch strategy is used
       final var request = createProcessInstanceWithResultRequest(null, "my-business-id");
-      when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceWithResultRequest.class)))
+      when(brokerClient.sendRequestWithRetry(
+              any(BrokerCreateProcessInstanceWithResultRequest.class)))
           .thenReturn(CompletableFuture.failedFuture(new ConnectException("connection refused")));
 
       // when / then - only one attempt
@@ -1196,7 +1198,7 @@ public final class ProcessInstanceServiceTest {
           .isInstanceOf(CompletionException.class)
           .hasCauseInstanceOf(ServiceException.class);
       verify(brokerClient, times(1))
-          .sendRequest(any(BrokerCreateProcessInstanceWithResultRequest.class));
+          .sendRequestWithRetry(any(BrokerCreateProcessInstanceWithResultRequest.class));
     }
 
     private ProcessInstanceServices.ProcessInstanceCreateRequest createProcessInstanceRequest(

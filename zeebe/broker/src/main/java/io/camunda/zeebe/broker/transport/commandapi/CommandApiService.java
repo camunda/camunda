@@ -22,6 +22,9 @@ public interface CommandApiService {
 
   void onResumed(final int partitionId);
 
+  /** Called when a leadership transfer freezes the partition's writes, and when it undoes that. */
+  void onTransferFreeze(final int partitionId, final boolean frozen);
+
   ActorFuture<Void> registerHandlers(
       final int partitionId, final LogStream logStream, final QueryService queryService);
 

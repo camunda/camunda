@@ -89,12 +89,12 @@ public class UserServiceTest {
     final var userRecord = new UserRecord();
     final var username = "test";
     userRecord.setUsername(username);
-    when(brokerClient.sendRequest(any()))
+    when(brokerClient.sendRequestWithRetry(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(userRecord)));
 
     services.deleteUser(username, authentication);
 
-    verify(brokerClient).sendRequest(userDeleteRequestArgumentCaptor.capture());
+    verify(brokerClient).sendRequestWithRetry(userDeleteRequestArgumentCaptor.capture());
     assertThat(userDeleteRequestArgumentCaptor.getValue().getPartitionGroup())
         .isEqualTo(PHYSICAL_TENANT_ID);
     final var request = userDeleteRequestArgumentCaptor.getValue().getRequestWriter();

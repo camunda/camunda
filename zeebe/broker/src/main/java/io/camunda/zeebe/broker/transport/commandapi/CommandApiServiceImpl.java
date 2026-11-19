@@ -89,6 +89,11 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   @Override
+  public void onTransferFreeze(final int partitionId, final boolean frozen) {
+    commandHandler.onTransferFreeze(frozen);
+  }
+
+  @Override
   public ActorFuture<Void> registerHandlers(
       final int partitionId, final LogStream logStream, final QueryService queryService) {
     return actor.call(
