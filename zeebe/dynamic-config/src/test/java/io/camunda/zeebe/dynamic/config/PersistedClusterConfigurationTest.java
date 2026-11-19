@@ -133,4 +133,33 @@ final class PersistedClusterConfigurationTest {
     Assertions.assertThatCode(() -> PersistedClusterConfiguration.ofFile(topologyFile, serializer))
         .isInstanceOf(ChecksumMismatch.class);
   }
+
+  @Test
+  void shouldKeepPreviousConfigurationOnDiskWhenWriteFails() throws IOException {
+    // given - a persisted configuration, and a write of the next one that fails
+    final var tmp = Files.createTempDirectory("topology");
+    final var topologyFile = tmp.resolve("topology.meta");
+    final var serializer = new ProtoBufSerializer();
+    final var previous =
+        ClusterConfiguration.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, partitionConfig))));
+    final var persisted = PersistedClusterConfiguration.ofFile(topologyFile, serializer);
+    persisted.update(previous);
+    // the new file cannot be created if a directory is in its place
+    Files.createDirectory(tmp.resolve("topology.meta.tmp"));
+
+    // when
+    final var thrown =
+        Assertions.catchThrowable(() -> persisted.update(ClusterConfiguration.uninitialized()));
+
+    // then - neither used nor gossiped, and still on disk after a restart
+    Assertions.assertThat(thrown).isInstanceOf(IOException.class);
+    Assertions.assertThat(persisted.getConfiguration()).isEqualTo(previous);
+    Assertions.assertThat(
+            PersistedClusterConfiguration.ofFile(topologyFile, serializer).getConfiguration())
+        .isEqualTo(previous);
+  }
 }
