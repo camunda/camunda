@@ -240,9 +240,14 @@ public final class BackupReadRateLimiter {
 
   @FunctionalInterface
   interface Scheduler {
+    /**
+     * Runs the task on the delay thread itself rather than the common pool, which closing backup
+     * stores can block for a minute. Only use it for short tasks that never block.
+     */
     Scheduler DELAYED =
         (delayNanos, task) ->
-            CompletableFuture.delayedExecutor(delayNanos, TimeUnit.NANOSECONDS).execute(task);
+            CompletableFuture.delayedExecutor(delayNanos, TimeUnit.NANOSECONDS, Runnable::run)
+                .execute(task);
 
     void schedule(long delayNanos, Runnable task);
   }
