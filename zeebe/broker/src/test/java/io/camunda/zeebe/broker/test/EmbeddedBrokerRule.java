@@ -64,8 +64,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final boolean ENABLE_HTTP_EXPORTER = false;
-  private static final String SNAPSHOTS_DIRECTORY = "snapshots";
-  private static final String STATE_DIRECTORY = "state";
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
   protected final Supplier<InputStream> configSupplier;
@@ -78,7 +76,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   protected long startTime;
   private AtomixCluster atomixCluster;
   private File brokerBase;
-  private String dataDirectory;
   private SystemContext systemContext;
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
@@ -103,19 +100,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       final Supplier<InputStream> configSupplier, final Consumer<BrokerCfg>... configurators) {
     this.configSupplier = configSupplier;
     this.configurators = configurators;
-  }
-
-  private static void deleteSnapshots(final File parentDir) {
-    final File snapshotDirectory = new File(parentDir, SNAPSHOTS_DIRECTORY);
-
-    if (snapshotDirectory.exists()) {
-      try {
-        FileUtil.deleteFolder(snapshotDirectory.getAbsolutePath());
-      } catch (final IOException e) {
-        throw new RuntimeException(
-            "Could not delete snapshot directory " + snapshotDirectory.getAbsolutePath(), e);
-      }
-    }
   }
 
   public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
@@ -262,8 +246,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
         brokerCfg.getCluster().getClusterSize(),
         brokerCfg.getCluster().getPartitionsCount(),
         brokerCfg.getCluster().getReplicationFactor());
-
-    dataDirectory = broker.getSystemContext().getBrokerConfiguration().getData().getDirectory();
   }
 
   public void configureBroker(final BrokerCfg brokerCfg) {
@@ -284,22 +266,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
     // initialize configuration
     brokerCfg.init(brokerBase.getAbsolutePath());
-  }
-
-  public void purgeSnapshots() {
-    final File directory = new File(dataDirectory);
-
-    final File[] partitionDirectories = directory.listFiles((d, f) -> new File(d, f).isDirectory());
-    if (partitionDirectories == null) {
-      return;
-    }
-
-    for (final File partitionDirectory : partitionDirectories) {
-      final File stateDirectory = new File(partitionDirectory, STATE_DIRECTORY);
-      if (stateDirectory.exists()) {
-        deleteSnapshots(stateDirectory);
-      }
-    }
   }
 
   public MeterRegistry getMeterRegistry() {
