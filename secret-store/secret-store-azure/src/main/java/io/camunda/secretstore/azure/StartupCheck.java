@@ -184,9 +184,11 @@ final class StartupCheck {
                       + " to a different Microsoft Entra tenant",
                   true);
           case 403 ->
-              new Diagnosis(
-                  "access denied: " + resolver.accessDeniedHint(),
-                  resolver.accessDeniedFailsResolution());
+              AzureKeyVaultErrors.isSecretDisabled(http)
+                  ? new Diagnosis("the secret is disabled in Azure Key Vault", true)
+                  : new Diagnosis(
+                      "access denied: " + resolver.accessDeniedHint(),
+                      resolver.accessDeniedFailsResolution());
           case 404 -> new Diagnosis("not found: " + firstLine(http.getMessage()), true);
           default ->
               new Diagnosis(

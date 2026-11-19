@@ -24,6 +24,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -140,6 +141,34 @@ final class StartupCheckTest {
             "'get' secret permission",
             "secrets of this store fail to resolve")
         .doesNotContain("Listing");
+  }
+
+  @Test
+  void shouldWarnThatAContainerSecretIsDisabledRatherThanBlamePermissions() {
+    // given — Key Vault answers a read of a disabled container secret with 403 SecretDisabled
+    final var failure =
+        new HttpResponseException(
+            "Status code 403",
+            response(403),
+            Map.of(
+                "error",
+                Map.of("code", "Forbidden", "innererror", Map.of("code", "SecretDisabled"))));
+    final var resolver = new ContainerProbingResolver(failure);
+
+    // when
+    final String warning;
+    try (final var log = LogCapturer.capturing(StartupCheck.class, Level.WARN)) {
+      run(resolver, TIMEOUT);
+      warning = log.messagesAt(Level.WARN).getFirst();
+    }
+
+    // then
+    assertThat(warning)
+        .contains(
+            "read its container secret",
+            "the secret is disabled in Azure Key Vault",
+            "secrets of this store fail to resolve")
+        .doesNotContain("access denied", "'get' secret permission");
   }
 
   @Test
@@ -438,7 +467,8 @@ final class StartupCheckTest {
 
     private final Runnable probe;
     // the wording needs no client
-    private final OneByOneSecretResolver wording = new OneByOneSecretResolver(null, "");
+    private final OneByOneSecretResolver wording =
+        new OneByOneSecretResolver(null, "", InstantSource.system());
 
     ProbingResolver(final Runnable probe) {
       this.probe = probe;
