@@ -17,12 +17,16 @@ package io.atomix.raft.storage.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Named.named;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.RaftStorage;
+import io.camunda.zeebe.journal.fs.PosixFs;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -57,6 +61,37 @@ class MetaStoreTest {
   @AfterEach
   public void tearDown() {
     metaStore.close();
+  }
+
+  @Test
+  void shouldDropPageCacheOfExistingFilesBeforeReadingThem() throws IOException {
+    // given - the files exist from a previous start
+    metaStore.close();
+    final var posixFs = mock(PosixFs.class);
+
+    // when
+    metaStore = new MetaStore(storage, meterRegistry, posixFs);
+
+    // then
+    verify(posixFs).dropPageCache(temporaryFolder.resolve(storage.prefix() + ".meta"));
+    verify(posixFs).dropPageCache(temporaryFolder.resolve(storage.prefix() + ".conf"));
+  }
+
+  @Test
+  void shouldNotDropPageCacheOfNewFiles() throws IOException {
+    // given
+    final var newStorage =
+        RaftStorage.builder(meterRegistry)
+            .withDirectory(temporaryFolder.resolve("new").toFile())
+            .build();
+    final var posixFs = mock(PosixFs.class);
+
+    // when
+    try (final var newMetaStore = new MetaStore(newStorage, meterRegistry, posixFs)) {
+
+      // then
+      verifyNoInteractions(posixFs);
+    }
   }
 
   @Nested

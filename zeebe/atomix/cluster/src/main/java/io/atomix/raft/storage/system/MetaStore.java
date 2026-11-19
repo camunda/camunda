@@ -26,6 +26,8 @@ import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.serializer.MetaEncoder;
 import io.atomix.raft.storage.serializer.MetaStoreSerializer;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.journal.fs.PosixFs;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -59,6 +61,12 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
 
   public MetaStore(final RaftStorage storage, final MeterRegistry meterRegistry)
       throws IOException {
+    this(storage, meterRegistry, new PosixFs());
+  }
+
+  @VisibleForTesting
+  MetaStore(final RaftStorage storage, final MeterRegistry meterRegistry, final PosixFs posixFs)
+      throws IOException {
     if (!(storage.directory().isDirectory() || storage.directory().mkdirs())) {
       throw new IllegalArgumentException(
           String.format("Can't create storage directory [%s].", storage.directory()));
@@ -86,6 +94,12 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
       record = new MetaStoreRecord(0, lastFlushedIndex, commitIndex, "");
     }
 
+    // After a failed write, the page cache may hold data that never reached the disk, and a restart
+    // on the same node would read it. Drop it before reading the files, so that they are read from
+    // disk, like on another node. Best effort, see PosixFs#dropPageCache.
+    if (initFromFile) {
+      posixFs.dropPageCache(metaFile.toPath());
+    }
     metaFileChannel =
         FileChannel.open(
             metaFile.toPath(),
@@ -105,7 +119,9 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
 
     confFile = new File(storage.directory(), String.format("%s.conf", storage.prefix()));
 
-    if (!confFile.exists()) {
+    if (confFile.exists()) {
+      posixFs.dropPageCache(confFile.toPath());
+    } else {
       Files.write(
           confFile.toPath(),
           new byte[32], // write zeros to prevent reading junk values
