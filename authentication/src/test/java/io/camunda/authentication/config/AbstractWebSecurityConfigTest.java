@@ -76,7 +76,7 @@ public class AbstractWebSecurityConfigTest {
    * Different types of endpoints that the security config handles specifically
    *
    * <ul>
-   *   <li>APIs (Operate internal, V1, V2)
+   *   <li>APIs (Operate internal, V2)
    *   <li>webapp resource
    *   <li>unprotected
    *
@@ -85,7 +85,6 @@ public class AbstractWebSecurityConfigTest {
   protected static String[] getAllDummyEndpoints() {
     return new String[] {
       TestApiController.DUMMY_OPERATE_INTERNAL_API_ENDPOINT,
-      TestApiController.DUMMY_V1_API_ENDPOINT,
       TestApiController.DUMMY_V2_API_ENDPOINT,
       TestApiController.DUMMY_WEBAPP_ENDPOINT,
       TestApiController.DUMMY_UNPROTECTED_ENDPOINT

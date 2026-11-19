@@ -66,7 +66,7 @@ class CsrfProtectionRequestMatcherTest {
       strings = {
         "/v2/operate/processes",
         "/v2/process-instances/search",
-        "/v1/flownode-instances/search",
+        "/v2/element-instances/search",
         "/api/process-instances/123/sequence-flows"
       })
   void whenUnprotectedApiIsOnAndApiCalledFromBrowser(final String protectedUrls) {
@@ -84,7 +84,7 @@ class CsrfProtectionRequestMatcherTest {
       strings = {
         "/v2/operate/processes",
         "/v2/process-instances/search",
-        "/v1/flownode-instances/search",
+        "/v2/element-instances/search",
         "/api/process-instances/123/sequence-flows"
       })
   void whenUnprotectedApiIsOnAndApiCalledFromNonBrowser(final String protectedUrls) {

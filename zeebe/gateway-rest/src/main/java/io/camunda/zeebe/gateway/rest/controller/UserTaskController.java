@@ -53,7 +53,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
-@RequestMapping(path = {"/v1/user-tasks", "/v2/user-tasks"})
+@RequestMapping(path = "/v2/user-tasks")
 public class UserTaskController {
 
   private final ServiceRegistry serviceRegistry;

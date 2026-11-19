@@ -35,6 +35,10 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
     })
 public class ProtectedApiSecurityFilterChainTest extends AbstractWebSecurityConfigTest {
 
+  // The Zeebe REST API (/v1) was removed; /v1/** is no longer an API path, so its requests must
+  // fall through to the catch-all chain instead of being challenged for credentials.
+  private static final String REMOVED_V1_TOPOLOGY_ENDPOINT = "/v1/topology";
+
   @Test
   public void shouldReturn200ForValidV2EndpointWithAuthorizedUser() {
     // when
@@ -112,6 +116,30 @@ public class ProtectedApiSecurityFilterChainTest extends AbstractWebSecurityConf
             .headers(basicAuthInvalid())
             .uri("https://localhost" + TestApiController.DUMMY_UNHANDLED_ENDPOINT)
             .exchange();
+
+    // then
+    assertThat(result).hasStatus(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldReturn404ForRemovedV1EndpointWithValidAuthentication() {
+    // when
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .headers(basicAuthDemo())
+            .uri("https://localhost" + REMOVED_V1_TOPOLOGY_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(result).hasStatus(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldReturn404ForRemovedV1EndpointWithoutAuthentication() {
+    // when
+    final MvcTestResult result =
+        mockMvcTester.get().uri("https://localhost" + REMOVED_V1_TOPOLOGY_ENDPOINT).exchange();
 
     // then
     assertThat(result).hasStatus(HttpStatus.NOT_FOUND);

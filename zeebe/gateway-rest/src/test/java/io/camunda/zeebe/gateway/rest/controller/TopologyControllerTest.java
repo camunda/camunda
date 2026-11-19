@@ -23,8 +23,7 @@ import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -34,6 +33,8 @@ import org.springframework.test.json.JsonCompareMode;
 @WebMvcTest(TopologyController.class)
 public class TopologyControllerTest extends RestControllerTest {
 
+  private static final String TOPOLOGY_URL = "/v2/topology";
+
   @MockitoBean TopologyServices topologyServices;
   @MockitoBean ServiceRegistry serviceRegistry;
 
@@ -42,9 +43,8 @@ public class TopologyControllerTest extends RestControllerTest {
     Mockito.when(serviceRegistry.topologyServices(any())).thenReturn(topologyServices);
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {"/v1/topology", "/v2/topology"})
-  public void shouldGetTopology(final String baseUrl) {
+  @Test
+  public void shouldGetTopology() {
     // given
     final var version = VersionUtil.getVersion();
     final var expectedResponse =
@@ -140,7 +140,7 @@ public class TopologyControllerTest extends RestControllerTest {
     // when / then
     webClient
         .get()
-        .uri(baseUrl)
+        .uri(TOPOLOGY_URL)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -151,9 +151,8 @@ public class TopologyControllerTest extends RestControllerTest {
         .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {"/v1/topology", "/v2/topology"})
-  public void shouldGetTopologyWithRecoveringPartitionState(final String baseUrl) {
+  @Test
+  public void shouldGetTopologyWithRecoveringPartitionState() {
     // given
     final var version = VersionUtil.getVersion();
     final var expectedResponse =
@@ -207,7 +206,7 @@ public class TopologyControllerTest extends RestControllerTest {
     // when / then
     webClient
         .get()
-        .uri(baseUrl)
+        .uri(TOPOLOGY_URL)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -218,9 +217,8 @@ public class TopologyControllerTest extends RestControllerTest {
         .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {"/v1/topology", "/v2/topology"})
-  void shouldReturn503WhenTopologyNotYetAvailable(final String baseUrl) {
+  @Test
+  void shouldReturn503WhenTopologyNotYetAvailable() {
     // given
     Mockito.when(topologyServices.getTopology())
         .thenReturn(
@@ -232,7 +230,7 @@ public class TopologyControllerTest extends RestControllerTest {
     // when / then
     webClient
         .get()
-        .uri(baseUrl)
+        .uri(TOPOLOGY_URL)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()

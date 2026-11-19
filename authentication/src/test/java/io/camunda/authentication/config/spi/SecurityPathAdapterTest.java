@@ -25,7 +25,7 @@ class SecurityPathAdapterTest {
     // them here would let the cluster chain shadow a scoped chain and break audience isolation.
     assertThat(port.apiPaths())
         .containsExactlyInAnyOrder(
-            "/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
+            "/api/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
   }
 
   @Test
