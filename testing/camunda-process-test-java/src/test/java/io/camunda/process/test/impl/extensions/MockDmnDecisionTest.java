@@ -35,14 +35,18 @@ import io.camunda.process.test.utils.DevAwaitBehavior;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.ExtensionElements;
 import org.camunda.bpm.model.dmn.instance.LiteralExpression;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -86,19 +90,20 @@ public class MockDmnDecisionTest {
             () -> new CamundaDataSource(camundaClient));
   }
 
-  @Test
-  void shouldMockDmnDecisionWithoutVersionTag() {
+  @ParameterizedTest
+  @MethodSource("mockDmnDecisionWithoutVersionTagCalls")
+  void shouldMockDmnDecisionWithoutVersionTag(final Consumer<CamundaProcessTestContext> mock) {
     // given
-    final String decisionId = "mock-dmn-decision-without-version-tag";
     when(camundaClient.getConfiguration().getJsonMapper().toJson("approved"))
         .thenReturn("\"approved\"");
 
     // when
-    processTestContext.mockDmnDecision().withDecisionId(decisionId).thenReturn("approved");
+    mock.accept(processTestContext);
 
     // then
     verify(camundaClient.newDeployResourceCommand())
-        .addResourceStream(dmnStreamCaptor.capture(), eq(decisionId + ".dmn"));
+        .addResourceStream(
+            dmnStreamCaptor.capture(), eq("mock-dmn-decision-without-version-tag.dmn"));
 
     final DmnModelInstance deployedModel = Dmn.readModelFromStream(dmnStreamCaptor.getValue());
 
@@ -107,7 +112,7 @@ public class MockDmnDecisionTest {
         .first()
         .satisfies(
             decision -> {
-              assertThat(decision.getId()).isEqualTo(decisionId);
+              assertThat(decision.getId()).isEqualTo("mock-dmn-decision-without-version-tag");
               assertThat(decision.getChildElementsByType(LiteralExpression.class))
                   .hasSize(1)
                   .first()
@@ -119,37 +124,20 @@ public class MockDmnDecisionTest {
             });
   }
 
-  @Test
-  void shouldMockDmnDecisionByIdWithoutVersionTag() {
-    // given
-    final String decisionId = "mock-dmn-decision-by-id-without-version-tag";
-    when(camundaClient.getConfiguration().getJsonMapper().toJson("rejected"))
-        .thenReturn("\"rejected\"");
-
-    // when
-    processTestContext.mockDmnDecision(decisionId, "rejected");
-
-    // then
-    verify(camundaClient.newDeployResourceCommand())
-        .addResourceStream(dmnStreamCaptor.capture(), eq(decisionId + ".dmn"));
-
-    final DmnModelInstance deployedModel = Dmn.readModelFromStream(dmnStreamCaptor.getValue());
-
-    assertThat(deployedModel.getModelElementsByType(Decision.class))
-        .hasSize(1)
-        .first()
-        .satisfies(
-            decision -> {
-              assertThat(decision.getId()).isEqualTo(decisionId);
-              assertThat(decision.getChildElementsByType(LiteralExpression.class))
-                  .hasSize(1)
-                  .first()
-                  .satisfies(
-                      expression ->
-                          assertThat(expression.getText().getTextContent())
-                              .isEqualTo("\"rejected\""));
-              assertThat(zeebeVersionTag(decision)).isEmpty();
-            });
+  static Stream<Named<Consumer<CamundaProcessTestContext>>>
+      mockDmnDecisionWithoutVersionTagCalls() {
+    return Stream.of(
+        Named.of(
+            "builder",
+            context ->
+                context
+                    .mockDmnDecision()
+                    .withDecisionId("mock-dmn-decision-without-version-tag")
+                    .thenReturn("approved")),
+        Named.of(
+            "by id and output",
+            context ->
+                context.mockDmnDecision("mock-dmn-decision-without-version-tag", "approved")));
   }
 
   @Test
