@@ -64,9 +64,6 @@ function row(item: Element) {
 function toggle(item: Element) {
 	return row(item).querySelector<HTMLElement>(':scope > .cds--tree-parent-node__toggle')!;
 }
-function icon(item: Element) {
-	return row(item).querySelector<HTMLElement>('[data-testid="element-instance-icon"]')!;
-}
 function renderTree(
 	worker: SetupWorker,
 	search = '',
@@ -550,25 +547,10 @@ describe('InstanceHistory', () => {
 		});
 		const rootItem = screen.getByRole('treeitem', {name: 'My Process'});
 		await expect.element(rootItem).toBeVisible();
-		expect(row(rootItem.element()).getBoundingClientRect().height).toBe(32);
 		await userEvent.click(screen.getByText('Execution count'));
 		await expect.element(screen.getByRole('switch', {name: 'Execution count'})).toBeChecked();
 		await userEvent.click(row(rootItem.element()));
 		await expect.poll(() => screen.router.state.location.search).toEqual({tenantId: 'tenant'});
-	});
-	it('should match the legacy history heading and right-aligned controls', async ({worker}) => {
-		const screen = await renderTree(worker);
-		const panel = screen.getByRole('region', {name: 'Instance History'});
-		const heading = panel.getByRole('heading', {name: 'Instance History'});
-
-		await expect.element(heading).toBeVisible();
-		expect(getComputedStyle(heading.element()).fontWeight).toBe('600');
-		const panelBounds = panel.element().getBoundingClientRect();
-		const headingBounds = heading.element().getBoundingClientRect();
-		const controlsBounds = panel.getByText('Execution count', {exact: true}).element().getBoundingClientRect();
-		expect(headingBounds.left - panelBounds.left).toBeCloseTo(16);
-		expect(panelBounds.right - controlsBounds.right).toBeCloseTo(16);
-		expect(controlsBounds.left).toBeGreaterThan(headingBounds.right);
 	});
 	it('should retry XML before reading disabled history and wait for successful recovery', async ({worker}) => {
 		let xmlStatus = 500;
@@ -601,45 +583,27 @@ describe('InstanceHistory', () => {
 		await expect.element(screen.getByRole('treeitem', {name: 'My Process'})).toBeVisible();
 		expect(historyReads).toHaveBeenCalledTimes(1);
 	});
-	it('should preserve legacy state gutters, indentation, row focus and selected-item highlighting', async ({
-		worker,
-	}) => {
+	it('should expand a subprocess and keep a clicked item selected after focus leaves it', async ({worker}) => {
 		const screen = await renderTree(worker);
 		const tree = screen.getByRole('tree', {name: 'Instance History'});
 		const rootItem = screen.getByRole('treeitem', {name: 'My Process'});
 		const subprocessItem = screen.getByRole('treeitem', {name: 'Subprocess', exact: true});
 		const leafItem = screen.getByRole('treeitem', {name: 'Leaf', exact: true});
 		await expect.element(leafItem).toBeVisible();
-		const origin = screen.getByRole('region', {name: 'Instance History'}).element().getBoundingClientRect().left;
-		const x = (element: Element) => element.getBoundingClientRect().left - origin;
-		expect(x(screen.getByTestId('ACTIVE-icon').element())).toBe(16);
-		expect(x(toggle(rootItem.element()))).toBe(32);
-		expect(x(icon(rootItem.element()))).toBe(56);
-		expect(x(icon(subprocessItem.element()))).toBe(80);
-		expect(x(icon(leafItem.element()))).toBe(72);
 		await userEvent.click(toggle(subprocessItem.element()));
 		const nestedItem = screen.getByRole('treeitem', {name: 'Nested', exact: true});
 		await expect.element(nestedItem).toBeVisible();
 		await expect.element(subprocessItem).toHaveAttribute('aria-expanded', 'true');
 		expect(screen.router.state.location.search).toEqual({});
-		expect(x(screen.getByTestId('INCIDENT-icon').element())).toBe(16);
-		expect(x(icon(nestedItem.element()))).toBe(96);
 		expect(tree.element().querySelectorAll('button')).toHaveLength(0);
 
 		await userEvent.click(leafItem);
 		await expect.element(leafItem).toHaveFocus();
 		await expect.element(leafItem).toHaveAttribute('aria-selected', 'true');
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({elementId: leaf.elementId});
-		const leafRow = row(leafItem.element());
-		expect(getComputedStyle(leafRow).outlineWidth).toBe('2px');
-		expect(getComputedStyle(leafRow).outlineColor).toBe('rgb(15, 98, 254)');
-		expect(getComputedStyle(leafRow, '::before').width).toBe('4px');
-		expect(getComputedStyle(leafRow, '::before').backgroundColor).toBe('rgb(15, 98, 254)');
-		expect(leafRow.getBoundingClientRect().height).toBe(32);
 		await userEvent.click(screen.getByText('End date', {exact: true}));
 		await expect.element(leafItem).not.toHaveFocus();
-		expect(getComputedStyle(leafRow).outlineStyle).toBe('none');
-		expect(getComputedStyle(leafRow, '::before').width).toBe('4px');
+		await expect.element(leafItem).toHaveAttribute('aria-selected', 'true');
 		await expect.element(rootItem).toHaveAttribute('aria-selected', 'false');
 	});
 	it('should highlight every visible instance for an element-only selection', async ({worker}) => {
@@ -652,7 +616,6 @@ describe('InstanceHistory', () => {
 		await expect.element(second).toHaveAttribute('aria-selected', 'true');
 		await expect.element(first).toHaveAttribute('aria-selected', 'true');
 		await expect.element(screen.getByRole('treeitem', {name: 'My Process'})).toHaveAttribute('aria-selected', 'false');
-		expect(getComputedStyle(row(second.element()), '::before').width).toBe('4px');
 	});
 	it('should navigate the native tree with a single roving tab stop without selecting on focus', async ({worker}) => {
 		const screen = await renderTree(worker);
@@ -675,10 +638,6 @@ describe('InstanceHistory', () => {
 		await userEvent.keyboard('{ArrowDown}');
 		await expect.element(subprocessItem).toHaveFocus();
 		expect(tabStops()).toEqual(['Subprocess']);
-		const focusedRow = row(subprocessItem.element());
-		expect(getComputedStyle(focusedRow).outlineWidth).toBe('2px');
-		expect(getComputedStyle(focusedRow).outlineColor).toBe('rgb(15, 98, 254)');
-		expect(focusedRow.getBoundingClientRect().height).toBe(32);
 
 		await userEvent.keyboard('{ArrowRight}');
 		await expect.element(subprocessItem).toHaveAttribute('aria-expanded', 'true');

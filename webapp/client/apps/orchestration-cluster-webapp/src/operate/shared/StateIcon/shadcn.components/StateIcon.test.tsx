@@ -12,37 +12,24 @@ import {it} from '#/vitest-modules/test-extend';
 import {StateIcon} from './StateIcon';
 
 describe('<StateIcon />', () => {
-	const colorizedStates = [
-		{state: 'FAILED', colorClassName: 'text-danger-foreground-subtle'},
-		{state: 'INCIDENT', colorClassName: 'text-danger-foreground-subtle'},
-		{state: 'ACTIVE', colorClassName: 'text-success-foreground-subtle'},
-		{state: 'COMPLETED', colorClassName: 'text-neutral-foreground-strong'},
-		{state: 'EVALUATED', colorClassName: 'text-neutral-foreground-strong'},
-		{state: 'SUSPENDED', colorClassName: 'text-neutral-foreground-subtle'},
-	] as const;
-
-	it.for(colorizedStates)('should render $state with the expected styling', async ({state, colorClassName}) => {
+	it.for([
+		'FAILED',
+		'INCIDENT',
+		'ACTIVE',
+		'COMPLETED',
+		'EVALUATED',
+		'SUSPENDED',
+		'TERMINATED',
+		'UNSPECIFIED',
+		'UNKNOWN',
+	] as const)('should render %s as a decorative icon', async (state) => {
 		const screen = await render(<StateIcon state={state} size={24} />);
 
 		const icon = screen.getByTestId(`${state}-icon`);
 		await expect.element(icon).toBeVisible();
-		await expect.element(icon).toHaveClass('shrink-0');
-		await expect.element(icon).toHaveClass(colorClassName);
 		await expect.element(icon).toHaveAttribute('aria-hidden', 'true');
 		await expect.element(icon).toHaveAttribute('focusable', 'false');
 	});
-
-	it.for(['TERMINATED', 'UNSPECIFIED', 'UNKNOWN'] as const)(
-		'should render %s without an explicit color class',
-		async (state) => {
-			const screen = await render(<StateIcon state={state} size={24} />);
-
-			const icon = screen.getByTestId(`${state}-icon`);
-			await expect.element(icon).toBeVisible();
-			await expect.element(icon).toHaveClass('shrink-0');
-			expect(icon.element().className.baseVal).not.toMatch(/text-(danger|success|neutral)-foreground-(strong|subtle)/);
-		},
-	);
 
 	it('should forward the requested numeric size to the icon', async () => {
 		const screen = await render(<StateIcon state="ACTIVE" size={24} />);

@@ -73,7 +73,7 @@ async function pickDateTimeRange({
 	fromTime?: string;
 	toTime?: string;
 }) {
-	await expect.element(screen.getByTestId('date-range-modal')).toHaveClass(/is-visible/);
+	await expect.element(screen.getByTestId('date-range-modal')).toBeVisible();
 	const monthName = document.querySelector('.cur-month')?.textContent;
 	const year = document.querySelector<HTMLInputElement>('.cur-year')?.value;
 	if (!monthName || !year) {
@@ -125,7 +125,7 @@ describe('<DateRangeField />', () => {
 		await expect.element(screen.getByTestId('date-range-modal')).not.toBeInTheDocument();
 
 		await screen.getByLabelText('Start Date Range').click();
-		await expect.element(screen.getByTestId('date-range-modal')).toHaveClass(/is-visible/);
+		await expect.element(screen.getByTestId('date-range-modal')).toBeVisible();
 
 		await screen.getByRole('button', {name: 'Cancel'}).click();
 		await expect.element(screen.getByTestId('date-range-modal')).not.toBeInTheDocument();

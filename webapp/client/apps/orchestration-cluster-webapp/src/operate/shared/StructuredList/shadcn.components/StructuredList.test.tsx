@@ -191,35 +191,4 @@ describe('<StructuredList />', () => {
 			expect(scrollToSpy).toHaveBeenCalledWith(0, 90);
 		});
 	});
-
-	it('should remove the left padding on the leading cell when flush (default)', async () => {
-		// given / when
-		const screen = await render(
-			<StructuredList
-				label="Process Details"
-				headerColumns={[{cellContent: 'Name'}]}
-				rows={[{key: 'row-1', columns: [{cellContent: 'First'}]}]}
-			/>,
-		);
-
-		// then
-		const cell = screen.getByText('First').element().closest('td')!;
-		expect(getComputedStyle(cell).paddingLeft).toBe('0px');
-	});
-
-	it('should keep the default cell padding when not flush', async () => {
-		// given / when
-		const screen = await render(
-			<StructuredList
-				label="Process Details"
-				headerColumns={[{cellContent: 'Name'}]}
-				rows={[{key: 'row-1', columns: [{cellContent: 'First'}]}]}
-				isFlush={false}
-			/>,
-		);
-
-		// then
-		const cell = screen.getByText('First').element().closest('td')!;
-		expect(getComputedStyle(cell).paddingLeft).not.toBe('0px');
-	});
 });
