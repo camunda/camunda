@@ -19,11 +19,14 @@ import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,6 +51,8 @@ final class StubAzureHttpClient implements HttpClient {
   // keyed by lower-cased name, as Key Vault compares names case-insensitively
   private final Map<String, StoredSecret> secrets = new ConcurrentHashMap<>();
   private volatile boolean holdingSecrets;
+  private final Queue<Scripted> scriptedReads = new ConcurrentLinkedQueue<>();
+  private volatile boolean hangingReads;
   private final Function<Request, Mono<HttpResponse>> router;
   private final AtomicBoolean rejectingSignIn;
   private final AtomicInteger vaultStatus;
@@ -149,6 +154,29 @@ final class StubAzureHttpClient implements HttpClient {
     return this;
   }
 
+  /**
+   * Answers the next signed-in secret reads, one each, with {@code statuses} and Key Vault's error
+   * body for them; later reads are answered as usual.
+   */
+  StubAzureHttpClient answerNextSecretReadsWith(final int... statuses) {
+    for (final int status : statuses) {
+      scriptedReads.add(new Scripted(status, null));
+    }
+    return this;
+  }
+
+  /** Answers the next signed-in secret read with {@code status} and a {@code Retry-After}. */
+  StubAzureHttpClient answerNextSecretReadWith(final int status, final Duration retryAfter) {
+    scriptedReads.add(new Scripted(status, retryAfter));
+    return this;
+  }
+
+  /** From now on never answers a signed-in secret read, as a vault that hangs. */
+  StubAzureHttpClient hangSecretReads() {
+    hangingReads = true;
+    return this;
+  }
+
   /** An environment holding only {@code variables}, isolated from this process's. */
   static Configuration environment(final Map<String, String> variables) {
     final ConfigurationSource source = path -> path == null ? variables : Map.of();
@@ -166,6 +194,15 @@ final class StubAzureHttpClient implements HttpClient {
             body == null ? "" : body.toString(),
             request.getHeaders().getValue(HttpHeaderName.AUTHORIZATION));
     requests.add(recorded);
+    if (recorded.isAuthorizedVaultRequest() && recorded.secretName() != null) {
+      if (hangingReads) {
+        return Mono.never();
+      }
+      final var scripted = scriptedReads.poll();
+      if (scripted != null) {
+        return Mono.just(scripted.answer(recorded));
+      }
+    }
     if (holdingSecrets && vaultStatus.get() == 0 && recorded.isAuthorizedVaultRequest()) {
       final var secretName = recorded.secretName();
       if (secretName != null) {
@@ -318,6 +355,19 @@ final class StubAzureHttpClient implements HttpClient {
         status,
         new HttpHeaders().set(HttpHeaderName.CONTENT_TYPE, "application/json"),
         body);
+  }
+
+  private record Scripted(int status, @Nullable Duration retryAfter) {
+
+    HttpResponse answer(final Request request) {
+      final var response = vaultError(request, status);
+      if (retryAfter != null) {
+        response
+            .getHeaders()
+            .set(HttpHeaderName.RETRY_AFTER, String.valueOf(retryAfter.toSeconds()));
+      }
+      return response;
+    }
   }
 
   private record StoredSecret(
