@@ -25,9 +25,10 @@ distribution-parity checks when Java, Maven, Gradle, or relevant CI build inputs
 specified in ADR D4. These checks supplement rather than replace the existing Maven CI path.
 
 The focused compile and distribution-parity check in Unified CI is part of `check-results` and
-blocks pull requests and merge groups. It runs on GCP and downloads the Maven SNAPSHOT archive;
-fork PRs without GCS credentials use the GitHub artifact fallback. The Gradle check extracts the
-attached Maven distribution ZIP and compares it with Gradle's `distZip` output. The separate
+blocks pull requests and merge groups. It runs on GCP and downloads the Maven `distball`
+(`camunda-zeebe-*.tar.gz`) through the shared downloader; fork PRs without GCS credentials use the
+GitHub artifact fallback. The Gradle check compares Gradle's `distTar` output directly with that
+archive. The separate
 experimental isolated-project check in `gradle-ci.yml` remains non-blocking; failures on `main`
 send a Slack notification (see the ADR).
 
@@ -46,7 +47,7 @@ merge groups, protected-branch pushes, schedules, and manual runs.
    finished until it completes successfully. This catches failures in other Gradle modules that
    are not exercised by the affected module's compile task.
 5. For every Gradle change, build the Gradle distribution and compare its archive with the Maven
-   archive using `compare-dist.py`. The CI gate compiles `testClasses`, packages `distZip`, and
+   archive using `compare-dist.py`. The CI gate compiles `testClasses`, packages `distTar`, and
    uploads the Gradle outputs, and `gradle-distribution-parity-check` compares the archives.
 6. Preserve already-fixed conventions; avoid regressions.
 
@@ -107,9 +108,10 @@ The rebase audit identifies what changed. It does not replace the porting proced
 ### Gradle CI gates
 
 On an eligible Gradle CI path, `gradle-compile-check` runs the root `testClasses` lifecycle task,
-builds `:camunda-zeebe:distZip`, and writes the distribution dependency report. The
-`gradle-distribution-parity-check` job then compares them with the attached Maven distribution ZIP
-from the SNAPSHOT archive using `compare-dist.py`. These jobs form the Gradle build gate; do not describe this path as a full Gradle test-suite run.
+builds `:camunda-zeebe:distTar`, and writes the distribution dependency report. The
+`gradle-distribution-parity-check` job then compares Gradle's TAR with the Maven `distball`
+TAR.GZ using `compare-dist.py`. These jobs form the Gradle build gate; do not describe this path
+as a full Gradle test-suite run.
 
 **Before investigating CI failures: always rebase onto main first.** CI runs on the merge
 commit, so Gradle build files apply against main's Java sources, which may differ from the

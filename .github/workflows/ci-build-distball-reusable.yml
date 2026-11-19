@@ -14,8 +14,8 @@ on:
         default: false
         description: >-
           When true, skip uploading the distball/m2 tarball to the GitHub artifact API.
-          ci.yml's docker-checks consumes both artifacts, and the focused Gradle check consumes
-          m2-installed; standalone callers with no such consumers should set this to true.
+          ci.yml's docker-checks consumes both artifacts; standalone callers with no such
+          consumer should set this to true.
 
 env:
   GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts

@@ -14,8 +14,8 @@ of five attempts with ten seconds between attempts.
 ## Existing consumers
 
 - Unified CI's integration-test job downloads the distball to `dist/target`.
-- The focused Gradle check downloads `m2-installed.tar` and compares its attached Maven
-  distribution ZIP with Gradle's `distZip` output.
+- The focused Gradle check downloads the distball and compares it with Gradle's `distTar`
+  output.
 - [`restore-shared-m2`](../restore-shared-m2) downloads the SNAPSHOT archive and
   extracts it into the local Maven repository for integration and unit tests.
 
