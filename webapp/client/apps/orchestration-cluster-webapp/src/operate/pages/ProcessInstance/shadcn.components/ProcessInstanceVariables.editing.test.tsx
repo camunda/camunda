@@ -82,8 +82,10 @@ async function appendToNewValue(group: Locator, text: string) {
 	await appendToEditor(group, text);
 }
 
-function notifications(screen: Awaited<ReturnType<typeof renderVariables>>) {
-	return screen.getByRole('region', {name: /^Notifications/}).getByRole('button', {name: 'Dismiss'});
+async function expectNoNotifications(screen: Awaited<ReturnType<typeof renderVariables>>) {
+	const region = screen.getByRole('region', {name: /^Notifications/});
+	await expect.element(region).toBeInTheDocument();
+	await expect.element(region.getByRole('button', {name: 'Dismiss'})).not.toBeInTheDocument();
 }
 
 function SelectElementInstanceButton() {
@@ -187,7 +189,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 			expect(getNextPageRequests()).toBe(3);
 			await expect.element(screen.getByRole('button', {name: 'Save'})).not.toBeInTheDocument();
 			await expect.element(screen.getByText('Add new variable "foo"')).not.toBeInTheDocument();
-			await expect.element(notifications(screen)).not.toBeInTheDocument();
+			await expectNoNotifications(screen);
 		}
 
 		async function addDuplicateVariable(screen: Awaited<ReturnType<typeof renderVariables>>) {
@@ -280,7 +282,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		await userEvent.type(screen.getByRole('searchbox', {name: 'Search variables by name'}), 'amount{Enter}');
 
 		await expect.element(row.getByRole('button', {name: 'Save'})).toBeEnabled();
-		await expect.element(notifications(screen)).not.toBeInTheDocument();
+		await expectNoNotifications(screen);
 	});
 
 	it('should save the full value of an edited truncated variable', async ({worker}) => {
@@ -385,7 +387,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 
 		await expect.element(screen.getByText('Name should be unique')).toBeVisible();
 		await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveValue('foo');
-		await expect.element(notifications(screen)).not.toBeInTheDocument();
+		await expectNoNotifications(screen);
 	});
 
 	it('should not save a new variable with a value that is not JSON', async ({worker}) => {
@@ -410,7 +412,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 
 		await expect.element(row.getByRole('button', {name: 'Copy amount'})).toHaveTextContent('100');
 		await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeEnabled();
-		await expect.element(notifications(screen)).not.toBeInTheDocument();
+		await expectNoNotifications(screen);
 	});
 
 	it('should discard a pending new variable when the scope changes', async ({worker}) => {
