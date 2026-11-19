@@ -29,6 +29,9 @@ import org.junit.jupiter.api.Test;
 
 public class BrokerRequestAuthorizationConverterTest {
 
+  private static final String KEYCLOAK_ISSUER = "https://keycloak.example.com";
+  private static final String PARTNER_ISSUER = "https://partner.example.com";
+
   @Test
   void shouldOnlyContainAuthenticationClaimsWhenAuthorizationAndMultiTenancyDisabled() {
     // given
@@ -171,11 +174,7 @@ public class BrokerRequestAuthorizationConverterTest {
   void shouldNotInvokeGroupsSupplierWhenNoGroupsClaimConfigured() {
     // given — OIDC with authorizations enabled and no groupsClaim configured. Groups would
     // otherwise come from a DB lookup, which we don't want on the broker request path; the engine
-    // resolves groups from its own membershipState in that case. (Note: with OIDC and no
-    // groupsClaim,
-    // SecurityConfiguration derives camundaGroupsEnabled=true; the converter's gate
-    // !camundaGroupsEnabled && groupsClaimConfigured therefore short-circuits on
-    // groupsClaimConfigured.)
+    // resolves groups from its own membershipState in that case.
     final var invoked = new AtomicBoolean();
     final var oidcConfiguration = new OidcConfiguration();
     // no groupsClaim set
@@ -201,6 +200,64 @@ public class BrokerRequestAuthorizationConverterTest {
     // then
     assertThat(invoked).isFalse();
     assertThat(brokerRequestAuth).doesNotContainKey(USER_GROUPS_CLAIMS);
+  }
+
+  @Test
+  void shouldContainTheGroupsOfATokenOfAProviderWithAGroupsClaimInAMixedSetup() {
+    // given
+    final var groups = List.of("engineering");
+    final var authentication =
+        CamundaAuthentication.of(
+            b -> b.user("foo").groupIds(groups).claims(Map.of("iss", KEYCLOAK_ISSUER)));
+    final var converter =
+        new BrokerRequestAuthorizationConverter(createEngineSecurityConfig(mixedProviders()));
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(brokerRequestAuth).containsEntry(USER_GROUPS_CLAIMS, groups);
+  }
+
+  @Test
+  void shouldNotReadTheGroupsOfATokenOfAProviderWithoutAGroupsClaimInAMixedSetup() {
+    // given - the engine resolves this user's groups from its own membership state
+    final var invoked = new AtomicBoolean();
+    final var authentication =
+        CamundaAuthentication.of(
+            b ->
+                b.user("foo")
+                    .claims(Map.of("iss", PARTNER_ISSUER))
+                    .groupIdsSupplier(
+                        () -> {
+                          invoked.set(true);
+                          return List.of("group1");
+                        }));
+    final var converter =
+        new BrokerRequestAuthorizationConverter(createEngineSecurityConfig(mixedProviders()));
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(invoked).isFalse();
+    assertThat(brokerRequestAuth).doesNotContainKey(USER_GROUPS_CLAIMS);
+  }
+
+  /** One named provider with a groups claim and one without. */
+  private static AuthenticationConfiguration mixedProviders() {
+    final var auth = new AuthenticationConfiguration();
+    auth.setMethod(OIDC);
+    final var keycloak = new OidcConfiguration();
+    keycloak.setClientId("client");
+    keycloak.setIssuerUri(KEYCLOAK_ISSUER);
+    keycloak.setGroupsClaim("groups");
+    final var partner = new OidcConfiguration();
+    partner.setClientId("client");
+    partner.setIssuerUri(PARTNER_ISSUER);
+    auth.getProviders().getOidc().put("keycloak", keycloak);
+    auth.getProviders().getOidc().put("partner", partner);
+    return auth;
   }
 
   private static @NonNull EngineSecurityConfig createEngineSecurityConfig(
