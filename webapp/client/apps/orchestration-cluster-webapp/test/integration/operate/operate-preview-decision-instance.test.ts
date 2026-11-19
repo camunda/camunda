@@ -154,6 +154,26 @@ test.describe('Operate Decision Instance DS preview (/operate-preview/decisions/
 		await page.getByRole('button', {name: 'Show full message'}).click();
 
 		await expect(page.getByRole('button', {name: 'Collapse message'})).toBeVisible();
+
+		await page.getByRole('button', {name: 'Collapse message'}).click();
+
+		await expect(page.getByRole('button', {name: 'Show full message'})).toBeVisible();
+	});
+
+	test('should fit the whole DRD into the panel again after resizing it', async ({operateDecisionInstancePage}) => {
+		await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_ID);
+		const decision = operateDecisionInstancePage.drdPanel.getByRole('button', {name: 'invoiceClassification'});
+		await expect(decision).toBeInViewport({ratio: 1});
+
+		const zoomIn = operateDecisionInstancePage.drdPanel.getByRole('button', {name: 'Zoom in'});
+		await zoomIn.click();
+		await zoomIn.click();
+		await zoomIn.click();
+		await expect(decision).not.toBeInViewport({ratio: 1});
+
+		await operateDecisionInstancePage.drdResizeHandle.press('ArrowLeft');
+
+		await expect(decision).toBeInViewport({ratio: 1});
 	});
 
 	test('should navigate to the related evaluated decision selected in the DRD', async ({
