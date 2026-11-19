@@ -13,16 +13,17 @@
     "cooldown_until": "2026-11-27T07:19:56Z",
     "pr": "https://github.com/camunda/camunda/pull/69298",
     "post_merge": {
+      "unit": "nights",
       "merged_at": "2026-11-13T10:05:11Z",
-      "nightlies": 5,
+      "nightlies": 6,
       "flaked": 0,
       "confirmed": 0,
       "verdict": "clean",
-      "summary": "clean 5 night(s)",
+      "summary": "clean 6 night(s)",
       "window_covers_merge": true,
-      "window_start": "2026-11-12T02:22:41Z",
+      "window_start": "2026-11-13T02:20:27Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-18T06:24:32.914Z"
+      "checked_at": "2026-11-19T06:25:19.865Z"
     }
   },
   "d64e1205": {
@@ -39,16 +40,17 @@
     "cooldown_until": "2026-11-27T07:24:03Z",
     "pr": "https://github.com/camunda/camunda/pull/69299",
     "post_merge": {
+      "unit": "nights",
       "merged_at": "2026-11-13T10:27:48Z",
-      "nightlies": 5,
+      "nightlies": 6,
       "flaked": 0,
       "confirmed": 0,
       "verdict": "clean",
-      "summary": "clean 5 night(s)",
+      "summary": "clean 6 night(s)",
       "window_covers_merge": true,
-      "window_start": "2026-11-12T01:47:37Z",
+      "window_start": "2026-11-13T01:47:36Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-18T06:24:32.914Z"
+      "checked_at": "2026-11-19T06:25:19.865Z"
     }
   },
   "f9a130cc": {
@@ -65,16 +67,17 @@
     "cooldown_until": "2026-11-25T21:49:35Z",
     "pr": "https://github.com/camunda/camunda/pull/69103",
     "post_merge": {
+      "unit": "nights",
       "merged_at": "2026-11-12T12:35:04Z",
-      "nightlies": 6,
+      "nightlies": 7,
       "flaked": 0,
       "confirmed": 0,
-      "verdict": "clean",
-      "summary": "clean 6 night(s)",
-      "window_covers_merge": true,
-      "window_start": "2026-11-12T00:45:07Z",
+      "verdict": "clean-in-window",
+      "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
+      "window_covers_merge": false,
+      "window_start": "2026-11-13T00:45:22Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-18T06:24:32.914Z"
+      "checked_at": "2026-11-19T06:25:19.865Z"
     }
   },
   "0acc0fd5": {
@@ -118,16 +121,17 @@
     "cooldown_until": "2026-11-28T07:47:23Z",
     "pr": "https://github.com/camunda/camunda/pull/69413",
     "post_merge": {
+      "unit": "nights",
       "merged_at": "2026-11-16T14:56:44Z",
-      "nightlies": 2,
+      "nightlies": 3,
       "flaked": 0,
       "confirmed": 0,
       "verdict": "clean",
-      "summary": "clean 2 night(s)",
+      "summary": "clean 3 night(s)",
       "window_covers_merge": true,
-      "window_start": "2026-11-12T02:22:41Z",
+      "window_start": "2026-11-13T02:20:27Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-18T06:24:32.914Z"
+      "checked_at": "2026-11-19T06:25:19.865Z"
     }
   },
   "bb4828fb": {
@@ -157,16 +161,17 @@
     "cooldown_until": "2026-11-30T07:13:12Z",
     "pr": "https://github.com/camunda/camunda/pull/69476",
     "post_merge": {
+      "unit": "nights",
       "merged_at": "2026-11-16T10:41:30Z",
-      "nightlies": 2,
+      "nightlies": 3,
       "flaked": 0,
       "confirmed": 0,
       "verdict": "clean",
-      "summary": "clean 2 night(s)",
+      "summary": "clean 3 night(s)",
       "window_covers_merge": true,
-      "window_start": "2026-11-12T00:52:39Z",
+      "window_start": "2026-11-13T00:52:39Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-18T06:24:32.914Z"
+      "checked_at": "2026-11-19T06:25:19.865Z"
     }
   },
   "3b4d6f3c": {
@@ -183,16 +188,17 @@
     "cooldown_until": "2026-11-26T13:57:31Z",
     "pr": "https://github.com/camunda/camunda/pull/69186",
     "post_merge": {
+      "unit": "nights",
       "merged_at": "2026-11-12T15:44:16Z",
-      "nightlies": 6,
+      "nightlies": 7,
       "flaked": 0,
       "confirmed": 0,
-      "verdict": "clean",
-      "summary": "clean 6 night(s)",
-      "window_covers_merge": true,
-      "window_start": "2026-11-12T00:45:07Z",
+      "verdict": "clean-in-window",
+      "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
+      "window_covers_merge": false,
+      "window_start": "2026-11-13T00:45:22Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-18T06:24:32.914Z"
+      "checked_at": "2026-11-19T06:25:19.865Z"
     }
   },
   "b1ba4e19": {
@@ -261,16 +267,17 @@
     "cooldown_until": "2026-11-27T11:44:46Z",
     "pr": "https://github.com/camunda/camunda/pull/69337",
     "post_merge": {
+      "unit": "nights",
       "merged_at": "2026-11-13T14:12:55Z",
-      "nightlies": 5,
+      "nightlies": 6,
       "flaked": 0,
       "confirmed": 0,
       "verdict": "clean",
-      "summary": "clean 5 night(s)",
+      "summary": "clean 6 night(s)",
       "window_covers_merge": true,
-      "window_start": "2026-11-12T00:36:58Z",
+      "window_start": "2026-11-13T00:37:01Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-18T06:24:32.914Z"
+      "checked_at": "2026-11-19T06:25:19.865Z"
     }
   },
   "3d80a605": {
@@ -287,16 +294,17 @@
     "cooldown_until": "2026-11-29T06:56:32Z",
     "pr": "https://github.com/camunda/camunda/pull/69451",
     "post_merge": {
+      "unit": "nights",
       "merged_at": "2026-11-16T14:27:14Z",
-      "nightlies": 2,
+      "nightlies": 3,
       "flaked": 0,
       "confirmed": 0,
       "verdict": "clean",
-      "summary": "clean 2 night(s)",
+      "summary": "clean 3 night(s)",
       "window_covers_merge": true,
-      "window_start": "2026-11-12T00:36:58Z",
+      "window_start": "2026-11-13T00:37:01Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-18T06:24:32.914Z"
+      "checked_at": "2026-11-19T06:25:19.865Z"
     }
   },
   "35a13433": {
@@ -313,16 +321,17 @@
     "cooldown_until": "2026-11-29T07:20:46Z",
     "pr": "https://github.com/camunda/camunda/pull/69452",
     "post_merge": {
+      "unit": "nights",
       "merged_at": "2026-11-16T14:59:04Z",
-      "nightlies": 4,
+      "nightlies": 3,
       "flaked": 0,
       "confirmed": 0,
       "verdict": "clean",
-      "summary": "clean 4 night(s)",
+      "summary": "clean 3 night(s)",
       "window_covers_merge": true,
-      "window_start": "2026-11-12T01:30:35Z",
+      "window_start": "2026-11-13T01:30:38Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-18T06:24:32.914Z"
+      "checked_at": "2026-11-19T06:25:19.865Z"
     }
   },
   "df6c1204": {
@@ -365,16 +374,17 @@
     "cooldown_until": "2026-11-30T07:39:57Z",
     "pr": "https://github.com/camunda/camunda/pull/69477",
     "post_merge": {
+      "unit": "nights",
       "merged_at": "2026-11-16T10:20:17Z",
-      "nightlies": 2,
+      "nightlies": 3,
       "flaked": 0,
       "confirmed": 0,
       "verdict": "clean",
-      "summary": "clean 2 night(s)",
+      "summary": "clean 3 night(s)",
       "window_covers_merge": true,
-      "window_start": "2026-11-12T01:18:46Z",
+      "window_start": "2026-11-13T01:18:33Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-18T06:24:32.914Z"
+      "checked_at": "2026-11-19T06:25:19.865Z"
     }
   },
   "ef2bd44f": {
@@ -391,16 +401,17 @@
     "cooldown_until": "2026-12-01T07:05:43Z",
     "pr": "https://github.com/camunda/camunda/pull/69591",
     "post_merge": {
+      "unit": "nights",
       "merged_at": "2026-11-17T08:04:48Z",
-      "nightlies": 1,
+      "nightlies": 2,
       "flaked": 0,
       "confirmed": 0,
-      "verdict": "clean",
-      "summary": "clean 1 night(s)",
+      "verdict": "too-early",
+      "summary": "clean 2 night(s) — too few to call it yet (3 needed)",
       "window_covers_merge": true,
-      "window_start": "2026-11-12T00:52:39Z",
+      "window_start": "2026-11-13T00:52:39Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-18T06:24:32.914Z"
+      "checked_at": "2026-11-19T06:25:19.865Z"
     }
   },
   "9932e04a": {
@@ -428,6 +439,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/44251136799",
     "updated_at": "2026-11-18T07:04:04Z",
     "cooldown_until": "2026-12-02T07:04:04Z",
-    "pr": "https://github.com/camunda/camunda/pull/69728"
+    "pr": "https://github.com/camunda/camunda/pull/69728",
+    "post_merge": {
+      "unit": "nights",
+      "merged_at": "2026-11-18T08:46:59Z",
+      "nightlies": 1,
+      "flaked": 0,
+      "confirmed": 0,
+      "verdict": "too-early",
+      "summary": "clean 1 night(s) — too few to call it yet (3 needed)",
+      "window_covers_merge": true,
+      "window_start": "2026-11-13T01:02:42Z",
+      "last_flake_run_id": "",
+      "checked_at": "2026-11-19T06:25:19.865Z"
+    }
   }
 }
