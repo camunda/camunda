@@ -249,7 +249,8 @@ jobs:
     name: Collect metrics
     needs: [ setup-done, soak ]
     if: ${{ !cancelled() && needs.soak.result == 'success' }}
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
@@ -268,7 +269,8 @@ jobs:
     needs: [ collect-metrics, soak ]
     if: always() && needs.collect-metrics.result == 'success'
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Download collected metrics
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -300,8 +302,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Delete the namespace once metrics are collected and profiling is done, to reduce cluster cost.
   # Profiling starts after the soak and runs for a while, so cleanup also waits for it. Runs
