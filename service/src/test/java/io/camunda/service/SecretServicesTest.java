@@ -22,8 +22,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.secretstore.InMemorySecretCache;
-import io.camunda.secretstore.SecretListEntry;
-import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStatus;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
@@ -45,6 +43,8 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class SecretServicesTest {
 
@@ -771,18 +771,19 @@ public class SecretServicesTest {
         .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
   }
 
-  @Test
-  void shouldListNothingOfAStoreWithoutStatesWhenFilteringByAnyOtherStatus() {
+  @ParameterizedTest
+  @EnumSource(value = SecretStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "ACTIVE")
+  void shouldListNothingOfAStoreWithoutStatesWhenFilteringByAnyOtherStatus(
+      final SecretStatus status) {
     // given a store that cannot report states
     authorizationsConfig.setEnabled(true);
     grantReadWildcard();
 
-    // when / then
-    for (final var status : SecretStatus.values()) {
-      if (status != SecretStatus.ACTIVE) {
-        assertThat(services.list(authentication, status).join()).as(status.name()).isEmpty();
-      }
-    }
+    // when
+    final var references = services.list(authentication, status).join();
+
+    // then
+    assertThat(references).isEmpty();
   }
 
   @Test
@@ -795,10 +796,12 @@ public class SecretServicesTest {
     // when
     final var disabled = services.list(authentication, SecretStatus.DISABLED).join();
     final var active = services.list(authentication, SecretStatus.ACTIVE).join();
+    final var expired = services.list(authentication, SecretStatus.EXPIRED).join();
     final var notYetActive = services.list(authentication, SecretStatus.NOT_YET_ACTIVE).join();
 
     // then
     assertThat(disabled).containsExactly("camunda.secrets.a");
+    assertThat(expired).containsExactly("camunda.secrets.b");
     assertThat(active).containsExactly("camunda.secrets.token");
     assertThat(notYetActive).isEmpty();
   }
@@ -837,15 +840,16 @@ public class SecretServicesTest {
     final var all = multiStore.list(authentication, null).join();
 
     // then each filter matches the store that reports that state, and an unfiltered list holds
-    // the reference once. Holds only while a tenant may have several stores; resolve lets the
-    // first store decide, so lifting the one-store cap must make the list do the same.
+    // the reference once. A tenant has one store today, so this cannot happen in production;
+    // once several are allowed, resolve lets the first store decide and the list must follow
+    // (see listFromStores).
     assertThat(disabledList).containsExactly("camunda.secrets.shared");
     assertThat(activeList).containsExactly("camunda.secrets.shared");
     assertThat(all).containsExactly("camunda.secrets.shared");
   }
 
   @Test
-  void shouldApplyTheAuthorizationFilterAfterTheStatusFilter() {
+  void shouldNotListAnUnreadableSecretInAnyStatus() {
     // given a disabled and an active secret, the caller may read only the disabled one
     authorizationsConfig.setEnabled(true);
     grantRead("camunda.secrets.a");
@@ -855,7 +859,7 @@ public class SecretServicesTest {
     final var active = services.list(authentication, SecretStatus.ACTIVE).join();
     final var disabled = services.list(authentication, SecretStatus.DISABLED).join();
 
-    // then the status filter drops what the caller may read, and never adds what they may not
+    // then only the readable secret is listed, and only under its own status
     assertThat(active).isEmpty();
     assertThat(disabled).containsExactly("camunda.secrets.a");
   }
@@ -937,32 +941,32 @@ public class SecretServicesTest {
     // third-party store could still do
     authorizationsConfig.setEnabled(true);
     grantReadWildcard();
-    final SecretStore nullEntryStore =
-        new SecretStore() {
-          @Override
-          public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
-            return Map.of();
-          }
-
-          @Override
-          public List<String> list() {
-            return List.of();
-          }
-
-          @Override
-          public List<SecretListEntry> listEntries() {
-            return Arrays.asList(null, new SecretListEntry("a", SecretStatus.ACTIVE));
-          }
-        };
-    final var nullEntryServices =
-        newSecretServices(
-            PHYSICAL_TENANT_ID, registryOf(nullEntryStore, new InMemorySecretCache()));
+    store.listsNullEntry();
 
     // when
-    final var references = nullEntryServices.list(authentication, SecretStatus.ACTIVE).join();
+    final var references = services.list(authentication, SecretStatus.ACTIVE).join();
 
     // then the listing costs that one entry rather than failing as an internal error
-    assertThat(references).containsExactly("camunda.secrets.a");
+    assertThat(references)
+        .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+  }
+
+  @Test
+  void shouldTreatAnEntryWithoutAStatusAsActive() {
+    // given a store listing a secret without a status, which the SPI forbids but a third-party
+    // store could still do
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    store.reportsStatus("a", null);
+
+    // when
+    final var active = services.list(authentication, SecretStatus.ACTIVE).join();
+    final var disabled = services.list(authentication, SecretStatus.DISABLED).join();
+
+    // then it is listed like any ACTIVE secret, and as in the unfiltered list
+    assertThat(active)
+        .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+    assertThat(disabled).isEmpty();
   }
 
   @Test

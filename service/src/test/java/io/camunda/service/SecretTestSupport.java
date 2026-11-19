@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.jspecify.annotations.Nullable;
 
 /** Shared doubles for the tests of {@link SecretServices}. */
 final class SecretTestSupport {
@@ -60,6 +61,7 @@ final class SecretTestSupport {
     // contract forbids
     private final List<String> additionalListedNames = new ArrayList<>();
     private final Map<String, SecretStatus> statuses = new HashMap<>();
+    private boolean listsNullEntry;
     private int listCalls;
     private boolean unavailable;
     private boolean omitResults;
@@ -87,15 +89,32 @@ final class SecretTestSupport {
 
     @Override
     public List<SecretListEntry> listEntries() {
-      return list().stream()
-          .map(name -> new SecretListEntry(name, statuses.getOrDefault(name, SecretStatus.ACTIVE)))
-          .toList();
+      final List<SecretListEntry> entries =
+          new ArrayList<>(
+              list().stream()
+                  .map(
+                      name ->
+                          new SecretListEntry(
+                              name,
+                              statuses.containsKey(name)
+                                  ? statuses.get(name)
+                                  : SecretStatus.ACTIVE))
+                  .toList());
+      if (listsNullEntry) {
+        entries.add(null);
+      }
+      return entries;
+    }
+
+    /** Makes the store list a null entry, which the SPI's nullness contract forbids. */
+    void listsNullEntry() {
+      listsNullEntry = true;
     }
 
     /**
      * Makes the store report the given state for a secret it lists, as a store with states does.
      */
-    TestSecretStore reportsStatus(final String name, final SecretStatus status) {
+    TestSecretStore reportsStatus(final String name, final @Nullable SecretStatus status) {
       statuses.put(name, status);
       return this;
     }

@@ -12,8 +12,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Implementations must be thread-safe: {@link #resolve} and {@link #list} may be called
- * concurrently from multiple threads.
+ * Implementations must be thread-safe: {@link #resolve}, {@link #list} and {@link #listEntries} may
+ * be called concurrently from multiple threads.
  */
 public interface SecretStore extends AutoCloseable {
 

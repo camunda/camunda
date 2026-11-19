@@ -75,7 +75,7 @@ class SecretStoreListEntriesTest {
     }
   }
 
-  private static class StoreWithoutStates implements SecretStore {
+  private static final class StoreWithoutStates implements SecretStore {
     private final List<String> names;
 
     StoreWithoutStates(final String... names) {
@@ -93,7 +93,18 @@ class SecretStoreListEntriesTest {
     }
   }
 
-  private static final class StoreWithStates extends StoreWithoutStates {
+  /** A store reporting the given entries, whose {@code list()} names exactly those secrets. */
+  private static final class StoreWithStates implements SecretStore {
+    @Override
+    public Map<String, SecretResolutionResult> resolve(final Set<String> requested) {
+      return Map.of();
+    }
+
+    @Override
+    public List<String> list() {
+      return STATES.stream().map(SecretListEntry::name).toList();
+    }
+
     @Override
     public List<SecretListEntry> listEntries() {
       return STATES;
