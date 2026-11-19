@@ -707,15 +707,6 @@ jobs:
               "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/gradle-distribution.zip"
             gcloud storage cp "$GRADLE_PARITY_INPUTS/dist-dependencies.json" \
               "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/gradle-dist-dependencies.json"
-      - name: Upload Gradle distribution comparison inputs for fork PRs
-        if: needs.detect-changes.outputs.gradle-changes == 'true' && github.event.pull_request.head.repo.fork == true
-        uses: ./.github/actions/upload-artifact-with-retry
-        with:
-          name: gradle-parity-inputs-${{ github.run_id }}
-          path: ${{ runner.temp }}/gradle-parity-inputs/
-          retention-days: 2
-          if-no-files-found: error
-          compression-level: 0
       - name: Upload Gradle build reports
         if: always()
         uses: ./.github/actions/upload-artifact-with-retry
@@ -786,12 +777,6 @@ jobs:
             gcloud storage cp \
               "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/gradle-dist-dependencies.json" \
               "$GRADLE_PARITY_INPUTS/dist-dependencies.json"
-      - name: Download Gradle distribution comparison inputs for fork PRs
-        if: github.event.pull_request.head.repo.fork == true
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: gradle-parity-inputs-${{ github.run_id }}
-          path: ${{ runner.temp }}/gradle-parity-inputs
       - name: Extract Maven distribution ZIP
         run: |
           set -euo pipefail
