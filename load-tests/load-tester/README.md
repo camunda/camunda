@@ -45,9 +45,8 @@ Both roles serve `/health/readiness` and `/health/liveness` on port 9600 (no `/a
   was deployed. The web server, and with it both health endpoints, starts only after that.
 - **Readiness (worker):** ready once the cluster topology was retrieved. The topology request
   retries every error, so a pod that cannot authenticate stays not ready.
-- **Liveness (starter):** DOWN when no start request succeeded for
-  `load-tester.starter.liveness-max-no-success-age` (default 2 minutes). The clock starts once
-  connected, and the age has to exceed the interval between two requests. Backpressure answers
+- **Liveness (starter):** DOWN when no start request succeeded for the larger of 2 minutes and
+  twice the interval between two requests. The clock starts once connected. Backpressure answers
   (gRPC `RESOURCE_EXHAUSTED`, HTTP 429) count as success, every other failure does not.
 - **Liveness (worker):** none. A worker without jobs cannot be told apart from one without load.
 

@@ -24,15 +24,18 @@ import org.springframework.stereotype.Component;
 
 /**
  * Liveness indicator of the starter. Reports DOWN when no start request succeeded for longer than
- * the configured age, so that Kubernetes restarts the pod. An answer that signals backpressure
- * counts as a success, as the cluster is responding. Every other failure does not, whatever its
- * cause: rejected credentials, a stopped request scheduler and an unreachable cluster all end in
- * the same state, a starter that creates no process instances. A fatal error reports DOWN
- * immediately.
+ * the larger of 2 minutes and twice the interval between two requests, so that Kubernetes restarts
+ * the pod while a low rate does not report DOWN between requests. An answer that signals
+ * backpressure counts as a success, as the cluster is responding. Every other failure does not,
+ * whatever its cause: rejected credentials, a stopped request scheduler and an unreachable cluster
+ * all end in the same state, a starter that creates no process instances. A fatal error reports
+ * DOWN immediately.
  */
 @Component("starterLiveness")
 @Profile("starter")
 public class StarterLivenessIndicator implements HealthIndicator {
+
+  private static final Duration MIN_NO_SUCCESS_AGE = Duration.ofMinutes(2);
 
   private final Duration maxNoSuccessAge;
   private final InstantSource clock;
@@ -46,7 +49,10 @@ public class StarterLivenessIndicator implements HealthIndicator {
   }
 
   StarterLivenessIndicator(final StarterProperties properties, final InstantSource clock) {
-    maxNoSuccessAge = properties.getLivenessMaxNoSuccessAge();
+    final var requestInterval = Duration.ofMillis((long) (1000 / properties.getRatePerSecond()));
+    final var intervalAge = requestInterval.multipliedBy(2);
+    maxNoSuccessAge =
+        intervalAge.compareTo(MIN_NO_SUCCESS_AGE) >= 0 ? intervalAge : MIN_NO_SUCCESS_AGE;
     this.clock = clock;
   }
 
