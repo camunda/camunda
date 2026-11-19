@@ -12,8 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.record.InternalOperationType;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -175,6 +178,78 @@ final class RecordMetadataTest {
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[metadata.getLength()]);
     metadata.write(buffer, 0);
     return buffer;
+  }
+
+  @Test
+  void shouldEncodeDecodeInternalOperation() {
+    // given
+    final var internalOperation = InternalOperationReference.policyUpdate(123L);
+    final var metadata = new RecordMetadata().internalOperation(internalOperation);
+
+    // when
+    encodeDecode(metadata);
+
+    // then
+    assertThat(metadata.getInternalOperation()).isEqualTo(internalOperation);
+    assertThat(metadata.getInternalOperationTypeCode())
+        .isEqualTo(InternalOperationType.POLICY_UPDATE.code());
+    assertThat(metadata.getInternalOperationReference()).isEqualTo(123L);
+  }
+
+  @Test
+  void shouldDecodeMissingInternalOperationAsNone() {
+    // given
+    final RecordMetadata metadata = new RecordMetadata();
+
+    // when
+    encodeDecode(metadata);
+
+    // then
+    assertThat(metadata.getInternalOperation()).isEqualTo(InternalOperationReference.NONE);
+  }
+
+  @Test
+  void shouldDecodeInternalOperationOfOlderProtocolVersionAsNone() {
+    // given - a record written before the internal operation fields existed
+    final var buffer =
+        write(
+            new RecordMetadata().internalOperation(InternalOperationReference.policyUpdate(123L)));
+    new MessageHeaderEncoder().wrap(buffer, 0).version(10);
+    final var metadata = new RecordMetadata();
+
+    // when
+    metadata.wrap(buffer, 0, buffer.capacity());
+
+    // then
+    assertThat(metadata.getInternalOperation()).isEqualTo(InternalOperationReference.NONE);
+  }
+
+  @Test
+  void shouldKeepUnknownInternalOperationTypeCode() {
+    // given - a type code written by a newer version
+    final var metadata =
+        new RecordMetadata().internalOperation(InternalOperationReference.ofStored(200, 123L));
+
+    // when
+    encodeDecode(metadata);
+
+    // then
+    assertThat(metadata.getInternalOperation().type()).isEqualTo(InternalOperationType.UNKNOWN);
+    assertThat(metadata.getInternalOperationTypeCode()).isEqualTo(200);
+    assertThat(metadata.toString()).contains("internalOperation=UNKNOWN(200):123");
+  }
+
+  @Test
+  void shouldResetInternalOperation() {
+    // given
+    final var metadata =
+        new RecordMetadata().internalOperation(InternalOperationReference.policyUpdate(123L));
+
+    // when
+    metadata.reset();
+
+    // then
+    assertThat(metadata.getInternalOperation()).isEqualTo(InternalOperationReference.NONE);
   }
 
   private void encodeDecode(final RecordMetadata metadata) {
