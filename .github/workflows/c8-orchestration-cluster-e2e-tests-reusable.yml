@@ -49,7 +49,8 @@ jobs:
     name: C8 Orchestration Cluster API Tests (Mode ${{ matrix.camunda_mode }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     strategy:
       fail-fast: false
       matrix:
@@ -344,15 +345,17 @@ jobs:
           build_status: ${{ job.status }}
           job_name: ${{ format('{0} (Mode {1})', github.job, matrix.camunda_mode) }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   c8-orchestration-cluster-api-tests-rdbms:
     if: ${{ contains(fromJSON('["stable/8.9","stable/8.10","main"]'), inputs.base) }}
     name: C8 Orchestration Cluster API Tests (H2/RDBMS, Mode ${{ matrix.camunda_mode }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     strategy:
       fail-fast: false
       matrix:
@@ -389,8 +392,9 @@ jobs:
         with:
           maven-cache-key-modifier: e2e-h2-api-tests
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
       - name: Build Camunda distribution
         shell: bash
@@ -605,8 +609,9 @@ jobs:
           build_status: ${{ job.status }}
           job_name: ${{ format('{0} (Mode {1})', github.job, matrix.camunda_mode) }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   c8-orchestration-cluster-e2e-tests:
     name: C8 Orchestration Cluster E2E Tests (Mode ${{ matrix.camunda_mode }}${{ matrix.tasklist_mode && format(', Tasklist {0}', matrix.tasklist_mode) || '' }})
@@ -616,7 +621,8 @@ jobs:
         include: ${{ fromJSON( inputs.base == 'main' && '[{"camunda_mode":"profiles"},{"camunda_mode":"all-in-one"}]' || (inputs.base == 'stable/8.6' || inputs.base == 'stable/8.7') && '[{"camunda_mode":"profiles","tasklist_mode":"v1"}]' || inputs.base == 'stable/8.9' && '[{"camunda_mode":"profiles","tasklist_mode":"v1"},{"camunda_mode":"all-in-one","tasklist_mode":"v1"},{"camunda_mode":"profiles","tasklist_mode":"v2"},{"camunda_mode":"all-in-one","tasklist_mode":"v2"}]' || inputs.base == 'stable/8.8' && '[{"camunda_mode":"profiles","tasklist_mode":"v1"},{"camunda_mode":"profiles","tasklist_mode":"v2"}]' || '[{"camunda_mode":"profiles","tasklist_mode":"v2"}]' ) }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Print input and base branch
         shell: bash
@@ -978,5 +984,6 @@ jobs:
           job_name: "c8-orchestration-cluster-e2e-tests${{ matrix.tasklist_mode && format('/{0}', matrix.tasklist_mode) || '' }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}

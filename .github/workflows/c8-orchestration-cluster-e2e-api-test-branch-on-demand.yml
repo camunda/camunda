@@ -94,6 +94,9 @@ jobs:
       contents: read
 
   c8-orchestration-cluster-api-tests-es:
+    permissions:
+      contents: read
+      id-token: write
     name: C8 Orchestration Cluster API Tests (ES)
     needs: [validate-branch, utils-get-snapshot-docker-tag]
     runs-on: ubuntu-latest
@@ -115,8 +118,9 @@ jobs:
         with:
           maven-cache-key-modifier: e2e-es-api-tests
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
       - name: Build Camunda distribution
         run: ./mvnw install -Dquickly -T1C
@@ -344,15 +348,17 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   c8-orchestration-cluster-api-tests-rdbms:
     name: C8 Orchestration Cluster API Tests (H2/RDBMS)
     needs: validate-branch
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Print input and base branch
         run: |
@@ -367,8 +373,9 @@ jobs:
         with:
           maven-cache-key-modifier: e2e-h2-api-tests
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
       - name: Build Camunda distribution
         run: ./mvnw install -Dquickly -T1C
@@ -513,5 +520,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}

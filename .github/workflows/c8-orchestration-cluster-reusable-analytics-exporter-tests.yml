@@ -28,6 +28,9 @@ jobs:
   # api-tests job carries. Only called for main — not backporting, the
   # exporter's config differs too much on stable/8.7/8.8/8.9.
   analytics-exporter-tests:
+    permissions:
+      contents: read
+      id-token: write
     name: Analytics Exporter Isolated Tests (${{ inputs.branch }})
     runs-on: ubuntu-latest
     steps:
@@ -100,5 +103,6 @@ jobs:
           job_name: "c8-orchestration-cluster-e2e-nightly-analytics-exporter-tests/${{ inputs.branch }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
