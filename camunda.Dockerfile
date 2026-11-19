@@ -13,7 +13,7 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
 ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.5_8-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:e3b6f7887a50f20d8f07abf279d8a81a5953fb398a9555bd9edd56b9bd15968c"
+ARG BASE_DIGEST_PUBLIC="sha256:3c6d7b40c2e78d4a8f4fe00af8165c706b34faf672dc21ff0924e583559ec6c2"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
