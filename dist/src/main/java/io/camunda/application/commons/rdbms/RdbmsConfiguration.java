@@ -87,7 +87,6 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
-import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -97,15 +96,14 @@ import javax.sql.DataSource;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.health.contributor.HealthContributor;
 import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.jdbc.support.JdbcTransactionManager;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
@@ -392,92 +390,65 @@ public class RdbmsConfiguration {
     return new GlobalListenerDbReader(globalListenerMapper, readerConfig);
   }
 
-  @Bean
-  @ConditionalOnBean(PlatformTransactionManager.class)
-  public TransactionRunner springTransactionRunner(
-      final PlatformTransactionManager transactionManager) {
-    return new SpringTransactionRunner(transactionManager);
-  }
-
-  @Bean
-  @ConditionalOnMissingBean(TransactionRunner.class)
-  public TransactionRunner noOpTransactionRunner() {
-    return TransactionRunner.noop();
-  }
-
+  /**
+   * The RDBMS exporter writes through its own pool and transaction manager, so that it keeps
+   * exporting while search requests hold all connections of the main pool.
+   */
   @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
-      final SqlSessionFactory sqlSessionFactory,
-      final ExporterPositionMapper exporterPositionMapper,
+      @Qualifier("rdbmsExporterDataSource") final DataSource rdbmsExporterDataSource,
+      @Qualifier("rdbmsExporterSqlSessionFactory") final SqlSessionFactory sqlSessionFactory,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      final AuditLogMapper auditLogMapper,
-      final DecisionInstanceMapper decisionInstanceMapper,
-      final DecisionDefinitionMapper decisionDefinitionMapper,
-      final DecisionRequirementsMapper decisionRequirementsMapper,
-      final FlowNodeInstanceMapper flowNodeInstanceMapper,
-      final IncidentMapper incidentMapper,
-      final ProcessInstanceMapper processInstanceMapper,
-      final ProcessDefinitionMapper processDefinitionMapper,
-      final PurgeMapper purgeMapper,
-      final UserTaskMapper userTaskMapper,
-      final VariableMapper variableMapper,
-      final MeterRegistry meterRegistry,
-      final JobMapper jobMapper,
-      final JobMetricsBatchMapper jobMetricsBatchMapper,
-      final SequenceFlowMapper sequenceFlowMapper,
-      final UsageMetricMapper usageMetricMapper,
-      final UsageMetricTUMapper usageMetricTUMapper,
-      final BatchOperationMapper batchOperationMapper,
-      final MessageSubscriptionMapper messageSubscriptionMapper,
-      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
-      final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper,
-      final TransactionRunner transactionRunner) {
+      final MeterRegistry meterRegistry)
+      throws Exception {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
-        exporterPositionMapper,
+        MyBatisConfiguration.createMapper(sqlSessionFactory, ExporterPositionMapper.class),
         vendorDatabaseProperties,
-        auditLogMapper,
-        decisionInstanceMapper,
-        decisionDefinitionMapper,
-        decisionRequirementsMapper,
-        flowNodeInstanceMapper,
-        incidentMapper,
-        processInstanceMapper,
-        processDefinitionMapper,
-        purgeMapper,
-        userTaskMapper,
-        variableMapper,
+        MyBatisConfiguration.createMapper(sqlSessionFactory, AuditLogMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, DecisionInstanceMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, DecisionDefinitionMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, DecisionRequirementsMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, FlowNodeInstanceMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, IncidentMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, ProcessInstanceMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, ProcessDefinitionMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, PurgeMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, UserTaskMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, VariableMapper.class),
         meterRegistry,
-        jobMapper,
-        jobMetricsBatchMapper,
-        sequenceFlowMapper,
-        usageMetricMapper,
-        usageMetricTUMapper,
-        batchOperationMapper,
-        messageSubscriptionMapper,
-        correlatedMessageSubscriptionMapper,
-        clusterVariableMapper,
-        historyDeletionMapper,
-        transactionRunner);
+        MyBatisConfiguration.createMapper(sqlSessionFactory, JobMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, JobMetricsBatchMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, SequenceFlowMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, UsageMetricMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, UsageMetricTUMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, BatchOperationMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, MessageSubscriptionMapper.class),
+        MyBatisConfiguration.createMapper(
+            sqlSessionFactory, CorrelatedMessageSubscriptionMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, ClusterVariableMapper.class),
+        MyBatisConfiguration.createMapper(sqlSessionFactory, HistoryDeletionMapper.class),
+        new SpringTransactionRunner(new JdbcTransactionManager(rdbmsExporterDataSource)));
   }
 
+  /**
+   * Only the RDBMS exporter uses this service. The readers it uses read through the exporter's
+   * pool, like its writers.
+   */
   @Bean
   public RdbmsService rdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
+      @Qualifier("rdbmsExporterSqlSessionFactory") final SqlSessionFactory exporterSessionFactory,
+      final RdbmsReaderConfig readerConfig,
       final VariableDbReader variableReader,
       final ClusterVariableDbReader clusterVariableDbReader,
       final AuditLogDbReader auditLogReader,
       final AuthorizationDbReader authorizationReader,
       final DecisionDefinitionDbReader decisionDefinitionReader,
-      final DecisionInstanceDbReader decisionInstanceReader,
-      final DecisionRequirementsDbReader decisionRequirementsReader,
       final FlowNodeInstanceDbReader flowNodeInstanceReader,
       final GroupDbReader groupReader,
       final GroupMemberDbReader groupMemberReader,
       final IncidentDbReader incidentReader,
-      final ProcessDefinitionDbReader processDefinitionReader,
-      final ProcessInstanceDbReader processInstanceReader,
       final RoleDbReader roleReader,
       final RoleMemberDbReader roleMemberReader,
       final TenantDbReader tenantReader,
@@ -486,7 +457,6 @@ public class RdbmsConfiguration {
       final UserTaskDbReader userTaskReader,
       final FormDbReader formReader,
       final MappingRuleDbReader mappingRuleReader,
-      final BatchOperationDbReader batchOperationReader,
       final SequenceFlowDbReader sequenceFlowReader,
       final BatchOperationItemDbReader batchOperationItemReader,
       final JobDbReader jobReader,
@@ -501,25 +471,35 @@ public class RdbmsConfiguration {
       final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsReader,
       final ProcessDefinitionInstanceVersionStatisticsDbReader
           processDefinitionInstanceVersionStatisticsReader,
-      final HistoryDeletionDbReader historyDeletionDbReader,
       final IncidentProcessInstanceStatisticsByErrorDbReader
           incidentProcessInstanceStatisticsByErrorReader,
       final IncidentProcessInstanceStatisticsByDefinitionDbReader
           incidentProcessInstanceStatisticsByDefinitionReader,
-      final GlobalListenerDbReader globalListenerDbReader) {
+      final GlobalListenerDbReader globalListenerDbReader)
+      throws Exception {
     return new RdbmsService(
         rdbmsWriterFactory,
         auditLogReader,
         authorizationReader,
         decisionDefinitionReader,
-        decisionInstanceReader,
-        decisionRequirementsReader,
+        new DecisionInstanceDbReader(
+            MyBatisConfiguration.createMapper(exporterSessionFactory, DecisionInstanceMapper.class),
+            readerConfig),
+        new DecisionRequirementsDbReader(
+            MyBatisConfiguration.createMapper(
+                exporterSessionFactory, DecisionRequirementsMapper.class),
+            readerConfig),
         flowNodeInstanceReader,
         groupReader,
         groupMemberReader,
         incidentReader,
-        processDefinitionReader,
-        processInstanceReader,
+        new ProcessDefinitionDbReader(
+            MyBatisConfiguration.createMapper(
+                exporterSessionFactory, ProcessDefinitionMapper.class),
+            readerConfig),
+        new ProcessInstanceDbReader(
+            MyBatisConfiguration.createMapper(exporterSessionFactory, ProcessInstanceMapper.class),
+            readerConfig),
         variableReader,
         clusterVariableDbReader,
         roleReader,
@@ -530,7 +510,9 @@ public class RdbmsConfiguration {
         userTaskReader,
         formReader,
         mappingRuleReader,
-        batchOperationReader,
+        new BatchOperationDbReader(
+            MyBatisConfiguration.createMapper(exporterSessionFactory, BatchOperationMapper.class),
+            readerConfig),
         sequenceFlowReader,
         batchOperationItemReader,
         jobReader,
@@ -543,7 +525,8 @@ public class RdbmsConfiguration {
         processDefinitionStatisticsReader,
         processDefinitionInstanceStatisticsReader,
         processDefinitionInstanceVersionStatisticsReader,
-        historyDeletionDbReader,
+        new HistoryDeletionDbReader(
+            MyBatisConfiguration.createMapper(exporterSessionFactory, HistoryDeletionMapper.class)),
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,
         globalListenerDbReader);
