@@ -3853,11 +3853,12 @@ public interface CamundaClient extends AutoCloseable, JobClient {
 
   /**
    * Command to list the secret reference names the caller is authorized to see. It never returns
-   * secret values, only the reference names.
+   * secret values, only the reference names. The filter is supported since 8.11.
    *
    * <pre>
    *   camundaClient
    *       .newListSecretsCommand()
+   *       .filter(f -&gt; f.status(SecretStatus.EXPIRED))
    *       .send();
    * </pre>
    *
