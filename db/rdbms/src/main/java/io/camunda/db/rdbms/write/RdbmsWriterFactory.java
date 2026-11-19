@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
+import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.micrometer.core.instrument.MeterRegistry;
 
 public class RdbmsWriterFactory {
@@ -44,7 +45,7 @@ public class RdbmsWriterFactory {
         mapperBundle.incidentMapper(),
         mapperBundle.processInstanceMapper(),
         mapperBundle.processDefinitionMapper(),
-        mapperBundle.purgeMapper(),
+        new RdbmsPurger(mapperBundle.sqlSessionFactory(), mapperBundle.vendorDatabaseProperties()),
         mapperBundle.userTaskMapper(),
         mapperBundle.variableMapper(),
         mapperBundle.vendorDatabaseProperties(),
