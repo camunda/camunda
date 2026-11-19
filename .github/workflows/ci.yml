@@ -77,6 +77,9 @@ jobs:
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
       load-test-k6-changes: ${{ steps.filter.outputs.load-test-k6-changes }}
+      # Union of the Gradle/Maven build-definition signal and the Java signal (ADR D4: Java, Maven,
+      # Gradle, or relevant CI inputs all trigger compilation and distribution parity).
+      gradle-changes: ${{ steps.filter.outputs.gradle-changes == 'true' || steps.filter.outputs.java-code-changes == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -589,13 +592,232 @@ jobs:
     # Gated on the union of all consumers' conditions so the artifact exists whenever one runs;
     # frontend-changes is included because the webapp back-end UTs run on it; rdbms-integration-tests
     # is included because its filter is a superset of java-code-changes (adds rdbms-change). See #52693.
-    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.rdbms-integration-tests == 'true'
+    # Gradle parity also consumes the Maven SNAPSHOT archive produced here.
+    if: >-
+      needs.detect-changes.outputs.camunda-docker-tests == 'true' ||
+      needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.frontend-changes == 'true' ||
+      needs.detect-changes.outputs.rdbms-integration-tests == 'true' ||
+      needs.detect-changes.outputs.gradle-changes == 'true'
     needs: [ detect-changes ]
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     uses: ./.github/workflows/ci-build-distball-reusable.yml
     secrets: inherit
+
+  gradle-compile-check:
+    name: "Gradle / Compile Check"
+    if: needs.detect-changes.outputs.gradle-changes == 'true'
+    needs: [ detect-changes ]
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    env:
+      TEST_PRODUCT: Gradle
+      TEST_TYPE: CI
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: ./.github/actions/setup-build
+        with:
+          skip-maven-cache: true
+          locale: C.UTF-8
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          # Only main and stable pushes warm the shared cache; all other runs only read it.
+          cache-read-only: >-
+            ${{
+              !(
+                github.event_name == 'push' &&
+                (
+                  github.ref == 'refs/heads/main' ||
+                  startsWith(github.ref, 'refs/heads/stable/')
+                )
+              )
+            }}
+      - name: Authenticate to GCS build-cache
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Compile
+        run: |
+          ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
+            testClasses
+      - name: Package distribution
+        run: |
+          ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
+            :camunda-zeebe:distZip
+      - name: Write distribution dependency report
+        run: |
+          ./gradlew --no-configuration-cache --console=plain -Pskip.fe.build \
+            :camunda-zeebe:writeDistDependencyReport
+      - name: Prepare Gradle distribution comparison inputs
+        run: |
+          set -euo pipefail
+          mapfile -t gradle_zips < <(find dist/build/distributions -maxdepth 1 -type f -name 'camunda-zeebe-*.zip' -print)
+          if [[ ${#gradle_zips[@]} -ne 1 ]]; then
+            echo "::error::Expected one Gradle distribution ZIP; found ${#gradle_zips[@]}"
+            exit 1
+          fi
+          gradle_report=dist/build/reports/dist-dependencies.json
+          if [[ ! -f "$gradle_report" ]]; then
+            echo "::error::Gradle distribution dependency report not found: $gradle_report"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/gradle-parity-inputs"
+          cp "${gradle_zips[0]}" "$RUNNER_TEMP/gradle-parity-inputs/gradle-distribution.zip"
+          cp "$gradle_report" "$RUNNER_TEMP/gradle-parity-inputs/dist-dependencies.json"
+      - name: Refresh GCS authentication for Gradle artifact upload
+        if: needs.detect-changes.outputs.gradle-changes == 'true' && github.event.pull_request.head.repo.fork != true
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Upload Gradle distribution comparison inputs to GCS
+        if: needs.detect-changes.outputs.gradle-changes == 'true' && github.event.pull_request.head.repo.fork != true
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
+        env:
+          CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
+          GRADLE_PARITY_INPUTS: ${{ runner.temp }}/gradle-parity-inputs
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 2
+          shell: bash
+          command: |
+            set -euo pipefail
+            gcloud storage cp "$GRADLE_PARITY_INPUTS/gradle-distribution.zip" \
+              "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/gradle-distribution.zip"
+            gcloud storage cp "$GRADLE_PARITY_INPUTS/dist-dependencies.json" \
+              "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/gradle-dist-dependencies.json"
+      - name: Upload Gradle distribution comparison inputs for fork PRs
+        if: needs.detect-changes.outputs.gradle-changes == 'true' && github.event.pull_request.head.repo.fork == true
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: gradle-parity-inputs-${{ github.run_id }}
+          path: ${{ runner.temp }}/gradle-parity-inputs/
+          retention-days: 2
+          if-no-files-found: error
+          compression-level: 0
+      - name: Upload Gradle build reports
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: gradle-build-reports
+          path: build/reports/profile/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  gradle-distribution-parity-check:
+    name: "Gradle / Distribution Parity"
+    if: needs.detect-changes.outputs.gradle-changes == 'true'
+    needs: [ build-distball, detect-changes, gradle-compile-check ]
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    env:
+      TEST_PRODUCT: Gradle
+      TEST_TYPE: CI
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Authenticate to GCS build-cache
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Download Maven SNAPSHOT archive
+        uses: ./.github/actions/download-shared-build-artifact
+        with:
+          artifact: m2-installed
+          path: ${{ runner.temp }}/maven-snapshots
+      - name: Download Gradle distribution comparison inputs from GCS
+        if: github.event.pull_request.head.repo.fork != true
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        env:
+          GRADLE_PARITY_INPUTS: ${{ runner.temp }}/gradle-parity-inputs
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 2
+          shell: bash
+          command: |
+            set -euo pipefail
+            mkdir -p "$GRADLE_PARITY_INPUTS"
+            gcloud storage cp \
+              "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/gradle-distribution.zip" \
+              "$GRADLE_PARITY_INPUTS/gradle-distribution.zip"
+            gcloud storage cp \
+              "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/gradle-dist-dependencies.json" \
+              "$GRADLE_PARITY_INPUTS/dist-dependencies.json"
+      - name: Download Gradle distribution comparison inputs for fork PRs
+        if: github.event.pull_request.head.repo.fork == true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: gradle-parity-inputs-${{ github.run_id }}
+          path: ${{ runner.temp }}/gradle-parity-inputs
+      - name: Extract Maven distribution ZIP
+        run: |
+          set -euo pipefail
+          maven_archive="$RUNNER_TEMP/maven-snapshots/m2-installed.tar"
+          mapfile -t maven_zip_entries < <(
+            tar -tf "$maven_archive" | grep -E '(^|/)camunda-zeebe-[^/]+\.zip$' || true
+          )
+          if [[ ${#maven_zip_entries[@]} -ne 1 ]]; then
+            echo "::error::Expected one Maven distribution ZIP; found ${#maven_zip_entries[@]}"
+            exit 1
+          fi
+          tar -xOf "$maven_archive" "${maven_zip_entries[0]}" > "$RUNNER_TEMP/maven-distribution.zip"
+      - name: Compare Gradle and Maven distributions
+        run: |
+          python3 .github/scripts/gradle/compare-dist.py \
+            "$RUNNER_TEMP/gradle-parity-inputs/gradle-distribution.zip" \
+            "$RUNNER_TEMP/maven-distribution.zip" \
+            --gradle-manifest "$RUNNER_TEMP/gradle-parity-inputs/dist-dependencies.json"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   build-platform-frontend:
     # Runs when the frontend changed, OR on any non-PR event targeting main/stable
@@ -3115,6 +3337,8 @@ jobs:
       - docker-checks
       - general-unit-tests
       - generate-db-versions
+      - gradle-compile-check
+      - gradle-distribution-parity-check
       - history-tests
       - identity-frontend-tests
       - identity-tests
@@ -3171,11 +3395,12 @@ jobs:
         with:
           github_token: ${{ github.token }}
           has_failures: ${{ contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
-      # Clean up the run-scoped GCS objects (distball + m2 tarball) only when build-distball
-      # succeeded and no other job failed or was cancelled. If any did, keep them so
-      # "Re-run failed jobs" can re-fetch the distball (build-distball won't re-run, so it won't
-      # re-upload). needs.* here spans every check-results dependency (broader than the old
-      # consumer-only gate) — strictly safer: a failure anywhere keeps the objects for a rerun.
+      # Clean up the run-scoped GCS objects (distball, m2 tarball, and Gradle parity inputs)
+      # only when build-distball succeeded and no other job failed or was cancelled. If any did,
+      # keep them so "Re-run failed jobs" can re-fetch outputs from successful producer jobs,
+      # which will not rerun to re-upload their artifacts. needs.* spans every check-results
+      # dependency (broader than the old consumer-only gate), so a failure anywhere keeps the
+      # objects for a rerun.
       # Orphaned objects on abandoned runs are reaped by the bucket TTL (Infra-owned).
       # continue-on-error keeps a Vault/GCS infra flake from failing the merge-queue gate.
       # timeout-minutes additionally bounds a Vault/WIF hang so continue-on-error doesn't
