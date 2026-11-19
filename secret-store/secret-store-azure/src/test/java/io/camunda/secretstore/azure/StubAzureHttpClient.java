@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -40,30 +41,41 @@ final class StubAzureHttpClient implements HttpClient {
   private final List<Request> requests = new CopyOnWriteArrayList<>();
   private final Function<Request, Mono<HttpResponse>> router;
   private final AtomicBoolean rejectingSignIn;
+  private final AtomicInteger vaultStatus;
 
   private StubAzureHttpClient(final Function<Request, Mono<HttpResponse>> router) {
-    this(router, new AtomicBoolean());
+    this(router, new AtomicBoolean(), new AtomicInteger());
   }
 
   private StubAzureHttpClient(
-      final Function<Request, Mono<HttpResponse>> router, final AtomicBoolean rejectingSignIn) {
+      final Function<Request, Mono<HttpResponse>> router,
+      final AtomicBoolean rejectingSignIn,
+      final AtomicInteger vaultStatus) {
     this.router = router;
     this.rejectingSignIn = rejectingSignIn;
+    this.vaultStatus = vaultStatus;
   }
 
   /**
    * Answers Entra ID and IMDS with a token valid for {@code tokenLifetimeSeconds}, and the vault,
-   * until {@link #rejectSignIn(boolean) told} to reject sign-in.
+   * until {@link #rejectSignIn(boolean) told} to reject sign-in or {@link #answerVaultWith(int) to
+   * refuse} the vault's calls.
    */
   static StubAzureHttpClient signingIn(final long tokenLifetimeSeconds) {
     final var rejecting = new AtomicBoolean();
+    final var vaultStatus = new AtomicInteger();
     return new StubAzureHttpClient(
-        request ->
-            Mono.just(
-                rejecting.get() && request.isTokenRequest()
-                    ? invalidClient(request)
-                    : answer(request, tokenLifetimeSeconds)),
-        rejecting);
+        request -> {
+          if (rejecting.get() && request.isTokenRequest()) {
+            return Mono.just(invalidClient(request));
+          }
+          if (vaultStatus.get() != 0 && request.isAuthorizedVaultRequest()) {
+            return Mono.just(vaultError(request, vaultStatus.get()));
+          }
+          return Mono.just(answer(request, tokenLifetimeSeconds));
+        },
+        rejecting,
+        vaultStatus);
   }
 
   /** Refuses every connection, as on a machine with no IMDS and no network route to Azure. */
@@ -88,6 +100,14 @@ final class StubAzureHttpClient implements HttpClient {
   /** From now on rejects, or again answers, every sign-in of a {@link #signingIn} stub. */
   void rejectSignIn(final boolean reject) {
     rejectingSignIn.set(reject);
+  }
+
+  /**
+   * From now on answers every signed-in call to the vault of a {@link #signingIn} stub with {@code
+   * status} and Key Vault's error body for it, or, with {@code 0}, again as usual.
+   */
+  void answerVaultWith(final int status) {
+    vaultStatus.set(status);
   }
 
   /** An environment holding only {@code variables}, isolated from this process's. */
@@ -161,6 +181,14 @@ final class StubAzureHttpClient implements HttpClient {
                       + " resource=\"https://vault.azure.net\"");
       return new StubResponse(request.original(), 401, headers, "");
     }
+    if (request.url().replaceAll("\\?.*", "").endsWith("/secrets")) {
+      return json(
+          request,
+          200,
+          """
+          {"value":[],"nextLink":null}
+          """);
+    }
     return json(
         request,
         200,
@@ -177,6 +205,17 @@ final class StubAzureHttpClient implements HttpClient {
         """
         {"error":"invalid_client","error_description":"AADSTS7000215: Invalid client secret provided."}
         """);
+  }
+
+  private static HttpResponse vaultError(final Request request, final int status) {
+    final var code = status == 403 ? "Forbidden" : status == 404 ? "SecretNotFound" : "Error";
+    return json(
+        request,
+        status,
+        """
+        {"error":{"code":"%s","message":"Key Vault answered %d"}}
+        """
+            .formatted(code, status));
   }
 
   private static HttpResponse json(final Request request, final int status, final String body) {
@@ -200,6 +239,10 @@ final class StubAzureHttpClient implements HttpClient {
 
     boolean isTokenRequest() {
       return isImdsRequest() || url.contains("/oauth2/v2.0/token");
+    }
+
+    boolean isAuthorizedVaultRequest() {
+      return !isTokenRequest() && authorization != null;
     }
   }
 

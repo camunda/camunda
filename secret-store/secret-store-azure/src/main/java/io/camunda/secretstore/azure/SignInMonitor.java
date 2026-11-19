@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * <p>Thread-safe: tokens are fetched on the store's credential executor and on the threads calling
  * the vault.
  */
-final class SignInMonitor implements AutoCloseable {
+final class SignInMonitor implements StartupCheck.SignInState, AutoCloseable {
 
   static final String STORE_TYPE = "azure";
 
@@ -139,6 +139,19 @@ final class SignInMonitor implements AutoCloseable {
           credential,
           reason(failure));
     }
+  }
+
+  /** Whether the last token request failed, and none has succeeded since. */
+  @Override
+  public boolean isFailing() {
+    final var current = state.get();
+    return current == State.FAILING || current == State.FAILING_TO_START;
+  }
+
+  /** Whether no token request has completed yet, successfully or not. */
+  @Override
+  public boolean isPending() {
+    return state.get() == State.STARTING;
   }
 
   /**

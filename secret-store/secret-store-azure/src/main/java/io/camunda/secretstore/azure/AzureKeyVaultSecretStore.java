@@ -63,6 +63,10 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
    * Builds a store from configuration, with the resolver its container secret setting selects. It
    * signs in with the {@code AZURE_*} variables of this process's environment.
    *
+   * <p>Before returning, checks once that the store can reach its vault and sign in, logging the
+   * outcome ({@link StartupCheck}). The store is returned whatever the outcome, within the call
+   * timeout at most.
+   *
    * @param physicalTenantId the physical tenant the store belongs to, named in its log lines
    * @param storeId the ID the store is configured under, tagging its meters
    * @param meterRegistry where the store publishes {@link
@@ -98,18 +102,29 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
     final var credentialExecutor = newCredentialExecutor();
     final var signInMonitor =
         new SignInMonitor(physicalTenantId, storeId, config.vaultUrl(), meterRegistry);
+    final AzureKeyVaultSecretStore store;
     try {
       final var credential =
           AzureCredentialChain.build(
               config, environment, httpClient, credentialExecutor, signInMonitor);
       final var client = buildClient(config, credential, httpClient);
-      return new AzureKeyVaultSecretStore(
-          resolver(config, client), client, credentialExecutor, signInMonitor);
+      store =
+          new AzureKeyVaultSecretStore(
+              resolver(config, client), client, credentialExecutor, signInMonitor);
     } catch (final RuntimeException e) {
       signInMonitor.close();
       credentialExecutor.shutdownNow();
       throw e;
     }
+    StartupCheck.run(
+        store.resolver,
+        credentialExecutor,
+        config.callTimeout(),
+        signInMonitor,
+        physicalTenantId,
+        storeId,
+        config.vaultUrl());
+    return store;
   }
 
   private static AzureSecretResolver resolver(
@@ -124,11 +139,12 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
   }
 
   /**
-   * Token acquisition runs on platform threads the store owns. The resolution pool calls the store
-   * on virtual threads ({@link io.camunda.secretstore.ConcurrentSecretStore}), and the SDK's shared
-   * pool can deadlock there when every carrier is pinned (Azure/azure-sdk-for-java#46231), as the
-   * Azure backup store also works around. The pool creates threads on demand, reaps them after 60s
-   * idle, and is shut down in {@link #close()}.
+   * Token acquisition, and the startup check, run on platform threads the store owns. The
+   * resolution pool calls the store on virtual threads ({@link
+   * io.camunda.secretstore.ConcurrentSecretStore}), and the SDK's shared pool can deadlock there
+   * when every carrier is pinned (Azure/azure-sdk-for-java#46231), as the Azure backup store also
+   * works around. The pool creates threads on demand, reaps them after 60s idle, and is shut down
+   * in {@link #close()}.
    */
   static ExecutorService newCredentialExecutor() {
     return Executors.newCachedThreadPool(

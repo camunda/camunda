@@ -22,6 +22,11 @@
  * <p>Developer logins (Azure CLI, IDEs, PowerShell, Azure Developer CLI) are never used, see {@link
  * io.camunda.secretstore.azure.AzureCredentialChain}.
  *
+ * <p>When it is built, the store checks once that it can reach, sign in to and read its vault,
+ * waiting at most {@code callTimeout}. It logs one INFO line on success, or one WARN line naming
+ * the cause, and the cluster starts either way, see {@link
+ * io.camunda.secretstore.azure.StartupCheck}.
+ *
  * <p>Reading the vault is not implemented yet (camunda/camunda#67226): until then every name is
  * reported as not found and no names are listed.
  *
