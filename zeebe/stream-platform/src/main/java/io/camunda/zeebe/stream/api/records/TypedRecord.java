@@ -59,7 +59,8 @@ public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
    * written by Zeebe itself and not by an external user.
    *
    * <p>A command is considered internal if it has no request metadata and no batch operation
-   * reference.
+   * reference. An internal operation reference doesn't change this: the broker writes such commands
+   * itself.
    *
    * @return {@code true} if the command is an internal, {@code false} otherwise
    */

@@ -8,11 +8,15 @@
 package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import java.util.function.Consumer;
 
 public record FollowUpCommandMetadata(
-    long operationReference, long batchOperationReference, AuthInfo authInfo) {
+    long operationReference,
+    long batchOperationReference,
+    InternalOperationReference internalOperationReference,
+    AuthInfo authInfo) {
 
   public static FollowUpCommandMetadata empty() {
     return of(builder -> {});
@@ -27,6 +31,7 @@ public record FollowUpCommandMetadata(
   public static class Builder {
     private long operationReference = RecordMetadataDecoder.operationReferenceNullValue();
     private long batchOperationReference = RecordMetadataDecoder.batchOperationReferenceNullValue();
+    private InternalOperationReference internalOperationReference = InternalOperationReference.NONE;
     private AuthInfo authInfo = AuthInfo.EMPTY;
 
     public Builder operationReference(final long operationReference) {
@@ -39,13 +44,20 @@ public record FollowUpCommandMetadata(
       return this;
     }
 
+    public Builder internalOperationReference(
+        final InternalOperationReference internalOperationReference) {
+      this.internalOperationReference = internalOperationReference;
+      return this;
+    }
+
     public Builder authInfo(final AuthInfo authInfo) {
       this.authInfo = authInfo;
       return this;
     }
 
     public FollowUpCommandMetadata build() {
-      return new FollowUpCommandMetadata(operationReference, batchOperationReference, authInfo);
+      return new FollowUpCommandMetadata(
+          operationReference, batchOperationReference, internalOperationReference, authInfo);
     }
   }
 }
