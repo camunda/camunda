@@ -14,6 +14,8 @@ of five attempts with ten seconds between attempts.
 ## Existing consumers
 
 - Unified CI's integration-test job downloads the distball to `dist/target`.
+- Unified CI's Gradle distribution parity check downloads the distball to
+  `${{ runner.temp }}/maven-distball` and compares its TAR.GZ with Gradle's `distTar` output.
 - [`restore-shared-m2`](../restore-shared-m2) downloads the SNAPSHOT archive and
   extracts it into the local Maven repository for integration and unit tests.
 
