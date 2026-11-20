@@ -71,11 +71,15 @@ public class BrokerEmbeddedGatewayConfiguration {
     }
 
     final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
-        authConfig -> scopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig);
+        authConfig ->
+            required(scopedJwtDecoderFactory, "ScopedJwtDecoderFactory")
+                .buildIssuerAwareDecoder(authConfig);
     final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
-        authConfig -> scopedOidcClaimsProviderFactory.buildClaimsProvider(authConfig);
+        authConfig ->
+            required(scopedOidcClaimsProviderFactory, "ScopedOidcClaimsProviderFactory")
+                .buildClaimsProvider(authConfig);
     final Function<String, UserServices> userServicesForTenant =
-        tenantId -> serviceRegistry.userServices(tenantId);
+        tenantId -> required(serviceRegistry, "ServiceRegistry").userServices(tenantId);
 
     final var jobStreamClient =
         new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService(), meterRegistry);
@@ -109,6 +113,14 @@ public class BrokerEmbeddedGatewayConfiguration {
       throw e;
     }
     return embeddedGateway;
+  }
+
+  private static <T> T required(final T bean, final String name) {
+    if (bean == null) {
+      throw new IllegalStateException(
+          "%s is not available, but the gateway next to the broker needs it".formatted(name));
+    }
+    return bean;
   }
 
   /** Holds the gateway and its job stream client. Both are absent if the gateway is disabled. */
