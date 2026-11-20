@@ -230,6 +230,7 @@ registerProject(":zeebe-cluster-config-openapi", "zeebe/dynamic-config/openapi")
 registerProject(":zeebe-cluster-config-rest", "zeebe/dynamic-config/rest")
 
 registerProject(":zeebe-cluster-gossip-api", "zeebe/cluster-gossip/api")
+registerProject(":zeebe-cluster-gossip-testkit", "zeebe/cluster-gossip/testkit")
 
 registerProject(":zeebe-qa-integration-tests", "zeebe/qa/integration-tests")
 

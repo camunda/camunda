@@ -756,6 +756,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-cluster-gossip-testkit</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-cluster-config-impl</artifactId>
         <version>${project.version}</version>
       </dependency>
