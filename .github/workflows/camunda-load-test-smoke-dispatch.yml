@@ -12,6 +12,7 @@ on:
     paths:
       - 'load-tests/setup/**'
       - '.github/workflows/camunda-load-test.yml'
+      - '.github/workflows/camunda-load-test-deploy.yml'
       - '.github/scripts/load-test-install-camunda-platform.sh'
       - '.github/workflows/camunda-load-test-smoke.yml'
       - '.github/workflows/camunda-load-test-smoke-dispatch.yml'
