@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.EndFlowNodeDto;
+import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.MigrateFlowNodeInstanceDto;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.UpdateIncidentDto;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
@@ -47,6 +48,9 @@ public class FlowNodeInstanceWriter {
   /**
    * Points the flow node instance at its migration target (ELEMENT_MIGRATED / ANCESTOR_MIGRATED).
    * Only the element ID, name and process definition are written; state and dates stay as stored.
+   * The item carries a dedicated DTO rather than a {@link FlowNodeInstanceDbModel}, so {@link
+   * #mergeToQueue} never merges a completion or an incident change into it, which the migration
+   * statement would not write.
    */
   public void migrate(final FlowNodeInstanceDbModel flowNode) {
     executionQueue.executeInQueue(
@@ -55,7 +59,12 @@ public class FlowNodeInstanceWriter {
             WriteStatementType.UPDATE,
             flowNode.flowNodeInstanceKey(),
             "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.migrate",
-            flowNode));
+            new MigrateFlowNodeInstanceDto(
+                flowNode.flowNodeInstanceKey(),
+                flowNode.flowNodeId(),
+                flowNode.flowNodeName(),
+                flowNode.processDefinitionId(),
+                flowNode.processDefinitionKey())));
   }
 
   public void finish(final long key, final FlowNodeState state, final OffsetDateTime endDate) {

@@ -164,10 +164,11 @@
   <!--
     The columns a migration (ELEMENT_MIGRATED / ANCESTOR_MIGRATED) changes. State and dates are
     deliberately absent: the element keeps its start date, and a completion in the same flush,
-    merged into the queued insert, must not be reset to ACTIVE by the migration that sorts after
-    it.
+    merged into the queued insert or queued as its own update, must not be reset to ACTIVE by the
+    migration that sorts after it. The parameter is a dedicated DTO, so the writer never merges
+    such a change into the migration (see FlowNodeInstanceWriter#migrate).
   -->
-  <update id="migrate" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
+  <update id="migrate" parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$MigrateFlowNodeInstanceDto">
     UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET FLOW_NODE_ID             = #{flowNodeId},
         FLOW_NODE_NAME           = #{flowNodeName},

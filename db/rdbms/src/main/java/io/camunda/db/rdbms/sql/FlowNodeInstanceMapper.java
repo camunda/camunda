@@ -31,4 +31,16 @@ public interface FlowNodeInstanceMapper extends ProcessBasedHistoryCleanupMapper
       OffsetDateTime endDate) {}
 
   record UpdateIncidentDto(long flowNodeInstanceKey, Long incidentKey) {}
+
+  /**
+   * The columns a migration writes. Not a {@code FlowNodeInstanceDbModel}: the writer merges later
+   * changes of the element into a queued item of that class, which the migration statement would
+   * not write.
+   */
+  record MigrateFlowNodeInstanceDto(
+      long flowNodeInstanceKey,
+      String flowNodeId,
+      String flowNodeName,
+      String processDefinitionId,
+      Long processDefinitionKey) {}
 }
