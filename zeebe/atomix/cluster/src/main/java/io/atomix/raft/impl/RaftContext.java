@@ -28,6 +28,7 @@ import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
+import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException.CommitFailedException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
@@ -79,10 +80,12 @@ import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
+import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.CheckedRunnable;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -97,6 +100,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -172,6 +176,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
   private volatile HealthReport health;
+
+  // set as soon as a write to the data directory may not have reached the disk, from any thread;
+  // from then on, the server answers no request and changes to no role but inactive
+  private final AtomicReference<UnrecoverableException> storageFailure = new AtomicReference<>();
+  // whether failOnStorageFailure failed the server; only accessed on the Raft thread
+  private boolean failedOnStorageFailure;
 
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
@@ -298,6 +308,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       // message from other healthy replicas.
       setTerm(raftLog.getLastEntry().term());
     }
+
+    // Only now: a write that fails while this server is created fails its creation instead.
+    meta.setWriteFailureListener(this::onStorageFailure);
+    raftLog.setStorageFailureListener(this::onStorageFailure);
   }
 
   private ThreadContext createThreadContext(
@@ -327,7 +341,84 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   private void onUncaughtException(final Throwable error) {
+    if (isStorageFailure(error)) {
+      recordStorageFailure(error);
+      failOnStorageFailure();
+      return;
+    }
+
+    if (storageFailure.get() != null) {
+      // the server failed, or is about to, because a write may not have reached the disk
+      LOGGER.debug("An uncaught exception occurred after a storage failure", error);
+      return;
+    }
+
     LOGGER.error("An uncaught exception occurred, transition to inactive role", error);
+    failServer(error);
+  }
+
+  /**
+   * Called by the journal and the meta store when a write to them may not have reached the disk,
+   * possibly from another thread. The write's caller gets the failure as an exception too, but may
+   * not propagate it: e.g. when it runs in a future's callback, the failure ends up in that future.
+   *
+   * <p>From the moment it returns, this server answers no request and changes to no role but
+   * inactive (see {@link #handleRequestOnContext} and {@link #transition(Role)}): every
+   * acknowledgement, vote or configuration change it could send would rely on that write. Failing
+   * the server, i.e. the transition to inactive, runs on the Raft thread, possibly a few tasks
+   * later; until then, nothing that runs can persist anything, as the journal and the meta store
+   * reject every write after a failed one.
+   */
+  private void onStorageFailure(final Throwable cause) {
+    if (recordStorageFailure(cause)) {
+      threadContext.execute(this::failOnStorageFailure);
+    }
+  }
+
+  /** Returns true if this is the first storage failure. */
+  private boolean recordStorageFailure(final Throwable cause) {
+    return storageFailure.compareAndSet(
+        null,
+        new UnrecoverableException(
+            "Failed to persist data: data written since the last successful sync may not be on disk, so this replica must be recovered manually",
+            cause));
+  }
+
+  /** Whether the error, or one of its causes, is a failed write to the data directory. */
+  public static boolean isStorageFailure(final Throwable error) {
+    for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+      if (cause instanceof FlushException
+          || cause instanceof SyncFailed
+          || cause instanceof StorageException) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Fails this server because a write to its data directory may not have reached the disk, most
+   * likely because syncing it failed. The server transitions to inactive and reports itself as
+   * dead, and never becomes active again.
+   *
+   * <p>Retrying is not an option: after a failed sync, the kernel marks the affected pages as clean
+   * and reports the error only once, so a retried sync succeeds without writing anything. Reading
+   * the data back returns what is in the page cache, not what is on disk. The data on disk can only
+   * be trusted again after a restart, and the replica has to be recovered manually (e.g. by
+   * deleting its data and letting it replicate from the other replicas).
+   */
+  private void failOnStorageFailure() {
+    if (failedOnStorageFailure) {
+      return;
+    }
+
+    failedOnStorageFailure = true;
+    final var failure = storageFailure.get();
+    LOGGER.error("Failed to persist data, transition to inactive role", failure);
+    failServer(failure);
+  }
+
+  private void failServer(final Throwable error) {
     try {
       // to prevent further operations submitted to the threadcontext to execute
       transition(Role.INACTIVE);
@@ -420,7 +511,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     final CompletableFuture<R> future = new CompletableFuture<>();
     threadContext.execute(
         () ->
-            role.shouldAcceptRequest(request)
+            shouldAcceptRequest(request)
                 .ifRightOrLeft(
                     ignore ->
                         function
@@ -441,6 +532,17 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                     }));
 
     return future;
+  }
+
+  private Either<RaftError, Void> shouldAcceptRequest(final RaftRequest request) {
+    if (storageFailure.get() != null) {
+      return Either.left(
+          new RaftError(
+              RaftError.Type.UNAVAILABLE,
+              "Failed to persist data, so this member answers no request anymore"));
+    }
+
+    return role.shouldAcceptRequest(request);
   }
 
   public int getMaxAppendBatchSize() {
@@ -585,15 +687,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         try {
           raftLog.flush();
         } catch (final FlushException e) {
-          if (LOGGER.isWarnEnabled()) {
-            LOGGER.warn(
-                "Failed to flush commit at index %s, resetting journal to %s and stepping down"
-                    .formatted(commitIndex, previousCommitIndex),
-                e);
-          }
-          transition(Role.FOLLOWER);
           throw new CommitFailedException(
-              "Failed to commit index %s because of a flush error: %s", commitIndex, e);
+              "Failed to commit index %s, as the journal could not be flushed: %s", commitIndex, e);
         }
       }
       raftLog.setCommitIndex(commitIndex);
@@ -737,6 +832,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     checkNotNull(role);
 
     if (this.role.role() == role) {
+      return;
+    }
+
+    if (storageFailure.get() != null && role != Role.INACTIVE) {
+      LOGGER.warn(
+          "Expected to transition to {}, but this server failed to persist data and becomes inactive",
+          role,
+          storageFailure.get());
       return;
     }
 
@@ -1123,8 +1226,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // If we've already voted for another candidate in this term then the last voted for candidate
     // cannot be overridden.
     checkState(!(lastVotedFor != null && candidate != null), "Already voted for another candidate");
+    // store before remembering it, so that a vote whose write failed is never granted again
+    meta.storeVote(candidate);
     lastVotedFor = candidate;
-    meta.storeVote(lastVotedFor);
 
     if (candidate != null) {
       LOGGER.debug("Voted for {}", candidate);
@@ -1282,11 +1386,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void setTerm(final long term) {
     if (term > this.term) {
+      // store before acting on it, so that a term whose write failed is never used
+      meta.storeTerm(term);
+      meta.storeVote(null);
       this.term = term;
       leader = null;
       lastVotedFor = null;
-      meta.storeTerm(this.term);
-      meta.storeVote(lastVotedFor);
       LOGGER.debug("Set term {}", term);
     }
   }

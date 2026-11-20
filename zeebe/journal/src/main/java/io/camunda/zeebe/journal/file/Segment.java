@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -291,11 +292,20 @@ final class Segment implements AutoCloseable, FlushableSegment {
 
     final var target = file.getFileMarkedForDeletion();
     try {
-      FileUtil.moveDurably(file.file(), target);
+      Files.move(file.file(), target);
     } catch (final IOException e) {
       throw new JournalException(e);
     }
     markedForDeletion = true;
+
+    try {
+      FileUtil.flushDirectory(target.getParent());
+    } catch (final IOException e) {
+      throw new SyncFailed(
+          "Failed to flush the journal directory after marking segment %s for deletion"
+              .formatted(file.file()),
+          e);
+    }
   }
 
   void updateDescriptor() {
@@ -308,6 +318,11 @@ final class Segment implements AutoCloseable, FlushableSegment {
     descriptor = descriptor.reset();
     descriptorSerializer.writeTo(descriptor, buffer);
     // flush immediately to prevent inconsistencies between descriptor and actual last written entry
-    buffer.force(0, descriptor.encodingLength());
+    try {
+      buffer.force(0, descriptor.encodingLength());
+    } catch (final UncheckedIOException e) {
+      throw new SyncFailed(
+          "Failed to flush the descriptor of segment %s".formatted(file.file()), e);
+    }
   }
 }

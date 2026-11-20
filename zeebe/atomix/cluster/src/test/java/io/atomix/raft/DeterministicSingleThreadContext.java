@@ -16,12 +16,14 @@
 package io.atomix.raft;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.impl.RaftContext;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ScheduledFutureImpl;
 import io.atomix.utils.concurrent.ThreadContext;
 import java.time.Duration;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.slf4j.Logger;
@@ -35,11 +37,20 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
 
   private final DeterministicScheduler deterministicScheduler;
   private final MemberId memberId;
+  private volatile Consumer<Throwable> uncaughtExceptionHandler;
 
   public DeterministicSingleThreadContext(
       final DeterministicScheduler executor, final MemberId memberId) {
     deterministicScheduler = executor;
     this.memberId = memberId;
+  }
+
+  /**
+   * Sets the handler that a task's storage failure is passed to, like a real thread context does
+   * with every uncaught exception. Any other uncaught exception still fails the test.
+   */
+  public void setUncaughtExceptionHandler(final Consumer<Throwable> handler) {
+    uncaughtExceptionHandler = handler;
   }
 
   public DeterministicScheduler getDeterministicScheduler() {
@@ -117,6 +128,11 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
       try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
         command.run();
       } catch (final Exception e) {
+        final var handler = uncaughtExceptionHandler;
+        if (handler != null && RaftContext.isStorageFailure(e)) {
+          handler.accept(e);
+          return;
+        }
         LOGGER.error("Uncaught exception", e);
         Assertions.fail("Uncaught exception" + e);
       }

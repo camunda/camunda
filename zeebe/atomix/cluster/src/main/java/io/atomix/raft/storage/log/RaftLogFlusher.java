@@ -11,6 +11,7 @@ import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.util.function.Consumer;
 
 /**
  * Configurable flush strategy for the {@link io.atomix.raft.storage.log.RaftLog}. You can use its
@@ -48,6 +49,15 @@ public interface RaftLogFlusher extends CloseableSilently {
   default boolean isDirect() {
     return false;
   }
+
+  /**
+   * Sets the listener to notify when a flush fails outside of a call to {@link #flush(Journal)},
+   * e.g. a delayed flush. Implementations which only flush within {@link #flush(Journal)} report
+   * failures by throwing, and can ignore the listener.
+   *
+   * @param listener called with the failure, possibly from another thread
+   */
+  default void setAsyncFailureListener(final Consumer<Throwable> listener) {}
 
   @Override
   default void close() {}

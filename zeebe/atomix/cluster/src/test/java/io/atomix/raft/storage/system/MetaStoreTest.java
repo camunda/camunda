@@ -16,13 +16,22 @@
 package io.atomix.raft.storage.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.junit.jupiter.api.Named.named;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.StorageException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -296,6 +305,43 @@ class MetaStoreTest {
               named(
                   "force configuration",
                   new Configuration(2, 3, 1235L, getMembers("0", "3"), List.of(), true))));
+    }
+  }
+
+  @Nested
+  final class WriteFailureTest {
+
+    @Test
+    void shouldReportFailedWrite() throws IOException {
+      // given - the caller may swallow the exception, e.g. in a future's callback
+      final var failingStore = spy(metaStore);
+      final var error = new IOException("Input/output error");
+      doThrow(error).when(failingStore).write(any(), any(), anyBoolean());
+      final var reported = new ArrayList<Throwable>();
+      failingStore.setWriteFailureListener(reported::add);
+
+      // when
+      final var thrown = catchThrowable(() -> failingStore.storeTerm(2L));
+
+      // then
+      assertThat(thrown).isInstanceOf(StorageException.class).hasCause(error);
+      assertThat(reported).containsExactly(thrown);
+    }
+
+    @Test
+    void shouldFailEveryWriteAfterFailedWrite() throws IOException {
+      // given - like a failed fsync, the write fails once and would then seem to succeed
+      final var failingStore = spy(metaStore);
+      final var error = new IOException("Input/output error");
+      doThrow(error).doCallRealMethod().when(failingStore).write(any(), any(), anyBoolean());
+      assertThatThrownBy(() -> failingStore.storeTerm(2L)).isInstanceOf(StorageException.class);
+
+      // when
+      final var thrown = catchThrowable(() -> failingStore.storeVote(MemberId.from("1")));
+
+      // then - no later write is attempted, so none can seem to succeed
+      assertThat(thrown).isInstanceOf(StorageException.class).hasCause(error);
+      verify(failingStore, times(1)).write(any(), any(), anyBoolean());
     }
   }
 }

@@ -17,6 +17,7 @@ package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -52,22 +53,21 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
 
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
 public class PassiveRoleTest {
 
-  @Rule public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
   private RaftLog log;
   private PassiveRole role;
   private RaftContext ctx;
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
-  @Before
+  @BeforeEach
   public void setup() throws IOException {
     ctx = mock(RaftContext.class);
 
@@ -204,6 +204,32 @@ public class PassiveRoleTest {
     // then
     verify(log, never()).flush();
     assertThat(response.lastLogIndex()).isZero();
+  }
+
+  @Test
+  public void shouldNotAcknowledgeEntriesWhenFlushFails() throws CheckedJournalException {
+    // given
+    doThrow(new FlushException(new IOException("Input/output error"))).when(log).flush();
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1])))
+            .withCommitIndex(1)
+            .build();
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - neither acknowledged nor committed
+    assertThat(response.succeeded()).isFalse();
+    assertThat(response.lastLogIndex()).isZero();
+    verify(ctx, never()).setCommitIndex(anyLong());
   }
 
   @Test

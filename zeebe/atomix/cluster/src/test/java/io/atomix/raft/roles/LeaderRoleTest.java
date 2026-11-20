@@ -63,9 +63,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.Before;
-import org.junit.Test;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 public class LeaderRoleTest {
@@ -77,7 +77,7 @@ public class LeaderRoleTest {
   private LogCompactor logCompactor;
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
-  @Before
+  @BeforeEach
   public void setup() {
     context = Mockito.mock(RaftContext.class, RETURNS_DEEP_STUBS);
     logCompactor = mock(LogCompactor.class);
