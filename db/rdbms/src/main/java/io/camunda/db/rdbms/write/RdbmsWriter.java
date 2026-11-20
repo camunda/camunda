@@ -17,7 +17,6 @@ import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
-import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
@@ -91,7 +90,7 @@ public class RdbmsWriter {
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
       final ProcessInstanceMapper processInstanceMapper,
-      final PurgeMapper purgeMapper,
+      final RdbmsPurger rdbmsPurger,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
@@ -105,7 +104,7 @@ public class RdbmsWriter {
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
-    rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
+    this.rdbmsPurger = rdbmsPurger;
     authorizationWriter = new AuthorizationWriter(executionQueue);
     decisionDefinitionWriter = new DecisionDefinitionWriter(executionQueue);
     decisionInstanceWriter =
