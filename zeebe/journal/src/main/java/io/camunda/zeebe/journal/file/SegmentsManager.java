@@ -98,7 +98,14 @@ final class SegmentsManager implements AutoCloseable {
     }
 
     if (bgIoExecutor != null) {
-      bgIoExecutor.close();
+      try {
+        bgIoExecutor.close();
+      } catch (final Exception e) {
+        LOG.warn(
+            "Failed to close the background I/O executor of journal {}; its thread may leak",
+            name,
+            e);
+      }
       bgIoExecutor = null;
     }
     currentSegment = null;

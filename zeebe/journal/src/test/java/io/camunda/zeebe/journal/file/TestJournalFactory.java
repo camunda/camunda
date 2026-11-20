@@ -109,8 +109,16 @@ final class TestJournalFactory {
 
   SegmentsManager segmentsManager(
       final Path directory, final SegmentLoader loader, final JournalMetaStore metaStore) {
+    return segmentsManager(directory, loader, metaStore, "journal");
+  }
+
+  SegmentsManager segmentsManager(
+      final Path directory,
+      final SegmentLoader loader,
+      final JournalMetaStore metaStore,
+      final String name) {
     return new SegmentsManager(
-        index, maxSegmentSize(), directory.resolve("data"), "journal", loader, metrics, metaStore);
+        index, maxSegmentSize(), directory.resolve("data"), name, loader, metrics, metaStore);
   }
 
   SegmentedJournal journal(final SegmentsManager segments) {

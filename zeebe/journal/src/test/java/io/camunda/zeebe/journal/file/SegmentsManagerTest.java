@@ -319,7 +319,9 @@ class SegmentsManagerTest {
             })
         .when(loader)
         .createUninitializedSegment(Mockito.any(), Mockito.any(), Mockito.any());
-    segments = journalFactory.segmentsManager(directory, loader);
+    segments =
+        journalFactory.segmentsManager(
+            directory, loader, journalFactory.metaStore(), "bg-io-probe");
     segments.open();
 
     // when - rolling over triggers preparing the following segment, which is awaited on the next
@@ -331,7 +333,7 @@ class SegmentsManagerTest {
     assertThat(preparingThread.get())
         .isNotNull()
         .extracting(Thread::getName)
-        .isEqualTo("journal-bg-io-journal");
+        .isEqualTo("journal-bg-io-bg-io-probe");
   }
 
   @Test
