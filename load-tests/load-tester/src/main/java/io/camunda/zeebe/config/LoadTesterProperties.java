@@ -18,6 +18,7 @@ public class LoadTesterProperties {
 
   private boolean monitorDataAvailability = true;
   private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
+  private double monitorDataAvailabilitySamplingPercentage = 10;
   private boolean performReadBenchmarks = false;
   private String disabledQueries = "";
 
@@ -41,6 +42,15 @@ public class LoadTesterProperties {
 
   public void setMonitorDataAvailabilityInterval(final Duration monitorDataAvailabilityInterval) {
     this.monitorDataAvailabilityInterval = monitorDataAvailabilityInterval;
+  }
+
+  public double getMonitorDataAvailabilitySamplingPercentage() {
+    return monitorDataAvailabilitySamplingPercentage;
+  }
+
+  public void setMonitorDataAvailabilitySamplingPercentage(
+      final double monitorDataAvailabilitySamplingPercentage) {
+    this.monitorDataAvailabilitySamplingPercentage = monitorDataAvailabilitySamplingPercentage;
   }
 
   public boolean isPerformReadBenchmarks() {
