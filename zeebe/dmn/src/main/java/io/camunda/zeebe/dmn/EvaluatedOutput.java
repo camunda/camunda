@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dmn;
 
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An evaluated output of a decision table that belongs to a {@link MatchedRule matched rule}. It
@@ -18,7 +19,7 @@ public interface EvaluatedOutput {
   /**
    * @return the id of the evaluated output
    */
-  String outputId();
+  @Nullable String outputId();
 
   /**
    * Returns the name of the evaluated output. Note that the name of the output can be different
@@ -27,9 +28,10 @@ public interface EvaluatedOutput {
    *
    * <p>If a label is defined, it is favored as the output name. Otherwise, the name is used.
    *
-   * @return the name of the evaluated output
+   * @return the name of the evaluated output, or {@code null} if the output has neither a label nor
+   *     a name
    */
-  String outputName();
+  @Nullable String outputName();
 
   /**
    * Returns the value of the evaluated output expression encoded as MessagePack.

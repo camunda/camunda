@@ -15,9 +15,11 @@ import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.camunda.dmn.Audit.EvaluatedRule;
 import org.camunda.feel.syntaxtree.Val;
+import org.jspecify.annotations.Nullable;
 
 public record MatchedDmnScalaRule(
-    String ruleId, int ruleIndex, List<EvaluatedOutput> evaluatedOutputs) implements MatchedRule {
+    @Nullable String ruleId, int ruleIndex, List<EvaluatedOutput> evaluatedOutputs)
+    implements MatchedRule {
 
   public static MatchedDmnScalaRule of(
       final EvaluatedRule evaluatedRule,

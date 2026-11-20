@@ -9,20 +9,21 @@ package io.camunda.zeebe.dmn.impl;
 
 import io.camunda.zeebe.dmn.DecisionContext;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Simple Decision Context based on a map of variables, where the key is the name of the variable.
  */
 public final class VariablesContext implements DecisionContext {
 
-  private final Map<String, Object> variables;
+  private final Map<String, @Nullable Object> variables;
 
-  public VariablesContext(final Map<String, Object> variables) {
+  public VariablesContext(final Map<String, @Nullable Object> variables) {
     this.variables = variables;
   }
 
   @Override
-  public Map<String, Object> toMap() {
+  public Map<String, @Nullable Object> toMap() {
     return variables;
   }
 }
