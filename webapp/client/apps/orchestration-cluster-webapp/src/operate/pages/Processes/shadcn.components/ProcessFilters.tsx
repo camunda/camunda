@@ -34,6 +34,7 @@ type Props = Pick<
 	'process' | 'version' | 'elementId' | 'tenantId' | 'active' | 'incidents' | 'suspended' | 'completed' | 'canceled'
 > & {
 	options: ProcessFilterOptions;
+	isLocked?: boolean;
 };
 
 const toCheckedState = (all: boolean, some: boolean) => (all ? true : some ? 'indeterminate' : false);
@@ -87,6 +88,7 @@ const ProcessFilters: React.FC<Props> = ({
 	suspended,
 	completed,
 	canceled,
+	isLocked = false,
 }) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
@@ -111,6 +113,7 @@ const ProcessFilters: React.FC<Props> = ({
 		refetchDiagramXml,
 		isMultiTenancyEnabled,
 	} = options;
+	const lockedTitle = isLocked ? t('operate.processes.batchModification.notChangeable') : undefined;
 	const selectedVersion = process ? String(version ?? ALL_VERSIONS) : '';
 	const isRunningAll = active && incidents && suspended;
 	const isFinishedAll = completed && canceled;
@@ -148,7 +151,7 @@ const ProcessFilters: React.FC<Props> = ({
 					<Heading as="h3" variant="heading-xs">
 						{t('operate.processes.filters.processSection')}
 					</Heading>
-					<div className="flex flex-col gap-1.5">
+					<div className="flex flex-col gap-1.5" title={lockedTitle}>
 						<Label htmlFor="process-name-filter">{t('operate.processes.filters.name')}</Label>
 						<Combobox
 							id="process-name-filter"
@@ -156,17 +159,17 @@ const ProcessFilters: React.FC<Props> = ({
 							size="sm"
 							options={processOptions}
 							value={selectedProcess?.id ?? ''}
-							disabled={isMultiTenancyEnabled && tenantId === undefined}
+							disabled={isLocked || (isMultiTenancyEnabled && tenantId === undefined)}
 							placeholder={t('operate.processes.ds.filters.searchByName')}
 							searchPlaceholder={t('operate.processes.ds.filters.searchByName')}
 							onValueChange={selectProcess}
 						/>
 					</div>
-					<div className="flex flex-col gap-1.5">
+					<div className="flex flex-col gap-1.5" title={lockedTitle}>
 						<Label htmlFor="process-version-filter">{t('operate.processes.filters.version')}</Label>
 						<Select
 							value={selectedVersion}
-							disabled={!areDefinitionsReady || versionNumbers.length === 0}
+							disabled={isLocked || !areDefinitionsReady || versionNumbers.length === 0}
 							onValueChange={selectVersion}
 						>
 							<SelectTrigger id="process-version-filter" size="sm" className="w-full">
@@ -184,7 +187,7 @@ const ProcessFilters: React.FC<Props> = ({
 					{areDefinitionsError && !areDefinitionsFetching && (
 						<LoadError error={selectedDefinitionsError} onRetry={() => void refetchSelectedDefinitions()} />
 					)}
-					<div className="flex flex-col gap-1.5">
+					<div className="flex flex-col gap-1.5" title={lockedTitle}>
 						<Label htmlFor="process-element-filter">{t('operate.processes.filters.element')}</Label>
 						<Combobox
 							id="process-element-filter"
@@ -192,7 +195,7 @@ const ProcessFilters: React.FC<Props> = ({
 							size="sm"
 							options={elementOptions}
 							value={selectedElement?.id ?? ''}
-							disabled={isElementDisabled}
+							disabled={isLocked || isElementDisabled}
 							placeholder={t('operate.processes.ds.filters.searchByElement')}
 							searchPlaceholder={t('operate.processes.ds.filters.searchByElement')}
 							onValueChange={selectElement}
@@ -202,7 +205,7 @@ const ProcessFilters: React.FC<Props> = ({
 						<LoadError error={xmlError} onRetry={() => void refetchDiagramXml()} />
 					)}
 					{isElementDisabled && elementId && (
-						<Button variant="ghost" size="sm" onClick={() => selectElement(undefined)}>
+						<Button variant="ghost" size="sm" disabled={isLocked} onClick={() => selectElement(undefined)}>
 							{t('operate.processes.filters.clearElement')}
 						</Button>
 					)}

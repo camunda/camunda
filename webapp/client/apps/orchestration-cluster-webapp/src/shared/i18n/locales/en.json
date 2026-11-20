@@ -1304,7 +1304,15 @@
 					"summaryDescription": "Planned modifications for \"{{processName}}\". Click \"Apply\" to proceed.",
 					"summaryHeading": "Element Modifications",
 					"affectedInstances": "Affected instances",
-					"batchMove": "Batch move"
+					"batchMove": "Batch move",
+					"targetScheduledDs_one": "Move {{count}} instance from “{{source}}” to “{{target}}”. Review the modification to confirm it.",
+					"targetScheduledDs_other": "Move {{count}} instances from “{{source}}” to “{{target}}”. Review the modification to confirm it.",
+					"targetPendingDs": "Move instances from “{{source}}” to “{{target}}”. Review the modification to confirm it.",
+					"reviewDs": "Review modification",
+					"helperReviewDs": "2. Click “Review modification”.",
+					"exitDescriptionDs": "Exiting discards your planned move.",
+					"exitDescriptionEmptyDs": "Exit batch modification mode.",
+					"undoAriaDs": "Undo move to “{{target}}”"
 				},
 				"toolbar": {
 					"delete": "Delete",

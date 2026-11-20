@@ -1295,7 +1295,15 @@
 					"summaryDescription": "Modifications prévues pour « {{processName}} ». Cliquez sur « Appliquer » pour continuer.",
 					"summaryHeading": "Modifications des éléments",
 					"affectedInstances": "Instances concernées",
-					"batchMove": "Déplacement par lot"
+					"batchMove": "Déplacement par lot",
+					"targetScheduledDs_one": "Déplacer {{count}} instance de « {{source}} » vers « {{target}} ». Vérifiez la modification pour la confirmer.",
+					"targetScheduledDs_other": "Déplacer {{count}} instances de « {{source}} » vers « {{target}} ». Vérifiez la modification pour la confirmer.",
+					"targetPendingDs": "Déplacer des instances de « {{source}} » vers « {{target}} ». Vérifiez la modification pour la confirmer.",
+					"reviewDs": "Vérifier la modification",
+					"helperReviewDs": "2. Cliquez sur « Vérifier la modification ».",
+					"exitDescriptionDs": "Quitter annule le déplacement prévu.",
+					"exitDescriptionEmptyDs": "Quitter le mode de modification par lot.",
+					"undoAriaDs": "Annuler le déplacement vers « {{target}} »"
 				},
 				"toolbar": {
 					"delete": "Supprimer",

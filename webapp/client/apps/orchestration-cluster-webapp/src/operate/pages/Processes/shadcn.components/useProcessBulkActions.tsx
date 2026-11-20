@@ -13,12 +13,16 @@ import type {ProcessInstancesSelection, ProcessBulkAction} from '../useProcessIn
 import type {ProcessBulkActionDialogProps} from './ProcessBulkActionDialog';
 import {ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
 import {useMigrateAction} from './useMigrateAction';
+import type {ProcessesMode} from './processesMode';
+import type {MoveBatchAction} from './useMoveBatchAction';
 
 type Props = {
 	selection: ProcessInstancesSelection;
 	isSubmitting: boolean;
 	onSubmit: (action: ProcessBulkAction) => void;
 	migration: Omit<Parameters<typeof useMigrateAction>[0], 'selection' | 'isSubmitting'>;
+	mode?: ProcessesMode;
+	moveAction?: MoveBatchAction;
 };
 
 const UNAVAILABLE_REASON_KEYS = {
@@ -37,7 +41,7 @@ const ACTIONS = [
 	{action: 'resume', Icon: Play},
 ] as const;
 
-function useProcessBulkActions({selection, isSubmitting, onSubmit, migration}: Props) {
+function useProcessBulkActions({selection, isSubmitting, onSubmit, migration, mode = 'list', moveAction}: Props) {
 	const {t} = useTranslation();
 	const migrateAction = useMigrateAction({...migration, selection, isSubmitting});
 	const [dialog, setDialog] = useState<{action: ProcessBulkAction; identity: string} | null>(null);
@@ -49,23 +53,36 @@ function useProcessBulkActions({selection, isSubmitting, onSubmit, migration}: P
 	}
 	const total = `${selectedCount}${isCountTruncated ? '+' : ''}`;
 
-	const bulkActions = ACTIONS.map(({action: operation, Icon}) => ({
+	const isActionMode = mode !== 'list';
+
+	const operationActions = ACTIONS.map(({action: operation, Icon}) => ({
 		id: operation,
 		label: t(`operate.processes.toolbar.${operation}`),
 		variant: operation === 'delete' ? ('destructive' as const) : ('default' as const),
 		icon: <Icon aria-hidden />,
-		disabled: isSubmitting || !eligibility[operation],
+		disabled: isSubmitting || isActionMode || !eligibility[operation],
 		onClick: () => setDialog({action: operation, identity: filterIdentity}),
 	}));
-
-	const batchActions = ENABLE_PROCESS_MIGRATION ? [...bulkActions, migrateAction.batchAction] : bulkActions;
-
-	const unavailableReasons = [
-		...ACTIONS.filter(({action: operation}) => !eligibility[operation]).map(({action: operation}) =>
-			t(`operate.processes.toolbar.${UNAVAILABLE_REASON_KEYS[operation]}`),
-		),
-		...(!ENABLE_PROCESS_MIGRATION || migrateAction.disabledReason === undefined ? [] : [migrateAction.disabledReason]),
+	const migrationAction = {
+		...migrateAction.batchAction,
+		disabled: isActionMode || migrateAction.batchAction.disabled,
+	};
+	const batchActions = [
+		...(moveAction === undefined ? [] : [moveAction.action]),
+		...operationActions,
+		...(ENABLE_PROCESS_MIGRATION ? [migrationAction] : []),
 	];
+	const unavailableReasons = isActionMode
+		? [t('operate.processes.toolbar.actionMode')]
+		: [
+				...(moveAction?.disabledReason === undefined ? [] : [moveAction.disabledReason]),
+				...ACTIONS.filter(({action: operation}) => !eligibility[operation]).map(({action: operation}) =>
+					t(`operate.processes.toolbar.${UNAVAILABLE_REASON_KEYS[operation]}`),
+				),
+				...(!ENABLE_PROCESS_MIGRATION || migrateAction.disabledReason === undefined
+					? []
+					: [migrateAction.disabledReason]),
+			];
 	const selectedLabel = t('operate.processes.ds.toolbar.selected', {count: selectedCount, total});
 	const unavailableText = unavailableReasons.join(' ');
 	// Reasons stay out of the visible bar (Carbon shows them as a button title) but remain available on hover and to screen readers.
