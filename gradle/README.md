@@ -43,6 +43,38 @@ disables test execution and Spotless tasks, and also skips frontend builds. The 
 still compiles test code without running tests. Prefer `-Pskip.fe.build=true` when only frontend
 work should be skipped and the active project graph should remain unchanged.
 
+## Java checks
+
+`javaChecks` is the Gradle equivalent of the Maven `Java Checks` CI job. It runs Checkstyle (main
+and test sources), SpotBugs, and compiles main and test classes (Error Prone and NullAway run as
+part of `compileJava`).
+
+```bash
+# Whole monorepo
+./gradlew -Pskip.fe.build=true javaChecks
+
+# One module
+./gradlew -Pskip.fe.build=true :zeebe-journal:javaChecks
+```
+
+The checks reuse the Maven configuration: `build-tools/src/main/resources/check/.checkstyle.xml`
+and the SpotBugs filters in `build-tools/src/main/resources/spotbugs`.
+A module's own `spotbugs/spotbugs-exclude.xml` is applied on top of the shared exclude filter, as in
+Maven. The Checkstyle and SpotBugs versions come from `parent/pom.xml`. SpotBugs runs the engine
+that the Maven plugin bundles, which can be older than `version.spotbugs`.
+
+All of these tasks are cacheable, so with `--build-cache` a repeated run only redoes the modules
+that changed. `-Pquickly` skips them, like Maven's `-Dquickly`.
+
+`javaChecks` does not cover everything the Maven job does:
+
+- Spotless is not part of it. Maven runs it in a separate job, and Gradle has `spotlessCheck`.
+- The license header check (`license-maven-plugin`) is not ported yet.
+- Dependency analysis (`maven-dependency-plugin:analyze-only`) has no Gradle equivalent yet.
+- The Maven Enforcer rules (`requireMavenVersion`, `banDuplicatePomDependencyVersions`,
+  `dependencyConvergence`) are not ported. Gradle dependency resolution and the version catalog
+  cover the dependency rules.
+
 ## Packaging and frontend assets
 
 ```bash
