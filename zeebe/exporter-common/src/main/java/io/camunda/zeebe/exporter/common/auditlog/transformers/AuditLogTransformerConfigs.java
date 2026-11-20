@@ -42,6 +42,7 @@ import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -126,7 +127,24 @@ public class AuditLogTransformerConfigs {
   // Unlike other resources, a process deletion is audited on DRAINING rather than DELETED: only
   // processes drain, and DRAINING is the record written synchronously under the deleter's command.
   public static final TransformerConfig PROCESS_CONFIG =
-      TransformerConfig.with(PROCESS).withIntents(ProcessIntent.CREATED, ProcessIntent.DRAINING);
+      TransformerConfig.with(PROCESS)
+          .withIntents(
+              ProcessIntent.CREATED,
+              ProcessIntent.DRAINING,
+              ProcessIntent.SUSPENDED,
+              ProcessIntent.RESUMED);
+
+  // Only refusals: each changed version is audited by its own Process SUSPENDED or RESUMED event
+  // (PROCESS_CONFIG), so auditing the summary event too would log every change twice. All three
+  // refusals a user can cause are kept: NOT_FOUND (unknown id, key or version), INVALID_ARGUMENT
+  // (malformed target) and INVALID_STATE. FORBIDDEN is left out like in the sibling configs, as
+  // authorization failures are not audited.
+  public static final TransformerConfig PROCESS_DEFINITION_SUSPENSION_CONFIG =
+      TransformerConfig.with(ValueType.PROCESS_DEFINITION_SUSPENSION)
+          .withRejections(
+              ProcessDefinitionSuspensionIntent.SUSPEND, ProcessDefinitionSuspensionIntent.RESUME)
+          .withRejectionTypes(
+              RejectionType.INVALID_ARGUMENT, RejectionType.INVALID_STATE, RejectionType.NOT_FOUND);
 
   public static final TransformerConfig PROCESS_INSTANCE_CANCEL_CONFIG =
       TransformerConfig.with(ValueType.PROCESS_INSTANCE)

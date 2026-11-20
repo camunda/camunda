@@ -86,6 +86,9 @@ public final class AuditLogTransformerRegistry {
         GroupAuditLogTransformer::new,
         GroupEntityAuditLogTransformer::new,
         MappingRuleAuditLogTransformer::new,
+        // Also audits Process SUSPENDED and RESUMED. Like CREATED, these per-version events are
+        // written on every partition once the command is distributed (#65686), so auditing them on
+        // partition 1 only gives one entry per change.
         ProcessAuditLogTransformer::new,
         ResourceAuditLogTransformer::new,
         RoleAuditLogTransformer::new,
@@ -111,6 +114,10 @@ public final class AuditLogTransformerRegistry {
         ProcessInstanceCreationAuditLogTransformer::new,
         ProcessInstanceMigrationAuditLogTransformer::new,
         ProcessInstanceModificationAuditLogTransformer::new,
+        // All partitions: the gateway does not pin suspend and resume commands to partition 1, so a
+        // rejection can be written on any partition. Once #65686 distributes the commands, a
+        // request rejected on several partitions writes one entry per partition.
+        ProcessDefinitionSuspensionAuditLogTransformer::new,
         ProcessInstanceSuspendResumeAuditLogTransformer::new,
         UserTaskAuditLogTransformer::new,
         VariableAddUpdateAuditLogTransformer::new);

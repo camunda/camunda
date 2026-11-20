@@ -9,6 +9,8 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 
 public class ProcessAuditLogTransformer implements AuditLogTransformer<Process> {
@@ -30,6 +32,15 @@ public class ProcessAuditLogTransformer implements AuditLogTransformer<Process> 
         .setDeploymentKey(value.getDeploymentKey())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessDefinitionId(value.getBpmnProcessId())
-        .setEntityDescription(value.getResourceName());
+        .setEntityDescription(describe(record.getIntent(), value));
+  }
+
+  // AuditLogEntry has no field for the definition version, so suspend and resume entries, which
+  // concern a single version, carry it in the description.
+  private static String describe(final Intent intent, final Process value) {
+    if (intent == ProcessIntent.SUSPENDED || intent == ProcessIntent.RESUMED) {
+      return value.getResourceName() + " (version " + value.getVersion() + ")";
+    }
+    return value.getResourceName();
   }
 }

@@ -25,13 +25,16 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.ImmutableHistoryDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableForm;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
@@ -316,6 +319,77 @@ public class AuditLogsIT {
                     .withPartitionId(1)
                     .withTimestamp(Instant.parse("2026-07-15T14:06:00Z").toEpochMilli())
                     .build())
+            .build(),
+        TestParameter.record(
+                ImmutableRecord.builder()
+                    .withRecordType(RecordType.EVENT)
+                    .withValueType(ValueType.PROCESS)
+                    .withIntent(ProcessIntent.SUSPENDED)
+                    .withValue(
+                        ImmutableProcess.builder()
+                            .withProcessDefinitionKey(5601L)
+                            .withBpmnProcessId("my-suspended-process")
+                            .withResourceName("suspended.bpmn")
+                            .withVersion(2)
+                            .build())
+                    .withKey(5601L)
+                    .withPosition(807L)
+                    .withPartitionId(1)
+                    .withTimestamp(Instant.parse("2026-07-15T14:07:00Z").toEpochMilli())
+                    .build())
+            .expectedAuditLog(
+                Map.ofEntries(
+                    Map.entry("id", "1-807"),
+                    Map.entry("actorType", "UNKNOWN"),
+                    Map.entry("category", "DEPLOYED_RESOURCES"),
+                    Map.entry("entityDescription", "suspended.bpmn (version 2)"),
+                    Map.entry("entityKey", "5601"),
+                    Map.entry("entityOperationIntent", (int) ProcessIntent.SUSPENDED.value()),
+                    Map.entry("entityType", "RESOURCE"),
+                    Map.entry("entityValueType", (int) ValueType.PROCESS.value()),
+                    Map.entry("entityVersion", 0),
+                    Map.entry("operationType", "SUSPEND"),
+                    Map.entry("processDefinitionId", "my-suspended-process"),
+                    Map.entry("processDefinitionKey", 5601),
+                    Map.entry("result", "SUCCESS"),
+                    Map.entry("tenantScope", "TENANT"),
+                    Map.entry("timestamp", "2026-07-15T14:07:00.000+0000")))
+            .build(),
+        TestParameter.record(
+                ImmutableRecord.builder()
+                    .withRecordType(RecordType.COMMAND_REJECTION)
+                    .withRejectionType(RejectionType.NOT_FOUND)
+                    .withValueType(ValueType.PROCESS_DEFINITION_SUSPENSION)
+                    .withIntent(ProcessDefinitionSuspensionIntent.RESUME)
+                    .withValue(
+                        ImmutableProcessDefinitionSuspensionRecordValue.builder()
+                            .withBpmnProcessId("my-resume-by-id-process")
+                            .withVersion(3)
+                            .build())
+                    .withKey(-1L)
+                    .withPosition(811L)
+                    .withPartitionId(1)
+                    .withTimestamp(Instant.parse("2026-07-15T14:11:00Z").toEpochMilli())
+                    .build())
+            .expectedAuditLog(
+                Map.ofEntries(
+                    Map.entry("id", "1-811"),
+                    Map.entry("actorType", "UNKNOWN"),
+                    Map.entry("category", "DEPLOYED_RESOURCES"),
+                    Map.entry("entityDescription", "NOT_FOUND (version 3)"),
+                    Map.entry("entityKey", "my-resume-by-id-process"),
+                    Map.entry(
+                        "entityOperationIntent",
+                        (int) ProcessDefinitionSuspensionIntent.RESUME.value()),
+                    Map.entry("entityType", "RESOURCE"),
+                    Map.entry(
+                        "entityValueType", (int) ValueType.PROCESS_DEFINITION_SUSPENSION.value()),
+                    Map.entry("entityVersion", 0),
+                    Map.entry("operationType", "RESUME"),
+                    Map.entry("processDefinitionId", "my-resume-by-id-process"),
+                    Map.entry("result", "FAIL"),
+                    Map.entry("tenantScope", "TENANT"),
+                    Map.entry("timestamp", "2026-07-15T14:11:00.000+0000")))
             .build(),
         TestParameter.record(
                 ImmutableRecord.builder()
