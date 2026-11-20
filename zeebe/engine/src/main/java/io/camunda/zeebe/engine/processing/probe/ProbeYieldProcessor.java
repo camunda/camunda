@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProbeState;
 import io.camunda.zeebe.engine.state.immutable.ProbeState.State;
@@ -43,6 +44,7 @@ public final class ProbeYieldProcessor implements TypedRecordProcessor<ProbeReco
   private final CslTenantCheck tenantCheck;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
   private final InstantSource clock;
 
   public ProbeYieldProcessor(
@@ -56,6 +58,7 @@ public final class ProbeYieldProcessor implements TypedRecordProcessor<ProbeReco
     this.tenantCheck = tenantCheck;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
     this.clock = clock;
   }
 
@@ -65,25 +68,31 @@ public final class ProbeYieldProcessor implements TypedRecordProcessor<ProbeReco
     final var state = probeState.getState(probeKey);
     final var probe = probeState.getProbe(probeKey);
     if (state == State.NOT_FOUND || probe == null || !isOfAuthorizedTenant(command, probe)) {
-      rejectionWriter.appendRejection(
-          command, RejectionType.NOT_FOUND, NOT_FOUND_MESSAGE.formatted(probeKey));
+      reject(command, RejectionType.NOT_FOUND, NOT_FOUND_MESSAGE.formatted(probeKey));
       return;
     }
     // late, as an answer (F4): the probe stays with its worker until the queued TIME_OUT ends it
     if (probe.getDeadline() <= clock.millis()) {
-      rejectionWriter.appendRejection(
-          command, RejectionType.NOT_FOUND, EXPIRED_MESSAGE.formatted(probeKey));
+      reject(command, RejectionType.NOT_FOUND, EXPIRED_MESSAGE.formatted(probeKey));
       return;
     }
     if (state != State.ACTIVATED) {
-      rejectionWriter.appendRejection(
+      reject(
           command, RejectionType.INVALID_STATE, NOT_ACTIVATED_MESSAGE.formatted(probeKey, state));
       return;
     }
 
-    stateWriter.appendFollowUpEvent(
-        probeKey, ProbeIntent.YIELDED, ProbeBehavior.withoutInput(probe));
+    final var yielded = ProbeBehavior.withoutInput(probe);
+    stateWriter.appendFollowUpEvent(probeKey, ProbeIntent.YIELDED, yielded);
+    // the gateway sends YIELD as a request: without a response, it waits for its time-out
+    responseWriter.writeAcceptedResponseOnCommand(probeKey, ProbeIntent.YIELDED, yielded, command);
     probeBehavior.notifyProbesAvailable(probe.getProbeId());
+  }
+
+  private void reject(
+      final TypedRecord<ProbeRecord> command, final RejectionType type, final String reason) {
+    rejectionWriter.appendRejection(command, type, reason);
+    responseWriter.writeRejectedResponseOnCommand(command, type, reason);
   }
 
   /**
