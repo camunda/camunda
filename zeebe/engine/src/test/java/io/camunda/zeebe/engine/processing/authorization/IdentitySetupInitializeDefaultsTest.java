@@ -126,7 +126,8 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.CANCEL_PROCESS_INSTANCE,
                         PermissionType.MODIFY_PROCESS_INSTANCE,
                         PermissionType.DELETE_PROCESS_INSTANCE,
-                        PermissionType.SUSPEND_PROCESS_INSTANCE),
+                        PermissionType.SUSPEND_PROCESS_INSTANCE,
+                        PermissionType.SUSPEND_PROCESS_DEFINITION),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION)
