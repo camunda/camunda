@@ -55,6 +55,7 @@ import io.camunda.service.TopologyServices;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.VariableHistoryServices;
 import io.camunda.service.VariableServices;
 import io.camunda.service.exception.ServiceException;
 import java.util.HashMap;
@@ -108,6 +109,7 @@ public record DefaultServiceRegistry(
     Map<String, UserServices> userByTenant,
     Map<String, UserTaskServices> userTaskByTenant,
     Map<String, VariableServices> variableByTenant,
+    Map<String, VariableHistoryServices> variableHistoryByTenant,
     @Nullable ClusterHistoryBackupServices clusterHistoryBackupServices,
     ClusterRuntimeBackupServices clusterRuntimeBackupServices,
     ClusterRebalanceServices clusterRebalanceServices,
@@ -330,6 +332,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public VariableHistoryServices variableHistoryServices(final String physicalTenantId) {
+    return byTenant(variableHistoryByTenant, physicalTenantId);
+  }
+
+  @Override
   public ClusterHistoryBackupServices clusterHistoryBackupServices() {
     if (clusterHistoryBackupServices == null) {
       // The same answer the @RequiresSecondaryStorage gate gives, rather than an
@@ -463,6 +470,7 @@ public record DefaultServiceRegistry(
     private final Map<String, UserServices> userByTenant = new HashMap<>();
     private final Map<String, UserTaskServices> userTaskByTenant = new HashMap<>();
     private final Map<String, VariableServices> variableByTenant = new HashMap<>();
+    private final Map<String, VariableHistoryServices> variableHistoryByTenant = new HashMap<>();
     private @Nullable ClusterHistoryBackupServices clusterHistoryBackupServices;
     private ClusterRuntimeBackupServices clusterRuntimeBackupServices;
     private ClusterRebalanceServices clusterRebalanceServices;
@@ -688,6 +696,12 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder variableHistoryServices(
+        final String tenantId, final VariableHistoryServices service) {
+      variableHistoryByTenant.put(tenantId, service);
+      return this;
+    }
+
     public Builder clusterHistoryBackupServices(final ClusterHistoryBackupServices service) {
       clusterHistoryBackupServices = service;
       return this;
@@ -775,6 +789,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(userByTenant),
           Map.copyOf(userTaskByTenant),
           Map.copyOf(variableByTenant),
+          Map.copyOf(variableHistoryByTenant),
           clusterHistoryBackupServices,
           clusterRuntimeBackupServices,
           clusterRebalanceServices,
