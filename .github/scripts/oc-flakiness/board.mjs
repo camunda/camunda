@@ -63,6 +63,11 @@ const STATUS = {
     label: 'skipped — a fix branch already covers this test',
     resolved: true,
   },
+  superseded: {
+    icon: ':no_entry_sign:',
+    label: 'superseded — the same change landed on the target branch first',
+    resolved: true,
+  },
   infra: {icon: ':wrench:', label: 'the run failed before any verdict', resolved: true},
 };
 
@@ -292,7 +297,9 @@ export function render(board, {now = new Date()} = {}) {
   if (closed > 0) parts.push(`:x: ${closed} closed (no improvement)`);
   const green = count((r) => r.status === 'not_reproduced');
   if (green > 0) parts.push(`:seedling: ${green} did not reproduce`);
-  const skipped = count((r) => r.status === 'skipped');
+  const skipped = count(
+    (r) => r.status === 'skipped' || r.status === 'superseded',
+  );
   if (skipped > 0) parts.push(`:no_entry_sign: ${skipped} skipped`);
   const stuck = count((r) => NEEDS_A_PERSON.includes(r.status));
   if (stuck > 0) parts.push(`:wrench: ${stuck} never reached a verdict`);

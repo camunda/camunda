@@ -98,6 +98,9 @@ jobs:
     permissions:
       contents: read
       actions: write
+      # Reading the fix PRs either agent has open is what keeps this job from
+      # dispatching a test another PR already covers.
+      pull-requests: read
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
@@ -237,17 +240,53 @@ jobs:
           MAX_TARGETS: ${{ inputs.max_targets || '3' }}
         run: |
           set -euo pipefail
-          # Ask for extra candidates: some are dropped below because a fix branch
-          # for them already exists.
+          # The whole ranking, not a slice of it: the exclusions below -- a fix
+          # branch, or a fix PR either agent has open -- are applied first, and
+          # MAX_TARGETS is taken from what survives them. Truncating here would
+          # let a run of claimed tests at the top of the ranking dispatch
+          # nothing while eligible tests waited below the cut.
           node .github/scripts/oc-flakiness/pick.mjs \
             --reports "$RUNNER_TEMP/reports" --ledger "$RUNNER_TEMP/ledger.json" \
-            --max $(( MAX_TARGETS * 3 )) > "$RUNNER_TEMP/candidates.json"
+            --max 1000 > "$RUNNER_TEMP/candidates.json"
 
           gh api "repos/${REPO}/git/matching-refs/heads/flaky-fix/" --jq '.[].ref' \
             | sed 's#^refs/heads/##' > "$RUNNER_TEMP/branches.txt" || true
-          jq -c --rawfile branches "$RUNNER_TEMP/branches.txt" --argjson max "$MAX_TARGETS" '
+
+          # Specs an open bot fix PR already covers, as "<base ref>\t<spec>".
+          # The nightly triage agent fixes a whole root cause -- every spec one
+          # product change broke -- in a single PR, hours before this pick runs.
+          # That PR carries its own branch name and fingerprint, so the filter
+          # above cannot see it, and the tests it covers are picked again and
+          # fixed a second time, one branch and one PR per test.
+          #
+          # Not guarded with `|| true`: a guard that fails quietly is the state
+          # this change exists to end, and an empty claims list reads exactly
+          # like "nothing is covered". A failure here stops the dispatch.
+          {
+            gh pr list --repo "$REPO" --state open --label failing-test-fix \
+              --limit 100 --json number,baseRefName \
+              --jq '.[] | "\(.number) \(.baseRefName)"'
+            gh pr list --repo "$REPO" --state open --label flaky-test-fix \
+              --limit 100 --json number,baseRefName \
+              --jq '.[] | "\(.number) \(.baseRefName)"'
+          } | sort -u > "$RUNNER_TEMP/open-fix-prs.txt"
+          : > "$RUNNER_TEMP/claimed.txt"
+          while read -r number base; do
+            [[ -n "${number:-}" ]] || continue
+            gh api "repos/${REPO}/pulls/${number}/files" --paginate --jq '.[].filename' \
+              | sed -n "s#^qa/c8-orchestration-cluster-e2e-test-suite/#${base}\t#p" \
+              >> "$RUNNER_TEMP/claimed.txt"
+          done < "$RUNNER_TEMP/open-fix-prs.txt"
+
+          jq -c --rawfile branches "$RUNNER_TEMP/branches.txt" \
+                --rawfile claimed "$RUNNER_TEMP/claimed.txt" \
+                --argjson max "$MAX_TARGETS" '
             ($branches | split("\n")) as $taken
-            | [.[] | select(("flaky-fix/" + .version + "-" + .fp) as $b | $taken | index($b) | not)]
+            | ($claimed | split("\n")) as $busy
+            | [.[]
+               | select(("flaky-fix/" + .version + "-" + .fp) as $b | $taken | index($b) | not)
+               | select(((if .version == "main" then "main" else "stable/" + .version end)
+                          + "\t" + .file) as $c | $busy | index($c) | not)]
             | .[0:$max]
           ' "$RUNNER_TEMP/candidates.json" > "$RUNNER_TEMP/targets.json"
 
@@ -258,6 +297,19 @@ jobs:
             echo "|---|---|---|---|---|---|"
             jq -r '.[] | "| \(.version) | `\(.file)` › \(.titlePath | join(" › ")) | \(.cells | join(", ")) | \(.flaky) | \(.failed) | \(.passed) |"' \
               "$RUNNER_TEMP/targets.json"
+            covered=$(jq -r --rawfile claimed "$RUNNER_TEMP/claimed.txt" '
+              ($claimed | split("\n")) as $busy
+              | [.[]
+                 | select(((if .version == "main" then "main" else "stable/" + .version end)
+                            + "\t" + .file) as $c | $busy | index($c))
+                 | "- `\(.file)` (\(.version))"]
+              | .[0:10] | join("\n")' "$RUNNER_TEMP/candidates.json")
+            if [[ -n "$covered" ]]; then
+              echo
+              echo "Not dispatched -- an open fix PR already covers these:"
+              echo
+              echo "$covered"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
           jq . "$RUNNER_TEMP/targets.json"
 
@@ -800,8 +852,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
-      action: ${{ steps.final.outputs.action }}
-      reason: ${{ steps.final.outputs.reason }}
+      # `act` is allowed to overrule the verdict: only it knows whether the
+      # target branch gained the same fix while this run was validating.
+      action: ${{ steps.act.outputs.action || steps.final.outputs.action }}
+      reason: ${{ steps.act.outputs.reason || steps.final.outputs.reason }}
       rate: ${{ steps.final.outputs.rate }}
       pr_url: ${{ steps.act.outputs.pr_url }}
     steps:
@@ -886,12 +940,59 @@ jobs:
           gh api "repos/${REPO}/git/ref/heads/${BRANCH}" > /dev/null 2>&1 && branch_exists=true
           pr_url=""
 
+          superseded=false
+
           if [[ "$ACTION" == "open_pr" ]]; then
             best_sha="$ITER1_SHA"
             [[ "$BEST" == "iter2" ]] && best_sha="$ITER2_SHA"
             # Attempt 2 may have moved the branch past (or away from) the better attempt 1.
             gh api -X PATCH "repos/${REPO}/git/refs/heads/${BRANCH}" -f sha="$best_sha" -F force=true > /dev/null
 
+            # Validating a fix takes the better part of two hours, and the
+            # target branch moves underneath it: the nightly triage agent, or a
+            # person, may land the same correction meanwhile. A diff against the
+            # merge base cannot see that -- it still shows our change -- so each
+            # file this branch touches is compared against the target as it
+            # stands now. All equal means there is nothing left to propose.
+            # `status` first: for a rename `filename` is the destination alone,
+            # so comparing it would call the branch superseded while its removal
+            # of the old path is still unlanded. Only a file the branch modified
+            # in place can be judged by its contents; anything else keeps the
+            # branch and lets the PR be opened.
+            gh api "repos/${REPO}/compare/${TARGET_REF}...${BRANCH}" --paginate \
+              --jq '.files[]? | "\(.status) \(.filename)"' > "$RUNNER_TEMP/changed.txt"
+            superseded=true
+            while read -r status changed_file; do
+              [[ -n "$changed_file" ]] || continue
+              if [[ "$status" != "modified" ]]; then
+                superseded=false
+                break
+              fi
+              # A failed read must never read as a match. `gh api` can put
+              # an error body on stdout, so a value is kept only when the call
+              # succeeded and returned something that is actually a blob id:
+              # two identical error bodies would otherwise delete the branch.
+              if ! head_blob=$(gh api "repos/${REPO}/contents/${changed_file}?ref=${BRANCH}" \
+                --jq '.sha' 2>/dev/null); then
+                head_blob=""
+              fi
+              if ! base_blob=$(gh api "repos/${REPO}/contents/${changed_file}?ref=${TARGET_REF}" \
+                --jq '.sha' 2>/dev/null); then
+                base_blob=""
+              fi
+              if [[ ! "$head_blob" =~ ^[0-9a-f]{40}$ || "$head_blob" != "$base_blob" ]]; then
+                superseded=false
+                break
+              fi
+            done < "$RUNNER_TEMP/changed.txt"
+          fi
+
+          if [[ "$superseded" == "true" ]]; then
+            ACTION=superseded
+            REASON="the same change is already on ${TARGET_REF}"
+          fi
+
+          if [[ "$ACTION" == "open_pr" ]]; then
             gh label create flaky-test-fix --repo "$REPO" --color FBCA04 \
               --description "Bot-opened fix for a flaky orchestration cluster E2E/API test" 2>/dev/null || true
             title=$(jq -r '.[-1]' <<< "$TITLE_PATH" | cut -c1-70)
@@ -956,7 +1057,11 @@ jobs:
             gh api -X DELETE "repos/${REPO}/git/refs/heads/${BRANCH}"
             echo "Deleted ${BRANCH}: ${REASON}"
           fi
-          echo "pr_url=${pr_url}" >> "$GITHUB_OUTPUT"
+          {
+            echo "pr_url=${pr_url}"
+            echo "action=${ACTION}"
+            echo "reason=${REASON}"
+          } >> "$GITHUB_OUTPUT"
 
           {
             echo "### ${ACTION}"
@@ -976,8 +1081,8 @@ jobs:
         env:
           TOKEN: ${{ steps.github-token.outputs.token }}
           REPO: ${{ github.repository }}
-          ACTION: ${{ steps.final.outputs.action }}
-          REASON: ${{ steps.final.outputs.reason }}
+          ACTION: ${{ steps.act.outputs.action || steps.final.outputs.action }}
+          REASON: ${{ steps.act.outputs.reason || steps.final.outputs.reason }}
           PR_URL: ${{ steps.act.outputs.pr_url }}
           FP: ${{ needs.prepare.outputs.fp }}
           VERSION: ${{ inputs.version }}
@@ -991,6 +1096,14 @@ jobs:
             delete_branch)  cooldown=$(date -u -d '7 days'  +%Y-%m-%dT%H:%M:%SZ) ;;
             not_reproduced) cooldown=$(date -u -d '3 days'  +%Y-%m-%dT%H:%M:%SZ) ;;
             blocked)        cooldown=$(date -u -d '1 day'   +%Y-%m-%dT%H:%M:%SZ) ;;
+            # Someone else's fix landed. Give the nightlies one night to say
+            # whether it held: if it did, the test stops being a candidate on
+            # its own; if it did not, the agent may pick it up again tomorrow.
+            # Expressed as a wall-clock time rather than "+1 day" because this
+            # verdict arrives mid-morning, two hours or so after the 06:00 pick
+            # that dispatched the run -- a 24-hour cooldown would outlive
+            # tomorrow's pick and hold the test back a second night.
+            superseded)     cooldown=$(date -u -d 'tomorrow' +%Y-%m-%dT05:00:00Z) ;;
             *)              cooldown="" ;;
           esac
           run_url="${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID}"
