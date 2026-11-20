@@ -17,6 +17,8 @@ import io.camunda.zeebe.cluster.gossip.MemberKey;
 import io.camunda.zeebe.cluster.gossip.MergeStrategy;
 import io.camunda.zeebe.cluster.gossip.poc.TestCluster.Timing;
 import io.camunda.zeebe.cluster.gossip.poc.TestCluster.Transport;
+import io.camunda.zeebe.cluster.gossip.poc.showcase.ClusterStatusView;
+import io.camunda.zeebe.cluster.gossip.poc.showcase.ClusterStatusView.Mode;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
@@ -218,6 +220,34 @@ final class ClusterGossiperPocTest {
 
     // then
     await().untilAsserted(() -> assertThat(rejoined.get(FLAG)).isEqualTo("on"));
+  }
+
+  @ParameterizedTest
+  @EnumSource(Transport.class)
+  void shouldRunShowcaseConsumer(final Transport transport) {
+    // given
+    cluster = new TestCluster(transport, Timing.fast(), 3).start();
+    final var view0 = new ClusterStatusView(cluster.gossiper(0), Runnable::run);
+    final var view2 = new ClusterStatusView(cluster.gossiper(2), Runnable::run);
+
+    // when
+    view0.becameLeader(1);
+    view0.setMode(Mode.MAINTENANCE);
+
+    // then
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(view2.leadersOf(1)).containsExactly(memberId(0));
+              assertThat(view2.mode()).isEqualTo(Mode.MAINTENANCE);
+            });
+
+    // when
+    cluster.stop(0);
+
+    // then
+    await().untilAsserted(() -> assertThat(view2.leadersOf(1)).isEmpty());
+    assertThat(view2.mode()).isEqualTo(Mode.MAINTENANCE);
   }
 
   private static org.awaitility.core.ConditionFactory await() {
