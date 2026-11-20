@@ -198,10 +198,21 @@ test.describe('Process Instances Table', () => {
     const instanceRows = page.getByTestId('data-list').getByRole('row');
 
     await test.step('Select process and sort by instance key DESC', async () => {
-      await operateFiltersPanelPage.selectProcess(
-        'Process For Infinite Scroll',
+      // Filter by the exact instance keys this test created rather than by
+      // process name + version. On a retry Playwright discards the worker and
+      // re-runs `beforeAll`, which deploys the same process again and creates
+      // another 300 instances, so a name/version filter can match instances
+      // from a previous attempt (and import lag means the "300 results" count
+      // is reached before the newest batch is indexed). Both effects make the
+      // DESC-sorted top row diverge from `descendingInstanceIds[0]`. Scoping
+      // the filter to this attempt's own keys isolates the result set and makes
+      // the "300 results" wait block until exactly these 300 are imported.
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
       );
-      await operateFiltersPanelPage.selectVersion('1');
+      await operateFiltersPanelPage.processInstanceKeysFilter.fill(
+        descendingInstanceIds.join(),
+      );
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('300 results')).toBeVisible();
