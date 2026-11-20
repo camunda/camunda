@@ -96,6 +96,7 @@ it('should read a process instance and preserve forbidden errors', async ({worke
 
 it.for([
 	{status: 403, expected: 'Unauthorized'},
+	{status: 400, expected: 'Not found'},
 	{status: 404, expected: 'Not found'},
 	{status: 500, expected: 'Generic error'},
 ])('should classify $status process instance reads as $expected', async ({status, expected}, {worker}) => {

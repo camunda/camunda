@@ -157,7 +157,8 @@ function getProcessInstanceErrorKind(error: unknown): 'forbidden' | 'notFound' |
 		return 'forbidden';
 	}
 	const requestError = requestErrorSchema.safeParse(error);
-	return requestError.success && requestError.data.response?.status === 404 ? 'notFound' : 'generic';
+	const status = requestError.success ? requestError.data.response?.status : undefined;
+	return status === 400 || status === 404 ? 'notFound' : 'generic';
 }
 
 function useProcessInstance(processInstanceKey: string) {
