@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -130,6 +131,49 @@ final class VariableRecordTest {
     final String afterWrap = record.getValue();
     assertThat(afterWrap).isEqualTo(JSON_VALUE_2);
     assertThat(afterWrap).isNotSameAs(cachedValue);
+  }
+
+  @Test
+  void shouldCopyAllSourceFieldsOnSetSource() {
+    // given
+    final var source =
+        new VariableSourceRecord()
+            .setType(VariableOperationType.JOB_COMPLETION)
+            .setElementInstanceKey(42L)
+            .setElementId("ChargeCard");
+    final var record = new VariableRecord();
+
+    // when
+    record.setSource(source);
+    source.setElementId("ShipOrder");
+
+    // then
+    assertThat(record.getSource().getType()).isEqualTo(VariableOperationType.JOB_COMPLETION);
+    assertThat(record.getSource().getElementInstanceKey()).isEqualTo(42L);
+    assertThat(record.getSource().getElementId()).isEqualTo("ChargeCard");
+  }
+
+  @Test
+  void shouldRoundTripTheSourceThroughMsgPack() {
+    // given
+    final var original =
+        createFullRecord(JSON_VALUE)
+            .setSource(
+                new VariableSourceRecord()
+                    .setType(VariableOperationType.JOB_COMPLETION)
+                    .setElementInstanceKey(42L)
+                    .setElementId("ChargeCard"));
+    final var buffer = new UnsafeBuffer(new byte[original.getLength()]);
+    original.write(buffer, 0);
+    final var readBack = new VariableRecord();
+
+    // when
+    readBack.wrap(buffer, 0, buffer.capacity());
+
+    // then
+    assertThat(readBack.getSource().getType()).isEqualTo(VariableOperationType.JOB_COMPLETION);
+    assertThat(readBack.getSource().getElementInstanceKey()).isEqualTo(42L);
+    assertThat(readBack.getSource().getElementId()).isEqualTo("ChargeCard");
   }
 
   private VariableRecord createFullRecord(final String jsonValue) {

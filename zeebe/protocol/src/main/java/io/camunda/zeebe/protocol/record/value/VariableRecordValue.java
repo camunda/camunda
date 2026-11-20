@@ -86,7 +86,8 @@ public interface VariableRecordValue
    * @return the source of the variable operation, e.g. {@code VariableOperationType.API} if the
    *     variable was triggered through the API, {@code VariableOperationType.USER_TASK_COMPLETION}
    *     if it was produced by native user task output processing, or {@code
-   *     VariableOperationType.UNKNOWN} if the source is unknown.
+   *     VariableOperationType.UNKNOWN} if the source is unknown. See {@link VariableOperationType}
+   *     for all types.
    */
   VariableSourceValue getSource();
 }

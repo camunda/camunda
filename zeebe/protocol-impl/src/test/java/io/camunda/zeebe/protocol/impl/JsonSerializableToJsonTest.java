@@ -157,6 +157,7 @@ import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -1773,7 +1774,9 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 6,
                   "elementInstanceKey": 3,
                   "source": {
-                    "type":"API"
+                    "type":"API",
+                    "elementInstanceKey": -1,
+                    "elementId": ""
                   }
                 }
                 """
@@ -1819,7 +1822,60 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 6,
                   "elementInstanceKey": 3,
                   "source": {
-                    "type":"API"
+                    "type":"API",
+                    "elementInstanceKey": -1,
+                    "elementId": ""
+                  }
+                }
+                """
+      },
+
+      // with the element that caused the variable operation
+      {
+        "VariableRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final String name = "x";
+              final String value = "1";
+              final long scopeKey = 3;
+              final long processInstanceKey = 2;
+              final long processDefinitionKey = 4;
+              final String bpmnProcessId = "process";
+              final long rootProcessInstanceKey = 5;
+              final int storageOrdinal = 6;
+              final VariableSourceRecord source =
+                  new VariableSourceRecord()
+                      .setType(VariableOperationType.JOB_COMPLETION)
+                      .setElementInstanceKey(7)
+                      .setElementId("ChargeCard");
+
+              return new VariableRecord()
+                  .setName(wrapString(name))
+                  .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
+                  .setScopeKey(scopeKey)
+                  .setProcessInstanceKey(processInstanceKey)
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setBpmnProcessId(wrapString(bpmnProcessId))
+                  .setSource(source)
+                  .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinal(storageOrdinal);
+            },
+        """
+                {
+                  "scopeKey": 3,
+                  "processInstanceKey": 2,
+                  "processDefinitionKey": 4,
+                  "bpmnProcessId": "process",
+                  "name": "x",
+                  "value": "1",
+                  "tenantId": "<default>",
+                  "rootProcessInstanceKey": 5,
+                  "storageOrdinal": 6,
+                  "elementInstanceKey": 3,
+                  "source": {
+                    "type":"JOB_COMPLETION",
+                    "elementInstanceKey": 7,
+                    "elementId": "ChargeCard"
                   }
                 }
                 """

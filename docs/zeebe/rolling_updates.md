@@ -55,6 +55,7 @@ All changes we make should fall into one of two categories:
 
 When adding a new record, command or event, we break compatibility with older brokers that have to handle it.
 The same applies to new versions of existing events.
+This includes a new value of an enum property in an existing record, such as a new `VariableOperationType`, because an old broker cannot decode a value it does not know.
 Replay only applies events, so an old-version follower fails when it must replay an event or event version it does not know.
 Its stream processor then becomes unhealthy until the broker is upgraded.
 Commands and rejections are skipped during replay without decoding their intent or value, so a new command that completes using only events and event versions the old broker supports does not affect old followers.
