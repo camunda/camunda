@@ -28,7 +28,8 @@ const USERS = [
 	createUser({username: 'john.smith', name: 'John Smith', email: 'john.smith@example.com'}),
 ];
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, adminUsersPage}) => {
+	await adminUsersPage.mockClientConfig();
 	network.use(
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfigurationEndpoint({

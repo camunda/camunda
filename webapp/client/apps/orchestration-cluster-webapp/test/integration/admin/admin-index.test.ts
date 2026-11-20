@@ -20,8 +20,10 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryMappingRulesResponse} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {createQueryUsersResponse} from '#/shared-test-modules/api-mocks/users';
+import {mockAdminClientConfig} from '#/pages/admin/mockAdminClientConfig';
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, page}) => {
+	await mockAdminClientConfig(page);
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser()),
