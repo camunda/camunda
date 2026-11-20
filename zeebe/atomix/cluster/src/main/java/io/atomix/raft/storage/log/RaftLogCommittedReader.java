@@ -74,11 +74,16 @@ public class RaftLogCommittedReader implements RaftLogReader {
    *
    * <p>The new reader stops before the index if the log ends there, and after it if the index is
    * compacted. The log can also be compacted or reset between the calls here, which is why the
-   * first index is read last: it is then already past the index.
+   * first index is read last: it is then already past the index. It is read without the journal
+   * lock, and is 0 while a reset has removed the segments but not yet added the new first one.
    */
   private boolean isMissingFromLog(final long index) {
     try (final var probe = log.openUncommittedReader()) {
-      return probe.seek(index) <= index && !probe.hasNext() && log.getFirstIndex() <= index;
+      if (probe.seek(index) > index || probe.hasNext()) {
+        return false;
+      }
+      final long firstIndex = log.getFirstIndex();
+      return firstIndex > 0 && firstIndex <= index;
     }
   }
 
@@ -86,13 +91,16 @@ public class RaftLogCommittedReader implements RaftLogReader {
    * A seek to an ASQN reads on until it finds an entry with a higher one, and takes a missing entry
    * for the end of the log, which leaves this reader at an earlier entry than the one asked for.
    * Reads the same entries again to tell the two apart.
+   *
+   * <p>The reader that does so is itself left behind when the log is compacted or reset while it
+   * reads, so where it stops is looked up once more with a new reader.
    */
   private void failIfSeekStoppedAtMissingEntry(final long asqn, final long commitIndex) {
     try (final var probe = log.openUncommittedReader()) {
       long index = probe.seek(nextIndex);
       while (index <= commitIndex) {
         if (!probe.hasNext()) {
-          if (log.getFirstIndex() <= index) {
+          if (isMissingFromLog(index)) {
             throw missingCommittedEntry(index, commitIndex);
           }
           return;
