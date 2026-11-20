@@ -37,7 +37,7 @@ async function renderWithRouter(
 ) {
 	const queryClient = new QueryClient({
 		defaultOptions: {
-			queries: {retry: false, retryDelay: 0},
+			queries: {retry: false},
 		},
 	});
 
