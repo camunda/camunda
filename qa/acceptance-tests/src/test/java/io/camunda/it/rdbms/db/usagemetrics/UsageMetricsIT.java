@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.usagemetrics;
 
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.EDI;
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.RPI;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,7 +34,12 @@ import io.camunda.search.filter.UsageMetricsFilter.Builder;
 import io.camunda.search.filter.UsageMetricsTUFilter;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UsageMetricsTUQuery;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -127,7 +133,8 @@ public class UsageMetricsIT {
     // when
     final var actual =
         usageMetricReader.usageMetricStatistics(
-            UsageMetricsQuery.of(q -> q.filter(f -> f.withTenants(true))), null);
+            UsageMetricsQuery.of(q -> q.filter(f -> f.withTenants(true))),
+            ResourceAccessChecks.disabled());
 
     // then
     assertThat(actual)
@@ -156,7 +163,8 @@ public class UsageMetricsIT {
     // when
     final var actualTU =
         usageMetricTUDbReader.usageMetricTUStatistics(
-            UsageMetricsTUQuery.of(q -> q.filter(f -> f.withTenants(true))), null);
+            UsageMetricsTUQuery.of(q -> q.filter(f -> f.withTenants(true))),
+            ResourceAccessChecks.disabled());
 
     // then
     assertThat(actualTU)
@@ -181,7 +189,9 @@ public class UsageMetricsIT {
     rdbmsWriter.flush();
 
     // when
-    final var actual = usageMetricReader.usageMetricStatistics(UsageMetricsQuery.of(q -> q), null);
+    final var actual =
+        usageMetricReader.usageMetricStatistics(
+            UsageMetricsQuery.of(q -> q), ResourceAccessChecks.disabled());
 
     // then
     assertThat(actual).isEqualTo(new UsageMetricStatisticsEntity(16, 14, 2, null));
@@ -199,7 +209,8 @@ public class UsageMetricsIT {
 
     // when
     final var actualTU =
-        usageMetricTUDbReader.usageMetricTUStatistics(UsageMetricsTUQuery.of(q -> q), null);
+        usageMetricTUDbReader.usageMetricTUStatistics(
+            UsageMetricsTUQuery.of(q -> q), ResourceAccessChecks.disabled());
 
     // then
     assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(3, null));
@@ -217,7 +228,8 @@ public class UsageMetricsIT {
     final UsageMetricsFilter filter =
         new Builder().startTime(NOW.minusMinutes(6)).endTime(NOW.plusMinutes(6)).build();
     final var actual =
-        usageMetricReader.usageMetricStatistics(UsageMetricsQuery.of(q -> q.filter(filter)), null);
+        usageMetricReader.usageMetricStatistics(
+            UsageMetricsQuery.of(q -> q.filter(filter)), ResourceAccessChecks.disabled());
 
     // then
     assertThat(actual).isEqualTo(new UsageMetricStatisticsEntity(1, 1, 1, null));
@@ -240,7 +252,7 @@ public class UsageMetricsIT {
             .build();
     final var actualTU =
         usageMetricTUDbReader.usageMetricTUStatistics(
-            UsageMetricsTUQuery.of(q -> q.filter(filter)), null);
+            UsageMetricsTUQuery.of(q -> q.filter(filter)), ResourceAccessChecks.disabled());
 
     // then
     assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(2, null));
@@ -263,7 +275,8 @@ public class UsageMetricsIT {
             .withTenants(true)
             .build();
     final var actual =
-        usageMetricReader.usageMetricStatistics(UsageMetricsQuery.of(q -> q.filter(filter)), null);
+        usageMetricReader.usageMetricStatistics(
+            UsageMetricsQuery.of(q -> q.filter(filter)), ResourceAccessChecks.disabled());
 
     // then
     assertThat(actual)
@@ -293,7 +306,7 @@ public class UsageMetricsIT {
             .build();
     final var actualTU =
         usageMetricTUDbReader.usageMetricTUStatistics(
-            UsageMetricsTUQuery.of(q -> q.filter(filter)), null);
+            UsageMetricsTUQuery.of(q -> q.filter(filter)), ResourceAccessChecks.disabled());
 
     // then
     assertThat(actualTU)
@@ -312,7 +325,8 @@ public class UsageMetricsIT {
     // when
     final UsageMetricsFilter filter = new Builder().tenantId(TENANT1).withTenants(true).build();
     final var actual =
-        usageMetricReader.usageMetricStatistics(UsageMetricsQuery.of(q -> q.filter(filter)), null);
+        usageMetricReader.usageMetricStatistics(
+            UsageMetricsQuery.of(q -> q.filter(filter)), ResourceAccessChecks.disabled());
 
     // then
     assertThat(actual)
@@ -334,12 +348,87 @@ public class UsageMetricsIT {
         new UsageMetricsTUFilter.Builder().tenantId(TENANT1).withTenants(true).build();
     final var actualTU =
         usageMetricTUDbReader.usageMetricTUStatistics(
-            UsageMetricsTUQuery.of(q -> q.filter(filter)), null);
+            UsageMetricsTUQuery.of(q -> q.filter(filter)), ResourceAccessChecks.disabled());
 
     // then
     assertThat(actualTU)
         .isEqualTo(
             new UsageMetricTUStatisticsEntity(
                 2, Map.of(TENANT1, new UsageMetricTUStatisticsEntityTenant(2L))));
+  }
+
+  @TestTemplate
+  public void shouldReturnNoMetricsWithoutUsageMetricPermission() {
+    // given
+    writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 11L);
+    writeTUMetric(usageMetricTUWriter, NOW, TENANT1, ASSIGNEE_HASH_1);
+    rdbmsWriter.flush();
+    final var noPermission =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(Authorization.of(a -> a.system().readUsageMetric())),
+            TenantCheck.disabled());
+
+    // when
+    final var actual =
+        usageMetricReader.usageMetricStatistics(
+            UsageMetricsQuery.of(q -> q.filter(f -> f.withTenants(true))), noPermission);
+    final var actualTU =
+        usageMetricTUDbReader.usageMetricTUStatistics(
+            UsageMetricsTUQuery.of(q -> q.filter(f -> f.withTenants(true))), noPermission);
+
+    // then
+    assertThat(actual).isEqualTo(new UsageMetricStatisticsEntity(0, 0, 0, Map.of()));
+    assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(0, Map.of()));
+  }
+
+  @TestTemplate
+  public void shouldRestrictMetricsToAuthorizedTenants() {
+    // given
+    writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 11L);
+    writeMetric(usageMetricWriter, EDI, NOW, TENANT1, 5L);
+    writeMetric(usageMetricWriter, RPI, NOW, TENANT2, 3L);
+    writeMetric(usageMetricWriter, EDI, NOW, TENANT2, 3L);
+    rdbmsWriter.flush();
+
+    // when
+    final var withTenants =
+        usageMetricReader.usageMetricStatistics(
+            UsageMetricsQuery.of(q -> q.filter(f -> f.withTenants(true))),
+            resourceAccessChecksFromTenantIds(TENANT1));
+    final var withoutTenants =
+        usageMetricReader.usageMetricStatistics(
+            UsageMetricsQuery.of(q -> q), resourceAccessChecksFromTenantIds(TENANT1));
+
+    // then
+    assertThat(withTenants)
+        .isEqualTo(
+            new UsageMetricStatisticsEntity(
+                11, 5, 1, Map.of(TENANT1, new UsageMetricStatisticsEntityTenant(11L, 5L))));
+    assertThat(withoutTenants).isEqualTo(new UsageMetricStatisticsEntity(11, 5, 1, null));
+  }
+
+  @TestTemplate
+  public void shouldRestrictTUMetricsToAuthorizedTenants() {
+    // given
+    writeTUMetric(usageMetricTUWriter, NOW, TENANT1, ASSIGNEE_HASH_1);
+    writeTUMetric(usageMetricTUWriter, NOW, TENANT2, ASSIGNEE_HASH_2);
+    writeTUMetric(usageMetricTUWriter, NOW, TENANT2, ASSIGNEE_HASH_3);
+    rdbmsWriter.flush();
+
+    // when
+    final var withTenants =
+        usageMetricTUDbReader.usageMetricTUStatistics(
+            UsageMetricsTUQuery.of(q -> q.filter(f -> f.withTenants(true))),
+            resourceAccessChecksFromTenantIds(List.of(TENANT1)));
+    final var withoutTenants =
+        usageMetricTUDbReader.usageMetricTUStatistics(
+            UsageMetricsTUQuery.of(q -> q), resourceAccessChecksFromTenantIds(TENANT1));
+
+    // then
+    assertThat(withTenants)
+        .isEqualTo(
+            new UsageMetricTUStatisticsEntity(
+                1, Map.of(TENANT1, new UsageMetricTUStatisticsEntityTenant(1L))));
+    assertThat(withoutTenants).isEqualTo(new UsageMetricTUStatisticsEntity(1, null));
   }
 }

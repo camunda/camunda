@@ -7,18 +7,18 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.read.domain.UsageMetricsTUDbQuery;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel.UsageMetricTUStatisticsDbModel;
 import io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel.UsageMetricTUTenantStatisticsDbModel;
-import io.camunda.search.filter.UsageMetricsTUFilter;
 import java.util.List;
 
 public interface UsageMetricTUMapper {
 
   List<UsageMetricTUTenantStatisticsDbModel> usageMetricTUTenantsStatistics(
-      final UsageMetricsTUFilter filter);
+      final UsageMetricsTUDbQuery query);
 
-  UsageMetricTUStatisticsDbModel usageMetricTUStatistics(final UsageMetricsTUFilter filter);
+  UsageMetricTUStatisticsDbModel usageMetricTUStatistics(final UsageMetricsTUDbQuery query);
 
   int cleanupMetrics(CleanupHistoryDto dto);
 }

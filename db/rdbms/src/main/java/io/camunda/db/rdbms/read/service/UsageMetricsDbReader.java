@@ -9,12 +9,14 @@ package io.camunda.db.rdbms.read.service;
 
 import static java.util.Optional.ofNullable;
 
+import io.camunda.db.rdbms.read.domain.UsageMetricsDbQuery;
 import io.camunda.db.rdbms.read.mapper.UsageMetricEntityMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.search.clients.reader.UsageMetricsReader;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,16 +35,35 @@ public class UsageMetricsDbReader implements UsageMetricsReader {
     LOG.trace("[RDBMS DB] Aggregate usage metrics statistics with {}", query);
     final var filter = query.filter();
 
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return new UsageMetricStatisticsEntity(0L, 0L, 0L, Map.of());
+    }
+
+    final var dbQuery =
+        new UsageMetricsDbQuery(filter, resourceAccessChecks.getAuthorizedTenantIds());
     if (filter.withTenants()) {
-      final var result = usageMetricMapper.usageMetricTenantsStatistics(filter);
+      final var result = usageMetricMapper.usageMetricTenantsStatistics(dbQuery);
       return UsageMetricEntityMapper.toEntity(result);
     } else {
-      final var result = usageMetricMapper.usageMetricStatistics(filter);
+      final var result = usageMetricMapper.usageMetricStatistics(dbQuery);
       return new UsageMetricStatisticsEntity(
           ofNullable(result.rpi()).orElse(0L),
           ofNullable(result.edi()).orElse(0L),
           ofNullable(result.at()).orElse(0L),
           null);
     }
+  }
+
+  /**
+   * Checks if the result should be empty: the caller lacks the usage metric permission, or the
+   * tenant check is enabled without any tenant. This mirrors the match-none of the
+   * Elasticsearch/OpenSearch filter transformers and allows the mappers to read an empty authorized
+   * tenant list as "tenant check disabled".
+   */
+  static boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
+    return resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty()
+        || resourceAccessChecks.tenantCheck().enabled()
+            && resourceAccessChecks.getAuthorizedTenantIds().isEmpty();
   }
 }
