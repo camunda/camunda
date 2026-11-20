@@ -125,5 +125,10 @@
   "msw": {
     "workerDirectory": "public"
   },
+  "overrides": {
+    "monaco-editor": {
+      "dompurify": "3.4.17"
+    }
+  },
   "packageManager": "npm@11.10.1"
 }
