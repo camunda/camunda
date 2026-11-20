@@ -99,6 +99,18 @@ class RaftLogCommittedReaderMissingEntryTest {
   }
 
   @Test
+  void shouldFailWhenFirstEntryOfLogReadsBackAsZeros() throws IOException {
+    // given - nothing can be read, not even the first index the log has
+    zeroEntriesAppendedBy(() -> appendEntries(3));
+    raftLog.setCommitIndex(3);
+
+    // when - then
+    assertThatThrownBy(reader::hasNext)
+        .isInstanceOf(CorruptedJournalException.class)
+        .hasMessageContaining("committed entry at index 1 (commit index 3)");
+  }
+
+  @Test
   void shouldFailWhenSeekingIntoZeroedCommittedEntries() throws IOException {
     // given
     appendEntries(3);
@@ -143,6 +155,32 @@ class RaftLogCommittedReaderMissingEntryTest {
 
     // when - then
     assertThatThrownBy(() -> reader.seekToAsqn(5))
+        .isInstanceOf(CorruptedJournalException.class)
+        .hasMessageContaining("committed entry at index 4 (commit index 6)");
+  }
+
+  @Test
+  void shouldFailWhenSeekingToAsqnAndOnlyTheLastCommittedEntryIsZeroed() throws IOException {
+    // given - every entry's ASQN is its index, and the first zeroed entry is the last committed
+    appendEntries(3);
+    zeroEntriesAppendedBy(() -> appendEntries(3));
+    raftLog.setCommitIndex(4);
+
+    // when - then
+    assertThatThrownBy(() -> reader.seekToAsqn(5))
+        .isInstanceOf(CorruptedJournalException.class)
+        .hasMessageContaining("committed entry at index 4 (commit index 4)");
+  }
+
+  @Test
+  void shouldFailWhenSeekingToAsqnOfTheLastEntryBeforeZeroedCommittedEntries() throws IOException {
+    // given - every entry's ASQN is its index
+    appendEntries(3);
+    zeroEntriesAppendedBy(() -> appendEntries(3));
+    raftLog.setCommitIndex(6);
+
+    // when - then - the entry sought exists, but a seek reads on until the next higher ASQN
+    assertThatThrownBy(() -> reader.seekToAsqn(3))
         .isInstanceOf(CorruptedJournalException.class)
         .hasMessageContaining("committed entry at index 4 (commit index 6)");
   }
