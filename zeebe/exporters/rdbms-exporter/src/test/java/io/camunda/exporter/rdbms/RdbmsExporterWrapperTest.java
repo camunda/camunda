@@ -310,9 +310,9 @@ class RdbmsExporterWrapperTest {
     assertThat(registeredHandlers)
         .as("Should register PROCESS handler on partition 1")
         .containsKey(ValueType.PROCESS);
-    assertThat(registeredHandlers)
-        .as("Should not register PROCESS_DEFINITION_SUSPENSION handler on partition 1")
-        .doesNotContainKey(ValueType.PROCESS_DEFINITION_SUSPENSION);
+    assertThat(registeredHandlers.getOrDefault(ValueType.PROCESS_DEFINITION_SUSPENSION, List.of()))
+        .as("Should not register non-audit PROCESS_DEFINITION_SUSPENSION handler on partition 1")
+        .allMatch(AuditLogExportHandler.class::isInstance);
     assertThat(registeredHandlers)
         .as("Should register MAPPING_RULE handler on partition 1")
         .containsKey(ValueType.MAPPING_RULE);

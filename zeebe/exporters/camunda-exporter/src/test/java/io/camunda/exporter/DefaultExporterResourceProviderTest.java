@@ -406,6 +406,9 @@ public class DefaultExporterResourceProviderTest {
     assertThat(handlers).anyMatch(ProcessStateHandler.class::isInstance);
     assertThat(handlers).anyMatch(ProcessFullyDeletedHandler.class::isInstance);
     assertThat(handlers)
+        .filteredOn(
+            handler ->
+                !(handler instanceof AuditLogHandler || handler instanceof AuditLogCleanupHandler))
         .extracting(ExportHandler::getHandledValueType)
         .doesNotContain(ValueType.PROCESS_DEFINITION_SUSPENSION);
   }
