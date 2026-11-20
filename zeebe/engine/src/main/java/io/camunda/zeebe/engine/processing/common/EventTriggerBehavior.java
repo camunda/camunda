@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -22,16 +23,21 @@ import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class EventTriggerBehavior {
 
   private final ProcessInstanceRecord eventRecord = new ProcessInstanceRecord();
   private final ProcessEventRecord processEventRecord = new ProcessEventRecord();
+  private final VariableSourceRecord eventPayloadSource = new VariableSourceRecord();
 
   private final KeyGenerator keyGenerator;
   private final CatchEventBehavior catchEventBehavior;
@@ -273,7 +279,8 @@ public class EventTriggerBehavior {
             elementRecord.getStorageOrdinal(),
             elementRecord.getBpmnProcessIdBuffer(),
             elementRecord.getTenantId(),
-            variables);
+            variables,
+            eventPayloadSource(triggeredEvent, eventInstanceKey));
       } catch (final ValidationException e) {
         throw new IllegalArgumentException(
             String.format(
@@ -285,6 +292,31 @@ public class EventTriggerBehavior {
 
     commandWriter.appendFollowUpCommand(
         eventInstanceKey, ProcessInstanceIntent.COMPLETE_ELEMENT, eventRecord);
+  }
+
+  /**
+   * Returns the source of an event payload that the given element caught, with that element as the
+   * causing element. A job worker element gives {@code JOB_COMPLETION}, any other element gives
+   * {@code UNKNOWN}. The returned record is reused by the next call, so write the variables before
+   * you derive another source.
+   */
+  public VariableSourceRecord eventPayloadSource(
+      final ExecutableFlowElement catchingElement, final long catchingElementInstanceKey) {
+    return eventPayloadSource
+        .setType(eventPayloadType(catchingElement))
+        .setElementInstanceKey(catchingElementInstanceKey)
+        .setElementId(catchingElement.getId());
+  }
+
+  private static VariableOperationType eventPayloadType(final ExecutableFlowElement element) {
+    // Task headers alone create job worker properties, for example on a FEEL script task. Only a
+    // job type tells that a job completed the payload.
+    if (element instanceof final ExecutableJobWorkerElement jobWorker
+        && jobWorker.getJobWorkerProperties() != null
+        && jobWorker.getJobWorkerProperties().getType() != null) {
+      return VariableOperationType.JOB_COMPLETION;
+    }
+    return VariableOperationType.UNKNOWN;
   }
 
   private void activateEventSubProcess(final ExecutableFlowElement flowScope) {

@@ -24,9 +24,11 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -62,6 +64,28 @@ public final class ProcessRecordSizeBaselineTest {
 
     // then
     RecordSizeBaseline.assertMatches(engine, "service-task", startPositions);
+  }
+
+  @Test
+  public void shouldNotChangeRecordSizesOfServiceTaskWithVariables() {
+    // given
+    deploy(
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done());
+    final var startPositions = RecordSizeBaseline.lastPositions(engine);
+
+    // when
+    final long processInstanceKey = createProcessInstance();
+    final long jobKey = jobKey(processInstanceKey, JOB_TYPE);
+    activateJob(JOB_TYPE);
+    completeJob(jobKey, Map.of("orderId", "order-1", "total", 42, "approved", true));
+    awaitCompletion(processInstanceKey);
+
+    // then
+    RecordSizeBaseline.assertMatches(engine, "service-task-with-variables", startPositions);
   }
 
   @Test
@@ -224,6 +248,11 @@ public final class ProcessRecordSizeBaselineTest {
 
   private void completeJob(final long jobKey) {
     writeJobCommand(jobKey, JobIntent.COMPLETE, new JobRecord());
+  }
+
+  private void completeJob(final long jobKey, final Map<String, Object> variables) {
+    writeJobCommand(
+        jobKey, JobIntent.COMPLETE, new JobRecord().setVariables(MsgPackUtil.asMsgPack(variables)));
   }
 
   /** Writes the job command as a worker sends it: with the claims of an OIDC client. */

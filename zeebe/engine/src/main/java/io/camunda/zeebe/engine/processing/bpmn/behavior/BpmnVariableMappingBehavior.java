@@ -43,7 +43,9 @@ public final class BpmnVariableMappingBehavior {
   private final VariableState variablesState;
   private final ElementInstanceState elementInstanceState;
   private final VariableBehavior variableBehavior;
-  private final VariableBehavior userTaskCompletionVariableBehavior;
+  private final VariableSourceRecord unknownSource = VariableSourceRecord.none();
+  private final VariableSourceRecord userTaskCompletionSource =
+      VariableSourceRecord.userTaskCompletion();
   private final EventScopeInstanceState eventScopeInstanceState;
 
   private final EventTriggerBehavior eventTriggerBehavior;
@@ -62,8 +64,6 @@ public final class BpmnVariableMappingBehavior {
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     this.variableBehavior = variableBehavior;
-    userTaskCompletionVariableBehavior =
-        variableBehavior.withVariableSource(VariableSourceRecord.userTaskCompletion());
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.inputMappingResolver = inputMappingResolver;
@@ -108,7 +108,7 @@ public final class BpmnVariableMappingBehavior {
     if (result.isLeft()) {
       return Either.left(result.getLeft());
     }
-    return mapLocalVariables(context, element, result.get());
+    return mapLocalVariables(context, element, result.get(), unknownSource);
   }
 
   /**
@@ -132,18 +132,23 @@ public final class BpmnVariableMappingBehavior {
    */
   public Either<Failure, Void> applyOutputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
-    return applyOutputMappings(context, element, variableBehavior);
+    final var payloadSource =
+        eventTriggerBehavior.eventPayloadSource(element, context.getElementInstanceKey());
+    return applyOutputMappings(context, element, payloadSource, payloadSource, unknownSource);
   }
 
   public Either<Failure, Void> applyUserTaskOutputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
-    return applyOutputMappings(context, element, userTaskCompletionVariableBehavior);
+    return applyOutputMappings(
+        context, element, unknownSource, userTaskCompletionSource, userTaskCompletionSource);
   }
 
   private Either<Failure, Void> applyOutputMappings(
       final BpmnElementContext context,
       final ExecutableFlowNode element,
-      final VariableBehavior outputVariableBehavior) {
+      final VariableSourceRecord localPayloadSource,
+      final VariableSourceRecord propagatedPayloadSource,
+      final VariableSourceRecord mappingResultSource) {
     final ProcessInstanceRecord record = context.getRecordValue();
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = record.getProcessDefinitionKey();
@@ -173,7 +178,8 @@ public final class BpmnVariableMappingBehavior {
     if (outputMappings.isPresent()) {
       // set as local variables
       if (hasVariables) {
-        final Either<Failure, Void> variableEither = mapLocalVariables(context, element, variables);
+        final Either<Failure, Void> variableEither =
+            mapLocalVariables(context, element, variables, localPayloadSource);
         if (variableEither.isLeft()) {
           return variableEither;
         }
@@ -200,11 +206,12 @@ public final class BpmnVariableMappingBehavior {
           element,
           isMultiInstanceActivity ? context.getElementInstanceKey() : context.getFlowScopeKey(),
           resolveResult.get(),
-          outputVariableBehavior,
+          mappingResultSource,
           isMultiInstanceActivity);
 
     } else if (hasVariables && isCallActivityWithoutPropagation(element)) {
-      final Either<Failure, Void> variableEither = mapLocalVariables(context, element, variables);
+      final Either<Failure, Void> variableEither =
+          mapLocalVariables(context, element, variables, localPayloadSource);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -212,7 +219,7 @@ public final class BpmnVariableMappingBehavior {
       // merge/propagate the event variables by default
       final Either<Failure, Void> variableEither =
           propagateVariables(
-              context, element, elementInstanceKey, variables, outputVariableBehavior, true);
+              context, element, elementInstanceKey, variables, propagatedPayloadSource, true);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -227,7 +234,7 @@ public final class BpmnVariableMappingBehavior {
               element,
               context.getFlowScopeKey(),
               localVariables,
-              outputVariableBehavior,
+              propagatedPayloadSource,
               false);
       if (variableEither.isLeft()) {
         return variableEither;
@@ -241,12 +248,12 @@ public final class BpmnVariableMappingBehavior {
       final ExecutableFlowNode element,
       final long scopeKey,
       final DirectBuffer result,
-      final VariableBehavior outputVariableBehavior,
+      final VariableSourceRecord source,
       final boolean propagateUnmodifiedVariables) {
     final ProcessInstanceRecord record = context.getRecordValue();
     try {
       if (propagateUnmodifiedVariables) {
-        outputVariableBehavior.mergeDocumentWithPropagationOfUnmodifiedVariable(
+        variableBehavior.mergeDocumentWithPropagationOfUnmodifiedVariable(
             scopeKey,
             record.getProcessDefinitionKey(),
             record.getProcessInstanceKey(),
@@ -254,9 +261,10 @@ public final class BpmnVariableMappingBehavior {
             context.getStorageOrdinal(),
             context.getBpmnProcessId(),
             context.getTenantId(),
-            result);
+            result,
+            source);
       } else {
-        outputVariableBehavior.mergeDocument(
+        variableBehavior.mergeDocument(
             scopeKey,
             record.getProcessDefinitionKey(),
             record.getProcessInstanceKey(),
@@ -264,7 +272,8 @@ public final class BpmnVariableMappingBehavior {
             context.getStorageOrdinal(),
             context.getBpmnProcessId(),
             context.getTenantId(),
-            result);
+            result,
+            source);
       }
       return Either.right(null);
 
@@ -281,7 +290,8 @@ public final class BpmnVariableMappingBehavior {
   private @NonNull Either<Failure, Void> mapLocalVariables(
       final BpmnElementContext context,
       final ExecutableFlowNode element,
-      final DirectBuffer result) {
+      final DirectBuffer result,
+      final VariableSourceRecord source) {
     final ProcessInstanceRecord record = context.getRecordValue();
     try {
       variableBehavior.mergeLocalDocument(
@@ -292,7 +302,8 @@ public final class BpmnVariableMappingBehavior {
           context.getStorageOrdinal(),
           context.getBpmnProcessId(),
           context.getTenantId(),
-          result);
+          result,
+          source);
       return Either.right(null);
     } catch (final ValidationException e) {
       return Either.left(
