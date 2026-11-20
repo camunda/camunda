@@ -27,11 +27,14 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.assertj.core.api.ThrowingConsumer;
 import org.junit.jupiter.api.Test;
 
@@ -161,6 +164,61 @@ public class ProcessMigrationIT {
         });
   }
 
+  @Test
+  void shouldKeepStartDatesAndIncidentWhenMigratingProcessInstance() {
+    // given - a running instance with an open incident on taskB
+    deployProcessFromClasspath(client, "process/migration-process_v1.bpmn");
+    final var definitionKey2 =
+        deployProcessFromClasspath(client, "process/migration-process_v2.bpmn");
+    final var processInstanceKey = startProcessInstance(client, "migration-process_v1", Map.of());
+    throwIncident(client, processInstanceKey, "taskB", "error", "error message");
+
+    final var processInstanceBefore =
+        awaitProcessInstance(processInstanceKey, ProcessInstance::getHasIncident);
+    final var elementsBefore = awaitElementStartDates(processInstanceKey, "taskA", "taskB");
+    final var incidentBefore = awaitIncident(processInstanceKey, i -> true);
+
+    // when - the instance is migrated to v2
+    migrateProcessInstance(
+        client,
+        processInstanceKey,
+        MigrationPlan.newBuilder()
+            .withTargetProcessDefinitionKey(definitionKey2)
+            .addMappingInstruction("taskA", "taskA2")
+            .addMappingInstruction("taskB", "taskB2")
+            .addMappingInstruction("taskC", "taskC2")
+            .build());
+
+    // then - the definition changed, but the dates and the open incident are kept
+    processInstanceExistAndMatches(
+        client,
+        f -> f.processInstanceKey(processInstanceKey).processDefinitionId("migration-process_v2"),
+        list -> {
+          assertThat(list).hasSize(1);
+          assertThat(list.getFirst().getHasIncident()).isTrue();
+          assertThat(list.getFirst().getStartDate())
+              .isEqualTo(processInstanceBefore.getStartDate());
+        });
+    final var elementsAfter = awaitElementStartDates(processInstanceKey, "taskA2", "taskB2");
+    assertThat(elementsAfter.get("taskA2")).isEqualTo(elementsBefore.get("taskA"));
+    assertThat(elementsAfter.get("taskB2")).isEqualTo(elementsBefore.get("taskB"));
+    final var incidentAfter =
+        awaitIncident(processInstanceKey, i -> "taskB2".equals(i.getElementId()));
+    assertThat(incidentAfter.getCreationTime()).isEqualTo(incidentBefore.getCreationTime());
+
+    // when - the migrated incident is resolved
+    resolveIncidents(client, processInstanceKey);
+
+    // then - the instance has no incident left
+    processInstanceExistAndMatches(
+        client,
+        f -> f.processInstanceKey(processInstanceKey),
+        list -> {
+          assertThat(list).hasSize(1);
+          assertThat(list.getFirst().getHasIncident()).isFalse();
+        });
+  }
+
   public Long deployProcessFromClasspath(final CamundaClient client, final String classpath) {
     final var deployment =
         client.newDeployResourceCommand().addResourceFromClasspath(classpath).send().join();
@@ -231,6 +289,65 @@ public class ProcessMigrationIT {
   //
   // Query helpers
   //
+
+  private ProcessInstance awaitProcessInstance(
+      final Long processInstanceKey, final Predicate<ProcessInstance> condition) {
+    return await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .until(
+            () ->
+                client
+                    .newProcessInstanceSearchRequest()
+                    .filter(f -> f.processInstanceKey(processInstanceKey))
+                    .send()
+                    .join()
+                    .items()
+                    .stream()
+                    .filter(condition)
+                    .findFirst(),
+            Optional::isPresent)
+        .orElseThrow();
+  }
+
+  private Incident awaitIncident(
+      final Long processInstanceKey, final Predicate<Incident> condition) {
+    return await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .until(
+            () ->
+                client
+                    .newIncidentSearchRequest()
+                    .filter(f -> f.processInstanceKey(processInstanceKey))
+                    .send()
+                    .join()
+                    .items()
+                    .stream()
+                    .filter(condition)
+                    .findFirst(),
+            Optional::isPresent)
+        .orElseThrow();
+  }
+
+  /** Waits until all given elements are visible and returns their start dates by element ID. */
+  private Map<String, OffsetDateTime> awaitElementStartDates(
+      final Long processInstanceKey, final String... elementIds) {
+    return await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .until(
+            () ->
+                client
+                    .newElementInstanceSearchRequest()
+                    .filter(f -> f.processInstanceKey(processInstanceKey))
+                    .send()
+                    .join()
+                    .items()
+                    .stream()
+                    .filter(e -> List.of(elementIds).contains(e.getElementId()))
+                    .collect(
+                        Collectors.toMap(
+                            ElementInstance::getElementId, ElementInstance::getStartDate)),
+            dates -> dates.size() == elementIds.length);
+  }
 
   public void incidentsExistAndMatch(
       final CamundaClient client,

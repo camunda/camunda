@@ -234,39 +234,34 @@
   </insert>
 
   <!--
-    Shared by `update` and `updateKeepingName`, which differ only in whether they also write
-    FLOW_NODE_NAME. Keeping the common columns in one place stops a newly added column from being
-    added to one statement and silently skipped by the other.
+    The columns a migration (ELEMENT_MIGRATED / ANCESTOR_MIGRATED) changes. State and dates are
+    deliberately absent: the element keeps its start date, and a completion in the same flush,
+    merged into the queued insert, must not be reset to ACTIVE by the migration that sorts after
+    it. Shared by `migrate` and `migrateKeepingName`, which differ only in whether they also write
+    FLOW_NODE_NAME.
   -->
-  <sql id="updateColumnsExceptName">
+  <sql id="migrationColumnsExceptName">
     FLOW_NODE_ID             = #{flowNodeId},
-    FLOW_NODE_SCOPE_KEY      = #{flowNodeScopeKey},
-    PROCESS_INSTANCE_KEY     = #{processInstanceKey},
     PROCESS_DEFINITION_ID    = #{processDefinitionId},
-    PROCESS_DEFINITION_KEY   = #{processDefinitionKey},
-    TYPE                     = #{type},
-    STATE                    = #{state},
-    START_DATE               = #{startDate, jdbcType=TIMESTAMP},
-    END_DATE                 = #{endDate, jdbcType=TIMESTAMP},
-    TENANT_ID                = #{tenantId}
+    PROCESS_DEFINITION_KEY   = #{processDefinitionKey}
   </sql>
 
-  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
+  <update id="migrate" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
     UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET FLOW_NODE_NAME = #{flowNodeName},
-        <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateColumnsExceptName"/>
+        <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.migrationColumnsExceptName"/>
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
   <!--
-    Same as `update`, but leaves FLOW_NODE_NAME untouched. Used instead of `update` when the
+    Same as `migrate`, but leaves FLOW_NODE_NAME untouched. Used instead of `migrate` when the
     incoming model is an ad-hoc-subprocess inner instance with no resolved name yet, so a
-    migration (ELEMENT_MIGRATED / ANCESTOR_MIGRATED) can't clobber an already-resolved inner
-    instance name back to null. See FlowNodeInstanceWriter#update for the selection logic.
+    migration can't clobber an already-resolved inner instance name back to null. See
+    FlowNodeInstanceWriter#migrate for the selection logic.
   -->
-  <update id="updateKeepingName" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
+  <update id="migrateKeepingName" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
     UPDATE ${prefix}FLOW_NODE_INSTANCE
-    SET <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateColumnsExceptName"/>
+    SET <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.migrationColumnsExceptName"/>
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 

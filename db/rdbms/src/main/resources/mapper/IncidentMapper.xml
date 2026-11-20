@@ -215,20 +215,12 @@
             #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{storageOrdinal}, #{partitionId}, #{treePath})
   </insert>
 
-  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel">
+  <!-- Sets only what a migration changes; the creation date and state stay as stored. -->
+  <update id="migrate" parameterType="io.camunda.db.rdbms.sql.IncidentMapper$MigrateIncidentDto">
     UPDATE ${prefix}INCIDENT
-    SET FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},
-        FLOW_NODE_ID           = #{flowNodeId},
-        PROCESS_INSTANCE_KEY   = #{processInstanceKey},
-        PROCESS_DEFINITION_ID  = #{processDefinitionId},
+    SET PROCESS_DEFINITION_ID  = #{processDefinitionId},
         PROCESS_DEFINITION_KEY = #{processDefinitionKey},
-        ERROR_MESSAGE          = #{errorMessage},
-        ERROR_MESSAGE_HASH     = #{errorMessageHash},
-        ERROR_TYPE             = #{errorType},
-        STATE                  = #{state},
-        CREATION_DATE          = #{creationDate, jdbcType=TIMESTAMP},
-        JOB_KEY                = #{jobKey},
-        TENANT_ID              = #{tenantId},
+        FLOW_NODE_ID           = #{flowNodeId},
         TREE_PATH              = #{treePath}
     WHERE INCIDENT_KEY = #{incidentKey}
   </update>
