@@ -12,6 +12,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
+import io.camunda.zeebe.cluster.gossip.poc.antientropy.AntiEntropyClusterGossiper;
+import io.camunda.zeebe.cluster.gossip.poc.antientropy.AntiEntropyConfig;
 import io.camunda.zeebe.cluster.gossip.poc.core.AbstractClusterGossiper;
 import io.camunda.zeebe.cluster.gossip.poc.swim.SwimClusterGossiper;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -119,7 +121,14 @@ final class TestCluster implements AutoCloseable {
 
   /** How state travels: which proof of concept runs on top of SWIM. */
   enum Transport {
-    SWIM((atomix, timing) -> new SwimClusterGossiper(atomix.getMembershipService()));
+    SWIM((atomix, timing) -> new SwimClusterGossiper(atomix.getMembershipService())),
+    ANTI_ENTROPY(
+        (atomix, timing) ->
+            new AntiEntropyClusterGossiper(
+                atomix.getCommunicationService(),
+                atomix.getMembershipService(),
+                new AntiEntropyConfig(
+                    timing.gossipInterval(), 2, 3, timing.syncInterval(), Duration.ofSeconds(5))));
 
     private final BiFunction<AtomixCluster, Timing, AbstractClusterGossiper> factory;
 
