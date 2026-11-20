@@ -135,12 +135,21 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     secrets.forEach(
         (name, value) ->
             withCopyToContainer(
-                Transferable.of(value.getBytes(StandardCharsets.UTF_8), SECRET_FILE_MODE),
+                Transferable.of(
+                    secretFileContent(value).getBytes(StandardCharsets.UTF_8), SECRET_FILE_MODE),
                 CLUSTER_SECRETS_DIRECTORY + "/" + name));
 
     return withEnv(
         ContainerRuntimeEnvs.CAMUNDA_ENV_SECRETS_STORES_FILE_DEFAULT_PATH,
         CLUSTER_SECRETS_DIRECTORY);
+  }
+
+  /**
+   * The file store drops one trailing line terminator when it reads a secret, as editors append
+   * one. A value that ends in a line terminator gets an extra LF, so the store returns it as is.
+   */
+  private static String secretFileContent(final String value) {
+    return value.endsWith("\n") ? value + "\n" : value;
   }
 
   /**
