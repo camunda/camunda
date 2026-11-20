@@ -1143,17 +1143,21 @@ public final class ProcessStateTest {
   }
 
   @Test
-  public void shouldRemoveSuspendedMarker() {
+  public void shouldRemoveSuspendedMarkerOnlyOfTheGivenVersion() {
     // given
-    final var processRecord = creatingProcessRecord(processingState);
-    processState.putProcess(processRecord.getKey(), processRecord);
-    processState.markSuspended(processRecord);
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.markSuspended(v1);
+    processState.markSuspended(v2);
 
     // when
-    processState.removeSuspended(processRecord);
+    processState.removeSuspended(v1);
 
     // then
-    assertThat(processState.isSuspended(processRecord.getKey())).isFalse();
+    assertThat(processState.isSuspended(v1.getKey())).isFalse();
+    assertThat(processState.isSuspended(v2.getKey())).isTrue();
   }
 
   @Test

@@ -116,7 +116,7 @@ public final class DbProcessState implements MutableProcessState {
 
   private final VersionManager versionManager;
 
-  /** [process definition key] => [DbNil], present while the version is suspended */
+  /** [process definition key] => [DbNil], present while the definition is suspended */
   private final ColumnFamily<DbLong, DbNil> suspendedProcessesColumnFamily;
 
   private final DbInt pendingDeletionPartitionId;
@@ -331,7 +331,7 @@ public final class DbProcessState implements MutableProcessState {
     process.setDeleteHistory(processRecord.isDeleteHistory());
     processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
     // a draining version is being deleted and can no longer be resumed, so its marker is moot
-    suspendedProcessesColumnFamily.deleteIfExists(processDefinitionKey);
+    removeSuspended(processRecord);
     updateInMemoryState(process);
   }
 
@@ -406,7 +406,7 @@ public final class DbProcessState implements MutableProcessState {
 
     processColumnFamily.deleteExisting(tenantAwareProcessDefinitionKey);
     processByIdAndVersionColumnFamily.deleteExisting(tenantAwareProcessIdAndVersionKey);
-    suspendedProcessesColumnFamily.deleteIfExists(processDefinitionKey);
+    removeSuspended(processRecord);
 
     // use deleteIfExists as no entry exists for older records that do not have a deployment key yet
     processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.deleteIfExists(
@@ -640,9 +640,10 @@ public final class DbProcessState implements MutableProcessState {
   /**
    * {@inheritDoc}
    *
-   * <p>When the highest version is active (see {@link DeployedProcess#isActive()}), it is returned
-   * immediately without loading known versions. The reverse scan only runs when that version is not
-   * active, and it skips {@code version >= latestVersion} because that version was already checked.
+   * <p>When the highest version is active (see {@link DeployedProcess#isActive()}) and not
+   * suspended, it is returned immediately without loading known versions. The reverse scan only
+   * runs when that version is not, and it skips {@code version >= latestVersion} because that
+   * version was already checked.
    */
   @Override
   public DeployedProcess getLatestActiveProcessVersionByProcessId(
@@ -651,7 +652,7 @@ public final class DbProcessState implements MutableProcessState {
     if (process == null) {
       return null;
     }
-    if (isActiveAndNotSuspended(process)) {
+    if (canStartInstances(process)) {
       return process;
     }
 
@@ -663,7 +664,7 @@ public final class DbProcessState implements MutableProcessState {
         continue;
       }
       process = getProcessByProcessIdAndVersion(processIdBuffer, version, tenantId);
-      if (process != null && isActiveAndNotSuspended(process)) {
+      if (process != null && canStartInstances(process)) {
         return process;
       }
     }
@@ -900,7 +901,7 @@ public final class DbProcessState implements MutableProcessState {
     return partitions;
   }
 
-  private boolean isActiveAndNotSuspended(final DeployedProcess process) {
+  private boolean canStartInstances(final DeployedProcess process) {
     return process.isActive() && !isSuspended(process.getKey());
   }
 

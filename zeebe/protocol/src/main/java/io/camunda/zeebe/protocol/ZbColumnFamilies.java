@@ -463,9 +463,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   PROBES_BY_SECRET_REFERENCE(175, PARTITION_LOCAL),
 
   /**
-   * Marker for suspended process definition versions: processDefinitionKey -> nil. An entry means
-   * the version is suspended; it is only set and removed by event appliers. Global, so a partition
-   * added by scaling starts with the same suspended versions.
+   * Marker for suspended process definitions: processDefinitionKey -> nil. An entry means the
+   * definition is suspended; it is only set and removed by event appliers. Global, so a partition
+   * added by scaling starts with the same suspended definitions.
    */
   SUSPENDED_PROCESS_DEFINITIONS(176, GLOBAL);
 

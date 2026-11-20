@@ -25,9 +25,9 @@ public interface ProcessState {
    * DeployedProcess#isActive()}: {@code ACTIVE} or a stuck {@code PENDING_DELETION}) and not
    * suspended. Skips draining and suspended versions.
    *
-   * <p>If the highest version in state is already active, that process is returned and older
-   * versions are not inspected. {@link #getLatestProcessVersionByProcessId} still returns the
-   * highest version in state regardless of lifecycle.
+   * <p>If the highest version in state is already active and not suspended, that process is
+   * returned and older versions are not inspected. {@link #getLatestProcessVersionByProcessId}
+   * still returns the highest version in state regardless of lifecycle.
    */
   DeployedProcess getLatestActiveProcessVersionByProcessId(
       DirectBuffer processId, final String tenantId);
@@ -36,9 +36,9 @@ public interface ProcessState {
       DirectBuffer processId, int version, final String tenantId);
 
   /**
-   * Whether the given process definition version is suspended. Suspension is kept apart from the
-   * {@link DeployedProcess#getState() lifecycle state}, so {@link DeployedProcess#isActive()} does
-   * not reflect it.
+   * Whether the given process definition is suspended. Suspension is kept apart from the {@link
+   * DeployedProcess#getState() lifecycle state}, so {@link DeployedProcess#isActive()} does not
+   * reflect it.
    */
   boolean isSuspended(long processDefinitionKey);
 
