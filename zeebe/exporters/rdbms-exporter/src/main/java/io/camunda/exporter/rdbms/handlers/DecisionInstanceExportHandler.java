@@ -42,7 +42,8 @@ public class DecisionInstanceExportHandler
   @Override
   public boolean canExport(final Record<DecisionEvaluationRecordValue> record) {
     return record.getValueType() == ValueType.DECISION_EVALUATION
-        && record.getIntent() == DecisionEvaluationIntent.EVALUATED;
+        && (record.getIntent() == DecisionEvaluationIntent.EVALUATED
+            || record.getIntent() == DecisionEvaluationIntent.FAILED);
   }
 
   @Override
@@ -105,7 +106,7 @@ public class DecisionInstanceExportHandler
         .evaluatedOutputs(createEvaluationOutputs(id, evaluatedDecision.getMatchedRules()))
         .state(state)
         .decisionType(DecisionDefinitionType.fromValue(evaluatedDecision.getDecisionType()))
-        .evaluationFailure(
+        .evaluationFailureMessage(
             state == DecisionInstanceState.FAILED ? value.getEvaluationFailureMessage() : null)
         .partitionId(record.getPartitionId())
         .storageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(value))
