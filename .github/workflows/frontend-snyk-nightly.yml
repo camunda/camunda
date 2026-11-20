@@ -239,6 +239,65 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  webapp-fe-snyk:
+    if: inputs.branch != 'stable/8.8' && inputs.branch != 'stable/8.9'
+    name: "Orchestration Cluster Webapp / Front End - Snyk (${{ inputs.branch }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: "@camunda/orchestration-cluster-webapps"
+      TEST_PRODUCT: Orchestration Cluster Webapp
+    defaults:
+      run:
+        working-directory: webapp/client
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Import Snyk token from Vault
+        id: snyk-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
+      - name: Scan frontend dependencies
+        id: snyk
+        uses: ./.github/actions/frontend-snyk-test
+        env:
+          SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
+        with:
+          directory: webapp/client
+          all-projects: "true"
+          exclude: pom.xml,build.gradle.kts
+          project-name: Orchestration Cluster Webapp frontend
+          artifact-name: snyk-report-webapp-${{ inputs.branch }}
+      - name: Verify all workspaces were scanned
+        if: steps.snyk.outputs.scan-mode != 'all-projects'
+        env:
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          echo "::error::frontend-snyk-test on ${BRANCH} does not support all-projects, so the npm workspaces were not scanned. Backport the action change to ${BRANCH}."
+          exit 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   report-to-slack:
     name: "Report failures to Slack"
     runs-on: ubuntu-latest
@@ -252,6 +311,7 @@ jobs:
       - operate-fe-snyk
       - tasklist-fe-snyk
       - optimize-fe-snyk
+      - webapp-fe-snyk
     if: always() && inputs['notify-on-failure'] && github.event_name != 'workflow_dispatch' && contains(needs.*.result, 'failure')
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -281,6 +341,7 @@ jobs:
           operate="${{ needs.operate-fe-snyk.result }}"
           tasklist="${{ needs.tasklist-fe-snyk.result }}"
           optimize="${{ needs.optimize-fe-snyk.result }}"
+          webapp="${{ needs.webapp-fe-snyk.result }}"
 
           icon() { [[ "$1" == "success" ]] && echo ":white_check_mark:" || echo ":x:"; }
 
@@ -293,6 +354,9 @@ jobs:
               echo "$(icon "$tasklist") *Tasklist* — ${tasklist}"
             fi
             echo "$(icon "$optimize") *Optimize* — ${optimize}"
+            if [[ "$webapp" != "skipped" ]]; then
+              echo "$(icon "$webapp") *Orchestration Cluster Webapp* — ${webapp}"
+            fi
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
       - name: Post to Slack
