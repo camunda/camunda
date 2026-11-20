@@ -66,6 +66,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyStatusRecord;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
@@ -251,6 +252,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.AGENT_HISTORY_BATCH -> new AgentHistoryBatchRecord();
       case ValueType.SECRET_REFERENCE -> new SecretReferenceRecord();
       case ValueType.POLICY_UPDATE -> new PolicyUpdateRecord();
+      case ValueType.POLICY_STATUS -> new PolicyStatusRecord();
       case ValueType.PROCESS_DEFINITION_SUSPENSION -> new ProcessDefinitionSuspensionRecord();
       case ValueType.CLUSTER_BEHAVIOR -> new ClusterBehaviorRecord();
       case ValueType.SBE_UNKNOWN -> null;

@@ -66,7 +66,8 @@ public final class ValueTypes {
           ValueType.AGENT_INSTANCE,
           ValueType.PROBE,
           ValueType.PROBE_BATCH,
-          ValueType.POLICY_UPDATE);
+          ValueType.POLICY_UPDATE,
+          ValueType.POLICY_STATUS);
 
   private ValueTypes() {}
 

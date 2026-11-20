@@ -111,6 +111,7 @@
       <validValue name="PROCESS_DEFINITION_SUSPENSION">85</validValue>
       <validValue name="CLUSTER_BEHAVIOR">86</validValue>
       <validValue name="CASE">87</validValue>
+      <validValue name="POLICY_STATUS">88</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->

@@ -65,6 +65,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.PolicyStatusIntent;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
@@ -145,6 +146,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.PolicyStatusRecordValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProbeBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
@@ -334,6 +336,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.POLICY_UPDATE,
         new Mapping<>(PolicyUpdateRecordValue.class, PolicyUpdateIntent.class));
+    mapping.put(
+        ValueType.POLICY_STATUS,
+        new Mapping<>(PolicyStatusRecordValue.class, PolicyStatusIntent.class));
     mapping.put(
         ValueType.PROCESS_DEFINITION_SUSPENSION,
         new Mapping<>(

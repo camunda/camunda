@@ -123,6 +123,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.PolicyStatusRecordValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProbeBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
@@ -364,6 +365,7 @@ public class CompactRecordLogger {
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.PROCESS_DEFINITION_RESTORE, this::summarizeProcessDefinitionRestore);
     valueLoggers.put(ValueType.POLICY_UPDATE, this::summarizePolicyUpdate);
+    valueLoggers.put(ValueType.POLICY_STATUS, this::summarizePolicyStatus);
     valueLoggers.put(ValueType.PROBE, this::summarizeProbe);
     valueLoggers.put(ValueType.PROBE_BATCH, this::summarizeProbeBatch);
     valueLoggers.put(
@@ -2317,6 +2319,17 @@ public class CompactRecordLogger {
     result.append(" tenantId:").append(value.getTenantId());
 
     return result.toString();
+  }
+
+  private String summarizePolicyStatus(final Record<?> record) {
+    final var value = (PolicyStatusRecordValue) record.getValue();
+    return "policy:%s version:%d seqNo:%d update:%s %s"
+        .formatted(
+            value.getPolicyId(),
+            value.getPolicyVersion(),
+            value.getSeqNo(),
+            value.getOpenUpdateId(),
+            value.getUpdateStatus());
   }
 
   private String summarizePolicyUpdate(final Record<?> record) {
