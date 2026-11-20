@@ -26,8 +26,9 @@ import org.springframework.context.ApplicationListener;
 
 /**
  * Runs the restore app as a Spring Boot application, as its main method does, and checks two parts
- * of the exit code contract: a failed restore exits with the code of its reason, and leaves no data
- * behind, so the caller can run the restore again on the same volume.
+ * of the exit code contract: a failed restore exits with the code of its reason, and a failure with
+ * a reason leaves the data directory untouched, so the caller can run the restore again on the same
+ * volume.
  *
  * <p>The exit itself happens on the main thread only, so the test observes the {@link
  * ExitCodeEvent} Spring Boot publishes for it.
@@ -43,22 +44,22 @@ final class RestoreAppExitCodeTest {
   void shouldExitWithTheInvalidRequestCodeForANegativeBackupId() throws IOException {
     // when
     assertThatThrownBy(() -> runRestore("--backupId=-1"))
-        .hasRootCauseMessage("Backup id must not be negative but was -1");
+        .hasMessage("Backup id must not be negative but was -1");
 
     // then
     assertThat(exitCodes).containsExactly(10);
-    assertDataDirectoryIsEmpty();
+    assertDataDirectoryIsUntouched();
   }
 
   @Test
   void shouldExitWithTheBackupsInconsistentCodeWhenTheBackupDoesNotExist() throws IOException {
     // when
     assertThatThrownBy(() -> runRestore("--backupId=42"))
-        .hasRootCauseMessage("Could not find a completed backup with id 42.");
+        .hasMessage("Could not find a completed backup with id 42.");
 
     // then
     assertThat(exitCodes).containsExactly(13);
-    assertDataDirectoryIsEmpty();
+    assertDataDirectoryIsUntouched();
   }
 
   private void runRestore(final String... args) {
@@ -74,10 +75,10 @@ final class RestoreAppExitCodeTest {
         .run(args);
   }
 
-  /** A failed restore clears the data directory, so it can run again on the same volume. */
-  private void assertDataDirectoryIsEmpty() throws IOException {
-    try (final Stream<Path> files = Files.walk(dataDirectory)) {
-      assertThat(files.filter(Files::isRegularFile)).isEmpty();
+  /** The restore must not write anything into the data directory, not even a directory. */
+  private void assertDataDirectoryIsUntouched() throws IOException {
+    try (final Stream<Path> entries = Files.list(dataDirectory)) {
+      assertThat(entries).isEmpty();
     }
   }
 }

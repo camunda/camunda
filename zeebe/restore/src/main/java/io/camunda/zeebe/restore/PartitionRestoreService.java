@@ -40,6 +40,8 @@ import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,14 +90,23 @@ public class PartitionRestoreService {
    */
   public void restore(final long[] backupIds, final BackupValidator validator)
       throws IOException, FlushException {
+    restore(findBackups(backupStore, partitionId, backupIds, validator));
+  }
+
+  /**
+   * Downloads the given backups and restores them to the partition's data directory, as {@link
+   * #restore(long[], BackupValidator)} does once it found them.
+   *
+   * @param backups the backup of each backup id, as {@link #findBackups} finds them
+   */
+  public void restore(final SortedMap<Long, BackupIdentifier> backups)
+      throws IOException, FlushException {
     if (!FileUtil.isEmpty(rootDirectory)) {
       LOG.error(
           "Partition's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
           rootDirectory);
       throw new DirectoryNotEmptyException(rootDirectory.toString());
     }
-    validateAndSortBackupIds(backupIds);
-
     try (final var restoredJournal =
         SegmentedJournal.builder(partition.getMeterRegistry())
             .withDirectory(rootDirectory.toFile())
@@ -103,11 +114,12 @@ public class PartitionRestoreService {
             .withMetaStore(new InMemory())
             .build()) {
       Backup previousBackup = null;
-      for (final var backupId : backupIds) {
+      for (final var entry : backups.entrySet()) {
         final var restoreTarget =
-            rootDirectory.resolve("restoring-partition" + partitionId + "-backup-" + backupId);
+            rootDirectory.resolve(
+                "restoring-partition" + partitionId + "-backup-" + entry.getKey());
         FileUtil.ensureDirectoryExists(restoreTarget);
-        final var backup = download(backupId, restoreTarget, validator);
+        final var backup = download(entry.getValue(), restoreTarget);
         if (previousBackup == null) {
           // Only take the first snapshot, all others are redundant because we have the full log.
           moveSnapshotFiles(backup);
@@ -122,6 +134,25 @@ public class PartitionRestoreService {
     // TODO: As an additional consistency check:
     // - Validate journal.firstIndex <= snapshotIndex + 1
     // - Verify journal.lastEntry.asqn == checkpointPosition
+  }
+
+  /**
+   * Finds the completed backup of each of the given ids for the partition, without writing
+   * anything. Its failures name their reason, and the restore app promises a caller that a failure
+   * with a reason left the data directory untouched, so the restore finds the backups of every
+   * partition before it writes to any.
+   */
+  public static SortedMap<Long, BackupIdentifier> findBackups(
+      final BackupStore backupStore,
+      final int partitionId,
+      final long[] backupIds,
+      final BackupValidator validator) {
+    validateAndSortBackupIds(backupIds);
+    final var backups = new TreeMap<Long, BackupIdentifier>();
+    for (final var backupId : backupIds) {
+      backups.put(backupId, findValidBackup(backupStore, partitionId, backupId, validator));
+    }
+    return backups;
   }
 
   /** Ensures that we have a valid array of backup ids. */
@@ -243,16 +274,17 @@ public class PartitionRestoreService {
     }
   }
 
-  private Backup download(
-      final long checkpointId, final Path tempRestoringDirectory, final BackupValidator validator) {
-    final var validBackup = findValidBackup(checkpointId, validator);
-    return backupStore.restore(validBackup, tempRestoringDirectory).join();
+  private Backup download(final BackupIdentifier backup, final Path tempRestoringDirectory) {
+    return backupStore.restore(backup, tempRestoringDirectory).join();
   }
 
-  private BackupIdentifier findValidBackup(
-      final long checkpointId, final BackupValidator validator) {
+  private static BackupIdentifier findValidBackup(
+      final BackupStore backupStore,
+      final int partitionId,
+      final long checkpointId,
+      final BackupValidator validator) {
     LOG.info("Searching for a completed backup with id {}", checkpointId);
-    final var statuses = listBackups(checkpointId);
+    final var statuses = listBackups(backupStore, partitionId, checkpointId);
     final var validStatus =
         statuses.stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
@@ -262,7 +294,8 @@ public class PartitionRestoreService {
     return validStatus.id();
   }
 
-  private Collection<BackupStatus> listBackups(final long checkpointId) {
+  private static Collection<BackupStatus> listBackups(
+      final BackupStore backupStore, final int partitionId, final long checkpointId) {
     try {
       return backupStore
           .list(
