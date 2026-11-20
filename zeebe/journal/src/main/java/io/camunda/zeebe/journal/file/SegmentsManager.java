@@ -290,9 +290,6 @@ final class SegmentsManager implements AutoCloseable {
 
   /** Loads existing segments from the disk */
   void open() {
-    bgIoExecutor =
-        Executors.newSingleThreadExecutor(
-            task -> Thread.ofPlatform().name("journal-bg-io-" + name).daemon(true).unstarted(task));
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
     for (final Segment segment : loadSegments()) {
@@ -323,6 +320,12 @@ final class SegmentsManager implements AutoCloseable {
     // node was stopped. It is safe to delete it now since there are no readers opened for these
     // segments.
     deleteDeferredFiles();
+
+    // created last, so that nothing above can fail while holding an executor that no one would
+    // close; the executor is only needed once open() has returned, to prepare the next segment
+    bgIoExecutor =
+        Executors.newSingleThreadExecutor(
+            task -> Thread.ofPlatform().name("journal-bg-io-" + name).daemon(true).unstarted(task));
   }
 
   private void prepareNextSegment() {
