@@ -25,9 +25,6 @@
 #   enable-chaos               Enable chaos-killer (true/false)
 #   physical-tenant-count      Number of extra physical tenants (pt1..ptN) to deploy (0 = disabled)
 #
-# The previous format with image-registry, camunda-repo and optimize-repo as positional arguments
-# after image-repository is still accepted, only for the stable/8.10 copy of camunda-load-test.yml.
-#
 # Options (all optional, empty by default). A platform image option that is empty or missing sets
 # no Helm value, so the value of the setup folder applies:
 #   --orchestration-registry REGISTRY      Orchestration image registry
@@ -49,19 +46,6 @@ namespace="$1"
 install_target="$2"
 image_tag="$3"
 image_repository="$4"
-
-# The stable/8.10 copy of camunda-load-test.yml runs this script from main with the previous
-# argument format: image-registry, camunda-repo and optimize-repo as positional arguments after
-# image-repository (13 positional arguments). The 11th argument is true or false in that format,
-# and an option or missing in the current one. Remove this block when that copy uses the options.
-legacy_arguments=false
-if [[ "${11:-}" == "true" || "${11:-}" == "false" ]]; then
-  legacy_arguments=true
-  legacy_image_registry="$5"
-  legacy_camunda_repo="$6"
-  legacy_optimize_repo="$7"
-  set -- "$1" "$2" "$3" "$4" "${@:8}"
-fi
 
 perform_read_benchmarks="$5"
 enable_optimize="$6"
@@ -101,21 +85,6 @@ while [[ $# -gt 0 ]]; do
     *) echo "::error::Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
-
-# Previous format: --orchestration-tag only tells whether a Docker Hub image is used, the image
-# tag of the orchestration image is image-tag, and Optimize is built from the same registry unless
-# an Optimize tag is given.
-if [[ "${legacy_arguments}" == "true" ]]; then
-  legacy_orchestration_tag="${orchestration_tag}"
-  orchestration_registry="${legacy_image_registry}"
-  orchestration_repository="${legacy_camunda_repo}"
-  orchestration_tag="${image_tag}"
-  if [[ -z "${optimize_tag}" && -z "${legacy_orchestration_tag}" ]]; then
-    optimize_registry="${legacy_image_registry}"
-    optimize_repository="${legacy_optimize_repo}"
-    optimize_tag="${image_tag}"
-  fi
-fi
 
 cd "load-tests/setup/${namespace}"
 
