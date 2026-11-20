@@ -19,14 +19,19 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +58,7 @@ import org.slf4j.LoggerFactory;
  *     overwrites the local member's state to keep it in sync with the statically configured
  *     exporters.
  */
+@NullMarked
 public interface ClusterConfigurationInitializer<T extends InitializableClusterConfiguration> {
   Logger LOG = LoggerFactory.getLogger(ClusterConfigurationInitializer.class);
 
@@ -223,18 +229,40 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
       implements ClusterConfigurationInitializer<CurrentClusterConfiguration>,
           ClusterConfigurationUpdateListener {
 
+    static final Duration DEFAULT_WAIT_LOG_INTERVAL = Duration.ofSeconds(10);
+    static final int ERROR_LOG_THRESHOLD = 10;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(GossipInitializer.class);
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final Supplier<CurrentClusterConfiguration> persistedConfigurationSupplier;
     private final Consumer<CurrentClusterConfiguration> configurationGossiper;
     private final ActorFuture<CurrentClusterConfiguration> initialized;
     private final ConcurrencyControl executor;
+    private final Duration waitLogInterval;
+    private @Nullable ScheduledTimer waitLogTimer;
+    private int waitLogCount;
 
     public GossipInitializer(
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
         final Supplier<CurrentClusterConfiguration> persistedConfigurationSupplier,
         final Consumer<CurrentClusterConfiguration> configurationGossiper,
         final ConcurrencyControl executor) {
+      this(
+          clusterConfigurationUpdateNotifier,
+          persistedConfigurationSupplier,
+          configurationGossiper,
+          executor,
+          DEFAULT_WAIT_LOG_INTERVAL);
+    }
+
+    @VisibleForTesting
+    GossipInitializer(
+        final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
+        final Supplier<CurrentClusterConfiguration> persistedConfigurationSupplier,
+        final Consumer<CurrentClusterConfiguration> configurationGossiper,
+        final ConcurrencyControl executor,
+        final Duration waitLogInterval) {
+      this.waitLogInterval = waitLogInterval;
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
       this.persistedConfigurationSupplier = persistedConfigurationSupplier;
       this.configurationGossiper = configurationGossiper;
@@ -255,7 +283,35 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
         // received gossip
         configurationGossiper.accept(persistedConfiguration);
       }
+      // Without this, a coordinator that never comes up leaves this member silently waiting.
+      // runAtFixedRate must be called from the actor, which initialize() does not guarantee when
+      // chained after another initializer.
+      executor.run(
+          () -> {
+            if (!initialized.isDone()) {
+              final var waitStarted = Instant.now();
+              waitLogTimer =
+                  executor.runAtFixedRate(waitLogInterval, () -> logStillWaiting(waitStarted));
+            }
+          });
       return initialized;
+    }
+
+    private void logStillWaiting(final Instant waitStarted) {
+      if (initialized.isDone()) {
+        return;
+      }
+      waitLogCount++;
+      final var waited =
+          Duration.between(waitStarted, Instant.now()).truncatedTo(ChronoUnit.SECONDS);
+      final var message =
+          "Still waiting for the coordinator to provide the initial cluster configuration via"
+              + " gossip after {}. Check that the coordinator is up and healthy.";
+      if (waitLogCount >= ERROR_LOG_THRESHOLD) {
+        LOGGER.error(message, waited);
+      } else {
+        LOGGER.warn(message, waited);
+      }
     }
 
     @Override
@@ -274,6 +330,9 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
               LOGGER.debug("Received cluster configuration {} via gossip.", clusterConfiguration);
               initialized.complete(clusterConfiguration);
               clusterConfigurationUpdateNotifier.removeUpdateListener(this);
+              if (waitLogTimer != null) {
+                waitLogTimer.cancel();
+              }
             }
           });
     }
@@ -298,7 +357,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     private final Set<MemberId> uninitializedMembers = new HashSet<>();
     private final Set<MemberId> requestsInFlight = new HashSet<>();
     private boolean retryScheduled;
-    private ScheduledTimer bootstrapTimeoutTimer;
+    private @Nullable ScheduledTimer bootstrapTimeoutTimer;
     private final ConcurrencyControl executor;
     private final Function<MemberId, ActorFuture<CurrentClusterConfiguration>> syncRequester;
     private final CurrentClusterConfiguration uninitialized;
