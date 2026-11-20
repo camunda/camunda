@@ -18,6 +18,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.KEY_CUSTOM_HEADER;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.VALUE_CUSTOM_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -228,6 +229,116 @@ class ElasticsearchConnectorTest {
       Mockito.verify(connector)
           .setConnectionTimeouts(any(ConnectionConfig.Builder.class), eq(configuration));
       Mockito.verify(connector).setRequestTimeouts(any(RequestConfig.Builder.class));
+    }
+  }
+
+  @Test
+  void shouldRequireAConfigurationToBuild() {
+    // when / then
+    assertThatThrownBy(() -> ElasticsearchConnector.builder().build())
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("configuration");
+  }
+
+  @Test
+  void shouldSetTheIoThreadCountOfTheBuilder() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        ElasticsearchConnector.builder().configuration(configuration).ioThreadCount(1).build();
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    Mockito.verify(builder).setIOReactorConfig(captor.capture());
+    assertThat(captor.getValue().getIoThreadCount()).isEqualTo(1);
+    assertThat(captor.getValue().isSoKeepAlive()).isTrue();
+  }
+
+  @Test
+  void shouldLeaveTheIoThreadCountToTheHttpClientByDefault() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector = ElasticsearchConnector.builder().configuration(configuration).build();
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    Mockito.verify(builder).setIOReactorConfig(captor.capture());
+    assertThat(captor.getValue().getIoThreadCount())
+        .isEqualTo(IOReactorConfig.custom().build().getIoThreadCount());
+  }
+
+  @Test
+  void shouldKeepTheDefaultConnectionRequestTimeoutWhenTheBuilderLeavesItUnset() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector = ElasticsearchConnector.builder().configuration(configuration).build();
+    final var requestConfigBuilder = Mockito.mock(RequestConfig.Builder.class);
+
+    // when
+    connector.setRequestTimeouts(requestConfigBuilder);
+
+    // then
+    Mockito.verify(requestConfigBuilder)
+        .setConnectionRequestTimeout(Timeout.ofMilliseconds(180_000));
+  }
+
+  @Test
+  void shouldLeaveTheConnectionRequestTimeoutToTheHttpClientWhenTheBuilderSetsNull() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        ElasticsearchConnector.builder()
+            .configuration(configuration)
+            .connectionRequestTimeoutMillis(null)
+            .build();
+    final var requestConfigBuilder = Mockito.mock(RequestConfig.Builder.class);
+
+    // when
+    connector.setRequestTimeouts(requestConfigBuilder);
+
+    // then
+    Mockito.verifyNoInteractions(requestConfigBuilder);
+  }
+
+  @Test
+  void shouldApplyTheBuilderInterceptorsAfterThePluginInterceptor() throws IOException {
+    // given - the plugin sets foo=bar, the builder interceptor then overrides it
+    final var context = HttpClientContext.create();
+    final var configuration = new ConnectConfiguration();
+    configuration.setInterceptorPlugins(
+        List.of(
+            new PluginConfiguration(
+                "my-plg", TestDatabaseCustomHeaderSupplierImpl.class.getName(), null)));
+    final var connector =
+        ElasticsearchConnector.builder()
+            .configuration(configuration)
+            .requestInterceptors((request, entity, ctx) -> request.setHeader("foo", "baz"))
+            .build();
+
+    // when
+    try (final var client = connector.createClient()) {
+      final var asyncResp =
+          getHttpClient(client)
+              .execute(
+                  SimpleHttpRequest.create("GET", esServer.getRuntimeInfo().getHttpBaseUrl()),
+                  context,
+                  NoopCallback.INSTANCE);
+      try {
+        asyncResp.get();
+      } catch (final Exception e) {
+        // ignore as we don't really care about the outcome
+      }
+
+      // then
+      assertThat(context.getRequest().getFirstHeader("foo").getValue()).isEqualTo("baz");
     }
   }
 
