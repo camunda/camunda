@@ -395,7 +395,8 @@ jobs:
           section. That file is your full operating manual: the loop, the
           constraints, and the /tmp/unskip-meta.json schema. It is main's copy of
           the suite AGENTS.md — authoritative even when the branch you are on
-          carries an older AGENTS.md.
+          carries an older AGENTS.md. Any code comment you add follows its
+          "## Code Comments" section.
 
           /tmp/cell-plan.json describes this environment cell: the spec files that
           run here, the Playwright projects to pass, the un-skipped tests with the
