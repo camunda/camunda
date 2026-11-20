@@ -10,46 +10,61 @@ package io.camunda.zeebe.it.engine.client.command;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceResult;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.util.ByteValue;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Map;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
-public final class CreateProcessInstanceWithLargeResultTest {
+@ZeebeIntegration
+final class CreateProcessInstanceWithLargeResultIT {
 
-  private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(
-          cfg -> {
-            cfg.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(21));
-            cfg.getGateway().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(21));
-          });
-  private static final GrpcClientRule CLIENT_RULE =
-      new GrpcClientRule(BROKER_RULE, clientBuilder -> clientBuilder.maxMessageSize(21 * ONE_MB));
+  @TestZeebe
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withUnifiedConfig(
+              c -> {
+                c.getCluster().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(21));
+                c.getData()
+                    .getPrimaryStorage()
+                    .getLogStream()
+                    .setLogSegmentSize(DataSize.ofMegabytes(64));
+              });
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @AutoClose private CamundaClient client;
+  private ZeebeResourcesHelper resourcesHelper;
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @BeforeEach
+  void createClient() {
+    client =
+        ZEEBE
+            .newClientBuilder()
+            .defaultRequestTimeout(Duration.ofSeconds(10))
+            .maxMessageSize(21 * ONE_MB)
+            .build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
+  }
 
   @Test
-  public void shouldCreateInstanceWithLargeResult() {
+  void shouldCreateInstanceWithLargeResult() {
     // given
-    CLIENT_RULE.deployProcess(
+    resourcesHelper.deployProcess(
         Bpmn.createExecutableProcess("PROCESS").startEvent().endEvent().done());
 
     // when
     final ProcessInstanceResult processInstance =
-        CLIENT_RULE
-            .getClient()
+        client
             .newCreateInstanceCommand()
             .bpmnProcessId("PROCESS")
             .latestVersion()
@@ -64,15 +79,14 @@ public final class CreateProcessInstanceWithLargeResultTest {
   }
 
   @Test
-  public void shouldCreateInstanceWithLargeResultAndSingleVariable() {
+  void shouldCreateInstanceWithLargeResultAndSingleVariable() {
     // given
-    CLIENT_RULE.deployProcess(
+    resourcesHelper.deployProcess(
         Bpmn.createExecutableProcess("PROCESS").startEvent().endEvent().done());
 
     // when
     final ProcessInstanceResult processInstance =
-        CLIENT_RULE
-            .getClient()
+        client
             .newCreateInstanceCommand()
             .bpmnProcessId("PROCESS")
             .latestVersion()

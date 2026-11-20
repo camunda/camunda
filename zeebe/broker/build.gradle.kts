@@ -79,7 +79,6 @@ dependencies {
   testImplementation(projectArtifact(":zeebe-atomix-cluster", ArtifactKind.TESTS))
   testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-bpmn-model"))
-  testImplementation(project(":camunda-client-java"))
   testImplementation(projectArtifact(":zeebe-logstreams", ArtifactKind.TESTS))
   testImplementation(projectArtifact(":zeebe-util", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-protocol-test-util"))

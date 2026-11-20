@@ -9,47 +9,56 @@ package io.camunda.zeebe.it.engine.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.util.BrokerClassRuleHelper;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.ByteValue;
+import java.time.Duration;
 import java.util.Map;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
-public final class CallActivityTest {
+@ZeebeIntegration
+final class CallActivityIT {
 
-  private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(
-          cfg -> {
-            cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(100));
-            cfg.getProcessing().setMaxCommandsInBatch(1);
-          });
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @TestZeebe
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withUnifiedConfig(
+              c -> {
+                c.getCluster().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(100));
+                c.getProcessing().setMaxCommandsInBatch(1);
+              });
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @AutoClose private CamundaClient client;
+  private ZeebeResourcesHelper resourcesHelper;
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @BeforeEach
+  void createClient() {
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
+  }
 
   @Test
-  public void shouldRaiseIncidentWhenExceedingBatchSizeOnCallActivityActivation() {
+  void shouldRaiseIncidentWhenExceedingBatchSizeOnCallActivityActivation() {
     final String child = Strings.newRandomValidBpmnId();
     final String parent = Strings.newRandomValidBpmnId();
 
-    CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(child).startEvent("v1").done());
-    CLIENT_RULE.deployProcess(
+    resourcesHelper.deployProcess(Bpmn.createExecutableProcess(child).startEvent("v1").done());
+    resourcesHelper.deployProcess(
         Bpmn.createExecutableProcess(parent)
             .startEvent("v2")
             .scriptTask("script1", c -> c.zeebeExpression("x").zeebeResultVariable("a"))
@@ -62,8 +71,7 @@ public final class CallActivityTest {
 
     // when
     final ProcessInstanceEvent processInstance =
-        CLIENT_RULE
-            .getClient()
+        client
             .newCreateInstanceCommand()
             .bpmnProcessId(parent)
             .latestVersion()
@@ -95,12 +103,12 @@ public final class CallActivityTest {
   }
 
   @Test
-  public void shouldBeAbleToResolveIncidentAfterExceedingBatchSizeOnCallActivityActivation() {
+  void shouldBeAbleToResolveIncidentAfterExceedingBatchSizeOnCallActivityActivation() {
     final String child = Strings.newRandomValidBpmnId();
     final String parent = Strings.newRandomValidBpmnId();
 
-    CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(child).startEvent("v1").done());
-    CLIENT_RULE.deployProcess(
+    resourcesHelper.deployProcess(Bpmn.createExecutableProcess(child).startEvent("v1").done());
+    resourcesHelper.deployProcess(
         Bpmn.createExecutableProcess(parent)
             .startEvent("v2")
             .scriptTask("script1", c -> c.zeebeExpression("x").zeebeResultVariable("a"))
@@ -112,8 +120,7 @@ public final class CallActivityTest {
             .done());
 
     final ProcessInstanceEvent processInstance =
-        CLIENT_RULE
-            .getClient()
+        client
             .newCreateInstanceCommand()
             .bpmnProcessId(parent)
             .latestVersion()
@@ -127,13 +134,12 @@ public final class CallActivityTest {
             .getFirst();
 
     // when
-    CLIENT_RULE
-        .getClient()
+    client
         .newSetVariablesCommand(processInstance.getProcessInstanceKey())
         .variables(Map.of("x", "", "a", "", "b", "", "c", "", "d", ""))
         .send()
         .join();
-    CLIENT_RULE.getClient().newResolveIncidentCommand(incident.getKey()).send().join();
+    client.newResolveIncidentCommand(incident.getKey()).send().join();
 
     // then
     assertThat(
@@ -150,11 +156,11 @@ public final class CallActivityTest {
   }
 
   @Test
-  public void shouldRaiseIncidentWhenExceedingBatchSizeOnCallActivityCompletion() {
+  void shouldRaiseIncidentWhenExceedingBatchSizeOnCallActivityCompletion() {
     final String child = Strings.newRandomValidBpmnId();
     final String parent = Strings.newRandomValidBpmnId();
 
-    CLIENT_RULE.deployProcess(
+    resourcesHelper.deployProcess(
         Bpmn.createExecutableProcess(child)
             .startEvent("child")
             .scriptTask("script1", c -> c.zeebeExpression("x").zeebeResultVariable("a"))
@@ -162,7 +168,7 @@ public final class CallActivityTest {
             .scriptTask("script3", c -> c.zeebeExpression("x").zeebeResultVariable("c"))
             .scriptTask("script4", c -> c.zeebeExpression("x").zeebeResultVariable("d"))
             .done());
-    CLIENT_RULE.deployProcess(
+    resourcesHelper.deployProcess(
         Bpmn.createExecutableProcess(parent)
             .startEvent("parent")
             .callActivity("call-activity", c -> c.zeebeProcessId(child))
@@ -171,8 +177,7 @@ public final class CallActivityTest {
 
     // when
     final ProcessInstanceEvent processInstance =
-        CLIENT_RULE
-            .getClient()
+        client
             .newCreateInstanceCommand()
             .bpmnProcessId(parent)
             .latestVersion()

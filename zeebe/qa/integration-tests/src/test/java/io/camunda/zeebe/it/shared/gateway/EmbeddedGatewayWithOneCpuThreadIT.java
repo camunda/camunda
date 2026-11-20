@@ -10,62 +10,38 @@ package io.camunda.zeebe.it.shared.gateway;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.zeebe.broker.Broker;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import java.net.URI;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.Test;
 
-public final class EmbeddedGatewayWithOneCpuThreadIT {
+@ZeebeIntegration
+final class EmbeddedGatewayWithOneCpuThreadIT {
 
-  @Rule
-  public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule(brokerCfg -> brokerCfg.getThreads().setCpuThreadCount(1));
+  @TestZeebe
+  private final TestStandaloneBroker broker =
+      new TestStandaloneBroker().withUnifiedConfig(cfg -> cfg.getSystem().setCpuThreadCount(1));
 
-  private Broker broker;
-  private CamundaClient client;
-
-  @Before
-  public void setup() {
-    broker = brokerRule.getBroker();
-    client = createClient();
-  }
-
-  private CamundaClient createClient() {
-    final var config = broker.getConfig();
-    final var gtwConfig = config.getGateway();
-    final var port = gtwConfig.getNetwork().getPort();
-
-    return CamundaClient.newClientBuilder()
-        .grpcAddress(URI.create("http://localhost:" + port))
-        .build();
-  }
-
-  @After
-  public void tearDown() {
-    client.close();
-  }
+  @AutoClose private CamundaClient client;
 
   @Test
-  public void shouldStartEmbeddedGateway() {
+  void shouldStartEmbeddedGateway() {
     // given
-    final var context = broker.getBrokerContext();
-    final var embeddedGatewayService = context.getEmbeddedGatewayService();
+    client = broker.newClientBuilder().build();
 
     // when
-    // already started by EmbeddedBrokerRule
+    final var topology = client.newTopologyRequest().send().join();
 
     // then
-    assertThat(embeddedGatewayService).isNotNull();
-    assertThat(embeddedGatewayService.get()).isNotNull();
+    assertThat(topology.getBrokers()).hasSize(1);
   }
 
   @Test
-  public void shouldDeployProcess() throws InterruptedException {
+  void shouldDeployProcess() {
     // given
+    client = broker.newClientBuilder().build();
     final var process = Bpmn.createExecutableProcess().startEvent().endEvent().done();
 
     // when

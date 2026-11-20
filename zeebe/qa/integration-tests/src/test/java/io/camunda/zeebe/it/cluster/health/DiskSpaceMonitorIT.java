@@ -10,53 +10,70 @@ package io.camunda.zeebe.it.cluster.health;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValueAssert;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValueAssert;
+import io.camunda.zeebe.qa.util.actuator.ActorClockActuator;
+import io.camunda.zeebe.qa.util.actuator.ActorClockActuator.AddTimeRequest;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.util.unit.DataSize;
 
-public class DiskSpaceRecoveryTest {
-  private final Timeout testTimeout = Timeout.seconds(120);
-  private final EmbeddedBrokerRule embeddedBrokerRule =
-      new EmbeddedBrokerRule(
-          cfg -> {
-            cfg.getData().setDiskUsageMonitoringInterval(Duration.ofSeconds(1));
-          });
-  private final GrpcClientRule clientRule = new GrpcClientRule(embeddedBrokerRule);
+@ZeebeIntegration
+@Timeout(120)
+final class DiskSpaceMonitorIT {
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(testTimeout).around(embeddedBrokerRule).around(clientRule);
+  // the test leaves the broker without disk space, so every test needs its own broker
+  @TestZeebe
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withUnifiedConfig(
+              cfg -> {
+                cfg.getSystem().setClockControlled(true);
+                cfg.getData()
+                    .getPrimaryStorage()
+                    .getDisk()
+                    .setMonitoringInterval(Duration.ofSeconds(1));
+              });
+
+  @AutoClose private CamundaClient client;
+  private ZeebeResourcesHelper resourcesHelper;
+  private ActorClockActuator clock;
+
+  @BeforeEach
+  void createClient() {
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
+    clock = ActorClockActuator.of(zeebe);
+  }
 
   @Test
-  public void shouldStopAcceptingRequestWhenDiskSpaceFull() throws InterruptedException {
+  void shouldStopAcceptingRequestWhenDiskSpaceFull() throws InterruptedException {
     // given
     waitUntilDiskSpaceNotAvailable();
 
     // when
     final var resultFuture =
-        clientRule
-            .getClient()
-            .newPublishMessageCommand()
-            .messageName("test")
-            .correlationKey("test")
-            .send();
+        client.newPublishMessageCommand().messageName("test").correlationKey("test").send();
 
     // then
     Assertions.assertThatThrownBy(resultFuture::join)
@@ -65,27 +82,21 @@ public class DiskSpaceRecoveryTest {
   }
 
   @Test
-  public void shouldRestartAcceptingRequestWhenDiskSpaceAvailableAgain()
-      throws InterruptedException {
+  void shouldRestartAcceptingRequestWhenDiskSpaceAvailableAgain() throws InterruptedException {
     // given
     waitUntilDiskSpaceNotAvailable();
 
     // when
     waitUntilDiskSpaceAvailable();
     final var resultFuture =
-        clientRule
-            .getClient()
-            .newPublishMessageCommand()
-            .messageName("test")
-            .correlationKey("Test")
-            .send();
+        client.newPublishMessageCommand().messageName("test").correlationKey("Test").send();
 
     // then
     assertThatCode(resultFuture::join).doesNotThrowAnyException();
   }
 
   @Test
-  public void shouldProcessTimersWhenDiskSpaceAvailableAgain() throws InterruptedException {
+  void shouldProcessTimersWhenDiskSpaceAvailableAgain() throws InterruptedException {
     // given
     final BpmnModelInstance timerProcess =
         Bpmn.createExecutableProcess("TimerProcess")
@@ -93,8 +104,8 @@ public class DiskSpaceRecoveryTest {
             .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT100S"))
             .endEvent("end")
             .done();
-    final long processDefinitionKey = clientRule.deployProcess(timerProcess);
-    final long processInstanceKey = clientRule.createProcessInstance(processDefinitionKey);
+    final long processDefinitionKey = resourcesHelper.deployProcess(timerProcess);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
         .until(
@@ -113,7 +124,7 @@ public class DiskSpaceRecoveryTest {
 
     // when
     waitUntilDiskSpaceNotAvailable();
-    embeddedBrokerRule.getClock().addTime(Duration.ofSeconds(100));
+    clock.addTime(new AddTimeRequest(Duration.ofSeconds(100).toMillis()));
 
     waitUntilDiskSpaceAvailable();
 
@@ -133,7 +144,7 @@ public class DiskSpaceRecoveryTest {
   }
 
   @Test
-  public void shouldTimeoutActivatedJobsWhenDiskSpaceAvailableAgain() throws InterruptedException {
+  void shouldTimeoutActivatedJobsWhenDiskSpaceAvailableAgain() throws InterruptedException {
     // given
     final BpmnModelInstance timerProcess =
         Bpmn.createExecutableProcess("TimerProcess")
@@ -141,8 +152,8 @@ public class DiskSpaceRecoveryTest {
             .serviceTask("test", s -> s.zeebeJobType("timeout"))
             .endEvent("end")
             .done();
-    final long processDefinitionKey = clientRule.deployProcess(timerProcess);
-    final long processInstanceKey = clientRule.createProcessInstance(processDefinitionKey);
+    final long processDefinitionKey = resourcesHelper.deployProcess(timerProcess);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
         .until(
@@ -153,8 +164,7 @@ public class DiskSpaceRecoveryTest {
                     .exists());
 
     final var jobs =
-        clientRule
-            .getClient()
+        client
             .newActivateJobsCommand()
             .jobType("timeout")
             .maxJobsToActivate(1)
@@ -170,7 +180,7 @@ public class DiskSpaceRecoveryTest {
 
     // when
     waitUntilDiskSpaceNotAvailable();
-    embeddedBrokerRule.getClock().addTime(Duration.ofSeconds(100));
+    clock.addTime(new AddTimeRequest(Duration.ofSeconds(100).toMillis()));
 
     waitUntilDiskSpaceAvailable();
 
@@ -179,7 +189,7 @@ public class DiskSpaceRecoveryTest {
         .timeout(Duration.ofSeconds(60))
         .until(
             () -> {
-              embeddedBrokerRule.getClock().addTime(Duration.ofMinutes(1));
+              clock.addTime(new AddTimeRequest(Duration.ofMinutes(1).toMillis()));
               return RecordingExporter.jobRecords(JobIntent.TIME_OUT)
                   .withProcessInstanceKey(processInstanceKey)
                   .limit(1)
@@ -193,7 +203,7 @@ public class DiskSpaceRecoveryTest {
 
   private void waitUntilDiskSpaceNotAvailable() throws InterruptedException {
     final var diskSpaceMonitor =
-        embeddedBrokerRule.getBroker().getBrokerContext().getDiskSpaceUsageMonitor();
+        zeebe.bean(Broker.class).getBrokerContext().getDiskSpaceUsageMonitor();
 
     final CountDownLatch diskSpaceNotAvailable = new CountDownLatch(1);
     diskSpaceMonitor.addDiskUsageListener(
@@ -209,7 +219,7 @@ public class DiskSpaceRecoveryTest {
 
     diskSpaceMonitor.setFreeDiskSpaceSupplier(() -> DataSize.ofGigabytes(0).toBytes());
 
-    embeddedBrokerRule.getClock().addTime(Duration.ofSeconds(1));
+    clock.addTime(new AddTimeRequest(Duration.ofSeconds(1).toMillis()));
 
     // when
     assertThat(diskSpaceNotAvailable.await(2, TimeUnit.SECONDS)).isTrue();
@@ -217,7 +227,7 @@ public class DiskSpaceRecoveryTest {
 
   private void waitUntilDiskSpaceAvailable() throws InterruptedException {
     final var diskSpaceMonitor =
-        embeddedBrokerRule.getBroker().getBrokerContext().getDiskSpaceUsageMonitor();
+        zeebe.bean(Broker.class).getBrokerContext().getDiskSpaceUsageMonitor();
     final CountDownLatch diskSpaceAvailableAgain = new CountDownLatch(1);
     diskSpaceMonitor.addDiskUsageListener(
         new DiskSpaceUsageListener() {
@@ -228,7 +238,7 @@ public class DiskSpaceRecoveryTest {
         });
 
     diskSpaceMonitor.setFreeDiskSpaceSupplier(() -> DataSize.ofGigabytes(100).toBytes());
-    embeddedBrokerRule.getClock().addTime(Duration.ofSeconds(1));
+    clock.addTime(new AddTimeRequest(Duration.ofSeconds(1).toMillis()));
     assertThat(diskSpaceAvailableAgain.await(2, TimeUnit.SECONDS)).isTrue();
   }
 }

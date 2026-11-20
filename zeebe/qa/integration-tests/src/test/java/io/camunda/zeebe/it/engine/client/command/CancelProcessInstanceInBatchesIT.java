@@ -10,50 +10,61 @@ package io.camunda.zeebe.it.engine.client.command;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import java.time.Duration;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
-public final class CancelProcessInstanceInBatchesTest {
+@ZeebeIntegration
+final class CancelProcessInstanceInBatchesIT {
 
   private static final int AMOUNT_OF_ELEMENT_INSTANCES = 100;
   private static final int MAX_MESSAGE_SIZE_KB = 32;
-  private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(
-          cfg -> {
-            cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(MAX_MESSAGE_SIZE_KB));
-            cfg.getGateway()
-                .getNetwork()
-                .setMaxMessageSize(DataSize.ofKilobytes(MAX_MESSAGE_SIZE_KB));
-            // Note: this is a bout the batch for writing to the logstream, not the terminate batch
-            cfg.getProcessing().setMaxCommandsInBatch(1);
-            cfg.getExperimental()
-                .getFeatures()
-                .setEnableStraightThroughProcessingLoopDetector(false);
-          });
-  private static final GrpcClientRule CLIENT_RULE =
-      new GrpcClientRule(
-          BROKER_RULE, clientBuilder -> clientBuilder.maxMessageSize(MAX_MESSAGE_SIZE_KB * ONE_KB));
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @TestZeebe
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withUnifiedConfig(
+              c -> {
+                c.getCluster()
+                    .getNetwork()
+                    .setMaxMessageSize(DataSize.ofKilobytes(MAX_MESSAGE_SIZE_KB));
+                // Note: this is about the batch for writing to the logstream, not the terminate
+                // batch
+                c.getProcessing().setMaxCommandsInBatch(1);
+                c.getProcessing().setEnableStraightthroughProcessingLoopDetector(false);
+              });
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @AutoClose private CamundaClient client;
+  private ZeebeResourcesHelper resourcesHelper;
+
+  @BeforeEach
+  void createClient() {
+    client =
+        ZEEBE
+            .newClientBuilder()
+            .defaultRequestTimeout(Duration.ofSeconds(10))
+            .maxMessageSize(MAX_MESSAGE_SIZE_KB * ONE_KB)
+            .build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
+  }
 
   @Test
-  public void shouldCancelInstanceWithMoreChildrenThanTheBatchSizeCanHandle() {
+  void shouldCancelInstanceWithMoreChildrenThanTheBatchSizeCanHandle() {
     // given
-    CLIENT_RULE.deployProcess(
+    resourcesHelper.deployProcess(
         Bpmn.createExecutableProcess("PROCESS")
             .startEvent()
             .zeebeOutputExpression("0", "count")
@@ -84,9 +95,9 @@ public final class CancelProcessInstanceInBatchesTest {
   }
 
   @Test
-  public void shouldCancelSubprocessWithMoreNestedChildrenThanTheBatchSizeCanHandle() {
+  void shouldCancelSubprocessWithMoreNestedChildrenThanTheBatchSizeCanHandle() {
     // given
-    CLIENT_RULE.deployProcess(
+    resourcesHelper.deployProcess(
         Bpmn.createExecutableProcess("PROCESS")
             .startEvent()
             .subProcess(
@@ -130,13 +141,7 @@ public final class CancelProcessInstanceInBatchesTest {
 
   private ProcessInstanceEvent startProcessInstance() {
     final var processInstance =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId("PROCESS")
-            .latestVersion()
-            .send()
-            .join();
+        client.newCreateInstanceCommand().bpmnProcessId("PROCESS").latestVersion().send().join();
     return processInstance;
   }
 
@@ -147,10 +152,7 @@ public final class CancelProcessInstanceInBatchesTest {
         .limit(1)
         .await();
 
-    CLIENT_RULE
-        .getClient()
-        .newCancelInstanceCommand(processInstance.getProcessInstanceKey())
-        .send();
+    client.newCancelInstanceCommand(processInstance.getProcessInstanceKey()).send();
   }
 
   private void hasTerminatedProcessInstance(final ProcessInstanceEvent processInstance) {

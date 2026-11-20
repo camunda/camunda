@@ -10,12 +10,11 @@ package io.camunda.zeebe.it.engine.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.PublishMessageResponse;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.util.BrokerClassRuleHelper;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -24,38 +23,45 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public final class MessageCorrelationTest {
+@ZeebeIntegration
+final class MessageCorrelationIT {
 
   private static final String CORRELATION_KEY_VARIABLE = "orderId";
   private static final String CATCH_EVENT_ELEMENT_ID = "catch-event";
   private static final String MESSAGE_NAME = "order canceled";
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @TestZeebe
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker().withRecordingExporter(true);
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
-
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
-
+  @AutoClose private CamundaClient client;
+  private ZeebeResourcesHelper resourcesHelper;
   private long processDefinitionKey;
   private String correlationValue;
 
-  @Before
-  public void init() {
-    correlationValue = helper.getCorrelationValue();
+  private void createClient() {
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
+  }
+
+  @BeforeEach
+  void init() {
+    createClient();
+    correlationValue = Strings.newRandomValidBpmnId();
 
     processDefinitionKey =
-        CLIENT_RULE.deployProcess(
+        resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
                 .intermediateCatchEvent(CATCH_EVENT_ELEMENT_ID)
@@ -68,11 +74,10 @@ public final class MessageCorrelationTest {
   }
 
   @Test
-  public void shouldCorrelateMessage() {
+  void shouldCorrelateMessage() {
     // given
     final long processInstanceKey =
-        CLIENT_RULE
-            .getClient()
+        client
             .newCreateInstanceCommand()
             .processDefinitionKey(processDefinitionKey)
             .variables(Map.of(CORRELATION_KEY_VARIABLE, correlationValue))
@@ -81,8 +86,7 @@ public final class MessageCorrelationTest {
             .getProcessInstanceKey();
 
     // when
-    CLIENT_RULE
-        .getClient()
+    client
         .newPublishMessageCommand()
         .messageName(MESSAGE_NAME)
         .correlationKey(correlationValue)
@@ -108,11 +112,10 @@ public final class MessageCorrelationTest {
   }
 
   @Test
-  public void shouldCorrelateMessageWithZeroTTL() {
+  void shouldCorrelateMessageWithZeroTTL() {
     // given
     final long processInstanceKey =
-        CLIENT_RULE
-            .getClient()
+        client
             .newCreateInstanceCommand()
             .processDefinitionKey(processDefinitionKey)
             .variables(Map.of(CORRELATION_KEY_VARIABLE, correlationValue))
@@ -129,8 +132,7 @@ public final class MessageCorrelationTest {
         .isTrue();
 
     // when
-    CLIENT_RULE
-        .getClient()
+    client
         .newPublishMessageCommand()
         .messageName(MESSAGE_NAME)
         .correlationKey(correlationValue)
@@ -148,10 +150,9 @@ public final class MessageCorrelationTest {
   }
 
   @Test
-  public void shouldRejectMessageWithSameId() {
+  void shouldRejectMessageWithSameId() {
     // given
-    CLIENT_RULE
-        .getClient()
+    client
         .newPublishMessageCommand()
         .messageName(MESSAGE_NAME)
         .correlationKey(correlationValue)
@@ -161,8 +162,7 @@ public final class MessageCorrelationTest {
 
     // when
     final CamundaFuture<PublishMessageResponse> future =
-        CLIENT_RULE
-            .getClient()
+        client
             .newPublishMessageCommand()
             .messageName(MESSAGE_NAME)
             .correlationKey(correlationValue)
@@ -177,11 +177,10 @@ public final class MessageCorrelationTest {
   }
 
   @Test
-  public void shouldReturnTheMessageKey() {
+  void shouldReturnTheMessageKey() {
     // when
     final PublishMessageResponse response =
-        CLIENT_RULE
-            .getClient()
+        client
             .newPublishMessageCommand()
             .messageName(MESSAGE_NAME)
             .correlationKey(correlationValue)

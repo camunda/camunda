@@ -1020,7 +1020,7 @@ public class ClusteringRule extends ExternalResource {
     return getSnapshot(broker, 1);
   }
 
-  LogStream getLogStream(final int partitionId) {
+  public LogStream getLogStream(final int partitionId) {
     return logstreams.get(partitionId);
   }
 

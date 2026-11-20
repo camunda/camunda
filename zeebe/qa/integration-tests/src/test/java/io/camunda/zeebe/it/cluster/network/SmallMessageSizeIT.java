@@ -9,55 +9,62 @@ package io.camunda.zeebe.it.cluster.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
-public class SmallMessageSizeTest {
+@ZeebeIntegration
+final class SmallMessageSizeIT {
   private static final int VARIABLE_COUNT = 4;
   private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofKilobytes(12);
   private static final String LARGE_TEXT =
       "x".repeat((int) (MAX_MESSAGE_SIZE.toBytes() / VARIABLE_COUNT));
 
-  private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(
-          b -> {
-            b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE);
-            b.getGateway().getLongPolling().setEnabled(false);
-          });
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @TestZeebe
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withUnifiedConfig(
+              c -> {
+                c.getCluster().getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE);
+                c.getApi().getLongPolling().setEnabled(false);
+              });
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
-
+  @AutoClose private CamundaClient client;
   private long processInstanceKey;
   private String jobType;
 
-  @Before
-  public void givenProcessWithLargeVariables() {
+  @BeforeEach
+  void givenProcessWithLargeVariables() {
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10)).build();
+    final var resourcesHelper = new ZeebeResourcesHelper(client);
+
     // given a process with a job
     jobType = UUID.randomUUID().toString();
     final var processDefinitionKey =
-        CLIENT_RULE.deployProcess(
+        resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess("PROCESS_" + jobType)
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType(jobType))
                 .endEvent()
                 .done());
 
-    processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
+    processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
     Awaitility.await("job CREATED")
         .until(
             () ->
@@ -68,8 +75,7 @@ public class SmallMessageSizeTest {
 
     // with variables that are greater than the message size
     for (int i = 0; i < VARIABLE_COUNT; i++) {
-      CLIENT_RULE
-          .getClient()
+      client
           .newSetVariablesCommand(processInstanceKey)
           .variables(Map.of(String.format("large-%d", i), LARGE_TEXT))
           .send()
@@ -87,11 +93,10 @@ public class SmallMessageSizeTest {
   }
 
   @Test
-  public void shouldSkipJobsThatExceedMessageSize() {
+  void shouldSkipJobsThatExceedMessageSize() {
     // when (we activate jobs)
     final var response =
-        CLIENT_RULE
-            .getClient()
+        client
             .newActivateJobsCommand()
             .jobType(jobType)
             .maxJobsToActivate(1)
@@ -103,12 +108,11 @@ public class SmallMessageSizeTest {
   }
 
   @Test
-  public void shouldActivateJobIfRequestVariablesFitIntoMessageSize() {
+  void shouldActivateJobIfRequestVariablesFitIntoMessageSize() {
     // when (we activate job, but select only a subset of the variables - a subset that fits into
     // the message size)
     final var response =
-        CLIENT_RULE
-            .getClient()
+        client
             .newActivateJobsCommand()
             .jobType(jobType)
             .maxJobsToActivate(1)

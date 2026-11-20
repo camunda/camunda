@@ -11,11 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.broker.test.TestPublishMessageRequest;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
@@ -36,7 +36,7 @@ public class BrokerSnapshotTest {
 
   private RaftLogReader journalReader;
   private BrokerAdminService brokerAdminService;
-  private CamundaClient client;
+  private BrokerClient client;
 
   @Before
   public void setup() {
@@ -48,17 +48,12 @@ public class BrokerSnapshotTest {
             .getRaftPartition(PARTITION_ID);
     journalReader = raftPartition.getServer().openReader();
     brokerAdminService = brokerRule.getBroker().getBrokerContext().getBrokerAdminService();
-
-    final CamundaClientBuilder camundaClientBuilder =
-        CamundaClient.newClientBuilder()
-            .grpcAddress(brokerRule.getGrpcAddress())
-            .preferRestOverGrpc(false);
-    client = camundaClientBuilder.build();
+    client = brokerRule.getBroker().getSystemContext().getBrokerClient();
   }
 
   @After
   public void after() {
-    CloseHelper.closeAll(client, journalReader);
+    CloseHelper.close(journalReader);
   }
 
   @Test
@@ -94,13 +89,10 @@ public class BrokerSnapshotTest {
   }
 
   private long publishMaxMessageSizeMessage(final int key) {
-    return client
-        .newPublishMessageCommand()
-        .messageName("msg")
-        .correlationKey("msg-" + key)
-        .send()
-        .join()
-        .getMessageKey();
+    final var response =
+        client.sendRequestWithRetry(new TestPublishMessageRequest("msg", "msg-" + key)).join();
+    response.getResponseOrThrow();
+    return response.getKey();
   }
 
   private SnapshotId waitForSnapshotAtBroker(

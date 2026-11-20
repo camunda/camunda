@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
  * correlation key. Unlike {@code createProcessInstance}, whose command the gateway attempts on
  * every partition in turn (collapsing the per-partition rejection into a generic "all partitions
  * failed" error), a partition-pinned command surfaces the broker's exact rejection reason to the
- * client - the same reason {@code DiskSpaceRecoveryTest} asserts on.
+ * client - the same reason {@code DiskSpaceMonitorIT} asserts on.
  */
 @ZeebeIntegration
 final class PhysicalTenantDiskUsageIsolationIT {
