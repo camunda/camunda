@@ -92,6 +92,7 @@ val openApiGenerateSimple =
         "ScopeKeyFilterProperty" to "String",
         "StringFilterProperty" to "String",
         "VariableKeyFilterProperty" to "String",
+        "VariableHistoryItemKeyFilterProperty" to "String",
         "DateTimeFilterProperty" to "SimpleDateTimeFilterProperty",
         "AuditLogActorTypeFilterProperty" to
           "io.camunda.gateway.protocol.model.AuditLogActorTypeEnum",
@@ -126,6 +127,12 @@ val openApiGenerateSimple =
         "OperationTypeFilterProperty" to
           "io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum",
         "UserTaskStateFilterProperty" to "io.camunda.gateway.protocol.model.UserTaskStateEnum",
+        "VariableHistoryItemOperationTypeFilterProperty" to
+          "io.camunda.gateway.protocol.model.VariableHistoryItemOperationTypeEnum",
+        "VariableHistoryItemVariableOperationTypeFilterProperty" to
+          "io.camunda.gateway.protocol.model.VariableHistoryItemVariableOperationTypeEnum",
+        "VariableHistoryItemActorTypeFilterProperty" to
+          "io.camunda.gateway.protocol.model.VariableHistoryItemActorTypeEnum",
         "AuditLogSearchQuerySortRequest" to
           "io.camunda.gateway.protocol.model.AuditLogSearchQuerySortRequest",
         "AuthorizationSearchQuerySortRequest" to
@@ -188,6 +195,8 @@ val openApiGenerateSimple =
           "io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest",
         "UserTaskVariableSearchQuerySortRequest" to
           "io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest",
+        "VariableHistoryItemSearchQuerySortRequest" to
+          "io.camunda.gateway.protocol.model.VariableHistoryItemSearchQuerySortRequest",
         "VariableSearchQuerySortRequest" to
           "io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest",
       )

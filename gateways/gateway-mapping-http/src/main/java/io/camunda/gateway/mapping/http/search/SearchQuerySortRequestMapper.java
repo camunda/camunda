@@ -256,6 +256,12 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
+  static List<SearchQuerySortRequest<VariableHistoryItemSearchQuerySortRequest.FieldEnum>>
+      fromVariableHistoryItemSearchQuerySortRequest(
+          final List<VariableHistoryItemSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
   static List<SearchQuerySortRequest<AuditLogSearchQuerySortRequest.FieldEnum>>
       fromUserTaskAuditLogSearchRequest(final List<AuditLogSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
@@ -923,6 +929,21 @@ public class SearchQuerySortRequestMapper {
         case TENANT_ID -> builder.tenantId();
         case TIMESTAMP -> builder.timestamp();
         case USER_TASK_KEY -> builder.userTaskKey();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<String> applyVariableHistoryItemSortField(
+      final VariableHistoryItemSearchQuerySortRequest.FieldEnum field,
+      final io.camunda.search.sort.VariableHistoryItemSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case VARIABLE_HISTORY_ITEM_KEY -> builder.variableHistoryItemKey();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

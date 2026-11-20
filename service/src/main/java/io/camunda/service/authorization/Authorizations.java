@@ -48,6 +48,7 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.VariableHistoryItemEntity;
 import io.camunda.security.core.auth.RequiredAuthorization;
 
 public abstract class Authorizations {
@@ -176,6 +177,10 @@ public abstract class Authorizations {
 
   public static final RequiredAuthorization<VariableEntity> VARIABLE_READ_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance());
+
+  public static final RequiredAuthorization<VariableHistoryItemEntity>
+      VARIABLE_HISTORY_READ_AUTHORIZATION =
+          RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance());
 
   public static final RequiredAuthorization<AuditLogEntity> AUDIT_LOG_READ_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.auditLog().read());
