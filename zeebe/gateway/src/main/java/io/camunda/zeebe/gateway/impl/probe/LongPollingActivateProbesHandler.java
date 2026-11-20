@@ -271,7 +271,7 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
 
   private void onProbesCollected(final Poll poll, final ProbeBatchRecord batch) {
     if (poll.done) {
-      // the poll was failed meanwhile, for example by a purge: nobody gets these probes
+      // the poll ended meanwhile, at its timeout or by a purge: nobody gets these probes
       yieldProbes(probeKeys(batch), poll.physicalTenantId);
       return;
     }
@@ -330,14 +330,17 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
           maxMessageSize);
       yieldProbes(tooLarge, poll.physicalTenantId);
     }
-    poll.pollSamePartition = batch.isTruncated();
+    // the engine truncates an empty batch when its first probe cannot fit beside the poll: asking
+    // again would get the same answer, so only a batch with probes is asked for more
+    poll.pollSamePartition = batch.isTruncated() && batch.probeKeys().size() > 0;
   }
 
   private void onPartitionsTried(final Poll poll) {
     poll.trying = false;
     if (poll.responseObserver.isCancelled()
         || poll.collected.probeKeys().size() > 0
-        || poll.timedOut) {
+        // a full poll collects nothing more, even if it holds no probe
+        || poll.full) {
       deliver(poll);
     } else if (poll.resourceExhausted) {
       fail(
@@ -346,14 +349,17 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
               ERROR_MSG_RESOURCE_EXHAUSTED.formatted(poll.probeIds())));
     } else if (!longPollingEnabled || poll.requestTimeout < 0) {
       deliver(poll);
-    } else if (poll.notifiedWhileTrying) {
-      tryPartitions(poll);
     } else {
-      hold(poll);
+      // started at the first round without probes, as for jobs, so a poll notified during every
+      // round still ends at its timeout
+      startTimeout(poll);
+      if (poll.notifiedWhileTrying) {
+        tryPartitions(poll);
+      }
     }
   }
 
-  private void hold(final Poll poll) {
+  private void startTimeout(final Poll poll) {
     if (poll.timer != null) {
       return;
     }
@@ -369,14 +375,13 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
     poll.timer = actor.schedule(timeout, () -> onTimeout(poll));
   }
 
+  /**
+   * Answers the poll at once, as for jobs, even while a partition's response is on its way: the
+   * probes of that response are yielded when it arrives.
+   */
   private void onTimeout(final Poll poll) {
     poll.timer = null;
-    if (poll.done) {
-      return;
-    }
-    poll.timedOut = true;
-    // a poll that is trying partitions is answered once it has tried them all
-    if (!poll.trying) {
+    if (!poll.done) {
       deliver(poll);
     }
   }
@@ -507,7 +512,6 @@ public final class LongPollingActivateProbesHandler implements Consumer<ActorCon
     private boolean resourceExhausted;
     private boolean trying;
     private boolean notifiedWhileTrying;
-    private boolean timedOut;
     private boolean done;
     private @Nullable ScheduledTimer timer;
 
