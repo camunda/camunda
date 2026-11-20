@@ -373,6 +373,8 @@
 				"createClusterVariableError": "No se pudo crear la variable de clúster",
 				"updateClusterVariableError": "No se pudo actualizar la variable de clúster",
 				"deleteClusterVariableError": "No se pudo eliminar la variable de clúster",
+				"changeNotConfirmed": "No se pudo confirmar que el cambio se aplicó",
+				"changeNotConfirmedDescription": "Actualice la página para ver el estado más reciente.",
 				"resourceSingular": "variable de clúster",
 				"resourcePlural": "variables de clúster"
 			},

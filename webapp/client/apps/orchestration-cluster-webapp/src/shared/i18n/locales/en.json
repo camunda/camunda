@@ -373,6 +373,8 @@
 				"createClusterVariableError": "Failed to create cluster variable",
 				"updateClusterVariableError": "Failed to update cluster variable",
 				"deleteClusterVariableError": "Failed to delete cluster variable",
+				"changeNotConfirmed": "Couldn't confirm the change took effect",
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
 				"resourceSingular": "cluster variable",
 				"resourcePlural": "cluster variables"
 			},
