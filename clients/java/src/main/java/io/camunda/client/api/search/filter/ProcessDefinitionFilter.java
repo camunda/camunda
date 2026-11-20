@@ -114,7 +114,7 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
    * Filters process definitions by their state. When not set, definitions in any state are
    * returned.
    *
-   * @param state {@link ProcessDefinitionState#ACTIVE} to exclude draining, deleted and suspended
+   * @param state {@link ProcessDefinitionState#ACTIVE} to exclude draining, deleted, and suspended
    *     definitions, {@link ProcessDefinitionState#DRAINING} to return only definitions that are
    *     being deleted but still have active process instances draining, {@link
    *     ProcessDefinitionState#DELETED} to return only definitions that have been deleted from the
