@@ -7,9 +7,14 @@
  */
 package io.camunda.zeebe.restore;
 
-public class BackupNotFoundException extends RuntimeException {
+public class BackupNotFoundException extends RuntimeException implements RestoreFailure {
 
   public BackupNotFoundException(final long backupId) {
     super("Could not find a completed backup with id %d.".formatted(backupId));
+  }
+
+  @Override
+  public Reason reason() {
+    return Reason.BACKUPS_INCONSISTENT;
   }
 }

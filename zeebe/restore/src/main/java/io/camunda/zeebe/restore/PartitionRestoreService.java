@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.restore;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -20,6 +21,8 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.restore.RestoreFailure.BackupStoreFailure;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
 import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
@@ -31,8 +34,15 @@ import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,14 +90,23 @@ public class PartitionRestoreService {
    */
   public void restore(final long[] backupIds, final BackupValidator validator)
       throws IOException, FlushException {
+    restore(findBackups(backupStore, partitionId, backupIds, validator));
+  }
+
+  /**
+   * Downloads the given backups and restores them to the partition's data directory, as {@link
+   * #restore(long[], BackupValidator)} does once it found them.
+   *
+   * @param backups the backup of each backup id, as {@link #findBackups} finds them
+   */
+  public void restore(final SortedMap<Long, BackupIdentifier> backups)
+      throws IOException, FlushException {
     if (!FileUtil.isEmpty(rootDirectory)) {
       LOG.error(
           "Partition's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
           rootDirectory);
       throw new DirectoryNotEmptyException(rootDirectory.toString());
     }
-    validateAndSortBackupIds(backupIds);
-
     try (final var restoredJournal =
         SegmentedJournal.builder(partition.getMeterRegistry())
             .withDirectory(rootDirectory.toFile())
@@ -95,11 +114,12 @@ public class PartitionRestoreService {
             .withMetaStore(new InMemory())
             .build()) {
       Backup previousBackup = null;
-      for (final var backupId : backupIds) {
+      for (final var entry : backups.entrySet()) {
         final var restoreTarget =
-            rootDirectory.resolve("restoring-partition" + partitionId + "-backup-" + backupId);
+            rootDirectory.resolve(
+                "restoring-partition" + partitionId + "-backup-" + entry.getKey());
         FileUtil.ensureDirectoryExists(restoreTarget);
-        final var backup = download(backupId, restoreTarget, validator);
+        final var backup = download(entry.getValue(), restoreTarget);
         if (previousBackup == null) {
           // Only take the first snapshot, all others are redundant because we have the full log.
           moveSnapshotFiles(backup);
@@ -116,15 +136,34 @@ public class PartitionRestoreService {
     // - Verify journal.lastEntry.asqn == checkpointPosition
   }
 
+  /**
+   * Finds the completed backup of each of the given ids for the partition, without writing
+   * anything. Its failures name their reason, and the restore app promises a caller that a failure
+   * with a reason left the data directory untouched, so the restore finds the backups of every
+   * partition before it writes to any.
+   */
+  public static SortedMap<Long, BackupIdentifier> findBackups(
+      final BackupStore backupStore,
+      final int partitionId,
+      final long[] backupIds,
+      final BackupValidator validator) {
+    validateAndSortBackupIds(backupIds);
+    final var backups = new TreeMap<Long, BackupIdentifier>();
+    for (final var backupId : backupIds) {
+      backups.put(backupId, findValidBackup(backupStore, partitionId, backupId, validator));
+    }
+    return backups;
+  }
+
   /** Ensures that we have a valid array of backup ids. */
   private static void validateAndSortBackupIds(final long[] backupIds) {
     if (backupIds.length == 0) {
-      throw new IllegalArgumentException("No backups to restore");
+      throw new InvalidArgument("No backups to restore");
     }
 
     for (final long backupId : backupIds) {
       if (backupId < 0) {
-        throw new IllegalArgumentException("Backup id must not be negative but was " + backupId);
+        throw new InvalidArgument("Backup id must not be negative but was " + backupId);
       }
     }
     Arrays.sort(backupIds);
@@ -235,21 +274,17 @@ public class PartitionRestoreService {
     }
   }
 
-  private Backup download(
-      final long checkpointId, final Path tempRestoringDirectory, final BackupValidator validator) {
-    final var validBackup = findValidBackup(checkpointId, validator);
-    return backupStore.restore(validBackup, tempRestoringDirectory).join();
+  private Backup download(final BackupIdentifier backup, final Path tempRestoringDirectory) {
+    return backupStore.restore(backup, tempRestoringDirectory).join();
   }
 
-  private BackupIdentifier findValidBackup(
-      final long checkpointId, final BackupValidator validator) {
+  private static BackupIdentifier findValidBackup(
+      final BackupStore backupStore,
+      final int partitionId,
+      final long checkpointId,
+      final BackupValidator validator) {
     LOG.info("Searching for a completed backup with id {}", checkpointId);
-    final var statuses =
-        backupStore
-            .list(
-                new BackupIdentifierWildcardImpl(
-                    Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId)))
-            .join();
+    final var statuses = listBackups(backupStore, partitionId, checkpointId);
     final var validStatus =
         statuses.stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
@@ -257,6 +292,37 @@ public class PartitionRestoreService {
             .orElseThrow(() -> new BackupNotFoundException(checkpointId));
     validator.validateStatus(validStatus);
     return validStatus.id();
+  }
+
+  private static Collection<BackupStatus> listBackups(
+      final BackupStore backupStore, final int partitionId, final long checkpointId) {
+    try {
+      return backupStore
+          .list(
+              new BackupIdentifierWildcardImpl(
+                  Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId)))
+          .join();
+    } catch (final CompletionException e) {
+      final var cause = e.getCause() != null ? e.getCause() : e;
+      throw new BackupStoreFailure(storeFailureReason(cause), cause);
+    }
+  }
+
+  /**
+   * Why the store failed. Each store wraps what went wrong in an exception of its own, so only the
+   * parser's exception in the cause chain tells content it could not parse, such as a corrupt
+   * backup manifest, apart from the store being unreachable, where retrying may help.
+   */
+  private static RestoreFailure.Reason storeFailureReason(final Throwable failure) {
+    final Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+    for (Throwable current = failure;
+        current != null && seen.add(current);
+        current = current.getCause()) {
+      if (current instanceof JsonProcessingException) {
+        return RestoreFailure.Reason.BACKUPS_INCONSISTENT;
+      }
+    }
+    return RestoreFailure.Reason.BACKUP_STORE_UNAVAILABLE;
   }
 
   @FunctionalInterface
@@ -267,9 +333,14 @@ public class PartitionRestoreService {
       return status -> status;
     }
 
-    class BackupNotValidException extends RuntimeException {
+    class BackupNotValidException extends RuntimeException implements RestoreFailure {
       public BackupNotValidException(final BackupStatus status, final String message) {
         super("Backup is not valid: " + message + ". Backup status: " + status);
+      }
+
+      @Override
+      public Reason reason() {
+        return Reason.BACKUPS_INCONSISTENT;
       }
     }
   }

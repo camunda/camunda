@@ -42,8 +42,7 @@ public interface RestoreAcceptance {
   @Test
   default void shouldFailForNonExistingBackup() {
     // then -- restore application exits with an error code
-    assertThatCode(() -> restoreBackup(1234))
-        .hasRootCauseExactlyInstanceOf(BackupNotFoundException.class);
+    assertThatCode(() -> restoreBackup(1234)).isInstanceOf(BackupNotFoundException.class);
   }
 
   private void takeBackup(final long backupId) {

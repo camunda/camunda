@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
@@ -36,11 +37,17 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -78,16 +85,27 @@ public class RestoreManager {
       throw new DirectoryNotEmptyException(dataDirectory.toString());
     }
 
-    final var partitionsToRestore = collectPartitions();
-
     try (final var executor =
         Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("zeebe-restore-", 0).factory())) {
+      final var backups = findBackups(backupIds, validator(validateConfig), executor);
+      restore(dataDirectory, backups, executor);
+    }
+  }
+
+  private void restore(
+      final Path dataDirectory,
+      final Map<Integer, SortedMap<Long, BackupIdentifier>> backups,
+      final ExecutorService executor)
+      throws IOException, ExecutionException, InterruptedException {
+    try {
+      final var partitionsToRestore = collectPartitions();
       final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
       for (final var partition : partitionsToRestore) {
+        final var partitionBackups = backups.get(partition.partition().id().id());
         tasks.add(
             () -> {
-              restorePartition(partition, backupIds, validateConfig);
+              restorePartition(partition, partitionBackups);
               return null;
             });
       }
@@ -131,20 +149,50 @@ public class RestoreManager {
     LOG.info("Successfully restored topology file {}", base);
   }
 
-  private void restorePartition(
-      final InstrumentedRaftPartition partition,
-      final long[] backupIds,
-      final boolean validateConfig)
-      throws IOException, FlushException {
-    final BackupValidator validator;
-    final RaftPartition raftPartition = partition.partition();
-
-    if (validateConfig) {
-      validator = new ValidatePartitionCount(configuration.getCluster().getPartitionsCount());
-    } else {
-      LOG.warn("Restoring without validating backup");
-      validator = BackupValidator.none();
+  /**
+   * Finds the backups of every local partition before any partition writes to the data directory.
+   * The partitions are restored in parallel, so finding each partition's backups as it is restored
+   * would let a missing backup fail one partition after another one had written its data, while the
+   * restore app reports a failure with a reason as having left the data directory untouched.
+   * Creating the partitions writes their directories, so this works from the partition ids.
+   */
+  private Map<Integer, SortedMap<Long, BackupIdentifier>> findBackups(
+      final long[] backupIds, final BackupValidator validator, final ExecutorService executor) {
+    final var lookups =
+        new HashMap<Integer, CompletableFuture<SortedMap<Long, BackupIdentifier>>>();
+    for (final var metadata : localPartitions()) {
+      final var partitionId = metadata.id().id();
+      lookups.put(
+          partitionId,
+          CompletableFuture.supplyAsync(
+              () ->
+                  PartitionRestoreService.findBackups(
+                      backupStore, partitionId, backupIds.clone(), validator),
+              executor));
     }
+    final var backups = new HashMap<Integer, SortedMap<Long, BackupIdentifier>>();
+    for (final var lookup : lookups.entrySet()) {
+      try {
+        backups.put(lookup.getKey(), lookup.getValue().join());
+      } catch (final CompletionException e) {
+        throw e.getCause() instanceof final RuntimeException cause ? cause : e;
+      }
+    }
+    return backups;
+  }
+
+  private BackupValidator validator(final boolean validateConfig) {
+    if (validateConfig) {
+      return new ValidatePartitionCount(configuration.getCluster().getPartitionsCount());
+    }
+    LOG.warn("Restoring without validating backup");
+    return BackupValidator.none();
+  }
+
+  private void restorePartition(
+      final InstrumentedRaftPartition partition, final SortedMap<Long, BackupIdentifier> backups)
+      throws IOException, FlushException {
+    final RaftPartition raftPartition = partition.partition();
 
     final var registry = partition.registry();
     final var restoreService =
@@ -155,29 +203,33 @@ public class RestoreManager {
             new ChecksumProviderRocksDBImpl(),
             partition.registry());
     try {
-      restoreService.restore(backupIds, validator);
+      restoreService.restore(backups);
       LOG.info(
           "Successfully restored partition {} from backups {}.",
           raftPartition.id().id(),
-          backupIds);
+          backups.keySet());
     } finally {
       MicrometerUtil.close(registry);
     }
   }
 
   private Set<InstrumentedRaftPartition> collectPartitions() {
+    final var raftPartitionFactory = new RaftPartitionFactory(configuration);
+    return localPartitions().stream()
+        .map(metadata -> createRaftPartition(metadata, raftPartitionFactory))
+        .collect(Collectors.toSet());
+  }
+
+  private List<PartitionMetadata> localPartitions() {
     final var localBrokerId = configuration.getCluster().getNodeId();
     final var localMember = MemberId.from(String.valueOf(localBrokerId));
     final var clusterTopology =
         new PartitionDistribution(
             StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)
                 .generatePartitionDistribution());
-    final var raftPartitionFactory = new RaftPartitionFactory(configuration);
-
     return clusterTopology.partitions().stream()
         .filter(partitionMetadata -> partitionMetadata.members().contains(localMember))
-        .map(metadata -> createRaftPartition(metadata, raftPartitionFactory))
-        .collect(Collectors.toSet());
+        .toList();
   }
 
   private InstrumentedRaftPartition createRaftPartition(
