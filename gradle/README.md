@@ -43,6 +43,42 @@ disables test execution and Spotless tasks, and also skips frontend builds. The 
 still compiles test code without running tests. Prefer `-Pskip.fe.build=true` when only frontend
 work should be skipped and the active project graph should remain unchanged.
 
+## Java checks
+
+`javaChecks` is the Gradle equivalent of the Maven `Java Checks` CI job. It runs Checkstyle (main
+and test sources), the license header check, SpotBugs, and compiles main and test classes (Error
+Prone and NullAway run as part of `compileJava`).
+
+```bash
+# Whole monorepo
+./gradlew -Pskip.fe.build=true javaChecks
+
+# One module
+./gradlew -Pskip.fe.build=true :zeebe-journal:javaChecks
+```
+
+The checks reuse the Maven configuration: `build-tools/src/main/resources/check/.checkstyle.xml`,
+`parent/COPYING-HEADER.txt`, and the SpotBugs filters in `build-tools/src/main/resources/spotbugs`.
+A module's own `spotbugs/spotbugs-exclude.xml` is applied on top of the shared exclude filter, as in
+Maven. The Checkstyle and SpotBugs versions come from `parent/pom.xml`. SpotBugs runs the engine
+that the Maven plugin bundles, which can be older than `version.spotbugs`.
+
+The license header settings are read from each module's `pom.xml` and its parent POMs, so they need
+no per-module Gradle configuration: `license.header.file` selects the header (the Apache-2 template
+maps to `gradle/license/APACHE-2.txt`), `skipExistingHeaders` accepts any leading block comment, and
+a module that pins a license plugin older than 4.x is not checked, as in Maven.
+
+All of these tasks are cacheable, so with `--build-cache` a repeated run only redoes the modules
+that changed. `-Pquickly` skips them, like Maven's `-Dquickly`.
+
+`javaChecks` does not cover everything the Maven job does:
+
+- Spotless is not part of it. Maven runs it in a separate job, and Gradle has `spotlessCheck`.
+- Dependency analysis (`maven-dependency-plugin:analyze-only`) has no Gradle equivalent yet.
+- The Maven Enforcer rules (`requireMavenVersion`, `banDuplicatePomDependencyVersions`,
+  `dependencyConvergence`) are not ported. Gradle dependency resolution and the version catalog
+  cover the dependency rules.
+
 ## Packaging and frontend assets
 
 ```bash
