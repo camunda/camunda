@@ -77,6 +77,7 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.policy.PolicyStateNotifier;
 import io.camunda.zeebe.engine.processing.policy.PolicyUpdateProcessors;
 import io.camunda.zeebe.engine.processing.probe.ProbeProcessors;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreContinueProcessor;
@@ -145,6 +146,7 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
       final ProbeNotifier probeNotifier,
+      final PolicyStateNotifier policyStateNotifier,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final SecretStoreRegistry secretStoreRegistry) {
@@ -513,7 +515,13 @@ public final class EngineProcessors {
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
 
     PolicyUpdateProcessors.addPolicyUpdateProcessors(
-        typedRecordProcessors, processingState, keyGenerator, writers, commandDistributionBehavior);
+        typedRecordProcessors,
+        processingState,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior,
+        policyStateNotifier,
+        partitionId);
 
     addResourceFetchProcessors(
         typedRecordProcessors, writers, processingState, permissionsBehavior, tenantCheck, config);

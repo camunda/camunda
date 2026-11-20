@@ -26,14 +26,21 @@ public final class PolicyUpdateProcessors {
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final PolicyStateNotifier policyStateNotifier,
+      final int partitionId) {
     final var policyUpdateState = processingState.getPolicyUpdateState();
     final var commandMapper = new PolicyUpdateCommandMapper(processingState);
+    final var policyStatePublisher =
+        new PolicyStatePublisher(
+            processingState.getPolicyState(), policyUpdateState, policyStateNotifier, partitionId);
     typedRecordProcessors
+        .withListener(policyStatePublisher)
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPEND_CHUNK,
-            new PolicyUpdateAppendChunkProcessor(policyUpdateState, keyGenerator, writers))
+            new PolicyUpdateAppendChunkProcessor(
+                policyUpdateState, policyStatePublisher, keyGenerator, writers))
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPLY_CHUNK,
@@ -42,6 +49,7 @@ public final class PolicyUpdateProcessors {
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.COMMIT_VERSION,
-            new PolicyUpdateCommitVersionProcessor(keyGenerator, distributionBehavior, writers));
+            new PolicyUpdateCommitVersionProcessor(
+                keyGenerator, distributionBehavior, policyStatePublisher, writers));
   }
 }

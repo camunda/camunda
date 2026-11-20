@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.policy;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -24,7 +25,8 @@ import org.jspecify.annotations.NullMarked;
  * Commits a policy version: the new policy becomes visible on the partition. Partition 1 commits
  * after the last chunk of an update is applied and distributes the commit on the identity queue.
  * The update's identity commands were distributed on the same queue before, so every other
- * partition commits only after it has applied the whole update.
+ * partition commits only after it has applied the whole update. Partition 1 then publishes the new
+ * policy state, which tells the Hub receiver that it may send the next update.
  */
 @ExcludeAuthorizationCheck
 @NullMarked
@@ -33,17 +35,22 @@ public final class PolicyUpdateCommitVersionProcessor
 
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior distributionBehavior;
+  private final PolicyStatePublisher policyStatePublisher;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SideEffectWriter sideEffectWriter;
 
-  public PolicyUpdateCommitVersionProcessor(
+  PolicyUpdateCommitVersionProcessor(
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior distributionBehavior,
+      final PolicyStatePublisher policyStatePublisher,
       final Writers writers) {
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
+    this.policyStatePublisher = policyStatePublisher;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    sideEffectWriter = writers.sideEffect();
   }
 
   @Override
@@ -61,6 +68,7 @@ public final class PolicyUpdateCommitVersionProcessor
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
+    policyStatePublisher.publishAfterCommit(sideEffectWriter);
   }
 
   @Override

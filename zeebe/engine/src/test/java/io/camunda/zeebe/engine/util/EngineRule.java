@@ -20,6 +20,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.policy.PolicyStateNotifier;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -140,6 +141,7 @@ public final class EngineRule extends ExternalResource {
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
   private ProbeNotifier probeNotifier = ProbeNotifier.noop();
+  private PolicyStateNotifier policyStateNotifier = PolicyStateNotifier.noop();
   private SecretStoreRegistry secretStoreRegistry = new SecretStoreRegistry(Map.of());
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
@@ -265,6 +267,11 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withProbeNotifier(final ProbeNotifier probeNotifier) {
     this.probeNotifier = probeNotifier;
+    return this;
+  }
+
+  public EngineRule withPolicyStateNotifier(final PolicyStateNotifier policyStateNotifier) {
+    this.policyStateNotifier = policyStateNotifier;
     return this;
   }
 
@@ -411,6 +418,7 @@ public final class EngineRule extends ExternalResource {
                         featureFlags,
                         jobStreamer,
                         probeNotifier,
+                        policyStateNotifier,
                         searchClientsProxy,
                         brokerRequestAuthorizationConverter,
                         secretStoreRegistry)

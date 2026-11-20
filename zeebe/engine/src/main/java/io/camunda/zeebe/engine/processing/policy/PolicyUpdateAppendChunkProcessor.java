@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.policy;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -40,7 +41,8 @@ import org.jspecify.annotations.NullMarked;
  *
  * <p>The processor checks no user authorization; see {@link PolicyUpdateGuard}. The broker's Hub
  * receiver sends the chunks as requests and waits for each response, so the processor answers every
- * chunk: with the appended event, or with the rejection.
+ * chunk: with the appended event, or with the rejection. Once a chunk is buffered or the update
+ * failed, it publishes the new policy state, which tells the receiver when to send the next update.
  */
 @ExcludeAuthorizationCheck
 @NullMarked
@@ -48,22 +50,27 @@ public final class PolicyUpdateAppendChunkProcessor
     implements TypedRecordProcessor<PolicyUpdateRecord> {
 
   private final PolicyUpdateState policyUpdateState;
+  private final PolicyStatePublisher policyStatePublisher;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final SideEffectWriter sideEffectWriter;
 
-  public PolicyUpdateAppendChunkProcessor(
+  PolicyUpdateAppendChunkProcessor(
       final PolicyUpdateState policyUpdateState,
+      final PolicyStatePublisher policyStatePublisher,
       final KeyGenerator keyGenerator,
       final Writers writers) {
     this.policyUpdateState = policyUpdateState;
+    this.policyStatePublisher = policyStatePublisher;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
   }
 
   @Override
@@ -100,6 +107,7 @@ public final class PolicyUpdateAppendChunkProcessor
                     key,
                     PolicyUpdateIntent.APPLY_CHUNK,
                     PolicyUpdateRecords.withoutPolicyData(update.getUpdate(), 0)));
+    policyStatePublisher.publishAfterCommit(sideEffectWriter);
   }
 
   /**
@@ -168,6 +176,7 @@ public final class PolicyUpdateAppendChunkProcessor
             .setErrorMessage(reason);
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), PolicyUpdateIntent.FAILED, failed);
     reject(command, rejectionType, reason);
+    policyStatePublisher.publishAfterCommit(sideEffectWriter);
   }
 
   private void reject(
