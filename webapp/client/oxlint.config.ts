@@ -92,6 +92,7 @@ export default defineConfig({
 		'typescript/no-implied-eval': 'error',
 		'typescript/no-misused-spread': 'error',
 		'typescript/no-unsafe-unary-minus': 'error',
+		'typescript/no-useless-default-assignment': 'error',
 		'typescript/require-array-sort-compare': 'error',
 		'for-direction': 'error',
 		'no-async-promise-executor': 'error',
