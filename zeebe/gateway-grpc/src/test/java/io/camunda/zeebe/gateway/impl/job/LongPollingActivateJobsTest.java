@@ -939,14 +939,9 @@ final class LongPollingActivateJobsTest {
     // given
     final var request = getLongPollingActivateJobsRequest();
 
-    // notification fires on the first visited partition, which is random
-    final var partitionVisits = new AtomicInteger();
-    registerCustomHandlerWithNotification(
-        (r) -> {
-          if (partitionVisits.incrementAndGet() == 1) {
-            brokerClient.notifyJobsAvailable(TYPE);
-          }
-        });
+    // notification fires on every visited partition, as the start partition is random; the request
+    // must still time out while the notifications keep repeating the retry loop
+    registerCustomHandlerWithNotification((r) -> brokerClient.notifyJobsAvailable(TYPE));
 
     // when
     handler.internalActivateJobsRetry(request);
