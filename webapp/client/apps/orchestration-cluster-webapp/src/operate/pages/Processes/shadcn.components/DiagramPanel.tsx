@@ -239,34 +239,38 @@ const DiagramPanel: React.FC<Props> = ({
 					variant="info"
 					className="py-1.5"
 					description={
-						sourceElementName === '' || targetElementName === ''
-							? t('operate.processes.batchModification.selectTarget')
-							: modificationCount === undefined
-								? t('operate.processes.batchModification.targetPendingDs', {
-										source: sourceElementName,
-										target: targetElementName,
-									})
-								: t('operate.processes.batchModification.targetScheduledDs', {
-										count: modificationCount,
-										source: sourceElementName,
-										target: targetElementName,
-									})
+						<div className="flex items-center justify-between gap-3">
+							<span>
+								{sourceElementName === '' || targetElementName === ''
+									? t('operate.processes.batchModification.selectTarget')
+									: modificationCount === undefined
+										? t('operate.processes.batchModification.targetPendingDs', {
+												source: sourceElementName,
+												target: targetElementName,
+											})
+										: t('operate.processes.batchModification.targetScheduledDs', {
+												count: modificationCount,
+												source: sourceElementName,
+												target: targetElementName,
+											})}
+							</span>
+							{selectedTargetElementId && (
+								<Button
+									variant="ghost"
+									size="sm"
+									className="shrink-0"
+									aria-label={t('operate.processes.batchModification.undoAriaDs', {target: targetElementName})}
+									onClick={() => {
+										onTargetElementSelection?.(undefined);
+										alertRef.current?.focus();
+									}}
+								>
+									{t('operate.processes.batchModification.undo')}
+								</Button>
+							)}
+						</div>
 					}
-				>
-					{selectedTargetElementId && (
-						<Button
-							variant="ghost"
-							size="sm"
-							aria-label={t('operate.processes.batchModification.undoAriaDs', {target: targetElementName})}
-							onClick={() => {
-								onTargetElementSelection?.(undefined);
-								alertRef.current?.focus();
-							}}
-						>
-							{t('operate.processes.batchModification.undo')}
-						</Button>
-					)}
-				</Alert>
+				/>
 			)}
 		</section>
 	);
