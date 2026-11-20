@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class BackupMetadataSyncer implements AutoCloseable {
 
-  static final ObjectMapper MAPPER =
+  public static final ObjectMapper MAPPER =
       new ObjectMapper()
           .registerModule(new Jdk8Module())
           .registerModule(new JavaTimeModule())

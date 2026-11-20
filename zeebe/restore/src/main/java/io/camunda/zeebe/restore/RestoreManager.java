@@ -12,6 +12,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -54,11 +55,13 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -79,7 +82,6 @@ public class RestoreManager implements CloseableSilently {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreManager.class);
   private final BrokerCfg configuration;
   private final BackupStore backupStore;
-  private final BackupMetadataSyncer metadataSyncer;
   private final MeterRegistry meterRegistry;
   @Nullable private final ExporterPositionMapper exporterPositionMapper;
   private final ExecutorService executor;
@@ -99,7 +101,6 @@ public class RestoreManager implements CloseableSilently {
       final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.backupStore = backupStore;
-    metadataSyncer = new BackupMetadataSyncer(backupStore, meterRegistry);
     this.exporterPositionMapper = exporterPositionMapper;
     this.meterRegistry = meterRegistry;
     executor =
@@ -287,18 +288,17 @@ public class RestoreManager implements CloseableSilently {
     verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
 
     final var partitionCount = partitions.size();
+    final var backups = findBackups(partitions, validator(validateConfig, partitionCount));
     try {
       final var partitionsToRestore = collectPartitions(partitionCount);
       final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
       for (final var partition : partitionsToRestore) {
         final var partitionId = partition.partition().id().id();
         final var restore = partitions.get(partitionId);
-        if (restore == null || restore.backupIds().isEmpty()) {
-          throw new IllegalArgumentException("No backup IDs provided for partition " + partitionId);
-        }
+        final var partitionBackups = backups.get(partitionId);
         tasks.add(
             () -> {
-              restorePartition(partition, restore, partitionCount, validateConfig);
+              restorePartition(partition, restore, partitionBackups);
               return null;
             });
       }
@@ -346,22 +346,56 @@ public class RestoreManager implements CloseableSilently {
     LOG.info("Successfully restored topology file {}", base);
   }
 
+  /**
+   * Finds the backups of every local partition before any partition writes to the data directory.
+   * The partitions are restored in parallel, so finding each partition's backups as it is restored
+   * would let a missing backup fail one partition after another one had written its data, while the
+   * restore app reports a failure with a reason as having left the data directory untouched.
+   * Creating the partitions writes their directories, so this works from the partition ids.
+   */
+  private Map<Integer, SortedMap<Long, BackupIdentifier>> findBackups(
+      final Map<Integer, PartitionRestore> partitions, final BackupValidator validator) {
+    final var lookups =
+        new HashMap<Integer, CompletableFuture<SortedMap<Long, BackupIdentifier>>>();
+    for (final var metadata : localPartitions(partitions.size())) {
+      final var partitionId = metadata.id().id();
+      final var restore = partitions.get(partitionId);
+      if (restore == null) {
+        throw new IllegalArgumentException("No backup IDs provided for partition " + partitionId);
+      }
+      lookups.put(
+          partitionId,
+          CompletableFuture.supplyAsync(
+              () ->
+                  PartitionRestoreService.findBackups(
+                      backupStore, partitionId, restore.backupIds(), validator),
+              executor));
+    }
+    final var backups = new HashMap<Integer, SortedMap<Long, BackupIdentifier>>();
+    for (final var lookup : lookups.entrySet()) {
+      try {
+        backups.put(lookup.getKey(), lookup.getValue().join());
+      } catch (final CompletionException e) {
+        throw e.getCause() instanceof final RuntimeException cause ? cause : e;
+      }
+    }
+    return backups;
+  }
+
+  private BackupValidator validator(final boolean validateConfig, final int partitionCount) {
+    if (validateConfig) {
+      return new ValidatePartitionCount(partitionCount);
+    }
+    LOG.warn("Restoring without validating backup");
+    return BackupValidator.none();
+  }
+
   private void restorePartition(
       final InstrumentedRaftPartition partition,
       final PartitionRestore restore,
-      final int partitionCount,
-      final boolean validateConfig)
+      final SortedMap<Long, BackupIdentifier> backups)
       throws IOException, FlushException {
-    final BackupValidator validator;
     final RaftPartition raftPartition = partition.partition();
-
-    if (validateConfig) {
-      validator = new ValidatePartitionCount(partitionCount);
-    } else {
-      LOG.warn("Restoring without validating backup");
-      validator = BackupValidator.none();
-    }
-
     final var registry = partition.registry();
     final var restoreService =
         new PartitionRestoreService(
@@ -371,7 +405,7 @@ public class RestoreManager implements CloseableSilently {
             new ChecksumProviderRocksDBImpl(),
             partition.registry());
     try {
-      restoreService.restore(restore, validator);
+      restoreService.restore(restore, backups);
       LOG.info("Successfully restored partition {} from {}.", raftPartition.id().id(), restore);
     } finally {
       MicrometerUtil.close(registry);
@@ -380,6 +414,13 @@ public class RestoreManager implements CloseableSilently {
 
   /** The local partitions of a cluster with {@code partitionCount} partitions. */
   private Set<InstrumentedRaftPartition> collectPartitions(final int partitionCount) {
+    final var raftPartitionFactory = new RaftPartitionFactory(configuration);
+    return localPartitions(partitionCount).stream()
+        .map(metadata -> createRaftPartition(metadata, raftPartitionFactory))
+        .collect(Collectors.toSet());
+  }
+
+  private List<PartitionMetadata> localPartitions(final int partitionCount) {
     final var localBrokerId = configuration.getCluster().getNodeId();
     final var localMember = MemberId.from(String.valueOf(localBrokerId));
     final var clusterTopology =
@@ -387,12 +428,9 @@ public class RestoreManager implements CloseableSilently {
             StaticConfigurationGenerator.getStaticConfiguration(
                     configuration, partitionCount, localMember)
                 .generatePartitionDistribution());
-    final var raftPartitionFactory = new RaftPartitionFactory(configuration);
-
     return clusterTopology.partitions().stream()
         .filter(partitionMetadata -> partitionMetadata.members().contains(localMember))
-        .map(metadata -> createRaftPartition(metadata, raftPartitionFactory))
-        .collect(Collectors.toSet());
+        .toList();
   }
 
   private InstrumentedRaftPartition createRaftPartition(
@@ -482,8 +520,9 @@ public class RestoreManager implements CloseableSilently {
         FuturesUtil.parTraverse(
             IntStream.rangeClosed(1, partitionCount).boxed().toList(),
             partition ->
-                metadataSyncer
-                    .load(partition)
+                backupStore
+                    .loadBackupMetadata(partition)
+                    .thenApply(bytes -> bytes.flatMap(content -> parseMetadata(partition, content)))
                     .thenApply(
                         opt ->
                             opt.orElseThrow(
@@ -491,6 +530,21 @@ public class RestoreManager implements CloseableSilently {
                                     new InvalidState(
                                         Reason.BACKUPS_INCONSISTENT,
                                         "No backup metadata found for partition " + partition)))));
+  }
+
+  /**
+   * Metadata that cannot be parsed is reported as missing. This does not go through {@link
+   * BackupMetadataSyncer#load}, which reports a failed store the same way: a store that is
+   * unavailable must fail as such, as retrying may help.
+   */
+  private static Optional<BackupMetadata> parseMetadata(
+      final int partitionId, final byte[] content) {
+    try {
+      return Optional.of(BackupMetadataSyncer.MAPPER.readValue(content, BackupMetadata.class));
+    } catch (final IOException e) {
+      LOG.warn("Failed to parse backup metadata for partition {}", partitionId, e);
+      return Optional.empty();
+    }
   }
 
   /** Waits for a call to the backup store, naming the reason if the store failed. */
@@ -506,7 +560,6 @@ public class RestoreManager implements CloseableSilently {
   public void close() {
     try {
       backupStore.closeAsync().join();
-      metadataSyncer.close();
       executor.shutdown();
       if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
         executor.shutdownNow();

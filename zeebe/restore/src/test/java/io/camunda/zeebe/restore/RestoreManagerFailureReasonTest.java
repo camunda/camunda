@@ -12,21 +12,30 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.restore.RestoreFailure.Reason;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -129,6 +138,60 @@ final class RestoreManagerFailureReasonTest {
     // then
     assertThat(failure).hasMessageContaining("No backup metadata found for partition 1");
     assertThat(reasonOf(failure)).isEqualTo(Reason.BACKUPS_INCONSISTENT);
+  }
+
+  @Test
+  void shouldReportAFailingBackupStoreWhenLoadingBackupMetadataAsUnavailable() {
+    // given
+    final var storeFailure = new UncheckedIOException(new IOException("Connection refused"));
+    when(backupStore.loadBackupMetadata(anyInt()))
+        .thenReturn(CompletableFuture.failedFuture(storeFailure));
+
+    // when
+    final var failure = catchThrowable(() -> restoreManager.resolveBackups(FROM, null));
+
+    // then - retrying may help, unlike for metadata that is missing
+    assertThat(failure).hasCause(storeFailure);
+    assertThat(reasonOf(failure)).isEqualTo(Reason.BACKUP_STORE_UNAVAILABLE);
+  }
+
+  @Test
+  void shouldFindEveryBackupBeforeWritingWhenALaterBackupIsMissing() throws IOException {
+    // given - backup 1 exists, backup 2 does not
+    when(backupStore.list(any(BackupIdentifierWildcard.class)))
+        .thenAnswer(
+            invocation -> {
+              final BackupIdentifierWildcard wildcard = invocation.getArgument(0);
+              return CompletableFuture.completedFuture(
+                  wildcard.checkpointPattern().matches(1L)
+                      ? List.of(completedBackup(1L))
+                      : List.of());
+            });
+
+    // when
+    final var failure =
+        catchThrowable(
+            () ->
+                restoreManager.restore(
+                    Map.of(1, PartitionRestore.ofBackups(1L, 2L)), false, List.of()));
+
+    // then - the restore app reports the reason as having left the data directory untouched
+    assertThat(failure).isInstanceOf(BackupNotFoundException.class);
+    assertThat(reasonOf(failure)).isEqualTo(Reason.BACKUPS_INCONSISTENT);
+    verify(backupStore, never()).restore(any(), any());
+    try (final var entries = Files.list(dataDirectory)) {
+      assertThat(entries).isEmpty();
+    }
+  }
+
+  private static BackupStatus completedBackup(final long checkpointId) {
+    return new BackupStatusImpl(
+        new BackupIdentifierImpl(0, 1, checkpointId),
+        Optional.empty(),
+        BackupStatusCode.COMPLETED,
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
   }
 
   /** The reason the restore app's exit code is derived from, found as the app finds it. */
