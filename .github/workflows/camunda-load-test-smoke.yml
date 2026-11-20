@@ -1,7 +1,7 @@
 # description: Smoke-tests the load-test setup on every push that touches load-test infra.
 #              Runs two independent chains in parallel, each in its own namespace:
 #              - install (deploys the PR ref from scratch to check the installation)
-#              - upgrade (deploys the base-ref first, then updates to the PR ref to check upgrading from an older setup-code version).
+#              - upgrade (deploys main first, then updates to the PR ref to check upgrading from an older setup-code version).
 #              Both chains wait for pod readiness and gateway connectivity after each deploy,
 #              and check the k6 TestRuns, then delete their namespace.
 #              In the upgrade chain, the k6 operator does not restart a TestRun when it is updated, so
@@ -30,11 +30,6 @@ on:
         type: string
         default: ""
         required: false
-      base-ref:
-        description: 'Git ref used as the "old" version for the upgrade chain. Defaults to main.'
-        type: string
-        default: "main"
-        required: false
   workflow_dispatch:
     inputs:
       target-version:
@@ -51,11 +46,6 @@ on:
         description: 'Git ref to checkout for the smoke test (branch or SHA)'
         type: string
         default: ""
-        required: false
-      base-ref:
-        description: 'Git ref used as the "old" version for the upgrade chain. Defaults to main.'
-        type: string
-        default: "main"
         required: false
 
 concurrency:
@@ -166,8 +156,8 @@ jobs:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
 
   # ---------------------------------------------------------------------------
-  # Upgrade chain: deploys base-ref's setup code (the version already on main
-  # before this PR), then updates it to the PR ref. This exercises upgrading
+  # Upgrade chain: deploys the setup code of main (the version before this PR),
+  # then updates it to the PR ref. This exercises upgrading
   # from an older setup-code version, which the install chain above cannot
   # catch since it only ever deploys the PR's own code.
   # ---------------------------------------------------------------------------
@@ -178,11 +168,13 @@ jobs:
     permissions:
       contents: read
       id-token: write # Teleport auth in called workflow
-    uses: ./.github/workflows/camunda-load-test.yml
+    # Pinned to main so that the workflow and the scripts it calls come from the same commit.
+    # A local `./` reference would run the workflow of the PR with the scripts of main.
+    uses: camunda/camunda/.github/workflows/camunda-load-test.yml@main
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
-      ref: ${{ inputs.base-ref || 'main' }}
+      ref: main
       scenario: realistic
       secondary-storage-type: elasticsearch
       ttl: 1
