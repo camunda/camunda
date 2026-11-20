@@ -373,6 +373,78 @@ final class LongPollingActivateProbesHandlerTest {
   }
 
   @Test
+  void shouldMoveToTheNextPartitionWhenATruncatedResponseHasNoProbe() {
+    // given - the engine cannot fit the partition's first probe beside the poll
+    partitions.truncateAfter(0);
+    partitions.addProbe(TENANT_A, 1, AWS);
+
+    // when
+    final var worker = poll(TENANT_A, -1, AWS);
+
+    // then
+    assertThat(worker.completed).isTrue();
+    assertThat(partitions.activations())
+        .extracting(Activation::partitionId)
+        .containsExactlyInAnyOrder(1, 2, 3);
+  }
+
+  @Test
+  void shouldAnswerAPollWithoutProbesWhenItsFirstProbeIsTooLarge() {
+    // given
+    handler = startHandler(1024, longPolling(true));
+    final long tooLarge = partitions.addProbe(TENANT_A, 1, AWS, 2048);
+
+    // when
+    final var worker = poll(TENANT_A, AWS);
+
+    // then - the probe is yielded for the next poll, and this one is not held
+    assertThat(partitions.yields()).extracting(yield -> yield.getKey()).containsExactly(tooLarge);
+    assertThat(worker.batches).isEmpty();
+    assertThat(worker.completed).isTrue();
+    assertThat(openPolls()).isZero();
+  }
+
+  @Test
+  void shouldStartTheTimeoutOfAPollTriedAgainBecauseOfANotification() {
+    // given - a notification during the first round, and a slow partition in the second
+    partitions.holdNextResponseOf(FakeProbePartitions.PARTITIONS);
+    final var worker = poll(TENANT_A, AWS);
+    partitions.notifyProbesAvailable(TENANT_A, AWS);
+    actorScheduler.workUntilDone();
+    partitions.onNextActivation(() -> partitions.holdNextResponseOf(1));
+    partitions.releaseResponse();
+    actorScheduler.workUntilDone();
+
+    // when
+    actorScheduler.updateClock(REQUEST_TIMEOUT);
+    actorScheduler.workUntilDone();
+    partitions.releaseResponse();
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(worker.completed).isTrue();
+    assertThat(openPolls()).isZero();
+  }
+
+  @Test
+  void shouldAnswerAPollAtItsTimeoutWhileAPartitionHasNotAnswered() {
+    // given - a held poll, woken while a partition is slow
+    final var worker = poll(TENANT_A, AWS);
+    partitions.holdNextResponseOf(2);
+    partitions.notifyProbesAvailable(TENANT_A, AWS);
+    actorScheduler.workUntilDone();
+
+    // when
+    actorScheduler.updateClock(REQUEST_TIMEOUT);
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(worker.completed).isTrue();
+    assertThat(openPolls()).isZero();
+    assertThat(registeredPolls(TENANT_A, AWS)).isZero();
+  }
+
+  @Test
   void shouldAskEachPartitionForTheProbesStillMissing() {
     // given
     partitions.addProbe(TENANT_A, 1, AWS);
