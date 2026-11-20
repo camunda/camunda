@@ -85,11 +85,26 @@ runs:
         # the `kill -0 -- -$pgid` guard below never matches. With it, PID and
         # PGID coincide, so the leftovers can be killed by group ID. Don't add
         # `--foreground`, it would signal npm only.
+        #
+        # GNU `timeout` is missing on macOS runners (Homebrew coreutils would
+        # name it `gtimeout`) and Windows has an unrelated timeout.exe, so it
+        # is probed, not assumed. Without one, only the retry backstop limits
+        # an attempt, as before INC-9201.
         command: |
           cd "$NPM_CI_DIRECTORY" || exit 1
+          timeout_cmd=()
+          for candidate in timeout gtimeout; do
+            if "$candidate" --kill-after=1s 1s true >/dev/null 2>&1; then
+              timeout_cmd=("$candidate" --kill-after=30s "${NPM_CI_TIMEOUT_SECONDS}s")
+              break
+            fi
+          done
+          if [ "${#timeout_cmd[@]}" -eq 0 ]; then
+            echo "npm-ci-with-retry: no GNU timeout found, only the retry timeout applies"
+          fi
           status=0
           set -m
-          timeout --kill-after=30s "${NPM_CI_TIMEOUT_SECONDS}s" npm ci --fetch-timeout=60000 --fetch-retries=3 --fetch-retry-mintimeout=5000 --fetch-retry-maxtimeout=15000 &
+          "${timeout_cmd[@]}" npm ci --fetch-timeout=60000 --fetch-retries=3 --fetch-retry-mintimeout=5000 --fetch-retry-maxtimeout=15000 &
           pgid=$!
           set +m
           wait "$pgid" || status=$?
