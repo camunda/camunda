@@ -26,7 +26,7 @@ function mapBreadcrumb(breadcrumb: BreadcrumbDescriptor): NavBreadcrumbDescripto
 		label: breadcrumb.label,
 		icon: breadcrumb.icon,
 		onClick: breadcrumb.onClick,
-		linkProps: breadcrumb.key === 'app' ? (breadcrumb.linkProps ?? {to: '/operate'}) : breadcrumb.linkProps,
+		linkProps: breadcrumb.key === 'app' ? {to: '/operate'} : breadcrumb.linkProps,
 		actions: breadcrumb.actions,
 		dropdownTitle: breadcrumb.dropdownTitle,
 		dropdownAriaLabel: breadcrumb.dropdownAriaLabel,
