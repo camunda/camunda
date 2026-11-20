@@ -11,7 +11,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
@@ -24,10 +24,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 
 public class FileBasedTransientSnapshotTest {
   private static final String SNAPSHOT_DIRECTORY = "snapshots";
@@ -36,15 +36,15 @@ public class FileBasedTransientSnapshotTest {
           "file1", "file1 contents",
           "file2", "file2 contents");
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
+  @TempDir Path temporaryFolder;
+  @RegisterExtension ActorSchedulerExtension scheduler = new ActorSchedulerExtension();
 
   private FileBasedSnapshotStore snapshotStore;
   private Path snapshotsDir;
 
-  @Before
+  @BeforeEach
   public void beforeEach() throws IOException {
-    final var root = temporaryFolder.getRoot().toPath();
+    final var root = temporaryFolder;
     snapshotsDir = root.resolve(SNAPSHOT_DIRECTORY);
     snapshotStore = createStore(root);
   }
@@ -221,12 +221,25 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldNotPersistEmptyTransientSnapshot() {
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L, false).get();
-    transientSnapshot.take(p -> p.toFile().mkdir());
+    final var taken =
+        transientSnapshot.take(
+            path -> {
+              try {
+                Files.createDirectory(path);
+              } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+              }
+            });
 
     // when
     final var persisted = transientSnapshot.persist();
 
     // then
+    assertThatThrownBy(taken::join)
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasRootCauseMessage(
+            "Expected to find transient snapshot in directory %s, but the directory is empty or does not exists",
+            transientSnapshot.getPath());
     assertThatThrownBy(persisted::join)
         .as("did not persist an empty transient snapshot directory")
         .hasCauseInstanceOf(IllegalStateException.class);

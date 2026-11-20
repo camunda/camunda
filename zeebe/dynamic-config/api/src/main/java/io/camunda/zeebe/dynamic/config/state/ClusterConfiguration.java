@@ -449,9 +449,10 @@ public record ClusterConfiguration(
   /**
    * Cancel any pending changes and return a new configuration with the already applied changes.
    *
-   * @note This is a dangerous operation that can lead to an inconsistent cluster configuration.
-   *     This should be only called as a last resort when the configuration change is stuck and not
-   *     able to make progress on its own.
+   * <p>This is a dangerous operation that can lead to an inconsistent cluster configuration. This
+   * should be only called as a last resort when the configuration change is stuck and not able to
+   * make progress on its own.
+   *
    * @return a new configuration with the already applied changes and no pending changes.
    */
   public ClusterConfiguration cancelPendingChanges() {

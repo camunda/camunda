@@ -107,7 +107,7 @@ public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
   }
 
   @Override
-  public ChannelType getRequestChannelType() {
+  public @Nullable ChannelType getRequestChannelType() {
     return requireNonNull(metadata).getRequestChannelType();
   }
 

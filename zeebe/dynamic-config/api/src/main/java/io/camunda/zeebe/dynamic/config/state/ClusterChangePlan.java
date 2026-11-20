@@ -119,6 +119,6 @@ public record ClusterChangePlan(
     IN_PROGRESS,
     COMPLETED,
     FAILED,
-    CANCELLED;
+    CANCELLED
   }
 }

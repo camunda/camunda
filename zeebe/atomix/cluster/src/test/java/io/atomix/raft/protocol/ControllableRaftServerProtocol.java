@@ -28,6 +28,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -466,6 +467,12 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   public void registerInstallHandler(
       final Function<InstallRequest, CompletableFuture<InstallResponse>> handler) {
     installHandler = handler;
+  }
+
+  public void interceptInstallRequests(
+      final UnaryOperator<Function<InstallRequest, CompletableFuture<InstallResponse>>>
+          interceptor) {
+    installHandler = interceptor.apply(installHandler);
   }
 
   @Override

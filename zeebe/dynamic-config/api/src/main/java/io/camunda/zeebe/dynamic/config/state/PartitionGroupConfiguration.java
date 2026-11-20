@@ -344,14 +344,14 @@ public record PartitionGroupConfiguration(
    *
    * <p>Clears {@code members} and {@code routingState} rather than retaining them, since a removed
    * tenant is never re-enabled and so has nothing left to resume. This still converges: the group
-   * version bumps once the operation's plan completes ({@link #advance()}), so the
-   * higher-versioned, cleared copy wins wholesale over a peer that has not seen the removal yet
+   * version bumps once the operation's plan completes ({@link #completeGraphChangeIfDrained()}), so
+   * the higher-versioned, cleared copy wins wholesale over a peer that has not seen the removal yet
    * ({@link #merge(PartitionGroupConfiguration)}).
    *
    * <p>{@code incarnationNumber} stays put because removal purges no data — it stays on disk,
    * unreachable through this configuration but not deleted by it. {@code pendingChanges} and {@code
-   * version} stay untouched too, so the {@link #advance()} call right after this one still sees,
-   * and completes, the operation it belongs to.
+   * version} stay untouched too, so {@link #completeOperation(OperationId, UnaryOperator)} can
+   * still record completion of the operation it belongs to.
    */
   public PartitionGroupConfiguration remove() {
     if (isRemoved()) {

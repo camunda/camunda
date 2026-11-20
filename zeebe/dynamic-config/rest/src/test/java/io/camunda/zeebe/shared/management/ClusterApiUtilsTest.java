@@ -229,7 +229,8 @@ final class ClusterApiUtilsTest {
         ClusterApiUtils.mapCompletedOperation(
             new CompletedOperation(operation, Instant.ofEpochSecond(17172371723L)));
     assertThat(encoded).isNotNull();
-    assertThat(encoded.getOperation()).isNotEqualTo(OperationEnum.UNKNOWN);
+    assertThat(encoded.getOperation())
+        .isNotEqualTo(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);
     assertThat(TopologyChangeCompletedInner.OperationEnum.values())
         .as("Operation " + operation + "is not mapped correctly")
         .contains(encoded.getOperation());
