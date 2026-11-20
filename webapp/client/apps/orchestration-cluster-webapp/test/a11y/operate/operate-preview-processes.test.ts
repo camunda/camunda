@@ -27,7 +27,11 @@ import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
-import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {
+	createGetProcessDefinitionStatisticsResponse,
+	createProcessDefinitionStatistic,
+} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {BPMN_XML as MOVE_BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
@@ -209,4 +213,74 @@ test('should have no accessibility violations with the process definition deleti
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);
+});
+
+test('should have no accessibility violations in batch move mode and its helper dialog', async ({
+	network,
+	operatePreviewProcessesPage,
+	page,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+		}),
+		mockLicenseEndpoint({
+			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessDefinitionsResponse({
+					items: [
+						createProcessDefinition({
+							processDefinitionId: 'my_simple_process',
+							tenantId: 'tenant-a',
+							name: 'Invoice process',
+							version: 1,
+						}),
+					],
+				}),
+			),
+		}),
+		mockQueryProcessInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessInstancesResponse({
+					items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'})],
+				}),
+			),
+		}),
+		mockQueryBatchOperationItemsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse({items: []})),
+		}),
+		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(MOVE_BPMN_XML)}),
+		mockGetProcessDefinitionStatisticsEndpoint({
+			successResponse: HttpResponse.json(
+				createGetProcessDefinitionStatisticsResponse([
+					createProcessDefinitionStatistic({elementId: 'task-1', active: 1}),
+				]),
+			),
+		}),
+	);
+
+	await operatePreviewProcessesPage.goto('?process=my_simple_process&version=1&tenantId=tenant-a&elementId=task-1');
+	await operatePreviewProcessesPage.instancesTable
+		.getByRole('checkbox', {name: 'Select instance 1'})
+		.click({force: true});
+	await page.getByRole('button', {name: 'Move'}).click();
+	await expect(page.getByRole('dialog')).toBeVisible();
+
+	const helperResults = await makeAxeBuilder().analyze();
+	expect(helperResults.violations).toEqual([]);
+
+	await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
+	await page.locator('[data-element-id="end_event"]').click();
+	await expect(page.getByText('Modification scheduled', {exact: false})).toBeVisible();
+	await expect(page.getByRole('button', {name: 'Review Modification'})).toBeEnabled();
+	await page.waitForTimeout(500);
+
+	const modeResults = await makeAxeBuilder().exclude('[data-testid="frame-container"] > div:first-child').analyze();
+	expect(modeResults.violations).toEqual([]);
 });

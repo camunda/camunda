@@ -27,7 +27,11 @@ import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
-import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {
+	createGetProcessDefinitionStatisticsResponse,
+	createProcessDefinitionStatistic,
+} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {BPMN_XML as MOVE_BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
@@ -179,5 +183,62 @@ test.describe('Operate Processes DS preview (/operate-preview/processes)', () =>
 			timeout: 15000,
 		});
 		await expect(operatePreviewProcessesPage.instancesTable.getByRole('button', {name: 'Try again'})).toBeVisible();
+	});
+
+	test('should enter batch move mode, select a target, and exit', async ({
+		network,
+		operatePreviewProcessesPage,
+		page,
+	}) => {
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({
+								processDefinitionId: 'my_simple_process',
+								tenantId: 'tenant-a',
+								name: 'Invoice process',
+								version: 1,
+							}),
+						],
+					}),
+				),
+			}),
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'})],
+					}),
+				),
+			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(MOVE_BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createGetProcessDefinitionStatisticsResponse([
+						createProcessDefinitionStatistic({elementId: 'task-1', active: 1}),
+					]),
+				),
+			}),
+		);
+		await operatePreviewProcessesPage.goto('?process=my_simple_process&version=1&tenantId=tenant-a&elementId=task-1');
+
+		await operatePreviewProcessesPage.instancesTable
+			.getByRole('checkbox', {name: 'Select instance 1'})
+			.click({force: true});
+		await page.getByRole('button', {name: 'Move'}).click();
+		await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
+
+		await expect(page.getByText('Batch Modification Mode', {exact: true})).toBeVisible();
+		await expect(page.getByRole('button', {name: 'Review Modification'})).toBeDisabled();
+
+		await page.locator('[data-element-id="end_event"]').click();
+		await expect(page.getByText('Modification scheduled', {exact: false})).toBeVisible();
+		await expect(page.getByRole('button', {name: 'Review Modification'})).toBeEnabled();
+
+		await page.getByRole('button', {name: 'Exit'}).click();
+		await page.getByRole('alertdialog').getByRole('button', {name: 'Exit'}).click();
+
+		await expect(page.getByText('Batch Modification Mode', {exact: true})).toBeHidden();
 	});
 });
