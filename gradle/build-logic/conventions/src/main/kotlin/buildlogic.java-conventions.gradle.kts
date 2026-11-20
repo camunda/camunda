@@ -1,4 +1,6 @@
 import buildlogic.ARTIFACT_KIND
+import buildlogic.CheckLicenseHeadersTask
+import buildlogic.readMavenLicenseSettings
 import buildlogic.skipWhen
 import buildlogic.requiredVersion
 import com.diffplug.gradle.spotless.SpotlessCheck
@@ -93,11 +95,31 @@ tasks.named<Checkstyle>("checkstyleTest") { setSource(fileTree("src/test/java"))
 // Maven -Dquickly skips checks (skipChecks); do the same here.
 tasks.withType<Checkstyle>().configureEach { skipWhen(quickly) }
 
+// Maven's license-maven-plugin check (checkFormat profile) over the module's java/scala sources.
+// Header file and skipExistingHeaders are inherited from the module's POMs, as in Maven.
+private val licenseSettings =
+  readMavenLicenseSettings(layout.projectDirectory.file("pom.xml").asFile) { pom ->
+    providers.fileContents(layout.projectDirectory.file(pom.absolutePath)).asText.orNull
+  }
+val checkLicenseHeaders =
+  tasks.register<CheckLicenseHeadersTask>("checkLicenseHeaders") {
+    group = "verification"
+    description = "Checks that source files start with the Camunda license header"
+    headerFile = layout.settingsDirectory.file(licenseSettings.headerFile)
+    if (licenseSettings.checked) {
+      sources.from(fileTree("src") { include("**/*.java", "**/*.scala").exclude("main/config/**") })
+    }
+    skipExistingHeaders = licenseSettings.skipExistingHeaders
+    baseDir = layout.projectDirectory
+    marker = layout.buildDirectory.file("license-headers/checked")
+    skipWhen(quickly)
+  }
+
 // Runs the checks of Maven's "Java Checks" CI job. Spotless is not part of it; it has its own job.
 tasks.register("javaChecks") {
   group = "verification"
-  description = "Runs the checks of the Maven Java Checks job: checkstyle on main and test sources"
-  dependsOn(tasks.withType<Checkstyle>(), "testClasses")
+  description = "Runs the checks of the Maven Java Checks job: checkstyle, license headers"
+  dependsOn(tasks.withType<Checkstyle>(), checkLicenseHeaders, "testClasses")
 }
 
 publishing {
