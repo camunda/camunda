@@ -39,6 +39,7 @@ import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.client.protocol.rest.IncidentErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentStateEnum;
 import io.camunda.client.protocol.rest.MessageSubscriptionStateEnum;
+import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import org.junit.jupiter.api.Test;
 
@@ -255,28 +256,29 @@ public class EnumUtilTest {
   public void shouldConvertProcessDefinitionResultState() {
 
     for (final ProcessDefinitionState value : ProcessDefinitionState.values()) {
-      final io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum protocolValue =
-          EnumUtil.convert(
-              value, io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum.class);
+      // when
+      final ProcessDefinitionResult.StateEnum protocolValue =
+          EnumUtil.convert(value, ProcessDefinitionResult.StateEnum.class);
+
+      // then
       assertThat(protocolValue).isNotNull();
       if (value == ProcessDefinitionState.UNKNOWN_ENUM_VALUE) {
         assertThat(protocolValue)
-            .isEqualTo(
-                io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum
-                    .UNKNOWN_DEFAULT_OPEN_API);
+            .isEqualTo(ProcessDefinitionResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
       } else {
         assertThat(protocolValue.name()).isEqualTo(value.name());
       }
     }
 
-    for (final io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum protocolValue :
-        io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum.values()) {
+    for (final ProcessDefinitionResult.StateEnum protocolValue :
+        ProcessDefinitionResult.StateEnum.values()) {
+      // when
       final ProcessDefinitionState value =
           EnumUtil.convert(protocolValue, ProcessDefinitionState.class);
+
+      // then
       assertThat(value).isNotNull();
-      if (protocolValue
-          == io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum
-              .UNKNOWN_DEFAULT_OPEN_API) {
+      if (protocolValue == ProcessDefinitionResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(ProcessDefinitionState.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());
