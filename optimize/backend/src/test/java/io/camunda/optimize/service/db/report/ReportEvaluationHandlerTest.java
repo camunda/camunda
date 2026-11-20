@@ -35,9 +35,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -191,6 +195,96 @@ class ReportEvaluationHandlerTest {
         .extracting(ReportDataDefinitionDto::getKey, ReportDataDefinitionDto::getDisplayName)
         .containsExactly(
             tuple(firstKey, "First in tenant a"), tuple(secondKey, "Second in tenant b"));
+  }
+
+  // Seeded system reports are stored with an empty definition list. The query treats an empty list
+  // as "match nothing" (camunda/camunda#70131), so the dashboards only show data because the
+  // handler replaces that placeholder with the user's authorized definitions before evaluation.
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("seededSystemReports")
+  void shouldInjectAuthorizedDefinitionsIntoSeededSystemReportWithEmptyDefinitionList(
+      final String flavor, final ProcessReportDataDto reportData) {
+    // given a seeded report with no stored definitions and processes in two authorized tenants
+    final String firstKey = uniqueKey();
+    final String secondKey = uniqueKey();
+    reportData.setDefinitions(List.of());
+    when(definitionService.getFullyImportedDefinitions(DefinitionType.PROCESS, USER_ID))
+        .thenReturn(
+            List.of(
+                definition(firstKey, "First process", "tenant-a"),
+                definition(secondKey, "Second process", "tenant-b")));
+
+    // when evaluated without any process selected
+    underTest.evaluateReport(evaluationWithoutSelection(reportData));
+
+    // then the report evaluates over every authorized definition, scoped to its own tenants
+    assertThat(reportData.getDefinitions())
+        .extracting(ReportDataDefinitionDto::getKey, ReportDataDefinitionDto::getTenantIds)
+        .containsExactly(
+            tuple(firstKey, List.of("tenant-a")), tuple(secondKey, List.of("tenant-b")));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("seededSystemReports")
+  void shouldLeaveDefinitionsEmptyWhenUserHasNoAuthorizedDefinitions(
+      final String flavor, final ProcessReportDataDto reportData) {
+    // given a user whose tenants hold no imported process definitions
+    reportData.setDefinitions(List.of());
+    when(definitionService.getFullyImportedDefinitions(DefinitionType.PROCESS, USER_ID))
+        .thenReturn(List.of());
+
+    // when
+    underTest.evaluateReport(evaluationWithoutSelection(reportData));
+
+    // then no definitions are injected
+    assertThat(reportData.getDefinitions()).isEmpty();
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("processScopedSystemReports")
+  void shouldLeaveDefinitionsEmptyWhenSelectedProcessIsUnknown(
+      final String flavor, final ProcessReportDataDto reportData) {
+    // given a selected process key that matches no imported definition (a key that exists only in
+    // tenants the user can't see is rejected with a ForbiddenException instead)
+    final String unknownKey = uniqueKey();
+    reportData.setDefinitions(List.of());
+    when(definitionService.getDefinitionWithAvailableTenants(
+            DefinitionType.PROCESS, unknownKey, USER_ID))
+        .thenReturn(Optional.empty());
+
+    // when
+    underTest.evaluateReport(evaluationSelecting(reportData, unknownKey));
+
+    // then no definitions are injected
+    assertThat(reportData.getDefinitions()).isEmpty();
+  }
+
+  // Only business value and agentic reports honour a process selection (L1); management reports
+  // always evaluate over every authorized definition.
+  private static Stream<Arguments> processScopedSystemReports() {
+    final ProcessReportDataDto agentic = new ProcessReportDataDto();
+    agentic.setAgenticControlReport(true);
+    return Stream.of(
+        Arguments.of("business value report", businessValueReportData()),
+        Arguments.of("agentic control report", agentic));
+  }
+
+  private static Stream<Arguments> seededSystemReports() {
+    final ProcessReportDataDto agentic = new ProcessReportDataDto();
+    agentic.setAgenticControlReport(true);
+    final ProcessReportDataDto management = new ProcessReportDataDto();
+    management.setManagementReport(true);
+    return Stream.of(
+        Arguments.of("business value report", businessValueReportData()),
+        Arguments.of("agentic control report", agentic),
+        Arguments.of("management report", management));
+  }
+
+  private static ReportEvaluationInfo evaluationWithoutSelection(
+      final ProcessReportDataDto reportData) {
+    return ReportEvaluationInfo.builder(new SingleProcessReportDefinitionRequestDto(reportData))
+        .userId(USER_ID)
+        .build();
   }
 
   private static ProcessReportDataDto businessValueReportData() {
