@@ -184,12 +184,27 @@ test.describe('Operate Decision Instance DS preview (/operate-preview/decisions/
 		await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_ID);
 		await expect(operateDecisionInstancePage.drdPanel).toBeVisible();
 
-		const inputs = await page.getByRole('heading', {name: 'Inputs'}).boundingBox();
-		const outputs = await page.getByRole('heading', {name: 'Outputs'}).boundingBox();
-		expect(outputs!.y).toBeGreaterThan(inputs!.y);
-		expect(outputs!.x).toBe(inputs!.x);
+		const inputs = page.getByRole('heading', {name: 'Inputs'});
+		const outputs = page.getByRole('heading', {name: 'Outputs'});
+		const lastHeaderLink = page.getByTestId('instance-header').getByRole('link').last();
 
-		await page.getByTestId('instance-header').getByRole('link').last().hover({timeout: 5000});
+		await expect(inputs).toBeInViewport();
+		await expect(outputs).toBeInViewport();
+		await expect
+			.poll(async () => ((await outputs.boundingBox())?.y ?? 0) - ((await inputs.boundingBox())?.y ?? 0))
+			.toBeGreaterThan(0);
+		await expect
+			.poll(async () => ((await outputs.boundingBox())?.x ?? 0) - ((await inputs.boundingBox())?.x ?? 0))
+			.toBe(0);
+		await lastHeaderLink.scrollIntoViewIfNeeded();
+		await expect(lastHeaderLink).toBeInViewport();
+		await expect
+			.poll(
+				async () =>
+					((await operateDecisionInstancePage.drdPanel.boundingBox())?.x ?? 0) -
+					((await lastHeaderLink.boundingBox())?.x ?? 0),
+			)
+			.toBeGreaterThan(0);
 	});
 
 	test('should navigate to the related evaluated decision selected in the DRD', async ({
