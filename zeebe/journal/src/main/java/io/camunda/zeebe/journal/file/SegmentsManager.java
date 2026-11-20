@@ -32,6 +32,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.agrona.CloseHelper;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,17 +98,14 @@ final class SegmentsManager implements AutoCloseable {
       nextSegment = null;
     }
 
-    if (bgIoExecutor != null) {
-      try {
-        bgIoExecutor.close();
-      } catch (final Exception e) {
-        LOG.warn(
-            "Failed to close the background I/O executor of journal {}; its thread may leak",
-            name,
-            e);
-      }
-      bgIoExecutor = null;
-    }
+    CloseHelper.close(
+        e ->
+            LOG.warn(
+                "Failed to close the background I/O executor of journal {}; its thread may leak",
+                name,
+                e),
+        bgIoExecutor);
+    bgIoExecutor = null;
     currentSegment = null;
   }
 
