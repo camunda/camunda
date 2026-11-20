@@ -14,6 +14,7 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_FILTER_PROPERTY;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
@@ -31,6 +32,14 @@ import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.mapping.http.mapper.ClusterVariableMapper;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
+import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
+import io.camunda.gateway.protocol.model.AdvancedDecisionInstanceStateFilter;
+import io.camunda.gateway.protocol.model.AdvancedElementInstanceStateFilter;
+import io.camunda.gateway.protocol.model.AdvancedIntegerFilter;
+import io.camunda.gateway.protocol.model.AdvancedJobKindFilter;
+import io.camunda.gateway.protocol.model.AdvancedJobListenerEventTypeFilter;
+import io.camunda.gateway.protocol.model.AdvancedJobStateFilter;
+import io.camunda.gateway.protocol.model.AdvancedProcessInstanceStateFilter;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.ElementInstanceFilterFields;
@@ -93,8 +102,12 @@ import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -103,6 +116,20 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
 
 public class SearchQueryFilterMapper {
+
+  /** Advanced filter objects that carry no value at all, one per type the batch filters use. */
+  private static final List<Object> EMPTY_FILTER_PROPERTIES =
+      List.of(
+          SearchQueryRequestMapper.EMPTY_BASIC_STRING_FILTER,
+          SearchQueryRequestMapper.EMPTY_ADVANCED_STRING_FILTER,
+          AdvancedIntegerFilter.Builder.create().build(),
+          AdvancedDateTimeFilter.Builder.create().build(),
+          AdvancedProcessInstanceStateFilter.Builder.create().build(),
+          AdvancedElementInstanceStateFilter.Builder.create().build(),
+          AdvancedDecisionInstanceStateFilter.Builder.create().build(),
+          AdvancedJobKindFilter.Builder.create().build(),
+          AdvancedJobListenerEventTypeFilter.Builder.create().build(),
+          AdvancedJobStateFilter.Builder.create().build());
 
   public static Either<List<String>, ProcessDefinitionStatisticsFilter>
       toProcessDefinitionStatisticsFilter(
@@ -645,6 +672,10 @@ public class SearchQueryFilterMapper {
     if (filter.equals(SearchQueryRequestMapper.EMPTY_PROCESS_INSTANCE_FILTER)) {
       return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
     }
+    final var emptyPropertyViolations = emptyFilterPropertyViolations(filter);
+    if (!emptyPropertyViolations.isEmpty()) {
+      return Either.left(emptyPropertyViolations);
+    }
     return toProcessInstanceFilter(filter);
   }
 
@@ -655,6 +686,10 @@ public class SearchQueryFilterMapper {
     }
     if (filter.equals(SearchQueryRequestMapper.EMPTY_DECISION_INSTANCE_FILTER)) {
       return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
+    }
+    final var emptyPropertyViolations = emptyFilterPropertyViolations(filter);
+    if (!emptyPropertyViolations.isEmpty()) {
+      return Either.left(emptyPropertyViolations);
     }
     return toDecisionInstanceFilter(filter);
   }
@@ -667,7 +702,49 @@ public class SearchQueryFilterMapper {
     if (filter.equals(SearchQueryRequestMapper.EMPTY_JOB_FILTER)) {
       return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
     }
+    final var emptyPropertyViolations = emptyFilterPropertyViolations(filter);
+    if (!emptyPropertyViolations.isEmpty()) {
+      return Either.left(emptyPropertyViolations);
+    }
     return toJobFilter(filter);
+  }
+
+  /**
+   * One violation per property of the filter that is an empty filter object, such as {@code {"$in":
+   * []}}. The mapping drops these, which would widen a batch operation to everything the remaining
+   * criteria match. The model cannot tell an explicit empty {@code $in} from an absent one, so the
+   * empty object is what we reject.
+   */
+  private static List<String> emptyFilterPropertyViolations(final Object filter) {
+    return Arrays.stream(propertyDescriptors(filter.getClass()))
+        .filter(property -> isEmptyFilterObject(readProperty(property, filter)))
+        .map(property -> ERROR_MESSAGE_EMPTY_FILTER_PROPERTY.formatted(property.getName()))
+        .toList();
+  }
+
+  private static boolean isEmptyFilterObject(final @Nullable Object value) {
+    return value != null && EMPTY_FILTER_PROPERTIES.contains(value);
+  }
+
+  private static PropertyDescriptor[] propertyDescriptors(final Class<?> type) {
+    try {
+      return Introspector.getBeanInfo(type, Object.class).getPropertyDescriptors();
+    } catch (final IntrospectionException e) {
+      throw new IllegalStateException("Failed to introspect " + type.getName(), e);
+    }
+  }
+
+  private static @Nullable Object readProperty(
+      final PropertyDescriptor property, final Object filter) {
+    final var getter = property.getReadMethod();
+    if (getter == null) {
+      return null;
+    }
+    try {
+      return getter.invoke(filter);
+    } catch (final ReflectiveOperationException e) {
+      throw new IllegalStateException("Failed to read filter property " + property.getName(), e);
+    }
   }
 
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
