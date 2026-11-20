@@ -603,9 +603,6 @@ jobs:
         env:
           INSTALL_TARGET: ${{ inputs.stable-vms && 'install-stable' || 'install' }}
           CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
-          RESOLVED_IMAGE_REGISTRY: ${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}
-          CAMUNDA_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/camunda' || 'team-zeebe/camunda' }}
-          OPTIMIZE_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/optimize' || 'team-zeebe/optimize' }}
           METRICS_EXPORTER_BUILT: ${{ needs.build-metrics-exporter-image.result == 'success' }}
         run: |-
           .github/scripts/load-test-install-camunda-platform.sh \
@@ -613,9 +610,6 @@ jobs:
             "${INSTALL_TARGET}" \
             "${CALCULATED_IMAGE_TAG}" \
             "${IMAGE_REPOSITORY}" \
-            "${RESOLVED_IMAGE_REGISTRY}" \
-            "${CAMUNDA_REPO}" \
-            "${OPTIMIZE_REPO}" \
             "${PERFORM_READ_BENCHMARKS}" \
             "${ENABLE_OPTIMIZE}" \
             "${ENABLE_OPTIMIZE_METRICS}" \

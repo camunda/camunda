@@ -9,17 +9,13 @@
 # metrics-exporter image was built this run).
 #
 # Usage: load-test-install-camunda-platform.sh <namespace> <install-target> <image-tag> \
-#          <image-repository> <image-registry> <camunda-repo> <optimize-repo> \
-#          <perform-read-benchmarks> <enable-optimize> <enable-optimize-metrics> \
+#          <image-repository> <perform-read-benchmarks> <enable-optimize> <enable-optimize-metrics> \
 #          <metrics-exporter-built> <enable-chaos> <physical-tenant-count> [OPTIONS]
 #
 #   namespace                  Load-test namespace (also the setup folder name)
 #   install-target             Make target to run (install or install-stable)
 #   image-tag                  Calculated image tag for platform/starter/worker images
 #   image-repository           Repository for the load-tester (starter/worker) images
-#   image-registry             Registry for the orchestration/optimize images
-#   camunda-repo               Repository for the orchestration image
-#   optimize-repo              Repository for the optimize image (custom build path)
 #   perform-read-benchmarks    Run continuous read benchmarks (true/false)
 #   enable-optimize            Whether Optimize is part of this deployment (true/false)
 #   enable-optimize-metrics    Enable the load-tester Optimize report-evaluation meter (true/false)
@@ -29,7 +25,8 @@
 #
 # Options (all optional, empty by default):
 #   --optimize-tag TAG            Explicit Optimize image tag (empty to use the built image)
-#   --orchestration-tag TAG       Docker Hub orchestration tag (empty when using a custom build)
+#   --orchestration-tag TAG       Docker Hub orchestration tag; when set, the orchestration and optimize
+#                                 images come from Docker Hub, otherwise from the internal registry
 #   --identity-tag TAG            Explicit Identity image tag
 #   --connectors-tag TAG          Explicit Connectors image tag
 #   --load-test-load VALUE        Extra --set args for the load-tester Helm chart
@@ -43,16 +40,13 @@ namespace="$1"
 install_target="$2"
 image_tag="$3"
 image_repository="$4"
-image_registry="$5"
-camunda_repo="$6"
-optimize_repo="$7"
-perform_read_benchmarks="$8"
-enable_optimize="$9"
-enable_optimize_metrics="${10}"
-metrics_exporter_built="${11}"
-enable_chaos="${12}"
-physical_tenant_count="${13}"
-shift 13
+perform_read_benchmarks="$5"
+enable_optimize="$6"
+enable_optimize_metrics="$7"
+metrics_exporter_built="$8"
+enable_chaos="$9"
+physical_tenant_count="${10}"
+shift 10
 
 optimize_tag=""
 orchestration_tag=""
@@ -103,7 +97,15 @@ fi
 load_test_config="$load_test_config ${load_test_load}"
 
 # Resolve image registry/repository: Docker Hub when orchestration-tag is set, internal registry otherwise
-# optimize_repo is only consumed in the custom build path where orchestration-tag is empty
+if [[ -n "${orchestration_tag}" ]]; then
+  image_registry="docker.io"
+  camunda_repo="camunda/camunda"
+  optimize_repo="camunda/optimize"
+else
+  image_registry="registry.camunda.cloud"
+  camunda_repo="team-zeebe/camunda"
+  optimize_repo="team-zeebe/optimize"
+fi
 
 # Build platform configuration
 additional_platform_config="--set orchestration.image.registry=${image_registry} \
