@@ -10,6 +10,7 @@ package io.camunda.authentication.filters;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
@@ -45,7 +46,7 @@ class AdminUserCheckFilterTest {
     securityConfig.getAuthentication().setUnprotectedApi(false);
     when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(roleServices);
-    when(roleServices.hasMembersOfType(any(), any())).thenReturn(false);
+    when(roleServices.hasMembers(any())).thenReturn(false);
     when(request.getContextPath()).thenReturn("localhost:8080");
     final AdminUserCheckFilter adminUserCheckFilter =
         new AdminUserCheckFilter(securityConfig, roleServices);
@@ -77,13 +78,56 @@ class AdminUserCheckFilterTest {
   }
 
   @Test
+  void shouldNotRedirectIfOnlyAdminGroupIsConfigured() throws ServletException, IOException {
+    // given
+    final var securityConfig = new SecurityConfiguration();
+    securityConfig.getAuthentication().setUnprotectedApi(false);
+    securityConfig
+        .getInitialization()
+        .getDefaultRoles()
+        .put("admin", Map.of("groups", Set.of("admins"), "users", Set.of()));
+    final AdminUserCheckFilter adminUserCheckFilter =
+        new AdminUserCheckFilter(securityConfig, roleServices);
+
+    // when
+    adminUserCheckFilter.doFilterInternal(request, response, filterChain);
+
+    // then
+    verify(filterChain).doFilter(request, response);
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldRedirectIfConfiguredAdminRoleHasNoMembers() throws ServletException, IOException {
+    // given
+    final var securityConfig = new SecurityConfiguration();
+    securityConfig.getAuthentication().setUnprotectedApi(false);
+    securityConfig
+        .getInitialization()
+        .getDefaultRoles()
+        .put("admin", Map.of("users", Set.of(), "groups", Set.of()));
+    when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(roleServices);
+    when(roleServices.hasMembers(any())).thenReturn(false);
+    when(request.getContextPath()).thenReturn("localhost:8080");
+    final AdminUserCheckFilter adminUserCheckFilter =
+        new AdminUserCheckFilter(securityConfig, roleServices);
+
+    // when
+    adminUserCheckFilter.doFilterInternal(request, response, filterChain);
+
+    // then
+    verify(response).sendRedirect("localhost:8080/identity/setup");
+  }
+
+  @Test
   void shouldNotRedirectIfAdminUserExists() throws ServletException, IOException {
     // given
     final var securityConfig = new SecurityConfiguration();
     securityConfig.getAuthentication().setUnprotectedApi(false);
     when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(roleServices);
-    when(roleServices.hasMembersOfType(any(), any())).thenReturn(true);
+    when(roleServices.hasMembers(any())).thenReturn(true);
     final AdminUserCheckFilter adminUserCheckFilter =
         new AdminUserCheckFilter(securityConfig, roleServices);
 

@@ -22,7 +22,6 @@ import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -67,7 +66,7 @@ public class SetupController {
 
     if (roleServices
         .withAuthentication(authenticationProvider.getAnonymousCamundaAuthentication())
-        .hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER)) {
+        .hasMembers(DefaultRole.ADMIN.getId())) {
       final var exception = new ServiceException(ADMIN_EXISTS_ERROR_MESSAGE, Status.FORBIDDEN);
       return RestErrorMapper.mapProblemToCompletedResponse(
           RestErrorMapper.mapErrorToProblem(exception));

@@ -11,14 +11,12 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -55,12 +53,13 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
     }
 
     final var hasConfiguredAdminUser =
-        !securityConfig
+        securityConfig
             .getInitialization()
             .getDefaultRoles()
             .getOrDefault(ADMIN_ROLE_ID, Map.of())
-            .getOrDefault(USER_MEMBERS, Set.of())
-            .isEmpty();
+            .values()
+            .stream()
+            .anyMatch(members -> !members.isEmpty());
 
     if (hasConfiguredAdminUser) {
       filterChain.doFilter(request, response);
@@ -70,7 +69,7 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
     try {
       if (!roleServices
           .withAuthentication(CamundaAuthentication.anonymous())
-          .hasMembersOfType(ADMIN_ROLE_ID, EntityType.USER)) {
+          .hasMembers(ADMIN_ROLE_ID)) {
         LOG.debug("No user with admin role exists. Redirecting to identity setup page.");
         final var redirectUrl = String.format("%s%s", request.getContextPath(), REDIRECT_PATH);
         response.sendRedirect(redirectUrl);

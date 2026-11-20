@@ -81,6 +81,12 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
     return members.total() > 0;
   }
 
+  public boolean hasMembers(final String roleId) {
+    final var query =
+        RoleQuery.of(builder -> builder.filter(filter -> filter.joinParentId(roleId)));
+    return searchMembers(query).total() > 0;
+  }
+
   public List<RoleEntity> getRolesByMemberTypeAndMemberIds(
       final Map<EntityType, Set<String>> memberTypesToMemberIds) {
     return search(
