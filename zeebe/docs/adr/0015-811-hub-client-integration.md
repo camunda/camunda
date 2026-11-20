@@ -52,31 +52,39 @@ partition 1 is open by then.
 `onBecomingLeader` future always completes successfully, because a failed listener future fails
 the leader transition of the partition.
 
-**D2. The receiver reads the policy state through a `PolicyStateReader` of the partition.**
-- `PolicyStateReader` is a small broker class with one method, `getPolicyState()`. It returns the
-policy version, the Hub sequence and the status of the last update.
-- Each `ZeebePartition` creates one next to its `ZeebePartitionAdminAccess`, with the same
-`PartitionAdminControl`. A read runs on the partition's actor and takes the `ZeebeDb` that is open at
-that moment, as `ZeebePartitionAdminAccess.readMigrationStatus()` does. The reader is not part of
-the operator API of `PartitionAdminAccess`.
-- The startup step of D1 gives the receiver a lookup through its constructor. At call time, the
-lookup finds partition 1 in the partition manager of the physical tenant and returns its reader,
-as `BrokerAdminServiceImpl` finds the admin access of a partition. The receiver is created before
-partition 1 exists, and the `ZeebeDb` is opened again on every leader transition, so neither can
-be passed in directly.
-- The `PartitionListener` interface does not change.
-- A read shows the state after the last processed command. It is used to read start values and to
-wait for `COMMITTED`, never to decide something that must be exact. Those decisions are made by
-the engine while it processes a command (D4).
-- While an update is `APPLYING`, the receiver reads the state every few seconds until the update is
-`COMMITTED`, and only then polls Hub again.
+**D2. The engine publishes the policy state of partition 1 through the gossip, and the receiver
+reacts to it.**
+- RocksDB is the engine's internal command state, not a read model. No component outside the stream
+processor reads it for this feature.
+- The engine gets a `PolicyStateNotifier` interface, built like `ProbeNotifier`. The broker
+implements it as `GossipPolicyStateNotifier`, and `ZeebePartitionFactory` passes it to the engine.
+- On partition 1, the policy processors publish the new state (committed policy, Hub sequence,
+status of the open update) after a command changed it. The state is read while the command is
+processed, and published in a side effect, so only after the commit and only on the leader:
+- `APPEND_CHUNK`, after the chunk is buffered (`PENDING` or `APPLYING`) or the update failed;
+- `COMMIT_VERSION`, after the version is committed.
+- A side effect does not run during replay. So a lifecycle listener publishes the state once
+partition 1 has recovered as the new leader, and withdraws it when the stream processor closes or
+fails.
+- `GossipPolicyStateNotifier` writes the state as a small JSON value into a property of the local
+member, `policyState:<physicalTenantId>`, as `TopologyManagerImpl` publishes the partition roles.
+SWIM detects the change on its next gossip round (250 ms by default), posts `METADATA_CHANGED`
+to the local listeners, and spreads it to the other members.
+- The receiver registers as a `ClusterMembershipEventListener`. It runs on the leader of partition
+1 (D1), so it reads the property of the local member: once on start, and again on every
+`METADATA_CHANGED` event of the local member. The events of other members are ignored.
+- The gossiped state can be behind the log. It is used to read start values and to wait for
+`COMMITTED`, never to decide something that must be exact. Those decisions are made by the engine
+while it processes a command (D4).
+- While an update is open, the receiver waits for the next change of the gossiped state, and polls
+Hub again only once the update is `COMMITTED`.
 
 **D3. The `PolicyInPort` sends the chunks with the `BrokerClient`, one at a time.**
 - The request's `partitionGroup` is the physical tenant, so the command reaches partition 1 of that
 tenant.
 - The receiver waits for the response to each chunk before it sends the next one. The engine sends
 a response only after it has processed the command and committed the state. So after the
-response to the last chunk, the `PolicyStateReader` already shows `APPLYING`.
+response to the last chunk, the published state is `APPLYING` or newer.
 - Backpressure, a missing partition leader and a timeout are retried. They say nothing about the
 update itself.
 - A chunk sent again for the same `updateId` and index is accepted, not rejected. After a timeout
@@ -121,20 +129,25 @@ public API.
 
 ## Alternatives considered
 
-- **Gossip of the policy state between brokers.** Eventually consistent, and sent to every node.
-  Only the leader of partition 1 needs the state, and that node can read it locally.
+- **A `PolicyStateReader` of the partition.** Reads RocksDB on the partition's actor from outside
+  the stream processor, through the `PartitionAdminControl`. This treats the engine's command state
+  as a read model, which violates CQRS; it also needs a lookup of partition 1 and a read every few
+  seconds while an update is open.
+- **`ClusterEventService.broadcast` instead of a member property.** A fire-and-forget event: a
+  receiver that starts after the event never sees it, and nothing repeats it.
+- **The receiver selects the leader of partition 1 from the gossip of all members.** Needs the
+  partition roles and terms from `BrokerInfo` to ignore a stale value. The receiver already runs on
+  the leader (D1), so the local member's value is enough.
 - **A `BrokerAdminRequest` to read the policy state.** A network request to a partition on the same
   node. It only helps if the receiver runs on another node. `BrokerAdminRequest` also lives in
   `zeebe/gateway`, so the broker would need a dependency on the gateway. It can still be useful
   later for debugging.
-- **The `QueryService` passed to `onBecomingLeader`.** It is deprecated for removal, and its Javadoc
-  limits it to the broker's temporary query API.
-- **A new read interface built like `StateQueryService`.** The same approach as the deprecated
-  `QueryService` under a new name, so it solves no architectural problem.
-- **A `getPolicyState()` method on `PartitionAdminAccess`.** Uses the same reading mechanism as D2,
-  but puts a product feature into the operator API (pause, snapshot, ban instance).
-- **A new parameter for `onBecomingLeader`.** Changes the listener interface and all its
-  implementations, for one listener. The constructor lookup of D2 needs no interface change.
+- **The `QueryService` passed to `onBecomingLeader`.** It is deprecated for removal, its Javadoc
+  limits it to the broker's temporary query API, and it reads RocksDB from outside the stream
+  processor.
+- **A `getPolicyState()` method on `PartitionAdminAccess`.** Reads RocksDB like the
+  `PolicyStateReader`, and puts a product feature into the operator API (pause, snapshot, ban
+  instance).
 - **`TopologyPartitionListener` instead of `PartitionListener`.** Its leader updates come from
   gossip. They arrive later, and two nodes can briefly both believe they lead partition 1.
 - **A `PartitionTransitionStep` instead of a listener.** Gets the full transition context, including
@@ -142,8 +155,9 @@ public API.
   the leader transition.
 - **Read the state with an `ABORT` or a status command.** A command is an intent to change state,
   not a query. The `ABORT` of D4 stays a real abort and is not used to read the start values.
-- **Notify the receiver from a processor side effect to read the start state.** Side effects follow
-  processed commands, so they cannot provide the state when the receiver starts.
+- **Notify the receiver from a processor side effect only.** Side effects follow processed
+  commands, so they cannot provide the state when the receiver starts. D2 adds the publication
+  once partition 1 has recovered, and keeps the last value in the member property.
 - **The Hub client inside the engine, in the stream processor of partition 1.** Gives exact state
   access, but puts the network calls to Hub and the Hub client dependency into the engine.
 - **Report results from a processor side effect only.** Reaches Hub at once, but is lost on a
@@ -161,25 +175,23 @@ public API.
 ## Consequences
 
 - The Hub client starts and stops with the leadership of partition 1, with no own leader election.
-- The engine keeps no REST client, and its processors do not change for the Hub connection.
+- The engine keeps no REST client. Its policy processors publish the state through an interface,
+  and know nothing about the gossip or Hub.
 - All communication with Hub stays in the receiver.
 - Hub can receive the same report more than once, and must ignore repeats.
 - After a failover, a failed update is validated a second time before Hub learns the reason.
-- Waiting for `COMMITTED` costs a read on the actor of partition 1 every few seconds.
-- `ZeebePartition` gets one more small component, the `PolicyStateReader`, next to its admin access.
+- No component outside the stream processor reads the engine's RocksDB state for this feature.
+- Every member gossips one more small property per physical tenant while it leads partition 1. The
+  value is not durable; the engine publishes it again after a restart or a leader change.
+- The receiver learns a commit within about one gossip round (250 ms by default), without polling
+  the partition.
 
 ## Open questions
 
-- **Where the components live and who creates them.** Options:
-  - All in `zeebe/broker`. The broker gets the Hub client dependency and its configuration.
-  - A Spring module builds the receiver with the Hub client, URL and credentials from the Spring
-    configuration, and gives the broker a factory per physical tenant through the
-    `SpringBrokerBridge` (precedent: `getSchemaInitializer(physicalTenantId)`). The broker controls
-    the lifecycle.
-  - Outside the broker, for example in the gateway. It watches the topology to run where partition
-    1 leads, and reads the state with a `BrokerAdminRequest`. It repeats what the
-    `PartitionListener` gives for free.
-- **Where the Hub URL and credentials are configured.** Depends on the previous question.
+- **Where the Hub URL and credentials are configured.** The receiver lives in `zeebe/broker`. A
+  Spring module gives the broker a `HubClient` factory per physical tenant through the
+  `SpringBrokerBridge` (precedent: `getSchemaInitializer(physicalTenantId)`), so the configuration
+  stays in Spring.
 - **Hub API.** Whether Hub ignores repeated reports, and whether the poll request can carry the
   last applied sequence, so that a success needs no separate call.
 - **Failures while applying.** A failure in the `APPLYING` phase is out of scope. The update then
