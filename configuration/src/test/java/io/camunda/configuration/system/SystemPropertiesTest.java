@@ -36,6 +36,102 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class SystemPropertiesTest {
 
   @Nested
+  class WithDefaultPartitionCount {
+    @Test
+    void shouldSizeSchedulerThreads(@Autowired final BrokerBasedProperties brokerCfg) {
+      // given no thread counts and no partition count are configured
+      // when the broker configuration is bound
+      final var threads = brokerCfg.getThreads();
+
+      // then both scheduler thread counts follow the default partition count of 1
+      assertThat(threads.getCpuThreadCount()).isEqualTo(1);
+      assertThat(threads.getIoThreadCount()).isEqualTo(1);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = "camunda.cluster.partition-count=3")
+  class WithUnifiedPartitionCount {
+    @Test
+    void shouldSizeSchedulerThreads(@Autowired final BrokerBasedProperties brokerCfg) {
+      // given camunda.cluster.partition-count is 3 and no thread counts are set (see
+      // @TestPropertySource)
+      // when the broker configuration is bound
+      final var threads = brokerCfg.getThreads();
+
+      // then both scheduler thread counts equal the partition count
+      assertThat(threads.getCpuThreadCount()).isEqualTo(3);
+      assertThat(threads.getIoThreadCount()).isEqualTo(3);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = "zeebe.broker.cluster.partitionsCount=5")
+  class WithLegacyPartitionCount {
+    @Test
+    void shouldSizeSchedulerThreads(@Autowired final BrokerBasedProperties brokerCfg) {
+      // given zeebe.broker.cluster.partitionsCount is 5 and no thread counts are set (see
+      // @TestPropertySource)
+      // when the broker configuration is bound
+      final var threads = brokerCfg.getThreads();
+
+      // then both scheduler thread counts equal the legacy partition count
+      assertThat(threads.getCpuThreadCount()).isEqualTo(5);
+      assertThat(threads.getIoThreadCount()).isEqualTo(5);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {"camunda.cluster.partition-count=4", "camunda.system.cpu-thread-count=2"})
+  class WithCpuOverride {
+    @Test
+    void shouldSizeSchedulerThreads(@Autowired final BrokerBasedProperties brokerCfg) {
+      // given partition-count is 4 and only cpu-thread-count is set to 2 (see
+      // @TestPropertySource)
+      // when the broker configuration is bound
+      final var threads = brokerCfg.getThreads();
+
+      // then the configured CPU count is kept and IO follows the partition count
+      assertThat(threads.getCpuThreadCount()).isEqualTo(2);
+      assertThat(threads.getIoThreadCount()).isEqualTo(4);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {"camunda.cluster.partition-count=4", "camunda.system.io-thread-count=2"})
+  class WithIoOverride {
+    @Test
+    void shouldSizeSchedulerThreads(@Autowired final BrokerBasedProperties brokerCfg) {
+      // given partition-count is 4 and only io-thread-count is set to 2 (see @TestPropertySource)
+      // when the broker configuration is bound
+      final var threads = brokerCfg.getThreads();
+
+      // then the configured IO count is kept and CPU follows the partition count
+      assertThat(threads.getCpuThreadCount()).isEqualTo(4);
+      assertThat(threads.getIoThreadCount()).isEqualTo(2);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {"camunda.cluster.partition-count=3", "zeebe.broker.threads.cpuThreadCount=6"})
+  class WithLegacyCpuOverride {
+    @Test
+    void shouldSizeSchedulerThreads(@Autowired final BrokerBasedProperties brokerCfg) {
+      // given partition-count is 3 and only the legacy cpuThreadCount is 6 (see
+      // @TestPropertySource)
+      // when the broker configuration is bound
+      final var threads = brokerCfg.getThreads();
+
+      // then the legacy CPU count is kept and IO follows the partition count
+      assertThat(threads.getCpuThreadCount()).isEqualTo(6);
+      assertThat(threads.getIoThreadCount()).isEqualTo(3);
+    }
+  }
+
+  @Nested
   @TestPropertySource(
       properties = {
         "camunda.system.cpu-thread-count=4",

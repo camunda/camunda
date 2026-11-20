@@ -807,8 +807,11 @@ public class BrokerBasedPropertiesOverride {
     final var system = camunda.getSystem();
 
     final var threadsCfg = new ThreadsCfg();
-    threadsCfg.setCpuThreadCount(system.getCpuThreadCount());
-    threadsCfg.setIoThreadCount(system.getIoThreadCount());
+    final var partitionCount = camunda.getCluster().getPartitionCount();
+    final var cpu = system.getCpuThreadCount();
+    final var io = system.getIoThreadCount();
+    threadsCfg.setCpuThreadCount(cpu == null ? partitionCount : cpu);
+    threadsCfg.setIoThreadCount(io == null ? partitionCount : io);
     override.setThreads(threadsCfg);
 
     final var enableVersionCheck = system.getUpgrade().getEnableVersionCheck();

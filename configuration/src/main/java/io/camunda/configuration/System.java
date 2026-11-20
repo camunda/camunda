@@ -26,18 +26,17 @@ public class System {
       Set.of("zeebe.clock.controlled");
 
   /**
-   * Controls the number of non-blocking CPU threads to be used. WARNING: You should never specify a
-   * value that is larger than the number of physical cores available. Good practice is to leave 1-2
-   * cores for IO threads and the operating system (it has to run somewhere). For example, when
-   * running Zeebe on a machine which has 4 cores, a good value would be 2.
+   * Number of CPU threads. Unless overridden, one CPU thread is used per partition configured by
+   * camunda.cluster.partition-count (legacy zeebe.broker.cluster.partitionsCount). Keep the CPU
+   * thread count within the number of available physical cores.
    */
-  private int cpuThreadCount = 2;
+  private Integer cpuThreadCount;
 
   /**
-   * Controls the number of io threads to be used. These threads are used for workloads that write
-   * data to disk. While writing, these threads are blocked which means that they yield the CPU.
+   * Number of IO threads. Unless overridden, one IO thread is used per partition configured by
+   * camunda.cluster.partition-count (legacy zeebe.broker.cluster.partitionsCount).
    */
-  private int ioThreadCount = 2;
+  private Integer ioThreadCount;
 
   /**
    * Controls whether the system clock or mutable one. When enabled, time progression can be
@@ -50,7 +49,7 @@ public class System {
   @NestedConfigurationProperty private Restore restore = new Restore();
   @NestedConfigurationProperty private LegacyQueryApi legacyQueryApi = new LegacyQueryApi();
 
-  public int getCpuThreadCount() {
+  public Integer getCpuThreadCount() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".cpu-thread-count",
         cpuThreadCount,
@@ -59,11 +58,11 @@ public class System {
         LEGACY_CPU_THREAD_COUNT_PROPERTIES);
   }
 
-  public void setCpuThreadCount(final int cpuThreadCount) {
+  public void setCpuThreadCount(final Integer cpuThreadCount) {
     this.cpuThreadCount = cpuThreadCount;
   }
 
-  public int getIoThreadCount() {
+  public Integer getIoThreadCount() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".io-thread-count",
         ioThreadCount,
@@ -72,7 +71,7 @@ public class System {
         LEGACY_IO_THREAD_COUNT_PROPERTIES);
   }
 
-  public void setIoThreadCount(final int ioThreadCount) {
+  public void setIoThreadCount(final Integer ioThreadCount) {
     this.ioThreadCount = ioThreadCount;
   }
 
