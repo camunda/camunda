@@ -18,7 +18,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -58,6 +60,7 @@ class ProcessDefinitionSuspensionSuspendProcessorTest {
   private ProcessingState processingState;
   private Writers writers;
   private CslAuthorizationCheck cslCheck;
+  private CslTenantCheck tenantCheck;
   private KeyGenerator keyGenerator;
 
   @BeforeEach
@@ -77,6 +80,10 @@ class ProcessDefinitionSuspensionSuspendProcessorTest {
             any(), any(), any(), any(), any(), anyString(), any()))
         .thenAnswer(invocation -> Either.right(invocation.getArgument(2)));
 
+    tenantCheck = mock(CslTenantCheck.class);
+    when(tenantCheck.resolveAuthorizedTenants(any()))
+        .thenReturn(TenantAccess.allowed(List.of(TENANT_ID)));
+
     keyGenerator = mock(KeyGenerator.class);
     final var nextKey = new AtomicLong(FIRST_KEY);
     when(keyGenerator.nextKey()).thenAnswer(invocation -> nextKey.getAndIncrement());
@@ -90,7 +97,7 @@ class ProcessDefinitionSuspensionSuspendProcessorTest {
     when(processState.getKnownProcessVersions(PROCESS_ID, TENANT_ID)).thenReturn(List.of(1L, 2L));
     final var processor =
         new ProcessDefinitionSuspensionSuspendProcessor(
-            processingState, keyGenerator, writers, cslCheck);
+            processingState, keyGenerator, writers, cslCheck, tenantCheck);
     final var command =
         command(new ProcessDefinitionSuspensionRecord().setBpmnProcessId(PROCESS_ID));
 
@@ -123,7 +130,7 @@ class ProcessDefinitionSuspensionSuspendProcessorTest {
     deployedProcess(10L, 1);
     final var processor =
         new ProcessDefinitionSuspensionSuspendProcessor(
-            processingState, keyGenerator, writers, cslCheck);
+            processingState, keyGenerator, writers, cslCheck, tenantCheck);
 
     // when
     processor.processRecord(
@@ -147,6 +154,7 @@ class ProcessDefinitionSuspensionSuspendProcessorTest {
     when(process.getKey()).thenReturn(key);
     when(process.getVersion()).thenReturn(version);
     when(process.getBpmnProcessId()).thenReturn(BufferUtil.wrapString(PROCESS_ID));
+    when(process.getTenantId()).thenReturn(TENANT_ID);
     when(process.toProcessRecord())
         .thenAnswer(
             invocation ->

@@ -448,7 +448,7 @@ public final class EngineProcessors {
         processDefinitionMetrics,
         routingInfo);
     addProcessDefinitionSuspensionProcessors(
-        typedRecordProcessors, writers, processingState, cslCheck);
+        typedRecordProcessors, writers, processingState, cslCheck, tenantCheck);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -971,18 +971,19 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final MutableProcessingState processingState,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
     final var keyGenerator = processingState.getKeyGenerator();
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_DEFINITION_SUSPENSION,
         ProcessDefinitionSuspensionIntent.SUSPEND,
         new ProcessDefinitionSuspensionSuspendProcessor(
-            processingState, keyGenerator, writers, cslCheck));
+            processingState, keyGenerator, writers, cslCheck, tenantCheck));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_DEFINITION_SUSPENSION,
         ProcessDefinitionSuspensionIntent.RESUME,
         new ProcessDefinitionSuspensionResumeProcessor(
-            processingState, keyGenerator, writers, cslCheck));
+            processingState, keyGenerator, writers, cslCheck, tenantCheck));
   }
 
   private static void addResourceFetchProcessors(

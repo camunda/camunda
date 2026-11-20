@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionResolvedVersionValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -94,6 +95,27 @@ public class ProcessDefinitionSuspensionMultiTenancyTest {
   }
 
   @Test
+  public void shouldSuspendByKeyInAssignedTenantWithoutTenantId() {
+    // given
+    assignUserToTenant();
+
+    // when - like the REST API, a request by key carries no tenant
+    final var suspended =
+        ENGINE
+            .processDefinitionSuspension()
+            .withProcessDefinitionKey(process.getProcessDefinitionKey())
+            .withAuthorizedTenantIds(tenantId)
+            .suspend(username);
+
+    // then
+    assertThat(suspended.getIntent()).isEqualTo(ProcessDefinitionSuspensionIntent.SUSPENDED);
+    assertThat(suspended.getValue().getTenantId()).isEqualTo(tenantId);
+    assertThat(suspended.getValue().getResolvedVersions())
+        .extracting(ProcessDefinitionSuspensionResolvedVersionValue::getProcessDefinitionKey)
+        .containsExactly(process.getProcessDefinitionKey());
+  }
+
+  @Test
   public void shouldRejectBpmnProcessIdOfUnassignedTenantAsNotFound() {
     // when
     final var rejection =
@@ -119,7 +141,6 @@ public class ProcessDefinitionSuspensionMultiTenancyTest {
         ENGINE
             .processDefinitionSuspension()
             .withProcessDefinitionKey(process.getProcessDefinitionKey())
-            .withTenantId(tenantId)
             .expectRejection()
             .resume(username);
 

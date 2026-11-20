@@ -492,26 +492,6 @@ public class ProcessDefinitionSuspensionTest {
   }
 
   @Test
-  public void shouldRejectKeyOfOtherTenant() {
-    // given
-    final var processId = helper.getBpmnProcessId();
-    final var v1 = deploy(processModel(processId, "v1"));
-
-    // when
-    final var rejection =
-        engine
-            .processDefinitionSuspension()
-            .withProcessDefinitionKey(v1.getProcessDefinitionKey())
-            .withTenantId("other-tenant")
-            .withAuthorizedTenantIds("other-tenant")
-            .expectRejection()
-            .suspend();
-
-    // then
-    Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
-  }
-
-  @Test
   public void shouldRejectBpmnProcessIdOfOtherTenant() {
     // given
     final var processId = helper.getBpmnProcessId();

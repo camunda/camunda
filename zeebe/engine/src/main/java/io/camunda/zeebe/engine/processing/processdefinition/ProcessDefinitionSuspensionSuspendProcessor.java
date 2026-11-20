@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.util.Iterator;
 import java.util.List;
 import org.jspecify.annotations.NullMarked;
 
@@ -50,8 +52,9 @@ public final class ProcessDefinitionSuspensionSuspendProcessor
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CslAuthorizationCheck cslCheck) {
-    behavior = new ProcessDefinitionSuspensionBehavior(processingState, writers);
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
+    behavior = new ProcessDefinitionSuspensionBehavior(processingState, writers, tenantCheck);
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -68,7 +71,9 @@ public final class ProcessDefinitionSuspensionSuspendProcessor
 
     final var value = command.getValue();
     final long key = keyGenerator.nextKey();
-    for (final var process : resolved.get()) {
+    final var versions = resolved.get();
+    while (versions.hasNext()) {
+      final var process = versions.next();
       final var outcome = outcomeOf(process);
       value.addResolvedVersion(
           ProcessDefinitionSuspensionBehavior.resolvedVersion(process, outcome));
@@ -89,7 +94,7 @@ public final class ProcessDefinitionSuspensionSuspendProcessor
     return behavior.rejectIfTooLarge(command, error, VERB);
   }
 
-  private Either<Rejection, List<DeployedProcess>> resolveVersions(
+  private Either<Rejection, Iterator<DeployedProcess>> resolveVersions(
       final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
     return behavior
         .validateIdentifiers(command.getValue(), VERB)
@@ -104,12 +109,12 @@ public final class ProcessDefinitionSuspensionSuspendProcessor
    * The BPMN process ID to authorize against is only known after the lookup, so every failure is a
    * {@code NOT_FOUND}.
    */
-  private Either<Rejection, List<DeployedProcess>> resolveByKey(
+  private Either<Rejection, Iterator<DeployedProcess>> resolveByKey(
       final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
     final var value = command.getValue();
     final var notFound = ProcessDefinitionSuspensionBehavior.notFoundByKey(value, VERB);
     return behavior
-        .findByKey(value, VERB)
+        .findByKey(command, VERB)
         .flatMap(
             process ->
                 cslCheck.checkAuthorizationAndTenant(
@@ -119,14 +124,14 @@ public final class ProcessDefinitionSuspensionSuspendProcessor
                     process,
                     notFound,
                     rejection -> notFound,
-                    value.getTenantId(),
+                    process.getTenantId(),
                     notFound))
         .flatMap(process -> behavior.rejectIfDraining(process, VERB))
-        .map(List::of);
+        .map(process -> List.of(process).iterator());
   }
 
   /** The permission is checked before the lookup, so a caller without it learns nothing. */
-  private Either<Rejection, List<DeployedProcess>> resolveById(
+  private Either<Rejection, Iterator<DeployedProcess>> resolveById(
       final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
     final var value = command.getValue();
     return cslCheck
