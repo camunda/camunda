@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.hub.HubUpdateReceiver;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -75,6 +76,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
   private final ExporterRepository exporterRepository = mock(ExporterRepository.class);
   private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
+  private final Map<String, HubUpdateReceiver> hubUpdateReceivers = new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
@@ -306,6 +308,22 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public void removeJobStreamService(final String physicalTenantId) {
     jobStreamServices.remove(physicalTenantId);
+  }
+
+  @Override
+  public HubUpdateReceiver getHubUpdateReceiver(final String physicalTenantId) {
+    return hubUpdateReceivers.get(physicalTenantId);
+  }
+
+  @Override
+  public void addHubUpdateReceiver(
+      final String physicalTenantId, final HubUpdateReceiver receiver) {
+    hubUpdateReceivers.put(physicalTenantId, receiver);
+  }
+
+  @Override
+  public void removeHubUpdateReceiver(final String physicalTenantId) {
+    hubUpdateReceivers.remove(physicalTenantId);
   }
 
   @Override

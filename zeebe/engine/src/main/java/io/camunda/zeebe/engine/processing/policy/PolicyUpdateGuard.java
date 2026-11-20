@@ -18,8 +18,11 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Only the broker itself writes policy update commands, on the deployment partition, which
  * coordinates every policy update. The policy update processors therefore check no user
- * authorization, but reject a command that came from a client request or that was written to
- * another partition.
+ * authorization, but reject a command that was written to another partition.
+ *
+ * <p>The broker's Hub receiver sends {@code APPEND_CHUNK} through the command API, like a gateway
+ * sends any other command; no public API maps to it. Every other policy update command is written
+ * by the engine itself, so a client request for it is rejected.
  */
 @NullMarked
 final class PolicyUpdateGuard {
@@ -46,7 +49,8 @@ final class PolicyUpdateGuard {
                 .formatted(command.getValue().getUpdateId())));
   }
 
-  private static Optional<Rejection> checkOnDeploymentPartition(
+  /** Rejects a command that was written to another partition than the deployment partition. */
+  static Optional<Rejection> checkOnDeploymentPartition(
       final TypedRecord<PolicyUpdateRecord> command) {
     if (command.getPartitionId() == Protocol.DEPLOYMENT_PARTITION) {
       return Optional.empty();

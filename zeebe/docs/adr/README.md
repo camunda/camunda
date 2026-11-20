@@ -26,7 +26,8 @@ process-execution data path). These are module-scoped decisions; see the
 
 ### 8.11
 
-|                           ADR                           |                                                 Decision                                                 |
-|---------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| [0014](0014-811-hub-managed-identity-policy-updates.md) | Hub policy updates applied as versioned identity state on partition 1, committed by a distributed switch |
+|                           ADR                           |                                                 Decision                                                  |
+|---------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| [0014](0014-811-hub-managed-identity-policy-updates.md) | Hub policy updates applied as versioned identity state on partition 1, committed by a distributed switch  |
+| [0015](0015-811-hub-client-integration.md)              | Hub client runs in a receiver bound to partition 1's leadership, results reach Hub from command responses |
 
