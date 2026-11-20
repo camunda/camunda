@@ -120,7 +120,7 @@
   },
   "overrides": {
     "monaco-editor": {
-      "dompurify": "3.4.17"
+      "dompurify": "3.4.18"
     }
   },
   "packageManager": "npm@11.10.1"
