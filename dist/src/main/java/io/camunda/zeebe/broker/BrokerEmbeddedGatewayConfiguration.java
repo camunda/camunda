@@ -25,10 +25,11 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.agrona.CloseHelper;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -126,18 +127,10 @@ public class BrokerEmbeddedGatewayConfiguration {
   }
 
   /** Holds the gateway and its job stream client. Both are absent if the gateway is disabled. */
-  public static final class BrokerEmbeddedGateway implements CloseableSilently {
-    private final Gateway gateway;
-    private final JobStreamClient jobStreamClient;
-
-    BrokerEmbeddedGateway(final Gateway gateway, final JobStreamClient jobStreamClient) {
-      this.gateway = gateway;
-      this.jobStreamClient = jobStreamClient;
-    }
-
-    public Optional<JobStreamClient> jobStreamClient() {
-      return Optional.ofNullable(jobStreamClient);
-    }
+  @NullMarked
+  public record BrokerEmbeddedGateway(
+      @Nullable Gateway gateway, @Nullable JobStreamClient jobStreamClient)
+      implements CloseableSilently {
 
     @Override
     public void close() {
