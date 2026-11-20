@@ -78,6 +78,8 @@ public class RecordFixtures {
 
   protected static final ProtocolFactory FACTORY = new ProtocolFactory(System.nanoTime());
 
+  private static final long ONE_HOUR_MILLIS = 3_600_000L;
+
   protected static ImmutableRecord<RecordValue> getProcessInstanceStartedRecord(
       final long position) {
     return getProcessInstanceStartedRecord(position, 42L);
@@ -405,6 +407,58 @@ public class RecordFixtures {
                 .withElementInstanceKey(elementInstanceKey)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementInstancePath(List.of(List.of(processInstanceKey, elementInstanceKey)))
+                .build())
+        .build();
+  }
+
+  /**
+   * Returns the ELEMENT_MIGRATED record of the process instance or element in {@code
+   * activatingRecord}, one hour later and moved to the given target process definition.
+   */
+  protected static ImmutableRecord<RecordValue> getElementMigratedRecord(
+      final Long position,
+      final Record<RecordValue> activatingRecord,
+      final long targetProcessDefinitionKey,
+      final String targetBpmnProcessId,
+      final String targetElementId) {
+    final var value = (ProcessInstanceRecordValue) activatingRecord.getValue();
+    return ImmutableRecord.builder()
+        .from(activatingRecord)
+        .withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED)
+        .withPosition(position)
+        .withTimestamp(activatingRecord.getTimestamp() + ONE_HOUR_MILLIS)
+        .withValue(
+            ImmutableProcessInstanceRecordValue.builder()
+                .from(value)
+                .withProcessDefinitionKey(targetProcessDefinitionKey)
+                .withBpmnProcessId(targetBpmnProcessId)
+                .withElementId(targetElementId)
+                .withVersion(value.getVersion() + 1)
+                .build())
+        .build();
+  }
+
+  /**
+   * Returns the MIGRATED record of the incident in {@code createdRecord}, one hour later and moved
+   * to the given target process definition.
+   */
+  protected static ImmutableRecord<RecordValue> getIncidentMigratedRecord(
+      final Long position,
+      final Record<RecordValue> createdRecord,
+      final long targetProcessDefinitionKey,
+      final String targetBpmnProcessId,
+      final String targetElementId) {
+    return ImmutableRecord.builder()
+        .from(createdRecord)
+        .withIntent(IncidentIntent.MIGRATED)
+        .withPosition(position)
+        .withTimestamp(createdRecord.getTimestamp() + ONE_HOUR_MILLIS)
+        .withValue(
+            ImmutableIncidentRecordValue.builder()
+                .from((IncidentRecordValue) createdRecord.getValue())
+                .withProcessDefinitionKey(targetProcessDefinitionKey)
+                .withBpmnProcessId(targetBpmnProcessId)
+                .withElementId(targetElementId)
                 .build())
         .build();
   }

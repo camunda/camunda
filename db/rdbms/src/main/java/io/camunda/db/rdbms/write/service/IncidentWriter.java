@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.service;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.IncidentMapper;
+import io.camunda.db.rdbms.sql.IncidentMapper.MigrateIncidentDto;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel.Builder;
@@ -53,16 +54,19 @@ public class IncidentWriter {
                 vendorDatabaseProperties.charColumnMaxBytes())));
   }
 
-  public void update(final IncidentDbModel incident) {
+  /**
+   * Points the incident at its migration target. The item carries a dedicated DTO rather than an
+   * {@link IncidentDbModel}, so {@link #resolve} never merges its state into it, which the
+   * migration statement would not write.
+   */
+  public void migrate(final MigrateIncidentDto migration) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.INCIDENT,
             WriteStatementType.UPDATE,
-            incident.incidentKey(),
-            "io.camunda.db.rdbms.sql.IncidentMapper.update",
-            incident.truncateErrorMessage(
-                vendorDatabaseProperties.errorMessageSize(),
-                vendorDatabaseProperties.charColumnMaxBytes())));
+            migration.incidentKey(),
+            "io.camunda.db.rdbms.sql.IncidentMapper.migrate",
+            migration));
   }
 
   public void resolve(final Long incidentKey) {

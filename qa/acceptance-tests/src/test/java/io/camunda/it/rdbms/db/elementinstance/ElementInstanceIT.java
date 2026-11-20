@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db.elementinstance;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveElementInstance;
 import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveRandomElementInstances;
@@ -16,10 +17,13 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
+import io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.FlowNodeInstanceQuery;
@@ -299,5 +303,97 @@ public class ElementInstanceIT {
     assertThat(searchResult.items()).hasSize(2);
     assertThat(searchResult.items().stream().map(FlowNodeInstanceEntity::flowNodeInstanceKey))
         .containsExactlyInAnyOrder(item1.flowNodeInstanceKey(), item3.flowNodeInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldKeepCompletionWhenStoredElementIsMigratedAndCompletedInTheSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given - a stored active element
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+    final var element =
+        createAndSaveElementInstance(rdbmsWriter, b -> b.state(FlowNodeState.ACTIVE).endDate(null));
+    final long targetProcessDefinitionKey = nextKey();
+    final var endDate = OffsetDateTime.now();
+
+    // when - it is migrated and then completed before the next flush
+    rdbmsWriter
+        .getFlowNodeInstanceWriter()
+        .migrate(migratedTo(element, targetProcessDefinitionKey));
+    rdbmsWriter
+        .getFlowNodeInstanceWriter()
+        .finish(element.flowNodeInstanceKey(), FlowNodeState.COMPLETED, endDate);
+    rdbmsWriter.flush();
+
+    // then - both the migration and the completion are stored
+    final var actual = reader.findOne(element.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.processDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+    assertThat(actual.state()).isEqualTo(FlowNodeState.COMPLETED);
+    assertThat(actual.endDate())
+        .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldKeepCompletionWhenElementIsActivatedMigratedAndCompletedInTheSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given - an element activated in this flush, so its insert is still queued
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+    final var element =
+        ElementInstanceFixtures.createRandomized(b -> b.state(FlowNodeState.ACTIVE).endDate(null));
+    final long targetProcessDefinitionKey = nextKey();
+    final var endDate = OffsetDateTime.now();
+
+    // when - it is activated, migrated and completed before the next flush
+    rdbmsWriter.getFlowNodeInstanceWriter().create(element);
+    rdbmsWriter
+        .getFlowNodeInstanceWriter()
+        .migrate(migratedTo(element, targetProcessDefinitionKey));
+    rdbmsWriter
+        .getFlowNodeInstanceWriter()
+        .finish(element.flowNodeInstanceKey(), FlowNodeState.COMPLETED, endDate);
+    rdbmsWriter.flush();
+
+    // then - both the migration and the completion are stored
+    final var actual = reader.findOne(element.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.processDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+    assertThat(actual.state()).isEqualTo(FlowNodeState.COMPLETED);
+    assertThat(actual.endDate())
+        .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldKeepIncidentResolutionWhenStoredElementIsMigratedInTheSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given - a stored element with an incident
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+    final var element = createAndSaveElementInstance(rdbmsWriter, b -> b.incidentKey(null));
+    rdbmsWriter.getFlowNodeInstanceWriter().createIncident(element.flowNodeInstanceKey(), 42L);
+    rdbmsWriter.flush();
+    final long targetProcessDefinitionKey = nextKey();
+
+    // when - it is migrated and its incident is resolved before the next flush
+    rdbmsWriter
+        .getFlowNodeInstanceWriter()
+        .migrate(migratedTo(element, targetProcessDefinitionKey));
+    rdbmsWriter.getFlowNodeInstanceWriter().resolveIncident(element.flowNodeInstanceKey());
+    rdbmsWriter.flush();
+
+    // then - both the migration and the resolution are stored
+    final var actual = reader.findOne(element.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.processDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+    assertThat(actual.hasIncident()).isFalse();
+    assertThat(actual.incidentKey()).isNull();
+  }
+
+  /** The element as an ELEMENT_MIGRATED record maps it: pointing at another process definition. */
+  private static FlowNodeInstanceDbModel migratedTo(
+      final FlowNodeInstanceDbModel element, final long processDefinitionKey) {
+    return element.copy(
+        b -> ((FlowNodeInstanceDbModelBuilder) b).processDefinitionKey(processDefinitionKey));
   }
 }

@@ -71,7 +71,12 @@ public class ProcessInstanceExportHandler
       historyCleanupService.scheduleProcessForHistoryCleanup(
           value.getProcessInstanceKey(), endDate);
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_MIGRATED)) {
-      processInstanceWriter.update(map(record));
+      processInstanceWriter.migrate(
+          value.getProcessInstanceKey(),
+          value.getBpmnProcessId(),
+          value.getProcessDefinitionKey(),
+          value.getVersion(),
+          createTreePath(record).toString());
     }
   }
 
