@@ -15,6 +15,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -253,7 +254,8 @@ final class JsonSerializableToJsonTest {
                   .requestChannelType(ChannelType.MCP)
                   .requestToolName("myTool")
                   .operationReference(1234)
-                  .batchOperationReference(5678);
+                  .batchOperationReference(5678)
+                  .internalOperation(InternalOperationReference.policyUpdate(9012));
 
               final String resourceName = "resource";
               final DirectBuffer resource = wrapString("contents");
@@ -308,6 +310,8 @@ final class JsonSerializableToJsonTest {
                   "recordVersion": 10,
                   "operationReference": 1234,
                   "batchOperationReference": 5678,
+                  "internalOperationReference": 9012,
+                  "internalOperationType": 2,
                   "sourceRecordPosition": 231,
                   "value": {
                     "processesMetadata": [
@@ -378,6 +382,8 @@ final class JsonSerializableToJsonTest {
                   "recordVersion": 1,
                   "operationReference": -1,
                   "batchOperationReference": -1,
+                  "internalOperationReference": -1,
+                  "internalOperationType": 0,
                   "value": {
                       "resources": [],
                       "decisionRequirementsMetadata": [],

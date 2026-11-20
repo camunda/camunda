@@ -93,6 +93,8 @@ final class BulkIndexRequestTest {
     recordAsMap.remove("agent");
     recordAsMap.remove("requestChannelType");
     recordAsMap.remove("requestToolName");
+    recordAsMap.remove("internalOperationReference");
+    recordAsMap.remove("internalOperationType");
     // storageOrdinal is stripped from record values during serialization;
     // it can appear at any nesting level (e.g. embedded job records), so remove it recursively
     removeStrippedKeys(recordAsMap);
@@ -280,6 +282,15 @@ final class BulkIndexRequestTest {
           .extracting(source -> source.get("requestToolName"))
           .describedAs("Expect that the records are NOT serialized with requestToolName")
           .containsExactly(new Object[] {null});
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .allSatisfy(
+              source ->
+                  assertThat(source)
+                      .describedAs(
+                          "Expect that the records are NOT serialized with the internal operation")
+                      .doesNotContainKeys("internalOperationReference", "internalOperationType"));
     }
 
     @Test
