@@ -240,7 +240,9 @@ class MigratingWebSessionAttributeConverterTest {
   @Test
   void shouldRoundTripOidcLoginSession() throws Exception {
     // given — the claims as Spring's converters and the identity provider produce them: Instant for
-    // the timestamps, URL for the issuer, booleans, lists and nested maps
+    // the timestamps, URL for the issuer, booleans, lists and nested maps. nbf is the exception:
+    // Spring's ID token decoder leaves it as a java.util.Date. Microsoft Entra ID tokens carry it,
+    // and a session that cannot be restored sends the user back to the login page with no error.
     final var issuer = URI.create("https://idp.example.com/realms/camunda").toURL();
     final var idToken =
         new OidcIdToken(
@@ -248,13 +250,22 @@ class MigratingWebSessionAttributeConverterTest {
             Instant.now(),
             Instant.now().plusSeconds(60),
             Map.of(
-                "iss", issuer,
-                "sub", "dave",
-                "aud", List.of("camunda"),
-                "iat", Instant.now(),
-                "exp", Instant.now().plusSeconds(60),
-                "auth_time", Instant.now(),
-                "email_verified", true));
+                "iss",
+                issuer,
+                "sub",
+                "dave",
+                "aud",
+                List.of("camunda"),
+                "iat",
+                Instant.now(),
+                "exp",
+                Instant.now().plusSeconds(60),
+                "nbf",
+                new java.util.Date(),
+                "auth_time",
+                Instant.now(),
+                "email_verified",
+                true));
     final var userInfo =
         new OidcUserInfo(
             Map.of(
