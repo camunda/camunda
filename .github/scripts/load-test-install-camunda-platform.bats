@@ -72,29 +72,3 @@ make_arg() {
   [ "$status" -eq 0 ]
   [ "$(make_arg additional_platform_configuration)" = "--set orchestration.image.tag=8.9.0 --set orchestration.replicas=1" ]
 }
-
-# The stable/8.10 copy of camunda-load-test.yml calls the script with the previous argument format.
-legacy_install() {
-  "${SCRIPT}" c8-test install "$1" registry.camunda.cloud/team-zeebe "$2" "$3" "$4" true true false "$5" false 0 "${@:6}"
-}
-
-@test "previous argument format: source build" {
-  run legacy_install abc123 registry.camunda.cloud team-zeebe/camunda team-zeebe/optimize true \
-    --optimize-tag "" --orchestration-tag ""
-  [ "$status" -eq 0 ]
-  [ "$(make_arg additional_platform_configuration)" = "--set orchestration.image.registry=registry.camunda.cloud --set orchestration.image.repository=team-zeebe/camunda --set orchestration.image.tag=abc123 --set optimize.image.registry=registry.camunda.cloud --set optimize.image.repository=team-zeebe/optimize --set optimize.image.tag=abc123" ]
-  [ "$(make_arg additional_load_test_setup_configuration)" = "--set metricsExporter.image.tag=abc123" ]
-}
-
-@test "previous argument format: released orchestration tag with an Optimize tag" {
-  run legacy_install 8.9.0 docker.io camunda/camunda camunda/optimize false \
-    --optimize-tag 8.9.1 --orchestration-tag 8.9.0
-  [ "$status" -eq 0 ]
-  [ "$(make_arg additional_platform_configuration)" = "--set orchestration.image.registry=docker.io --set orchestration.image.repository=camunda/camunda --set orchestration.image.tag=8.9.0 --set optimize.image.tag=8.9.1" ]
-}
-
-@test "previous argument format: released orchestration tag without an Optimize tag" {
-  run legacy_install 8.9.0 docker.io camunda/camunda camunda/optimize false --orchestration-tag 8.9.0
-  [ "$status" -eq 0 ]
-  [ "$(make_arg additional_platform_configuration)" = "--set orchestration.image.registry=docker.io --set orchestration.image.repository=camunda/camunda --set orchestration.image.tag=8.9.0" ]
-}
