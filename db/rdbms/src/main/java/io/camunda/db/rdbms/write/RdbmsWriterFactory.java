@@ -33,6 +33,7 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
+import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.ibatis.session.SqlSessionFactory;
 
@@ -143,7 +144,7 @@ public class RdbmsWriterFactory {
         incidentMapper,
         processInstanceMapper,
         processDefinitionMapper,
-        purgeMapper,
+        new RdbmsPurger(sqlSessionFactory, vendorDatabaseProperties),
         userTaskMapper,
         variableMapper,
         vendorDatabaseProperties,
