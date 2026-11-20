@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.resource.ProcessDeleteCompleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -200,11 +202,13 @@ public final class EngineProcessors {
         bpmnBehaviors.jobActivationBehavior(),
         incidentMetrics);
     addResourceDeletionProcessors(
+        partitionId,
         typedRecordProcessors,
         writers,
         processingState,
         commandDistributionBehavior,
-        bpmnBehaviors);
+        bpmnBehaviors,
+        routingInfo);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -408,20 +412,29 @@ public final class EngineProcessors {
   }
 
   private static void addResourceDeletionProcessors(
+      final int partitionId,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final MutableProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final RoutingInfo routingInfo) {
     final var resourceDeletionProcessor =
         new ResourceDeletionDeleteProcessor(
             writers,
             processingState.getKeyGenerator(),
             processingState,
             commandDistributionBehavior,
-            bpmnBehaviors);
+            bpmnBehaviors,
+            routingInfo);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
+
+    final var deleteCompleteProcessor =
+        new ProcessDeleteCompleteProcessor(
+            partitionId, writers, processingState, commandDistributionBehavior);
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS, ProcessIntent.DELETE_COMPLETE, deleteCompleteProcessor);
   }
 
   private static void addResourceFetchProcessors(
