@@ -25,6 +25,7 @@ import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 import io.camunda.zeebe.model.bpmn.instance.SendTask;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeStage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners;
@@ -138,6 +140,10 @@ public class ExtensionElementDuplicationValidators {
           ExtensionElementsDuplicationValidator.verifyThat(ScriptTask.class)
               .hasSingleExtensionElement(
                   ZeebeJobPriorityDefinition.class, ZeebeConstants.ELEMENT_JOB_PRIORITY_DEFINITION),
+
+          // sub-process (also covers ad-hoc and event sub-processes)
+          ExtensionElementsDuplicationValidator.verifyThat(SubProcess.class)
+              .hasSingleExtensionElement(ZeebeStage.class, ZeebeConstants.ELEMENT_STAGE),
 
           // ad-hoc subprocess
           ExtensionElementsDuplicationValidator.verifyThat(AdHocSubProcess.class)

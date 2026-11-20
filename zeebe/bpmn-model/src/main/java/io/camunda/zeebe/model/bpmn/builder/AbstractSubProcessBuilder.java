@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeStage;
 
 /**
  * @author Sebastian Menski
@@ -45,4 +46,14 @@ public class AbstractSubProcessBuilder<B extends AbstractSubProcessBuilder<B>>
   }
 
   /** camunda extensions */
+
+  /**
+   * Marks the sub process as a stage of a case. The marker is only valid on a top-level sub process
+   * of a process that is marked as a case.
+   *
+   * @return the builder object
+   */
+  public B zeebeStage() {
+    return addExtensionElement(ZeebeStage.class, stage -> {});
+  }
 }
