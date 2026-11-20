@@ -138,14 +138,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     return null;
   }
 
-  /** Marks the delivery of an install request, so it can be held back. */
-  private record InstallDelivery(Runnable delivery) implements Runnable {
-    @Override
-    public void run() {
-      delivery.run();
-    }
-  }
-
   // drop next message from the incoming queue
   public void dropNextMessage() {
     final var nextMessage =
@@ -675,6 +667,14 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
       return configureHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  /** Marks the delivery of an install request, so it can be held back. */
+  private record InstallDelivery(Runnable delivery) implements Runnable {
+    @Override
+    public void run() {
+      delivery.run();
     }
   }
 }
