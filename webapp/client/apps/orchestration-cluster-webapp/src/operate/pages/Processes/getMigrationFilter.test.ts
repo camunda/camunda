@@ -90,4 +90,14 @@ describe('getMigrationStatisticsFilter', () => {
 			processInstanceKey: {$in: ['1']},
 		});
 	});
+
+	it('should keep the instance keys from the list filter when rows are excluded', () => {
+		expect(
+			getMigrationStatisticsFilter({
+				search: {...RUNNING_SEARCH, processInstanceKey: '1,2,3'},
+				includeIds: [],
+				excludeIds: ['2'],
+			}),
+		).toMatchObject({processInstanceKey: {$in: ['1', '2', '3'], $notIn: ['2']}});
+	});
 });

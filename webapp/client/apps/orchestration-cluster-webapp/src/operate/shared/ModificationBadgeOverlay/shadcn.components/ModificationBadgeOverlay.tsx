@@ -15,21 +15,23 @@ type Props = {
 	container: HTMLElement;
 	newTokenCount: number;
 	cancelledTokenCount: number;
+	elementName?: string;
 };
 
-const ModificationBadgeOverlay: React.FC<Props> = ({container, newTokenCount, cancelledTokenCount}) => {
+const ModificationBadgeOverlay: React.FC<Props> = ({container, newTokenCount, cancelledTokenCount, elementName}) => {
 	const {t} = useTranslation();
 
 	if (newTokenCount === 0 && cancelledTokenCount === 0) {
 		return null;
 	}
 
-	const label = [
+	const counts = [
 		newTokenCount > 0 ? t('operate.shared.modificationBadge.added', {count: newTokenCount}) : undefined,
 		cancelledTokenCount > 0 ? t('operate.shared.modificationBadge.canceled', {count: cancelledTokenCount}) : undefined,
 	]
 		.filter((part) => part !== undefined)
 		.join(', ');
+	const label = elementName === undefined ? counts : `${elementName}, ${counts}`;
 
 	return createPortal(
 		<Badge

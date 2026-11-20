@@ -8,8 +8,13 @@
 
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
+// Unlike getElementName, a blank name falls back to the id so controls always have an accessible name.
+function getNameOrId(name: string | undefined, id: string) {
+	return name?.trim() ? name : id;
+}
+
 function getElementName({businessObjects, elementId}: {businessObjects?: BusinessObjects; elementId?: string}) {
 	return (elementId ? businessObjects?.[elementId] : undefined)?.name ?? elementId ?? '';
 }
 
-export {getElementName};
+export {getElementName, getNameOrId};

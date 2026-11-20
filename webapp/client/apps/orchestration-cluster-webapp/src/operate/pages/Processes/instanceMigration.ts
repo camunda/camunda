@@ -13,6 +13,7 @@ import {
 	type ProcessDefinition,
 	type ProcessInstance,
 } from '@camunda/camunda-api-zod-schemas/8.11';
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {getMigrationFilter, getMigrationStatisticsFilter, type MigrationScope} from './getMigrationFilter';
 import type {ProcessesSearch} from './processesFilter';
@@ -51,6 +52,15 @@ function getInstanceMigrationLocation(processInstance: ProcessInstance) {
 	});
 }
 
+function getPreviewInstanceMigrationLocation(processInstance: ProcessInstance) {
+	const handoff = instanceMigrationSchema.parse(processInstance);
+	return linkOptions({
+		to: `${OPERATE_BASE}/processes` as const,
+		search: getSourceSearch(handoff),
+		state: {operateInstanceMigration: handoff},
+	});
+}
+
 function getInstanceMigration(state: unknown): {source: ProcessDefinition; scope: MigrationScope} | null {
 	const result = instanceMigrationSchema.safeParse(state);
 	if (!result.success) {
@@ -84,4 +94,4 @@ function getInstanceMigration(state: unknown): {source: ProcessDefinition; scope
 			};
 }
 
-export {getInstanceMigration, getInstanceMigrationLocation};
+export {getInstanceMigration, getInstanceMigrationLocation, getPreviewInstanceMigrationLocation};

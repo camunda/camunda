@@ -76,7 +76,7 @@ function MigrationDiagrams({
 	const {t} = useTranslation();
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const [clientWidth, setClientWidth] = useState(0);
-	const availableTargets = useAvailableMigrationTargets(source);
+	const {targets: availableTargets} = useAvailableMigrationTargets(source);
 	const {data: targetVersions} = useMigrationTargetVersions(source, target);
 	const processItems = useMemo(
 		() =>

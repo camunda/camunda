@@ -1165,6 +1165,8 @@
 					"migrate": "Migrieren",
 					"selectSource": "Um die Migration zu starten, wählen Sie zuerst einen Prozess und eine Version aus.",
 					"diagramError": "Fehler beim Abrufen des Diagramms. Wenden Sie sich an den Administrator, wenn das Problem weiterhin besteht.",
+					"targetsError": "Die Zielprozesse oder -versionen konnten nicht geladen werden.",
+					"retry": "Erneut versuchen",
 					"runningOnly": "Sie können nur Instanzen im Status „Aktiv“ oder „Vorfall“ migrieren.",
 					"helperTitle": "Prozessinstanzversionen migrieren",
 					"helperPurpose": "Mit „Migrieren“ werden laufende Prozessinstanzen zu einer anderen Prozessdefinition migriert.",

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {http, HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
@@ -37,7 +37,7 @@ function renderInstancesTable(search: ProcessesSearch = BASE_SEARCH) {
 	return renderWithRouter(
 		() => (
 			<div style={{height: '100vh'}}>
-				<InstancesTable search={search} />
+				<InstancesTable search={search} processDefinitionSelection={{kind: 'no-match'}} onMigrationEnter={vi.fn()} />
 			</div>
 		),
 		{path: PATH, initialEntry: PATH},

@@ -9,7 +9,7 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import type {FormApi} from 'final-form';
 import {useTranslation} from 'react-i18next';
-import {useNavigate} from '@tanstack/react-router';
+import {useLocation, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Heading, PageLayout, Separator} from '@camunda/design-system';
 import {FilterSidebar} from '#/operate/shared/FilterSidebar/shadcn.components/FilterSidebar';
@@ -24,6 +24,9 @@ import {ProcessFilters} from './ProcessFilters';
 import {InstancesTable} from './InstancesTable';
 import {DiagramPanel} from './DiagramPanel';
 import {useProcessFilterOptions} from './useProcessFilterOptions';
+import {MigrationView} from './MigrationView';
+import {ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
+import {getInstanceMigration} from '../instanceMigration';
 
 type FilterFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
 
@@ -43,6 +46,10 @@ const Processes: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+	const instanceMigrationState = useLocation({select: ({state}) => state.operateInstanceMigration});
+	const [migration, setMigration] = useState(() =>
+		ENABLE_PROCESS_MIGRATION ? getInstanceMigration(instanceMigrationState) : null,
+	);
 	const preservingFormRef = useRef<FormApi<FilterFormValues> | null>(null);
 	const variable = useVariableConditions();
 	const filterOptions = useProcessFilterOptions({
@@ -121,14 +128,39 @@ const Processes: React.FC<Props> = ({search}) => {
 	const [clientHeight, setClientHeight] = useState(0);
 	const panelMinHeight = clientHeight / 4;
 
+	const isMigrating = migration !== null;
+
 	useEffect(() => {
-		setClientHeight(containerRef.current?.clientHeight ?? 0);
-	}, []);
+		if (!isMigrating) {
+			setClientHeight(containerRef.current?.clientHeight ?? 0);
+		}
+	}, [isMigrating]);
+
+	useEffect(() => {
+		if (instanceMigrationState !== undefined) {
+			void navigate({
+				to: '.',
+				search: true,
+				hash: true,
+				state: ({operateInstanceMigration: _, ...state}) => state,
+				replace: true,
+				ignoreBlocker: true,
+			});
+		}
+	}, [instanceMigrationState, navigate]);
 
 	useEffect(() => {
 		preservingFormRef.current?.setConfig('keepDirtyOnReinitialize', false);
 		preservingFormRef.current = null;
 	}, [optionalFilterValues]);
+
+	if (migration !== null) {
+		return (
+			<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
+				<MigrationView source={migration.source} scope={migration.scope} onExit={() => setMigration(null)} />
+			</PageLayout>
+		);
+	}
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
@@ -232,7 +264,12 @@ const Processes: React.FC<Props> = ({search}) => {
 							}}
 						/>
 						<div className="h-full overflow-hidden">
-							<InstancesTable search={instancesSearch} />
+							<InstancesTable
+								search={instancesSearch}
+								processDefinitionSelection={filterOptions.processDefinitionSelection}
+								isDefinitionSelectionPlaceholder={filterOptions.areDefinitionsPlaceholder}
+								onMigrationEnter={(source, scope) => setMigration({source, scope})}
+							/>
 						</div>
 					</ResizablePanel>
 				</div>

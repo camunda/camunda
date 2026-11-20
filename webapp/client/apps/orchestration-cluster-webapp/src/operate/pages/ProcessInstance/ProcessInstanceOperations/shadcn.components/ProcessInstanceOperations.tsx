@@ -34,7 +34,7 @@ import {useProcessInstanceModification} from '#/operate/pages/ProcessInstance/us
 import {isModificationHelperHidden} from '#/operate/pages/ProcessInstance/modificationHelperPreference';
 import {MigrationHelperModal} from '#/operate/shared/MigrationHelperModal/shadcn.components/MigrationHelperModal';
 import {isMigrationHelperHidden} from '#/operate/shared/MigrationHelperModal/migrationHelperPreference';
-import {getInstanceMigrationLocation} from '#/operate/pages/Processes/instanceMigration';
+import {getPreviewInstanceMigrationLocation} from '#/operate/pages/Processes/instanceMigration';
 import {ModificationHelperModal} from '#/operate/pages/ProcessInstance/shadcn.components/ModificationHelperModal';
 import {COLLAPSED_LAYOUT_QUERY} from '../../shadcn.components/collapsedLayoutQuery';
 import {processInstanceHeaderOperationMachine, type HeaderAction} from '../processInstanceHeaderOperationMachine';
@@ -151,7 +151,7 @@ const ProcessInstanceOperations: React.FC = () => {
 	const modifyTitle = t('operate.shared.operations.modifyTitle', {processInstanceKey});
 	const canModify = ENABLE_PROCESS_INSTANCE_MODIFICATION && state === 'ACTIVE';
 
-	const enterMigration = () => void navigate(getInstanceMigrationLocation(processInstance));
+	const enterMigration = () => void navigate(getPreviewInstanceMigrationLocation(processInstance));
 	const openMigration = () => {
 		if (isMigrationHelperHidden()) {
 			enterMigration();
@@ -196,7 +196,7 @@ const ProcessInstanceOperations: React.FC = () => {
 							{canMigrate &&
 								(isMigrationHelperHidden() ? (
 									<DropdownMenuItem asChild>
-										<Link {...getInstanceMigrationLocation(processInstance)}>
+										<Link {...getPreviewInstanceMigrationLocation(processInstance)}>
 											<ArrowRightLeft aria-hidden="true" />
 											{migrateLabel}
 										</Link>
