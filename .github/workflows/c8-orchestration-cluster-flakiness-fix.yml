@@ -968,11 +968,19 @@ jobs:
                 superseded=false
                 break
               fi
-              head_blob=$(gh api "repos/${REPO}/contents/${changed_file}?ref=${BRANCH}" \
-                --jq '.sha' 2>/dev/null || echo "")
-              base_blob=$(gh api "repos/${REPO}/contents/${changed_file}?ref=${TARGET_REF}" \
-                --jq '.sha' 2>/dev/null || echo "")
-              if [[ -z "$head_blob" || "$head_blob" != "$base_blob" ]]; then
+              # A failed read must never read as a match. `gh api` can put
+              # an error body on stdout, so a value is kept only when the call
+              # succeeded and returned something that is actually a blob id:
+              # two identical error bodies would otherwise delete the branch.
+              if ! head_blob=$(gh api "repos/${REPO}/contents/${changed_file}?ref=${BRANCH}" \
+                --jq '.sha' 2>/dev/null); then
+                head_blob=""
+              fi
+              if ! base_blob=$(gh api "repos/${REPO}/contents/${changed_file}?ref=${TARGET_REF}" \
+                --jq '.sha' 2>/dev/null); then
+                base_blob=""
+              fi
+              if [[ ! "$head_blob" =~ ^[0-9a-f]{40}$ || "$head_blob" != "$base_blob" ]]; then
                 superseded=false
                 break
               fi
