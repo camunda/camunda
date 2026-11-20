@@ -28,7 +28,6 @@ import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -78,7 +77,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
         maxMessageSize,
         activationResultMapper,
         requestCanceledExceptionProvider,
-        () -> RoundRobinDispatchStrategy.withRandomInitialOffset(ThreadLocalRandom.current()));
+        RoundRobinDispatchStrategy::withRandomInitialOffset);
   }
 
   /**

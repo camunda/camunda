@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -38,14 +39,14 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
   private final ConcurrentMap<String, GroupState> groups = new ConcurrentHashMap<>();
   private final int initialOffset;
   private final boolean randomInitialOffset;
-  private final Random random;
+  private final Supplier<? extends Random> random;
 
   public RoundRobinDispatchStrategy() {
     this(0);
   }
 
   public RoundRobinDispatchStrategy(final int initialOffset) {
-    this(initialOffset, false);
+    this(initialOffset, false, ThreadLocalRandom::current);
   }
 
   /**
@@ -53,19 +54,26 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
    * fixed start would concentrate the first request of every untracked or evicted job type on the
    * first partition, which skews load when the set of tracked types churns faster than the
    * round-robin cursors spread it.
-   *
-   * @param random source of the initial offsets; injectable for deterministic tests
    */
-  public static RoundRobinDispatchStrategy withRandomInitialOffset(final Random random) {
-    return new RoundRobinDispatchStrategy(0, true, random);
+  public static RoundRobinDispatchStrategy withRandomInitialOffset() {
+    // resolved per seeding: a ThreadLocalRandom captured here would draw from the seeding thread's
+    // state, which is uninitialised (and thus identical) on threads that never called current()
+    return new RoundRobinDispatchStrategy(0, true, ThreadLocalRandom::current);
   }
 
-  private RoundRobinDispatchStrategy(final int initialOffset, final boolean randomInitialOffset) {
-    this(initialOffset, randomInitialOffset, ThreadLocalRandom.current());
+  /**
+   * Same as {@link #withRandomInitialOffset()}, with a fixed source for deterministic tests.
+   *
+   * @param random source of the initial offsets; must be safe to share across threads
+   */
+  public static RoundRobinDispatchStrategy withRandomInitialOffset(final Random random) {
+    return new RoundRobinDispatchStrategy(0, true, () -> random);
   }
 
   private RoundRobinDispatchStrategy(
-      final int initialOffset, final boolean randomInitialOffset, final Random random) {
+      final int initialOffset,
+      final boolean randomInitialOffset,
+      final Supplier<? extends Random> random) {
     if (initialOffset < 0) {
       throw new IllegalArgumentException(
           "Expected initialOffset to be >= 0, but got %d".formatted(initialOffset));
@@ -90,7 +98,7 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
     if (randomInitialOffset) {
       // bounded by the active ring, not the configured partition count, so the offset stays
       // uniform even while the ring is smaller during scaling
-      state.seedOffsetIfUnused(initialOffset, random, partitions.size());
+      state.seedOffsetIfUnused(initialOffset, random.get(), partitions.size());
     }
 
     for (int i = 0; i < topology.getPartitionsCount(); i++) {
