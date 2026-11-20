@@ -23,8 +23,8 @@ import {
 import {themeStore} from '#/shared/theme/theme';
 import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {HELPER_STORAGE_KEY} from './isMoveHelperHidden';
-import modalDiagramImageLight from '#/operate/assets/modal-diagram-image-light.png';
-import modalDiagramImageDark from '#/operate/assets/modal-diagram-image-dark.png';
+import modalDiagramImageLight from '#/operate/assets/modal-diagram-image-ds-light.png';
+import modalDiagramImageDark from '#/operate/assets/modal-diagram-image-ds-dark.png';
 
 type Props = {
 	open: boolean;
@@ -54,7 +54,7 @@ const MoveHelperDialog: React.FC<Props> = observer(({open, onClose, onSubmit}) =
 					<img
 						src={themeStore.actualTheme === 'light' ? modalDiagramImageLight : modalDiagramImageDark}
 						alt={t('operate.processes.batchModification.helperImageAlt')}
-						className="max-w-full self-center"
+						className="w-[335px] max-w-full self-center"
 					/>
 					<p>{t('operate.processes.batchModification.helperReview')}</p>
 					<div className="flex items-center gap-2">
