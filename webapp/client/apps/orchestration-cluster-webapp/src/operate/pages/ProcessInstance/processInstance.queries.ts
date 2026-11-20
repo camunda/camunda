@@ -74,8 +74,6 @@ function isNumericKey(key: string) {
 function processInstanceQuery(processInstanceKey: string) {
 	return queryOptions({
 		queryKey: ['processInstance', processInstanceKey] as const,
-		retry: (failureCount, error) =>
-			isNumericKey(processInstanceKey) && getResponseStatus(error) !== 400 && failureCount < 3,
 		queryFn: async (): Promise<ProcessInstance> => {
 			if (!isNumericKey(processInstanceKey)) {
 				throw {
@@ -179,7 +177,11 @@ function getProcessInstanceErrorKind(error: unknown): 'forbidden' | 'notFound' |
 }
 
 function useProcessInstance(processInstanceKey: string) {
-	const query = useQuery(processInstanceQuery(processInstanceKey));
+	const query = useQuery({
+		...processInstanceQuery(processInstanceKey),
+		retry: (failureCount, error) =>
+			isNumericKey(processInstanceKey) && getResponseStatus(error) !== 400 && failureCount < 3,
+	});
 	const errorKind = query.isError ? getProcessInstanceErrorKind(query.error) : null;
 
 	return {
