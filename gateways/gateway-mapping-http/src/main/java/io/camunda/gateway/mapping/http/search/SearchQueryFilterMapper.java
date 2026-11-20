@@ -675,7 +675,7 @@ public class SearchQueryFilterMapper {
     if (filter.equals(SearchQueryRequestMapper.EMPTY_PROCESS_INSTANCE_FILTER)) {
       return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
     }
-    final var emptyPropertyViolations = emptyFilterPropertyViolations(filter);
+    final var emptyPropertyViolations = emptyProcessInstanceFilterViolations(filter);
     if (!emptyPropertyViolations.isEmpty()) {
       return Either.left(emptyPropertyViolations);
     }
@@ -710,6 +710,20 @@ public class SearchQueryFilterMapper {
       return Either.left(emptyPropertyViolations);
     }
     return toJobFilter(filter);
+  }
+
+  /** Like {@link #emptyFilterPropertyViolations}, also covering the {@code $or} branches. */
+  private static List<String> emptyProcessInstanceFilterViolations(
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter filter) {
+    final var violations = new ArrayList<>(emptyFilterPropertyViolations(filter));
+    if (filter.get$Or() != null) {
+      for (final var or : filter.get$Or()) {
+        if (or != null) {
+          violations.addAll(emptyFilterPropertyViolations(or));
+        }
+      }
+    }
+    return violations.stream().distinct().toList();
   }
 
   /**
