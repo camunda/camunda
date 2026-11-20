@@ -441,6 +441,21 @@ class ExporterConfigurationTest {
   }
 
   @Test
+  public void shouldUseDefaultBatchOperationHistoryTTLFromConfig() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getHistory().setDefaultBatchOperationHistoryTTL(Duration.ofDays(2));
+
+    // when
+    final var writerConfig =
+        configuration.createRdbmsWriterConfig(1, "mytenant", InstantSource.system());
+
+    // then
+    assertThat(writerConfig.history().defaultBatchOperationHistoryTTL())
+        .isEqualTo(Duration.ofDays(2));
+  }
+
+  @Test
   public void shouldFailWithNegativeJobMetricsBatchCleanup() {
     final ExporterConfiguration.HistoryConfiguration historyConfiguration =
         new ExporterConfiguration.HistoryConfiguration();

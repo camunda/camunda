@@ -227,6 +227,7 @@ public class ExporterConfiguration {
         new HistoryConfig.Builder()
             .defaultHistoryTTL(history.getDefaultHistoryTTL())
             .decisionInstanceTTL(history.getDecisionInstanceTTL())
+            .defaultBatchOperationHistoryTTL(history.getDefaultBatchOperationHistoryTTL())
             .batchOperationCancelProcessInstanceHistoryTTL(
                 history.getBatchOperationCancelProcessInstanceHistoryTTL())
             .batchOperationMigrateProcessInstanceHistoryTTL(
