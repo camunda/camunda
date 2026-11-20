@@ -280,3 +280,6 @@
 /.github/pr-review-agent/operate-admin.yml          @camunda/operate-admin-pod
 /.github/workflows/ai-pr-review-tasklist.yml        @camunda/employee-engagement-tasklist
 /.github/pr-review-agent/tasklist.yml               @camunda/employee-engagement-tasklist
+
+/zeebe/util/src/main/java/io/camunda/zeebe/util/clusterbehavior/ @camunda/core-features
+/zeebe/util/src/test/java/io/camunda/zeebe/util/clusterbehavior/ @camunda/core-features
