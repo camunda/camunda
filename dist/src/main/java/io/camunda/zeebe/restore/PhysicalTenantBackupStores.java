@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreFactory;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -58,7 +59,7 @@ final class PhysicalTenantBackupStores implements AutoCloseable {
         tenantId -> {
           final var store = BackupStoreFactory.createStore(configuration.getData().getBackup());
           if (store == null) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgument(
                 "No backup store configured for physical tenant '%s', cannot restore it from backup."
                     .formatted(tenantId));
           }
