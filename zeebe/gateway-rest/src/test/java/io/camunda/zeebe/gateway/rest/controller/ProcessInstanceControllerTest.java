@@ -3916,6 +3916,48 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectProcessInstanceBatchOperationWhenAnOrBranchHasAnEmptyInList() {
+    // given - "by definition OR by instance" with nothing selected in either list; the empty
+    // branches would be dropped and every active instance would be selected
+    final var request =
+        """
+        {
+          "filter": {
+            "state": "ACTIVE",
+            "$or": [
+              { "processDefinitionKey": { "$in": [] } },
+              { "processInstanceKey": { "$in": [] } }
+            ]
+          }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The filter property 'processDefinitionKey' must contain at least one value. The filter property 'processInstanceKey' must contain at least one value.",
+                "instance":"/v2/process-instances/cancellation"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
   void shouldRejectProcessInstanceBatchOperationWhenAnEmptyInListSitsNextToOtherCriteria() {
     // given - the empty $in list would be dropped, widening the batch to every active instance
     final var request =
