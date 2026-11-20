@@ -8,11 +8,11 @@
 package io.camunda.zeebe.engine.processing.resource;
 
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
-import static io.camunda.zeebe.protocol.ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessDeletionBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
@@ -39,6 +39,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -60,13 +61,10 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ResourceDeletionDeleteProcessor.class);
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -74,6 +72,7 @@ public class ResourceDeletionDeleteProcessor
   private final DecisionState decisionState;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ProcessState processState;
+  private final BpmnProcessDeletionBehavior processDeletionBehavior;
   private final ElementInstanceState elementInstanceState;
   private final TimerInstanceState timerInstanceState;
   private final BannedInstanceState bannedInstanceState;
@@ -82,13 +81,15 @@ public class ResourceDeletionDeleteProcessor
   private final StartEventSubscriptionManager startEventSubscriptionManager;
   private final FormState formState;
   private final ResourceState resourceState;
+  private final RoutingInfo routingInfo;
 
   public ResourceDeletionDeleteProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final RoutingInfo routingInfo) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -96,6 +97,7 @@ public class ResourceDeletionDeleteProcessor
     decisionState = processingState.getDecisionState();
     this.commandDistributionBehavior = commandDistributionBehavior;
     processState = processingState.getProcessState();
+    processDeletionBehavior = bpmnBehaviors.processDeletionBehavior();
     elementInstanceState = processingState.getElementInstanceState();
     timerInstanceState = processingState.getTimerState();
     bannedInstanceState = processingState.getBannedInstanceState();
@@ -105,6 +107,7 @@ public class ResourceDeletionDeleteProcessor
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
     formState = processingState.getFormState();
     resourceState = processingState.getResourceState();
+    this.routingInfo = routingInfo;
   }
 
   @Override
@@ -142,28 +145,41 @@ public class ResourceDeletionDeleteProcessor
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
       responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.NOT_FOUND, exception.getMessage());
+      acknowledgeIfDistributed(command);
       return ProcessingError.EXPECTED_ERROR;
-    } else if (error instanceof final ActiveProcessInstancesException exception) {
+    } else if (error instanceof final ResourceDeletionInProgressException exception) {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, exception.getMessage());
       responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.INVALID_STATE, exception.getMessage());
+      acknowledgeIfDistributed(command);
       return ProcessingError.EXPECTED_ERROR;
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
+  // Ack even on rejection, otherwise the distribution never finishes and head-of-line blocks every
+  // command queued behind it.
+  private void acknowledgeIfDistributed(final TypedRecord<ResourceDeletionRecord> command) {
+    if (command.isCommandDistributed()) {
+      commandDistributionBehavior.acknowledgeCommand(command);
+    }
+  }
+
   private void tryDeleteResources(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
 
+    boolean drainingDeletionInFlight = false;
     for (final String tenantId : getAuthorizedTenants(command)) {
-      final var processOptional =
-          Optional.ofNullable(
-              processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId));
-      if (processOptional.isPresent()) {
-        setTenantId(command, tenantId);
-        deleteProcess(processOptional.get());
-        return;
+      final var process = processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId);
+      if (process != null) {
+        if (process.isActive()) {
+          setTenantId(command, tenantId);
+          deleteProcess(process);
+          return;
+        }
+        // found but not active: the deletion is already in flight, reject as INVALID_STATE
+        drainingDeletionInFlight = true;
       }
 
       final var drgOptional =
@@ -190,6 +206,9 @@ public class ResourceDeletionDeleteProcessor
       }
     }
 
+    if (drainingDeletionInFlight || processState.hasPendingDeletion(value.getResourceKey())) {
+      throw new ResourceDeletionInProgressException(value.getResourceKey());
+    }
     throw new NoSuchResourceException(value.getResourceKey());
   }
 
@@ -244,29 +263,21 @@ public class ResourceDeletionDeleteProcessor
             .setResourceName(process.getResourceName())
             .setTenantId(tenantId)
             .setDeploymentKey(process.getDeploymentKey());
-    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
 
     final String processId = processRecord.getBpmnProcessId();
     final var latestVersion = processState.getLatestProcessVersion(processId, tenantId);
+
+    processRecord.setDrainPartitions(routingInfo.partitions());
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DRAINING, processRecord);
 
     // If we are deleting the latest version we must unsubscribe the start events
     if (latestVersion == process.getVersion()) {
       unsubscribeStartEvents(process);
 
-      final var previousVersion =
-          processState.findProcessVersionBefore(processId, latestVersion, tenantId);
-      // If there is a previous version we must resubscribe to the previous version's start events.
-      if (previousVersion.isPresent()) {
-        final var previousProcess =
-            processState.getProcessByProcessIdAndVersion(
-                processIdBuffer, previousVersion.get(), tenantId);
-        if (previousProcess == null) {
-          warnPreviousProcessNotFound(
-              processIdBuffer, previousVersion.get(), tenantId, processId, latestVersion);
-        } else {
-          resubscribeStartEvents(previousProcess);
-        }
-      }
+      // Hand the start subscription down to the latest active version; draining or deleted
+      // versions reject new instances so must stay unsubscribed.
+      findLatestActiveVersionBelow(processIdBuffer, processId, latestVersion, tenantId)
+          .ifPresent(this::resubscribeStartEvents);
     }
 
     final var bannedInstances = bannedInstanceState.getBannedProcessInstanceKeys();
@@ -274,10 +285,32 @@ public class ResourceDeletionDeleteProcessor
         elementInstanceState.hasActiveProcessInstances(process.getKey(), bannedInstances);
 
     if (!hasRunningInstances) {
-      stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
-    } else {
-      throw new ActiveProcessInstancesException(process.getKey());
+      processDeletionBehavior.finalizeDeletion(processRecord);
     }
+  }
+
+  /**
+   * Latest active version (see {@link DeployedProcess#isActive()}) strictly below {@code version}.
+   * Skips draining versions so they do not hold start-event subscriptions.
+   */
+  private Optional<DeployedProcess> findLatestActiveVersionBelow(
+      final DirectBuffer processIdBuffer,
+      final String processId,
+      final int version,
+      final String tenantId) {
+    final var knownVersions = processState.getKnownProcessVersions(processId, tenantId);
+    for (int i = knownVersions.size() - 1; i >= 0; i--) {
+      final int candidateVersion = knownVersions.get(i).intValue();
+      if (candidateVersion >= version) {
+        continue;
+      }
+      final var candidate =
+          processState.getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
+      if (candidate != null && candidate.isActive()) {
+        return Optional.of(candidate);
+      }
+    }
+    return Optional.empty();
   }
 
   private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {
@@ -359,24 +392,6 @@ public class ResourceDeletionDeleteProcessor
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ResourceIntent.DELETED, resource);
   }
 
-  private void warnPreviousProcessNotFound(
-      final DirectBuffer processIdBuffer,
-      final int previousVersion,
-      final String tenantId,
-      final String processId,
-      final int latestVersion) {
-    LOG.warn(
-        "Expected to find previous process: {} with version: {} and tenant: '{}' to "
-            + "resubscribe start events, but no row exists in {}. "
-            + "knownVersions: {}, current latest version: {}.",
-        bufferAsString(processIdBuffer),
-        previousVersion,
-        tenantId,
-        PROCESS_CACHE_BY_ID_AND_VERSION.name(),
-        processState.getKnownProcessVersions(processId, tenantId),
-        latestVersion);
-  }
-
   private List<String> getAuthorizedTenants(final TypedRecord<ResourceDeletionRecord> command) {
     final String tenantId = command.getValue().getTenantId();
     if (tenantId.isEmpty()) {
@@ -401,12 +416,12 @@ public class ResourceDeletionDeleteProcessor
     }
   }
 
-  private static final class ActiveProcessInstancesException extends IllegalStateException {
-    private static final String ERROR_MESSAGE_RUNNING_INSTANCES =
-        "Expected to delete resource with key `%d` but there are still running instances";
+  private static final class ResourceDeletionInProgressException extends IllegalStateException {
+    private static final String ERROR_MESSAGE_DELETION_IN_PROGRESS =
+        "Expected to delete process definition with key `%d`, but it is already being deleted.";
 
-    private ActiveProcessInstancesException(final long processDefinitionKey) {
-      super(String.format(ERROR_MESSAGE_RUNNING_INSTANCES, processDefinitionKey));
+    private ResourceDeletionInProgressException(final long resourceKey) {
+      super(String.format(ERROR_MESSAGE_DELETION_IN_PROGRESS, resourceKey));
     }
   }
 }
