@@ -69,7 +69,10 @@ public enum VariableOperationType {
   /** An evaluate conditional request with variables. */
   CONDITIONAL_EVALUATION,
 
-  /** A request that activates ad-hoc sub-process activities with variables. */
+  /**
+   * A request that activates ad-hoc sub-process activities with variables. The variables of the
+   * elements that a job result activates use {@link #JOB_COMPLETION}.
+   */
   AD_HOC_SUB_PROCESS_ACTIVATION,
 
   /** The result of an input mapping, written by the engine. */
