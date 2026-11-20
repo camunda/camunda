@@ -30,6 +30,7 @@ import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.security.spring.converter.TokenClaimsConvertersByIssuer;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.security.spring.oidc.AssertionJwkProvider;
+import io.camunda.security.spring.oidc.FailSoftOidcUserService;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
@@ -508,8 +509,6 @@ public class OidcOverrideBeansConfiguration {
   public OidcUserService oidcUserService(
       final ObjectProvider<ObservationRegistry> observationRegistry) {
     final var oauthUserService = new DefaultOAuth2UserService();
-    final var oidcUserService = new OidcUserService();
-    oidcUserService.setOauth2UserService(oauthUserService);
 
     // see DefaultOAuth2UserService#setRestOperations for the minimum handlers/converters required
     final var restTemplate = new RestTemplate();
@@ -524,7 +523,10 @@ public class OidcOverrideBeansConfiguration {
         observationRegistry.getIfAvailable(() -> ObservationRegistry.NOOP));
 
     oauthUserService.setRestOperations(restTemplate);
-    return oidcUserService;
+
+    // keep the library's fail-soft behavior: this bean replaces its default, which would otherwise
+    // continue login with ID-token claims when the IdP rejects the access token at /userinfo
+    return new FailSoftOidcUserService(oauthUserService);
   }
 
   /**
