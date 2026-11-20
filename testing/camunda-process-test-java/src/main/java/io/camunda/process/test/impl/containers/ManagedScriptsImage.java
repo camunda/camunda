@@ -15,10 +15,20 @@
  */
 package io.camunda.process.test.impl.containers;
 
+import com.github.dockerjava.api.command.BuildImageResultCallback;
+import com.github.dockerjava.api.exception.DockerClientException;
+import com.github.dockerjava.api.model.BuildResponseItem;
 import com.github.dockerjava.api.model.ContainerConfig;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -27,7 +37,6 @@ import java.util.regex.Pattern;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.images.PullPolicy;
 import org.testcontainers.images.RemoteDockerImage;
-import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.ImageNameSubstitutor;
 import org.testcontainers.utility.LazyFuture;
@@ -167,15 +176,54 @@ public final class ManagedScriptsImage {
         final ContainerConfig config =
             DockerClientFactory.lazyClient().inspectImageCmd(resolvedBaseImage).exec().getConfig();
         final String user = config == null ? null : config.getUser();
-        return build(resolvedBaseImage, user).get();
+        return build(resolvedBaseImage, user);
       }
     };
   }
 
-  ImageFromDockerfile build(final String fromImage, final String baseImageUser) {
-    // Not deleted on exit: the image and its layers are reused by the next runs.
-    return new ImageFromDockerfile(imageName(fromImage, baseImageUser), false)
-        .withFileFromString("Dockerfile", dockerfile(fromImage, baseImageUser));
+  /**
+   * Builds the image with the Docker client instead of an {@code ImageFromDockerfile}, which logs
+   * the build output on debug level only: a failed build reports the output, such as the apk
+   * errors, in its exception.
+   */
+  private String build(final String fromImage, final String baseImageUser) {
+    final String imageName = imageName(fromImage, baseImageUser);
+    final BuildOutput output = new BuildOutput();
+    Path contextDirectory = null;
+    try {
+      contextDirectory = Files.createTempDirectory("camunda-process-test-managed-scripts");
+      Files.write(
+          contextDirectory.resolve("Dockerfile"),
+          dockerfile(fromImage, baseImageUser).getBytes(StandardCharsets.UTF_8));
+      // Not deleted on exit: the image and its layers are reused by the next runs.
+      DockerClientFactory.lazyClient()
+          .buildImageCmd(contextDirectory.toFile())
+          .withTags(Collections.singleton(imageName))
+          .withLabels(DockerClientFactory.DEFAULT_LABELS)
+          // also removes the container of a failed step, which Ryuk doesn't know about
+          .withForcerm(true)
+          .exec(output)
+          .awaitImageId();
+      return imageName;
+    } catch (final DockerClientException e) {
+      throw new IllegalStateException(output.failureMessage(imageName), e);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to write the Dockerfile of " + imageName, e);
+    } finally {
+      deleteQuietly(contextDirectory);
+    }
+  }
+
+  private static void deleteQuietly(final Path directory) {
+    if (directory == null) {
+      return;
+    }
+    try {
+      Files.deleteIfExists(directory.resolve("Dockerfile"));
+      Files.deleteIfExists(directory);
+    } catch (final IOException ignored) {
+      // a leftover file in the temp directory
+    }
   }
 
   private String missingInterpretersMessage() {
@@ -271,6 +319,76 @@ public final class ManagedScriptsImage {
       return hex.toString();
     } catch (final NoSuchAlgorithmException e) {
       throw new IllegalStateException(e);
+    }
+  }
+
+  /**
+   * Keeps the last lines of the build output, to report them when the build fails. The output
+   * arrives in chunks that can split a line, so the incomplete last line is buffered until the rest
+   * of it arrives.
+   */
+  static final class BuildOutput extends BuildImageResultCallback {
+
+    static final int MAX_LINES = 50;
+
+    private final Deque<String> lines = new ArrayDeque<>();
+    private final StringBuilder incompleteLine = new StringBuilder();
+
+    @Override
+    public void onNext(final BuildResponseItem item) {
+      super.onNext(item);
+      if (item.isErrorIndicated() && item.getErrorDetail() != null) {
+        addError(item.getErrorDetail().getMessage());
+      } else {
+        add(item.getStream());
+      }
+    }
+
+    synchronized void add(final String chunk) {
+      if (chunk == null) {
+        return;
+      }
+      incompleteLine.append(chunk);
+      int lineStart = 0;
+      for (int i = 0; i < incompleteLine.length(); i++) {
+        final char c = incompleteLine.charAt(i);
+        if (c == '\n' || c == '\r') {
+          addLine(incompleteLine.substring(lineStart, i));
+          lineStart = i + 1;
+        }
+      }
+      incompleteLine.delete(0, lineStart);
+    }
+
+    synchronized void addError(final String message) {
+      add("\n");
+      if (message != null) {
+        add(message + "\n");
+      }
+    }
+
+    private void addLine(final String line) {
+      if (line.trim().isEmpty()) {
+        return;
+      }
+      if (lines.size() == MAX_LINES) {
+        lines.removeFirst();
+      }
+      lines.addLast(line);
+    }
+
+    synchronized String failureMessage(final String imageName) {
+      final Deque<String> output = new ArrayDeque<>(lines);
+      if (!incompleteLine.toString().trim().isEmpty()) {
+        if (output.size() == MAX_LINES) {
+          output.removeFirst();
+        }
+        output.addLast(incompleteLine.toString());
+      }
+      return "Failed to build the managed scripts image "
+          + imageName
+          + ". The last lines of the build output:\n"
+          + String.join("\n", output);
     }
   }
 }

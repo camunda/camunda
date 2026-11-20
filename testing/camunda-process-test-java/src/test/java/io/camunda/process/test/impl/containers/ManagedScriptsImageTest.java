@@ -27,7 +27,6 @@ import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.images.ImagePullPolicy;
 import org.testcontainers.images.RemoteDockerImage;
-import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.utility.DockerImageName;
 
 class ManagedScriptsImageTest {
@@ -136,16 +135,6 @@ class ManagedScriptsImageTest {
   }
 
   @Test
-  void shouldKeepTheBuiltImage() {
-    // when
-    final ImageFromDockerfile image =
-        new ManagedScriptsImage(BASE_IMAGE, null, null).build(BASE_IMAGE, CONNECTORS_USER);
-
-    // then
-    assertThat(image.isDeleteOnExit()).isFalse();
-  }
-
-  @Test
   void shouldBuildLazily() {
     // when: no Docker is needed until the container starts
     final RemoteDockerImage image = new ManagedScriptsImage(BASE_IMAGE, null, null).build(true);
@@ -172,19 +161,15 @@ class ManagedScriptsImageTest {
   }
 
   @Test
-  void shouldBuildFromTheResolvedBaseImage() {
+  void shouldUseTheResolvedBaseImage() {
     // given: a registry mirror substitutes the Connectors image
     final ManagedScriptsImage image = new ManagedScriptsImage(BASE_IMAGE, null, null);
     final String mirroredImage = "mirror.example.com/camunda/connectors-bundle:8.11.0";
 
-    // when
-    final ImageFromDockerfile built = image.build(mirroredImage, CONNECTORS_USER);
-
-    // then
+    // when/then
     assertThat(image.dockerfile(mirroredImage, CONNECTORS_USER))
         .startsWith("FROM " + mirroredImage + "\n");
-    assertThat(built.getDockerImageName())
-        .isEqualTo(image.imageName(mirroredImage, CONNECTORS_USER))
+    assertThat(image.imageName(mirroredImage, CONNECTORS_USER))
         .isNotEqualTo(image.imageName(CONNECTORS_USER));
   }
 
@@ -241,5 +226,75 @@ class ManagedScriptsImageTest {
         .containsEntry(ManagedScriptsImage.ENV_MANAGED_CODE_ENABLED, "true")
         .containsEntry(ManagedScriptsImage.ENV_MANAGED_CODE_PROVIDER, "local")
         .containsEntry(ManagedScriptsImage.ENV_MANAGED_CODE_LOCAL_DIRECTORY, "/tmp/managed-script");
+  }
+
+  @Test
+  void shouldReportTheBuildOutputOnFailure() {
+    // given
+    final ManagedScriptsImage.BuildOutput output = new ManagedScriptsImage.BuildOutput();
+
+    // when
+    output.add("Step 3/4 : RUN apk add --no-cache python3 nodejs\n");
+    output.add("ERROR: unable to select packages:\n  nodejs (no such package)\n");
+
+    // then
+    assertThat(output.failureMessage("image:1"))
+        .isEqualTo(
+            "Failed to build the managed scripts image image:1. The last lines of the build"
+                + " output:\n"
+                + "Step 3/4 : RUN apk add --no-cache python3 nodejs\n"
+                + "ERROR: unable to select packages:\n"
+                + "  nodejs (no such package)");
+  }
+
+  @Test
+  void shouldReportTheLastLinesOfALongBuildOutput() {
+    // given
+    final ManagedScriptsImage.BuildOutput output = new ManagedScriptsImage.BuildOutput();
+
+    // when
+    for (int i = 1; i <= ManagedScriptsImage.BuildOutput.MAX_LINES + 10; i++) {
+      output.add("line " + i + "\n");
+    }
+
+    // then
+    assertThat(output.failureMessage("image:1"))
+        .doesNotContain("line 10\n")
+        .contains("\nline 11\n")
+        .endsWith("line " + (ManagedScriptsImage.BuildOutput.MAX_LINES + 10));
+  }
+
+  @Test
+  void shouldJoinALineSplitAcrossChunks() {
+    // given
+    final ManagedScriptsImage.BuildOutput output = new ManagedScriptsImage.BuildOutput();
+
+    // when
+    output.add("ERROR: unable to select packages:\n  python-3.");
+    output.add("99 (no such package)\n");
+    output.add("  required by: world[python-3.99]");
+
+    // then
+    assertThat(output.failureMessage("image:1"))
+        .endsWith(
+            "ERROR: unable to select packages:\n"
+                + "  python-3.99 (no such package)\n"
+                + "  required by: world[python-3.99]");
+  }
+
+  @Test
+  void shouldReportTheErrorAfterAnIncompleteLine() {
+    // given
+    final ManagedScriptsImage.BuildOutput output = new ManagedScriptsImage.BuildOutput();
+
+    // when
+    output.add("  nodejs (no such package)");
+    output.addError("The command '/bin/sh -c apk add nodejs' returned a non-zero code: 1");
+
+    // then
+    assertThat(output.failureMessage("image:1"))
+        .endsWith(
+            "  nodejs (no such package)\n"
+                + "The command '/bin/sh -c apk add nodejs' returned a non-zero code: 1");
   }
 }

@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.images.RemoteDockerImage;
@@ -40,10 +41,19 @@ class ManagedScriptsImageIT {
     final ManagedScriptsImage image = new ManagedScriptsImage(CONNECTORS_IMAGE, "3.12", "22");
 
     // when
-    final String output = run(image.build(false));
+    final RemoteDockerImage built = image.build(false);
+    final String output = run(built);
 
     // then: the interpreters that the local provider calls are the pinned ones
     assertThat(output).contains("user=camunda", "Python 3.12.", "v22.");
+    // and: without the session label, Ryuk keeps the image for the next runs
+    assertThat(
+            DockerClientFactory.lazyClient()
+                .inspectImageCmd(built.get())
+                .exec()
+                .getConfig()
+                .getLabels())
+        .doesNotContainKey(DockerClientFactory.TESTCONTAINERS_SESSION_ID_LABEL);
   }
 
   @Test
@@ -77,6 +87,17 @@ class ManagedScriptsImageIT {
     // when/then
     assertThatThrownBy(() -> image.build(false).get())
         .hasStackTraceContaining("has no apk to install python3 and node");
+  }
+
+  @Test
+  void shouldReportTheApkErrorsWhenTheBuildFails() {
+    // given: a Python version that the package repository of the image doesn't have
+    final ManagedScriptsImage image = new ManagedScriptsImage(CONNECTORS_IMAGE, "3.99", null);
+
+    // when/then: the apk output, not only the failed command, tells why the build failed
+    assertThatThrownBy(() -> image.build(false).get())
+        .hasStackTraceContaining("The last lines of the build output")
+        .hasStackTraceContaining("python-3.99 (no such package)");
   }
 
   private static String run(final RemoteDockerImage image) {
