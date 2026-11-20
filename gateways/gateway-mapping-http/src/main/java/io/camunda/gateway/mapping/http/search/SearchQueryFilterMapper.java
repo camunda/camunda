@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.search;
 
+import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.isEmptyAdvancedFilter;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToIntegerOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToKeyOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOffsetDateTimeOperations;
@@ -32,14 +33,6 @@ import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.mapping.http.mapper.ClusterVariableMapper;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
-import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
-import io.camunda.gateway.protocol.model.AdvancedDecisionInstanceStateFilter;
-import io.camunda.gateway.protocol.model.AdvancedElementInstanceStateFilter;
-import io.camunda.gateway.protocol.model.AdvancedIntegerFilter;
-import io.camunda.gateway.protocol.model.AdvancedJobKindFilter;
-import io.camunda.gateway.protocol.model.AdvancedJobListenerEventTypeFilter;
-import io.camunda.gateway.protocol.model.AdvancedJobStateFilter;
-import io.camunda.gateway.protocol.model.AdvancedProcessInstanceStateFilter;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.ElementInstanceFilterFields;
@@ -116,20 +109,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
 
 public class SearchQueryFilterMapper {
-
-  /** Advanced filter objects that carry no value at all, one per type the batch filters use. */
-  private static final List<Object> EMPTY_FILTER_PROPERTIES =
-      List.of(
-          SearchQueryRequestMapper.EMPTY_BASIC_STRING_FILTER,
-          SearchQueryRequestMapper.EMPTY_ADVANCED_STRING_FILTER,
-          AdvancedIntegerFilter.Builder.create().build(),
-          AdvancedDateTimeFilter.Builder.create().build(),
-          AdvancedProcessInstanceStateFilter.Builder.create().build(),
-          AdvancedElementInstanceStateFilter.Builder.create().build(),
-          AdvancedDecisionInstanceStateFilter.Builder.create().build(),
-          AdvancedJobKindFilter.Builder.create().build(),
-          AdvancedJobListenerEventTypeFilter.Builder.create().build(),
-          AdvancedJobStateFilter.Builder.create().build());
 
   public static Either<List<String>, ProcessDefinitionStatisticsFilter>
       toProcessDefinitionStatisticsFilter(
@@ -731,13 +710,15 @@ public class SearchQueryFilterMapper {
    */
   private static List<String> emptyFilterPropertyViolations(final Object filter) {
     return Arrays.stream(propertyDescriptors(filter.getClass()))
-        .filter(property -> isEmptyFilterObject(readProperty(property, filter)))
+        .filter(property -> isEmptyFilterProperty(property, filter))
         .map(property -> ERROR_MESSAGE_EMPTY_FILTER_PROPERTY.formatted(property.getName()))
         .toList();
   }
 
-  private static boolean isEmptyFilterObject(final @Nullable Object value) {
-    return value != null && EMPTY_FILTER_PROPERTIES.contains(value);
+  private static boolean isEmptyFilterProperty(
+      final PropertyDescriptor property, final Object filter) {
+    final var value = readProperty(property, filter);
+    return value != null && isEmptyAdvancedFilter(value);
   }
 
   private static PropertyDescriptor[] propertyDescriptors(final Class<?> type) {
