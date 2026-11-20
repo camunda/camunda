@@ -14,6 +14,7 @@ import org.gradle.jvm.tasks.Jar
 plugins {
   `java-library`
   `maven-publish`
+  checkstyle
   id("com.diffplug.spotless")
   id("net.ltgt.errorprone")
   id("org.gradle.test-retry")
@@ -74,6 +75,30 @@ extensions.configure<SpotlessExtension> {
 
 // Maven -Dquickly skips format checks; do the same for the per-module Spotless checks.
 tasks.withType<SpotlessCheck>().configureEach { skipWhen(quickly) }
+
+// Same checkstyle config and tool version as Maven's validate-java execution (parent/pom.xml).
+checkstyle {
+  toolVersion = versionCatalog.requiredVersion("parent-checkstyle")
+  configFile =
+    layout.settingsDirectory.file("build-tools/src/main/resources/check/.checkstyle.xml").asFile
+  maxWarnings = 0
+}
+
+// Maven checks only the module's own src/main/java and src/test/java; Gradle's source sets also
+// contain generated sources (SBE, protobuf, OpenAPI), which are not ours to fix.
+tasks.named<Checkstyle>("checkstyleMain") { setSource(fileTree("src/main/java")) }
+
+tasks.named<Checkstyle>("checkstyleTest") { setSource(fileTree("src/test/java")) }
+
+// Maven -Dquickly skips checks (skipChecks); do the same here.
+tasks.withType<Checkstyle>().configureEach { skipWhen(quickly) }
+
+// Runs the checks of Maven's "Java Checks" CI job. Spotless is not part of it; it has its own job.
+tasks.register("javaChecks") {
+  group = "verification"
+  description = "Runs the checks of the Maven Java Checks job: checkstyle on main and test sources"
+  dependsOn(tasks.withType<Checkstyle>(), "testClasses")
+}
 
 publishing {
   publications.create<MavenPublication>("maven") {
