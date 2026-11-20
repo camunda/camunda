@@ -14,3 +14,7 @@ writable by any member — or MEMBER — one value per member, written only by t
 
 Consumers depend on `api/`, and on `testkit/` in test scope. There is no production implementation
 yet; the transport is still to be decided (ADR 0001, D2).
+
+`poc/` holds two proof-of-concept implementations, one over SWIM member properties and one with its
+own transport, plus a showcase consumer in its tests. They exist to choose the transport and are not
+used in production; see the [comparison](docs/poc-transport-comparison.md).
