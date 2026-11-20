@@ -1,0 +1,8 @@
+es:
+  settings:
+    index:
+      agent_instance_number_of_shards: 7
+opensearch:
+  settings:
+    index:
+      agent_instance_number_of_shards: 7
