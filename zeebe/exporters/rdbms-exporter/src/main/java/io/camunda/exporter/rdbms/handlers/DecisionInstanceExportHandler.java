@@ -93,7 +93,7 @@ public class DecisionInstanceExportHandler
         .decisionRequirementsId(value.getDecisionRequirementsId())
         .flowNodeInstanceKey(value.getElementInstanceKey())
         .flowNodeId(value.getElementId())
-        .rootDecisionDefinitionKey(evaluatedDecision.getDecisionKey())
+        .rootDecisionDefinitionKey(value.getDecisionKey())
         .result(evaluatedDecision.getDecisionOutput())
         .evaluatedInputs(createEvaluationInputs(id, evaluatedDecision.getEvaluatedInputs()))
         .evaluatedOutputs(createEvaluationOutputs(id, evaluatedDecision.getMatchedRules()))
