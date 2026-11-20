@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -31,7 +32,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @ExcludeAuthorizationCheck
 public final class ProcessMessageSubscriptionDeleteProcessor
-    implements TypedRecordProcessor<ProcessMessageSubscriptionRecord> {
+    implements TypedRecordProcessor<ProcessMessageSubscriptionRecord>,
+        StorageOrdinalAware<ProcessMessageSubscriptionRecord> {
 
   private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to delete process message subscription for element with key '%d' and message name '%s', "

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspensionJobBehavior;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -29,7 +30,9 @@ import java.util.List;
 
 @ExcludeAuthorizationCheck
 public final class JobYieldProcessor
-    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
+    implements TypedRecordProcessor<JobRecord>,
+        SuspensionAware<JobRecord>,
+        StorageOrdinalAware<JobRecord> {
   private final JobState jobState;
   private final SuspensionState suspensionState;
   private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;

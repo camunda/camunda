@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -36,7 +37,9 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public final class ProcessInstanceSuspendProcessor
-    implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
+    implements TypedRecordProcessor<ProcessInstanceRecord>,
+        SuspensionAware<ProcessInstanceRecord>,
+        StorageOrdinalAware<ProcessInstanceRecord> {
 
   private static final String MESSAGE_PREFIX =
       "Expected to suspend a process instance with key '%d', but ";
@@ -201,7 +204,6 @@ public final class ProcessInstanceSuspendProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
-    command.getValue().setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
   @Override

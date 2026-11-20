@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -37,17 +36,14 @@ public final class CommandBufferingBehavior {
 
   private final KeyGenerator keyGenerator;
   private final Writers writers;
-  private final ElementInstanceState elementInstanceState;
   private final SuspensionMetrics suspensionMetrics;
 
   public CommandBufferingBehavior(
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final ElementInstanceState elementInstanceState,
       final SuspensionMetrics suspensionMetrics) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
-    this.elementInstanceState = elementInstanceState;
     this.suspensionMetrics = suspensionMetrics;
   }
 
@@ -78,7 +74,7 @@ public final class CommandBufferingBehavior {
             .setProcessInstanceKey(processInstanceKey)
             .setProcessDefinitionKey(processDefinitionKey)
             .setTenantId(tenantId)
-            .setStorageOrdinal(resolveStorageOrdinal(commandValue, processInstanceKey))
+            .setStorageOrdinal(storageOrdinalOf(commandValue))
             .setCommandKey(commandKey)
             .setValueType(valueType)
             .setIntent(intent)
@@ -93,18 +89,10 @@ public final class CommandBufferingBehavior {
   }
 
   /**
-   * Returns the ordinal of the process instance, read from its root element instance. The command
-   * value is not used first, because clients send JOB, USER_TASK and INCIDENT commands without an
-   * ordinal, so they arrive with the default 0 even when the instance has a real ordinal.
+   * The command value carries the ordinal: the engine entry restores it on commands that arrive
+   * without one, and engine-written commands copy it from state when they are written.
    */
-  private int resolveStorageOrdinal(
-      final UnifiedRecordValue commandValue, final long processInstanceKey) {
-    final var root = elementInstanceState.getInstance(processInstanceKey);
-    if (root != null) {
-      return root.getValue().getStorageOrdinal();
-    }
-    // The instance is gone, so its ordinal is unknown. Use the ordinal on the command if it has
-    // one. Otherwise, use the main index, where these records were written before ordinals.
+  private static int storageOrdinalOf(final UnifiedRecordValue commandValue) {
     return commandValue instanceof final StorageOrdinalRelated related
         ? related.getStorageOrdinal()
         : StorageOrdinalRelated.MAIN_INDEX;

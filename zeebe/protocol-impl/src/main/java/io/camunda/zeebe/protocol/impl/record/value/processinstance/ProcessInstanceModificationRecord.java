@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -24,7 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
-    implements ProcessInstanceModificationRecordValue {
+    implements ProcessInstanceModificationRecordValue, MutableStorageOrdinal {
 
   public static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   // Static StringValue keys to avoid memory waste
@@ -264,6 +265,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     return storageOrdinalProperty.getValue();
   }
 
+  @Override
   public ProcessInstanceModificationRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProperty.setValue(storageOrdinal);
     return this;

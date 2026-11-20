@@ -14,11 +14,12 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 
 public final class ProcessInstanceBusinessIdRecord extends UnifiedRecordValue
-    implements ProcessInstanceBusinessIdRecordValue {
+    implements ProcessInstanceBusinessIdRecordValue, MutableStorageOrdinal {
 
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   // Static StringValue keys to avoid memory waste
@@ -101,6 +102,7 @@ public final class ProcessInstanceBusinessIdRecord extends UnifiedRecordValue
     return storageOrdinalProperty.getValue();
   }
 
+  @Override
   public ProcessInstanceBusinessIdRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProperty.setValue(storageOrdinal);
     return this;

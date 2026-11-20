@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
@@ -23,7 +24,7 @@ import java.util.Objects;
 import org.agrona.DirectBuffer;
 
 public final class VariableDocumentRecord extends UnifiedRecordValue
-    implements VariableDocumentRecordValue {
+    implements VariableDocumentRecordValue, MutableStorageOrdinal {
   // Static StringValue keys for property names
   private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
   private static final StringValue UPDATE_SEMANTICS_KEY = new StringValue("updateSemantics");
@@ -82,6 +83,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public VariableDocumentRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

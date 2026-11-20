@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior.LeaseMismatchHandling;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -43,7 +44,9 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public final class AgentInstanceCreateProcessor
-    implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
+    implements TypedRecordProcessor<AgentInstanceRecord>,
+        SuspensionAware<AgentInstanceRecord>,
+        StorageOrdinalAware<AgentInstanceRecord> {
 
   // CAUTION: callers may parse this message to extract the existing agentInstanceKey from the
   // second '%d'. Wording changes that alter the position of the numeric values are a breaking

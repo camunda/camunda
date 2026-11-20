@@ -18,12 +18,14 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public final class VariableRecord extends UnifiedRecordValue implements VariableRecordValue {
+public final class VariableRecord extends UnifiedRecordValue
+    implements VariableRecordValue, MutableStorageOrdinal {
 
   // Static StringValue keys for property names
   private static final StringValue NAME_KEY = new StringValue("name");
@@ -207,6 +209,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public VariableRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

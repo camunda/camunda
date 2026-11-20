@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue.ExpressionSecretReferenceValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -27,7 +28,8 @@ import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRecordValue {
+public class ExpressionRecord extends UnifiedRecordValue
+    implements ExpressionRecordValue, MutableStorageOrdinal {
 
   private static final StringValue EXPRESSION_KEY = new StringValue("expression");
   private static final StringValue RESULT_VALUE_KEY = new StringValue("resultValue");
@@ -163,6 +165,7 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public ExpressionRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

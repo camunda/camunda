@@ -9,6 +9,9 @@ package io.camunda.zeebe.engine;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.processinstance.CommandBufferingBehavior;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalRestoreBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.InstanceKeyResolver;
+import io.camunda.zeebe.engine.processing.streamprocessor.InstanceKeyResolver.InstanceKeys;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -66,7 +69,9 @@ public class Engine implements RecordProcessor {
   private RecordProcessorMap recordProcessorMap;
   private MutableProcessingState processingState;
   private CommandBufferingBehavior bufferingBehavior;
+  private InstanceKeyResolver instanceKeyResolver;
   private SuspensionBehavior suspensionBehavior;
+  private StorageOrdinalRestoreBehavior ordinalRestoreBehavior;
 
   private final ErrorRecord errorRecord = new ErrorRecord();
 
@@ -136,18 +141,18 @@ public class Engine implements RecordProcessor {
             recordProcessorContext, writers, config, securityConfig);
     processingState = typedProcessorContext.getProcessingState();
     writers.setKeyValidator(processingState.getKeyGenerator());
+    instanceKeyResolver = new InstanceKeyResolver(processingState);
     suspensionBehavior = new SuspensionBehavior(processingState);
+    ordinalRestoreBehavior =
+        new StorageOrdinalRestoreBehavior(
+            processingState.getPartitionId(), processingState.getElementInstanceState());
     final var suspensionMetrics = typedProcessorContext.getSuspensionMetrics();
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
     bufferingBehavior =
-        new CommandBufferingBehavior(
-            processingState.getKeyGenerator(),
-            writers,
-            processingState.getElementInstanceState(),
-            suspensionMetrics);
+        new CommandBufferingBehavior(processingState.getKeyGenerator(), writers, suspensionMetrics);
 
     // Replay only rebuilds the state, so the clock is set from the state once replay is done.
     // This listener is added first, so the other listeners already see this clock when they
@@ -199,6 +204,18 @@ public class Engine implements RecordProcessor {
       if (currentProcessor == null) {
         return processingResultBuilder.build();
       }
+
+      // the keys are resolved once for both behaviors, and only when one of them needs them
+      final InstanceKeys keys =
+          ordinalRestoreBehavior.appliesTo(typedCommand, currentProcessor)
+                  || suspensionBehavior.appliesTo(currentProcessor)
+              ? instanceKeyResolver.resolve(typedCommand)
+              : InstanceKeyResolver.UNRESOLVED;
+
+      // the ordinal is restored before the ban check and the gate, so their rejections carry it;
+      // a no-op unless the processor is StorageOrdinalAware and the value carries no ordinal
+      ordinalRestoreBehavior.restore(typedCommand, currentProcessor, keys);
+
       if (isBannedCommand(typedCommand)) {
         // Reject commands for banned process instances
         rejectBannedInstanceCommand(typedCommand);
@@ -210,7 +227,8 @@ public class Engine implements RecordProcessor {
         processingResultBuilder.withProcessInASeparateBatch();
       }
 
-      final var suspension = suspensionBehavior.process(typedCommand, currentProcessor);
+      // a no-op unless the processor is SuspensionAware
+      final var suspension = suspensionBehavior.process(typedCommand, currentProcessor, keys);
       switch (suspension.outcome()) {
         case REJECT -> {
           rejectInstanceCommand(typedCommand, suspension.rejectionReason());

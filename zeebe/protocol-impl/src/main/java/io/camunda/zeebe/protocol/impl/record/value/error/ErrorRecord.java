@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
@@ -20,7 +21,8 @@ import java.io.StringWriter;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 
-public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecordValue {
+public final class ErrorRecord extends UnifiedRecordValue
+    implements ErrorRecordValue, MutableStorageOrdinal {
 
   private static final String NULL_MESSAGE = "Without exception message.";
 
@@ -103,6 +105,7 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public ErrorRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -30,7 +31,8 @@ import java.time.InstantSource;
 
 @ExcludeAuthorizationCheck
 public final class MessageSubscriptionCorrelateProcessor
-    implements TypedRecordProcessor<MessageSubscriptionRecord> {
+    implements TypedRecordProcessor<MessageSubscriptionRecord>,
+        StorageOrdinalAware<MessageSubscriptionRecord> {
 
   private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to correlate subscription for element with key '%d' and message name '%s', "

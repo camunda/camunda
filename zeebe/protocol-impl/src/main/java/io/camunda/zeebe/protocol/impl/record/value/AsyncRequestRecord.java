@@ -16,7 +16,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 
 public final class AsyncRequestRecord extends UnifiedRecordValue
-    implements AsyncRequestRecordValue {
+    implements AsyncRequestRecordValue, MutableStorageOrdinal {
 
   private final LongProperty scopeKeyProperty = new LongProperty("scopeKey", -1);
   private final EnumProperty<ValueType> valueTypeProperty =
@@ -139,6 +139,7 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
     return storageOrdinalProperty.getValue();
   }
 
+  @Override
   public AsyncRequestRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProperty.setValue(storageOrdinal);
     return this;

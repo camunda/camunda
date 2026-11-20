@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -22,7 +23,7 @@ import org.agrona.DirectBuffer;
 
 @SuppressWarnings("java:S2160")
 public final class ProcessEventRecord extends UnifiedRecordValue
-    implements ProcessEventRecordValue {
+    implements ProcessEventRecordValue, MutableStorageOrdinal {
   private final LongProperty scopeKeyProperty = new LongProperty("scopeKey");
   private final StringProperty targetElementIdProperty = new StringProperty("targetElementId");
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
@@ -134,6 +135,7 @@ public final class ProcessEventRecord extends UnifiedRecordValue
     return storageOrdinalProperty.getValue();
   }
 
+  @Override
   public ProcessEventRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProperty.setValue(storageOrdinal);
     return this;

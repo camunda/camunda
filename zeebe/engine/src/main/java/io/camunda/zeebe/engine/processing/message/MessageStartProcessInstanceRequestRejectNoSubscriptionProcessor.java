@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReplyOutcome;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -44,7 +45,8 @@ import org.slf4j.LoggerFactory;
  */
 @ExcludeAuthorizationCheck
 public final class MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor
-    implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
+    implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord>,
+        StorageOrdinalAware<MessageStartProcessInstanceRequestRecord> {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(

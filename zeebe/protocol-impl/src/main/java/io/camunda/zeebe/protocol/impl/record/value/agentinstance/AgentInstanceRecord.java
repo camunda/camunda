@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
@@ -26,7 +27,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public final class AgentInstanceRecord extends UnifiedRecordValue
-    implements AgentInstanceRecordValue {
+    implements AgentInstanceRecordValue, MutableStorageOrdinal {
 
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty agentDefinitionKeyProp = new LongProperty("agentDefinitionKey", -1L);
@@ -321,6 +322,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public AgentInstanceRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

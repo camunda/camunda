@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -21,7 +22,7 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class CompensationSubscriptionRecord extends UnifiedRecordValue
-    implements CompensationSubscriptionRecordValue {
+    implements CompensationSubscriptionRecordValue, MutableStorageOrdinal {
 
   private static final String EMPTY_STRING = "";
 
@@ -153,6 +154,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     return storageOrdinalProperty.getValue();
   }
 
+  @Override
   public CompensationSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProperty.setValue(storageOrdinal);
     return this;

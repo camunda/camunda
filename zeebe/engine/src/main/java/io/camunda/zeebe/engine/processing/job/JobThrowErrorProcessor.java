@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -57,7 +58,9 @@ import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public class JobThrowErrorProcessor
-    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
+    implements TypedRecordProcessor<JobRecord>,
+        SuspensionAware<JobRecord>,
+        StorageOrdinalAware<JobRecord> {
 
   /**
    * Marker element ID. This ID is used to indicate that a given catch event could not be found. The

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -51,7 +52,9 @@ import org.jspecify.annotations.NullMarked;
 @ExcludeAuthorizationCheck
 @NullMarked
 public final class BufferedCommandDrainProcessor
-    implements TypedRecordProcessor<BufferedCommandRecord>, SuspensionAware<BufferedCommandRecord> {
+    implements TypedRecordProcessor<BufferedCommandRecord>,
+        SuspensionAware<BufferedCommandRecord>,
+        StorageOrdinalAware<BufferedCommandRecord> {
 
   private static final String NOT_RESUMING_MESSAGE =
       "Expected to drain buffered commands of process instance '%d', but it is not resuming.";

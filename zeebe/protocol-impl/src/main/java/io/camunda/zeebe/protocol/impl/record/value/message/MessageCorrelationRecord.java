@@ -17,13 +17,14 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class MessageCorrelationRecord extends UnifiedRecordValue
-    implements MessageCorrelationRecordValue {
+    implements MessageCorrelationRecordValue, MutableStorageOrdinal {
 
   // Static StringValue keys to avoid memory waste
   private static final StringValue NAME_KEY = new StringValue("name");
@@ -211,6 +212,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public MessageCorrelationRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

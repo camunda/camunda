@@ -11,12 +11,13 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
 import java.util.List;
 
 public final class BatchOperationLifecycleManagementRecord extends UnifiedRecordValue
-    implements BatchOperationLifecycleManagementRecordValue {
+    implements BatchOperationLifecycleManagementRecordValue, MutableStorageOrdinal {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
@@ -51,6 +52,7 @@ public final class BatchOperationLifecycleManagementRecord extends UnifiedRecord
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public BatchOperationLifecycleManagementRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

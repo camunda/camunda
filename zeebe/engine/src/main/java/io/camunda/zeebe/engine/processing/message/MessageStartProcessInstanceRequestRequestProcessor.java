@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -93,7 +94,8 @@ import org.slf4j.LoggerFactory;
  */
 @ExcludeAuthorizationCheck
 public final class MessageStartProcessInstanceRequestRequestProcessor
-    implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
+    implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord>,
+        StorageOrdinalAware<MessageStartProcessInstanceRequestRecord> {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(MessageStartProcessInstanceRequestRequestProcessor.class);

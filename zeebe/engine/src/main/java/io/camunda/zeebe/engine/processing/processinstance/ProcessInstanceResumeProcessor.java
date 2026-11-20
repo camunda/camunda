@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -38,7 +39,9 @@ import io.camunda.zeebe.util.Either;
 import org.slf4j.Logger;
 
 public final class ProcessInstanceResumeProcessor
-    implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
+    implements TypedRecordProcessor<ProcessInstanceRecord>,
+        SuspensionAware<ProcessInstanceRecord>,
+        StorageOrdinalAware<ProcessInstanceRecord> {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
@@ -230,6 +233,5 @@ public final class ProcessInstanceResumeProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
-    command.getValue().setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 }

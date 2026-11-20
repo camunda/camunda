@@ -19,7 +19,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.InstanceKeyResolver.InstanceKeys;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionAction;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionBehavior.SuspensionResult;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -49,6 +51,7 @@ final class SuspensionBehaviorTest {
 
   private ProcessingState processingState;
   private SuspensionState suspensionState;
+  private InstanceKeyResolver resolver;
   private SuspensionBehavior suspensionBehavior;
 
   @BeforeEach
@@ -56,7 +59,41 @@ final class SuspensionBehaviorTest {
     processingState = mock(ProcessingState.class);
     suspensionState = mock(SuspensionState.class);
     when(processingState.getSuspensionState()).thenReturn(suspensionState);
+    resolver = new InstanceKeyResolver(processingState);
     suspensionBehavior = new SuspensionBehavior(processingState);
+  }
+
+  private SuspensionResult process(
+      final TypedRecord<?> command, final TypedRecordProcessor<?> processor) {
+    final InstanceKeys keys =
+        suspensionBehavior.appliesTo(processor)
+            ? resolver.resolve(command)
+            : InstanceKeyResolver.UNRESOLVED;
+    return suspensionBehavior.process(command, processor, keys);
+  }
+
+  @Test
+  void shouldNotApplyToProcessorThatIsNotSuspensionAware() {
+    // given
+    final var processor = plainProcessor();
+
+    // when
+    final var applies = suspensionBehavior.appliesTo(processor);
+
+    // then
+    assertThat(applies).isFalse();
+  }
+
+  @Test
+  void shouldApplyToSuspensionAwareProcessor() {
+    // given
+    final var processor = overridingProcessor(SuspensionAction.PROCESS);
+
+    // when
+    final var applies = suspensionBehavior.appliesTo(processor);
+
+    // then
+    assertThat(applies).isTrue();
   }
 
   @Test
@@ -65,7 +102,7 @@ final class SuspensionBehaviorTest {
     markerIs(State.SUSPENDED);
 
     // when
-    final var result = suspensionBehavior.process(command(), plainProcessor());
+    final var result = process(command(), plainProcessor());
 
     // then - non-aware processors are never gated, and the key is not even resolved
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
@@ -80,7 +117,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.REJECT);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then - no marker means the processor is not consulted
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
@@ -104,7 +141,7 @@ final class SuspensionBehaviorTest {
         };
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then
     assertThat(result.outcome()).isEqualTo(expected);
@@ -119,7 +156,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.BUFFER);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then
     assertThat(result.outcome()).isEqualTo(SuspensionAction.BUFFER);
@@ -135,7 +172,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(behavior);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then
     assertThat(result.outcome()).isEqualTo(behavior);
@@ -159,7 +196,7 @@ final class SuspensionBehaviorTest {
     doReturn(SuspensionAction.PROCESS).when(suspensionAware).onSuspending(any());
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
@@ -176,7 +213,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(null);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then - a contract-violating null classification is logged and processed (fail-open)
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
@@ -189,7 +226,7 @@ final class SuspensionBehaviorTest {
     markerIs(State.RESUMING);
 
     // when
-    final var result = suspensionBehavior.process(command(), plainProcessor());
+    final var result = process(command(), plainProcessor());
 
     // then - non-aware processors are never gated, and the key is not even resolved
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
@@ -204,7 +241,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.PROCESS);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then - buffered commands drain (pass through) while resuming
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
@@ -219,7 +256,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.REJECT);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then - rejected commands stay rejected until draining clears the marker
     assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
@@ -234,7 +271,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.BUFFER);
 
     // when / then - re-buffering while draining is a bug
-    assertThatThrownBy(() -> suspensionBehavior.process(command, processor))
+    assertThatThrownBy(() -> process(command, processor))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Expected PROCESS or REJECT from onResuming, but got BUFFER");
     verifyOnResuming(processor, command);
@@ -252,7 +289,7 @@ final class SuspensionBehaviorTest {
     stubRejectionReason(processor, command, "custom user-task reason");
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then - Engine can use this instead of the generic suspended-process-instance message
     assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
@@ -271,7 +308,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.REJECT);
 
     // when
-    final var result = suspensionBehavior.process(command(), processor);
+    final var result = process(command(), processor);
 
     // then - the interface default names the suspended process instance
     assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
@@ -287,7 +324,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.REJECT);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then - callers reuse the resolved key instead of re-deriving it
     assertThat(result.processInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
@@ -310,7 +347,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.REJECT);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then - the process instance key is resolved
     assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
@@ -333,7 +370,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.REJECT);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then - the real process instance key is resolved via job state and returned to the caller
     assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
@@ -354,7 +391,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.REJECT);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
@@ -378,7 +415,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.REJECT);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
@@ -394,7 +431,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.REJECT);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then
     assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
@@ -409,7 +446,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.BUFFER);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
@@ -425,7 +462,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.BUFFER);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then
     assertThat(result.outcome()).isEqualTo(SuspensionAction.BUFFER);
@@ -484,7 +521,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.PROCESS);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
@@ -515,7 +552,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.BUFFER);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then - the real process instance key is resolved via the element instance state and returned
     // to the caller
@@ -540,7 +577,7 @@ final class SuspensionBehaviorTest {
     final var processor = overridingProcessor(SuspensionAction.BUFFER);
 
     // when
-    final var result = suspensionBehavior.process(command, processor);
+    final var result = process(command, processor);
 
     // then - the key can't be resolved (-1), so the command is processed rather than gated
     assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);

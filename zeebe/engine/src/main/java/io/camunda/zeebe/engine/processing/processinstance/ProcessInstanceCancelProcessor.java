@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -34,7 +35,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Optional;
 
 public final class ProcessInstanceCancelProcessor
-    implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
+    implements TypedRecordProcessor<ProcessInstanceRecord>,
+        SuspensionAware<ProcessInstanceRecord>,
+        StorageOrdinalAware<ProcessInstanceRecord> {
 
   private static final String MESSAGE_PREFIX =
       "Expected to cancel a process instance with key '%d', but ";
@@ -195,7 +198,6 @@ public final class ProcessInstanceCancelProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
-    command.getValue().setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
   private long getRootProcessInstanceKey(long instanceKey) {

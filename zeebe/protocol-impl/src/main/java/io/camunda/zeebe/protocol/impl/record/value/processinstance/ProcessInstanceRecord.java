@@ -20,6 +20,7 @@ import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -33,7 +34,7 @@ import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceRecord extends UnifiedRecordValue
-    implements ProcessInstanceRecordValue {
+    implements ProcessInstanceRecordValue, MutableStorageOrdinal {
 
   // Static StringValue keys for property names
   public static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
@@ -393,6 +394,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public ProcessInstanceRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;
