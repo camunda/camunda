@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
 import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -139,6 +140,45 @@ class DecisionInstanceExportHandlerTest {
             DecisionInstanceDbModel::decisionDefinitionKey,
             DecisionInstanceDbModel::rootDecisionDefinitionKey)
         .containsExactly(tuple(100L, 300L), tuple(200L, 300L), tuple(300L, 300L));
+  }
+
+  @Test
+  void shouldExportFailedEvaluationWithFailureMessageOnLastDecision() {
+    // given - the failing decision is the last one of a FAILED record
+    final var value =
+        ImmutableDecisionEvaluationRecordValue.builder()
+            .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+            .withEvaluationFailureMessage("boom")
+            .withEvaluatedDecisions(List.of(evaluatedDecision("d1"), evaluatedDecision("d2")))
+            .build();
+    final Record<DecisionEvaluationRecordValue> record =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r -> r.withIntent(DecisionEvaluationIntent.FAILED).withValue(value));
+
+    // when
+    assertThat(handler.canExport(record)).isTrue();
+    handler.export(record);
+
+    // then
+    verify(decisionInstanceWriter, times(2)).create(dbModelCaptor.capture());
+    assertThat(dbModelCaptor.getAllValues())
+        .extracting(
+            DecisionInstanceDbModel::state, DecisionInstanceDbModel::evaluationFailureMessage)
+        .containsExactly(
+            tuple(DecisionInstanceState.EVALUATED, null),
+            tuple(DecisionInstanceState.FAILED, "boom"));
+  }
+
+  @Test
+  void shouldNotExportOtherIntents() {
+    // given
+    final Record<DecisionEvaluationRecordValue> record =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION, r -> r.withIntent(DecisionEvaluationIntent.EVALUATE));
+
+    // when - then
+    assertThat(handler.canExport(record)).isFalse();
   }
 
   private EvaluatedDecisionValue evaluatedDecision(final String decisionId) {
