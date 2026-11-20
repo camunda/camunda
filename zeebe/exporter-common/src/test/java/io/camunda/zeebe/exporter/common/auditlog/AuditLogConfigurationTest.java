@@ -121,6 +121,42 @@ class AuditLogConfigurationTest {
   }
 
   @Test
+  void shouldDisableVariableHistoryByDefault() {
+    // when
+    final var config = new AuditLogConfiguration();
+
+    // then
+    assertThat(config.isVariableHistoryEnabled()).isFalse();
+  }
+
+  @Test
+  void shouldKeepAuditLogEnabledWhenVariableHistoryIsDisabled() {
+    // given
+    final var config = new AuditLogConfiguration();
+    config.setVariableHistoryEnabled(false);
+
+    // when
+    final var enabled = config.isEnabled();
+
+    // then
+    assertThat(enabled).isTrue();
+  }
+
+  @Test
+  void shouldNotEnableAuditLogThroughVariableHistory() {
+    // given no section has categories, and the switch is on
+    final var config = new AuditLogConfiguration();
+    config.getUser().setCategories(Set.of());
+    config.setVariableHistoryEnabled(true);
+
+    // when
+    final var enabled = config.isEnabled();
+
+    // then
+    assertThat(enabled).isFalse();
+  }
+
+  @Test
   void shouldBeDisabledForAnonymousActors() {
     final var config = new AuditLogConfiguration();
 

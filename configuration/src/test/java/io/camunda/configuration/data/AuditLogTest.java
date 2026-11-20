@@ -89,6 +89,18 @@ class AuditLogTest {
   }
 
   @Test
+  void shouldDisableVariableHistoryByDefault() {
+    // when
+    final AuditLog auditLog = new AuditLog();
+
+    // then
+    assertThat(auditLog.isVariableHistoryEnabled())
+        .as("The variable history is off until it is switched on")
+        .isFalse();
+    assertThat(auditLog.toConfiguration().isVariableHistoryEnabled()).isFalse();
+  }
+
+  @Test
   void shouldConvertToAuditLogConfiguration() {
     final AuditLog auditLog = new AuditLog();
 
@@ -115,6 +127,21 @@ class AuditLogTest {
     assertThat(config.getUnknown().getExcludes())
         .as("Unknown excludes should match")
         .isEqualTo(auditLog.getUnknown().getExcludes());
+  }
+
+  @Test
+  void shouldConvertVariableHistorySwitch() {
+    // given the switch is on and no actor has categories
+    final AuditLog auditLog = new AuditLog();
+    auditLog.getUser().setCategories(Set.of());
+    auditLog.setVariableHistoryEnabled(true);
+
+    // when
+    final AuditLogConfiguration config = auditLog.toConfiguration();
+
+    // then the switch is converted and does not enable the audit log by itself
+    assertThat(config.isVariableHistoryEnabled()).isTrue();
+    assertThat(config.isEnabled()).isFalse();
   }
 
   @Test
@@ -152,7 +179,8 @@ class AuditLogTest {
         "camunda.data.audit-log.unknown.categories[0]=USER_TASKS",
         "camunda.data.audit-log.unknown.excludes[0]=VARIABLE",
         "camunda.data.audit-log.engine.categories[0]=DEPLOYED_RESOURCES",
-        "camunda.data.audit-log.engine.excludes[0]=USER"
+        "camunda.data.audit-log.engine.excludes[0]=USER",
+        "camunda.data.audit-log.variable-history-enabled=true"
       })
   class RDBMSExporterTest {
     @Test
@@ -181,6 +209,7 @@ class AuditLogTest {
           .containsExactlyInAnyOrder(AuditLogOperationCategory.DEPLOYED_RESOURCES);
       assertThat(config.getAuditLog().getEngine().getExcludes())
           .containsExactlyInAnyOrder(AuditLogEntityType.USER);
+      assertThat(config.getAuditLog().isVariableHistoryEnabled()).isTrue();
     }
   }
 
@@ -203,7 +232,8 @@ class AuditLogTest {
         "camunda.data.audit-log.unknown.categories[0]=DEPLOYED_RESOURCES",
         "camunda.data.audit-log.unknown.excludes[0]=PROCESS_INSTANCE",
         "camunda.data.audit-log.engine.categories[0]=USER_TASKS",
-        "camunda.data.audit-log.engine.excludes[0]=PROCESS_INSTANCE"
+        "camunda.data.audit-log.engine.excludes[0]=PROCESS_INSTANCE",
+        "camunda.data.audit-log.variable-history-enabled=true"
       })
   class CamundaExporterTest {
     @Test
@@ -232,6 +262,7 @@ class AuditLogTest {
           .containsExactlyInAnyOrder(AuditLogOperationCategory.USER_TASKS);
       assertThat(config.getAuditLog().getEngine().getExcludes())
           .containsExactlyInAnyOrder(AuditLogEntityType.PROCESS_INSTANCE);
+      assertThat(config.getAuditLog().isVariableHistoryEnabled()).isTrue();
     }
   }
 

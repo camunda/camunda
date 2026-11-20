@@ -48,10 +48,11 @@ class AuditLogPhysicalTenantTest {
 
   @Test
   void shouldReachTheCamundaExporterOfTheTenantOnly() {
-    // given a tenant that sets only the engine section, with its own index prefix
+    // given a tenant that sets only the engine section and the switch, with its own index prefix
     environment.setProperty("camunda.data.secondary-storage.type", "elasticsearch");
     environment.setProperty("camunda.data.audit-log.user.categories[0]", "USER_TASKS");
     environment.setProperty(TENANT_PREFIX + "data.audit-log.engine.categories[0]", "ADMIN");
+    environment.setProperty(TENANT_PREFIX + "data.audit-log.variable-history-enabled", "true");
     environment.setProperty(
         TENANT_PREFIX + "data.secondary-storage.elasticsearch.index-prefix", TENANT_A);
     addSecurityInitialization();
@@ -66,15 +67,20 @@ class AuditLogPhysicalTenantTest {
     assertThat(tenant.getEngine().getCategories()).containsExactly(AuditLogOperationCategory.ADMIN);
     assertThat(tenant.getUser().getCategories())
         .containsExactly(AuditLogOperationCategory.USER_TASKS);
+    assertThat(tenant.isVariableHistoryEnabled()).isTrue();
     assertThat(defaultTenant.getEngine().getCategories()).isEmpty();
+    assertThat(defaultTenant.isVariableHistoryEnabled()).isFalse();
   }
 
   @Test
   void shouldReachTheRdbmsExporterOfTheTenantOnly() {
-    // given a tenant that sets only the engine section, with its own database
+    // given a root that turns the history on, and a tenant that turns it off and sets only the
+    // engine section, with its own database
     environment.setProperty("camunda.data.secondary-storage.type", "rdbms");
     environment.setProperty("camunda.data.audit-log.user.categories[0]", "USER_TASKS");
     environment.setProperty(TENANT_PREFIX + "data.audit-log.engine.categories[0]", "ADMIN");
+    environment.setProperty("camunda.data.audit-log.variable-history-enabled", "true");
+    environment.setProperty(TENANT_PREFIX + "data.audit-log.variable-history-enabled", "false");
     environment.setProperty(
         TENANT_PREFIX + "data.secondary-storage.rdbms.url", "jdbc:h2:mem:rdbms-" + TENANT_A);
     addSecurityInitialization();
@@ -94,7 +100,9 @@ class AuditLogPhysicalTenantTest {
     assertThat(tenant.getEngine().getCategories()).containsExactly(AuditLogOperationCategory.ADMIN);
     assertThat(tenant.getUser().getCategories())
         .containsExactly(AuditLogOperationCategory.USER_TASKS);
+    assertThat(tenant.isVariableHistoryEnabled()).isFalse();
     assertThat(defaultTenant.getEngine().getCategories()).isEmpty();
+    assertThat(defaultTenant.isVariableHistoryEnabled()).isTrue();
   }
 
   private AuditLogConfiguration camundaExporterAuditLog(final Camunda camunda) {

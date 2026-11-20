@@ -25,6 +25,9 @@ public class AuditLog {
   @NestedConfigurationProperty private AuditLogEntry unknown = AuditLogEntry.logNone();
   @NestedConfigurationProperty private AuditLogEntry engine = AuditLogEntry.logNone();
 
+  /** Whether the variable history is recorded. It has no effect when the audit log is disabled. */
+  private boolean variableHistoryEnabled = false;
+
   public boolean isEnabled() {
     return enabled;
   }
@@ -65,6 +68,14 @@ public class AuditLog {
     this.engine = engine;
   }
 
+  public boolean isVariableHistoryEnabled() {
+    return variableHistoryEnabled;
+  }
+
+  public void setVariableHistoryEnabled(final boolean variableHistoryEnabled) {
+    this.variableHistoryEnabled = variableHistoryEnabled;
+  }
+
   /** Converts this configuration to an {@link AuditLogConfiguration} for the exporter. */
   public AuditLogConfiguration toConfiguration() {
     final AuditLogConfiguration auditLogConfiguration = new AuditLogConfiguration();
@@ -85,6 +96,7 @@ public class AuditLog {
         .getEngine()
         .setCategories(getEngine().getCategories())
         .setExcludes(getEngine().getExcludes());
+    auditLogConfiguration.setVariableHistoryEnabled(isVariableHistoryEnabled());
     return auditLogConfiguration;
   }
 }

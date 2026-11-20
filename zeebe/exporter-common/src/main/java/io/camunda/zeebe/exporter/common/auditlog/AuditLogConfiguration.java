@@ -22,6 +22,12 @@ public final class AuditLogConfiguration implements AuditLogCheck {
   private ActorAuditLogConfiguration unknown = ActorAuditLogConfiguration.logNone();
   private ActorAuditLogConfiguration engine = ActorAuditLogConfiguration.logNone();
 
+  /**
+   * Whether the variable history is recorded. It has no effect when the audit log is disabled, and
+   * it does not count in {@link #isEnabled()}.
+   */
+  private boolean variableHistoryEnabled = false;
+
   public ActorAuditLogConfiguration getUser() {
     return user;
   }
@@ -58,6 +64,14 @@ public final class AuditLogConfiguration implements AuditLogCheck {
     return this;
   }
 
+  public boolean isVariableHistoryEnabled() {
+    return variableHistoryEnabled;
+  }
+
+  public void setVariableHistoryEnabled(final boolean variableHistoryEnabled) {
+    this.variableHistoryEnabled = variableHistoryEnabled;
+  }
+
   @Override
   public String toString() {
     return "AuditLogConfiguration{"
@@ -71,6 +85,8 @@ public final class AuditLogConfiguration implements AuditLogCheck {
         + unknown
         + ", engine="
         + engine
+        + ", variableHistoryEnabled="
+        + variableHistoryEnabled
         + '}';
   }
 
