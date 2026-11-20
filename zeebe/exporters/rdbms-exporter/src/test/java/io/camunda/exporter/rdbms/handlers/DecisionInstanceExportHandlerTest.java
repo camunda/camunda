@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -99,6 +100,45 @@ class DecisionInstanceExportHandlerTest {
         .extracting(DecisionInstanceDbModel::decisionDefinitionId)
         .containsExactly("d1", "d2", "d3");
     verify(value, times(1)).getEvaluatedDecisions();
+  }
+
+  @Test
+  void shouldSetCalledDecisionAsRootOfEveryDecisionInstance() {
+    // given - required decisions come first, the called (root) decision last
+    final var value =
+        ImmutableDecisionEvaluationRecordValue.builder()
+            .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+            .withDecisionKey(300L)
+            .withEvaluatedDecisions(
+                List.of(
+                    ImmutableEvaluatedDecisionValue.builder()
+                        .from(evaluatedDecision("d1"))
+                        .withDecisionKey(100L)
+                        .build(),
+                    ImmutableEvaluatedDecisionValue.builder()
+                        .from(evaluatedDecision("d2"))
+                        .withDecisionKey(200L)
+                        .build(),
+                    ImmutableEvaluatedDecisionValue.builder()
+                        .from(evaluatedDecision("d3"))
+                        .withDecisionKey(300L)
+                        .build()))
+            .build();
+    final Record<DecisionEvaluationRecordValue> record =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r -> r.withIntent(DecisionEvaluationIntent.EVALUATED).withValue(value));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(decisionInstanceWriter, times(3)).create(dbModelCaptor.capture());
+    assertThat(dbModelCaptor.getAllValues())
+        .extracting(
+            DecisionInstanceDbModel::decisionDefinitionKey,
+            DecisionInstanceDbModel::rootDecisionDefinitionKey)
+        .containsExactly(tuple(100L, 300L), tuple(200L, 300L), tuple(300L, 300L));
   }
 
   private EvaluatedDecisionValue evaluatedDecision(final String decisionId) {
