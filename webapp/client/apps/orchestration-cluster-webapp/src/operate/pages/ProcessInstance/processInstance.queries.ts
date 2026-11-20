@@ -15,7 +15,7 @@ import type {
 	QueryElementInstancesRequestBody,
 	QuerySortOrder,
 } from '@camunda/camunda-api-zod-schemas/8.11';
-import {request, requestErrorSchema} from '#/shared/http/request';
+import {request, requestErrorSchema, type RequestError} from '#/shared/http/request';
 import {ForbiddenError} from '#/shared/errors';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
@@ -62,10 +62,22 @@ function instanceLastMigrationQuery(processInstanceKey: string) {
 	});
 }
 
+function isNumericKey(key: string) {
+	return /^-?\d+$/.test(key);
+}
+
 function processInstanceQuery(processInstanceKey: string) {
 	return queryOptions({
 		queryKey: ['processInstance', processInstanceKey] as const,
+		...(isNumericKey(processInstanceKey) ? {} : {retry: false}),
 		queryFn: async (): Promise<ProcessInstance> => {
+			if (!isNumericKey(processInstanceKey)) {
+				throw {
+					variant: 'failed-response',
+					response: new Response(null, {status: 404}),
+					networkError: null,
+				} satisfies RequestError;
+			}
 			const {response, error} = await request(endpoints.getProcessInstance(processInstanceKey));
 			if (error !== null) {
 				throw mapQueryError(error);

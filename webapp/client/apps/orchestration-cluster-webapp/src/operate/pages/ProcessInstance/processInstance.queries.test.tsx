@@ -63,8 +63,8 @@ function WaitStatePreview({initialState = 'ACTIVE'}: {initialState?: ProcessInst
 	);
 }
 
-function ProcessInstanceStatus() {
-	const {query, isUnauthorized, isNotFound, isGenericError} = useProcessInstance(PROCESS_INSTANCE_KEY);
+function ProcessInstanceStatus({processInstanceKey = PROCESS_INSTANCE_KEY}: {processInstanceKey?: string}) {
+	const {query, isUnauthorized, isNotFound, isGenericError} = useProcessInstance(processInstanceKey);
 	return (
 		<p>
 			{isUnauthorized
@@ -111,6 +111,16 @@ it.for([
 		</QueryClientProvider>,
 	);
 	await expect.element(screen.getByText(expected)).toBeVisible();
+});
+
+it('should treat a non-numeric process instance key as not found without reading it', async ({worker}) => {
+	worker.use(mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(createProcessInstance())}));
+	const screen = await render(
+		<QueryClientProvider client={new QueryClient()}>
+			<ProcessInstanceStatus processInstanceKey="not-a-key" />
+		</QueryClientProvider>,
+	);
+	await expect.element(screen.getByText('Not found')).toBeVisible();
 });
 
 it('should refresh suspended process instance metadata after it is resumed externally', async ({worker}) => {
