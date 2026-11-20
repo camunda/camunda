@@ -373,6 +373,8 @@
 				"createClusterVariableError": "Cluster-Variable konnte nicht erstellt werden",
 				"updateClusterVariableError": "Cluster-Variable konnte nicht aktualisiert werden",
 				"deleteClusterVariableError": "Cluster-Variable konnte nicht gelöscht werden",
+				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
 				"resourceSingular": "Cluster-Variable",
 				"resourcePlural": "Cluster-Variablen"
 			},
