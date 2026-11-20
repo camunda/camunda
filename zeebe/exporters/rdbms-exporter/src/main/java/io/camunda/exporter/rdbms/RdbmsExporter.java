@@ -137,6 +137,9 @@ public final class RdbmsExporter {
     }
 
     initializeRdbmsPosition();
+    // On an in-process reopen, the records up to here were already handed to this instance; any
+    // that were not flushed are dropped with the queue, so they must be replayed.
+    final long receivedPosition = lastPosition;
     // Use whichever of the broker-acked position and this instance's own last-flushed position
     // (preserved across a close+reopen on the same instance) is more advanced. On a cold start
     // lastFlushedPosition is still -1, so this is exactly the broker position, matching what a
@@ -163,11 +166,13 @@ public final class RdbmsExporter {
         // broker according to its replication policy (immediately for NONE, once confirmed for
         // LSN).
         replicationController.onFlush(lastPosition);
-      } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
+      }
+      final long expectedPosition = Math.max(lastPosition, receivedPosition);
+      if (expectedPosition > exporterRdbmsPosition.lastExportedPosition()) {
         log(
             INFO,
             "Broker position {} is more advanced than rdbms position {}. Requesting replay from {}",
-            lastPosition,
+            expectedPosition,
             exporterRdbmsPosition.lastExportedPosition(),
             exporterRdbmsPosition.lastExportedPosition());
         lastPosition = exporterRdbmsPosition.lastExportedPosition();

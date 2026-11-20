@@ -800,6 +800,36 @@ class RdbmsExporterTest {
   }
 
   @Test
+  void shouldRequestReplayWhenReopenedBehindReceivedRecords() {
+    // given - the exporter flushed up to 100 and then received record 110 without flushing it
+    final var flushedRdbmsPosition =
+        new ExporterPositionModel(
+            0, RdbmsExporter.class.getSimpleName(), 100L, LocalDateTime.now(), LocalDateTime.now());
+    final var jobHandler = mockHandler(ValueType.JOB);
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler), true, true, flushedRdbmsPosition);
+    exporter.export(mockRecord(ValueType.JOB, 110L));
+
+    // the broker was acked up to 100, and another writer advanced the DB position to 105
+    when(controller.getLastExportedRecordPosition()).thenReturn(100L);
+    when(positionService.findOne(anyInt()))
+        .thenReturn(
+            new ExporterPositionModel(
+                0,
+                RdbmsExporter.class.getSimpleName(),
+                105L,
+                LocalDateTime.now(),
+                LocalDateTime.now()));
+    when(controller.requestReplay(anyLong())).thenReturn(true);
+
+    // when - the exporter is reopened after its final flush failed, which drops the unflushed
+    // record
+    exporter.open(controller);
+
+    // then - the records after the DB position are replayed instead of being skipped
+    verify(controller).requestReplay(105L);
+  }
+
+  @Test
   void shouldThrowReopenExceptionWhenPositionIsAhead() {
     // given
     final var jobHandler = mockHandler(ValueType.JOB);

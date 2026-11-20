@@ -20,6 +20,7 @@ import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.retry.BackOffRetryStrategy;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
@@ -34,6 +35,7 @@ import org.slf4j.Logger;
 final class ExporterContainer implements Controller {
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
+  private static final Duration MAX_REOPEN_BACKOFF = Duration.ofSeconds(10);
 
   private static final String SKIP_POSITION_UPDATE_ERROR_MESSAGE =
       "Failed to update exporter position when skipping filtered record, can be skipped, but may indicate an issue if it occurs often";
@@ -53,6 +55,7 @@ final class ExporterContainer implements Controller {
   private final ExporterInitializationInfo initializationInfo;
   private final ExporterReplayControl replayControl;
   private boolean replayAcceptedOnReopen;
+  private boolean reopenPending;
   private boolean removed;
 
   ExporterContainer(
@@ -229,11 +232,30 @@ final class ExporterContainer implements Controller {
       context
           .getLogger()
           .warn("Scheduled task of exporter '{}' requires reopen to re-sync position", getId(), ex);
-      try {
-        reopenExporter();
-      } catch (final Exception reopenEx) {
-        context.getLogger().error("Failed to reopen exporter '{}'", getId(), reopenEx);
-      }
+      reopenPending = true;
+      // an idle partition delivers no record that would retry a failed reopen
+      new BackOffRetryStrategy(actor, MAX_REOPEN_BACKOFF)
+          .runWithRetry(this::reopenIfPending, () -> removed);
+    }
+  }
+
+  /**
+   * Reopens the exporter if a reopen was requested and has not succeeded yet. Until it succeeds, no
+   * record is delivered to the exporter.
+   *
+   * @return {@code false} if the reopen failed
+   */
+  private boolean reopenIfPending() {
+    if (!reopenPending || removed) {
+      return true;
+    }
+    try {
+      reopenExporter();
+      reopenPending = false;
+      return true;
+    } catch (final Exception e) {
+      context.getLogger().error("Failed to reopen exporter '{}'", getId(), e);
+      return false;
     }
   }
 
@@ -283,6 +305,14 @@ final class ExporterContainer implements Controller {
   }
 
   ExportOutcome exportRecord(final RecordMetadata rawMetadata, final TypedRecord<?> typedEvent) {
+    if (reopenPending) {
+      if (!reopenIfPending()) {
+        return ExportOutcome.RETRY;
+      }
+      if (replayAcceptedOnReopen) {
+        return ExportOutcome.ABORT_REPLAY;
+      }
+    }
     try {
       if (position < typedEvent.getPosition()) {
         if (acceptRecord(rawMetadata, typedEvent)) {
@@ -298,19 +328,15 @@ final class ExporterContainer implements Controller {
             .getLogger()
             .warn(
                 "Export error for exporter '{}' requires reopen to re-sync position", getId(), ex);
-        try {
-          reopenExporter();
-          if (replayAcceptedOnReopen) {
-            context
-                .getLogger()
-                .info(
-                    "Exporter '{}' accepted a replay during reopen; abandoning the current record"
-                        + " so it is redelivered in order from the rewound position",
-                    getId());
-            return ExportOutcome.ABORT_REPLAY;
-          }
-        } catch (final Exception reopenEx) {
-          context.getLogger().error("Failed to reopen exporter '{}'", getId(), reopenEx);
+        reopenPending = true;
+        if (reopenIfPending() && replayAcceptedOnReopen) {
+          context
+              .getLogger()
+              .info(
+                  "Exporter '{}' accepted a replay during reopen; abandoning the current record"
+                      + " so it is redelivered in order from the rewound position",
+                  getId());
+          return ExportOutcome.ABORT_REPLAY;
         }
       } else {
         context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);

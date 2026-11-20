@@ -1095,6 +1095,65 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldRetryFailedReopenFromScheduledTaskWithoutNewRecords() {
+    // given - write and export 4 events
+    writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 = writeEvent();
+    final long eventPosition4 = writeEvent();
+
+    final ControlledTestExporter exporter0 = exporters.get(0);
+    final AtomicInteger openCount = new AtomicInteger(0);
+    final AtomicBoolean scheduleReopen = new AtomicBoolean(false);
+    final AtomicReference<Controller> controllerRef = new AtomicReference<>();
+
+    exporter0
+        .onOpen(
+            controller -> {
+              controllerRef.set(controller);
+              final int count = openCount.incrementAndGet();
+              if (count == 2) {
+                throw new RuntimeException("expected failure, the database is unavailable");
+              }
+              if (count > 2) {
+                controller.requestReplay(eventPosition2);
+              }
+            })
+        .onExport(
+            record -> {
+              if (scheduleReopen.compareAndSet(true, false)) {
+                controllerRef
+                    .get()
+                    .scheduleCancellableTask(
+                        Duration.ofSeconds(1),
+                        () -> {
+                          throw new ExporterException(
+                              "position mismatch", ExporterException.Compensation.REOPEN);
+                        });
+              }
+            })
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    startExporterDirector(exporterDescriptors);
+    waitUntil(() -> exporter0.getExportedRecords().size() == 4);
+    scheduleReopen.set(true);
+    final long eventPosition5 = writeEvent();
+    waitUntil(() -> exporter0.getExportedRecords().size() == 5);
+    exporter0.getExportedRecords().clear();
+
+    // when - the first reopen from the scheduled task fails, and no new record is written
+    doRepeatedly(() -> rule.getClock().addTime(Duration.ofSeconds(1)))
+        .until(r -> exporter0.getExportedRecords().size() >= 3);
+
+    // then - the reopen is retried, and the replay redelivers the records in order
+    assertThat(openCount.get()).isEqualTo(3);
+    assertThat(exporter0.getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition3, eventPosition4, eventPosition5);
+  }
+
+  @Test
   public void shouldReplayFromScheduledTaskReopenWithoutNewRecords() {
     // given - write and export 4 events
     writeEvent();
