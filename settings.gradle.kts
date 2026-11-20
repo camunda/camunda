@@ -229,6 +229,8 @@ registerProject(":zeebe-cluster-config-impl", "zeebe/dynamic-config/impl")
 registerProject(":zeebe-cluster-config-openapi", "zeebe/dynamic-config/openapi")
 registerProject(":zeebe-cluster-config-rest", "zeebe/dynamic-config/rest")
 
+registerProject(":zeebe-cluster-gossip-api", "zeebe/cluster-gossip/api")
+
 registerProject(":zeebe-qa-integration-tests", "zeebe/qa/integration-tests")
 
 registerProject(":dynamic-node-id-provider", "zeebe/dynamic-node-id-provider")

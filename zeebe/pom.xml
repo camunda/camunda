@@ -69,6 +69,7 @@
     <module>restore</module>
     <module>restore-standalone</module>
     <module>dynamic-config</module>
+    <module>cluster-gossip</module>
     <module>rebalance</module>
     <module>dynamic-node-id-provider</module>
   </modules>
