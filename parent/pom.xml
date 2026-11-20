@@ -96,7 +96,7 @@
     <version.mockito>5.24.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.12</version.msgpack>
-    <version.netty>4.2.20.Final</version.netty>
+    <version.netty>4.2.21.Final</version.netty>
     <version.objenesis>3.6</version.objenesis>
     <version.opentelemetry>1.68.0</version.opentelemetry>
     <version.opentelemetry-semconv>1.45.0</version.opentelemetry-semconv>
