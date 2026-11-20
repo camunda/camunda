@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +83,22 @@ public final class RequestRetryHandler {
         r -> brokerClient.sendRequestWithRetry(r, requestTimeout),
         responseConsumer,
         throwableConsumer);
+  }
+
+  /**
+   * Like {@link #sendRequest(BrokerRequest, BrokerResponseConsumer, Consumer, Duration)}, but asks
+   * for the timeout before each attempt, so a request with an absolute deadline does not wait
+   * longer on a retry than on its first attempt.
+   */
+  public <BrokerResponseT> void sendRequest(
+      final BrokerRequest<BrokerResponseT> request,
+      final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
+      final Consumer<Throwable> throwableConsumer,
+      final Supplier<Duration> requestTimeout) {
+    final Function<
+            BrokerRequest<BrokerResponseT>, CompletableFuture<BrokerResponse<BrokerResponseT>>>
+        requestSender = r -> brokerClient.sendRequest(r, requestTimeout.get());
+    sendRequestInternal(request, requestSender, responseConsumer, throwableConsumer);
   }
 
   private <BrokerResponseT> void sendRequestInternal(
