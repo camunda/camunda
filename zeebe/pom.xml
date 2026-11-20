@@ -32,6 +32,7 @@
     <module>test-util</module>
     <module>msgpack-core</module>
     <module>msgpack-value</module>
+    <module>msgpack-codegen</module>
     <module>gateway-protocol</module>
     <module>gateway-protocol-impl</module>
     <module>gateway</module>

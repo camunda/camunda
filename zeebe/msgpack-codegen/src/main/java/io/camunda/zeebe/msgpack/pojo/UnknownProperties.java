@@ -1,0 +1,116 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.msgpack.pojo;
+
+import io.camunda.zeebe.msgpack.pojo.annotation.MsgpackPojo;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+
+/** The encoded key/value entries of properties a {@link MsgpackPojo} does not declare. */
+public final class UnknownProperties {
+  private final ExpandableArrayBuffer entries = new ExpandableArrayBuffer(0);
+  private int count;
+  private int length;
+
+  /** Appends one already encoded key/value entry. The bytes are copied. */
+  public void append(final DirectBuffer source, final int offset, final int entryLength) {
+    entries.putBytes(length, source, offset, entryLength);
+    length += entryLength;
+    count++;
+  }
+
+  /** Replaces the entries by a copy of the ones of {@code other}. */
+  public void copyFrom(final UnknownProperties other) {
+    if (other == this) {
+      return;
+    }
+    clear();
+    if (other.length > 0) {
+      entries.putBytes(0, other.entries, 0, other.length);
+    }
+    length = other.length;
+    count = other.count;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof final UnknownProperties other)
+        || count != other.count
+        || length != other.length) {
+      return false;
+    }
+    for (int i = 0; i < length; i++) {
+      if (entries.getByte(i) != other.entries.getByte(i)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = count;
+    for (int i = 0; i < length; i++) {
+      hash = 31 * hash + entries.getByte(i);
+    }
+    return hash;
+  }
+
+  /**
+   * Appends every entry as {@code "key":[packed value (length=n)]}, the form in which an {@code
+   * UnpackedObject} prints properties it does not declare, with a comma before each entry that does
+   * not come first in the object.
+   *
+   * @param start the length of the builder after the opening brace of the object
+   */
+  public void appendJson(final StringBuilder builder, final int start) {
+    final var reader = new MsgPackReader().wrap(entries, 0, length);
+    for (int i = 0; i < count; i++) {
+      if (builder.length() > start) {
+        builder.append(',');
+      }
+      final int keyLength = reader.readStringLength();
+      final String key = entries.getStringWithoutLengthUtf8(reader.getOffset(), keyLength);
+      reader.skipBytes(keyLength);
+      final int valueStart = reader.getOffset();
+      reader.skipValue();
+      builder
+          .append('"')
+          .append(key)
+          .append("\":[packed value (length=")
+          .append(reader.getOffset() - valueStart)
+          .append(")]");
+    }
+  }
+
+  public int count() {
+    return count;
+  }
+
+  /** The number of bytes of the encoded entries. */
+  public int length() {
+    return length;
+  }
+
+  public DirectBuffer buffer() {
+    return entries;
+  }
+
+  public void clear() {
+    count = 0;
+    length = 0;
+  }
+
+  public boolean isEmpty() {
+    return count == 0;
+  }
+}
