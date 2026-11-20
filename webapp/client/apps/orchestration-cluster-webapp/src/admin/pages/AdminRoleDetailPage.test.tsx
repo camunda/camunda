@@ -189,7 +189,78 @@ describe('<AdminRoleDetailPage />', () => {
 
 		await userEvent.click(screen.getByRole('tab', {name: 'Groups'}));
 
-		expect(onSearchChange).toHaveBeenCalledWith({tab: 'groups', page: undefined, pageSize: undefined});
+		expect(onSearchChange).toHaveBeenCalledWith({
+			tab: 'groups',
+			search: undefined,
+			page: undefined,
+			pageSize: undefined,
+		});
+	});
+
+	it('should search the users of the role by username once the reader stops typing', async ({worker}) => {
+		// given
+		worker.use(
+			http.post(decodeURIComponent(endpoints.queryUsersByRole.getUrl({roleId: ':roleId'})), async ({request}) => {
+				const body = (await request.json()) as {filter?: {username?: {$like?: string}}};
+				return HttpResponse.json(
+					body.filter?.username?.$like === '*john\\**'
+						? createMembersPage([{username: 'john.doe'}])
+						: createMembersPage([{username: 'john.doe'}, {username: 'jane.roe'}]),
+				);
+			}),
+			mockQueryUsersEndpoint({
+				successResponse: HttpResponse.json(createMembersPage([createUser({username: 'john.doe'})])),
+			}),
+		);
+		const {screen} = await renderPage();
+		await expect.element(screen.getByRole('cell', {name: 'jane.roe'})).toBeVisible();
+
+		// when
+		await userEvent.fill(screen.getByRole('searchbox'), 'john*');
+
+		// then
+		await expect.element(screen.getByRole('cell', {name: 'jane.roe'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).toBeVisible();
+	});
+
+	it('should keep the search field when no user of the role matches the search', async ({worker}) => {
+		// given
+		worker.use(mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}));
+
+		// when
+		const {screen} = await renderPage({search: {search: 'nobody'}});
+
+		// then
+		await expect.element(screen.getByText('No users found.')).toBeVisible();
+		await expect.element(screen.getByRole('searchbox')).toHaveValue('nobody');
+		await expect.element(screen.getByText('No users assigned to this role yet')).not.toBeInTheDocument();
+	});
+
+	it('should show the assign prompt when a role has no users and the search term is blank', async ({worker}) => {
+		// given
+		worker.use(mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}));
+
+		// when
+		const {screen} = await renderPage({search: {search: '   '}});
+
+		// then
+		await expect.element(screen.getByText('No users assigned to this role yet')).toBeVisible();
+		await expect.element(screen.getByText('No users found.')).not.toBeInTheDocument();
+	});
+
+	it('should not offer a search on the groups tab', async ({worker}) => {
+		// given
+		worker.use(
+			mockQueryGroupsByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([{groupId: 'ops-team'}]))}),
+			mockQueryGroupsEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
+		);
+
+		// when
+		const {screen} = await renderPage({search: {tab: 'groups'}});
+
+		// then
+		await expect.element(screen.getByRole('cell', {name: 'ops-team'})).toBeVisible();
+		await expect.element(screen.getByRole('searchbox')).not.toBeInTheDocument();
 	});
 
 	it('should show the name of each group when Camunda groups are enabled', async ({worker}) => {

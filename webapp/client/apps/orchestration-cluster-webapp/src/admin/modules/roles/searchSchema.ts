@@ -42,5 +42,5 @@ function getRolesRequestBody(search: RolesSearch): QueryRolesRequestBody {
 	};
 }
 
-export {DEFAULT_PAGE_SIZE, PAGE_SIZES, rolesSearchSchema, getRolesRequestBody};
+export {DEFAULT_PAGE_SIZE, PAGE_SIZES, escapeWildcards, rolesSearchSchema, getRolesRequestBody};
 export type {RolesSearch};
