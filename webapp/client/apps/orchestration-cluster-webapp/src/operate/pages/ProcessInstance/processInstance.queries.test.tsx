@@ -123,6 +123,22 @@ it('should treat a non-numeric process instance key as not found without reading
 	await expect.element(screen.getByText('Not found')).toBeVisible();
 });
 
+it('should treat a numeric process instance key rejected by the gateway as not found', async ({worker}) => {
+	worker.use(
+		mockGetProcessInstanceEndpoint({
+			successResponse: HttpResponse.json(createProblemDetails({status: 400}), {status: 400}),
+			once: true,
+		}),
+		mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(createProcessInstance())}),
+	);
+	const screen = await render(
+		<QueryClientProvider client={new QueryClient()}>
+			<ProcessInstanceStatus processInstanceKey="9999999999999999999999" />
+		</QueryClientProvider>,
+	);
+	await expect.element(screen.getByText('Not found')).toBeVisible();
+});
+
 it('should refresh suspended process instance metadata after it is resumed externally', async ({worker}) => {
 	worker.use(
 		mockGetProcessInstanceEndpoint({
