@@ -241,13 +241,15 @@ public class RdbmsExporterWrapper implements Exporter {
       final ExporterConfiguration config,
       final HistoryCleanupService historyCleanupService) {
 
+    builder.withHandler(
+        ValueType.PROCESS,
+        new ProcessExportHandler(
+            rdbmsWriters.getProcessDefinitionWriter(),
+            cacheRegistry.processCache(),
+            config.getExtensionProperties(),
+            partitionId == PROCESS_DEFINITION_PARTITION));
+
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
-      builder.withHandler(
-          ValueType.PROCESS,
-          new ProcessExportHandler(
-              rdbmsWriters.getProcessDefinitionWriter(),
-              cacheRegistry.processCache(),
-              config.getExtensionProperties()));
       builder.withHandler(
           ValueType.PROCESS_DEFINITION_SUSPENSION,
           new ProcessDefinitionSuspensionExportHandler(rdbmsWriters.getProcessDefinitionWriter()));
