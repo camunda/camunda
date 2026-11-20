@@ -49,7 +49,7 @@ const MoveHelperDialog: React.FC<Props> = observer(({open, onClose, onSubmit}) =
 					<DialogTitle>{t('operate.processes.batchModification.helperTitle')}</DialogTitle>
 					<DialogDescription>{t('operate.processes.batchModification.helperDescription')}</DialogDescription>
 				</DialogHeader>
-				<DialogBody className="flex flex-col gap-4 text-sm">
+				<DialogBody className="flex flex-col gap-4 pb-2 text-sm">
 					<p>{t('operate.processes.batchModification.helperSelectTarget')}</p>
 					<img
 						src={themeStore.actualTheme === 'light' ? modalDiagramImageLight : modalDiagramImageDark}
