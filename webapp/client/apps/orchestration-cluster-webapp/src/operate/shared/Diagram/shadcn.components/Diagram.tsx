@@ -285,6 +285,10 @@ function Diagram({
 		canvas.querySelectorAll('.op-non-selectable').forEach((element) => {
 			['tabindex', 'aria-pressed', 'aria-describedby'].forEach((attribute) => element.removeAttribute(attribute));
 			const label = getElementLabel(element);
+			if (label === '') {
+				['role', 'aria-label'].forEach((attribute) => element.removeAttribute(attribute));
+				return;
+			}
 			element.setAttribute('role', 'img');
 			element.setAttribute(
 				'aria-label',
