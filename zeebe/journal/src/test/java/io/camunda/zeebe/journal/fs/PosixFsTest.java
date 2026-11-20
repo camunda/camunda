@@ -10,8 +10,14 @@ package io.camunda.zeebe.journal.fs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.intThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import io.camunda.zeebe.journal.fs.LibC.InvalidLibC;
@@ -20,6 +26,7 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import jnr.constants.platform.Errno;
@@ -70,6 +77,82 @@ final class PosixFsTest {
 
     // then
     PosixPathAssert.assertThat(path).hasRealSize(length);
+  }
+
+  @Test
+  @EnabledOnOs(value = OS.LINUX, disabledReason = "posix_fadvise is only called on Linux")
+  void shouldDropPageCacheOfFile() throws IOException {
+    // given
+    final var posixFs = new PosixFs();
+    final var path = tmpDir.resolve("file");
+    Files.writeString(path, "content");
+
+    // when
+    final var dropped = posixFs.dropPageCache(path);
+
+    // then - only the cached pages are gone, not the content
+    assertThat(dropped).isTrue();
+    assertThat(path).hasContent("content");
+  }
+
+  @Test
+  @EnabledOnOs(value = OS.LINUX, disabledReason = "posix_fadvise is only called on Linux")
+  void shouldAdviseToDropAllPagesOfFile() throws IOException {
+    // given
+    final var libC = mock(LibC.class);
+    final var posixFs = new PosixFs(libC);
+    final var path = tmpDir.resolve("file");
+    Files.writeString(path, "content");
+
+    // when
+    posixFs.dropPageCache(path);
+
+    // then - offset and length 0 cover the whole file
+    verify(libC)
+        .posix_fadvise(anyInt(), eq(0L), eq(0L), intThat(advice -> advice == 4 || advice == 6));
+  }
+
+  @Test
+  void shouldNotFailWhenPageCacheCannotBeDropped() throws IOException {
+    // given
+    final var libC = mock(LibC.class);
+    when(libC.posix_fadvise(anyInt(), anyLong(), anyLong(), anyInt()))
+        .thenReturn(Errno.EINVAL.intValue());
+    final var posixFs = new PosixFs(libC);
+    final var path = tmpDir.resolve("file");
+    Files.writeString(path, "content");
+
+    // when
+    final var dropped = posixFs.dropPageCache(path);
+
+    // then
+    assertThat(dropped).isFalse();
+  }
+
+  @Test
+  void shouldNotFailWhenNativeLibraryIsUnavailable() throws IOException {
+    // given
+    final var posixFs = new PosixFs(new InvalidLibC());
+    final var path = tmpDir.resolve("file");
+    Files.writeString(path, "content");
+
+    // when
+    final var dropped = posixFs.dropPageCache(path);
+
+    // then
+    assertThat(dropped).isFalse();
+  }
+
+  @Test
+  void shouldNotFailWhenFileDoesNotExist() {
+    // given
+    final var posixFs = new PosixFs();
+
+    // when
+    final var dropped = posixFs.dropPageCache(tmpDir.resolve("missing"));
+
+    // then
+    assertThat(dropped).isFalse();
   }
 
   @Test

@@ -24,6 +24,12 @@ import jnr.ffi.types.off_t;
 public interface LibC {
   int posix_fallocate(final @In int fd, final @In @off_t long offset, final @In @off_t long len);
 
+  int posix_fadvise(
+      final @In int fd,
+      final @In @off_t long offset,
+      final @In @off_t long len,
+      final @In int advice);
+
   /**
    * Returns a process-wide, cached instance of LibC bound to the system's C library (e.g. glibc,
    * musl, etc.).
@@ -58,6 +64,11 @@ public interface LibC {
 
     @Override
     public int posix_fallocate(final int fd, final long offset, final long len) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int posix_fadvise(final int fd, final long offset, final long len, final int advice) {
       throw new UnsupportedOperationException();
     }
   }
