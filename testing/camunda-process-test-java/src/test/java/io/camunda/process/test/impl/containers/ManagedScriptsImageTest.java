@@ -263,4 +263,38 @@ class ManagedScriptsImageTest {
         .contains("\nline 11\n")
         .endsWith("line " + (ManagedScriptsImage.BuildOutput.MAX_LINES + 10));
   }
+
+  @Test
+  void shouldJoinALineSplitAcrossChunks() {
+    // given
+    final ManagedScriptsImage.BuildOutput output = new ManagedScriptsImage.BuildOutput();
+
+    // when
+    output.add("ERROR: unable to select packages:\n  python-3.");
+    output.add("99 (no such package)\n");
+    output.add("  required by: world[python-3.99]");
+
+    // then
+    assertThat(output.failureMessage("image:1"))
+        .endsWith(
+            "ERROR: unable to select packages:\n"
+                + "  python-3.99 (no such package)\n"
+                + "  required by: world[python-3.99]");
+  }
+
+  @Test
+  void shouldReportTheErrorAfterAnIncompleteLine() {
+    // given
+    final ManagedScriptsImage.BuildOutput output = new ManagedScriptsImage.BuildOutput();
+
+    // when
+    output.add("  nodejs (no such package)");
+    output.addError("The command '/bin/sh -c apk add nodejs' returned a non-zero code: 1");
+
+    // then
+    assertThat(output.failureMessage("image:1"))
+        .endsWith(
+            "  nodejs (no such package)\n"
+                + "The command '/bin/sh -c apk add nodejs' returned a non-zero code: 1");
+  }
 }

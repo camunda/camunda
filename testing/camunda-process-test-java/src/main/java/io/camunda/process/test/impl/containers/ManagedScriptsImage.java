@@ -320,43 +320,73 @@ public final class ManagedScriptsImage {
     }
   }
 
-  /** Keeps the last lines of the build output, to report them when the build fails. */
+  /**
+   * Keeps the last lines of the build output, to report them when the build fails. The output
+   * arrives in chunks that can split a line, so the incomplete last line is buffered until the rest
+   * of it arrives.
+   */
   static final class BuildOutput extends BuildImageResultCallback {
 
     static final int MAX_LINES = 50;
 
     private final Deque<String> lines = new ArrayDeque<>();
+    private final StringBuilder incompleteLine = new StringBuilder();
 
     @Override
     public void onNext(final BuildResponseItem item) {
       super.onNext(item);
       if (item.isErrorIndicated() && item.getErrorDetail() != null) {
-        add(item.getErrorDetail().getMessage());
+        addError(item.getErrorDetail().getMessage());
       } else {
         add(item.getStream());
       }
     }
 
-    synchronized void add(final String text) {
-      if (text == null) {
+    synchronized void add(final String chunk) {
+      if (chunk == null) {
         return;
       }
-      for (final String line : text.split("\\R")) {
-        if (line.trim().isEmpty()) {
-          continue;
+      incompleteLine.append(chunk);
+      int lineStart = 0;
+      for (int i = 0; i < incompleteLine.length(); i++) {
+        final char c = incompleteLine.charAt(i);
+        if (c == '\n' || c == '\r') {
+          addLine(incompleteLine.substring(lineStart, i));
+          lineStart = i + 1;
         }
-        if (lines.size() == MAX_LINES) {
-          lines.removeFirst();
-        }
-        lines.addLast(line);
+      }
+      incompleteLine.delete(0, lineStart);
+    }
+
+    synchronized void addError(final String message) {
+      add("\n");
+      if (message != null) {
+        add(message + "\n");
       }
     }
 
+    private void addLine(final String line) {
+      if (line.trim().isEmpty()) {
+        return;
+      }
+      if (lines.size() == MAX_LINES) {
+        lines.removeFirst();
+      }
+      lines.addLast(line);
+    }
+
     synchronized String failureMessage(final String imageName) {
+      final Deque<String> output = new ArrayDeque<>(lines);
+      if (!incompleteLine.toString().trim().isEmpty()) {
+        if (output.size() == MAX_LINES) {
+          output.removeFirst();
+        }
+        output.addLast(incompleteLine.toString());
+      }
       return "Failed to build the managed scripts image "
           + imageName
           + ". The last lines of the build output:\n"
-          + String.join("\n", lines);
+          + String.join("\n", output);
     }
   }
 }
