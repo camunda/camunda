@@ -98,6 +98,9 @@ jobs:
     permissions:
       contents: read
       actions: write
+      # Reading the fix PRs either agent has open is what keeps this job from
+      # dispatching a test another PR already covers.
+      pull-requests: read
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
@@ -237,11 +240,14 @@ jobs:
           MAX_TARGETS: ${{ inputs.max_targets || '3' }}
         run: |
           set -euo pipefail
-          # Ask for extra candidates: some are dropped below because a fix
-          # branch -- or a fix PR either agent has open -- already covers them.
+          # The whole ranking, not a slice of it: the exclusions below -- a fix
+          # branch, or a fix PR either agent has open -- are applied first, and
+          # MAX_TARGETS is taken from what survives them. Truncating here would
+          # let a run of claimed tests at the top of the ranking dispatch
+          # nothing while eligible tests waited below the cut.
           node .github/scripts/oc-flakiness/pick.mjs \
             --reports "$RUNNER_TEMP/reports" --ledger "$RUNNER_TEMP/ledger.json" \
-            --max $(( MAX_TARGETS * 3 )) > "$RUNNER_TEMP/candidates.json"
+            --max 1000 > "$RUNNER_TEMP/candidates.json"
 
           gh api "repos/${REPO}/git/matching-refs/heads/flaky-fix/" --jq '.[].ref' \
             | sed 's#^refs/heads/##' > "$RUNNER_TEMP/branches.txt" || true
@@ -252,20 +258,24 @@ jobs:
           # That PR carries its own branch name and fingerprint, so the filter
           # above cannot see it, and the tests it covers are picked again and
           # fixed a second time, one branch and one PR per test.
+          #
+          # Not guarded with `|| true`: a guard that fails quietly is the state
+          # this change exists to end, and an empty claims list reads exactly
+          # like "nothing is covered". A failure here stops the dispatch.
           {
             gh pr list --repo "$REPO" --state open --label failing-test-fix \
               --limit 100 --json number,baseRefName \
-              --jq '.[] | "\(.number) \(.baseRefName)"' || true
+              --jq '.[] | "\(.number) \(.baseRefName)"'
             gh pr list --repo "$REPO" --state open --label flaky-test-fix \
               --limit 100 --json number,baseRefName \
-              --jq '.[] | "\(.number) \(.baseRefName)"' || true
+              --jq '.[] | "\(.number) \(.baseRefName)"'
           } | sort -u > "$RUNNER_TEMP/open-fix-prs.txt"
           : > "$RUNNER_TEMP/claimed.txt"
           while read -r number base; do
             [[ -n "${number:-}" ]] || continue
             gh api "repos/${REPO}/pulls/${number}/files" --paginate --jq '.[].filename' \
               | sed -n "s#^qa/c8-orchestration-cluster-e2e-test-suite/#${base}\t#p" \
-              >> "$RUNNER_TEMP/claimed.txt" || true
+              >> "$RUNNER_TEMP/claimed.txt"
           done < "$RUNNER_TEMP/open-fix-prs.txt"
 
           jq -c --rawfile branches "$RUNNER_TEMP/branches.txt" \
@@ -293,7 +303,7 @@ jobs:
                  | select(((if .version == "main" then "main" else "stable/" + .version end)
                             + "\t" + .file) as $c | $busy | index($c))
                  | "- `\(.file)` (\(.version))"]
-              | join("\n")' "$RUNNER_TEMP/candidates.json")
+              | .[0:10] | join("\n")' "$RUNNER_TEMP/candidates.json")
             if [[ -n "$covered" ]]; then
               echo
               echo "Not dispatched -- an open fix PR already covers these:"
@@ -944,11 +954,20 @@ jobs:
             # merge base cannot see that -- it still shows our change -- so each
             # file this branch touches is compared against the target as it
             # stands now. All equal means there is nothing left to propose.
+            # `status` first: for a rename `filename` is the destination alone,
+            # so comparing it would call the branch superseded while its removal
+            # of the old path is still unlanded. Only a file the branch modified
+            # in place can be judged by its contents; anything else keeps the
+            # branch and lets the PR be opened.
             gh api "repos/${REPO}/compare/${TARGET_REF}...${BRANCH}" --paginate \
-              --jq '.files[]? | .filename' > "$RUNNER_TEMP/changed.txt"
+              --jq '.files[]? | "\(.status) \(.filename)"' > "$RUNNER_TEMP/changed.txt"
             superseded=true
-            while read -r changed_file; do
+            while read -r status changed_file; do
               [[ -n "$changed_file" ]] || continue
+              if [[ "$status" != "modified" ]]; then
+                superseded=false
+                break
+              fi
               head_blob=$(gh api "repos/${REPO}/contents/${changed_file}?ref=${BRANCH}" \
                 --jq '.sha' 2>/dev/null || echo "")
               base_blob=$(gh api "repos/${REPO}/contents/${changed_file}?ref=${TARGET_REF}" \
