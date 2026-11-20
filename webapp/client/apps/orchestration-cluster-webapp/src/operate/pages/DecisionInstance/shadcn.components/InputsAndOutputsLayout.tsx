@@ -37,7 +37,9 @@ const InputsAndOutputsLayout: React.FC<Props> = ({minWidths, children}) => {
 	return (
 		<div ref={containerRef} className="h-full">
 			{isNarrow ? (
-				<div className="flex h-full flex-col overflow-y-auto [&>section]:h-auto [&>section]:shrink-0">{children}</div>
+				<div className="grid h-full grid-rows-[fit-content(50%)_minmax(0,1fr)] [&>section]:h-auto [&>section]:min-h-0">
+					{children}
+				</div>
 			) : (
 				<ResizablePanel
 					panelId="decision-instance-horizontal-panel"

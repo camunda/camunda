@@ -64,7 +64,7 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 			<InputsAndOutputsLayout minWidths={[width / 3, width / 3]}>
 				<section
 					aria-label={t('operate.decisionInstance.variablesPanel.inputVariables')}
-					className="grid h-full grid-rows-[auto_1fr] overflow-hidden max-sm:h-auto max-sm:shrink-0"
+					className="grid h-full grid-rows-[auto_1fr] overflow-hidden"
 				>
 					{!query.isError && (
 						<Heading as="h2" variant="heading-sm" className="m-0 mt-4 ml-4 text-muted-foreground">
@@ -98,7 +98,7 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 				</section>
 				<section
 					aria-label={t('operate.decisionInstance.variablesPanel.outputVariables')}
-					className="grid h-full grid-rows-[auto_1fr] overflow-hidden max-sm:h-auto max-sm:shrink-0"
+					className="grid h-full grid-rows-[auto_1fr] overflow-hidden"
 				>
 					{!query.isError && (
 						<Heading as="h2" variant="heading-sm" className="m-0 mt-4 ml-4 text-muted-foreground">
