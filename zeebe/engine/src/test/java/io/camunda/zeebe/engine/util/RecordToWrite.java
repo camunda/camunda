@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelati
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyStatusRecord;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
@@ -63,6 +64,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.intent.PolicyStatusIntent;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
@@ -272,6 +274,13 @@ public final class RecordToWrite implements LogAppendEntry {
   public RecordToWrite policyUpdate(
       final PolicyUpdateIntent intent, final PolicyUpdateRecord value) {
     recordMetadata.valueType(ValueType.POLICY_UPDATE).intent(intent);
+    unifiedRecordValue = value;
+    return this;
+  }
+
+  public RecordToWrite policyStatus(
+      final PolicyStatusIntent intent, final PolicyStatusRecord value) {
+    recordMetadata.valueType(ValueType.POLICY_STATUS).intent(intent);
     unifiedRecordValue = value;
     return this;
   }
