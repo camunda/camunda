@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.camunda.zeebe.broker.BrokerEmbeddedGatewayConfiguration.BrokerEmbeddedGateway;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -22,10 +23,13 @@ import org.springframework.stereotype.Component;
 @Component(value = "jobStreamService")
 final class BrokerJobStreamService implements JobStreamEndpoint.Service {
   private final SpringBrokerBridge bridge;
+  private final BrokerEmbeddedGateway embeddedGateway;
 
   @Autowired
-  public BrokerJobStreamService(final SpringBrokerBridge bridge) {
+  public BrokerJobStreamService(
+      final SpringBrokerBridge bridge, final BrokerEmbeddedGateway embeddedGateway) {
     this.bridge = bridge;
+    this.embeddedGateway = embeddedGateway;
   }
 
   @Override
@@ -54,8 +58,8 @@ final class BrokerJobStreamService implements JobStreamEndpoint.Service {
 
   @Override
   public Collection<ClientStream<JobActivationProperties>> clientJobStreams() {
-    return bridge
-        .getJobStreamClient()
+    return embeddedGateway
+        .jobStreamClient()
         .map(JobStreamClient::list)
         .map(ActorFuture::join)
         .orElse(Collections.emptyList());

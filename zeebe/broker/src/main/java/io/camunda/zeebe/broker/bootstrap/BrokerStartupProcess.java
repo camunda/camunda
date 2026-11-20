@@ -45,7 +45,6 @@ public final class BrokerStartupProcess {
 
   private List<StartupStep<BrokerStartupContext>> buildStartupSteps(
       final BrokerStartupContext startupContext) {
-    final var config = startupContext.getBrokerConfiguration();
     final var result = new ArrayList<StartupStep<BrokerStartupContext>>();
 
     result.add(new ClusterServicesStep());
@@ -60,10 +59,6 @@ public final class BrokerStartupProcess {
     result.add(new RequestIdGeneratorStep());
     result.add(new RebalanceCoordinatorStep());
     result.add(new GatewayBrokerTransportStep());
-
-    if (config.getGateway().isEnable()) {
-      result.add(new EmbeddedGatewayServiceStep());
-    }
 
     result.add(new JobStreamServiceStep());
     result.add(new PartitionGroupMigrationStep());
@@ -116,7 +111,6 @@ public final class BrokerStartupProcess {
     return new BrokerContextImpl(
         bsc.getDiskSpaceUsageMonitor(),
         bsc.getClusterServices(),
-        bsc.getEmbeddedGatewayService(),
         bsc.getPartitionManagers().get(PartitionManagerImpl.DEFAULT_GROUP_NAME),
         bsc.getPartitionManagers(),
         bsc.getBrokerAdminService(PartitionManagerImpl.DEFAULT_GROUP_NAME),

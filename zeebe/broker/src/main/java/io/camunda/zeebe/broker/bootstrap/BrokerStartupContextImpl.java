@@ -24,7 +24,6 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
-import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
@@ -83,7 +82,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private SnowflakeIdGenerator requestIdGenerator;
   private ManagedMessagingService commandApiMessagingService;
   private AdminApiRequestHandler adminApiService;
-  private EmbeddedGatewayService embeddedGatewayService;
   private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new ConcurrentHashMap<>();
   private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
@@ -245,16 +243,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setApiMessagingService(final ManagedMessagingService commandApiMessagingService) {
     this.commandApiMessagingService = commandApiMessagingService;
-  }
-
-  @Override
-  public EmbeddedGatewayService getEmbeddedGatewayService() {
-    return embeddedGatewayService;
-  }
-
-  @Override
-  public void setEmbeddedGatewayService(final EmbeddedGatewayService embeddedGatewayService) {
-    this.embeddedGatewayService = embeddedGatewayService;
   }
 
   @Override

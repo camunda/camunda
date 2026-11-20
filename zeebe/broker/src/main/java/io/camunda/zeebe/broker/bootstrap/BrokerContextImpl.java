@@ -12,7 +12,6 @@ import static java.util.Objects.requireNonNull;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
-import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import java.util.Map;
@@ -20,7 +19,6 @@ import java.util.Map;
 final class BrokerContextImpl implements BrokerContext {
 
   private final ClusterServicesImpl clusterServices;
-  private final EmbeddedGatewayService embeddedGatewayService;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final PartitionManager partitionManager;
   private final Map<String, PartitionManager> partitionManagers;
@@ -30,14 +28,12 @@ final class BrokerContextImpl implements BrokerContext {
   BrokerContextImpl(
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final ClusterServicesImpl clusterServices,
-      final EmbeddedGatewayService embeddedGatewayService,
       final PartitionManager partitionManager,
       final Map<String, PartitionManager> partitionManagers,
       final BrokerAdminService brokerAdminService,
       final ManagedMessagingService apiMessagingService) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.clusterServices = requireNonNull(clusterServices);
-    this.embeddedGatewayService = embeddedGatewayService;
     this.partitionManager = requireNonNull(partitionManager);
     this.partitionManagers = requireNonNull(partitionManagers);
     this.brokerAdminService = requireNonNull(brokerAdminService);
@@ -47,11 +43,6 @@ final class BrokerContextImpl implements BrokerContext {
   @Override
   public ClusterServicesImpl getClusterServices() {
     return clusterServices;
-  }
-
-  @Override
-  public EmbeddedGatewayService getEmbeddedGatewayService() {
-    return embeddedGatewayService;
   }
 
   @Override

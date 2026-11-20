@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
-import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import java.util.Map;
@@ -19,8 +18,6 @@ import java.util.Map;
 public interface BrokerContext {
 
   ClusterServices getClusterServices();
-
-  EmbeddedGatewayService getEmbeddedGatewayService();
 
   /**
    * Returns disk space usage monitor. May be {@code null} if disabled in configuration

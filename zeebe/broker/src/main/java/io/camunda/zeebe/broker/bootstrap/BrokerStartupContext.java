@@ -21,7 +21,6 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
-import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
@@ -105,10 +104,6 @@ public interface BrokerStartupContext {
   ManagedMessagingService getApiMessagingService();
 
   void setApiMessagingService(ManagedMessagingService commandApiMessagingService);
-
-  EmbeddedGatewayService getEmbeddedGatewayService();
-
-  void setEmbeddedGatewayService(EmbeddedGatewayService embeddedGatewayService);
 
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
 
