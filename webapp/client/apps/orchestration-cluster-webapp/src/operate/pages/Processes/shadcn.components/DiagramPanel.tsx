@@ -235,7 +235,7 @@ const DiagramPanel: React.FC<Props> = ({
 				<div className="relative px-1 py-1">
 					<Alert
 						variant="info"
-						className="py-1.5"
+						className={selectedTargetElementId ? 'py-1.5 pr-24' : 'py-1.5'}
 						role="status"
 						description={
 							sourceElementName === '' || targetElementName === ''
@@ -249,7 +249,7 @@ const DiagramPanel: React.FC<Props> = ({
 					/>
 					{selectedTargetElementId && (
 						<Button
-							variant="secondary"
+							variant="ghost"
 							size="sm"
 							className="absolute right-3 top-1/2 -translate-y-1/2"
 							onClick={() => onTargetElementSelection?.(undefined)}
