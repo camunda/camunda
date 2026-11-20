@@ -108,16 +108,14 @@ public class ProcessInstanceCreationHelper {
       final ProcessInstanceCreationRecord record) {
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
 
-    final Either<Rejection, DeployedProcess> process;
     if (bpmnProcessId.capacity() > 0) {
-      process = findProcessById(bpmnProcessId, record);
+      return findProcessById(bpmnProcessId, record);
     } else if (record.getProcessDefinitionKey() >= 0) {
-      process = findProcessByKey(record);
+      return findProcessByKey(record);
     } else {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
-    return process.flatMap(this::rejectIfDraining);
   }
 
   private Either<Rejection, DeployedProcess> findProcessById(
@@ -165,9 +163,10 @@ public class ProcessInstanceCreationHelper {
 
   /**
    * A process definition that is being deleted is kept in state so its already-running instances
-   * can finish, but no new instances may be created for it.
+   * can finish, but no new instances may be created for it. Runs after the authorization check, so
+   * callers without access can't learn that the version is being deleted.
    */
-  private Either<Rejection, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
+  public Either<Rejection, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
     if (process.isDraining()) {
       return Either.left(
           new Rejection(

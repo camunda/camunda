@@ -14,7 +14,9 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -200,6 +202,58 @@ public class ProcessInstanceCreateAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToCreateInstanceOnDrainingVersionIfNoPermissions() {
+    // given - callers without access must not learn that the version is being deleted; a running
+    // instance keeps the deleted version draining
+    final var processId = "drainingProcess";
+    final long processDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(
+                "draining.bpmn",
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("task", t -> t.zeebeJobType("task"))
+                    .endEvent()
+                    .done())
+            .deploy(DEFAULT_USER.getUsername())
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(processId).create(DEFAULT_USER.getUsername());
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    engine
+        .resourceDeletion()
+        .withResourceKey(processDefinitionKey)
+        .delete(DEFAULT_USER.getUsername());
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+    final var user = createUser();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withVersion(1)
+        .expectRejection()
+        .create(user.getUsername());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                .formatted(processId));
   }
 
   @Test
