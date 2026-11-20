@@ -14,7 +14,7 @@ import org.jspecify.annotations.NullMarked;
 
 /**
  * Configuration for audit log filtering by operation categories and entity type exclusions. Used
- * for both user and client audit logging.
+ * for each kind of actor, such as users, clients and the engine.
  */
 @NullMarked
 public class AuditLogEntry {

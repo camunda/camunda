@@ -75,6 +75,20 @@ class AuditLogTest {
   }
 
   @Test
+  void shouldHaveEngineDefaults() {
+    // when
+    final AuditLog auditLog = new AuditLog();
+
+    // then
+    assertThat(auditLog.getEngine().getCategories())
+        .as("Engine categories should be empty by default (opt-in logging)")
+        .isEmpty();
+    assertThat(auditLog.getEngine().getExcludes())
+        .as("No excludes should be set for engine by default")
+        .isEmpty();
+  }
+
+  @Test
   void shouldConvertToAuditLogConfiguration() {
     final AuditLog auditLog = new AuditLog();
 
@@ -103,6 +117,22 @@ class AuditLogTest {
         .isEqualTo(auditLog.getUnknown().getExcludes());
   }
 
+  @Test
+  void shouldConvertConfiguredEngineSection() {
+    // given
+    final AuditLog auditLog = new AuditLog();
+    auditLog.getEngine().setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+    auditLog.getEngine().setExcludes(Set.of(AuditLogEntityType.INCIDENT));
+
+    // when
+    final AuditLogConfiguration config = auditLog.toConfiguration();
+
+    // then
+    assertThat(config.getEngine().getCategories())
+        .containsExactly(AuditLogOperationCategory.DEPLOYED_RESOURCES);
+    assertThat(config.getEngine().getExcludes()).containsExactly(AuditLogEntityType.INCIDENT);
+  }
+
   @Nested
   @ActiveProfiles({"broker"})
   @SpringJUnitConfig({
@@ -120,7 +150,9 @@ class AuditLogTest {
         "camunda.data.audit-log.client.categories[0]=ADMIN",
         "camunda.data.audit-log.client.excludes[0]=PROCESS_INSTANCE",
         "camunda.data.audit-log.unknown.categories[0]=USER_TASKS",
-        "camunda.data.audit-log.unknown.excludes[0]=VARIABLE"
+        "camunda.data.audit-log.unknown.excludes[0]=VARIABLE",
+        "camunda.data.audit-log.engine.categories[0]=DEPLOYED_RESOURCES",
+        "camunda.data.audit-log.engine.excludes[0]=USER"
       })
   class RDBMSExporterTest {
     @Test
@@ -145,6 +177,10 @@ class AuditLogTest {
           .containsExactlyInAnyOrder(AuditLogOperationCategory.USER_TASKS);
       assertThat(config.getAuditLog().getUnknown().getExcludes())
           .containsExactlyInAnyOrder(AuditLogEntityType.VARIABLE);
+      assertThat(config.getAuditLog().getEngine().getCategories())
+          .containsExactlyInAnyOrder(AuditLogOperationCategory.DEPLOYED_RESOURCES);
+      assertThat(config.getAuditLog().getEngine().getExcludes())
+          .containsExactlyInAnyOrder(AuditLogEntityType.USER);
     }
   }
 
@@ -165,7 +201,9 @@ class AuditLogTest {
         "camunda.data.audit-log.client.categories[0]=USER_TASKS",
         "camunda.data.audit-log.client.excludes[0]=USER",
         "camunda.data.audit-log.unknown.categories[0]=DEPLOYED_RESOURCES",
-        "camunda.data.audit-log.unknown.excludes[0]=PROCESS_INSTANCE"
+        "camunda.data.audit-log.unknown.excludes[0]=PROCESS_INSTANCE",
+        "camunda.data.audit-log.engine.categories[0]=USER_TASKS",
+        "camunda.data.audit-log.engine.excludes[0]=PROCESS_INSTANCE"
       })
   class CamundaExporterTest {
     @Test
@@ -190,6 +228,47 @@ class AuditLogTest {
           .containsExactlyInAnyOrder(AuditLogOperationCategory.DEPLOYED_RESOURCES);
       assertThat(config.getAuditLog().getUnknown().getExcludes())
           .containsExactlyInAnyOrder(AuditLogEntityType.PROCESS_INSTANCE);
+      assertThat(config.getAuditLog().getEngine().getCategories())
+          .containsExactlyInAnyOrder(AuditLogOperationCategory.USER_TASKS);
+      assertThat(config.getAuditLog().getEngine().getExcludes())
+          .containsExactlyInAnyOrder(AuditLogEntityType.PROCESS_INSTANCE);
+    }
+  }
+
+  @Nested
+  @ActiveProfiles({"broker"})
+  @SpringJUnitConfig({
+    UnifiedConfiguration.class,
+    UnifiedConfigurationHelper.class,
+    BrokerBasedPropertiesOverride.class,
+  })
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.audit-log.user.categories=",
+        "camunda.data.audit-log.engine.categories[0]=DEPLOYED_RESOURCES"
+      })
+  class OnlyEngineConfiguredTest {
+    @Test
+    void shouldEnableAuditLogWithOnlyEngineSection(
+        @Autowired final BrokerBasedProperties brokerBasedProperties) {
+      // given only the engine section has categories
+      final var exporter = brokerBasedProperties.getCamundaExporter();
+
+      // when
+      final var config =
+          ExporterConfiguration.fromArgs(
+              io.camunda.exporter.config.ExporterConfiguration.class, exporter.getArgs());
+
+      // then
+      assertThat(config.getAuditLog().getUser().getCategories()).isEmpty();
+      assertThat(config.getAuditLog().getClient().getCategories()).isEmpty();
+      assertThat(config.getAuditLog().getUnknown().getCategories()).isEmpty();
+      assertThat(config.getAuditLog().getEngine().getCategories())
+          .containsExactly(AuditLogOperationCategory.DEPLOYED_RESOURCES);
+      assertThat(config.getAuditLog().isEnabled())
+          .as("A setup with only the engine section still registers the audit log")
+          .isTrue();
     }
   }
 }
