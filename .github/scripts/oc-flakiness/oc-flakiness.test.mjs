@@ -532,6 +532,19 @@ test('should replace only the row of the test that finished', () => {
   assert.match(text, /\*1\/2 run\(s\) resolved\*/);
 });
 
+test('should report a run whose fix landed on the target branch first as resolved, not as a fix', () => {
+  const board = setRow(initBoard({targets: [targets[0]], date: '2026-11-12'}), {
+    fp: 'aaaa1111',
+    status: 'superseded',
+    detail: 'the same change is already on stable/8.10',
+  });
+  const text = render(board);
+  assert.match(text, /:no_entry_sign: 1 skipped/);
+  assert.match(text, /superseded — the same change landed on the target branch first/);
+  assert.match(text, /\*1\/1 run\(s\) resolved\*/);
+  assert.doesNotMatch(text, /fixed/);
+});
+
 test('should report a fix that only cleared the threshold without claiming it is fixed outright', () => {
   const board = setRow(initBoard({targets: [targets[0]], date: '2026-11-12'}), {
     fp: 'aaaa1111',
