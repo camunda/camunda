@@ -21,7 +21,7 @@ const ProcessInstanceWithHeight: React.FC = () => (
 	</div>
 );
 
-describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold)', () => {
+describe('<ProcessInstance activeTab="variables" header={HEADER} />', () => {
 	it('should render the sr-only process instance title', async () => {
 		const screen = await renderWithRouter(ProcessInstanceWithHeight, {
 			path: '/operate-preview/processes/$processInstanceId',
@@ -31,19 +31,17 @@ describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold
 		await expect.element(screen.getByRole('heading', {name: 'Operate Process Instance'})).toBeInTheDocument();
 	});
 
-	it('should render the provided header and the diagram and bottom panel placeholders', async () => {
+	it('should render the provided header and the tabs', async () => {
 		const screen = await renderWithRouter(ProcessInstanceWithHeight, {
 			path: '/operate-preview/processes/$processInstanceId',
 			initialEntry: '/operate-preview/processes/2251799813685249',
 		});
 
 		await expect.element(screen.getByText('Instance header content')).toBeVisible();
-		await expect.element(screen.getByText('Diagram panel placeholder')).toBeVisible();
-		await expect.element(screen.getByText('Bottom panel placeholder')).toBeVisible();
 		await expect.element(screen.getByRole('tab', {name: 'Variables'})).toBeVisible();
 	});
 
-	it('should render the provided top panel instead of the diagram placeholder', async () => {
+	it('should render the provided top panel', async () => {
 		const screen = await renderWithRouter(
 			() => (
 				<div style={{height: '800px'}} className="flex flex-col">
@@ -62,7 +60,6 @@ describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold
 		);
 
 		await expect.element(screen.getByText('Instance diagram')).toBeVisible();
-		await expect.element(screen.getByText('Diagram panel placeholder')).not.toBeInTheDocument();
 	});
 
 	it('should mark the active tab and report tab changes', async () => {

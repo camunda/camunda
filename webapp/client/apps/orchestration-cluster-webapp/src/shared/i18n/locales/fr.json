@@ -1665,10 +1665,6 @@
 						"heading": "Vous n'avez pas la permission de consulter ces informations"
 					}
 				},
-				"scaffold": {
-					"diagramPanelPlaceholder": "Espace réservé du panneau de diagramme",
-					"bottomPanelPlaceholder": "Espace réservé du panneau inférieur"
-				},
 				"history": {
 					"title": "Historique de l’instance",
 					"tabs": "Onglets de l’instance de processus",
