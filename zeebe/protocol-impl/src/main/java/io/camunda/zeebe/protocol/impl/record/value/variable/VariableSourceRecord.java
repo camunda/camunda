@@ -80,6 +80,10 @@ public class VariableSourceRecord extends UnifiedRecordValue implements Variable
     return this;
   }
 
+  /**
+   * Copies the type and the element instance key. The element id is referenced, not copied, so the
+   * buffer it points at must not change afterwards.
+   */
   public void wrap(final VariableSourceRecord variableSourceRecord) {
     setType(variableSourceRecord.getType());
     setElementInstanceKey(variableSourceRecord.getElementInstanceKey());

@@ -36,7 +36,8 @@ public interface VariableSourceValue extends RecordValue {
   /**
    * @return the key of the element instance that caused the variable operation, or {@code -1} if
    *     the operation has no causing element. For example, this is the job's element instance for a
-   *     job completion.
+   *     job completion. This is not the scope of the variable, see {@link
+   *     VariableRecordValue#getElementInstanceKey()}.
    */
   @Value.Default
   default long getElementInstanceKey() {

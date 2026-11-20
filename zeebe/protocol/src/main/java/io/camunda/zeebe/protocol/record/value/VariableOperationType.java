@@ -110,8 +110,8 @@ public enum VariableOperationType {
 
   /**
    * The {@code adHocSubProcessElements} variable of an ad-hoc sub-process, which holds metadata
-   * about its available activities, written by the engine. A process instance migration that
-   * changes the metadata also uses this type.
+   * about its available activities, written by the engine. A process instance migration also uses
+   * this type when it rewrites the variable for the target process definition.
    */
   AD_HOC_SUB_PROCESS_METADATA,
 
