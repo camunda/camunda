@@ -2732,8 +2732,8 @@ jobs:
         if: steps.deploy-check.outputs.deploy == 'true'
         id: snapshot-gate
         env:
-          NEXUS_USR: ${{ fromJSON(steps.nexus-secrets.outputs.secrets).NEXUS_USR }}
-          NEXUS_PSW: ${{ fromJSON(steps.nexus-secrets.outputs.secrets).NEXUS_PSW }}
+          NEXUS_USR: ${{ fromJSON(steps.nexus-secrets.outputs.secrets || '{}').NEXUS_USR }}
+          NEXUS_PSW: ${{ fromJSON(steps.nexus-secrets.outputs.secrets || '{}').NEXUS_PSW }}
           MIN_INTERVAL_HOURS: '3'
           MARKER_ARTIFACT: io/camunda/zeebe-protocol
         run: |
