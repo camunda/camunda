@@ -62,6 +62,11 @@ function instanceLastMigrationQuery(processInstanceKey: string) {
 	});
 }
 
+function getResponseStatus(error: unknown) {
+	const requestError = requestErrorSchema.safeParse(error);
+	return requestError.success ? requestError.data.response?.status : undefined;
+}
+
 function isNumericKey(key: string) {
 	return /^-?\d+$/.test(key);
 }
@@ -69,7 +74,8 @@ function isNumericKey(key: string) {
 function processInstanceQuery(processInstanceKey: string) {
 	return queryOptions({
 		queryKey: ['processInstance', processInstanceKey] as const,
-		retry: (failureCount, error) => getProcessInstanceErrorKind(error) !== 'notFound' && failureCount < 3,
+		retry: (failureCount, error) =>
+			isNumericKey(processInstanceKey) && getResponseStatus(error) !== 400 && failureCount < 3,
 		queryFn: async (): Promise<ProcessInstance> => {
 			if (!isNumericKey(processInstanceKey)) {
 				throw {
@@ -168,8 +174,7 @@ function getProcessInstanceErrorKind(error: unknown): 'forbidden' | 'notFound' |
 	if (error instanceof ForbiddenError) {
 		return 'forbidden';
 	}
-	const requestError = requestErrorSchema.safeParse(error);
-	const status = requestError.success ? requestError.data.response?.status : undefined;
+	const status = getResponseStatus(error);
 	return status === 400 || status === 404 ? 'notFound' : 'generic';
 }
 

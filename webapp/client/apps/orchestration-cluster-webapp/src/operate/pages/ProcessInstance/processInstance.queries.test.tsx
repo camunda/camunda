@@ -34,7 +34,7 @@ import {
 	useProcessInstanceWaitStateStatistics,
 } from './processInstance.queries';
 
-const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, retryDelay: 0}}});
 const PROCESS_INSTANCE_KEY = '123';
 
 beforeEach(() => {
@@ -137,6 +137,23 @@ it('should treat a numeric process instance key rejected by the gateway as not f
 		</QueryClientProvider>,
 	);
 	await expect.element(screen.getByText('Not found')).toBeVisible();
+});
+
+it('should keep retrying a numeric process instance key that is briefly not found', async ({worker}) => {
+	const instance = createProcessInstance({processInstanceKey: PROCESS_INSTANCE_KEY, state: 'ACTIVE'});
+	worker.use(
+		mockGetProcessInstanceEndpoint({
+			successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
+			once: true,
+		}),
+		mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance)}),
+	);
+	const screen = await render(
+		<QueryClientProvider client={new QueryClient()}>
+			<ProcessInstanceStatus />
+		</QueryClientProvider>,
+	);
+	await expect.element(screen.getByText('ACTIVE')).toBeVisible();
 });
 
 it('should refresh suspended process instance metadata after it is resumed externally', async ({worker}) => {
