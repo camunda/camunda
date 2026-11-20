@@ -46,6 +46,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -531,6 +536,41 @@ class MigratingWebSessionAttributeConverterTest {
     assertThatThrownBy(() -> converter.deserialize(payload))
         .hasRootCauseInstanceOf(java.io.InvalidClassException.class);
     assertThat(ForbiddenSessionAttribute.deserialized).isFalse();
+  }
+
+  @Test
+  void shouldNameTheRootTypeOfTheAttributeWhenAClassIsRejected() throws IOException {
+    // given — a rejected class nested in an allowed container, as a session attribute holds it.
+    // The attribute name does not reach the converter, so the type the stream starts with is the
+    // only hint an operator gets about which attribute failed.
+    final byte[] payload = serialize(new HashMap<>(Map.of("key", new ForbiddenSessionAttribute())));
+    final var loggerName = MigratingWebSessionAttributeConverter.class.getName();
+    final var appender = new ListAppender("session-attribute-appender");
+    appender.start();
+    final var context = (LoggerContext) LogManager.getContext(false);
+    final var loggerConfig = new LoggerConfig(loggerName, Level.ALL, true);
+    loggerConfig.addAppender(appender, null, null);
+    context.getConfiguration().addLogger(loggerName, loggerConfig);
+    context.updateLoggers();
+
+    try {
+      // when
+      assertThatThrownBy(() -> converter.deserialize(payload)).isInstanceOf(RuntimeException.class);
+
+      // then
+      assertThat(appender.getEvents())
+          .extracting(event -> event.getMessage().getFormattedMessage())
+          .singleElement()
+          .satisfies(
+              message ->
+                  assertThat(message)
+                      .contains("root=" + HashMap.class)
+                      .contains("class=" + ForbiddenSessionAttribute.class));
+    } finally {
+      context.getConfiguration().removeLogger(loggerName);
+      context.updateLoggers();
+      appender.stop();
+    }
   }
 
   @Test
