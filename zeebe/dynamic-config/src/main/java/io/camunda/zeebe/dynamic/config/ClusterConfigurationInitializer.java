@@ -227,12 +227,16 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
   class GossipInitializer<T extends InitializableClusterConfiguration>
       implements ClusterConfigurationInitializer<T>, ClusterConfigurationUpdateListener {
 
+    static final Duration DEFAULT_WAIT_LOG_INTERVAL = Duration.ofSeconds(10);
+    static final int ERROR_LOG_THRESHOLD = 10;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(GossipInitializer.class);
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final Supplier<T> persistedConfigurationSupplier;
     private final Consumer<T> configurationGossiper;
     private final ActorFuture<T> initialized;
     private final ConcurrencyControl executor;
+<<<<<<< HEAD:zeebe/dynamic-config/src/main/java/io/camunda/zeebe/dynamic/config/ClusterConfigurationInitializer.java
     // Used only to discriminate, at runtime, which of the two onClusterConfigurationUpdated
     // overloads carries a T (see SyncInitializer for the same pattern).
     private final T uninitialized;
@@ -243,6 +247,32 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
         final Consumer<T> configurationGossiper,
         final ConcurrencyControl executor,
         final T uninitialized) {
+=======
+    private final Duration waitLogInterval;
+    private ScheduledTimer waitLogTimer;
+    private int waitLogCount;
+
+    public GossipInitializer(
+        final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
+        final Supplier<CurrentClusterConfiguration> persistedConfigurationSupplier,
+        final Consumer<CurrentClusterConfiguration> configurationGossiper,
+        final ConcurrencyControl executor) {
+      this(
+          clusterConfigurationUpdateNotifier,
+          persistedConfigurationSupplier,
+          configurationGossiper,
+          executor,
+          DEFAULT_WAIT_LOG_INTERVAL);
+    }
+
+    GossipInitializer(
+        final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
+        final Supplier<CurrentClusterConfiguration> persistedConfigurationSupplier,
+        final Consumer<CurrentClusterConfiguration> configurationGossiper,
+        final ConcurrencyControl executor,
+        final Duration waitLogInterval) {
+      this.waitLogInterval = waitLogInterval;
+>>>>>>> 0521dfa2f (fix: log while a broker waits for the coordinator's configuration):zeebe/dynamic-config/impl/src/main/java/io/camunda/zeebe/dynamic/config/impl/ClusterConfigurationInitializer.java
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
       this.persistedConfigurationSupplier = persistedConfigurationSupplier;
       this.configurationGossiper = configurationGossiper;
@@ -264,7 +294,25 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
         // received gossip
         configurationGossiper.accept(persistedConfiguration);
       }
+      // Without this, a coordinator that never comes up leaves this member silently waiting.
+      waitLogTimer = executor.runAtFixedRate(waitLogInterval, this::logStillWaiting);
       return initialized;
+    }
+
+    private void logStillWaiting() {
+      if (initialized.isDone()) {
+        return;
+      }
+      waitLogCount++;
+      final var waited = waitLogInterval.multipliedBy(waitLogCount);
+      final var message =
+          "Still waiting for the coordinator to provide the initial cluster configuration via"
+              + " gossip after {}. Check that the coordinator (broker 0) is up and healthy.";
+      if (waitLogCount >= ERROR_LOG_THRESHOLD) {
+        LOGGER.error(message, waited);
+      } else {
+        LOGGER.warn(message, waited);
+      }
     }
 
     @Override
@@ -294,6 +342,9 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
               LOGGER.debug("Received cluster configuration {} via gossip.", clusterConfiguration);
               initialized.complete(clusterConfiguration);
               clusterConfigurationUpdateNotifier.removeUpdateListener(this);
+              if (waitLogTimer != null) {
+                waitLogTimer.cancel();
+              }
             }
           });
     }

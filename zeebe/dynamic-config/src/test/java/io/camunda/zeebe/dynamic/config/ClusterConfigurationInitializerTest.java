@@ -32,6 +32,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.Level;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -139,8 +141,12 @@ final class ClusterConfigurationInitializerTest {
             topologyNotifier,
             persistedClusterConfiguration::getConfiguration,
             ignore -> {},
+<<<<<<< HEAD:zeebe/dynamic-config/src/test/java/io/camunda/zeebe/dynamic/config/ClusterConfigurationInitializerTest.java
             new TestConcurrencyControl(),
             ClusterConfiguration.uninitialized());
+=======
+            new TestConcurrencyControl(true));
+>>>>>>> 0521dfa2f (fix: log while a broker waits for the coordinator's configuration):zeebe/dynamic-config/impl/src/test/java/io/camunda/zeebe/dynamic/config/impl/ClusterConfigurationInitializerTest.java
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -151,6 +157,62 @@ final class ClusterConfigurationInitializerTest {
 
     // then
     assertThatClusterTopology(initializeFuture.join()).isInitialized();
+  }
+
+  @Test
+  void shouldLogWarningsThenErrorWhileWaitingForGossip() {
+    // given
+    final var executor = new TestConcurrencyControl(true);
+    final var notifier = new TestClusterConfigurationNotifier();
+    final var initializer =
+        new GossipInitializer(
+            notifier,
+            persistedClusterConfiguration::getConfiguration,
+            ignore -> {},
+            executor,
+            Duration.ofSeconds(1));
+
+    try (final var logCapturer = LogCapturer.capturing(GossipInitializer.class, Level.WARN)) {
+      // when
+      initializer.initialize();
+      for (int i = 0; i < GossipInitializer.ERROR_LOG_THRESHOLD; i++) {
+        executor.runAll();
+      }
+
+      // then
+      assertThat(logCapturer.messagesAt(Level.WARN))
+          .hasSize(GossipInitializer.ERROR_LOG_THRESHOLD - 1)
+          .allMatch(m -> m.contains("Still waiting for the coordinator"));
+      assertThat(logCapturer.messagesAt(Level.ERROR))
+          .singleElement()
+          .asString()
+          .contains("Still waiting for the coordinator");
+    }
+  }
+
+  @Test
+  void shouldStopLoggingOnceGossipIsReceived() {
+    // given
+    final var executor = new TestConcurrencyControl(true);
+    final var notifier = new TestClusterConfigurationNotifier();
+    final var initializer =
+        new GossipInitializer(
+            notifier,
+            persistedClusterConfiguration::getConfiguration,
+            ignore -> {},
+            executor,
+            Duration.ofSeconds(1));
+
+    try (final var logCapturer = LogCapturer.capturing(GossipInitializer.class, Level.WARN)) {
+      initializer.initialize();
+      notifier.updateCurrentClusterConfiguration(initialClusterConfiguration);
+
+      // when
+      executor.runAll();
+
+      // then
+      assertThat(logCapturer.messages()).isEmpty();
+    }
   }
 
   @Test
@@ -511,9 +573,14 @@ final class ClusterConfigurationInitializerTest {
                       new TestClusterConfigurationNotifier(),
                       persistedClusterConfiguration::getConfiguration,
                       ignore -> {},
+<<<<<<< HEAD:zeebe/dynamic-config/src/test/java/io/camunda/zeebe/dynamic/config/ClusterConfigurationInitializerTest.java
                       new TestConcurrencyControl(),
                       ClusterConfiguration.uninitialized()));
       // write initial topology to the file
+=======
+                      new TestConcurrencyControl(true)));
+      // write initial configuration to the file
+>>>>>>> 0521dfa2f (fix: log while a broker waits for the coordinator's configuration):zeebe/dynamic-config/impl/src/test/java/io/camunda/zeebe/dynamic/config/impl/ClusterConfigurationInitializerTest.java
       persistedClusterConfiguration.update(initialClusterConfiguration);
       // when
       final var initializeFuture = fileInitializer.initialize();
@@ -534,9 +601,14 @@ final class ClusterConfigurationInitializerTest {
                   new GossipInitializer<>(
                       topologyUpdateNotifier,
                       persistedClusterConfiguration::getConfiguration,
+<<<<<<< HEAD:zeebe/dynamic-config/src/test/java/io/camunda/zeebe/dynamic/config/ClusterConfigurationInitializerTest.java
                       gossipedTopology::set,
                       new TestConcurrencyControl(),
                       ClusterConfiguration.uninitialized()));
+=======
+                      gossipedConfiguration::set,
+                      new TestConcurrencyControl(true)));
+>>>>>>> 0521dfa2f (fix: log while a broker waits for the coordinator's configuration):zeebe/dynamic-config/impl/src/test/java/io/camunda/zeebe/dynamic/config/impl/ClusterConfigurationInitializerTest.java
 
       // when
       final var initializeFuture = initializer.initialize();
@@ -564,9 +636,14 @@ final class ClusterConfigurationInitializerTest {
                   new GossipInitializer<>(
                       topologyUpdateNotifier,
                       persistedClusterConfiguration::getConfiguration,
+<<<<<<< HEAD:zeebe/dynamic-config/src/test/java/io/camunda/zeebe/dynamic/config/ClusterConfigurationInitializerTest.java
                       gossipedTopology::set,
                       new TestConcurrencyControl(),
                       ClusterConfiguration.uninitialized()));
+=======
+                      gossipedConfiguration::set,
+                      new TestConcurrencyControl(true)));
+>>>>>>> 0521dfa2f (fix: log while a broker waits for the coordinator's configuration):zeebe/dynamic-config/impl/src/test/java/io/camunda/zeebe/dynamic/config/impl/ClusterConfigurationInitializerTest.java
       // Corrupt file
       Files.write(
           topologyFile, "random".getBytes(), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
