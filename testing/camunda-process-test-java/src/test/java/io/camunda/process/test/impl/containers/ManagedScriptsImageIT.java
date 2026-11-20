@@ -79,6 +79,17 @@ class ManagedScriptsImageIT {
         .hasStackTraceContaining("has no apk to install python3 and node");
   }
 
+  @Test
+  void shouldReportTheApkErrorsWhenTheBuildFails() {
+    // given: a Python version that the package repository of the image doesn't have
+    final ManagedScriptsImage image = new ManagedScriptsImage(CONNECTORS_IMAGE, "3.99", null);
+
+    // when/then: the apk output, not only the failed command, tells why the build failed
+    assertThatThrownBy(() -> image.build(false).get())
+        .hasStackTraceContaining("The last lines of the build output")
+        .hasStackTraceContaining("python-3.99 (no such package)");
+  }
+
   private static String run(final RemoteDockerImage image) {
     try (final GenericContainer<?> container =
         new GenericContainer<>(image)
