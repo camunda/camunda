@@ -23,13 +23,11 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
 
     <!-- java version -->
     <version.java>21</version.java>
 
     <!-- maven plugin versions -->
-    <plugin.version.license>3.0</plugin.version.license>
     <plugin.version.jib>3.5.2</plugin.version.jib>
     <docker.registry>registry.camunda.cloud/team-reliability-testing</docker.registry>
   </properties>
