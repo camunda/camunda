@@ -76,7 +76,7 @@ public class ClusterRaftTest {
         "zeebe.broker.cluster.electionTimeout=20s",
         "zeebe.broker.cluster.raft.enablePriorityElection=false",
         "zeebe.broker.cluster.raft.flush.enabled=false",
-        "zeebe.broker.cluster.raft.flush.delay=10s"
+        "zeebe.broker.cluster.raft.flush.delayTime=10s"
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -113,6 +113,27 @@ public class ClusterRaftTest {
   }
 
   @Nested
+  @TestPropertySource(properties = {"zeebe.broker.cluster.raft.flush.delayTime=15s"})
+  class WithOnlyLegacyFlushDelayTimeSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithOnlyLegacyFlushDelayTimeSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldKeepFlushEnabled() {
+      assertThat(brokerCfg.getCluster().getRaft().getFlush().enabled()).isTrue();
+    }
+
+    @Test
+    void shouldSetFlushDelayFromLegacyDelayTime() {
+      assertThat(brokerCfg.getCluster().getRaft().getFlush().delayTime())
+          .isEqualTo(Duration.ofSeconds(15));
+    }
+  }
+
+  @Nested
   @TestPropertySource(
       properties = {
         // new
@@ -126,7 +147,7 @@ public class ClusterRaftTest {
         "zeebe.broker.cluster.electionTimeout=99s",
         "zeebe.broker.cluster.raft.enablePriorityElection=false",
         "zeebe.broker.cluster.raft.flush.enabled=false",
-        "zeebe.broker.cluster.raft.flush.delay=99s"
+        "zeebe.broker.cluster.raft.flush.delayTime=99s"
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;

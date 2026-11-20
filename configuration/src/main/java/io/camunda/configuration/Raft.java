@@ -23,7 +23,7 @@ public class Raft {
   private static final String LEGACY_PRIORITY_ELECTION_ENABLED =
       "zeebe.broker.cluster.raft.enablePriorityElection";
   private static final String LEGACY_FLUSH_ENABLED = "zeebe.broker.cluster.raft.flush.enabled";
-  private static final String LEGACY_FLUSH_DELAY = "zeebe.broker.cluster.raft.flush.delay";
+  private static final String LEGACY_FLUSH_DELAY = "zeebe.broker.cluster.raft.flush.delayTime";
 
   /**
    * The heartbeat interval for Raft. The leader sends a heartbeat to a follower every
