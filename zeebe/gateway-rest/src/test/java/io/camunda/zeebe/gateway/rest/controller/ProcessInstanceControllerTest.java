@@ -3410,6 +3410,174 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(expectedBody, JsonCompareMode.STRICT);
   }
 
+  @ParameterizedTest
+  @ValueSource(
+      strings = {"cancellation", "suspension", "resumption", "incident-resolution", "deletion"})
+  void shouldRejectProcessInstanceBatchOperationWhenFilterHasOnlyAnEmptyInList(
+      final String operation) {
+    // given - an empty $in list is dropped on mapping, leaving a filter without criteria
+    final var request =
+        """
+        {
+          "filter": {
+            "processDefinitionKey": { "$in": [] }
+          }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The filter property 'processDefinitionKey' must contain at least one value.",
+                "instance":"/v2/process-instances/%s"
+             }"""
+            .formatted(operation);
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/" + operation)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"{\"$in\": []}", "{\"$in\": [], \"$notIn\": []}"})
+  void shouldRejectProcessInstanceBatchOperationWhenAKeyFilterHasNoUsableValue(
+      final String keyFilter) {
+    // given - the mapping drops an empty list, which would widen the batch
+    final var request =
+        """
+        {
+          "filter": {
+            "processDefinitionKey": %s
+          }
+        }"""
+            .formatted(keyFilter);
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The filter property 'processDefinitionKey' must contain at least one value.",
+                "instance":"/v2/process-instances/cancellation"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "tenantId",
+        "state",
+        "startDate",
+        "processDefinitionVersion",
+        "processDefinitionId"
+      })
+  void shouldRejectProcessInstanceBatchOperationWhenAnotherFilterPropertyHasNoUsableValue(
+      final String property) {
+    // given - the empty list is dropped for any property type, also next to a valid property
+    final var request =
+        """
+        {
+          "filter": {
+            "processInstanceKey": { "$eq": "1" },
+            "%s": { "$in": [] }
+          }
+        }"""
+            .formatted(property);
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The filter property '%s' must contain at least one value.",
+                "instance":"/v2/process-instances/cancellation"
+             }"""
+            .formatted(property);
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectProcessInstanceBatchOperationWhenAnEmptyInListSitsNextToOtherCriteria() {
+    // given - the empty $in list would be dropped, widening the batch to every active instance
+    final var request =
+        """
+        {
+          "filter": {
+            "state": "ACTIVE",
+            "processInstanceKey": { "$in": [] }
+          }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The filter property 'processInstanceKey' must contain at least one value.",
+                "instance":"/v2/process-instances/cancellation"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
   @Test
   void shouldRejectCancelProcessInstanceBatchOperationWithNonCancellableState() {
     // given
@@ -4237,6 +4405,50 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectMigrateProcessInstancesBatchOperationWhenFilterHasOnlyAnEmptyInList() {
+    // given
+    final var request =
+        """
+        {
+          "filter": { "processDefinitionKey": { "$in": [] } },
+          "migrationPlan": {
+            "targetProcessDefinitionKey": "123",
+            "mappingInstructions": [
+              {
+                "sourceElementId": "a",
+                "targetElementId": "b"
+              }
+            ]
+          }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The filter property 'processDefinitionKey' must contain at least one value.",
+                "instance":"/v2/process-instances/migration"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
   void shouldRejectMigrateProcessInstancesBatchOperationWithEmptyFilter() {
     // given
     final var request =
@@ -4392,6 +4604,47 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No filter provided.",
+                "instance":"/v2/process-instances/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstancesBatchOperationWhenFilterHasOnlyAnEmptyInList() {
+    // given
+    final var request =
+        """
+        {
+          "filter": { "processDefinitionKey": { "$in": [] } },
+          "moveInstructions": [
+            {
+              "sourceElementId": "source1",
+              "targetElementId": "target1"
+            }
+          ]
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The filter property 'processDefinitionKey' must contain at least one value.",
                 "instance":"/v2/process-instances/modification"
              }""";
 

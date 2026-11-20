@@ -52,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -1164,6 +1165,50 @@ public class JobControllerTest extends RestControllerTest {
               "instance": "%s"
             }"""
             .formatted(JOBS_BASE_URL + "/batch-update");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/batch-update")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"jobKey", "processInstanceKey", "type", "state", "worker"})
+  void shouldRejectBatchUpdateWhenAFilterPropertyHasNoUsableValue(final String property) {
+    // given - the mapping drops an empty list, which would widen the batch
+    final var request =
+        """
+            {
+              "filter": {
+                "processDefinitionKey": { "$eq": "1" },
+                "%s": { "$in": [] }
+              },
+              "changeset": { "priority": 80 }
+            }"""
+            .formatted(property);
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The filter property '%s' must contain at least one value.",
+              "instance": "%s"
+            }"""
+            .formatted(property, JOBS_BASE_URL + "/batch-update");
 
     // when/then
     webClient
