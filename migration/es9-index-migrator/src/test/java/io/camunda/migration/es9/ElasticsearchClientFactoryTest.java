@@ -16,7 +16,7 @@ import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.env.SystemEnvironmentPropertySource;
 
-final class Es9ClientFactoryTest {
+final class ElasticsearchClientFactoryTest {
 
   private static StandardEnvironment environmentOf(final Map<String, Object> properties) {
     final var environment = new StandardEnvironment();
@@ -40,7 +40,7 @@ final class Es9ClientFactoryTest {
                 "camunda.data.secondary-storage.elasticsearch.security.verify-hostname", "false"));
 
     // when
-    final var configuration = Es9ClientFactory.connectConfiguration(environment);
+    final var configuration = ElasticsearchClientFactory.connectConfiguration(environment);
 
     // then
     assertThat(configuration.getUrl()).isEqualTo("https://es.example:9201");
@@ -65,7 +65,7 @@ final class Es9ClientFactoryTest {
                     "CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_USERNAME", "env-user")));
 
     // when
-    final var configuration = Es9ClientFactory.connectConfiguration(environment);
+    final var configuration = ElasticsearchClientFactory.connectConfiguration(environment);
 
     // then
     assertThat(configuration.getUrl()).isEqualTo("http://es-env:9200");
@@ -100,7 +100,7 @@ final class Es9ClientFactoryTest {
         environmentOf(Map.of("camunda.data.secondary-storage.type", "opensearch"));
 
     // when / then
-    assertThatThrownBy(() -> Es9ClientFactory.connectConfiguration(environment))
+    assertThatThrownBy(() -> ElasticsearchClientFactory.connectConfiguration(environment))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("opensearch");
   }

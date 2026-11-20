@@ -26,9 +26,9 @@ import org.springframework.core.env.Environment;
  * as in the broker. Binding them directly avoids starting a Spring context.
  */
 @NullMarked
-final class Es9ClientFactory {
+final class ElasticsearchClientFactory {
 
-  private Es9ClientFactory() {}
+  private ElasticsearchClientFactory() {}
 
   static ElasticsearchClient create(final Environment environment) {
     return ElasticsearchConnector.forElasticsearch8(connectConfiguration(environment))

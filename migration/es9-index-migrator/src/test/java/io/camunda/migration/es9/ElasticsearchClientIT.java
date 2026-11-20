@@ -33,7 +33,7 @@ import org.testcontainers.utility.DockerImageName;
  * Runs the client against a real Elasticsearch 8.19, the version the Job runs on, as the user the
  * Orchestration Cluster connects with.
  */
-final class Es9ClientIT {
+final class ElasticsearchClientIT {
 
   // The version the Job meets in production
   private static final DockerImageName ES_IMAGE =
@@ -63,10 +63,11 @@ final class Es9ClientIT {
       // the role the operator gives the Orchestration Cluster user
       superuser
           .security()
-          .putRole(r ->
-              r.name("oc-role")
-                  .cluster("manage", "manage_ilm")
-                  .indices(i -> i.names("*").privileges(IndexPrivilege.All)));
+          .putRole(
+              r ->
+                  r.name("oc-role")
+                      .cluster("manage", "manage_ilm")
+                      .indices(i -> i.names("*").privileges(IndexPrivilege.All)));
       superuser.security().putUser(u -> u.username(OC_USER).password(OC_PASSWORD).roles("oc-role"));
     }
   }
@@ -110,10 +111,11 @@ final class Es9ClientIT {
 
       // then
       assertThat(features)
-          .anySatisfy(feature -> {
-            assertThat(feature.featureName()).isEqualTo("tasks");
-            assertThat(feature.migrationStatus().jsonValue()).isEqualTo("NO_MIGRATION_NEEDED");
-          });
+          .anySatisfy(
+              feature -> {
+                assertThat(feature.featureName()).isEqualTo("tasks");
+                assertThat(feature.migrationStatus().jsonValue()).isEqualTo("NO_MIGRATION_NEEDED");
+              });
     }
   }
 
@@ -136,12 +138,12 @@ final class Es9ClientIT {
   }
 
   private static ElasticsearchClient client(final String username, final String password) {
-    return Es9ClientFactory.create(environment(username, password));
+    return ElasticsearchClientFactory.create(environment(username, password));
   }
 
   private static ConnectConfiguration connectConfiguration(
       final String username, final String password) {
-    return Es9ClientFactory.connectConfiguration(environment(username, password));
+    return ElasticsearchClientFactory.connectConfiguration(environment(username, password));
   }
 
   private static StandardEnvironment environment(final String username, final String password) {
