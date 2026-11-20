@@ -18,6 +18,7 @@ import {anchorStateOverlaysToCorners} from '#/operate/shared/StateOverlay/shadcn
 import {useDiagramXml} from '../useDiagramXml';
 import {useDiagramStatisticsOverlays} from '../useDiagramStatisticsOverlays';
 import {getStatisticsFilter} from '../getStatisticsFilter';
+import {getNameOrId} from '../getElementName';
 import {getProcessDefinitionName} from '../getProcessDefinitionName';
 import type {ProcessesSearch} from '../processesFilter';
 import {DiagramHeader} from './DiagramHeader';
@@ -53,7 +54,7 @@ const StatisticsOverlays: React.FC<{businessObjects?: BusinessObjects}> = ({busi
 					container={container}
 					newTokenCount={payload.newTokenCount ?? 0}
 					cancelledTokenCount={payload.cancelledTokenCount ?? 0}
-					elementName={businessObjects?.[elementId]?.name ?? elementId}
+					elementName={getNameOrId(businessObjects?.[elementId]?.name, elementId)}
 				/>
 			);
 		}
@@ -67,7 +68,7 @@ const StatisticsOverlays: React.FC<{businessObjects?: BusinessObjects}> = ({busi
 				state={payload.elementState}
 				count={payload.count}
 				container={container}
-				elementName={businessObjects?.[elementId]?.name ?? elementId}
+				elementName={getNameOrId(businessObjects?.[elementId]?.name, elementId)}
 			/>
 		);
 	});

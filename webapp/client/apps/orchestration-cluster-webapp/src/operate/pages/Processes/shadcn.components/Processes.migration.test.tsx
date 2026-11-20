@@ -238,6 +238,49 @@ describe('<Processes /> migration mode (design system)', () => {
 		await expect.element(elementButton).toHaveAttribute('aria-pressed', 'false');
 	});
 
+	describe('leaving with a staged mapping', () => {
+		async function stageMapping(screen: Screen) {
+			await userEvent.click(screen.getByRole('combobox', {name: 'Target element for Review invoice'}));
+			await userEvent.click(screen.getByRole('option', {name: 'Not mapped'}));
+			await expect
+				.element(screen.getByRole('combobox', {name: 'Target element for Review invoice'}))
+				.toHaveTextContent('Not mapped');
+		}
+
+		it('should keep the staged mapping when staying after navigating away', async ({worker}) => {
+			mockPage(worker);
+			const screen = await renderPage();
+			await enterMigration(screen);
+			await stageMapping(screen);
+
+			void screen.router.navigate({
+				to: PATH,
+				search: {process: 'my_simple_process', version: 1, tenantId: 'tenant-a'},
+			});
+			await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Stay'}));
+
+			await expect.element(screen.getByText('Migration step 1 - mapping elements')).toBeVisible();
+			await expect
+				.element(screen.getByRole('combobox', {name: 'Target element for Review invoice'}))
+				.toHaveTextContent('Not mapped');
+		});
+
+		it('should leave migration mode when leaving after navigating away', async ({worker}) => {
+			mockPage(worker);
+			const screen = await renderPage();
+			await enterMigration(screen);
+			await stageMapping(screen);
+
+			void screen.router.navigate({
+				to: PATH,
+				search: {process: 'my_simple_process', version: 1, tenantId: 'tenant-a'},
+			});
+			await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Leave'}));
+
+			await expect.element(screen.getByText('Migration step 1 - mapping elements')).not.toBeInTheDocument();
+		});
+	});
+
 	it('should open migration mode for the instance handed over from the instance page', async ({worker}) => {
 		mockPage(worker);
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: `/operate-preview/processes/1`});

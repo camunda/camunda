@@ -9,7 +9,7 @@
 import {describe, expect} from 'vitest';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {it} from '#/vitest-modules/test-extend';
-import {getElementName} from './getElementName';
+import {getElementName, getNameOrId} from './getElementName';
 
 const businessObjectsWithName = (name: string | undefined) =>
 	({task: {id: 'task', $type: 'bpmn:ServiceTask', name}}) as unknown as BusinessObjects;
@@ -22,5 +22,16 @@ describe('getElementName', () => {
 		{description: 'a blank name as it is, like legacy', name: '   ', expected: '   '},
 	])('should return $description', ({name, expected}) => {
 		expect(getElementName({businessObjects: businessObjectsWithName(name), elementId: 'task'})).toBe(expected);
+	});
+});
+
+describe('getNameOrId', () => {
+	it.for([
+		{name: 'Check order', expected: 'Check order'},
+		{name: undefined, expected: 'task'},
+		{name: '', expected: 'task'},
+		{name: '   ', expected: 'task'},
+	])('should return $expected for the name "$name"', ({name, expected}) => {
+		expect(getNameOrId(name, 'task')).toBe(expected);
 	});
 });

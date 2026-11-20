@@ -32,6 +32,7 @@ import {
 import {ArrowRight, CircleAlert, CircleCheck} from '@camunda/design-system/icons';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
 import {cn} from '#/shared/cn';
+import {getNameOrId} from '../getElementName';
 import {getTargetChoices, hasEmbeddedForm, isCamundaUserTask, type MigrationElements} from '../migrationMapping';
 
 const NOT_MAPPED = 'not-mapped';
@@ -125,7 +126,7 @@ const MigrationMappingTable: React.FC<Props> = ({
 						</TableHeader>
 						<TableBody>
 							{rows.map(({sourceElement, choices}) => {
-								const name = sourceElement.name ?? sourceElement.id;
+								const name = getNameOrId(sourceElement.name, sourceElement.id);
 								const targetElementId = mapping[sourceElement.id] ?? '';
 								const isSelected = selectedSourceElementIds?.includes(sourceElement.id) ?? false;
 
@@ -194,7 +195,7 @@ const MigrationMappingTable: React.FC<Props> = ({
 														<SelectItem value={NOT_MAPPED}>{t('operate.processes.migration.notMapped')}</SelectItem>
 														{choices.map(({id, name: choiceName}) => (
 															<SelectItem key={id} value={`${TARGET_PREFIX}${id}`}>
-																{choiceName ?? id}
+																{getNameOrId(choiceName, id)}
 															</SelectItem>
 														))}
 													</SelectContent>
