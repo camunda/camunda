@@ -365,27 +365,32 @@ final class LongPollingActivateJobsTest {
   void shouldHandleNotificationAfterActorClockMovedBackwards() throws Exception {
     // given — a throttled notification was handled while the clock was advanced
     actorClock.pinCurrentTime();
-    activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
+    final var pinnedTime = actorClock.getCurrentTime();
+    final var requests = activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
     final int firstRound = FAILED_RESPONSE_THRESHOLD * partitionsCount;
     brokerClient.notifyJobsAvailable(TYPE);
     verify(activateJobsStub, timeout(2000).times(firstRound + partitionsCount)).handle(any());
     awaitNoActiveRequests(handler);
     brokerClient.notifyJobsAvailable(TYPE);
     awaitHandlerActor();
-    actorClock.addTime(Duration.ofDays(2));
+    // stay below the long polling and probe timeouts: their timers would time out the blocked
+    // requests, dropping the throttled job type state, or wake up extra requests
+    actorClock.addTime(Duration.ofSeconds(1));
     awaitInvocationsSettledAt(firstRound + 2 * partitionsCount);
     awaitNoActiveRequests(handler);
 
-    // when — the clock moves backwards, and a new request is blocked
-    actorClock.reset();
-    final var request = getLongPollingActivateJobsRequest();
-    handler.internalActivateJobsRetry(request);
-    waitUntil(request::hasScheduledTimer);
+    // when — the clock moves backwards, and jobs become available
+    actorClock.setCurrentTime(pinnedTime);
+    // the clock only exposes the new time once an actor thread updated it
+    Awaitility.await().until(() -> actorClock.getCurrentTime().equals(pinnedTime));
+    awaitHandlerActor();
     activateJobsStub.addAvailableJobs(TYPE, 1);
     brokerClient.notifyJobsAvailable(TYPE);
 
-    // then — the notification is not throttled
-    Awaitility.await().atMost(Duration.ofSeconds(3)).until(request::isCompleted);
+    // then — the notification is not throttled, as the pinned clock would never end the window
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(3))
+        .until(() -> requests.stream().anyMatch(r -> r.isCompleted() && !r.isTimedOut()));
   }
 
   @Test
