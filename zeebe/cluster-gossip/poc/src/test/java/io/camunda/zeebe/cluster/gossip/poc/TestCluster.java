@@ -17,6 +17,7 @@ import io.camunda.zeebe.cluster.gossip.poc.antientropy.AntiEntropyConfig;
 import io.camunda.zeebe.cluster.gossip.poc.core.AbstractClusterGossiper;
 import io.camunda.zeebe.cluster.gossip.poc.swim.SwimClusterGossiper;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ final class TestCluster implements AutoCloseable {
   private final List<Node> nodes = new ArrayList<>();
   private final List<AtomixCluster> atomixMembers = new ArrayList<>();
   private final List<AbstractClusterGossiper> gossipers = new ArrayList<>();
+  private final List<MeterRegistry> meterRegistries = new ArrayList<>();
 
   TestCluster(final Transport transport, final Timing timing, final int size) {
     this.transport = transport;
@@ -46,6 +48,7 @@ final class TestCluster implements AutoCloseable {
               .build());
       atomixMembers.add(null);
       gossipers.add(null);
+      meterRegistries.add(new SimpleMeterRegistry());
     }
   }
 
@@ -60,6 +63,7 @@ final class TestCluster implements AutoCloseable {
   /** Starts a new run of the member with the given index. */
   AbstractClusterGossiper start(final int index) {
     final var meterRegistry = new SimpleMeterRegistry();
+    meterRegistries.set(index, meterRegistry);
     final var atomix =
         AtomixCluster.builder(meterRegistry)
             .withAddress(nodes.get(index).address())
@@ -106,6 +110,28 @@ final class TestCluster implements AutoCloseable {
   /** The gossipers of all running members. */
   List<AbstractClusterGossiper> running() {
     return gossipers.stream().filter(gossiper -> gossiper != null).toList();
+  }
+
+  /**
+   * Bytes of TCP requests sent by all running members on topics starting with the prefix, as
+   * recorded by Atomix messaging metrics. Responses are not recorded by Atomix, so they are missing
+   * for every transport alike.
+   */
+  long tcpRequestBytes(final String topicPrefix) {
+    double kiloBytes = 0;
+    for (int i = 0; i < meterRegistries.size(); i++) {
+      if (gossipers.get(i) == null) {
+        continue;
+      }
+      for (final var summary :
+          meterRegistries.get(i).find("zeebe.messaging.request.size.kb").summaries()) {
+        final var topic = summary.getId().getTag("topic");
+        if (topic != null && topic.startsWith(topicPrefix)) {
+          kiloBytes += summary.totalAmount();
+        }
+      }
+    }
+    return Math.round(kiloBytes * 1_000);
   }
 
   static MemberId memberId(final int index) {
