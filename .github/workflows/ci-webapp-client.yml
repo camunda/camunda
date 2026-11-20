@@ -337,6 +337,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "6"
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
       - name: Integration tests
@@ -465,6 +467,8 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "6"
       - name: Build frontend
         run: npm run build:test -w @camunda/orchestration-cluster-webapp
       - name: Visual regression tests
