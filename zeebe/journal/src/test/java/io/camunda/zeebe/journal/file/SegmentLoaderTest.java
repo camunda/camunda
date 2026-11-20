@@ -8,7 +8,10 @@
 package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -68,5 +71,31 @@ final class SegmentLoaderTest {
 
     // then
     assertThat(tmpDir).isEmptyDirectory();
+  }
+
+  @Test
+  void shouldDropPageCacheBeforeLoadingExistingSegment(final @TempDir Path tmpDir) {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var descriptor =
+        SegmentDescriptor.builder().withId(1).withIndex(1).withMaxSegmentSize(segmentSize).build();
+    final var segmentFile = tmpDir.resolve("segment.log");
+    new SegmentLoader(
+            segmentSize * 2, new JournalMetrics(meterRegistry), SegmentAllocator.defaultAllocator())
+        .createSegment(segmentFile, descriptor, 0, new SparseJournalIndex(1))
+        .close();
+    final var posixFs = mock(PosixFs.class);
+    final var segmentLoader =
+        new SegmentLoader(
+            segmentSize * 2,
+            new JournalMetrics(meterRegistry),
+            SegmentAllocator.defaultAllocator(),
+            posixFs);
+
+    // when
+    segmentLoader.loadExistingSegment(segmentFile, 0, new SparseJournalIndex(1)).close();
+
+    // then
+    verify(posixFs).dropPageCache(segmentFile);
   }
 }
