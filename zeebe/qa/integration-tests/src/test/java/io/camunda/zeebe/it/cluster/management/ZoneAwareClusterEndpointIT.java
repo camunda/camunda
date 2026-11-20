@@ -367,9 +367,10 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   @Test
   void shouldGracefullyRemoveHealthyZoneWithoutLeaders() {
     try (final var cluster = createCluster(minReplicationFactor())) {
-      // given - zoneB has follower replicas only, while zoneA contains every partition leader
+      // given - zoneB has follower replicas only, while zoneA contains every partition leader;
+      // use the zoneA broker as the actuator, since zone-a_0 stays alive while zoneB is removed
       cluster.awaitCompleteTopology();
-      final var actuator = ClusterActuator.of(cluster.availableGateway());
+      final var actuator = ClusterActuator.of(cluster.brokers().get(memberIdForBroker(0)));
       Awaitility.await()
           .untilAsserted(
               () ->
