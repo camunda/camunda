@@ -160,7 +160,7 @@ const CamundaFormRenderer: React.FC<Props> = ({
 				schema,
 				data,
 				onImportError,
-				onSubmit: async ({data: newData, errors, files = new Map<string, File[]>()}) => {
+				onSubmit: async ({data: newData, errors, files}) => {
 					onSubmitStart?.();
 					setInvalidFields(undefined);
 					setHasLargeFilePayload(false);
