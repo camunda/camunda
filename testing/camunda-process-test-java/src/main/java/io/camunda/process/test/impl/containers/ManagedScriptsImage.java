@@ -200,6 +200,8 @@ public final class ManagedScriptsImage {
           .buildImageCmd(contextDirectory.toFile())
           .withTags(Collections.singleton(imageName))
           .withLabels(DockerClientFactory.DEFAULT_LABELS)
+          // also removes the container of a failed step, which Ryuk doesn't know about
+          .withForcerm(true)
           .exec(output)
           .awaitImageId();
       return imageName;
