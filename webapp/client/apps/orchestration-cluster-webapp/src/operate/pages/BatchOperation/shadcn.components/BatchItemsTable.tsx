@@ -37,7 +37,6 @@ const TABLE_CONTAINER_CLASSES = [
 
 const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link className="underline" {...props} />;
 const ProcessInstanceLink = createLink(TableLink);
-const DecisionInstanceLink = createLink(TableLink);
 
 type ProcessInstanceKeyCellProps = {
 	/** `null` for items that do not target a process instance (e.g. decision or definition items). */
@@ -117,27 +116,12 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 				{
 					key: 'decisionInstanceKey',
 					label: t('operate.batchOperation.itemsTable.decisionInstanceKey'),
-					render: (row: BatchOperationItem) => {
-						const label = t('operate.batchOperation.itemsTable.viewDecisionInstance', {key: row.itemKey});
-
-						return (
-							<ItemKeyCell
-								itemKey={row.itemKey}
-								fallbackText={t('operate.batchOperation.itemsTable.noDecisionInstance')}
-							>
-								{row.state === 'COMPLETED' ? undefined : (
-									<DecisionInstanceLink
-										to="/operate-preview/decisions/$decisionInstanceId"
-										params={{decisionInstanceId: row.itemKey}}
-										title={label}
-										aria-label={label}
-									>
-										{row.itemKey}
-									</DecisionInstanceLink>
-								)}
-							</ItemKeyCell>
-						);
-					},
+					render: (row: BatchOperationItem) => (
+						<ItemKeyCell
+							itemKey={row.itemKey}
+							fallbackText={t('operate.batchOperation.itemsTable.noDecisionInstance')}
+						/>
+					),
 				},
 				state,
 				processedDate,

@@ -2284,7 +2284,6 @@
 					"noDecisionInstance": "Aucune instance de décision",
 					"noIncident": "Aucun incident",
 					"viewProcessInstance": "Voir l'instance de processus {{key}}",
-					"viewDecisionInstance": "Voir l'instance de décision {{key}}",
 					"failureReason": "Raison de l'échec :",
 					"failureDetails": "Détails de l'échec",
 					"expandFailure": "Afficher les détails de l'échec pour l'élément {{key}}",

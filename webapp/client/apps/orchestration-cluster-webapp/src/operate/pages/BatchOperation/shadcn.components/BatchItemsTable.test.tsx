@@ -201,14 +201,14 @@ describe('<BatchItemsTable />', () => {
 		await expect.element(screen.getByRole('link')).not.toBeInTheDocument();
 	});
 
-	it('should render a decision instance key column with a link to the decision instance', async ({worker}) => {
+	it('should render the decision instance key as plain text', async ({worker}) => {
 		worker.use(
 			mockQueryBatchOperationItemsEndpoint({
 				successResponse: HttpResponse.json(
 					createQueryBatchOperationItemsResponse({
 						items: [
 							createBatchOperationItem({
-								itemKey: 'item-1',
+								itemKey: '2251799813702856-1',
 								state: 'FAILED',
 								operationType: 'DELETE_DECISION_INSTANCE',
 							}),
@@ -222,7 +222,8 @@ describe('<BatchItemsTable />', () => {
 		const screen = await renderBatchItemsTable('DELETE_DECISION_INSTANCE');
 
 		await expect.element(screen.getByText('Decision instance key', {exact: true})).toBeVisible();
-		await expect.element(screen.getByRole('link', {name: 'View decision instance item-1'})).toBeVisible();
+		await expect.element(screen.getByText('2251799813702856-1')).toBeVisible();
+		await expect.element(screen.getByRole('link')).not.toBeInTheDocument();
 	});
 
 	it('should render an incident key column for a resolve incident operation', async ({worker}) => {

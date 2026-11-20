@@ -2281,7 +2281,6 @@
 					"noDecisionInstance": "Keine Entscheidungsinstanz",
 					"noIncident": "Kein Vorfall",
 					"viewProcessInstance": "Prozessinstanz {{key}} anzeigen",
-					"viewDecisionInstance": "Entscheidungsinstanz {{key}} anzeigen",
 					"failureReason": "Fehlerursache:",
 					"failureDetails": "Fehlerdetails",
 					"expandFailure": "Fehlerdetails für Element {{key}} anzeigen",
