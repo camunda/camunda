@@ -9,16 +9,13 @@ package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
-import io.camunda.application.commons.security.EngineSecurityConfigFactory;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.security.api.context.OidcClaimsProvider;
-import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
-import io.camunda.service.UserServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.GatewayFactory;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
@@ -26,7 +23,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import org.agrona.CloseHelper;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -36,7 +32,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 /**
  * Starts the gateway next to the broker when {@code zeebe.broker.gateway.enable} is set. The
@@ -71,59 +66,35 @@ public class BrokerEmbeddedGatewayConfiguration {
       return new BrokerEmbeddedGateway(null, null);
     }
 
-    final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
-        authConfig ->
-            required(scopedJwtDecoderFactory, "ScopedJwtDecoderFactory")
-                .buildIssuerAwareDecoder(authConfig);
-    final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
-        authConfig ->
-            required(scopedOidcClaimsProviderFactory, "ScopedOidcClaimsProviderFactory")
-                .buildClaimsProvider(authConfig);
-    final Function<String, UserServices> userServicesForTenant =
-        tenantId -> required(serviceRegistry, "ServiceRegistry").userServices(tenantId);
-
     final var jobStreamClient =
         new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService(), meterRegistry);
     final var gateway =
-        new Gateway(
+        GatewayFactory.create(
             configuration.shutdownTimeout(),
             brokerCfg.getGateway(),
-            physicalTenantResolver.mapValues(
-                camunda -> EngineSecurityConfigFactory.create(camunda.getSecurity())),
+            physicalTenantResolver,
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            jwtDecoderFactory,
-            oidcClaimsProviderFactory,
-            userServicesForTenant,
             passwordEncoder,
             meterRegistry,
             brokerCfg.getExperimental().getEngine().getValidators().getMaxNameFieldLength(),
-            physicalTenantResolver);
+            serviceRegistry,
+            scopedJwtDecoderFactory,
+            scopedOidcClaimsProviderFactory);
     final var embeddedGateway = new BrokerEmbeddedGateway(gateway, jobStreamClient);
 
     LOGGER.info("Starting gateway next to the broker");
-    try {
-      jobStreamClient.start().join();
-      // before we can add the job stream client as a topology listener, we need to wait for the
-      // topology to be set up, otherwise the callback may be lost
-      brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
-      gateway.start().join(30, TimeUnit.SECONDS);
-    } catch (final Exception e) {
-      // ActorFuture.join can throw checked exception as well
-      // close allocated resources as they are not registered with spring
-      embeddedGateway.close();
-      throw e;
-    }
+    GatewayFactory.startOrClose(
+        embeddedGateway,
+        () -> {
+          jobStreamClient.start().join();
+          // before we can add the job stream client as a topology listener, we need to wait for
+          // the topology to be set up, otherwise the callback may be lost
+          brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
+          gateway.start().join(30, TimeUnit.SECONDS);
+        });
     return embeddedGateway;
-  }
-
-  private static <T> T required(final T bean, final String name) {
-    if (bean == null) {
-      throw new IllegalStateException(
-          "%s is not available, but the gateway next to the broker needs it".formatted(name));
-    }
-    return bean;
   }
 
   /** Holds the gateway and its job stream client. Both are absent if the gateway is disabled. */
