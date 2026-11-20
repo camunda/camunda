@@ -32,6 +32,7 @@
 #   --orchestration-tag TAG       Docker Hub orchestration tag (empty when using a custom build)
 #   --identity-tag TAG            Explicit Identity image tag
 #   --connectors-tag TAG          Explicit Connectors image tag
+#   --physical-tenant-profiles VALUE  Per-tenant "<starter-rate>:<worker-replicas>" entries for pt1..ptN
 #   --load-test-load VALUE        Extra --set args for the load-tester Helm chart
 #   --platform-helm-values VALUE  Extra --set args for the platform Helm chart
 #   --load-test-setup-helm-values VALUE  Extra --set args for the load-test-setup Helm chart
@@ -59,6 +60,7 @@ orchestration_tag=""
 identity_tag=""
 connectors_tag=""
 load_test_load=""
+physical_tenant_profiles=""
 platform_helm_values=""
 load_test_setup_helm_values=""
 scenario=""
@@ -70,6 +72,7 @@ while [[ $# -gt 0 ]]; do
     --identity-tag) identity_tag="$2"; shift 2 ;;
     --connectors-tag) connectors_tag="$2"; shift 2 ;;
     --load-test-load) load_test_load="$2"; shift 2 ;;
+    --physical-tenant-profiles) physical_tenant_profiles="$2"; shift 2 ;;
     --platform-helm-values) platform_helm_values="$2"; shift 2 ;;
     --load-test-setup-helm-values) load_test_setup_helm_values="$2"; shift 2 ;;
     --scenario) scenario="$2"; shift 2 ;;
@@ -153,6 +156,7 @@ make "${install_target}" \
   scenario="${scenario}" \
   chaos="${enable_chaos}" \
   physical_tenant_count="${physical_tenant_count}" \
+  physical_tenant_profiles="${physical_tenant_profiles}" \
   additional_platform_configuration="$additional_platform_config" \
   additional_load_test_configuration="$load_test_config" \
   additional_load_test_setup_configuration="$additional_load_test_setup_configuration"
