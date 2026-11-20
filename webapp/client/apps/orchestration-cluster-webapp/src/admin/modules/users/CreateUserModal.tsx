@@ -20,7 +20,8 @@ import {
 	Input,
 	Label,
 } from '@camunda/design-system';
-import {isValidEmail, isValidUsername} from './userValidation';
+import {isCustomIdPattern, isValidId} from '#/admin/modules/shared/identifierPattern';
+import {isValidEmail} from './userValidation';
 import {useUserMutations} from './useUserMutations';
 
 type FormValues = {
@@ -34,9 +35,10 @@ type FormValues = {
 type Props = {
 	isOpen: boolean;
 	onClose: () => void;
+	idPattern: string | null | undefined;
 };
 
-const CreateUserModal: React.FC<Props> = ({isOpen, onClose}) => {
+const CreateUserModal: React.FC<Props> = ({isOpen, onClose, idPattern}) => {
 	const {t} = useTranslation();
 	const {create} = useUserMutations();
 
@@ -71,8 +73,10 @@ const CreateUserModal: React.FC<Props> = ({isOpen, onClose}) => {
 
 							if (!values.username) {
 								errors.username = t('admin.users.usernameRequired');
-							} else if (!isValidUsername(values.username)) {
-								errors.username = t('admin.users.usernameInvalid');
+							} else if (!isValidId(values.username, idPattern)) {
+								errors.username = isCustomIdPattern(idPattern)
+									? t('admin.configuredIdPatternInvalidError', {pattern: idPattern})
+									: t('admin.users.usernameInvalid');
 							}
 
 							if (values.email && !isValidEmail(values.email)) {

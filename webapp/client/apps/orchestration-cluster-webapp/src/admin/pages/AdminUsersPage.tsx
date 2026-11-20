@@ -38,11 +38,12 @@ type ModalState = {type: 'create'} | {type: 'edit'; user: User} | {type: 'delete
 type AdminUsersPageProps = {
 	users: User[];
 	totalItems: number;
+	idPattern: string | null | undefined;
 	search: UsersSearch;
 	onSearchChange: (next: Partial<UsersSearch>) => void;
 };
 
-const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, search, onSearchChange}) => {
+const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, idPattern, search, onSearchChange}) => {
 	const detailPath = useAdminDetailPath();
 	const {t} = useTranslation();
 	const appliedSearchTerm = search.search ?? '';
@@ -184,7 +185,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, searc
 				)}
 			</div>
 
-			{modalState?.type === 'create' && <CreateUserModal isOpen onClose={closeModal} />}
+			{modalState?.type === 'create' && <CreateUserModal isOpen idPattern={idPattern} onClose={closeModal} />}
 			{modalState?.type === 'edit' && <EditUserModal isOpen user={modalState.user} onClose={closeModal} />}
 			{modalState?.type === 'delete' && (
 				<DeleteUserModal isOpen username={modalState.user.username} onClose={closeModal} />

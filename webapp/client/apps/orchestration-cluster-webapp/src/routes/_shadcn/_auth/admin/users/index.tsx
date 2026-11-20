@@ -26,7 +26,10 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/users/')({
 	},
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {
-		await queryClient.query(adminListQuery(queries.queryUsers(getUsersRequestBody(search))));
+		await Promise.all([
+			queryClient.query(adminListQuery(queries.queryUsers(getUsersRequestBody(search)))),
+			queryClient.query(queries.adminClientConfig()),
+		]);
 	},
 	errorComponent: function AdminUsersErrorPage({error, reset}: ErrorComponentProps) {
 		if (error instanceof ForbiddenError) {
@@ -47,6 +50,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/users/')({
 		const search = Route.useSearch();
 		const navigate = useNavigate();
 		const {data} = useSuspenseQuery(adminListQuery(queries.queryUsers(getUsersRequestBody(search))));
+		const {data: clientConfig} = useSuspenseQuery(queries.adminClientConfig());
 
 		const handleSearchChange = useCallback(
 			(next: Partial<UsersSearch>) => {
@@ -59,6 +63,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/users/')({
 			<AdminUsersPage
 				users={data.items}
 				totalItems={data.page.totalItems}
+				idPattern={clientConfig.idPattern}
 				search={search}
 				onSearchChange={handleSearchChange}
 			/>

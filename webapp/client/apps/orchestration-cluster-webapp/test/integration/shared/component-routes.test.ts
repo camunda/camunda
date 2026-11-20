@@ -23,6 +23,7 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 import {createQueryUsersResponse} from '#/shared-test-modules/api-mocks/users';
+import {mockAdminClientConfig} from '#/pages/admin/mockAdminClientConfig';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test.describe('component routes', () => {
@@ -72,6 +73,7 @@ test.describe('component routes', () => {
 	});
 
 	test('should land on Admin users when Admin component is active', async ({network, page}) => {
+		await mockAdminClientConfig(page);
 		network.use(
 			mockCurrentUserEndpoint({
 				successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['admin']})),
