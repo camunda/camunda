@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.CompactionPriority;
@@ -275,6 +276,44 @@ final class ZeebeRocksDbFactoryTest {
 
     // then
     assertThat(customColumnFamilyOptions.writeBufferSize()).isEqualTo(50_704_475L);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"0", "1000"})
+  void shouldAcceptMinTombstonesForRangeConversion(final String value) {
+    // given
+    final var customProperties = new Properties();
+    customProperties.put("min_tombstones_for_range_conversion", value);
+    final var factory =
+        new ZeebeRocksDbFactory<>(
+            new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE),
+            SimpleMeterRegistry::new);
+
+    // when - then
+    assertThatCode(() -> factory.createColumnFamilyOptions(closeable)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldEnableRangeTombstoneConversionByDefault() {
+    // given
+    final var configuration = new RocksDbConfiguration();
+    final var resources =
+        RocksDbResources.of(configuration, new RuntimeInfo(1024 * 1024 * 1024, 3));
+    final var factory =
+        new ZeebeRocksDbFactory<>(
+            configuration,
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE),
+            SimpleMeterRegistry::new,
+            resources);
+
+    // when
+    final var defaults = factory.createDefaultColumnFamilyOptionsAsProperties(resources);
+
+    // then
+    assertThat(defaults).containsEntry("min_tombstones_for_range_conversion", "100");
   }
 
   @Test
