@@ -244,7 +244,7 @@ export default defineConfig({
 			excludeFiles: ocTestFiles,
 			rules: {
 				...camundaDsPlugin.configs.recommended.rules,
-				'react/only-export-components': ['error', {allowConstantExport: true}],
+				'react/only-export-components': ['error', {allowConstantExport: true, customHOCs: ['observer']}],
 			},
 		},
 		{
