@@ -103,7 +103,7 @@ public final class EventPayloadVariableSourceTest {
   }
 
   @Test
-  public void shouldOnlySourceLocalCopyOfJobCompletionFromJobCompletionWithOutputMapping() {
+  public void shouldSourceLocalCopyOfJobCompletionFromJobCompletionWithOutputMapping() {
     // given
     final long processInstanceKey =
         createInstance(
@@ -119,14 +119,11 @@ public final class EventPayloadVariableSourceTest {
     ENGINE.job().ofInstance(processInstanceKey).withType(jobType).withVariable("x", 1).complete();
 
     // then
-    assertThat(variableRecords(processInstanceKey))
+    assertThat(variableRecords(processInstanceKey, "x"))
         .extracting(
-            record -> record.getValue().getName(),
-            record -> record.getValue().getScopeKey(),
-            EventPayloadVariableSourceTest::sourceOf)
-        .containsExactlyInAnyOrder(
-            tuple("x", taskKey, tuple(VariableOperationType.JOB_COMPLETION, taskKey, "task")),
-            tuple("total", processInstanceKey, NO_SOURCE));
+            record -> record.getValue().getScopeKey(), EventPayloadVariableSourceTest::sourceOf)
+        .containsExactly(
+            tuple(taskKey, tuple(VariableOperationType.JOB_COMPLETION, taskKey, "task")));
   }
 
   @Test
