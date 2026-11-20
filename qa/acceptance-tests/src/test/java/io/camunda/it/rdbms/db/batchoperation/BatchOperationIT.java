@@ -176,6 +176,38 @@ public class BatchOperationIT {
   }
 
   @TestTemplate
+  public void shouldStoreErrorMessageWhenFailedItemDoesNotExistYet(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given a batch operation without any exported items
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final long itemKey = nextKey();
+
+    // when a failed item is written that was not inserted before
+    writer
+        .getBatchOperationWriter()
+        .updateItem(
+            new BatchOperationItemDbModel(
+                batchOperation.batchOperationKey(),
+                itemKey,
+                nextKey(),
+                BatchOperationItemState.FAILED,
+                NOW,
+                "item failed because of " + itemKey));
+    writer.flush();
+
+    // then the error message is stored with the item
+    final var items =
+        getBatchOperationItems(rdbmsService, batchOperation.batchOperationKey()).items();
+    assertThat(items).hasSize(1);
+    assertThat(items.getFirst().state()).isEqualTo(BatchOperationItemState.FAILED);
+    assertThat(items.getFirst().errorMessage()).isEqualTo("item failed because of " + itemKey);
+  }
+
+  @TestTemplate
   public void shouldUpdateCompletedBatchItemWithLargeErrorMessage(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
