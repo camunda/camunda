@@ -10,6 +10,10 @@ package io.camunda.it.rdbms.db.util;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.*;
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +28,8 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.mssqlserver.MSSQLServerContainer;
+import org.testcontainers.utility.DockerImageName;
 
 public class CamundaRdbmsInvocationContextProviderExtension
     implements TestTemplateInvocationContextProvider, BeforeAllCallback, AfterAllCallback {
@@ -86,7 +92,7 @@ public class CamundaRdbmsInvocationContextProviderExtension
                 c -> {
                   c.getData().getSecondaryStorage().getRdbms().setUsername("sa");
                 })
-            .withDatabaseContainer(createDefaultMSSQLServerContainer()));
+            .withDatabaseContainer(createMSSQLServerContainer()));
     applications.put(
         "camundaWithMssqlReplicationCluster",
         new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
@@ -259,12 +265,47 @@ public class CamundaRdbmsInvocationContextProviderExtension
           createCamundaRdbmsTestApplication()
               .withUnifiedConfig(
                   c -> c.getData().getSecondaryStorage().getRdbms().setUsername("sa"))
-              .withDatabaseContainer(createDefaultMSSQLServerContainer());
+              .withDatabaseContainer(createMSSQLServerContainer());
       default -> throw new IllegalArgumentException("Unknown RDBMS test application: " + key);
     };
   }
 
   private static CamundaRdbmsTestApplication createCamundaRdbmsTestApplication() {
     return new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class).withRdbms();
+  }
+
+  /**
+   * The default SQL Server container, or with {@code RDBMS_KIT_MSSQL_RCSI=true} one whose Camunda
+   * database has {@code READ_COMMITTED_SNAPSHOT ON}, as the RDBMS troubleshooting guide recommends
+   * against deadlocks. The default container keeps the schema in {@code master}, which does not
+   * allow the option, so this one creates a database {@code camunda} after start and points the
+   * JDBC URL to it.
+   */
+  private static MSSQLServerContainer createMSSQLServerContainer() {
+    final MSSQLServerContainer defaults = createDefaultMSSQLServerContainer();
+    if (!"true".equals(System.getenv("RDBMS_KIT_MSSQL_RCSI"))) {
+      return defaults;
+    }
+    return new MSSQLServerContainer(DockerImageName.parse(defaults.getDockerImageName())) {
+      private boolean created;
+
+      @Override
+      public void start() {
+        super.start();
+        try (final Connection c = createConnection("");
+            final Statement st = c.createStatement()) {
+          st.execute("CREATE DATABASE camunda");
+          st.execute("ALTER DATABASE camunda SET READ_COMMITTED_SNAPSHOT ON");
+        } catch (final SQLException e) {
+          throw new IllegalStateException(e);
+        }
+        created = true;
+      }
+
+      @Override
+      public String getJdbcUrl() {
+        return created ? super.getJdbcUrl() + ";databaseName=camunda" : super.getJdbcUrl();
+      }
+    }.withPassword(CAMUNDA_PASSWORD).withStartupTimeout(Duration.ofMinutes(5)).acceptLicense();
   }
 }
