@@ -30,9 +30,11 @@ A configuration value is a reference when it is exactly `secret:<name>`, where t
 
 ### D2. Only the operator writes references, and only in properties marked to accept them
 
-References are written in configuration (and later through the tenant lifecycle API), so whoever can write a reference can already write the credential itself. Only properties marked as credentials in configuration classes accept a reference. If a reference is malformed, in a property that isn't marked as a credential, or belongs to a tenant without a configuration secrets store, we will fail on startup with a message identifying the property and tenant (if any).
+Configuration properties which can accept a reference are marked explicitly, along with a flag that identifies whether or not they represent a credential (e.g. the endpoint URL for secondary storage would accept a reference, but is not a credential).
 
-Properties whose clients will take new values at runtime are the credentials of secondary storage, exporters, the backup and document stores and the OIDC client. Other credentials will accept secret references too, but we only resolve them on startup (e.g. TLS key store passwords, the license key, the incident notifier's client secret and the passwords of initial users). Changes to any of those are picked up at the next restart.
+References are written in configuration (and later through the tenant lifecycle API), so anyone who can write a reference could already have written a literal value to the property. If a reference is malformed, in a property that isn't marked as accepting references, or belongs to a tenant without a configuration secrets store, we will fail on startup with a message identifying the property and tenant (if any).
+
+Properties whose clients will take new values at runtime are the credentials and endpoints of secondary storage, exporters, the backup and document stores and the OIDC client. Some other properties will accept secret references too, but they will only be resolved on startup (e.g. TLS key store passwords, the license key, and the incident notifier's client secret). Changes to any of those are picked up at the next restart (one caveat to note here is that the properties that set the passwords of initial users only have effect when creating the users, so changing them later will not change the password of an already-existing user).
 
 ### D3. Configuration secrets have a store of their own
 
@@ -78,7 +80,7 @@ If the build or the check fails, the new client is closed and the old one stays 
 
 ### D6. By default, literal credentials are reported, not rejected
 
-On startup, if we see a credential property that holds a literal we will log a warning identifying the property (and the tenant, if any - but not the value!). We will also provide a setting to fail on startup instead, but this will be off by default to enable upgrades. Enabling this setting will be required for some new physical tenants functionality (dynamic updates to tenant configuration).
+On startup, if we see a credential property that holds a literal value rather than a reference we will log a warning identifying the property (and the tenant, if any - but not the value!). We will also provide a setting to fail on startup instead, but this will be off by default to enable upgrades. Enabling this setting will be required for some new physical tenants functionality (dynamic updates to tenant configuration).
 
 ### D7. Failures are reported per reference and client, never with the value
 
@@ -87,8 +89,8 @@ Each applied change and each failure will be logged (one line each). The log mes
 ## Consequences
 
 - Operators will have to configure a second store to make use of this functionality (except where the Helm chart sets it up for them).
-- For up to one refresh interval, nodes (and the clients within one node) can use different values of the same reference.
-- A client holds two connections while it switches, so a database or search cluster close to its connection limit can refuse the new one. The check then fails and the old client stays in use.
+- When refreshes are successful, nodes (and the clients within one node) can still use different values of the same reference for up to one refresh interval. Failed refreshes can prolong this state indefinitely, until the failure clears. Operators should wait until no refreshes are failing and every node has applied the change before revoking old credentials.
+- A client holds two sets of connections while it switches, so a database or search cluster close to its connection limit can refuse the new one. The check then fails and the old client stays in use.
 - A credential in an environment variable, or in a property that is only resolved on startup, still needs a restart to change.
 - A reference in a legacy property (one that a configuration getter falls back to, such as `zeebe.broker.data.backup.s3.accessKey`) is neither checked nor resolved, since only the bound configuration is.
 
