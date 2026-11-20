@@ -8,74 +8,59 @@
 # component, read benchmarks, Optimize metrics, user-supplied Helm values, whether the
 # metrics-exporter image was built this run).
 #
-# Usage: load-test-install-camunda-platform.sh <namespace> <install-target> <image-tag> \
-#          <image-repository> <image-registry> <camunda-repo> <optimize-repo> \
-#          <perform-read-benchmarks> <enable-optimize> <enable-optimize-metrics> \
-#          <metrics-exporter-built> <enable-chaos> <physical-tenant-count> [OPTIONS]
+# Inputs are read from environment variables, so that a variable can be added to the workflow
+# without breaking a script that does not know it yet. Required variables must be set, possibly
+# to an empty string; optional variables default to empty.
 #
-#   namespace                  Load-test namespace (also the setup folder name)
-#   install-target             Make target to run (install or install-stable)
-#   image-tag                  Calculated image tag for platform/starter/worker images
-#   image-repository           Repository for the load-tester (starter/worker) images
-#   image-registry             Registry for the orchestration/optimize images
-#   camunda-repo               Repository for the orchestration image
-#   optimize-repo              Repository for the optimize image (custom build path)
-#   perform-read-benchmarks    Run continuous read benchmarks (true/false)
-#   enable-optimize            Whether Optimize is part of this deployment (true/false)
-#   enable-optimize-metrics    Enable the load-tester Optimize report-evaluation meter (true/false)
-#   metrics-exporter-built     Whether build-metrics-exporter-image ran this run (true/false)
-#   enable-chaos               Enable chaos-killer (true/false)
-#   physical-tenant-count      Number of extra physical tenants (pt1..ptN) to deploy (0 = disabled)
+# Required:
+#   NAMESPACE                  Load-test namespace (also the setup folder name)
+#   INSTALL_TARGET             Make target to run (install or install-stable)
+#   CALCULATED_IMAGE_TAG       Calculated image tag for platform/starter/worker images
+#   IMAGE_REPOSITORY           Repository for the load-tester (starter/worker) images
+#   RESOLVED_IMAGE_REGISTRY    Registry for the orchestration/optimize images
+#   CAMUNDA_REPO               Repository for the orchestration image
+#   OPTIMIZE_REPO              Repository for the optimize image (custom build path)
+#   PERFORM_READ_BENCHMARKS    Run continuous read benchmarks (true/false)
+#   ENABLE_OPTIMIZE            Whether Optimize is part of this deployment (true/false)
+#   ENABLE_OPTIMIZE_METRICS    Enable the load-tester Optimize report-evaluation meter (true/false)
+#   METRICS_EXPORTER_BUILT     Whether build-metrics-exporter-image ran this run (true/false)
+#   ENABLE_CHAOS               Enable chaos-killer (true/false)
+#   PHYSICAL_TENANT_COUNT      Number of extra physical tenants (pt1..ptN) to deploy (0 = disabled)
 #
-# Options (all optional, empty by default):
-#   --optimize-tag TAG            Explicit Optimize image tag (empty to use the built image)
-#   --orchestration-tag TAG       Docker Hub orchestration tag (empty when using a custom build)
-#   --identity-tag TAG            Explicit Identity image tag
-#   --connectors-tag TAG          Explicit Connectors image tag
-#   --load-test-load VALUE        Extra --set args for the load-tester Helm chart
-#   --platform-helm-values VALUE  Extra --set args for the platform Helm chart
-#   --load-test-setup-helm-values VALUE  Extra --set args for the load-test-setup Helm chart
-#   --scenario SCENARIO           Workload scenario to run
+# Optional:
+#   OPTIMIZE_TAG                  Explicit Optimize image tag (empty to use the built image)
+#   ORCHESTRATION_TAG             Docker Hub orchestration tag (empty when using a custom build)
+#   IDENTITY_TAG                  Explicit Identity image tag
+#   CONNECTORS_TAG                Explicit Connectors image tag
+#   LOAD_TEST_LOAD                Extra --set args for the load-tester Helm chart
+#   PLATFORM_HELM_VALUES          Extra --set args for the platform Helm chart
+#   LOAD_TEST_SETUP_HELM_VALUES   Extra --set args for the load-test-setup Helm chart
+#   SCENARIO                      Workload scenario to run
 
 set -euo pipefail
 
-namespace="$1"
-install_target="$2"
-image_tag="$3"
-image_repository="$4"
-image_registry="$5"
-camunda_repo="$6"
-optimize_repo="$7"
-perform_read_benchmarks="$8"
-enable_optimize="$9"
-enable_optimize_metrics="${10}"
-metrics_exporter_built="${11}"
-enable_chaos="${12}"
-physical_tenant_count="${13}"
-shift 13
+namespace="${NAMESPACE?}"
+install_target="${INSTALL_TARGET?}"
+image_tag="${CALCULATED_IMAGE_TAG?}"
+image_repository="${IMAGE_REPOSITORY?}"
+image_registry="${RESOLVED_IMAGE_REGISTRY?}"
+camunda_repo="${CAMUNDA_REPO?}"
+optimize_repo="${OPTIMIZE_REPO?}"
+perform_read_benchmarks="${PERFORM_READ_BENCHMARKS?}"
+enable_optimize="${ENABLE_OPTIMIZE?}"
+enable_optimize_metrics="${ENABLE_OPTIMIZE_METRICS?}"
+metrics_exporter_built="${METRICS_EXPORTER_BUILT?}"
+enable_chaos="${ENABLE_CHAOS?}"
+physical_tenant_count="${PHYSICAL_TENANT_COUNT?}"
 
-optimize_tag=""
-orchestration_tag=""
-identity_tag=""
-connectors_tag=""
-load_test_load=""
-platform_helm_values=""
-load_test_setup_helm_values=""
-scenario=""
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --optimize-tag) optimize_tag="$2"; shift 2 ;;
-    --orchestration-tag) orchestration_tag="$2"; shift 2 ;;
-    --identity-tag) identity_tag="$2"; shift 2 ;;
-    --connectors-tag) connectors_tag="$2"; shift 2 ;;
-    --load-test-load) load_test_load="$2"; shift 2 ;;
-    --platform-helm-values) platform_helm_values="$2"; shift 2 ;;
-    --load-test-setup-helm-values) load_test_setup_helm_values="$2"; shift 2 ;;
-    --scenario) scenario="$2"; shift 2 ;;
-    *) echo "::error::Unknown argument: $1" >&2; exit 1 ;;
-  esac
-done
+optimize_tag="${OPTIMIZE_TAG:-}"
+orchestration_tag="${ORCHESTRATION_TAG:-}"
+identity_tag="${IDENTITY_TAG:-}"
+connectors_tag="${CONNECTORS_TAG:-}"
+load_test_load="${LOAD_TEST_LOAD:-}"
+platform_helm_values="${PLATFORM_HELM_VALUES:-}"
+load_test_setup_helm_values="${LOAD_TEST_SETUP_HELM_VALUES:-}"
+scenario="${SCENARIO:-}"
 
 cd "load-tests/setup/${namespace}"
 
