@@ -128,10 +128,14 @@ public class RdbmsExporterWrapper implements Exporter {
   private void createHandlers(
       final long partitionId, final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
 
+    builder.withHandler(
+        ValueType.PROCESS,
+        new ProcessExportHandler(
+            rdbmsWriter.getProcessDefinitionWriter(),
+            processCache,
+            partitionId == PROCESS_DEFINITION_PARTITION));
+
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
-      builder.withHandler(
-          ValueType.PROCESS,
-          new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter(), processCache));
       builder.withHandler(
           ValueType.MAPPING_RULE, new MappingRuleExportHandler(rdbmsWriter.getMappingRuleWriter()));
       builder.withHandler(ValueType.TENANT, new TenantExportHandler(rdbmsWriter.getTenantWriter()));
