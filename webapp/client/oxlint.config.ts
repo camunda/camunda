@@ -90,6 +90,7 @@ export default defineConfig({
 		'typescript/no-array-delete': 'error',
 		'typescript/no-for-in-array': 'error',
 		'typescript/no-implied-eval': 'error',
+		'typescript/no-meaningless-void-operator': 'error',
 		'typescript/no-misused-spread': 'error',
 		'typescript/no-unsafe-unary-minus': 'error',
 		'typescript/require-array-sort-compare': 'error',

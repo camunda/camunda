@@ -37,7 +37,7 @@ const InstanceOperations: React.FC<Props> = ({processInstance, activeOperations}
 			isActive && hasIncident
 				? {
 						type: 'RESOLVE_INCIDENT',
-						onExecute: () => void resolveIncidents(),
+						onExecute: () => resolveIncidents(),
 						disabled: isBusyWith('RESOLVE_INCIDENT'),
 					}
 				: null;
@@ -45,13 +45,13 @@ const InstanceOperations: React.FC<Props> = ({processInstance, activeOperations}
 		const stateChangeOperation: OperationSlot = isActive
 			? {
 					type: 'SUSPEND_PROCESS_INSTANCE',
-					onExecute: () => void suspend(),
+					onExecute: () => suspend(),
 					disabled: isBusyWith('SUSPEND_PROCESS_INSTANCE'),
 				}
 			: isSuspended
 				? {
 						type: 'RESUME_PROCESS_INSTANCE',
-						onExecute: () => void resume(),
+						onExecute: () => resume(),
 						disabled: isBusyWith('RESUME_PROCESS_INSTANCE'),
 					}
 				: null;
@@ -60,13 +60,13 @@ const InstanceOperations: React.FC<Props> = ({processInstance, activeOperations}
 			isActive || isSuspended
 				? {
 						type: 'CANCEL_PROCESS_INSTANCE',
-						onExecute: () => void cancel(),
+						onExecute: () => cancel(),
 						disabled: isBusyWith('CANCEL_PROCESS_INSTANCE'),
 					}
 				: isFinished
 					? {
 							type: 'DELETE_PROCESS_INSTANCE',
-							onExecute: () => void remove(),
+							onExecute: () => remove(),
 							disabled: isBusyWith('DELETE_PROCESS_INSTANCE'),
 						}
 					: null;

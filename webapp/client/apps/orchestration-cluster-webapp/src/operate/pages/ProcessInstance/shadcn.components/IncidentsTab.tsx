@@ -41,7 +41,7 @@ const IncidentsTab: React.FC = () => {
 				}}
 				onVerticalScrollEndReach={() => {
 					if (!tab.isFetchingPreviousPage) {
-						void tab.fetchNextPage();
+						tab.fetchNextPage();
 					}
 				}}
 			/>
