@@ -11,11 +11,15 @@ import {useTranslation} from 'react-i18next';
 import {CircleX, Pause, Play, RotateCcw, Trash2} from '@camunda/design-system/icons';
 import type {ProcessInstancesSelection, ProcessBulkAction} from '../useProcessInstancesSelection';
 import type {ProcessBulkActionDialogProps} from './ProcessBulkActionDialog';
+import type {ProcessesMode} from './processesMode';
+import type {MoveBatchAction} from './useMoveBatchAction';
 
 type Props = {
 	selection: ProcessInstancesSelection;
 	isSubmitting: boolean;
 	onSubmit: (action: ProcessBulkAction) => void;
+	mode?: ProcessesMode;
+	moveAction?: MoveBatchAction;
 };
 
 const UNAVAILABLE_REASON_KEYS = {
@@ -34,7 +38,7 @@ const ACTIONS = [
 	{action: 'resume', Icon: Play},
 ] as const;
 
-function useProcessBulkActions({selection, isSubmitting, onSubmit}: Props) {
+function useProcessBulkActions({selection, isSubmitting, onSubmit, mode = 'list', moveAction}: Props) {
 	const {t} = useTranslation();
 	const [dialog, setDialog] = useState<{action: ProcessBulkAction; identity: string} | null>(null);
 	const {selectedCount, isCountTruncated, filterIdentity, eligibility} = selection;
@@ -45,18 +49,26 @@ function useProcessBulkActions({selection, isSubmitting, onSubmit}: Props) {
 	}
 	const total = `${selectedCount}${isCountTruncated ? '+' : ''}`;
 
-	const batchActions = ACTIONS.map(({action: operation, Icon}) => ({
+	const isActionMode = mode !== 'list';
+
+	const operationActions = ACTIONS.map(({action: operation, Icon}) => ({
 		id: operation,
 		label: t(`operate.processes.toolbar.${operation}`),
 		variant: operation === 'delete' ? ('destructive' as const) : ('default' as const),
 		icon: <Icon aria-hidden />,
-		disabled: isSubmitting || !eligibility[operation],
+		disabled: isSubmitting || isActionMode || !eligibility[operation],
 		onClick: () => setDialog({action: operation, identity: filterIdentity}),
 	}));
+	const batchActions = moveAction === undefined ? operationActions : [moveAction.action, ...operationActions];
 
-	const unavailableReasons = ACTIONS.filter(({action: operation}) => !eligibility[operation]).map(
-		({action: operation}) => t(`operate.processes.toolbar.${UNAVAILABLE_REASON_KEYS[operation]}`),
-	);
+	const unavailableReasons = isActionMode
+		? [t('operate.processes.toolbar.actionMode')]
+		: [
+				...(moveAction?.disabledReason === undefined ? [] : [moveAction.disabledReason]),
+				...ACTIONS.filter(({action: operation}) => !eligibility[operation]).map(({action: operation}) =>
+					t(`operate.processes.toolbar.${UNAVAILABLE_REASON_KEYS[operation]}`),
+				),
+			];
 	const selectedLabel = t('operate.processes.toolbar.selected', {count: selectedCount, total});
 	const unavailableText = unavailableReasons.join(' ');
 	// Reasons stay out of the visible bar (Carbon shows them as a button title) but remain available on hover and to screen readers.

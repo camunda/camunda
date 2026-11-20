@@ -9,13 +9,15 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import type {FormApi} from 'final-form';
 import {useTranslation} from 'react-i18next';
-import {useNavigate} from '@tanstack/react-router';
+import {useBlocker, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Heading, PageLayout, Separator} from '@camunda/design-system';
 import {FilterSidebar} from '#/operate/shared/FilterSidebar/shadcn.components/FilterSidebar';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
+import {Frame} from '#/operate/shared/Frame/shadcn.components/Frame';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {ProcessesSearch} from '../processesFilter';
+import type {BatchModificationScope} from '../useBatchModificationStatistics';
 import {setVariableConditions, useVariableConditions} from '../VariablesFilter/variableFilterStore';
 import {getInlineCondition} from '../VariablesFilter/variableConditions';
 import type {OptionalFilter, OptionalFilterValues, VariableFieldValues} from './optionalFilters';
@@ -24,6 +26,7 @@ import {ProcessFilters} from './ProcessFilters';
 import {InstancesTable} from './InstancesTable';
 import {DiagramPanel} from './DiagramPanel';
 import {useProcessFilterOptions} from './useProcessFilterOptions';
+import type {ProcessesMode} from './processesMode';
 
 type FilterFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
 
@@ -44,6 +47,16 @@ const Processes: React.FC<Props> = ({search}) => {
 	const navigate = useNavigate();
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 	const preservingFormRef = useRef<FormApi<FilterFormValues> | null>(null);
+	const [mode, setMode] = useState<ProcessesMode>('list');
+	const [selectedTargetElementId, setSelectedTargetElementId] = useState<string>();
+	const [selectionScope, setSelectionScope] = useState<BatchModificationScope | null>(null);
+	const [footerSlot, setFooterSlot] = useState<HTMLDivElement | null>(null);
+	const isBatchModification = mode === 'batch-modification';
+	const blocker = useBlocker({
+		shouldBlockFn: ({current, next}) => current.pathname !== next.pathname,
+		withResolver: true,
+		disabled: !isBatchModification,
+	});
 	const variable = useVariableConditions();
 	const filterOptions = useProcessFilterOptions({
 		process: search.process,
@@ -105,17 +118,18 @@ const Processes: React.FC<Props> = ({search}) => {
 		search.incidentErrorHashCode !== undefined ||
 		Object.values(optionalFilterValues).some((value) => value !== undefined);
 	const isResetDisabled =
-		search.active &&
-		search.incidents &&
-		search.suspended &&
-		!search.completed &&
-		!search.canceled &&
-		!search.process &&
-		search.version === undefined &&
-		search.elementId === undefined &&
-		!hasOptionalFilters &&
-		variable.length === 0 &&
-		visibleFilters.length === 0;
+		isBatchModification ||
+		(search.active &&
+			search.incidents &&
+			search.suspended &&
+			!search.completed &&
+			!search.canceled &&
+			!search.process &&
+			search.version === undefined &&
+			search.elementId === undefined &&
+			!hasOptionalFilters &&
+			variable.length === 0 &&
+			visibleFilters.length === 0);
 
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [clientHeight, setClientHeight] = useState(0);
@@ -132,111 +146,135 @@ const Processes: React.FC<Props> = ({search}) => {
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
-			<div className="flex h-full min-h-0 flex-1 overflow-hidden">
-				<Heading as="h1" className="sr-only">
-					{t('operate.processes.title')}
-				</Heading>
-				<Form<FilterFormValues>
-					onSubmit={(values) => {
-						void navigate({
-							to: '.',
-							search: (prev) => ({
-								...prev,
-								...((values.tenantId || undefined) !== prev.tenantId
-									? {process: undefined, version: undefined, elementId: undefined}
-									: {}),
-								tenantId: values.tenantId || undefined,
-								processInstanceKey: values.processInstanceKey || undefined,
-								parentProcessInstanceKey: values.parentProcessInstanceKey || undefined,
-								businessId: values.businessId || undefined,
-								batchOperationKey: values.batchOperationKey || undefined,
-								errorMessage: values.errorMessage || undefined,
-								incidentErrorHashCode:
-									values.errorMessage === prev.errorMessage ? prev.incidentErrorHashCode : undefined,
-								hasRetriesLeft: values.hasRetriesLeft || undefined,
-								startDateFrom: values.startDateFrom || undefined,
-								startDateTo: values.startDateTo || undefined,
-								endDateFrom: values.endDateFrom || undefined,
-								endDateTo: values.endDateTo || undefined,
-							}),
-						});
-					}}
-					initialValues={filterFormValues}
-					initialValuesEqual={areUrlFilterValuesEqual}
-				>
-					{({handleSubmit, form}) => (
-						<form onSubmit={handleSubmit} className="flex h-full min-h-0">
-							<AutoSubmit fieldsToSkipTimeout={['tenantId', 'hasRetriesLeft']} />
-							<FilterSidebar
-								hideCollapsedLabel
-								localStorageKey="isProcessesFiltersCollapsed"
-								isResetButtonDisabled={isResetDisabled}
-								onResetClick={() => {
-									setVariableConditions([]);
-									form.reset();
-									setVisibleFilters([]);
-									void navigate({to: '.', search: {active: true, suspended: true, incidents: true}});
-								}}
+			<Frame frame={{isVisible: isBatchModification, headerTitle: t('operate.processes.batchModification.frameTitle')}}>
+				<div className="flex h-full min-h-0 flex-1 overflow-hidden">
+					<Heading as="h1" className="sr-only">
+						{t('operate.processes.title')}
+					</Heading>
+					<Form<FilterFormValues>
+						onSubmit={(values) => {
+							void navigate({
+								to: '.',
+								search: (prev) => ({
+									...prev,
+									...((values.tenantId || undefined) !== prev.tenantId
+										? {process: undefined, version: undefined, elementId: undefined}
+										: {}),
+									tenantId: values.tenantId || undefined,
+									processInstanceKey: values.processInstanceKey || undefined,
+									parentProcessInstanceKey: values.parentProcessInstanceKey || undefined,
+									businessId: values.businessId || undefined,
+									batchOperationKey: values.batchOperationKey || undefined,
+									errorMessage: values.errorMessage || undefined,
+									incidentErrorHashCode:
+										values.errorMessage === prev.errorMessage ? prev.incidentErrorHashCode : undefined,
+									hasRetriesLeft: values.hasRetriesLeft || undefined,
+									startDateFrom: values.startDateFrom || undefined,
+									startDateTo: values.startDateTo || undefined,
+									endDateFrom: values.endDateFrom || undefined,
+									endDateTo: values.endDateTo || undefined,
+								}),
+							});
+						}}
+						initialValues={filterFormValues}
+						initialValuesEqual={areUrlFilterValuesEqual}
+					>
+						{({handleSubmit, form}) => (
+							<form onSubmit={handleSubmit} className="flex h-full min-h-0">
+								<AutoSubmit fieldsToSkipTimeout={['tenantId', 'hasRetriesLeft']} />
+								<FilterSidebar
+									hideCollapsedLabel
+									localStorageKey="isProcessesFiltersCollapsed"
+									isResetButtonDisabled={isResetDisabled}
+									onResetClick={() => {
+										setVariableConditions([]);
+										form.reset();
+										setVisibleFilters([]);
+										void navigate({to: '.', search: {active: true, suspended: true, incidents: true}});
+									}}
+								>
+									<div className="flex flex-col gap-8">
+										<ProcessFilters
+											process={search.process}
+											version={search.version}
+											elementId={search.elementId}
+											options={filterOptions}
+											isLocked={isBatchModification}
+											tenantId={search.tenantId}
+											active={search.active}
+											incidents={search.incidents}
+											suspended={search.suspended}
+											completed={search.completed}
+											canceled={search.canceled}
+										/>
+										<Separator />
+										<OptionalFiltersFormGroup
+											filters={optionalFilterValues}
+											visibleFilters={visibleFilters}
+											onVisibleFilterChange={setVisibleFilters}
+											onFilterClear={(keys) => {
+												if (
+													Object.entries(optionalFilterValues).some(
+														([key, value]) => keys.includes(key) && value !== undefined,
+													)
+												) {
+													form.setConfig('keepDirtyOnReinitialize', true);
+													preservingFormRef.current = form;
+												}
+												void navigate({
+													to: '.',
+													search: (prev) => ({...prev, ...Object.fromEntries(keys.map((key) => [key, undefined]))}),
+												});
+											}}
+										/>
+									</div>
+								</FilterSidebar>
+							</form>
+						)}
+					</Form>
+					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+						<div ref={containerRef} className="min-h-0 min-w-0 flex-1 overflow-hidden">
+							<ResizablePanel
+								panelId="process-instances-vertical-panel"
+								direction={SplitDirection.Vertical}
+								minHeights={[panelMinHeight, panelMinHeight]}
 							>
-								<div className="flex flex-col gap-8">
-									<ProcessFilters
-										process={search.process}
-										version={search.version}
-										elementId={search.elementId}
-										options={filterOptions}
-										tenantId={search.tenantId}
-										active={search.active}
-										incidents={search.incidents}
-										suspended={search.suspended}
-										completed={search.completed}
-										canceled={search.canceled}
-									/>
-									<Separator />
-									<OptionalFiltersFormGroup
-										filters={optionalFilterValues}
-										visibleFilters={visibleFilters}
-										onVisibleFilterChange={setVisibleFilters}
-										onFilterClear={(keys) => {
-											if (
-												Object.entries(optionalFilterValues).some(
-													([key, value]) => keys.includes(key) && value !== undefined,
-												)
-											) {
-												form.setConfig('keepDirtyOnReinitialize', true);
-												preservingFormRef.current = form;
-											}
-											void navigate({
-												to: '.',
-												search: (prev) => ({...prev, ...Object.fromEntries(keys.map((key) => [key, undefined]))}),
-											});
+								<DiagramPanel
+									processDefinitionSelection={filterOptions.processDefinitionSelection}
+									isDefinitionSelectionLoading={filterOptions.areDefinitionsLoading}
+									isDefinitionSelectionError={filterOptions.areDefinitionsError}
+									search={instancesSearch}
+									mode={mode}
+									selectedTargetElementId={selectedTargetElementId}
+									onTargetElementSelection={setSelectedTargetElementId}
+									modificationScope={selectionScope ?? undefined}
+									onElementSelection={(elementId) => {
+										void navigate({to: '.', search: (prev) => ({...prev, elementId: elementId || undefined})});
+									}}
+								/>
+								<div className="h-full overflow-hidden">
+									<InstancesTable
+										search={instancesSearch}
+										mode={mode}
+										navigationBlocker={blocker}
+										processDefinitionSelection={filterOptions.processDefinitionSelection}
+										selectedTargetElementId={selectedTargetElementId}
+										footerContainer={footerSlot}
+										onEnterMode={() => setMode('batch-modification')}
+										onSelectionScopeChange={setSelectionScope}
+										onExitMode={() => {
+											blocker.proceed?.();
+											setSelectedTargetElementId(undefined);
+											setMode('list');
 										}}
 									/>
 								</div>
-							</FilterSidebar>
-						</form>
-					)}
-				</Form>
-				<div ref={containerRef} className="min-h-0 min-w-0 flex-1 overflow-hidden">
-					<ResizablePanel
-						panelId="process-instances-vertical-panel"
-						direction={SplitDirection.Vertical}
-						minHeights={[panelMinHeight, panelMinHeight]}
-					>
-						<DiagramPanel
-							processDefinitionSelection={filterOptions.processDefinitionSelection}
-							isDefinitionSelectionLoading={filterOptions.areDefinitionsLoading}
-							isDefinitionSelectionError={filterOptions.areDefinitionsError}
-							search={instancesSearch}
-							onElementSelection={(elementId) => {
-								void navigate({to: '.', search: (prev) => ({...prev, elementId: elementId || undefined})});
-							}}
-						/>
-						<div className="h-full overflow-hidden">
-							<InstancesTable search={instancesSearch} />
+							</ResizablePanel>
 						</div>
-					</ResizablePanel>
+						<div ref={setFooterSlot} />
+					</div>
 				</div>
-			</div>
+			</Frame>
 		</PageLayout>
 	);
 };
