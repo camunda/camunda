@@ -276,6 +276,84 @@ class RaftLogCommittedReaderMissingEntryTest {
   }
 
   @Test
+  void shouldNotFailWhenLogIsResetWhileLookingForTheMissingEntry() {
+    // given - a reader left behind by a first compaction, at the first index that is kept
+    appendEntries(1000);
+    raftLog.setCommitIndex(1000);
+    final long firstIndexOfKeptSegment = raftLog.getTailSegments(400).firstKey();
+    final var resetting = new AtomicBoolean();
+    final var resettingLog = spy(raftLog);
+    // a reset removes every segment before it adds the new first one, and the first index is read
+    // without the journal lock, so it is 0 in between
+    doAnswer(firstIndex -> resetting.get() ? 0L : firstIndex.callRealMethod())
+        .when(resettingLog)
+        .getFirstIndex();
+    doAnswer(
+            openReader -> {
+              final var probe = spy((RaftLogReader) openReader.callRealMethod());
+              doAnswer(
+                      seek -> {
+                        final var soughtIndex = seek.callRealMethod();
+                        // when - a second compaction removes that index after it was sought, and
+                        // the log is being reset when the first index is read
+                        assertThat(raftLog.deleteUntil(800)).isTrue();
+                        resetting.set(true);
+                        return soughtIndex;
+                      })
+                  .when(probe)
+                  .seek(anyLong());
+              return probe;
+            })
+        .when(resettingLog)
+        .openUncommittedReader();
+    try (final var leftBehindReader = resettingLog.openCommittedReaderFailingOnMissingEntries()) {
+      while (leftBehindReader.next().index() < firstIndexOfKeptSegment - 1) {
+        // read on
+      }
+      assertThat(raftLog.deleteUntil(400)).isTrue();
+
+      // then
+      assertThat(leftBehindReader.hasNext()).isFalse();
+    }
+  }
+
+  @Test
+  void shouldNotFailWhenLogIsCompactedWhileSeekingToAsqnAtTheEndOfASegment() {
+    // given - every entry's ASQN is its index, and the entry sought is the last of its segment
+    appendEntries(1000);
+    raftLog.setCommitIndex(1000);
+    final long firstIndexOfKeptSegment = raftLog.getTailSegments(400).firstKey();
+    final long lastIndexOfCompactedSegment = firstIndexOfKeptSegment - 1;
+    final var compactingLog = spy(raftLog);
+    doAnswer(
+            openReader -> {
+              final var probe = spy((RaftLogReader) openReader.callRealMethod());
+              doAnswer(
+                      next -> {
+                        final var entry = (IndexedRaftLogEntry) next.callRealMethod();
+                        if (entry.index() == lastIndexOfCompactedSegment) {
+                          // when - the segment is compacted after its last entry was read, so
+                          // the next entry is the first one the log still has
+                          assertThat(raftLog.deleteUntil(400)).isTrue();
+                        }
+                        return entry;
+                      })
+                  .when(probe)
+                  .next();
+              return probe;
+            })
+        .when(compactingLog)
+        .openUncommittedReader();
+
+    try (final var seekingReader = compactingLog.openCommittedReaderFailingOnMissingEntries()) {
+      // then
+      assertThat(seekingReader.seekToAsqn(lastIndexOfCompactedSegment))
+          .isEqualTo(lastIndexOfCompactedSegment);
+      assertThat(raftLog.getFirstIndex()).isEqualTo(firstIndexOfKeptSegment);
+    }
+  }
+
+  @Test
   void shouldNotFailWhenLogIsResetForSnapshot() {
     // given
     appendEntries(5);
