@@ -108,7 +108,9 @@ public class BrokerEmbeddedGatewayConfiguration {
       // topology to be set up, otherwise the callback may be lost
       brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
       gateway.start().join(30, TimeUnit.SECONDS);
-    } catch (final RuntimeException e) {
+    } catch (final Exception e) {
+      // ActorFuture.join can throw checked exception as well
+      // close allocated resources as they are not registered with spring
       embeddedGateway.close();
       throw e;
     }
