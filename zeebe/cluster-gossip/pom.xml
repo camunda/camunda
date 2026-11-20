@@ -21,5 +21,6 @@
 
   <modules>
     <module>api</module>
+    <module>testkit</module>
   </modules>
 </project>
