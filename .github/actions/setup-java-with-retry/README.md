@@ -34,17 +34,19 @@ nested composite action exactly as it does for a top-level step.
 
 ## Notes
 
-- **Three attempts, 10s apart, hard-coded.** Retry-by-repetition cannot be parameterised: a
+- **Three attempts, 30s then 60s apart, hard-coded.** Retry-by-repetition cannot be parameterised: a
   composite action has no loop, so `max_attempts` would have to change the number of steps in the
   file. Change the count by adding or removing an attempt block.
-- **The whole retry window is ~39 seconds.** Measured in
-  [run 34333710709](https://github.com/camunda/camunda/actions/runs/34333710709): a failing
-  `setup-java` takes ~6.2s per attempt, so three attempts plus two 10s gaps give up 39s after the
-  step started. This protects against a blip, **not an outage.** The throttling window behind
-  INC-7723 lasted 30 minutes; neither this configuration nor the `Wandalen/wretry.action` one it
-  replaced (identical `attempt_limit: 3` / `attempt_delay: 10000`) would have saved a single one of
-  those jobs. What fixes that failure mode is that nothing is fetched at runtime any more — see
-  below. Do not reach for these actions expecting them to absorb a sustained outage.
+- **The whole retry window is ~2 minutes.** A failing `setup-java` takes ~5-10s per attempt
+  ([run 34333710709](https://github.com/camunda/camunda/actions/runs/34333710709),
+  [INC-9252](https://app.incident.io/camunda/incidents/9252)), so three attempts plus the 30s and 60s
+  gaps give up after ~2 minutes. The gaps were 10s each until INC-9252, where a DNS blip on
+  `api.adoptium.net` outlasted the resulting ~40s window. This protects against a blip, **not an
+  outage.** The throttling window behind INC-7723 lasted 30 minutes; neither this configuration nor
+  the `Wandalen/wretry.action` one it replaced (identical `attempt_limit: 3` / `attempt_delay: 10000`)
+  would have saved a single one of those jobs. What fixes that failure mode is that nothing is
+  fetched at runtime any more — see below. Do not reach for these actions expecting them to absorb a
+  sustained outage.
 - **Editing one attempt means editing all three.** The `with:` blocks must stay identical, including
   the pinned `actions/setup-java` SHA. A mismatch means an attempt silently installs something
   different from its predecessor.
@@ -60,8 +62,8 @@ nested composite action exactly as it does for a top-level step.
   annotations, so a job that recovered produces no PR comment. The residual effect: if the job later
   fails for an unrelated reason, that comment will list these already-retried errors alongside the
   real one.
-- No failure classification: a genuine error (a bad `java-version`, say) costs all three attempts
-  before the job reports red.
+- No failure classification: a genuine error (a bad `java-version`, say) costs all three attempts,
+  and the 90s of gaps, before the job reports red.
 
 This replaced `Wandalen/wretry.action`, which fetched the action it wrapped with an anonymous runtime
 `git clone` — outside its own retry loop, and the single point of failure behind INC-7723. See
