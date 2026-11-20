@@ -1099,7 +1099,11 @@ jobs:
             # Someone else's fix landed. Give the nightlies one night to say
             # whether it held: if it did, the test stops being a candidate on
             # its own; if it did not, the agent may pick it up again tomorrow.
-            superseded)     cooldown=$(date -u -d '1 day'   +%Y-%m-%dT%H:%M:%SZ) ;;
+            # Expressed as a wall-clock time rather than "+1 day" because this
+            # verdict arrives mid-morning, two hours or so after the 06:00 pick
+            # that dispatched the run -- a 24-hour cooldown would outlive
+            # tomorrow's pick and hold the test back a second night.
+            superseded)     cooldown=$(date -u -d 'tomorrow' +%Y-%m-%dT05:00:00Z) ;;
             *)              cooldown="" ;;
           esac
           run_url="${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID}"
