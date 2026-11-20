@@ -32,20 +32,37 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final boolean exportDefinition;
 
+  /**
+   * @param exportDefinition whether this partition writes the process definition. Deployments are
+   *     distributed to every partition, so every partition fills its process cache from the
+   *     records, but only the deployment partition writes the definition and its state changes.
+   */
   public ProcessExportHandler(
       final ProcessDefinitionWriter processDefinitionWriter,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final boolean exportDefinition) {
     this.processDefinitionWriter = processDefinitionWriter;
     this.processCache = processCache;
+    this.exportDefinition = exportDefinition;
   }
 
   @Override
   public boolean canExport(final Record<Process> record) {
-    return record.getValueType() == ValueType.PROCESS
-        && (record.getIntent() == ProcessIntent.CREATED
-            || record.getIntent() == ProcessIntent.DRAINING
-            || record.getIntent() == ProcessIntent.FULLY_DELETED);
+    if (record.getValueType() != ValueType.PROCESS) {
+      return false;
+    }
+
+    final var intent = record.getIntent();
+    if (intent == ProcessIntent.CREATED) {
+      // every partition fills its process cache
+      return true;
+    }
+
+    // only the deployment partition updates the definition state
+    return exportDefinition
+        && (intent == ProcessIntent.DRAINING || intent == ProcessIntent.FULLY_DELETED);
   }
 
   @Override
@@ -60,7 +77,9 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
     }
 
     final Process value = record.getValue();
-    processDefinitionWriter.create(map(value));
+    if (exportDefinition) {
+      processDefinitionWriter.create(map(value));
+    }
     final String resourceName = value.getResourceName();
     final var versionTag = value.getVersionTag();
     final var version = value.getVersion();

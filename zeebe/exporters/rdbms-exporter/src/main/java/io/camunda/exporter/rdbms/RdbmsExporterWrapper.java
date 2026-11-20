@@ -193,10 +193,14 @@ public class RdbmsExporterWrapper implements Exporter {
       final ExporterConfiguration config,
       final HistoryCleanupService historyCleanupService) {
 
+    builder.withHandler(
+        ValueType.PROCESS,
+        new ProcessExportHandler(
+            rdbmsWriters.getProcessDefinitionWriter(),
+            processCache,
+            partitionId == PROCESS_DEFINITION_PARTITION));
+
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
-      builder.withHandler(
-          ValueType.PROCESS,
-          new ProcessExportHandler(rdbmsWriters.getProcessDefinitionWriter(), processCache));
       builder.withHandler(
           ValueType.MAPPING_RULE,
           new MappingRuleExportHandler(rdbmsWriters.getMappingRuleWriter()));
