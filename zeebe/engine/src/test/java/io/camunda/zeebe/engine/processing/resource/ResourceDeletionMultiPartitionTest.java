@@ -28,9 +28,11 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
@@ -216,6 +218,79 @@ public class ResourceDeletionMultiPartitionTest {
                 .count())
         .describedAs("the definition is reported fully deleted exactly once")
         .isEqualTo(1);
+  }
+
+  @Test
+  public void shouldAcknowledgeRedeliveredDrainReportWithoutRepeatingFullDeletion() {
+    // given - a process that is already fully deleted on every partition
+    final var processId = Strings.newRandomValidBpmnId();
+    final var metadata =
+        engine
+            .deployment()
+            .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.FULLY_DELETED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .withPartitionId(1)
+        .await();
+
+    // when - partition 2 sends its drain report again, as a redelivery would
+    final long reportKey =
+        RecordingExporter.processRecords()
+            .withRecordType(RecordType.COMMAND)
+            .withIntent(ProcessIntent.DELETE_COMPLETE)
+            .withPartitionId(INSTANCE_PARTITION)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getKey();
+    engine.writeCommandOnPartition(
+        INSTANCE_PARTITION,
+        reportKey,
+        ProcessIntent.DELETE_COMPLETE,
+        new ProcessRecord()
+            .setKey(processDefinitionKey)
+            .setBpmnProcessId(metadata.getBpmnProcessId())
+            .setVersion(metadata.getVersion())
+            .setResourceName(metadata.getResourceName())
+            .setTenantId(metadata.getTenantId()));
+
+    // then - the deployment partition rejects the stale report but acknowledges it, so the
+    // distribution finishes instead of being retried forever
+    final var finishedDistributions = new AtomicInteger();
+    final var records =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getPartitionId() == INSTANCE_PARTITION
+                        && r.getKey() == reportKey
+                        && r.getIntent() == CommandDistributionIntent.FINISHED
+                        && finishedDistributions.incrementAndGet() == 2)
+            .toList();
+
+    assertThat(records)
+        .filteredOn(
+            r ->
+                r.getPartitionId() == 1
+                    && r.getRecordType() == RecordType.COMMAND_REJECTION
+                    && r.getIntent() == ProcessIntent.DELETE_COMPLETE
+                    && r.getKey() == reportKey)
+        .extracting(Record::getRejectionType)
+        .containsExactly(RejectionType.NOT_FOUND);
+
+    // and - the definition is still reported fully deleted only once
+    assertThat(records)
+        .filteredOn(
+            r ->
+                r.getPartitionId() == 1
+                    && r.getIntent() == ProcessIntent.FULLY_DELETED
+                    && ((Process) r.getValue()).getProcessDefinitionKey() == processDefinitionKey)
+        .hasSize(1);
   }
 
   @Test
