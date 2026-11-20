@@ -233,7 +233,7 @@ test.describe('Operate Processes DS preview (/operate-preview/processes)', () =>
 		await expect(page.getByRole('button', {name: 'Review Modification'})).toBeDisabled();
 
 		await page.locator('[data-element-id="end_event"]').click();
-		await expect(page.getByText('Modification scheduled', {exact: false})).toBeVisible();
+		await expect(page.getByText('Review the modification to confirm it', {exact: false})).toBeVisible();
 		await expect(page.getByRole('button', {name: 'Review Modification'})).toBeEnabled();
 
 		await page.getByRole('button', {name: 'Exit'}).click();

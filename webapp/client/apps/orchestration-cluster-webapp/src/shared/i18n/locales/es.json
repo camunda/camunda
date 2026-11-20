@@ -1246,7 +1246,15 @@
 					"summaryDescription": "Modificaciones previstas para «{{processName}}». Haga clic en «Aplicar» para continuar.",
 					"summaryHeading": "Modificaciones de elementos",
 					"affectedInstances": "Instancias afectadas",
-					"batchMove": "Movimiento por lotes"
+					"batchMove": "Movimiento por lotes",
+					"targetScheduledDs_one": "Mover {{count}} instancia de «{{source}}» a «{{target}}». Revise la modificación para confirmarla.",
+					"targetScheduledDs_other": "Mover {{count}} instancias de «{{source}}» a «{{target}}». Revise la modificación para confirmarla.",
+					"targetPendingDs": "Mover instancias de «{{source}}» a «{{target}}». Revise la modificación para confirmarla.",
+					"reviewDs": "Revisar modificación",
+					"helperReviewDs": "2. Haga clic en «Revisar modificación».",
+					"exitDescriptionDs": "Al salir se descarta el movimiento planificado.",
+					"exitDescriptionEmptyDs": "Salir del modo de modificación por lotes.",
+					"undoAriaDs": "Deshacer el movimiento a «{{target}}»"
 				},
 				"toolbar": {
 					"delete": "Eliminar",

@@ -88,7 +88,7 @@ const BatchModificationFooter: React.FC<Props> = ({
 				{t('operate.processes.batchModification.exit')}
 			</Button>
 			<Button size="sm" disabled={!canApply} onClick={() => setIsReviewOpen(true)}>
-				{t('operate.processes.batchModification.review')}
+				{t('operate.processes.batchModification.reviewDs')}
 			</Button>
 			<AlertDialog
 				open={isExitConfirmationOpen}
@@ -103,8 +103,9 @@ const BatchModificationFooter: React.FC<Props> = ({
 					<AlertDialogHeader>
 						<AlertDialogTitle>{t('operate.processes.batchModification.exitTitle')}</AlertDialogTitle>
 						<AlertDialogDescription>
-							{isTargetElementSelected ? `${t('operate.processes.batchModification.discard')} ` : ''}
-							{t('operate.processes.batchModification.exitProceed')}
+							{isTargetElementSelected
+								? t('operate.processes.batchModification.exitDescriptionDs')
+								: t('operate.processes.batchModification.exitDescriptionEmptyDs')}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>

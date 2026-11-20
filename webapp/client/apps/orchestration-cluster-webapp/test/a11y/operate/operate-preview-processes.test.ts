@@ -277,7 +277,7 @@ test('should have no accessibility violations in batch move mode and its helper 
 
 	await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
 	await page.locator('[data-element-id="end_event"]').click();
-	await expect(page.getByText('Modification scheduled', {exact: false})).toBeVisible();
+	await expect(page.getByText('Review the modification to confirm it', {exact: false})).toBeVisible();
 	await expect(page.getByRole('button', {name: 'Review Modification'})).toBeEnabled();
 	await page.waitForTimeout(500);
 

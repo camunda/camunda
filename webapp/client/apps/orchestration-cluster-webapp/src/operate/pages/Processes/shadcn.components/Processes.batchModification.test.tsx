@@ -211,7 +211,7 @@ describe('<Processes /> batch modification (design system)', () => {
 		await expect.element(screen.getByRole('button', {name: 'Move'})).toBeDisabled();
 		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeDisabled();
 		await expect.element(screen.getByText('Not available in batch modification mode')).toBeInTheDocument();
-		await expect.element(screen.getByRole('button', {name: 'Review Modification'})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: 'Review modification'})).toBeDisabled();
 	});
 
 	it('should select a target, show it in the notification, and undo it', async ({worker}) => {
@@ -221,9 +221,9 @@ describe('<Processes /> batch modification (design system)', () => {
 
 		await clickDiagramElement('end_event');
 
-		await expect.element(screen.getByRole('button', {name: 'Review Modification'})).toBeEnabled();
-		await userEvent.click(screen.getByRole('button', {name: 'Undo'}));
-		await expect.element(screen.getByRole('button', {name: 'Review Modification'})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: 'Review modification'})).toBeEnabled();
+		await userEvent.click(screen.getByRole('button', {name: /^Undo move to/}));
+		await expect.element(screen.getByRole('button', {name: 'Review modification'})).toBeDisabled();
 	});
 
 	it('should submit the move instructions after review', async ({worker}) => {
@@ -252,7 +252,7 @@ describe('<Processes /> batch modification (design system)', () => {
 		await enterMode(screen);
 		await clickDiagramElement('end_event');
 
-		await userEvent.click(screen.getByRole('button', {name: 'Review Modification'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Review modification'}));
 		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply'}));
 
 		await expect

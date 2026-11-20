@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useContext, useMemo, useState} from 'react';
+import {useContext, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from '#/operate/shared/Diagram/shadcn.components/Diagram';
@@ -118,6 +118,7 @@ const DiagramPanel: React.FC<Props> = ({
 
 	const isModificationMode = mode === 'batch-modification';
 	const {elementId} = search;
+	const alertRef = useRef<HTMLDivElement>(null);
 	const modificationCount = useBatchModificationStatistics({
 		definitionKey: isModificationMode ? selectedDefinitionKey : undefined,
 		sourceElementId: isModificationMode ? elementId : undefined,
@@ -232,32 +233,40 @@ const DiagramPanel: React.FC<Props> = ({
 				)}
 			</DiagramShell>
 			{isModificationMode && (
-				<div className="relative px-1 py-1">
-					<Alert
-						variant="info"
-						className={selectedTargetElementId ? 'py-1.5 pr-24' : 'py-1.5'}
-						role="status"
-						description={
-							sourceElementName === '' || targetElementName === ''
-								? t('operate.processes.batchModification.selectTarget')
-								: t('operate.processes.batchModification.targetScheduled', {
-										count: modificationCount ?? 0,
+				<Alert
+					ref={alertRef}
+					tabIndex={-1}
+					variant="info"
+					className="py-1.5"
+					description={
+						sourceElementName === '' || targetElementName === ''
+							? t('operate.processes.batchModification.selectTarget')
+							: modificationCount === undefined
+								? t('operate.processes.batchModification.targetPendingDs', {
 										source: sourceElementName,
 										target: targetElementName,
 									})
-						}
-					/>
+								: t('operate.processes.batchModification.targetScheduledDs', {
+										count: modificationCount,
+										source: sourceElementName,
+										target: targetElementName,
+									})
+					}
+				>
 					{selectedTargetElementId && (
 						<Button
 							variant="ghost"
 							size="sm"
-							className="absolute right-3 top-1/2 -translate-y-1/2"
-							onClick={() => onTargetElementSelection?.(undefined)}
+							aria-label={t('operate.processes.batchModification.undoAriaDs', {target: targetElementName})}
+							onClick={() => {
+								onTargetElementSelection?.(undefined);
+								alertRef.current?.focus();
+							}}
 						>
 							{t('operate.processes.batchModification.undo')}
 						</Button>
 					)}
-				</div>
+				</Alert>
 			)}
 		</section>
 	);

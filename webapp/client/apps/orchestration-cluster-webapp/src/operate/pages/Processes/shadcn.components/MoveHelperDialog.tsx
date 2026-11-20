@@ -56,7 +56,7 @@ const MoveHelperDialog: React.FC<Props> = observer(({open, onClose, onSubmit}) =
 						alt={t('operate.processes.batchModification.helperImageAlt')}
 						className="w-[335px] max-w-full self-center"
 					/>
-					<p>{t('operate.processes.batchModification.helperReview')}</p>
+					<p>{t('operate.processes.batchModification.helperReviewDs')}</p>
 					<div className="flex items-center gap-2">
 						<Checkbox
 							id="hide-move-modification-helper"
