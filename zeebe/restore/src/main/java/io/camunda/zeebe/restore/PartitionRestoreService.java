@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.restore;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -20,6 +21,8 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.restore.RestoreFailure.BackupStoreFailure;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
 import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
@@ -31,8 +34,13 @@ import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,12 +127,12 @@ public class PartitionRestoreService {
   /** Ensures that we have a valid array of backup ids. */
   private static void validateAndSortBackupIds(final long[] backupIds) {
     if (backupIds.length == 0) {
-      throw new IllegalArgumentException("No backups to restore");
+      throw new InvalidArgument("No backups to restore");
     }
 
     for (final long backupId : backupIds) {
       if (backupId < 0) {
-        throw new IllegalArgumentException("Backup id must not be negative but was " + backupId);
+        throw new InvalidArgument("Backup id must not be negative but was " + backupId);
       }
     }
     Arrays.sort(backupIds);
@@ -244,12 +252,7 @@ public class PartitionRestoreService {
   private BackupIdentifier findValidBackup(
       final long checkpointId, final BackupValidator validator) {
     LOG.info("Searching for a completed backup with id {}", checkpointId);
-    final var statuses =
-        backupStore
-            .list(
-                new BackupIdentifierWildcardImpl(
-                    Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId)))
-            .join();
+    final var statuses = listBackups(checkpointId);
     final var validStatus =
         statuses.stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
@@ -257,6 +260,36 @@ public class PartitionRestoreService {
             .orElseThrow(() -> new BackupNotFoundException(checkpointId));
     validator.validateStatus(validStatus);
     return validStatus.id();
+  }
+
+  private Collection<BackupStatus> listBackups(final long checkpointId) {
+    try {
+      return backupStore
+          .list(
+              new BackupIdentifierWildcardImpl(
+                  Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId)))
+          .join();
+    } catch (final CompletionException e) {
+      final var cause = e.getCause() != null ? e.getCause() : e;
+      throw new BackupStoreFailure(storeFailureReason(cause), cause);
+    }
+  }
+
+  /**
+   * Why the store failed. Each store wraps what went wrong in an exception of its own, so only the
+   * parser's exception in the cause chain tells content it could not parse, such as a corrupt
+   * backup manifest, apart from the store being unreachable, where retrying may help.
+   */
+  private static RestoreFailure.Reason storeFailureReason(final Throwable failure) {
+    final Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+    for (Throwable current = failure;
+        current != null && seen.add(current);
+        current = current.getCause()) {
+      if (current instanceof JsonProcessingException) {
+        return RestoreFailure.Reason.BACKUPS_INCONSISTENT;
+      }
+    }
+    return RestoreFailure.Reason.BACKUP_STORE_UNAVAILABLE;
   }
 
   @FunctionalInterface
@@ -267,9 +300,14 @@ public class PartitionRestoreService {
       return status -> status;
     }
 
-    class BackupNotValidException extends RuntimeException {
+    class BackupNotValidException extends RuntimeException implements RestoreFailure {
       public BackupNotValidException(final BackupStatus status, final String message) {
         super("Backup is not valid: " + message + ". Backup status: " + status);
+      }
+
+      @Override
+      public Reason reason() {
+        return Reason.BACKUPS_INCONSISTENT;
       }
     }
   }
