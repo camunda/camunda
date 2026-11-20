@@ -10,10 +10,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.validator.SecretRequestValidator;
+import io.camunda.secretstore.SecretStatus;
 import io.camunda.service.SecretServices;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
@@ -23,22 +25,24 @@ import org.junit.jupiter.api.Test;
  * the only real enforcement of the {@code maxItems}/{@code maxLength} declared on {@code
  * SecretResolveRequest.references} in {@code secrets.yaml}: the generated request model does not
  * emit array-size or length constraints, so nothing else fails the build if the two drift apart.
- * This test is that guard.
+ * This test is that guard. It also pins {@code SecretStatusEnum} to {@link SecretStatus}, so the
+ * statuses a client can filter by stay exactly the states a store can report.
  *
  * <p>Reads {@code secrets.yaml} as plain text (it is bundled onto this module's classpath by the
  * {@code zeebe-gateway-protocol} dependency) rather than through an OpenAPI parser: the file is a
  * fragment referenced piecemeal by {@code rest-api.yaml} ($ref per path item, not per schema), so a
  * full-spec parse does not reliably resolve its schemas back onto a single root document.
  *
- * <p>Extraction is scoped to the {@code SecretResolveRequest} schema block (up to the next
- * top-level schema key), not the whole file: other schemas in {@code secrets.yaml} may later
- * declare their own {@code maxItems}/{@code maxLength} constraints (e.g. pagination on {@code
- * SecretListResult}), and this test must not break when they do.
+ * <p>Extraction is scoped to one schema block (up to the next top-level schema key), not the whole
+ * file: other schemas in {@code secrets.yaml} may later declare their own {@code maxItems}/{@code
+ * maxLength} constraints (e.g. pagination on {@code SecretListResult}), and this test must not
+ * break when they do.
  */
 class SecretRequestValidatorSpecSyncTest {
 
   private static final String SECRETS_YAML_CLASSPATH_RESOURCE = "v2/secrets.yaml";
   private static final String SCHEMA_UNDER_TEST = "SecretResolveRequest";
+  private static final String STATUS_SCHEMA = "SecretStatusEnum";
 
   @Test
   void shouldMatchMaxBatchSizeDeclaredInSpec() {
@@ -58,9 +62,26 @@ class SecretRequestValidatorSpecSyncTest {
     assertThat(maxLength).isEqualTo(SecretServices.MAX_REFERENCE_LENGTH);
   }
 
+  @Test
+  void shouldMatchSecretStatusValuesDeclaredInSpec() {
+    // given the values declared on SecretStatusEnum in secrets.yaml
+    final var specValues =
+        Pattern.compile("\\n {8}- (\\w+)")
+            .matcher(schemaBlock(STATUS_SCHEMA))
+            .results()
+            .map(match -> match.group(1))
+            .toList();
+
+    // then they are exactly the statuses a store can report, so the controller can map each
+    // value a client sends and a store state never lacks a value to filter by
+    assertThat(specValues)
+        .containsExactlyInAnyOrderElementsOf(
+            Arrays.stream(SecretStatus.values()).map(Enum::name).toList());
+  }
+
   private static int extractIntValue(final String yamlKey) {
     final var pattern = Pattern.compile(yamlKey + ":\\s*(\\d+)");
-    final Matcher matcher = pattern.matcher(schemaUnderTest());
+    final Matcher matcher = pattern.matcher(schemaBlock(SCHEMA_UNDER_TEST));
     if (!matcher.find()) {
       throw new AssertionError(
           "Expected the '%s' schema in '%s' to declare a '%s' constraint, but none was found."
@@ -78,21 +99,22 @@ class SecretRequestValidatorSpecSyncTest {
   }
 
   /**
-   * Slices {@code secrets.yaml} down to the {@code SecretResolveRequest} schema block: from its
-   * declaration to the next top-level ({@code schemaName:}, 4-space indented) schema key.
+   * Slices {@code secrets.yaml} down to one schema block: from its declaration to the next
+   * top-level ({@code schemaName:}, 4-space indented) schema key.
    */
-  private static String schemaUnderTest() {
+  private static String schemaBlock(final String schemaName) {
     final var yaml = secretsYaml();
-    final var start = yaml.indexOf(SCHEMA_UNDER_TEST + ":");
+    final var declaration = "\n    " + schemaName + ":";
+    final var start = yaml.indexOf(declaration);
     if (start < 0) {
       throw new AssertionError(
           "Expected '%s' to declare a '%s' schema, but none was found."
-              .formatted(SECRETS_YAML_CLASSPATH_RESOURCE, SCHEMA_UNDER_TEST));
+              .formatted(SECRETS_YAML_CLASSPATH_RESOURCE, schemaName));
     }
     final var nextSchema =
         Pattern.compile("\\n {4}\\w+:")
             .matcher(yaml)
-            .region(start + SCHEMA_UNDER_TEST.length(), yaml.length());
+            .region(start + declaration.length(), yaml.length());
     final var end = nextSchema.find() ? nextSchema.start() : yaml.length();
     return yaml.substring(start, end);
   }
