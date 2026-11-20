@@ -245,7 +245,7 @@ function useBatchOperationActions(
 
 	const hadExistingPendingActionsCacheEntry =
 		queryClient.getQueryData(pendingActionsQueryKey(batchOperationKey)) !== undefined;
-	const {data: pendingActions = []} = useQuery({
+	const {data: pendingActions} = useQuery({
 		queryKey: pendingActionsQueryKey(batchOperationKey),
 		queryFn: (): BatchOperationAction[] => [],
 		initialData: () => readUnexpiredPersistedActions(batchOperationKey),
