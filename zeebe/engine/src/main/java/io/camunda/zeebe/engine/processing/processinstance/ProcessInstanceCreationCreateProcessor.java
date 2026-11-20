@@ -63,7 +63,7 @@ public final class ProcessInstanceCreationCreateProcessor
     final Either<Rejection, DeployedProcess> persistedProcess = helper.findRelevantProcess(record);
     persistedProcess
         .flatMap(process -> helper.isAuthorized(command, process))
-        .flatMap(helper::rejectIfDraining)
+        .flatMap(helper::rejectIfCannotCreateNewInstances)
         .flatMap(process -> helper.validateCommand(command.getValue(), process))
         .ifRightOrLeft(
             process -> {
