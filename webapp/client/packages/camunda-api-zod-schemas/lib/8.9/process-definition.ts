@@ -127,7 +127,7 @@ type GetProcessDefinitionStatisticsParams = Pick<ProcessDefinition, 'processDefi
 
 const getProcessDefinitionStatistics = {
 	method: 'POST',
-	getUrl: ({processDefinitionKey, statisticName = 'element-instances'}) =>
+	getUrl: ({processDefinitionKey, statisticName}) =>
 		`/${API_VERSION}/process-definitions/${processDefinitionKey}/statistics/${statisticName}` as const,
 } as const satisfies Endpoint<GetProcessDefinitionStatisticsParams>;
 
