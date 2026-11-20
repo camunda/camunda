@@ -190,21 +190,16 @@ test.describe('Operate Decision Instance DS preview (/operate-preview/decisions/
 
 		await expect(inputs).toBeInViewport();
 		await expect(outputs).toBeInViewport();
-		await expect
-			.poll(async () => ((await outputs.boundingBox())?.y ?? 0) - ((await inputs.boundingBox())?.y ?? 0))
-			.toBeGreaterThan(0);
-		await expect
-			.poll(async () => ((await outputs.boundingBox())?.x ?? 0) - ((await inputs.boundingBox())?.x ?? 0))
-			.toBe(0);
+		const inputsBounds = await operateDecisionInstancePage.boundsOf(inputs);
+		const outputsBounds = await operateDecisionInstancePage.boundsOf(outputs);
+		expect(outputsBounds.y).toBeGreaterThan(inputsBounds.y);
+		expect(outputsBounds.x).toBe(inputsBounds.x);
+
 		await lastHeaderLink.scrollIntoViewIfNeeded();
 		await expect(lastHeaderLink).toBeInViewport();
-		await expect
-			.poll(
-				async () =>
-					((await operateDecisionInstancePage.drdPanel.boundingBox())?.x ?? 0) -
-					((await lastHeaderLink.boundingBox())?.x ?? 0),
-			)
-			.toBeGreaterThan(0);
+		const lastHeaderLinkBounds = await operateDecisionInstancePage.boundsOf(lastHeaderLink);
+		const drdPanelBounds = await operateDecisionInstancePage.boundsOf(operateDecisionInstancePage.drdPanel);
+		expect(drdPanelBounds.x).toBeGreaterThan(lastHeaderLinkBounds.x);
 	});
 
 	test('should navigate to the related evaluated decision selected in the DRD', async ({

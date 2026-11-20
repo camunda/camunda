@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {Locator} from '@playwright/test';
 import {BasePage} from '#/pages/BasePage';
 
 class OperateDecisionInstancePage extends BasePage {
@@ -51,6 +52,14 @@ class OperateDecisionInstancePage extends BasePage {
 		await this.page.mouse.down();
 		await this.page.mouse.move(x - delta, bounds.y + bounds.height / 2, {steps: 4});
 		await this.page.mouse.up();
+	}
+
+	async boundsOf(locator: Locator) {
+		const bounds = await locator.boundingBox();
+		if (bounds === null) {
+			throw new Error(`Missing bounds for ${locator}`);
+		}
+		return bounds;
 	}
 
 	get loadingSpinner() {
