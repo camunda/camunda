@@ -1175,6 +1175,8 @@
 					"migrate": "Migrate",
 					"selectSource": "To start the migration process, choose a process and version first.",
 					"diagramError": "Issue fetching diagram, contact admin if problem persists.",
+					"targetsError": "Failed to load the target processes or versions.",
+					"retry": "Retry",
 					"runningOnly": "You can only migrate instances in active or incident state.",
 					"helperTitle": "Migrate process instance versions",
 					"helperPurpose": "Migrate is used to migrate running process instances to a different process definition.",

@@ -1163,6 +1163,8 @@
 					"migrate": "Migrar",
 					"selectSource": "Para iniciar la migración, elija primero un proceso y una versión.",
 					"diagramError": "Error al obtener el diagrama. Póngase en contacto con el administrador si el problema persiste.",
+					"targetsError": "No se pudieron cargar los procesos o versiones de destino.",
+					"retry": "Reintentar",
 					"runningOnly": "Solo puede migrar instancias en estado activo o con incidente.",
 					"helperTitle": "Migrar versiones de instancias de proceso",
 					"helperPurpose": "Migrar se utiliza para migrar instancias de proceso en ejecución a otra definición de proceso.",

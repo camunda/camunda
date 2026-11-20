@@ -23,17 +23,27 @@ type Props = {
 	selection: ProcessInstancesSelection;
 	isSubmitting: boolean;
 	processDefinitionSelection: ProcessDefinitionSelection;
+	isDefinitionSelectionPlaceholder?: boolean;
 	onEnter: (
 		definition: Extract<ProcessDefinitionSelection, {kind: 'single-version'}>['definition'],
 		scope: MigrationScope,
 	) => void;
 };
 
-function useMigrateAction({search, selection, isSubmitting, processDefinitionSelection, onEnter}: Props) {
+function useMigrateAction({
+	search,
+	selection,
+	isSubmitting,
+	processDefinitionSelection,
+	isDefinitionSelectionPlaceholder = false,
+	onEnter,
+}: Props) {
 	const {t} = useTranslation();
 	const [isHelperOpen, setIsHelperOpen] = useState(false);
 	const definitionKey =
-		ENABLE_PROCESS_MIGRATION && processDefinitionSelection.kind === 'single-version'
+		ENABLE_PROCESS_MIGRATION &&
+		!isDefinitionSelectionPlaceholder &&
+		processDefinitionSelection.kind === 'single-version'
 			? processDefinitionSelection.definition.processDefinitionKey
 			: undefined;
 	const {data, isError} = useDiagramXml(definitionKey);

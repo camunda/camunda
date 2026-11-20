@@ -36,8 +36,9 @@ function useInitialMigrationTarget(source: ProcessDefinition) {
 }
 
 function useAvailableMigrationTargets(source: ProcessDefinition) {
-	const {data: initialTarget} = useInitialMigrationTarget(source);
-	const {data: otherDefinitions} = useQuery({
+	const initialTargetQuery = useInitialMigrationTarget(source);
+	const {data: initialTarget} = initialTargetQuery;
+	const otherDefinitionsQuery = useQuery({
 		...operationsLogDefinitionsQuery({
 			isLatestVersion: true,
 			tenantId: source.tenantId,
@@ -46,8 +47,9 @@ function useAvailableMigrationTargets(source: ProcessDefinition) {
 		}),
 		staleTime: STALE_TIME,
 	});
+	const {data: otherDefinitions} = otherDefinitionsQuery;
 
-	return useMemo(() => {
+	const targets = useMemo(() => {
 		if (otherDefinitions === undefined) {
 			return initialTarget ? [initialTarget] : [];
 		}
@@ -55,6 +57,13 @@ function useAvailableMigrationTargets(source: ProcessDefinition) {
 			.concat(initialTarget ?? [])
 			.sort((a, b) => getProcessDefinitionName(a).localeCompare(getProcessDefinitionName(b)));
 	}, [initialTarget, otherDefinitions]);
+
+	return {
+		targets,
+		isError: initialTargetQuery.isError || otherDefinitionsQuery.isError,
+		isFetching: initialTargetQuery.isFetching || otherDefinitionsQuery.isFetching,
+		refetch: () => Promise.all([initialTargetQuery.refetch(), otherDefinitionsQuery.refetch()]),
+	};
 }
 
 function useMigrationTargetVersions(source: ProcessDefinition, target: ProcessDefinition | null) {

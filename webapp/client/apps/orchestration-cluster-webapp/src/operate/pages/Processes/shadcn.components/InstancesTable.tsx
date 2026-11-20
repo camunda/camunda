@@ -45,6 +45,7 @@ import type {MigrationScope} from '../getMigrationFilter';
 type Props = {
 	search: ProcessesSearch;
 	processDefinitionSelection: ProcessDefinitionSelection;
+	isDefinitionSelectionPlaceholder?: boolean;
 	onMigrationEnter: (source: ProcessDefinition, scope: MigrationScope) => void;
 };
 
@@ -108,7 +109,12 @@ function getActiveOperationsByInstance(items: BatchOperationItem[]) {
 
 const NO_INSTANCES: ProcessInstance[] = [];
 
-const InstancesTable: React.FC<Props> = ({search, processDefinitionSelection, onMigrationEnter}) => {
+const InstancesTable: React.FC<Props> = ({
+	search,
+	processDefinitionSelection,
+	isDefinitionSelectionPlaceholder = false,
+	onMigrationEnter,
+}) => {
 	const {t} = useTranslation();
 	const {
 		processInstances: loadedInstances,
@@ -155,7 +161,7 @@ const InstancesTable: React.FC<Props> = ({search, processDefinitionSelection, on
 		isSubmitting,
 		onSubmit: (action) =>
 			send({type: 'submit', action, body: selection.getRequest(action), filterIdentity: selection.filterIdentity}),
-		migration: {search, processDefinitionSelection, onEnter: onMigrationEnter},
+		migration: {search, processDefinitionSelection, isDefinitionSelectionPlaceholder, onEnter: onMigrationEnter},
 	});
 	const canSelect = status === 'success' && !isPlaceholderData && !isSubmitting;
 

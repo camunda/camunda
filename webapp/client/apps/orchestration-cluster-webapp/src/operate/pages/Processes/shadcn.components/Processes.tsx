@@ -267,6 +267,7 @@ const Processes: React.FC<Props> = ({search}) => {
 							<InstancesTable
 								search={instancesSearch}
 								processDefinitionSelection={filterOptions.processDefinitionSelection}
+								isDefinitionSelectionPlaceholder={filterOptions.areDefinitionsPlaceholder}
 								onMigrationEnter={(source, scope) => setMigration({source, scope})}
 							/>
 						</div>

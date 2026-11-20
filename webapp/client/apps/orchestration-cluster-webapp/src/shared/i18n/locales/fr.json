@@ -1166,6 +1166,8 @@
 					"migrate": "Migrer",
 					"selectSource": "Pour démarrer la migration, choisissez d’abord un processus et une version.",
 					"diagramError": "Erreur lors de la récupération du diagramme. Contactez l’administrateur si le problème persiste.",
+					"targetsError": "Impossible de charger les processus ou versions cibles.",
+					"retry": "Réessayer",
 					"runningOnly": "Vous ne pouvez migrer que des instances à l’état actif ou en incident.",
 					"helperTitle": "Migrer les versions des instances de processus",
 					"helperPurpose": "La migration permet de migrer des instances de processus en cours vers une autre définition de processus.",

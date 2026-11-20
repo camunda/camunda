@@ -255,6 +255,7 @@ function useProcessFilterOptions({process, version, elementId, tenantId}: Params
 		areDefinitionsLoading,
 		areDefinitionsError,
 		areDefinitionsFetching,
+		areDefinitionsPlaceholder,
 		selectedDefinitionsError,
 		refetchSelectedDefinitions,
 		selectedDefinitionKey,
