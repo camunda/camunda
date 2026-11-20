@@ -405,6 +405,33 @@ class DecisionInstanceSearchIT {
   }
 
   @Test
+  public void shouldRetrieveAllDecisionInstancesOfEvaluationByRootDecisionDefinitionKey(
+      final CamundaClient camundaClient) {
+    // given - the root decision requires another decision
+    final var evaluation = EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_2);
+
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.rootDecisionDefinitionKey(evaluation.getDecisionKey())
+                        .decisionInstanceKey(evaluation.getDecisionEvaluationKey()))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items())
+        .extracting(
+            DecisionInstance::getDecisionDefinitionId,
+            DecisionInstance::getRootDecisionDefinitionKey)
+        .containsExactlyInAnyOrder(
+            tuple(DECISION_DEFINITION_ID_2, evaluation.getDecisionKey()),
+            tuple(DECISION_DEFINITION_ID_3, evaluation.getDecisionKey()));
+  }
+
+  @Test
   public void shouldRetrieveDecisionInstanceByRootDecisionDefinitionKeyFilterIn(
       final CamundaClient camundaClient) {
     // when
