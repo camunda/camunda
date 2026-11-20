@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
@@ -91,7 +90,7 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
     if (randomInitialOffset) {
       // bounded by the active ring, not the configured partition count, so the offset stays
       // uniform even while the ring is smaller during scaling
-      state.seedOffsetIfUnseeded(random, partitions.size());
+      state.seedOffsetIfUnused(initialOffset, random, partitions.size());
     }
 
     for (int i = 0; i < topology.getPartitionsCount(); i++) {
@@ -159,19 +158,19 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
   }
 
   private record GroupState(
-      AtomicLong offset,
-      AtomicBoolean offsetSeeded,
-      AtomicReference<VersionedPartitionRing> partitionRing) {
+      AtomicLong offset, AtomicReference<VersionedPartitionRing> partitionRing) {
     GroupState(final int initialOffset) {
       this(
           new AtomicLong(initialOffset),
-          new AtomicBoolean(false),
           new AtomicReference<>(VersionedPartitionRing.uninitialized()));
     }
 
-    void seedOffsetIfUnseeded(final Random random, final int ringSize) {
-      if (offsetSeeded.compareAndSet(false, true)) {
-        offset.set(random.nextInt(ringSize));
+    void seedOffsetIfUnused(
+        final int expectedInitialOffset, final Random random, final int ringSize) {
+      // only seeds while the offset is untouched; seeding after a concurrent advance would
+      // clobber that advance and lose a round-robin step
+      if (offset.get() == expectedInitialOffset) {
+        offset.compareAndSet(expectedInitialOffset, random.nextInt(ringSize));
       }
     }
   }
