@@ -21,6 +21,8 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.restore.RestoreFailure.BackupStoreFailure;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
 import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
@@ -30,9 +32,13 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,8 +86,18 @@ public class PartitionRestoreService {
    */
   public void restore(final PartitionRestore restore, final BackupValidator validator)
       throws IOException, FlushException {
-    validateBackupIds(restore.backupIds());
+    restore(restore, findBackups(backupStore, partitionId, restore.backupIds(), validator));
+  }
 
+  /**
+   * Downloads the given backups and restores them to the partition's data directory, as {@link
+   * #restore(PartitionRestore, BackupValidator)} does once it found them.
+   *
+   * @param backups the backup of each id in {@code restore}, as {@link #findBackups} finds them
+   */
+  public void restore(
+      final PartitionRestore restore, final SortedMap<Long, BackupIdentifier> backups)
+      throws IOException, FlushException {
     try (final var restoredJournal =
         SegmentedJournal.builder(partition.getMeterRegistry())
             .withDirectory(rootDirectory.toFile())
@@ -94,7 +110,7 @@ public class PartitionRestoreService {
         final var restoreTarget =
             rootDirectory.resolve("restoring-partition" + partitionId + "-backup-" + backupId);
         FileUtil.ensureDirectoryExists(restoreTarget);
-        final var backup = download(backupId, restoreTarget, validator);
+        final var backup = download(backups.get(backupId), restoreTarget);
         if (previousBackup == null) {
           // Only take the first snapshot, all others are redundant because we have the full log.
           moveSnapshotFiles(backup);
@@ -116,13 +132,31 @@ public class PartitionRestoreService {
     // - Verify journal.lastEntry.asqn == checkpointPosition
   }
 
+  /**
+   * Finds the completed backup of each of the given ids for the partition, without writing
+   * anything. Its failures name their reason, and the restore app promises a caller that a failure
+   * with a reason left the data directory untouched, so the restore finds the backups of every
+   * partition before it writes to any.
+   */
+  public static SortedMap<Long, BackupIdentifier> findBackups(
+      final BackupStore backupStore,
+      final int partitionId,
+      final SortedSet<Long> backupIds,
+      final BackupValidator validator) {
+    validateBackupIds(backupIds);
+    final var backups = new TreeMap<Long, BackupIdentifier>();
+    for (final var backupId : backupIds) {
+      backups.put(backupId, findValidBackup(backupStore, partitionId, backupId, validator));
+    }
+    return backups;
+  }
+
   private static void validateBackupIds(final SortedSet<Long> backupIds) {
     if (backupIds.isEmpty()) {
-      throw new IllegalArgumentException("No backups to restore");
+      throw new InvalidArgument("No backups to restore");
     }
     if (backupIds.first() < 0) {
-      throw new IllegalArgumentException(
-          "Backup id must not be negative but was " + backupIds.first());
+      throw new InvalidArgument("Backup id must not be negative but was " + backupIds.first());
     }
   }
 
@@ -230,15 +264,16 @@ public class PartitionRestoreService {
     }
   }
 
-  private Backup download(
-      final long checkpointId, final Path tempRestoringDirectory, final BackupValidator validator) {
-    final var validBackup = findValidBackup(checkpointId, validator);
-    LOG.atInfo().addKeyValue("backup", validBackup).setMessage("Restoring backup").log();
-    return backupStore.restore(validBackup, tempRestoringDirectory).join();
+  private Backup download(final BackupIdentifier backup, final Path tempRestoringDirectory) {
+    LOG.atInfo().addKeyValue("backup", backup).setMessage("Restoring backup").log();
+    return backupStore.restore(backup, tempRestoringDirectory).join();
   }
 
-  private BackupIdentifier findValidBackup(
-      final long checkpointId, final BackupValidator validator) {
+  private static BackupIdentifier findValidBackup(
+      final BackupStore backupStore,
+      final int partitionId,
+      final long checkpointId,
+      final BackupValidator validator) {
     final var searchPattern =
         new BackupIdentifierWildcardImpl(
             Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId));
@@ -246,7 +281,12 @@ public class PartitionRestoreService {
         .addKeyValue("pattern", searchPattern)
         .setMessage("Searching for completed backup")
         .log();
-    final var statuses = backupStore.list(searchPattern).join();
+    final Collection<BackupStatus> statuses;
+    try {
+      statuses = backupStore.list(searchPattern).join();
+    } catch (final CompletionException e) {
+      throw BackupStoreFailure.of(e);
+    }
     final var validStatus =
         statuses.stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
@@ -264,9 +304,14 @@ public class PartitionRestoreService {
       return status -> status;
     }
 
-    class BackupNotValidException extends RuntimeException {
+    class BackupNotValidException extends RuntimeException implements RestoreFailure {
       public BackupNotValidException(final BackupStatus status, final String message) {
         super("Backup is not valid: " + message + ". Backup status: " + status);
+      }
+
+      @Override
+      public Reason reason() {
+        return Reason.BACKUPS_INCONSISTENT;
       }
     }
   }

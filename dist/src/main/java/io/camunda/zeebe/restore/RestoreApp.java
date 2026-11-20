@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
@@ -218,12 +219,12 @@ public class RestoreApp implements ApplicationRunner {
     final boolean hasTimeRange = hasTimeRange();
 
     if (hasBackupId && hasTimeRange) {
-      throw new IllegalArgumentException(
+      throw new InvalidArgument(
           "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
     }
 
     if (hasTimeRange && from != null && to != null && from.isAfter(to)) {
-      throw new IllegalArgumentException(
+      throw new InvalidArgument(
           "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
     }
   }
