@@ -25,14 +25,15 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 
-class ProcessDrainingHandlerTest {
+class ProcessStateHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-process";
-  private final ProcessDrainingHandler underTest = new ProcessDrainingHandler(indexName);
+  private final ProcessStateHandler underTest = new ProcessStateHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
@@ -47,7 +48,7 @@ class ProcessDrainingHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessIntent.class,
-      names = {"DRAINING"},
+      names = {"DRAINING", "SUSPENDED", "RESUMED"},
       mode = Mode.INCLUDE)
   void shouldHandleRecord(final ProcessIntent intent) {
     // given
@@ -61,7 +62,7 @@ class ProcessDrainingHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessIntent.class,
-      names = {"DRAINING"},
+      names = {"DRAINING", "SUSPENDED", "RESUMED"},
       mode = Mode.EXCLUDE)
   void shouldNotHandleRecord(final ProcessIntent intent) {
     // given
@@ -103,24 +104,31 @@ class ProcessDrainingHandlerTest {
     assertThat(entity.getState()).isEqualTo(ProcessDefinitionState.ACTIVE);
   }
 
-  @Test
-  void shouldSetStateDrainingOnUpdateEntity() {
+  @ParameterizedTest
+  @CsvSource({"DRAINING,DRAINING", "SUSPENDED,SUSPENDED", "RESUMED,ACTIVE"})
+  void shouldSetStateFromIntentOnUpdateEntity(
+      final ProcessIntent intent, final ProcessDefinitionState expectedState) {
     // given
     final Record<Process> record =
-        factory.generateRecord(ValueType.PROCESS, r -> r.withIntent(ProcessIntent.DRAINING));
+        factory.generateRecord(ValueType.PROCESS, r -> r.withIntent(intent));
     final ProcessEntity entity = new ProcessEntity();
 
     // when
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getState()).isEqualTo(ProcessDefinitionState.DRAINING);
+    assertThat(entity.getState()).isEqualTo(expectedState);
   }
 
-  @Test
-  void shouldFlushPartialUpdateWithStateDraining() throws Exception {
+  @ParameterizedTest
+  @CsvSource({"DRAINING,DRAINING", "SUSPENDED,SUSPENDED", "RESUMED,ACTIVE"})
+  void shouldFlushPartialUpdateWithStateFromIntent(
+      final ProcessIntent intent, final ProcessDefinitionState expectedState) throws Exception {
     // given
+    final Record<Process> record =
+        factory.generateRecord(ValueType.PROCESS, r -> r.withIntent(intent));
     final ProcessEntity entity = new ProcessEntity().setId("789");
+    underTest.updateEntity(record, entity);
     final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
@@ -128,7 +136,6 @@ class ProcessDrainingHandlerTest {
     underTest.flush(index, entity, mockRequest);
 
     // then
-    verify(mockRequest)
-        .update(index, "789", Map.of(ProcessIndex.STATE, ProcessDefinitionState.DRAINING));
+    verify(mockRequest).update(index, "789", Map.of(ProcessIndex.STATE, expectedState));
   }
 }

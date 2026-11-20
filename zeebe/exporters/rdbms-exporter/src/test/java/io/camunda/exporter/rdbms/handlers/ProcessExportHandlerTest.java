@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -51,7 +52,7 @@ class ProcessExportHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessIntent.class,
-      names = {"CREATED", "DRAINING", "FULLY_DELETED"},
+      names = {"CREATED", "DRAINING", "FULLY_DELETED", "SUSPENDED", "RESUMED"},
       mode = Mode.INCLUDE)
   void shouldExportHandledIntents(final ProcessIntent intent) {
     // given
@@ -65,7 +66,7 @@ class ProcessExportHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessIntent.class,
-      names = {"CREATED", "DRAINING", "FULLY_DELETED"},
+      names = {"CREATED", "DRAINING", "FULLY_DELETED", "SUSPENDED", "RESUMED"},
       mode = Mode.EXCLUDE)
   void shouldNotExportOtherIntents(final ProcessIntent intent) {
     // given
@@ -95,6 +96,50 @@ class ProcessExportHandlerTest {
     // then
     verify(processDefinitionWriter)
         .updateState(processDefinitionKey, ProcessDefinitionState.DRAINING);
+  }
+
+  @Test
+  void shouldMarkSuspendedOnSuspendedRecord() {
+    // given
+    final long processDefinitionKey = 789L;
+    final Process value =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(processDefinitionKey)
+            .build();
+    final Record<Process> record =
+        factory.generateRecord(
+            ValueType.PROCESS, r -> r.withIntent(ProcessIntent.SUSPENDED).withValue(value));
+
+    // when
+    underTest.export(record);
+
+    // then
+    verify(processDefinitionWriter)
+        .updateState(processDefinitionKey, ProcessDefinitionState.SUSPENDED);
+    verify(processDefinitionWriter, never()).create(any());
+  }
+
+  @Test
+  void shouldMarkActiveOnResumedRecord() {
+    // given
+    final long processDefinitionKey = 101L;
+    final Process value =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(processDefinitionKey)
+            .build();
+    final Record<Process> record =
+        factory.generateRecord(
+            ValueType.PROCESS, r -> r.withIntent(ProcessIntent.RESUMED).withValue(value));
+
+    // when
+    underTest.export(record);
+
+    // then
+    verify(processDefinitionWriter)
+        .updateState(processDefinitionKey, ProcessDefinitionState.ACTIVE);
+    verify(processDefinitionWriter, never()).create(any());
   }
 
   @Test
@@ -142,7 +187,7 @@ class ProcessExportHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessIntent.class,
-      names = {"DRAINING", "FULLY_DELETED"},
+      names = {"DRAINING", "FULLY_DELETED", "SUSPENDED", "RESUMED"},
       mode = Mode.INCLUDE)
   void shouldNotHandleDefinitionStateChangesOnOtherPartition(final ProcessIntent intent) {
     // given
