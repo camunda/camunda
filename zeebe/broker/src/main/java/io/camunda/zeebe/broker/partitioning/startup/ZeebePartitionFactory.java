@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.hub.GossipPolicyStateNotifier;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
@@ -172,8 +173,10 @@ public final class ZeebePartitionFactory {
     final var membershipService = clusterServices.getMembershipService();
     final var probeNotifier =
         new RemoteProbeNotifier(clusterServices.getEventService(), raftPartition.id().group());
+    final var policyStateNotifier =
+        new GossipPolicyStateNotifier(membershipService, raftPartition.id().group());
     final var typedRecordProcessorsFactory =
-        createFactory(localBroker, featureFlags, probeNotifier);
+        createFactory(localBroker, featureFlags, probeNotifier, policyStateNotifier);
 
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
@@ -293,7 +296,8 @@ public final class ZeebePartitionFactory {
   private TypedRecordProcessorsFactory createFactory(
       final BrokerInfo localBroker,
       final FeatureFlags featureFlags,
-      final ProbeNotifier probeNotifier) {
+      final ProbeNotifier probeNotifier,
+      final PolicyStateNotifier policyStateNotifier) {
     return recordProcessorContext -> {
       final InterPartitionCommandSender partitionCommandSender =
           recordProcessorContext.getPartitionCommandSender();
@@ -309,7 +313,7 @@ public final class ZeebePartitionFactory {
           featureFlags,
           jobStreamer,
           probeNotifier,
-          PolicyStateNotifier.noop(),
+          policyStateNotifier,
           searchClientsProxy,
           brokerRequestAuthorizationConverter,
           secretStoreRegistry);
