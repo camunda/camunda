@@ -13,6 +13,7 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import java.util.UUID;
 
 public class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
 
@@ -34,6 +35,11 @@ public class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
   @Override
   public long term() {
     return term;
+  }
+
+  @Override
+  public UUID epoch() {
+    return new UUID(0, term);
   }
 
   @Override

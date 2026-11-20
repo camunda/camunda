@@ -19,6 +19,7 @@ package io.atomix.raft.storage.log.entry;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer.SerializedBufferWriterAdapter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.UUID;
 
 /**
  * Indicates a leader change has occurred.
@@ -30,9 +31,10 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 public record InitialEntry() implements RaftEntry {
 
   @Override
-  public BufferWriter toSerializable(final long term, final RaftEntrySerializer serializer) {
+  public BufferWriter toSerializable(
+      final long term, final UUID epoch, final RaftEntrySerializer serializer) {
     return new SerializedBufferWriterAdapter(
         serializer::getInitialEntrySerializedLength,
-        (buffer, offset) -> serializer.writeInitialEntry(term, this, buffer, offset));
+        (buffer, offset) -> serializer.writeInitialEntry(term, epoch, this, buffer, offset));
   }
 }

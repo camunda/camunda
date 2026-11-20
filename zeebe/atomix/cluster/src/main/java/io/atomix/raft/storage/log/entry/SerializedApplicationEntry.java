@@ -20,6 +20,7 @@ import io.atomix.raft.storage.serializer.RaftEntrySerializer.SerializedBufferWri
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -37,10 +38,11 @@ public record SerializedApplicationEntry(
   }
 
   @Override
-  public BufferWriter toSerializable(final long term, final RaftEntrySerializer serializer) {
+  public BufferWriter toSerializable(
+      final long term, final UUID epoch, final RaftEntrySerializer serializer) {
     return new SerializedBufferWriterAdapter(
         () -> serializer.getApplicationEntrySerializedLength(this),
-        (buffer, offset) -> serializer.writeApplicationEntry(term, this, buffer, offset));
+        (buffer, offset) -> serializer.writeApplicationEntry(term, epoch, this, buffer, offset));
   }
 
   @Override
