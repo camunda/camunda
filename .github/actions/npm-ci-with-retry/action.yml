@@ -124,5 +124,9 @@ runs:
         # A killed attempt (timeout) can leave node_modules half-extracted,
         # which makes the next attempt fail deterministically (e.g. ENOTEMPTY)
         # instead of getting a clean retry.
-        on_retry_command: |
-          rm -rf "$NPM_CI_DIRECTORY/node_modules"
+        #
+        # nick-fields/retry runs this hook in the OS default shell, not in
+        # `shell` above: /bin/sh, or cmd.exe on Windows, which does not expand
+        # `$VAR`. Node reads the env var the same way on every OS.
+        on_retry_command: >-
+          node -e "require('fs').rmSync(require('path').join(process.env.NPM_CI_DIRECTORY, 'node_modules'), { recursive: true, force: true })"
