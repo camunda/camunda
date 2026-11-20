@@ -10,8 +10,10 @@ package io.camunda.service;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateProbesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerProbeAnswerRequest;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.gateway.impl.probe.LongPollingActivateProbesHandler;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.time.Duration;
@@ -27,6 +30,8 @@ import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import org.jspecify.annotations.NullMarked;
@@ -116,7 +121,7 @@ public final class ProbeServices extends PhysicalTenantScopedApiServices<ProbeSe
     return result.handleAsync(
         (response, error) -> {
           if (error != null) {
-            throw ErrorMapper.mapError(error);
+            throw mapError(error);
           }
           return response;
         },
@@ -128,15 +133,52 @@ public final class ProbeServices extends PhysicalTenantScopedApiServices<ProbeSe
     return Duration.ofMillis(Math.max(1, deadline + RESPONSE_MARGIN.toMillis() - clock.millis()));
   }
 
-  /** Sends a worker's answer to the partition that owns the probe. */
+  /**
+   * Sends a worker's answer to the partition that owns the probe. Errors are mapped as by {@link
+   * #sendBrokerRequest}, except that a rejection of an answer too large for one log batch keeps its
+   * cause (see {@link #mapError}).
+   */
   public CompletableFuture<ProbeRecord> answerProbe(
       final ProbeAnswerRequest request, final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
+    final var brokerRequest =
         new BrokerProbeAnswerRequest(request.probeKey())
             .setOutcome(request.outcome())
             .setData(request.data())
-            .setMessage(request.message()),
-        authentication);
+            .setMessage(request.message());
+    applyBrokerRequestMutators(brokerRequest, authentication);
+    return brokerClient
+        .sendRequest(brokerRequest)
+        .handleAsync(
+            (response, error) -> {
+              if (error != null) {
+                throw mapError(error);
+              }
+              if (!response.isResponse()) {
+                throw mapError(response.toException());
+              }
+              return response.getResponse();
+            },
+            executor);
+  }
+
+  /**
+   * Maps an error as {@link ErrorMapper#mapError} does, but keeps the rejection of a command too
+   * large for one log batch as the cause. {@link ErrorMapper} maps it to {@code INTERNAL} for every
+   * request, jobs included; for probes the REST layer answers {@code 413} instead (D53), and needs
+   * the cause to tell it apart.
+   */
+  private static ServiceException mapError(final Throwable error) {
+    final ServiceException mapped = ErrorMapper.mapError(error);
+    final Throwable cause =
+        (error instanceof CompletionException || error instanceof ExecutionException)
+                && error.getCause() != null
+            ? error.getCause()
+            : error;
+    if (cause instanceof final BrokerRejectionException rejection
+        && rejection.getRejection().type() == RejectionType.EXCEEDED_BATCH_RECORD_SIZE) {
+      return new ServiceException(mapped.getMessage(), mapped.getStatus(), rejection);
+    }
+    return mapped;
   }
 
   /**
