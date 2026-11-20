@@ -41,7 +41,7 @@ import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.api.EngineDependencies;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -78,7 +78,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
   private final RaftPartition raftPartition;
-  private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
+  private final EngineDependencies engineDependencies;
   private final CommandApiService commandApiService;
   private final PersistedSnapshotStore persistedSnapshotStore;
   private final PartitionId partitionId;
@@ -139,7 +139,7 @@ public class PartitionStartupAndTransitionContextImpl
       final SnapshotCopy snapshotCopy,
       final BrokerClient brokerClient,
       final StateController stateController,
-      final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
+      final EngineDependencies engineDependencies,
       final ExporterRepository exporterRepository,
       final PartitionProcessingState partitionProcessingState,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
@@ -157,7 +157,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.brokerClient = brokerClient;
     this.stateController = stateController;
     this.snapshotCopy = snapshotCopy;
-    this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
+    this.engineDependencies = engineDependencies;
     this.commandApiService = commandApiService;
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
@@ -638,8 +638,8 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
-    return typedRecordProcessorsFactory::createTypedStreamProcessor;
+  public EngineDependencies getEngineDependencies() {
+    return engineDependencies;
   }
 
   @Override

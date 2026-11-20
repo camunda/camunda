@@ -13,8 +13,8 @@ import io.camunda.zeebe.broker.engine.impl.ScheduledCommandCacheMetrics.BoundedC
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
-import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.api.EngineFactory;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -146,8 +146,8 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final var engineCfg = createEngineConfiguration(context.getBrokerCfg());
 
     final var engine =
-        new Engine(
-            context.getTypedRecordProcessorFactory(), engineCfg, context.getSecurityConfig());
+        EngineFactory.createEngine(
+            context.getEngineDependencies(), engineCfg, context.getSecurityConfig());
     final List<RecordProcessor> recordProcessors =
         List.of(engine, context.getCheckpointProcessor());
 

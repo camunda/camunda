@@ -54,7 +54,6 @@ import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfi
 import io.camunda.zeebe.engine.processing.identity.initialize.GroupConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.RoleConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
-import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperationChunk;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
@@ -103,8 +102,8 @@ public final class SystemContext {
           + "'.";
 
   /**
-   * The maximum number of items stored in a single batch operation chunk. This value is limited by
-   * two factors:
+   * The maximum number of items stored in a single batch operation chunk (the engine's {@code
+   * PersistedBatchOperationChunk}). This value is limited by two factors:
    *
    * <ul>
    *   <li>The hard-coded max record size of 4MB in the engine
@@ -119,7 +118,6 @@ public final class SystemContext {
    * </ul>
    *
    * @see ZeebeRocksDbFactory
-   * @see PersistedBatchOperationChunk
    */
   private static final long MAX_CHUNK_SIZE = 3000;
 

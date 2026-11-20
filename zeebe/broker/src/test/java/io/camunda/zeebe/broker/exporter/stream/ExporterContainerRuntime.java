@@ -13,8 +13,8 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.broker.test.TestZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -131,7 +131,7 @@ public final class ExporterContainerRuntime implements CloseableSilently {
   }
 
   private ZeebeDb<ZbColumnFamilies> createZeebeDb(final Path path) {
-    return DefaultZeebeDbFactory.defaultFactory().createDb(path.toFile());
+    return TestZeebeDbFactory.defaultFactory().createDb(path.toFile());
   }
 
   static final class RuntimeActor extends Actor {
