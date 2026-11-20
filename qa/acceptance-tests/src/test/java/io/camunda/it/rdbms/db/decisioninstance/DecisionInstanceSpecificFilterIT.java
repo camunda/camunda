@@ -102,6 +102,7 @@ public class DecisionInstanceSpecificFilterIT {
                     .decisionDefinitionKey(decisionDefinition.decisionDefinitionKey())
                     .decisionDefinitionId(decisionDefinition.decisionDefinitionId())
                     .evaluationFailure("failure-42")
+                    .evaluationFailureMessage("failure-message-42")
                     .result("result-42")));
 
     final var searchResult =
@@ -129,6 +130,7 @@ public class DecisionInstanceSpecificFilterIT {
         DecisionInstanceFilter.of(b -> b.states(DecisionInstanceState.EVALUATED)),
         DecisionInstanceFilter.of(b -> b.decisionTypes(DecisionDefinitionType.DECISION_TABLE)),
         DecisionInstanceFilter.of(b -> b.evaluationFailures("failure-42")),
+        DecisionInstanceFilter.of(b -> b.evaluationFailures("failure-message-42")),
         DecisionInstanceFilter.of(b -> b.decisionDefinitionNames("Decision 100")));
   }
 }
