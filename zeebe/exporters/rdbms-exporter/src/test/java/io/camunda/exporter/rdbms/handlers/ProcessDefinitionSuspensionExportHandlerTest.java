@@ -43,7 +43,8 @@ class ProcessDefinitionSuspensionExportHandlerTest {
             List.of(
                 version(1L, ProcessDefinitionSuspensionOutcome.SUSPENDED),
                 version(2L, ProcessDefinitionSuspensionOutcome.ALREADY_SUSPENDED),
-                version(3L, ProcessDefinitionSuspensionOutcome.SUSPENDED)));
+                version(3L, ProcessDefinitionSuspensionOutcome.SUSPENDED),
+                version(4L, ProcessDefinitionSuspensionOutcome.DRAINING)));
 
     // when
     underTest.export(record);

@@ -290,6 +290,71 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  public void shouldReturnSuspendedStateForSuspendedProcessDefinition() {
+    // given
+    final var suspendedEntity =
+        new ProcessDefinitionEntity(
+            23L,
+            "Complex process",
+            "complexProcess",
+            "<xml/>",
+            "complexProcess.bpmn",
+            5,
+            "alpha",
+            "<default>",
+            "formId",
+            ProcessDefinitionState.SUSPENDED);
+    when(processDefinitionServices.getByKey(eq(23L), any())).thenReturn(suspendedEntity);
+
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "23")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.state")
+        .isEqualTo("SUSPENDED");
+  }
+
+  @Test
+  public void shouldSearchProcessDefinitionByStateSuspended() {
+    // given
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+                "filter": {
+                    "state": "SUSPENDED"
+                }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processDefinitionServices)
+        .search(
+            eq(
+                new ProcessDefinitionQuery.Builder()
+                    .filter(
+                        new ProcessDefinitionFilter.Builder()
+                            .state(ProcessDefinitionState.SUSPENDED)
+                            .build())
+                    .build()),
+            any());
+  }
+
+  @Test
   public void shouldDefaultToActiveStateForLegacyNullState() {
     // given - a row/document written before the state field existed
     final var legacyEntity =
