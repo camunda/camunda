@@ -20,6 +20,9 @@
   "overrides": {
     "@camunda/oc-saas-notifications": {
       "@camunda/design-system": "$@camunda/design-system"
+    },
+    "monaco-editor": {
+      "dompurify": "3.4.17"
     }
   },
   "dependencies": {
