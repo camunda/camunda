@@ -157,6 +157,10 @@ public final class BpmnStateBehavior {
         processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId));
   }
 
+  public boolean isSuspended(final long processDefinitionKey) {
+    return processState.isSuspended(processDefinitionKey);
+  }
+
   public Optional<DeployedProcess> getLatestProcessVersion(
       final DirectBuffer processId, final String tenantId) {
     final var process = processState.getLatestProcessVersionByProcessId(processId, tenantId);

@@ -255,6 +255,63 @@ public class ProcessInstanceCreateAuthorizationTest {
   }
 
   @Test
+  public void shouldBeUnauthorizedToCreateInstanceOnSuspendedVersionIfNoPermissions() {
+    // given - callers without access must not learn that the version is suspended
+    engine
+        .processDefinitionSuspension()
+        .withBpmnProcessId(PROCESS_ID)
+        .withVersion(1)
+        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .suspend(DEFAULT_USER.getUsername());
+    final var user = createUser();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVersion(1)
+        .expectRejection()
+        .create(user.getUsername());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToCreateInstanceWithResultOnSuspendedVersionIfNoPermissions() {
+    // given - creation with result runs through its own processor, which must keep the same check
+    // order as plain creation
+    engine
+        .processDefinitionSuspension()
+        .withBpmnProcessId(PROCESS_ID)
+        .withVersion(1)
+        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .suspend(DEFAULT_USER.getUsername());
+    final var user = createUser();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVersion(1)
+        .withResult()
+        .asyncCreate(user.getUsername());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                .formatted(PROCESS_ID));
+  }
+
+  @Test
   public void shouldRejectCreationWhenAssignedTenantsExcludeProcessTenant() {
     // given - process deployed under CUSTOM_TENANT, caller has a global (non-tenant-restricted)
     // CREATE_PROCESS_INSTANCE permission but is only assigned to OTHER_TENANT
