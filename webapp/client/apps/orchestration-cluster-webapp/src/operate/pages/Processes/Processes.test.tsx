@@ -317,6 +317,35 @@ describe('<Processes />', () => {
 		await expect.element(screen.getByRole('option').nth(1)).toHaveTextContent('Payment Process');
 	});
 
+	it('should only list the processes matching the typed name', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
+
+		const screen = await renderPage();
+		const nameCombobox = screen.getByRole('combobox', {name: 'Name'});
+		await nameCombobox.click({force: true});
+		await nameCombobox.fill('pay');
+
+		await expect.element(screen.getByRole('option', {name: 'Payment Process'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'Order Process'})).not.toBeInTheDocument();
+	});
+
+	it('should list no processes when the typed name matches none', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+		);
+
+		const screen = await renderPage();
+		const nameCombobox = screen.getByRole('combobox', {name: 'Name'});
+		await nameCombobox.click({force: true});
+		await nameCombobox.fill('zzqx');
+
+		await expect.element(screen.getByRole('option')).not.toBeInTheDocument();
+	});
+
 	it('should navigate resetting elementId when a version is selected', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),

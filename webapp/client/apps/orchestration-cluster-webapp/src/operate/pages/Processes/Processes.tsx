@@ -454,6 +454,9 @@ const Processes: React.FC<Props> = ({
 												placeholder={t('operate.processes.filters.searchByName')}
 												items={processItems}
 												itemToString={(item) => item?.label ?? ''}
+												shouldFilterItem={({inputValue, item}) =>
+													!inputValue || item.label.toLowerCase().includes(inputValue.toLowerCase())
+												}
 												selectedItem={selectedProcess}
 												disabled={mode !== 'list' || (isMultiTenancyEnabled && tenantId === undefined)}
 												title={notChangeableTitle}
