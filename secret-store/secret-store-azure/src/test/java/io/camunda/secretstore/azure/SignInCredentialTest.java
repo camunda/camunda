@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.azure.core.credential.AccessToken;
 import com.azure.core.credential.TokenRequestContext;
+import com.azure.identity.CredentialUnavailableException;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.OffsetDateTime;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
@@ -33,7 +35,7 @@ final class SignInCredentialTest {
             "ManagedIdentityCredential",
             "ManagedIdentityCredential (system-assigned identity)",
             request -> Mono.just(new AccessToken(TOKEN, OffsetDateTime.now().plusHours(1))),
-            new SignInMonitor(VAULT_URL));
+            new SignInMonitor("default", VAULT_URL, new SimpleMeterRegistry()));
 
     try (final var log = LogCapturer.capturing(SignInMonitor.class, Level.INFO)) {
       // when — tokens fetched both ways and again, as the vault client refreshes them
@@ -52,15 +54,15 @@ final class SignInCredentialTest {
   }
 
   @Test
-  void shouldPassAFailureThroughUnchangedWithoutLogging() {
-    // given — the chain decides by the exception's type whether to move on, so it must not change
-    final var unavailable = new IllegalStateException("not configured");
+  void shouldPassAnUnavailableCredentialThroughWithoutReportingIt() {
+    // given — not configured here, so the chain moves on to the next method: not a failure
+    final var unavailable = new CredentialUnavailableException("not configured");
     final var credential =
         new SignInCredential(
             "EnvironmentCredential",
             "EnvironmentCredential (service principal)",
             request -> Mono.error(unavailable),
-            new SignInMonitor(VAULT_URL));
+            new SignInMonitor("default", VAULT_URL, new SimpleMeterRegistry()));
 
     try (final var log = LogCapturer.capturing(SignInMonitor.class, Level.INFO)) {
       // when / then

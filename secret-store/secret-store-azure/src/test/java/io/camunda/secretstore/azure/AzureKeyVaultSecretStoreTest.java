@@ -9,10 +9,15 @@ package io.camunda.secretstore.azure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.azure.core.util.Configuration;
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
+import io.camunda.secretstore.SecretStoreMetricsDoc;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 class AzureKeyVaultSecretStoreTest {
@@ -22,7 +27,9 @@ class AzureKeyVaultSecretStoreTest {
   @Test
   void shouldFanOutOneNamePerCallByDefault() {
     // when
-    final var store = AzureKeyVaultSecretStore.fromConfig(AzureKeyVaultStoreConfig.of(VAULT_URL));
+    final var store =
+        AzureKeyVaultSecretStore.fromConfig(
+            "default", AzureKeyVaultStoreConfig.of(VAULT_URL), new SimpleMeterRegistry());
 
     // then
     assertThat(store.namesPerCall()).isEqualTo(1);
@@ -43,7 +50,8 @@ class AzureKeyVaultSecretStoreTest {
             AzureKeyVaultStoreConfig.DEFAULT_ATTEMPT_TIMEOUT);
 
     // when
-    final var store = AzureKeyVaultSecretStore.fromConfig(config);
+    final var store =
+        AzureKeyVaultSecretStore.fromConfig("default", config, new SimpleMeterRegistry());
 
     // then
     assertThat(store.namesPerCall()).isEqualTo(Integer.MAX_VALUE);
@@ -52,7 +60,9 @@ class AzureKeyVaultSecretStoreTest {
   @Test
   void shouldReportEveryNameAsNotFoundUntilResolutionIsImplemented() {
     // given
-    final var store = AzureKeyVaultSecretStore.fromConfig(AzureKeyVaultStoreConfig.of(VAULT_URL));
+    final var store =
+        AzureKeyVaultSecretStore.fromConfig(
+            "default", AzureKeyVaultStoreConfig.of(VAULT_URL), new SimpleMeterRegistry());
 
     // when
     final var results = store.resolve(Set.of("a", "b"));
@@ -82,7 +92,11 @@ class AzureKeyVaultSecretStoreTest {
                 "AZURE_CLIENT_SECRET", "sp-secret"));
     try (final var store =
         AzureKeyVaultSecretStore.fromConfig(
-            AzureKeyVaultStoreConfig.of(VAULT_URL), environment, http)) {
+            "default",
+            AzureKeyVaultStoreConfig.of(VAULT_URL),
+            new SimpleMeterRegistry(),
+            environment,
+            http)) {
 
       // when
       final var first = store.client().getSecret("a");
@@ -100,7 +114,9 @@ class AzureKeyVaultSecretStoreTest {
     // given
     final var store =
         AzureKeyVaultSecretStore.fromConfig(
+            "default",
             AzureKeyVaultStoreConfig.of(VAULT_URL),
+            new SimpleMeterRegistry(),
             StubAzureHttpClient.environment(Map.of()),
             StubAzureHttpClient.offline());
 
@@ -109,5 +125,67 @@ class AzureKeyVaultSecretStoreTest {
 
     // then
     assertThat(store.credentialExecutor().isShutdown()).isTrue();
+  }
+
+  @Test
+  void shouldCountAFailedRefreshWhileTheTokenIsStillValid() {
+    // given a token that is still valid but inside the window the vault client refreshes it ahead
+    // of its expiry
+    final var http = StubAzureHttpClient.signingIn(120);
+    final var meterRegistry = new SimpleMeterRegistry();
+    try (final var store =
+        AzureKeyVaultSecretStore.fromConfig(
+            "default",
+            AzureKeyVaultStoreConfig.of(VAULT_URL),
+            meterRegistry,
+            servicePrincipal(),
+            http)) {
+      store.client().getSecret("a");
+
+      // when every refresh is rejected
+      http.rejectSignIn(true);
+
+      // then — the client waits 30s after a token before it tries to refresh it, and from then on
+      // keeps reading the vault with the old token, yet the failed refresh is counted
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(60))
+          .pollInterval(Duration.ofSeconds(1))
+          .untilAsserted(
+              () -> {
+                assertThat(store.client().getSecret("a").getValue()).isEqualTo("secret-value");
+                assertThat(
+                        meterRegistry
+                            .get(SecretStoreMetricsDoc.SIGNIN_FAILURES.getName())
+                            .counter()
+                            .count())
+                    .isPositive();
+              });
+    }
+  }
+
+  @Test
+  void shouldRemoveItsMeterOnClose() {
+    // given
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var store =
+        AzureKeyVaultSecretStore.fromConfig(
+            "default", AzureKeyVaultStoreConfig.of(VAULT_URL), meterRegistry);
+    assertThat(meterRegistry.find(SecretStoreMetricsDoc.SIGNIN_FAILURES.getName()).counter())
+        .isNotNull();
+
+    // when
+    store.close();
+
+    // then — a store rebuilt under the same ID registers a fresh series instead of a stale one
+    assertThat(meterRegistry.find(SecretStoreMetricsDoc.SIGNIN_FAILURES.getName()).meters())
+        .isEmpty();
+  }
+
+  private static Configuration servicePrincipal() {
+    return StubAzureHttpClient.environment(
+        Map.of(
+            "AZURE_TENANT_ID", "tenant-id",
+            "AZURE_CLIENT_ID", "sp-client-id",
+            "AZURE_CLIENT_SECRET", "sp-secret"));
   }
 }
