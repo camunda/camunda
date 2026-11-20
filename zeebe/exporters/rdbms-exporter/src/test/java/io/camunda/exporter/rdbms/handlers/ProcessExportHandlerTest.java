@@ -8,11 +8,15 @@
 package io.camunda.exporter.rdbms.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -32,11 +36,16 @@ class ProcessExportHandlerTest {
       mock(ProcessDefinitionWriter.class);
 
   @SuppressWarnings("unchecked")
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache =
+      mock(ExporterEntityCache.class);
+
   private final ProcessExportHandler underTest =
       new ProcessExportHandler(
-          processDefinitionWriter,
-          mock(ExporterEntityCache.class),
-          mock(ExtensionPropertyConfiguration.class));
+          processDefinitionWriter, processCache, mock(ExtensionPropertyConfiguration.class), true);
+
+  private final ProcessExportHandler otherPartitionHandler =
+      new ProcessExportHandler(
+          processDefinitionWriter, processCache, mock(ExtensionPropertyConfiguration.class), false);
 
   @ParameterizedTest
   @EnumSource(
@@ -104,5 +113,40 @@ class ProcessExportHandlerTest {
 
     // then
     verify(processDefinitionWriter).markDeleted(processDefinitionKey);
+  }
+
+  @Test
+  void shouldCacheProcessWithoutWritingDefinitionOnOtherPartition() {
+    // given
+    final long processDefinitionKey = 789L;
+    final Process value =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(processDefinitionKey)
+            .build();
+    final Record<Process> record =
+        factory.generateRecord(
+            ValueType.PROCESS, r -> r.withIntent(ProcessIntent.CREATED).withValue(value));
+
+    // when
+    otherPartitionHandler.export(record);
+
+    // then
+    verify(processCache).put(eq(processDefinitionKey), any());
+    verifyNoInteractions(processDefinitionWriter);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ProcessIntent.class,
+      names = {"DRAINING", "FULLY_DELETED"},
+      mode = Mode.INCLUDE)
+  void shouldNotHandleDefinitionStateChangesOnOtherPartition(final ProcessIntent intent) {
+    // given
+    final Record<Process> record =
+        factory.generateRecord(ValueType.PROCESS, r -> r.withIntent(intent));
+
+    // when - then
+    assertThat(otherPartitionHandler.canExport(record)).isFalse();
   }
 }
