@@ -188,6 +188,7 @@ mwnw*                       @camunda/engineering-operations
 /zeebe/backup-stores/       @camunda/zeebe-distributed-platform
 /zeebe/broker/              @camunda/zeebe-distributed-platform
 /zeebe/broker-client/       @camunda/zeebe-distributed-platform
+/zeebe/cluster-gossip/      @camunda/zeebe-distributed-platform
 /zeebe/dynamic-config/      @camunda/zeebe-distributed-platform
 /zeebe/dynamic-node-id-provider/ @camunda/zeebe-distributed-platform
 /zeebe/journal/             @camunda/zeebe-distributed-platform
