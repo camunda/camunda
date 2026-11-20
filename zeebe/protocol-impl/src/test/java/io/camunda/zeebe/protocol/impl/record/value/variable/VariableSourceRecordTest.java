@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.VariableOperationType;
+import java.nio.charset.StandardCharsets;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -59,6 +60,21 @@ final class VariableSourceRecordTest {
 
     // then
     assertThat(copy.getElementId()).isEqualTo("ChargeCard");
+  }
+
+  @Test
+  void shouldReferenceTheElementIdBytesOnWrap() {
+    // given an element id backed by a buffer
+    final var elementId = new UnsafeBuffer("ChargeCard".getBytes(StandardCharsets.UTF_8));
+    final var original = new VariableSourceRecord().setElementId(elementId);
+    final var copy = new VariableSourceRecord();
+    copy.wrap(original);
+
+    // when the buffer is overwritten in place
+    elementId.putBytes(0, "RefundCard".getBytes(StandardCharsets.UTF_8));
+
+    // then the copy sees the new bytes, because wrap references the element id
+    assertThat(copy.getElementId()).isEqualTo("RefundCard");
   }
 
   @Test
