@@ -91,23 +91,46 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
       final Function<String, Throwable> requestCanceledExceptionProvider,
       final Supplier<RoundRobinDispatchStrategy> strategyFactory) {
-    jobTypeToNextPartitionId =
-        Caffeine.newBuilder()
-            .maximumSize(MAX_TRACKED_JOB_TYPES)
-            // A type idle this long has a stale cursor; dropping it frees the slot for active
-            // types, and the lost cursor only randomizes the type's next first request.
-            .expireAfterAccess(IDLE_CURSOR_EXPIRATION)
-            // Keeps cache maintenance off the JVM-wide common pool, which other components share
-            // and could starve; with at most 1024 tiny entries, evicting inline adds negligible
-            // latency.
-            .executor(Runnable::run)
-            .build();
+    this(
+        brokerClient,
+        maxMessageSize,
+        activationResultMapper,
+        requestCanceledExceptionProvider,
+        strategyFactory,
+        newJobTypeCache());
+  }
+
+  /**
+   * The cache is injectable so tests can force pending maintenance with {@link Cache#cleanUp()}
+   * instead of relying on how the production cache schedules its evictions.
+   */
+  RoundRobinActivateJobsHandler(
+      final BrokerClient brokerClient,
+      final long maxMessageSize,
+      final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
+      final Function<String, Throwable> requestCanceledExceptionProvider,
+      final Supplier<RoundRobinDispatchStrategy> strategyFactory,
+      final Cache<String, RoundRobinDispatchStrategy> jobTypeToNextPartitionId) {
+    this.jobTypeToNextPartitionId = jobTypeToNextPartitionId;
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
     this.maxMessageSize = maxMessageSize;
     this.activationResultMapper = activationResultMapper;
     this.requestCanceledExceptionProvider = requestCanceledExceptionProvider;
     this.strategyFactory = strategyFactory;
+  }
+
+  static Cache<String, RoundRobinDispatchStrategy> newJobTypeCache() {
+    return Caffeine.newBuilder()
+        .maximumSize(MAX_TRACKED_JOB_TYPES)
+        // A type idle this long has a stale cursor; dropping it frees the slot for active
+        // types, and the lost cursor only randomizes the type's next first request.
+        .expireAfterAccess(IDLE_CURSOR_EXPIRATION)
+        // Keeps cache maintenance off the JVM-wide common pool, which other components share
+        // and could starve; with at most 1024 tiny entries, evicting inline adds negligible
+        // latency.
+        .executor(Runnable::run)
+        .build();
   }
 
   @Override

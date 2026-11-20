@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler.MA
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
@@ -30,24 +31,26 @@ final class RoundRobinActivateJobsHandlerTest {
   final ControlledActorSchedulerExtension actorScheduler = new ControlledActorSchedulerExtension();
 
   private final StubbedBrokerClient brokerClient = new StubbedBrokerClient();
-  private final List<Integer> polledPartitions = new ArrayList<>();
-  // The deterministic factory makes every untracked type start at the first partition, so the
-  // assertion below can tell an evicted type (restarts there) from a kept one (advances); the
-  // production factory starts untracked types at a random partition.
+  // The production cache configuration, so the test verifies the real bound; cleanUp() below
+  // applies pending evictions regardless of which executor the cache runs maintenance on.
+  private final Cache<String, RoundRobinDispatchStrategy> jobTypeCache =
+      RoundRobinActivateJobsHandler.newJobTypeCache();
   private final RoundRobinActivateJobsHandler<Object> handler =
       new RoundRobinActivateJobsHandler<>(
           brokerClient,
           Long.MAX_VALUE,
           r -> new EmptyResult(),
           IllegalStateException::new,
-          RoundRobinDispatchStrategy::new);
+          // The deterministic factory makes every untracked type start at the first partition, so
+          // the assertion below can tell an evicted type (restarts there) from a kept one
+          // (advances); the production factory starts untracked types at a random partition.
+          RoundRobinDispatchStrategy::new,
+          jobTypeCache);
 
-  // Deterministic only because the production cache evicts inline (executor(Runnable::run)), so
-  // the size bound holds as soon as each activation returns. If this test becomes flaky, check
-  // whether that direct executor was removed.
   @Test
   void shouldForgetRoundRobinPositionOfJobTypesBeyondLimit() {
     // given - every job type activated once, which advances its round-robin cursor
+    final List<Integer> polledPartitions = new ArrayList<>();
     brokerClient.registerHandler(
         BrokerActivateJobsRequest.class,
         (BrokerActivateJobsRequest request) -> {
@@ -59,13 +62,13 @@ final class RoundRobinActivateJobsHandlerTest {
 
     final int jobTypesCount = MAX_TRACKED_JOB_TYPES * 2;
     for (int i = 0; i < jobTypesCount; i++) {
-      assertThat(firstPolledPartition("type-" + i)).isEqualTo(START_PARTITION_ID);
+      assertThat(firstPolledPartition("type-" + i, polledPartitions)).isEqualTo(START_PARTITION_ID);
     }
 
     // when
     int restartedJobTypes = 0;
     for (int i = 0; i < jobTypesCount; i++) {
-      if (firstPolledPartition("type-" + i) == START_PARTITION_ID) {
+      if (firstPolledPartition("type-" + i, polledPartitions) == START_PARTITION_ID) {
         restartedJobTypes++;
       }
     }
@@ -74,7 +77,7 @@ final class RoundRobinActivateJobsHandlerTest {
     assertThat(restartedJobTypes).isGreaterThanOrEqualTo(jobTypesCount - MAX_TRACKED_JOB_TYPES);
   }
 
-  private int firstPolledPartition(final String jobType) {
+  private int firstPolledPartition(final String jobType, final List<Integer> polledPartitions) {
     polledPartitions.clear();
     final var brokerRequest = new BrokerActivateJobsRequest(jobType).setMaxJobsToActivate(1);
     brokerRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
@@ -89,6 +92,7 @@ final class RoundRobinActivateJobsHandlerTest {
         e -> {},
         (a, b) -> {});
     actorScheduler.workUntilDone();
+    jobTypeCache.cleanUp();
     return polledPartitions.getFirst();
   }
 
