@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +58,7 @@ final class ZeroedCommittedJournalRangeIT {
   }
 
   @Test
-  void shouldNotSilentlyStallReplayOnZeroedCommittedRange() throws IOException {
+  void shouldReportPartitionAsNotHealthyWhenReplayReachesZeroedCommittedRange() throws IOException {
     // given - a follower whose replay is paused, so that it has not yet read what is zeroed below
     final var leader = cluster.leaderForPartition(PARTITION_ID);
     final var follower =
@@ -72,34 +73,39 @@ final class ZeroedCommittedJournalRangeIT {
     final var segment = onlySegmentOf(follower);
     final long zeroedFrom = endOfData(segment);
     publishMessages(10);
-    final long zeroedUntil =
-        Awaitility.await("follower appended the new entries")
-            .atMost(Duration.ofSeconds(30))
-            .until(() -> endOfData(segment), end -> end > zeroedFrom);
+    final long zeroedUntil = awaitFollowerStoppedAppending(segment, zeroedFrom);
 
     // when - the range reads back as zeros, and replay reaches it
     zero(segment, zeroedFrom, zeroedUntil);
     followerPartitions.resumeProcessing();
     publishMessages(10);
 
-    // then - the follower either replays up to the leader or reports that it cannot
-    Awaitility.await("follower catches up with the leader or reports itself as not healthy")
+    // then - catching up is not an outcome here, as it would mean that nothing was zeroed
+    Awaitility.await("follower reports its partition as not healthy")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
+            () ->
+                assertThat(partitionHealthOf(follower))
+                    .isNotEqualTo(PartitionBrokerHealth.HEALTHY));
+  }
+
+  /**
+   * Waits until the follower's segment no longer grows, and returns where its data ends. Zeroing
+   * while the follower appends would cut an entry in half, which fails its checksum instead of
+   * making it look like the end of the log. The leader has processed every message when its publish
+   * returns, so nothing more is replicated once the entries written for them arrived.
+   */
+  private static long awaitFollowerStoppedAppending(final Path segment, final long from) {
+    final var previousEnd = new AtomicLong(from);
+    return Awaitility.await("follower appended the new entries, and appends no more")
+        .pollInterval(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(30))
+        .until(
             () -> {
-              final var followerHealth = partitionHealthOf(follower);
-              if (followerHealth != PartitionBrokerHealth.HEALTHY) {
-                return;
-              }
-              final long leaderPosition = processedPosition(leaderPartitions);
-              final long followerPosition = processedPosition(followerPartitions);
-              assertThat(followerPosition)
-                  .describedAs(
-                      "follower reports its partition as %s, so it must replay until the position"
-                          + " %d that the leader processed",
-                      followerHealth, leaderPosition)
-                  .isGreaterThanOrEqualTo(leaderPosition);
-            });
+              final long end = endOfData(segment);
+              return previousEnd.getAndSet(end) == end ? end : from;
+            },
+            end -> end > from);
   }
 
   private void publishMessages(final int count) {
