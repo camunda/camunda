@@ -92,6 +92,36 @@ public class ProcessInstanceIT {
   }
 
   @TestTemplate
+  public void shouldResolveIncidentWhenProcessInstanceIsMigratedAndResolvedBeforeFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given - a running process instance with one open incident
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    final var processInstance =
+        ProcessInstanceFixtures.createRandomized(
+            b -> b.state(ProcessInstanceState.ACTIVE).numIncidents(1));
+    createAndSaveProcessInstance(rdbmsWriters, processInstance);
+
+    // when - the instance is migrated and its incident resolved before the next flush
+    final var writer = rdbmsWriters.getProcessInstanceWriter();
+    writer.migrate(
+        processInstance.processInstanceKey(),
+        "target-process",
+        nextKey(),
+        processInstance.version() + 1,
+        processInstance.treePath());
+    writer.resolveIncident(processInstance.processInstanceKey());
+    rdbmsWriters.flush();
+
+    // then - the resolution is applied to the stored count, not to a migration-built row
+    final var actual =
+        processInstanceReader.findOne(processInstance.processInstanceKey()).orElseThrow();
+    assertThat(actual.processDefinitionId()).isEqualTo("target-process");
+    assertThat(actual.hasIncident()).isFalse();
+  }
+
+  @TestTemplate
   public void shouldSaveLogAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);

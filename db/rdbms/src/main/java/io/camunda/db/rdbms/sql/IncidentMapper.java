@@ -20,6 +20,8 @@ public interface IncidentMapper extends ProcessInstanceDependantMapper {
 
   void insert(IncidentDbModel incident);
 
+  void migrate(MigrateIncidentDto dto);
+
   void updateState(IncidentStateDto dto);
 
   IncidentEntity findOne(Long incidentKey);
@@ -40,4 +42,11 @@ public interface IncidentMapper extends ProcessInstanceDependantMapper {
       IncidentProcessInstanceStatisticsByDefinitionDbQuery query);
 
   record IncidentStateDto(Long incidentKey, IncidentEntity.IncidentState state) {}
+
+  record MigrateIncidentDto(
+      long incidentKey,
+      String processDefinitionId,
+      Long processDefinitionKey,
+      String flowNodeId,
+      String treePath) {}
 }

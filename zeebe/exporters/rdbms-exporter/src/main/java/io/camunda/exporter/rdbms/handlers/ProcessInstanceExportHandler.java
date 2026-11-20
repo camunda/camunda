@@ -65,7 +65,13 @@ public class ProcessInstanceExportHandler
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)) {
       finishAndScheduleCleanup(record, ProcessInstanceState.CANCELED);
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_MIGRATED)) {
-      processInstanceWriter.update(map(record));
+      final var value = record.getValue();
+      processInstanceWriter.migrate(
+          value.getProcessInstanceKey(),
+          value.getBpmnProcessId(),
+          value.getProcessDefinitionKey(),
+          value.getVersion(),
+          createTreePath(record).toTruncatedString());
     }
   }
 
