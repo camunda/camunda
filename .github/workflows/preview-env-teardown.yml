@@ -78,6 +78,9 @@ jobs:
 
   clean:
     if: always() && needs.teardown-preview.result != 'skipped'
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login in the called workflow
     uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
     needs: [teardown-preview]
     secrets: inherit
