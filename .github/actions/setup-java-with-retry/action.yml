@@ -27,9 +27,7 @@ runs:
   # The last attempt deliberately omits `continue-on-error` so an exhausted
   # retry fails the job.
   #
-  # The waits grow (30s, then 60s) so the retries span about two minutes: with
-  # 10s waits all three attempts fit into ~40s and a short DNS outage of
-  # api.adoptium.net outlasted them (INC-9252).
+  # Waits grow (30s, 60s) so retries outlast short DNS blips (INC-9252).
   steps:
     - name: Setup Java (attempt 1 of 3)
       id: attempt-1
