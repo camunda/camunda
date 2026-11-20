@@ -91,7 +91,7 @@ Each applied change and each failure will be logged (one line each). The log mes
 - Operators will have to configure a second store to make use of this functionality (except where the Helm chart sets it up for them).
 - When refreshes are successful, nodes (and the clients within one node) can still use different values of the same reference for up to one refresh interval. Failed refreshes can prolong this state indefinitely, until the failure clears. Operators should wait until no refreshes are failing and every node has applied the change before revoking old credentials.
 - A client holds two sets of connections while it switches, so a database or search cluster close to its connection limit can refuse the new one. The check then fails and the old client stays in use.
-- A credential in an environment variable, or in a property that is only resolved on startup, still needs a restart to change.
+- Credentials supplied as literal values (or as a reference in a property that is only resolved on startup) still need a restart to change.
 - A reference in a legacy property (one that a configuration getter falls back to, such as `zeebe.broker.data.backup.s3.accessKey`) is neither checked nor resolved, since only the bound configuration is.
 
 ## Source
