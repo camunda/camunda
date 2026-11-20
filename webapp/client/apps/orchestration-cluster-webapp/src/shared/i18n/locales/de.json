@@ -1248,7 +1248,15 @@
 					"summaryDescription": "Geplante Änderungen für „{{processName}}“. Klicken Sie auf „Anwenden“, um fortzufahren.",
 					"summaryHeading": "Elementänderungen",
 					"affectedInstances": "Betroffene Instanzen",
-					"batchMove": "Batch-Verschiebung"
+					"batchMove": "Batch-Verschiebung",
+					"targetScheduledDs_one": "{{count}} Instanz von „{{source}}“ nach „{{target}}“ verschieben. Prüfen Sie die Änderung, um sie zu bestätigen.",
+					"targetScheduledDs_other": "{{count}} Instanzen von „{{source}}“ nach „{{target}}“ verschieben. Prüfen Sie die Änderung, um sie zu bestätigen.",
+					"targetPendingDs": "Instanzen von „{{source}}“ nach „{{target}}“ verschieben. Prüfen Sie die Änderung, um sie zu bestätigen.",
+					"reviewDs": "Änderung prüfen",
+					"helperReviewDs": "2. Klicken Sie auf „Änderung prüfen“.",
+					"exitDescriptionDs": "Beim Beenden wird Ihre geplante Verschiebung verworfen.",
+					"exitDescriptionEmptyDs": "Batch-Änderungsmodus beenden.",
+					"undoAriaDs": "Verschiebung nach „{{target}}“ rückgängig machen"
 				},
 				"toolbar": {
 					"delete": "Löschen",
