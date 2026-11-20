@@ -39,6 +39,8 @@ faces-config.NavData
 .java-version
 .gradle
 .worktree
+# CI npm download cache, see .github/actions/setup-npm-cache
+/.npm-cache/
 work/
 tngp-data
 *.sst
