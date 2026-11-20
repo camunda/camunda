@@ -10,16 +10,12 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.camunda.zeebe.broker.hub.BrokerClientPolicyInPort;
 import io.camunda.zeebe.broker.hub.HubClient;
 import io.camunda.zeebe.broker.hub.HubUpdateReceiver;
-import io.camunda.zeebe.broker.system.partitions.PolicyStateReader;
-import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Starts one {@link HubUpdateReceiver} for every physical tenant that gets a {@link HubClient} from
@@ -91,7 +87,6 @@ public final class HubUpdateReceiverStep extends AbstractBrokerStartupStep {
             physicalTenantId,
             client,
             new BrokerClientPolicyInPort(physicalTenantId, context.getBrokerClient()),
-            () -> findPolicyStateReader(context, physicalTenantId),
             WAIT_INTERVAL);
     final var started = context.getActorSchedulingService().submitActor(receiver);
     // stored at once, so a failed start is closed by the clean-up as well
@@ -114,21 +109,5 @@ public final class HubUpdateReceiverStep extends AbstractBrokerStartupStep {
     }
     context.removeHubUpdateReceiver(physicalTenantId);
     return receiver.closeAsync();
-  }
-
-  /**
-   * Finds the reader of partition 1 at call time: partition 1 does not exist yet when the receiver
-   * is created, and it can be recreated later.
-   */
-  private static Optional<PolicyStateReader> findPolicyStateReader(
-      final BrokerStartupContext context, final String physicalTenantId) {
-    return Optional.ofNullable(context.getPartitionManagers().get(physicalTenantId))
-        .flatMap(
-            partitionManager ->
-                partitionManager.getZeebePartitions().stream()
-                    .filter(
-                        partition -> partition.getPartitionId() == Protocol.DEPLOYMENT_PARTITION)
-                    .findFirst())
-        .map(ZeebePartition::getPolicyStateReader);
   }
 }

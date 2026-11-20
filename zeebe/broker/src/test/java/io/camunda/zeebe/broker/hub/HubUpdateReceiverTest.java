@@ -14,12 +14,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.broker.system.partitions.PolicyStateReader;
-import io.camunda.zeebe.broker.system.partitions.PolicyStateReader.PolicyStatus;
-import io.camunda.zeebe.broker.system.partitions.PolicyStateReader.UpdateStatus;
-import io.camunda.zeebe.engine.state.immutable.PolicyState.CommittedPolicy;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.protocol.record.value.PolicyUpdateStatus;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -41,21 +37,16 @@ final class HubUpdateReceiverTest {
 
   private final FakeHubClient hubClient = new FakeHubClient();
   private final PolicyInPort policyInPort = mock(PolicyInPort.class);
-  private final PolicyStateReader stateReader = mock(PolicyStateReader.class);
-  private final AtomicReference<Optional<PolicyStateReader>> stateReaderLookup =
-      new AtomicReference<>(Optional.of(stateReader));
   private final AtomicReference<PolicyStatus> policyState = new AtomicReference<>(committed(0));
 
   private HubUpdateReceiver receiver;
 
   @BeforeEach
   void setUp() {
-    when(stateReader.getPolicyState())
-        .thenAnswer(invocation -> CompletableActorFuture.completed(Optional.of(policyState.get())));
+    when(policyInPort.queryStatus())
+        .thenAnswer(invocation -> CompletableFuture.completedFuture(policyState.get()));
     when(policyInPort.apply(any())).thenReturn(CompletableFuture.completedFuture(null));
-    receiver =
-        new HubUpdateReceiver(
-            "pt-1", hubClient, policyInPort, stateReaderLookup::get, WAIT_INTERVAL);
+    receiver = new HubUpdateReceiver("pt-1", hubClient, policyInPort, WAIT_INTERVAL);
     scheduler.submitActor(receiver);
     scheduler.workUntilDone();
   }
@@ -82,9 +73,10 @@ final class HubUpdateReceiverTest {
   }
 
   @Test
-  void shouldBecomeLeaderWithoutPartitionState() {
+  void shouldBecomeLeaderWhenPartitionOneDoesNotAnswer() {
     // given
-    stateReaderLookup.set(Optional.empty());
+    when(policyInPort.queryStatus())
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("no leader")));
 
     // when
     final var becameLeader = receiver.onBecomingLeader(1, 1, null, null);
@@ -98,7 +90,7 @@ final class HubUpdateReceiverTest {
   @Test
   void shouldNotPollWhileAnUpdateIsOpen() {
     // given
-    policyState.set(open(UpdateStatus.APPLYING));
+    policyState.set(open(PolicyUpdateStatus.APPLYING));
     becomeLeader(1);
     assertThat(hubClient.polls).isEmpty();
 
@@ -114,7 +106,8 @@ final class HubUpdateReceiverTest {
   void shouldPollAgainOnlyOnceTheForwardedUpdateIsCommitted() {
     // given
     final var update = update(1);
-    hubClient.nextResult(CompletableFuture.completedFuture(List.of(update)));
+    hubClient.nextResult(CompletableFuture.completedFuture(Optional.of(update)));
+    whenAppliedTheUpdateIsOpen(update);
     becomeLeader(1);
     verify(policyInPort).apply(update);
     assertThat(hubClient.polls).containsExactly(0L);
@@ -137,7 +130,7 @@ final class HubUpdateReceiverTest {
   void shouldNotForwardAnUpdateThatIsAlreadyCommitted() {
     // given
     policyState.set(committed(3));
-    hubClient.nextResult(CompletableFuture.completedFuture(List.of(update(3))));
+    hubClient.nextResult(CompletableFuture.completedFuture(Optional.of(update(3))));
 
     // when
     becomeLeader(1);
@@ -150,14 +143,14 @@ final class HubUpdateReceiverTest {
   @Test
   void shouldStopWhenBecomingFollower() {
     // given
-    final var pendingPoll = new CompletableFuture<List<PolicyUpdateRecord>>();
+    final var pendingPoll = new CompletableFuture<Optional<PolicyUpdateRecord>>();
     hubClient.nextResult(pendingPoll);
     becomeLeader(1);
 
     // when
     receiver.onBecomingFollower(1, 2);
     scheduler.workUntilDone();
-    pendingPoll.complete(List.of(update(1)));
+    pendingPoll.complete(Optional.of(update(1)));
     scheduler.workUntilDone();
 
     // then
@@ -182,7 +175,7 @@ final class HubUpdateReceiverTest {
   void shouldPollTheSameUpdateAgainAfterItWasRejected() {
     // given
     final var update = update(1);
-    hubClient.nextResult(CompletableFuture.completedFuture(List.of(update)));
+    hubClient.nextResult(CompletableFuture.completedFuture(Optional.of(update)));
     when(policyInPort.apply(update))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("rejected")));
     becomeLeader(1);
@@ -192,6 +185,42 @@ final class HubUpdateReceiverTest {
 
     // then the stored sequence did not move, so the receiver polls from it again
     assertThat(hubClient.polls).containsExactly(0L, 0L);
+  }
+
+  @Test
+  void shouldPollAgainWhenTheUpdateWasNotCommitted() {
+    // given an update that the engine buffers, but fails instead of committing it
+    final var update = update(1);
+    hubClient.nextResult(CompletableFuture.completedFuture(Optional.of(update)));
+    becomeLeader(1);
+    verify(policyInPort).apply(update);
+
+    // when
+    passWaitInterval();
+
+    // then the stored sequence did not move, so the receiver polls from it again
+    assertThat(hubClient.polls).containsExactly(0L, 0L);
+  }
+
+  @Test
+  void shouldPollAgainWhenTheLongPollTimesOut() {
+    // given
+    hubClient.nextResult(CompletableFuture.completedFuture(Optional.empty()));
+
+    // when
+    becomeLeader(1);
+
+    // then
+    assertThat(hubClient.polls).containsExactly(0L, 0L);
+  }
+
+  private void whenAppliedTheUpdateIsOpen(final PolicyUpdateRecord update) {
+    when(policyInPort.apply(update))
+        .thenAnswer(
+            invocation -> {
+              policyState.set(open(PolicyUpdateStatus.APPLYING));
+              return CompletableFuture.completedFuture(null);
+            });
   }
 
   private void becomeLeader(final int partitionId) {
@@ -205,15 +234,11 @@ final class HubUpdateReceiverTest {
   }
 
   private static PolicyStatus committed(final long seqNo) {
-    final var committed =
-        seqNo == 0
-            ? Optional.<CommittedPolicy>empty()
-            : Optional.of(new CommittedPolicy("policy-1", seqNo, seqNo));
-    return new PolicyStatus(committed, UpdateStatus.NONE, null);
+    return new PolicyStatus(seqNo, PolicyUpdateStatus.NONE, "");
   }
 
-  private static PolicyStatus open(final UpdateStatus status) {
-    return new PolicyStatus(Optional.empty(), status, "update-1");
+  private static PolicyStatus open(final PolicyUpdateStatus status) {
+    return new PolicyStatus(0, status, "update-1");
   }
 
   private static PolicyUpdateRecord update(final long seqNo) {
@@ -234,14 +259,14 @@ final class HubUpdateReceiverTest {
   private static final class FakeHubClient implements HubClient {
 
     private final List<Long> polls = new ArrayList<>();
-    private final List<CompletableFuture<List<PolicyUpdateRecord>>> results = new ArrayList<>();
+    private final List<CompletableFuture<Optional<PolicyUpdateRecord>>> results = new ArrayList<>();
 
-    void nextResult(final CompletableFuture<List<PolicyUpdateRecord>> result) {
+    void nextResult(final CompletableFuture<Optional<PolicyUpdateRecord>> result) {
       results.add(result);
     }
 
     @Override
-    public CompletableFuture<List<PolicyUpdateRecord>> poll(final long afterSeqNo) {
+    public CompletableFuture<Optional<PolicyUpdateRecord>> poll(final long afterSeqNo) {
       polls.add(afterSeqNo);
       return results.isEmpty() ? new CompletableFuture<>() : results.removeFirst();
     }

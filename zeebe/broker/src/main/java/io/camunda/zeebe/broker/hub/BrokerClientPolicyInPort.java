@@ -8,13 +8,15 @@
 package io.camunda.zeebe.broker.hub;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Sends a policy update to partition 1 of a physical tenant with the {@link BrokerClient} (ADR
- * 0015, D3). The broker does not split updates yet, so an update is sent as its single chunk.
+ * Sends policy update commands to partition 1 of a physical tenant with the {@link BrokerClient}
+ * (ADR 0015, D3). The broker does not split updates yet, so an update is sent as its single chunk.
  */
 @NullMarked
 public final class BrokerClientPolicyInPort implements PolicyInPort {
@@ -29,14 +31,23 @@ public final class BrokerClientPolicyInPort implements PolicyInPort {
 
   @Override
   public CompletableFuture<Void> apply(final PolicyUpdateRecord update) {
-    final var request = new BrokerPolicyUpdateRequest(update);
+    return send(new BrokerPolicyUpdateRequest(update)).thenAccept(appended -> {});
+  }
+
+  @Override
+  public CompletableFuture<PolicyStatus> queryStatus() {
+    return send(new BrokerPolicyStatusRequest()).thenApply(PolicyStatus::of);
+  }
+
+  /** Sends the request; the future fails on a rejection or an error. */
+  private <T> CompletableFuture<T> send(final BrokerExecuteCommand<T> request) {
     request.setPartitionGroup(physicalTenantId);
     return brokerClient
         .sendRequestWithRetry(request)
         .thenCompose(
-            response ->
+            (BrokerResponse<T> response) ->
                 response.isResponse()
-                    ? CompletableFuture.<Void>completedFuture(null)
+                    ? CompletableFuture.completedFuture(response.getResponseOrThrow())
                     : CompletableFuture.failedFuture(response.toException()));
   }
 }

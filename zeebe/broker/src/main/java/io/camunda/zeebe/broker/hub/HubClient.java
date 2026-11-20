@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.hub;
 
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
-import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.NullMarked;
 
@@ -23,12 +23,12 @@ import org.jspecify.annotations.NullMarked;
 public interface HubClient extends AutoCloseable {
 
   /**
-   * Long-polls Hub for the policy updates after the given sequence.
+   * Long-polls Hub for the next policy update after the given sequence.
    *
    * @param afterSeqNo the Hub sequence of the last committed policy update, or 0 if there is none
-   * @return the updates in Hub sequence order; empty if Hub has none before the poll times out
+   * @return the next update, or empty if Hub has none before the poll times out
    */
-  CompletableFuture<List<PolicyUpdateRecord>> poll(long afterSeqNo);
+  CompletableFuture<Optional<PolicyUpdateRecord>> poll(long afterSeqNo);
 
   @Override
   void close();

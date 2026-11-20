@@ -11,7 +11,7 @@ import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateReco
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.NullMarked;
 
-/** Hands a policy update from Hub to the engine of a physical tenant. */
+/** Hands a policy update from Hub to the engine of a physical tenant, and asks for its status. */
 @NullMarked
 public interface PolicyInPort {
 
@@ -22,4 +22,10 @@ public interface PolicyInPort {
    *     rejected a chunk or could not be reached
    */
   CompletableFuture<Void> apply(PolicyUpdateRecord update);
+
+  /**
+   * Asks partition 1 for the committed policy and the open update. The engine answers in log order,
+   * so the status reflects every command written before.
+   */
+  CompletableFuture<PolicyStatus> queryStatus();
 }
