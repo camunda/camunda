@@ -44,7 +44,7 @@ const MoveHelperDialog: React.FC<Props> = observer(({open, onClose, onSubmit}) =
 				}
 			}}
 		>
-			<DialogContent size="md" dismissOnOutsideClick={false}>
+			<DialogContent size="lg" dismissOnOutsideClick={false}>
 				<DialogHeader>
 					<DialogTitle>{t('operate.processes.batchModification.helperTitle')}</DialogTitle>
 					<DialogDescription>{t('operate.processes.batchModification.helperDescription')}</DialogDescription>

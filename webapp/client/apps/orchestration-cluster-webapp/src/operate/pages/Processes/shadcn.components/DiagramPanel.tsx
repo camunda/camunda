@@ -232,9 +232,10 @@ const DiagramPanel: React.FC<Props> = ({
 				)}
 			</DiagramShell>
 			{isModificationMode && (
-				<div className="relative">
+				<div className="relative px-1 py-1">
 					<Alert
 						variant="info"
+						className="py-1.5"
 						role="status"
 						description={
 							sourceElementName === '' || targetElementName === ''
@@ -248,9 +249,9 @@ const DiagramPanel: React.FC<Props> = ({
 					/>
 					{selectedTargetElementId && (
 						<Button
-							variant="ghost"
+							variant="secondary"
 							size="sm"
-							className="absolute right-2 top-1/2 -translate-y-1/2"
+							className="absolute right-3 top-1/2 -translate-y-1/2"
 							onClick={() => onTargetElementSelection?.(undefined)}
 						>
 							{t('operate.processes.batchModification.undo')}
