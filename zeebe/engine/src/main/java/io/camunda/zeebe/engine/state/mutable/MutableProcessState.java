@@ -41,6 +41,16 @@ public interface MutableProcessState extends ProcessState {
   void markDraining(final ProcessRecord processRecord);
 
   /**
+   * Marks a process definition as suspended. The lifecycle state is not touched, and the caller
+   * must not suspend a {@link PersistedProcessState#DRAINING} version: the suspension processor
+   * reports that as the {@code DRAINING} outcome and does not write the event.
+   */
+  void markSuspended(ProcessRecord processRecord);
+
+  /** Removes the suspended marker of a process definition, if it has one. */
+  void removeSuspended(ProcessRecord processRecord);
+
+  /**
    * Sets the deployment key of a process that was not previously associated with a deployment. This
    * method updates both the ColumnFamily and the in memory cache. Throws an exception if the
    * process is already associated with another deployment.

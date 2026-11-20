@@ -116,6 +116,9 @@ public final class DbProcessState implements MutableProcessState {
 
   private final VersionManager versionManager;
 
+  /** [process definition key] => [DbNil], present while the definition is suspended */
+  private final ColumnFamily<DbLong, DbNil> suspendedProcessesColumnFamily;
+
   private final DbInt pendingDeletionPartitionId;
   private final DbCompositeKey<DbLong, DbInt> pendingDeletionKey;
 
@@ -147,6 +150,13 @@ public final class DbProcessState implements MutableProcessState {
             transactionContext,
             tenantAwareProcessDefinitionKey,
             persistedProcess);
+
+    suspendedProcessesColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.SUSPENDED_PROCESS_DEFINITIONS,
+            transactionContext,
+            processDefinitionKey,
+            DbNil.INSTANCE);
 
     processId = new DbString();
     processVersion = new DbLong();
@@ -320,7 +330,21 @@ public final class DbProcessState implements MutableProcessState {
     process.setState(PersistedProcessState.DRAINING);
     process.setDeleteHistory(processRecord.isDeleteHistory());
     processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
+    // a draining version is being deleted and can no longer be resumed, so its marker is moot
+    removeSuspended(processRecord);
     updateInMemoryState(process);
+  }
+
+  @Override
+  public void markSuspended(final ProcessRecord processRecord) {
+    processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
+    suspendedProcessesColumnFamily.upsert(this.processDefinitionKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void removeSuspended(final ProcessRecord processRecord) {
+    processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
+    suspendedProcessesColumnFamily.deleteIfExists(this.processDefinitionKey);
   }
 
   @Override
@@ -382,6 +406,7 @@ public final class DbProcessState implements MutableProcessState {
 
     processColumnFamily.deleteExisting(tenantAwareProcessDefinitionKey);
     processByIdAndVersionColumnFamily.deleteExisting(tenantAwareProcessIdAndVersionKey);
+    removeSuspended(processRecord);
 
     // use deleteIfExists as no entry exists for older records that do not have a deployment key yet
     processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.deleteIfExists(
@@ -615,9 +640,10 @@ public final class DbProcessState implements MutableProcessState {
   /**
    * {@inheritDoc}
    *
-   * <p>When the highest version is active (see {@link DeployedProcess#isActive()}), it is returned
-   * immediately without loading known versions. The reverse scan only runs when that version is not
-   * active, and it skips {@code version >= latestVersion} because that version was already checked.
+   * <p>When the highest version is active (see {@link DeployedProcess#isActive()}) and not
+   * suspended, it is returned immediately without loading known versions. The reverse scan only
+   * runs when that version is not, and it skips {@code version >= latestVersion} because that
+   * version was already checked.
    */
   @Override
   public DeployedProcess getLatestActiveProcessVersionByProcessId(
@@ -626,7 +652,7 @@ public final class DbProcessState implements MutableProcessState {
     if (process == null) {
       return null;
     }
-    if (process.isActive()) {
+    if (canStartInstances(process)) {
       return process;
     }
 
@@ -638,7 +664,7 @@ public final class DbProcessState implements MutableProcessState {
         continue;
       }
       process = getProcessByProcessIdAndVersion(processIdBuffer, version, tenantId);
-      if (process != null && process.isActive()) {
+      if (process != null && canStartInstances(process)) {
         return process;
       }
     }
@@ -657,6 +683,12 @@ public final class DbProcessState implements MutableProcessState {
       return lookupPersistenceState(processId, version, tenantId);
     }
     return cachedProcess;
+  }
+
+  @Override
+  public boolean isSuspended(final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    return suspendedProcessesColumnFamily.exists(this.processDefinitionKey);
   }
 
   @Override
@@ -867,6 +899,10 @@ public final class DbProcessState implements MutableProcessState {
           return true;
         });
     return partitions;
+  }
+
+  private boolean canStartInstances(final DeployedProcess process) {
+    return process.isActive() && !isSuspended(process.getKey());
   }
 
   private DeployedProcess lookupProcessByIdAndPersistedVersion(

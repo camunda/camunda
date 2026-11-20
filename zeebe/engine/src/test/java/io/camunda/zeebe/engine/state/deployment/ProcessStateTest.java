@@ -1123,6 +1123,252 @@ public final class ProcessStateTest {
     assertThat(latestActive).isNull();
   }
 
+  @Test
+  public void shouldReportSuspendedOnlyForTheMarkedVersion() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+
+    // when
+    processState.markSuspended(v1);
+
+    // then - suspension does not touch the lifecycle state
+    assertThat(processState.isSuspended(v1.getKey())).isTrue();
+    assertThat(processState.isSuspended(v2.getKey())).isFalse();
+    assertThat(processState.getProcessByKeyAndTenant(v1.getKey(), TENANT_ID).getState())
+        .isEqualTo(PersistedProcessState.ACTIVE);
+    assertThat(processState.getProcessByKeyAndTenant(v1.getKey(), TENANT_ID).isActive()).isTrue();
+  }
+
+  @Test
+  public void shouldRemoveSuspendedMarkerOnlyOfTheGivenVersion() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.markSuspended(v1);
+    processState.markSuspended(v2);
+
+    // when
+    processState.removeSuspended(v1);
+
+    // then
+    assertThat(processState.isSuspended(v1.getKey())).isFalse();
+    assertThat(processState.isSuspended(v2.getKey())).isTrue();
+  }
+
+  @Test
+  public void shouldBeIdempotentWhenSuspendingAndResumingTwice() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+
+    // when
+    processState.markSuspended(processRecord);
+    processState.markSuspended(processRecord);
+    final var suspended = processState.isSuspended(processRecord.getKey());
+    processState.removeSuspended(processRecord);
+    processState.removeSuspended(processRecord);
+
+    // then
+    assertThat(suspended).isTrue();
+    assertThat(processState.isSuspended(processRecord.getKey())).isFalse();
+  }
+
+  @Test
+  public void shouldKeepPendingDeletionWhenSuspending() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.updateProcessState(processRecord, PersistedProcessState.PENDING_DELETION);
+
+    // when
+    processState.markSuspended(processRecord);
+
+    // then
+    assertThat(processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID).getState())
+        .isEqualTo(PersistedProcessState.PENDING_DELETION);
+  }
+
+  @Test
+  public void shouldRemoveSuspendedMarkerWhenMarkingDraining() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.markSuspended(processRecord);
+
+    // when
+    processState.markDraining(processRecord);
+
+    // then
+    assertThat(processState.isSuspended(processRecord.getKey())).isFalse();
+    assertThat(processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID).getState())
+        .isEqualTo(PersistedProcessState.DRAINING);
+  }
+
+  @Test
+  public void shouldRemoveSuspendedMarkerWhenDeletingProcess() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.markSuspended(processRecord);
+
+    // when
+    processState.deleteProcessAndRepointVersionTag(processRecord);
+
+    // then
+    assertThat(processState.isSuspended(processRecord.getKey())).isFalse();
+  }
+
+  @Test
+  public void shouldStayDrainingAndUnsuspendedWhenResumingAfterDraining() {
+    // given - suspended, then deleted: the drain clears the marker
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.markSuspended(processRecord);
+    processState.markDraining(processRecord);
+
+    // when - a resume that arrives afterwards finds nothing to remove
+    processState.removeSuspended(processRecord);
+
+    // then
+    assertThat(processState.isSuspended(processRecord.getKey())).isFalse();
+    assertThat(processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID).getState())
+        .isEqualTo(PersistedProcessState.DRAINING);
+  }
+
+  @Test
+  public void shouldKeepSuspendedMarkerWhenRestoringFromPendingDeletion() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.markSuspended(processRecord);
+    processState.updateProcessState(processRecord, PersistedProcessState.PENDING_DELETION);
+
+    // when
+    processState.restoreFromPendingDeletion(TENANT_ID, processRecord.getKey());
+
+    // then - restore only reverts the lifecycle state, the version is still suspended
+    assertThat(processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID).getState())
+        .isEqualTo(PersistedProcessState.ACTIVE);
+    assertThat(processState.isSuspended(processRecord.getKey())).isTrue();
+  }
+
+  @Test
+  public void shouldOnlyClearMarkerOfTheDrainingVersion() {
+    // given - two suspended versions, one of them is deleted
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.markSuspended(v1);
+    processState.markSuspended(v2);
+
+    // when
+    processState.markDraining(v2);
+
+    // then
+    assertThat(processState.isSuspended(v1.getKey())).isTrue();
+    assertThat(processState.isSuspended(v2.getKey())).isFalse();
+  }
+
+  @Test
+  public void shouldSkipSuspendedLatestWhenLookingUpLatestActiveProcess() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.markSuspended(v2);
+
+    // when
+    final var latest =
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latest.getKey()).isEqualTo(v2.getKey());
+    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
+  }
+
+  @Test
+  public void shouldSkipSuspendedAndDrainingVersionsWhenLookingUpLatestActiveProcess() {
+    // given - v3 is draining, v2 is suspended, v1 is active
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    final var v3 = creatingProcessRecord(processingState, "processId", 3);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.putProcess(v3.getKey(), v3);
+    processState.markSuspended(v2);
+    processState.markDraining(v3);
+
+    // when
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
+  }
+
+  @Test
+  public void shouldResolveOlderVersionAsLatestActiveWhenLatestIsSuspendedAfterCacheMiss() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.markSuspended(v2);
+
+    // when
+    processState.clearCache();
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
+  }
+
+  @Test
+  public void shouldReturnNullLatestActiveProcessWhenEveryVersionIsSuspended() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.markSuspended(v1);
+    processState.markSuspended(v2);
+
+    // when
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive).isNull();
+  }
+
+  @Test
+  public void shouldResolveResumedVersionAsLatestActiveProcessAgain() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.markSuspended(v2);
+
+    // when
+    processState.removeSuspended(v2);
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive.getKey()).isEqualTo(v2.getKey());
+  }
+
   @ParameterizedTest
   @EnumSource(
       value = PersistedProcessState.class,
