@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.restore.RestoreFailure.Reason;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,22 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class RestorePointResolverTest {
+
+  /** The backups do not cover the requested point: an earlier point can still be restored. */
+  private static void isRestorePointUnavailable(final Throwable failure) {
+    assertThat(failure)
+        .isInstanceOfSatisfying(
+            RestoreFailure.class,
+            f -> assertThat(f.reason()).isEqualTo(Reason.RESTORE_POINT_UNAVAILABLE));
+  }
+
+  /** The backups themselves are broken: no restore point helps until they are repaired. */
+  private static void isBackupsInconsistent(final Throwable failure) {
+    assertThat(failure)
+        .isInstanceOfSatisfying(
+            RestoreFailure.class,
+            f -> assertThat(f.reason()).isEqualTo(Reason.BACKUPS_INCONSISTENT));
+  }
 
   @Test
   void shouldResolveWithSinglePartitionSingleBackup() {
@@ -209,6 +226,7 @@ final class RestorePointResolverTest {
     assertThatThrownBy(
             () -> RestorePointResolver.resolve(List.of(meta), fromBeforeAll, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isRestorePointUnavailable)
         .hasMessageContaining("No usable range found")
         .hasMessageContaining("partition 1")
         .hasMessageContaining("from=2024-01-01");
@@ -232,6 +250,7 @@ final class RestorePointResolverTest {
     assertThatThrownBy(
             () -> RestorePointResolver.resolve(metadataByPartition, null, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isRestorePointUnavailable)
         .hasMessageContaining("Could not find common checkpoint")
         .hasMessageContaining("Restorable checkpoint count per partition");
   }
@@ -441,6 +460,7 @@ final class RestorePointResolverTest {
     assertThatThrownBy(
             () -> RestorePointResolver.resolve(List.of(meta), null, null, Map.of(1, 10L)))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isRestorePointUnavailable)
         .hasMessageContaining("No usable range found")
         .hasMessageContaining("partition 1")
         .hasMessageContaining("exportedPosition=10");
@@ -488,6 +508,7 @@ final class RestorePointResolverTest {
     assertThatThrownBy(
             () -> RestorePointResolver.resolve(List.of(meta), null, null, Map.of(1, 500L)))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isRestorePointUnavailable)
         .hasMessageContaining("No usable range found")
         .hasMessageContaining("partition 1")
         .hasMessageContaining("exportedPosition=500");
@@ -543,6 +564,7 @@ final class RestorePointResolverTest {
     // when/then – from=t2 filters out P2's range (t3 > t2)
     assertThatThrownBy(() -> RestorePointResolver.resolve(metadataByPartition, t2, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isRestorePointUnavailable)
         .hasMessageContaining("No usable range found")
         .hasMessageContaining("partition 2");
   }
@@ -604,6 +626,7 @@ final class RestorePointResolverTest {
     assertThatThrownBy(
             () -> RestorePointResolver.resolve(metadataByPartition, null, null, Map.of(1, 500L)))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isRestorePointUnavailable)
         .hasMessageContaining("No usable range found")
         .hasMessageContaining("partition 1");
   }
@@ -672,6 +695,7 @@ final class RestorePointResolverTest {
     assertThatThrownBy(
             () -> RestorePointResolver.resolve(metadataByPartition, null, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isRestorePointUnavailable)
         .hasMessageContaining("Could not find common checkpoint");
   }
 
@@ -692,6 +716,7 @@ final class RestorePointResolverTest {
     // when/then – gap detected between cp1 and cp2
     assertThatThrownBy(() -> RestorePointResolver.resolve(List.of(meta), null, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isBackupsInconsistent)
         .hasMessageContaining("Unexpected data gaps")
         .hasMessageContaining("first log position");
   }
@@ -754,6 +779,7 @@ final class RestorePointResolverTest {
     // when/then – gap detected between backup1 and backup2 (marker is skipped)
     assertThatThrownBy(() -> RestorePointResolver.resolve(List.of(meta), null, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isBackupsInconsistent)
         .hasMessageContaining("Unexpected data gaps");
   }
 
@@ -830,6 +856,7 @@ final class RestorePointResolverTest {
     assertThatThrownBy(
             () -> RestorePointResolver.resolve(metadataByPartition, null, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isBackupsInconsistent)
         .hasMessageContaining("Unexpected data gaps");
   }
 
@@ -1092,6 +1119,7 @@ final class RestorePointResolverTest {
     // when - then
     assertThatThrownBy(() -> RestorePointResolver.resolve(List.of(meta), null, t2, Map.of()))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isRestorePointUnavailable)
         .hasMessageContaining(
             "Cannot restore partition 1 up to checkpoint 2 at position 50: it must be in [101, 200]");
   }
@@ -1166,6 +1194,7 @@ final class RestorePointResolverTest {
     // when - then
     assertThatThrownBy(() -> RestorePointResolver.resolve(List.of(meta), from, t3, Map.of(1, 150L)))
         .isInstanceOf(IllegalStateException.class)
+        .satisfies(RestorePointResolverTest::isRestorePointUnavailable)
         .hasMessageContaining("the exporter position 150 is not covered by the first remaining");
   }
 

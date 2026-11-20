@@ -34,6 +34,10 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
+import io.camunda.zeebe.restore.RestoreFailure.BackupStoreFailure;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidState;
+import io.camunda.zeebe.restore.RestoreFailure.Reason;
 import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
@@ -58,6 +62,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -140,7 +145,7 @@ public class RestoreManager implements CloseableSilently {
     final var latestBackupId =
         Arrays.stream(backupIds)
             .max()
-            .orElseThrow(() -> new IllegalArgumentException("No backup ID specified"));
+            .orElseThrow(() -> new InvalidArgument("No backup ID specified"));
     final var partitionCount = backupPartitionCount(latestBackupId);
     final var restore = PartitionRestore.ofBackups(backupIds);
     return IntStream.rangeClosed(1, partitionCount)
@@ -159,7 +164,7 @@ public class RestoreManager implements CloseableSilently {
       @Nullable final Instant from, @Nullable final Instant to) {
     if (exporterPositionMapper == null) {
       if (from == null) {
-        throw new IllegalArgumentException(
+        throw new InvalidArgument(
             "Expected `from` to not be null, but got <null>. When the restore is not using a RDBMS as secondary storage, `from` parameter is required");
       }
       return resolveTimeRangeBackups(from, to);
@@ -175,7 +180,7 @@ public class RestoreManager implements CloseableSilently {
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
 
     // Load backup metadata for each partition in parallel
-    final var metadataByPartition = loadMetadataForAllPartitions(exportedPositions.size()).join();
+    final var metadataByPartition = loadMetadataForAllPartitions(exportedPositions.size());
 
     final var restorableBackups =
         RestorePointResolver.resolve(metadataByPartition, from, to, exportedPositions);
@@ -196,7 +201,7 @@ public class RestoreManager implements CloseableSilently {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
 
     // Load backup metadata for each partition in parallel
-    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
+    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount);
 
     final var restorableBackups = RestorePointResolver.resolve(metadataByPartition, from, to, null);
 
@@ -224,7 +229,8 @@ public class RestoreManager implements CloseableSilently {
             lastBackup -> {
               final var backupPartitionCount = backupPartitionCount(lastBackup);
               if (backupPartitionCount != exportedPartitionCount) {
-                throw new IllegalStateException(
+                throw new InvalidState(
+                    Reason.BACKUPS_INCONSISTENT,
                     ("Cannot restore: backup %d was taken with %d partitions, but the RDBMS holds "
                             + "exported positions for %d")
                         .formatted(lastBackup, backupPartitionCount, exportedPartitionCount));
@@ -238,22 +244,22 @@ public class RestoreManager implements CloseableSilently {
    */
   private int backupPartitionCount(final long backupId) {
     final var backupPartitionCount =
-        backupStore
-            .list(
-                new BackupIdentifierWildcardImpl(
-                    Optional.empty(), Optional.empty(), CheckpointPattern.of(backupId)))
-            .thenApply(
-                statuses ->
-                    statuses.stream()
-                        .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
-                        .findAny()
-                        .flatMap(BackupStatus::descriptor)
-                        .orElseThrow(() -> new BackupNotFoundException(backupId))
-                        .numberOfPartitions())
-            .join();
+        joinStoreCall(
+            backupStore
+                .list(
+                    new BackupIdentifierWildcardImpl(
+                        Optional.empty(), Optional.empty(), CheckpointPattern.of(backupId)))
+                .thenApply(
+                    statuses ->
+                        statuses.stream()
+                            .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
+                            .findAny()
+                            .flatMap(BackupStatus::descriptor)
+                            .orElseThrow(() -> new BackupNotFoundException(backupId))
+                            .numberOfPartitions()));
     final var configuredPartitionCount = configuration.getCluster().getPartitionsCount();
     if (backupPartitionCount > configuredPartitionCount) {
-      throw new IllegalArgumentException(
+      throw new InvalidArgument(
           "Cannot restore backup %d: it has %d partitions, but only %d are configured"
               .formatted(backupId, backupPartitionCount, configuredPartitionCount));
     }
@@ -457,7 +463,8 @@ public class RestoreManager implements CloseableSilently {
           firstMissing = partition;
         }
       } else if (firstMissing != 0) {
-        throw new IllegalStateException(
+        throw new InvalidState(
+            Reason.INVALID_REQUEST,
             "The RDBMS holds an exported position for partition %d but none for partition %d"
                 .formatted(partition, firstMissing));
       } else {
@@ -465,24 +472,34 @@ public class RestoreManager implements CloseableSilently {
       }
     }
     if (positions.isEmpty()) {
-      throw new IllegalArgumentException("No exported position found for partition 1 in RDBMS");
+      throw new InvalidArgument("No exported position found for partition 1 in RDBMS");
     }
     return positions;
   }
 
-  private CompletableFuture<List<BackupMetadata>> loadMetadataForAllPartitions(
-      final int partitionCount) {
-    return FuturesUtil.parTraverse(
-        IntStream.rangeClosed(1, partitionCount).boxed().toList(),
-        partition ->
-            metadataSyncer
-                .load(partition)
-                .thenApply(
-                    opt ->
-                        opt.orElseThrow(
-                            () ->
-                                new IllegalStateException(
-                                    "No backup metadata found for partition " + partition))));
+  private List<BackupMetadata> loadMetadataForAllPartitions(final int partitionCount) {
+    return joinStoreCall(
+        FuturesUtil.parTraverse(
+            IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+            partition ->
+                metadataSyncer
+                    .load(partition)
+                    .thenApply(
+                        opt ->
+                            opt.orElseThrow(
+                                () ->
+                                    new InvalidState(
+                                        Reason.BACKUPS_INCONSISTENT,
+                                        "No backup metadata found for partition " + partition)))));
+  }
+
+  /** Waits for a call to the backup store, naming the reason if the store failed. */
+  private static <T> T joinStoreCall(final CompletableFuture<T> call) {
+    try {
+      return call.join();
+    } catch (final CompletionException e) {
+      throw BackupStoreFailure.of(e);
+    }
   }
 
   @Override

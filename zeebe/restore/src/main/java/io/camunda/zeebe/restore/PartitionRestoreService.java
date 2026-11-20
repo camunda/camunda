@@ -21,6 +21,8 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.restore.RestoreFailure.BackupStoreFailure;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
 import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
@@ -30,9 +32,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedSet;
+import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,11 +122,10 @@ public class PartitionRestoreService {
 
   private static void validateBackupIds(final SortedSet<Long> backupIds) {
     if (backupIds.isEmpty()) {
-      throw new IllegalArgumentException("No backups to restore");
+      throw new InvalidArgument("No backups to restore");
     }
     if (backupIds.first() < 0) {
-      throw new IllegalArgumentException(
-          "Backup id must not be negative but was " + backupIds.first());
+      throw new InvalidArgument("Backup id must not be negative but was " + backupIds.first());
     }
   }
 
@@ -246,7 +249,12 @@ public class PartitionRestoreService {
         .addKeyValue("pattern", searchPattern)
         .setMessage("Searching for completed backup")
         .log();
-    final var statuses = backupStore.list(searchPattern).join();
+    final Collection<BackupStatus> statuses;
+    try {
+      statuses = backupStore.list(searchPattern).join();
+    } catch (final CompletionException e) {
+      throw BackupStoreFailure.of(e);
+    }
     final var validStatus =
         statuses.stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
@@ -264,9 +272,14 @@ public class PartitionRestoreService {
       return status -> status;
     }
 
-    class BackupNotValidException extends RuntimeException {
+    class BackupNotValidException extends RuntimeException implements RestoreFailure {
       public BackupNotValidException(final BackupStatus status, final String message) {
         super("Backup is not valid: " + message + ". Backup status: " + status);
+      }
+
+      @Override
+      public Reason reason() {
+        return Reason.BACKUPS_INCONSISTENT;
       }
     }
   }
