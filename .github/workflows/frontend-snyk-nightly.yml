@@ -237,8 +237,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   webapp-fe-snyk:
-    # webapp/client only exists from 8.10 on. Excluding the older branches instead of listing the
-    # newer ones keeps future stable/* branches scanned without editing this condition.
     if: inputs.branch != 'stable/8.8' && inputs.branch != 'stable/8.9'
     name: "Orchestration Cluster Webapp / Front End - Snyk (${{ inputs.branch }})"
     runs-on: ubuntu-latest
@@ -276,14 +274,11 @@ jobs:
           SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
         with:
           directory: webapp/client
-          # npm workspaces: the root package.json has no production dependencies of its own.
           all-projects: "true"
           exclude: pom.xml,build.gradle.kts
           project-name: Orchestration Cluster Webapp frontend
           artifact-name: snyk-report-webapp-${{ inputs.branch }}
       - name: Verify all workspaces were scanned
-        # The action comes from the checked-out branch. A copy that predates `all-projects` ignores
-        # it and passes after scanning only the root package, which has no production dependencies.
         if: steps.snyk.outputs.scan-mode != 'all-projects'
         env:
           BRANCH: ${{ inputs.branch }}
