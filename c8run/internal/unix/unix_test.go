@@ -128,6 +128,28 @@ func TestConnectorsCmdRespectsExistingZeebeRestEnv(t *testing.T) {
 	}
 }
 
+func TestConnectorsCmdDisablesBase64IntrinsicsBeforeMainClass(t *testing.T) {
+	// given
+	unixC8Run := &UnixC8Run{}
+
+	// when
+	cmd := unixC8Run.ConnectorsCmd(context.Background(), "java", "/test/parent/dir", "8.9.0", 8080)
+
+	// then: JVM options are only honored before the main class
+	flagIdx, mainIdx := -1, -1
+	for i, arg := range cmd.Args {
+		switch arg {
+		case "-XX:-UseBASE64Intrinsics":
+			flagIdx = i
+		case "org.springframework.boot.loader.launch.PropertiesLauncher":
+			mainIdx = i
+		}
+	}
+	if flagIdx == -1 || mainIdx == -1 || flagIdx > mainIdx {
+		t.Fatalf("expected -XX:-UseBASE64Intrinsics before the main class, got args: %v", cmd.Args)
+	}
+}
+
 func TestConnectorsCmdUsesPropertiesLauncherWhenVersionRequiresIt(t *testing.T) {
 	ctx := context.Background()
 	unixC8Run := &UnixC8Run{}
