@@ -535,5 +535,19 @@
     "updated_at": "2026-11-20T07:31:51Z",
     "cooldown_until": "2026-12-04T07:31:51Z",
     "pr": "https://github.com/camunda/camunda/pull/70186"
+  },
+  "6d974c0e": {
+    "version": "8.10",
+    "file": "tests/api/v2/authorization/create-authorization-for-mapping-rule-api.spec.ts",
+    "titlePath": [
+      "Create Authorization API for Mapping Rule - Unhappy paths",
+      "Create Authorization for Mapping Rule - 400 Bad Request - wrong value for resourceType"
+    ],
+    "last_action": "open_pr",
+    "last_reason": "iter1 100% vs baseline 0% (+100pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44687938931",
+    "updated_at": "2026-11-20T07:32:19Z",
+    "cooldown_until": "2026-12-04T07:32:19Z",
+    "pr": "https://github.com/camunda/camunda/pull/70187"
   }
 }
