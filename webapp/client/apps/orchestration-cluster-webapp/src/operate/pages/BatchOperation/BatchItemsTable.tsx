@@ -107,18 +107,10 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 					key: 'decisionInstanceKey',
 					label: t('operate.batchOperation.itemsTable.decisionInstanceKey'),
 					render: (row: BatchOperationItem) => (
-						<ItemKeyCell itemKey={row.itemKey} fallbackText={t('operate.batchOperation.itemsTable.noDecisionInstance')}>
-							{row.state === 'COMPLETED' ? undefined : (
-								<RouterItemLink
-									to="/operate/decisions/$decisionInstanceId"
-									params={{decisionInstanceId: row.itemKey}}
-									title={t('operate.batchOperation.itemsTable.viewDecisionInstance', {key: row.itemKey})}
-									aria-label={t('operate.batchOperation.itemsTable.viewDecisionInstance', {key: row.itemKey})}
-								>
-									{row.itemKey}
-								</RouterItemLink>
-							)}
-						</ItemKeyCell>
+						<ItemKeyCell
+							itemKey={row.itemKey}
+							fallbackText={t('operate.batchOperation.itemsTable.noDecisionInstance')}
+						/>
 					),
 				},
 				state,

@@ -2293,7 +2293,6 @@
 					"noDecisionInstance": "No decision instance",
 					"noIncident": "No incident",
 					"viewProcessInstance": "View process instance {{key}}",
-					"viewDecisionInstance": "View decision instance {{key}}",
 					"failureReason": "Failure reason:",
 					"failureDetails": "Failure details",
 					"expandFailure": "Show failure details for item {{key}}",

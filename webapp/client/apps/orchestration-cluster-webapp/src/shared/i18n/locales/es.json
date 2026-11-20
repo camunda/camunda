@@ -2281,7 +2281,6 @@
 					"noDecisionInstance": "Sin instancia de decisión",
 					"noIncident": "Sin incidente",
 					"viewProcessInstance": "Ver instancia de proceso {{key}}",
-					"viewDecisionInstance": "Ver instancia de decisión {{key}}",
 					"failureReason": "Motivo del fallo:",
 					"failureDetails": "Detalles del fallo",
 					"expandFailure": "Mostrar los detalles del fallo del elemento {{key}}",
