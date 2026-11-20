@@ -111,9 +111,12 @@ public final class RdbmsExporter {
   }
 
   public void open(final Controller controller) {
+    final long receivedPosition = lastPosition;
     try {
       doOpen(controller);
     } catch (final RuntimeException e) {
+      // keep the received records for the next attempt, which must still replay them
+      lastPosition = Math.max(lastPosition, receivedPosition);
       // open() may fail after allocating resources (replication controller, scheduled flush task,
       // background task manager). Release them via close() before propagating so a retried open
       // starts from a clean state instead of leaking the partial allocation.
