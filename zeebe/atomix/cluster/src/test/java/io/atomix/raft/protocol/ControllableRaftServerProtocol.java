@@ -64,6 +64,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   private final Map<CompletableFuture<?>, Long> timeoutQueue = new HashMap<>();
   private long currentTime = 0;
   private int receivedInstallRequests = 0;
+  private boolean installRequestsHeld = false;
   private final long requestTimeoutMillis = Duration.ofSeconds(5).toMillis();
 
   public ControllableRaftServerProtocol(
@@ -79,8 +80,8 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
 
   public void receiveNextMessage() {
     final var rcvQueue = messageQueue.get(localMemberId);
-    if (!rcvQueue.isEmpty()) {
-      final Tuple<Runnable, CompletableFuture<?>> message = rcvQueue.poll();
+    final var message = pollNextDeliverable(rcvQueue);
+    if (message != null) {
       message.getLeft().run();
       timeoutQueue.remove(message.getRight());
     }
@@ -88,11 +89,53 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
 
   public void receiveAll() {
     final var rcvQueue = messageQueue.get(localMemberId);
-    while (!rcvQueue.isEmpty()) {
-      final Tuple<Runnable, CompletableFuture<?>> message = rcvQueue.poll();
+    Tuple<Runnable, CompletableFuture<?>> message;
+    while ((message = pollNextDeliverable(rcvQueue)) != null) {
       message.getLeft().run();
       timeoutQueue.remove(message.getRight());
     }
+  }
+
+  /**
+   * Holds back install requests to this member: they stay queued, in order, while other messages
+   * are still delivered. This mirrors the transport, where each message type has its own connection
+   * and a slow snapshot transfer does not delay appends or configure requests.
+   */
+  public void holdInstallRequests() {
+    installRequestsHeld = true;
+  }
+
+  public void releaseInstallRequests() {
+    installRequestsHeld = false;
+  }
+
+  /** Drops the install requests held back so far, as if the transfer timed out. */
+  public void dropHeldInstallRequests() {
+    final var rcvQueue = messageQueue.get(localMemberId);
+    rcvQueue.removeIf(
+        message -> {
+          if (!(message.getLeft() instanceof InstallDelivery)) {
+            return false;
+          }
+          Optional.ofNullable(message.getRight())
+              .ifPresent(f -> f.completeExceptionally(new TimeoutException()));
+          timeoutQueue.remove(message.getRight());
+          return true;
+        });
+  }
+
+  private Tuple<Runnable, CompletableFuture<?>> pollNextDeliverable(
+      final Queue<Tuple<Runnable, CompletableFuture<?>>> rcvQueue) {
+    final var iterator = rcvQueue.iterator();
+    while (iterator.hasNext()) {
+      final var message = iterator.next();
+      if (installRequestsHeld && message.getLeft() instanceof InstallDelivery) {
+        continue;
+      }
+      iterator.remove();
+      return message;
+    }
+    return null;
   }
 
   // drop next message from the incoming queue
@@ -233,13 +276,15 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     final var responseFuture = new CompletableFuture<InstallResponse>();
     send(
         memberId,
-        () -> {
-          server(memberId).receivedInstallRequests++;
-          getServer(memberId)
-              .thenCompose(listener -> listener.install(request))
-              .thenAccept(
-                  response -> send(localMemberId, () -> responseFuture.complete(response), null));
-        },
+        new InstallDelivery(
+            () -> {
+              server(memberId).receivedInstallRequests++;
+              getServer(memberId)
+                  .thenCompose(listener -> listener.install(request))
+                  .thenAccept(
+                      response ->
+                          send(localMemberId, () -> responseFuture.complete(response), null));
+            }),
         responseFuture);
     return responseFuture;
   }
@@ -622,6 +667,14 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
       return configureHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  /** Marks the delivery of an install request, so it can be held back. */
+  private record InstallDelivery(Runnable delivery) implements Runnable {
+    @Override
+    public void run() {
+      delivery.run();
     }
   }
 }
