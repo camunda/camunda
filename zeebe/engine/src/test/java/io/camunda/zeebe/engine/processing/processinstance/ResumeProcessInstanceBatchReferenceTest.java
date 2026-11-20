@@ -13,13 +13,18 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -110,6 +115,111 @@ public final class ResumeProcessInstanceBatchReferenceTest {
 
     // then
     assertResumedOnceWithBatchReference(instance.processInstanceKey(), 3L);
+  }
+
+  @Test
+  public void shouldEndInstanceWhenDrainedTimerTriggersDuringBatchResume() {
+    // given - the timer becomes due while the instance is suspended, so its trigger is buffered
+    // and only written back to the log when the batch resume drains the buffer
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1S"))
+                .endEvent("terminate", e -> e.terminate())
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.increaseTime(Duration.ofSeconds(1));
+    RecordingExporter.timerRecords(TimerIntent.SUSPENDED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .withBatchOperationReference(5L)
+        .expectResuming()
+        .resume();
+
+    // then - the drained trigger ends the instance and the batch item completes
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("process instance completed after the drained timer trigger")
+        .isTrue();
+    assertResumedOnceWithBatchReference(processInstanceKey, 5L);
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenDrainedTimerTriggerFailsDuringBatchResume() {
+    // given - the timer becomes due while the instance is suspended, and the task after it fails
+    // to activate because its job type expression has no value
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1S"))
+                .serviceTask("task", t -> t.zeebeJobTypeExpression("jobType"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.increaseTime(Duration.ofSeconds(1));
+    RecordingExporter.timerRecords(TimerIntent.SUSPENDED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .withBatchOperationReference(6L)
+        .expectResuming()
+        .resume();
+
+    // then - the failure creates an incident as it would without the suspension, and the batch
+    // item completes
+    final long incidentKey =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUMED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getBatchOperationReference())
+        .isEqualTo(6L);
+
+    // and the instance is not banned: resolving the incident continues it
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("jobType", Strings.newRandomValidBpmnId()))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentKey).resolve();
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .describedAs("job created after the incident was resolved")
+        .isTrue();
   }
 
   private static ListenerInstance suspendWhileWaitingForEndListener() {

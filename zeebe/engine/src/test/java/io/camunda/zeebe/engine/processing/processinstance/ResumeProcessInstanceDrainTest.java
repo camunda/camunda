@@ -20,12 +20,14 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -141,6 +143,47 @@ public final class ResumeProcessInstanceDrainTest {
     // then
     assertThat(elementLifecycle(processInstanceKey))
         .containsExactlyInAnyOrderElementsOf(elementLifecycle(controlInstanceKey));
+  }
+
+  @Test
+  public void shouldNotPassResumerClaimsToDrainedCommand() {
+    // given - the timer becomes due while the instance is suspended, so its trigger is buffered
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1S"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = start(processId);
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.increaseTime(Duration.ofSeconds(1));
+    RecordingExporter.timerRecords(TimerIntent.SUSPENDED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume("resumer");
+
+    // then - the drained trigger is processed as if the instance was never suspended, not on
+    // behalf of the user who resumed it
+    final var triggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var completed =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    assertThat(List.of(triggered.getAuthorizations(), completed.getAuthorizations()))
+        .allSatisfy(claims -> assertThat(claims).isEmpty());
   }
 
   @Test
