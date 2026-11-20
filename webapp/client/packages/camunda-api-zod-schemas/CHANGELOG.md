@@ -12,6 +12,10 @@
 
 - Accept the anonymous current user of an unprotected API in the 8.10 schema (`isAnonymous`, and a `null` username, display name and email) ([#66964](https://github.com/camunda/camunda/pull/66964))
 
+### 💅 Refactors
+
+- Remove the unused `'element-instances'` default of the required `statisticName` param in `getProcessDefinitionStatistics.getUrl` and `getProcessInstanceStatistics.getUrl` in the 8.8, 8.9, 8.10 and 8.11 schemas ([#70221](https://github.com/camunda/camunda/pull/70221))
+
 ### ❤️ Contributors
 
 - Francesco Esposito ([@phoinixi](https://github.com/phoinixi))
