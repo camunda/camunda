@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.IncidentMapper;
+import io.camunda.db.rdbms.sql.IncidentMapper.MigrateIncidentDto;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -58,17 +59,15 @@ class IncidentWriterTest {
   }
 
   @Test
-  void shouldUpdateIncident() {
-    when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
-    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
+  void shouldMigrateIncident() {
+    // given
+    final var migration =
+        new MigrateIncidentDto(123L, "target-process", 456L, "targetTask", "PI_1/FN_a/FNI_2");
 
-    final var model = mock(IncidentDbModel.class);
-    final var truncatedModel = mock(IncidentDbModel.class);
-    when(model.truncateErrorMessage(anyInt(), anyInt())).thenReturn(truncatedModel);
-    when(model.incidentKey()).thenReturn(123L);
+    // when
+    writer.migrate(migration);
 
-    writer.update(model);
-
+    // then
     verify(executionQueue)
         .executeInQueue(
             eq(
@@ -76,8 +75,8 @@ class IncidentWriterTest {
                     ContextType.INCIDENT,
                     WriteStatementType.UPDATE,
                     123L,
-                    "io.camunda.db.rdbms.sql.IncidentMapper.update",
-                    truncatedModel)));
+                    "io.camunda.db.rdbms.sql.IncidentMapper.migrate",
+                    migration)));
   }
 
   @Test

@@ -57,18 +57,21 @@ public class FlowNodeInstanceWriter extends ProcessInstanceDependant implements 
     }
   }
 
-  public void update(final FlowNodeInstanceDbModel flowNode) {
-    // ELEMENT_MIGRATED / ANCESTOR_MIGRATED go through this full-row update, but the migrated
-    // record carries no resolved ad-hoc-subprocess inner-instance name (it's only known from the
-    // entry child's ELEMENT_ACTIVATING, handled separately by updateName). Route those rows
-    // through a statement that leaves FLOW_NODE_NAME untouched instead of expressing the guard as
-    // a cross-type SQL comparison/CASE against the NVARCHAR name column, which trips a charset
-    // mismatch on Oracle.
+  /**
+   * Points the flow node instance at its migration target (ELEMENT_MIGRATED / ANCESTOR_MIGRATED).
+   * Only the element ID, name and process definition are written; state and dates stay as stored.
+   */
+  public void migrate(final FlowNodeInstanceDbModel flowNode) {
+    // The migrated record carries no resolved ad-hoc-subprocess inner-instance name (it's only
+    // known from the entry child's ELEMENT_ACTIVATING, handled separately by updateName). Route
+    // those rows through a statement that leaves FLOW_NODE_NAME untouched instead of expressing
+    // the guard as a cross-type SQL comparison/CASE against the NVARCHAR name column, which trips
+    // a charset mismatch on Oracle.
     final var statementId =
         flowNode.type() == FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE
                 && flowNode.flowNodeName() == null
-            ? "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateKeepingName"
-            : "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.update";
+            ? "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.migrateKeepingName"
+            : "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.migrate";
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.FLOW_NODE,
