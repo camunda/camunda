@@ -1,7 +1,7 @@
 # description: For C8Run, this workflow runs a linting check, unit tests, a build, tests on unix, and end to end tests on windows
 # test location: c8run/e2e_tests/ and c8run/cmd/c8run/physicaltenants_e2e_test.go
 # type: CI
-# owner: @camunda/distribution
+# owner: @camunda/smx
 ---
 name: "C8Run: build/test"
 
@@ -39,7 +39,7 @@ on:
 
 env:
   GO_VERSION: "1.27.3"
-  TEST_OWNER: '@camunda/distribution'
+  TEST_OWNER: '@camunda/smx'
 
 permissions:
   actions: none

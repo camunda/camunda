@@ -1,6 +1,6 @@
 # description: This workflow builds the Camunda Docker image, pushes it to Harbor, runs Helm integration and E2E tests, and triggers SaaS E2E smoke tests in the c8-cross-component-e2e-tests repo. This is part of the AlwaysGreen project where every PR is deployed via helm to confirm no breaking changes.
 # type: CI
-# owner: @camunda/distribution
+# owner: @camunda/smx
 ---
 name: Docker Build, Helm Deploy & E2E Tests (SaaS + Helm)
 
@@ -42,7 +42,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TEST_OWNER: '@camunda/distribution'
+  TEST_OWNER: '@camunda/smx'
   GHA_BEST_PRACTICES_LINTER: enabled
   HARBOR_REGISTRY: registry.camunda.cloud
   HARBOR_REPOSITORY: registry.camunda.cloud/team-camunda/camunda
@@ -76,7 +76,7 @@ jobs:
             # above) -- a should-run gate failure is this pipeline's own
             # plumbing, not something the monorepo-ci-medic has a runbook
             # for. Route to the actual owner instead.
-            OWNER_TEAM="@camunda/distribution"
+            OWNER_TEAM="@camunda/smx"
             FAILURE_CATEGORY="orchestration_should_run"
           fi
           jq -n \
@@ -567,7 +567,7 @@ jobs:
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
             # Same reasoning as should-run above: this pipeline's own
             # plumbing is Distribution's to fix, not monorepo-ci-medic's.
-            OWNER_TEAM="@camunda/distribution"
+            OWNER_TEAM="@camunda/smx"
             FAILURE_CATEGORY="orchestration_identifier"
           fi
           jq -n \
@@ -709,7 +709,7 @@ jobs:
           else
             {
               echo "failure_category=test-infra"
-              echo "owner_team=@camunda/distribution"
+              echo "owner_team=@camunda/smx"
               echo "evidence=Helm install or setup failed before E2E tests could run."
             } >> "$GITHUB_OUTPUT"
           fi
@@ -721,7 +721,7 @@ jobs:
         with:
           failure_category: ${{ steps.classify.outputs.failure_category || 'test-infra' }}
           stage: helm-integration
-          owner_team: ${{ steps.classify.outputs.owner_team || '@camunda/distribution' }}
+          owner_team: ${{ steps.classify.outputs.owner_team || '@camunda/smx' }}
           run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           status: failure
           evidence: ${{ steps.classify.outputs.evidence || 'Helm chart Integration Tests failed.' }}
@@ -752,7 +752,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ needs.helm-deploy.result }}" == "failure" || "${{ needs.helm-deploy.result }}" == "cancelled" ]]; then
-            OWNER_TEAM="${{ steps.classify.outputs.owner_team || '@camunda/distribution' }}"
+            OWNER_TEAM="${{ steps.classify.outputs.owner_team || '@camunda/smx' }}"
             FAILURE_CATEGORY="helm_install_or_it"
           fi
           jq -n \
@@ -1121,7 +1121,7 @@ jobs:
                   } >> "$GITHUB_STEP_SUMMARY"
                 else
                   DOWNSTREAM_CATEGORY="unknown_artifact_unreachable"
-                  DOWNSTREAM_OWNER="@camunda/distribution"
+                  DOWNSTREAM_OWNER="@camunda/smx"
                   # Both remaining cases are parent-side plumbing, but they need
                   # different first moves: an unreadable listing points at access
                   # or retention, while a readable one that names a `json-report`
