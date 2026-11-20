@@ -49,7 +49,7 @@ func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parent
 		mainClass = "org.springframework.boot.loader.launch.PropertiesLauncher"
 	}
 	springConfigLocation := "--spring.config.additional-location=" + parentDir + "/connectors-application.properties"
-	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-cp", classPath, mainClass, springConfigLocation)
+	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-XX:-UseBASE64Intrinsics", "-cp", classPath, mainClass, springConfigLocation)
 	connectorsCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	// Set default Zeebe REST address if the user has not provided one already.
