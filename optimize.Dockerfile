@@ -6,7 +6,7 @@ ARG BASE_DIGEST="sha256:4103bf065c47f43d0d80aebf9258fec411585ed6fd6ed39711509272
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
 ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.5_8-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:3c6d7b40c2e78d4a8f4fe00af8165c706b34faf672dc21ff0924e583559ec6c2"
+ARG BASE_DIGEST_PUBLIC="sha256:23481dc33a759b79d62814ceb1ec27a0d1a84da9d7aab0609577427176fbb1b7"
 ARG BASE="hardened"
 
 ### Base Application Image ###
