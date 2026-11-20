@@ -161,7 +161,8 @@ public class StateControllerImpl implements StateController {
     final NextSnapshotId nextSnapshotId;
     try {
       nextSnapshotId = tryFindNextSnapshotId(lowerBoundSnapshotPosition);
-    } catch (final NoEntryAtSnapshotPosition e) {
+    } catch (final NoEntryAtSnapshotPosition | RuntimeException e) {
+      // also when reading the log fails: whoever waits takes no other snapshot until this completes
       future.completeExceptionally(e);
       return;
     }

@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
@@ -103,6 +105,27 @@ public final class StateControllerImplTest {
     // then
     assertThatThrownBy(() -> snapshotController.takeTransientSnapshot(1).join())
         .hasCauseInstanceOf(NoEntryAtSnapshotPosition.class);
+  }
+
+  @Test
+  public void shouldFailSnapshotWhenLogCannotBeRead() {
+    // given - the log reports a committed entry it cannot read back while looking up the index
+    final var corruption = new CorruptedJournalException("no entry at committed index");
+    atomixRecordEntrySupplier.set(
+        position -> {
+          throw corruption;
+        });
+    exporterPosition.set(1);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot = snapshotController.takeTransientSnapshot(2);
+
+    // then - the caller hears about it, as it takes no other snapshot until this one completed
+    assertThat(snapshot)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCause(corruption);
   }
 
   @Test
