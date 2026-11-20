@@ -9,14 +9,26 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.broker.system.InvalidConfigurationException;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.Objects;
 
 public final class BackupStoreTransitionStep implements PartitionTransitionStep {
+
+  private final BackupReadRateLimiter readRateLimiter;
+
+  /**
+   * @param readRateLimiter the limiter shared by all partitions of the broker, so that their
+   *     backups together stay within the configured read rate
+   */
+  public BackupStoreTransitionStep(final BackupReadRateLimiter readRateLimiter) {
+    this.readRateLimiter = Objects.requireNonNull(readRateLimiter);
+  }
 
   @Override
   public ActorFuture<Void> prepareTransition(
@@ -49,7 +61,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final var backupCfg = context.getBrokerCfg().getData().getBackup();
       final BackupStore store;
       try {
-        store = BackupCfg.BackupStoreFactory.createStore(backupCfg);
+        store = BackupCfg.BackupStoreFactory.createStore(backupCfg, readRateLimiter);
       } catch (final Exception e) {
         installed.completeExceptionally("Failed to create backup store.", e);
         return installed;

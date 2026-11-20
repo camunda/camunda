@@ -9,18 +9,28 @@ package io.camunda.zeebe.broker.system.configuration.backup;
 
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.Schedule;
+import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.springframework.util.unit.DataSize;
 
 @NullMarked
 public class BackupCfg implements ConfigurationEntry {
+
+  /** The lowest {@link #getMaxReadRate() maxReadRate} in bytes per second. */
+  public static final long MIN_MAX_READ_RATE_BYTES = BackupReadRateLimiter.MIN_BYTES_PER_SECOND;
 
   private BackupStoreType store = BackupStoreType.NONE;
 
@@ -37,6 +47,7 @@ public class BackupCfg implements ConfigurationEntry {
   private long offset = 0L;
   private @Nullable Duration readTimeout;
   private @Nullable Duration writeTimeout;
+  private @Nullable DataSize maxReadRate;
 
   public S3BackupStoreConfig getS3() {
     return s3;
@@ -113,6 +124,8 @@ public class BackupCfg implements ConfigurationEntry {
         .append(readTimeout)
         .append(", writeTimeout=")
         .append(writeTimeout)
+        .append(", maxReadRate=")
+        .append(maxReadRate)
         .append('}');
     return sb.toString();
   }
@@ -181,16 +194,40 @@ public class BackupCfg implements ConfigurationEntry {
     this.writeTimeout = writeTimeout;
   }
 
+  public @Nullable DataSize getMaxReadRate() {
+    return maxReadRate;
+  }
+
+  public void setMaxReadRate(final @Nullable DataSize maxReadRate) {
+    this.maxReadRate = maxReadRate;
+  }
+
   public interface BackupStoreFactory {
-    /** Returns {@code null} for {@link BackupCfg.BackupStoreType#NONE}. */
+    /**
+     * Creates a store that does not limit how fast it reads the files of a backup. Use it for
+     * stores that do not take backups.
+     *
+     * @return {@code null} for {@link BackupCfg.BackupStoreType#NONE}
+     */
     @Nullable
     static BackupStore createStore(final BackupCfg backupCfg) {
+      return createStore(backupCfg, BackupReadRateLimiter.unlimited());
+    }
+
+    /**
+     * @param readRateLimiter the limiter of this broker, see {@link #createReadRateLimiter}
+     * @return {@code null} for {@link BackupCfg.BackupStoreType#NONE}
+     */
+    @Nullable
+    static BackupStore createStore(
+        final BackupCfg backupCfg, final BackupReadRateLimiter readRateLimiter) {
       return switch (backupCfg.getStore()) {
         case NONE -> null;
         case S3 ->
             S3BackupStore.of(
                 S3BackupStoreConfig.toStoreConfig(
-                    backupCfg.getS3(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout()));
+                    backupCfg.getS3(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout()),
+                readRateLimiter);
         case GCS ->
             GcsBackupStore.of(
                 GcsBackupStoreConfig.toStoreConfig(
@@ -203,6 +240,69 @@ public class BackupCfg implements ConfigurationEntry {
             FilesystemBackupStore.of(
                 FilesystemBackupStoreConfig.toStoreConfig(backupCfg.getFilesystem()));
       };
+    }
+
+    /**
+     * Creates the limiter for {@link BackupCfg#getMaxReadRate()}. All partitions of a broker read
+     * from the same disk, whichever physical tenant they belong to, so create it once per broker
+     * and pass it to every store the broker creates; each call returns a limiter with its own
+     * budget. Only the S3 store limits its reads, so the limiter is unlimited unless the broker or
+     * one of its physical tenants backs up to S3.
+     *
+     * @param backupCfg the backup configuration of the broker, which sets the read rate for all
+     *     physical tenants
+     * @param physicalTenantBackups the backup configurations of the physical tenants, which may use
+     *     other stores than the broker's
+     */
+    static BackupReadRateLimiter createReadRateLimiter(
+        final BackupCfg backupCfg, final Collection<BackupCfg> physicalTenantBackups) {
+      final var maxReadRate = backupCfg.getMaxReadRate();
+      if (maxReadRate == null) {
+        return BackupReadRateLimiter.unlimited();
+      }
+
+      final var backups = new ArrayList<BackupCfg>(physicalTenantBackups.size() + 1);
+      backups.add(backupCfg);
+      backups.addAll(physicalTenantBackups);
+      final var notLimitedStores = EnumSet.noneOf(BackupStoreType.class);
+      backups.stream()
+          .map(BackupCfg::getStore)
+          .filter(store -> store != BackupStoreType.NONE && store != BackupStoreType.S3)
+          .forEach(notLimitedStores::add);
+      if (!notLimitedStores.isEmpty()) {
+        Loggers.SYSTEM_LOGGER.warn(
+            "Backup maxReadRate is set to {} per second, but only the S3 backup store limits its reads. Backups to {} are not limited.",
+            maxReadRate,
+            notLimitedStores);
+      }
+
+      final var s3Backups =
+          backups.stream().filter(backup -> backup.getStore() == BackupStoreType.S3).toList();
+      if (s3Backups.isEmpty()) {
+        return BackupReadRateLimiter.unlimited();
+      }
+      final var limiter = BackupReadRateLimiter.of(maxReadRate.toBytes());
+      Loggers.SYSTEM_LOGGER.info(
+          "Limiting the backup reads of this broker to {} per second", maxReadRate);
+      s3Backups.stream()
+          .map(BackupCfg::getWriteTimeout)
+          .filter(Objects::nonNull)
+          .distinct()
+          .forEach(BackupStoreFactory::warnIfWriteTimeoutIsTooShort);
+      return limiter;
+    }
+
+    /**
+     * A limited upload writes nothing while it waits for the read limit, and the S3 client aborts
+     * an upload that writes nothing for its write timeout.
+     */
+    private static void warnIfWriteTimeoutIsTooShort(final Duration writeTimeout) {
+      if (writeTimeout.compareTo(BackupReadRateLimiter.MAX_READ_PAUSE) <= 0) {
+        Loggers.SYSTEM_LOGGER.warn(
+            "The backup writeTimeout of {} is not longer than the {} an upload may pause while it waits for the backup read limit. The S3 client may abort such uploads; increase the write timeout.",
+            writeTimeout,
+            BackupReadRateLimiter.MAX_READ_PAUSE);
+      }
     }
   }
 
