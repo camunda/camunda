@@ -161,7 +161,7 @@ class ManagedScriptsImageTest {
   }
 
   @Test
-  void shouldBuildFromTheResolvedBaseImage() {
+  void shouldUseTheResolvedBaseImage() {
     // given: a registry mirror substitutes the Connectors image
     final ManagedScriptsImage image = new ManagedScriptsImage(BASE_IMAGE, null, null);
     final String mirroredImage = "mirror.example.com/camunda/connectors-bundle:8.11.0";

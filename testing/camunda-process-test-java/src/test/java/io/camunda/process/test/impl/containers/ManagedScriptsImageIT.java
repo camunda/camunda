@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.images.RemoteDockerImage;
@@ -40,10 +41,19 @@ class ManagedScriptsImageIT {
     final ManagedScriptsImage image = new ManagedScriptsImage(CONNECTORS_IMAGE, "3.12", "22");
 
     // when
-    final String output = run(image.build(false));
+    final RemoteDockerImage built = image.build(false);
+    final String output = run(built);
 
     // then: the interpreters that the local provider calls are the pinned ones
     assertThat(output).contains("user=camunda", "Python 3.12.", "v22.");
+    // and: without the session label, Ryuk keeps the image for the next runs
+    assertThat(
+            DockerClientFactory.lazyClient()
+                .inspectImageCmd(built.get())
+                .exec()
+                .getConfig()
+                .getLabels())
+        .doesNotContainKey(DockerClientFactory.TESTCONTAINERS_SESSION_ID_LABEL);
   }
 
   @Test
