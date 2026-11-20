@@ -25,6 +25,8 @@ public final class ErrorMessages {
   public static final String ERROR_SEARCH_UNKNOWN_PAGE_TYPE =
       "Page type is unknown, please provide valid pagination parameters";
   public static final String ERROR_MESSAGE_AT_LEAST_ONE_FIELD = "At least one of %s is required";
+  public static final String ERROR_MESSAGE_EMPTY_FILTER_PROPERTY =
+      "The filter property '%s' must contain at least one value";
   public static final String ERROR_MESSAGE_INVALID_TENANT =
       "Expected to handle request %s with tenant identifier '%s', but %s";
   public static final String ERROR_MESSAGE_INVALID_TENANTS =
