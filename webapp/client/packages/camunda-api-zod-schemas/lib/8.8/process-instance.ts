@@ -192,7 +192,7 @@ type GetProcessInstanceCallHierarchyResponseBody = z.infer<typeof getProcessInst
 
 const getProcessInstanceStatistics = {
 	method: 'GET',
-	getUrl: ({processInstanceKey, statisticName = 'element-instances'}) =>
+	getUrl: ({processInstanceKey, statisticName}) =>
 		`/${API_VERSION}/process-instances/${processInstanceKey}/statistics/${statisticName}` as const,
 } as const satisfies Endpoint<GetProcessInstanceStatisticsParams>;
 
