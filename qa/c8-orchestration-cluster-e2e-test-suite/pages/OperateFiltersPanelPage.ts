@@ -56,6 +56,7 @@ export class OperateFiltersPanelPage {
   readonly fromTimeInput: Locator;
   readonly toTimeInput: Locator;
   readonly fromDateInput: Locator;
+  readonly toDateInput: Locator;
   readonly applyButton: Locator;
   readonly getOptionByName: (name: string, exact?: boolean) => Locator;
   readonly getConditionRowNameInput: (index: number) => Locator;
@@ -168,6 +169,7 @@ export class OperateFiltersPanelPage {
       exact: true,
     });
     this.fromDateInput = this.page.getByText('From date');
+    this.toDateInput = this.page.getByText('To date');
     this.applyButton = this.page.getByText('Apply');
     this.getOptionByName = (name: string, exact = true) =>
       this.page.getByRole('option', {name, exact});
@@ -386,8 +388,13 @@ export class OperateFiltersPanelPage {
     const monthName = date.toLocaleString('default', {month: 'long'});
     const year = date.getFullYear();
 
+    // The modal's From/To fields share one Carbon range DatePicker. Selecting
+    // the start date re-syncs the controlled value and closes the calendar, so
+    // the To-date input must be reopened before the end day can be clicked —
+    // mirroring how the frontend's own DateRangeField test drives this modal.
     await this.fromDateInput.click();
     await this.page.getByLabel(`${monthName} ${fromDay}, ${year}`).click();
+    await this.toDateInput.click();
     await this.page.getByLabel(`${monthName} ${toDay}, ${year}`).click();
 
     if (fromTime !== undefined) {
