@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,12 +65,14 @@ public class BatchOperationLifecycleManagementExportHandler
     final var endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
     switch (record.getIntent()) {
       case CANCELED -> {
+        final var cachedEntity = batchOperationCache.get(batchOperationKey);
         batchOperationWriter.cancel(batchOperationKey, endDate);
-        scheduleBatchOperationForHistoryCleanup(batchOperationKey, endDate);
+        scheduleBatchOperationForHistoryCleanup(cachedEntity, batchOperationKey, endDate);
       }
       case SUSPENDED -> batchOperationWriter.suspend(batchOperationKey);
       case RESUMED -> batchOperationWriter.resume(batchOperationKey);
       case COMPLETED -> {
+        final var cachedEntity = batchOperationCache.get(batchOperationKey);
         if (value.getErrors().isEmpty()) {
           batchOperationWriter.finish(batchOperationKey, endDate);
         } else {
@@ -79,16 +82,17 @@ public class BatchOperationLifecycleManagementExportHandler
               mapErrors(batchOperationKey, value.getErrors()),
               BatchOperationState.PARTIALLY_COMPLETED);
         }
-        scheduleBatchOperationForHistoryCleanup(batchOperationKey, endDate);
+        scheduleBatchOperationForHistoryCleanup(cachedEntity, batchOperationKey, endDate);
       }
       case FAILED -> {
+        final var cachedEntity = batchOperationCache.get(batchOperationKey);
         batchOperationWriter.finishWithErrors(
             batchOperationKey,
             endDate,
             mapErrors(batchOperationKey, value.getErrors()),
             BatchOperationState.FAILED);
 
-        scheduleBatchOperationForHistoryCleanup(batchOperationKey, endDate);
+        scheduleBatchOperationForHistoryCleanup(cachedEntity, batchOperationKey, endDate);
       }
       default -> // should never happen
           LOGGER.warn(
@@ -97,9 +101,16 @@ public class BatchOperationLifecycleManagementExportHandler
     }
   }
 
+  /**
+   * Takes the cache entry instead of looking it up, because the lookup can read from the database
+   * and fail. Callers look it up before queueing any write: the exporter retries a failed record,
+   * so writes queued before the failure would be queued twice, and batch operation errors have no
+   * unique key that would reject the duplicates.
+   */
   private void scheduleBatchOperationForHistoryCleanup(
-      final String batchOperationKey, final OffsetDateTime endDate) {
-    final var cachedEntity = batchOperationCache.get(batchOperationKey);
+      final Optional<CachedBatchOperationEntity> cachedEntity,
+      final String batchOperationKey,
+      final OffsetDateTime endDate) {
     cachedEntity.ifPresent(
         entity ->
             historyCleanupService.scheduleBatchOperationForHistoryCleanup(

@@ -56,6 +56,9 @@ public final class RdbmsExporter {
   // volatile runtime properties
   private ExporterPositionModel exporterRdbmsPosition;
   private long lastPosition = -1;
+  // record and handler that failed last; a redelivery of that record resumes at the failed handler
+  private long failedPosition = -1;
+  private int failedHandlerIndex;
   private long lastFlushedPosition = -1;
   private ScheduledTask currentFlushTask = null;
   private ScheduledTask currentCleanupTask = null;
@@ -99,6 +102,7 @@ public final class RdbmsExporter {
   public void open(final Controller controller) {
     this.controller = controller;
     rdbmsWriters.getExecutionQueue().reset();
+    failedPosition = -1;
     LOG.info(
         "[RDBMS Exporter P{}] Opening exporter with broker position {}, last flushed position {}",
         partitionId,
@@ -239,23 +243,38 @@ public final class RdbmsExporter {
     boolean exported = false;
     boolean shouldFlushAfterRecordProcessed = false;
     if (!alreadyProcessed && registeredHandlers.containsKey(record.getValueType())) {
-      for (final var handler : registeredHandlers.get(record.getValueType())) {
-        if (handler.canExport(record)) {
-          LOG.trace(
-              "[RDBMS Exporter P{}] Exporting record {} with handler {}",
-              partitionId,
-              record.getValue(),
-              handler.getClass());
-          handler.export(record);
-          exported = true;
-          shouldFlushAfterRecordProcessed |= handler.shouldFlushAfterRecordProcessed();
-        } else {
-          LOG.trace(
-              "[RDBMS Exporter P{}] Handler {} can not export record {}",
-              partitionId,
-              handler.getClass(),
-              record.getValueType());
+      // when a handler throws, the broker redelivers the record. Handlers that already completed
+      // have queued their statements, so resume at the handler that failed instead of queueing them
+      // a second time. Queued items cannot be rolled back as merges mutate already queued items.
+      final int resumeAt = record.getPosition() == failedPosition ? failedHandlerIndex : 0;
+      final var handlers = registeredHandlers.get(record.getValueType());
+      for (int i = 0; i < handlers.size(); i++) {
+        final var handler = handlers.get(i);
+        try {
+          if (!handler.canExport(record)) {
+            LOG.trace(
+                "[RDBMS Exporter P{}] Handler {} can not export record {}",
+                partitionId,
+                handler.getClass(),
+                record.getValueType());
+            continue;
+          }
+          if (i >= resumeAt) {
+            LOG.trace(
+                "[RDBMS Exporter P{}] Exporting record {} with handler {}",
+                partitionId,
+                record.getValue(),
+                handler.getClass());
+            handler.export(record);
+          }
+        } catch (final Exception e) {
+          // canExport of an already completed handler can fail again; never resume before it
+          failedPosition = record.getPosition();
+          failedHandlerIndex = Math.max(i, resumeAt);
+          throw e;
         }
+        exported = true;
+        shouldFlushAfterRecordProcessed |= handler.shouldFlushAfterRecordProcessed();
       }
     } else if (!alreadyProcessed) {
       LOG.trace(
@@ -266,6 +285,7 @@ public final class RdbmsExporter {
 
     if (!alreadyProcessed) {
       lastPosition = record.getPosition();
+      failedPosition = -1;
     }
 
     if (exported || alreadyProcessed) {
