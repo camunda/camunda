@@ -1,0 +1,12 @@
+# Snyk (https://snyk.io) policy file, applied to every npm workspace by the nightly frontend
+# Snyk scan. Every ignore needs a reason and an expiry date.
+version: v1.25.0
+ignore:
+  SNYK-JS-URIJS-19963963:
+    - '*':
+        reason: >-
+          No fixed uri-js version exists. It is only reached through ajv@6 in eslint, a peer
+          dependency of @camunda/lint-config that is lint tooling and never shipped in the bundle.
+          Revisit when eslint drops ajv@6 or uri-js publishes a fix.
+        expires: '2027-02-20T00:00:00.000Z'
+patch: {}
