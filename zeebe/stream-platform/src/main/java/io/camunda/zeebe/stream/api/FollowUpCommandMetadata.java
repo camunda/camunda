@@ -12,11 +12,18 @@ import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import java.util.function.Consumer;
 
+/**
+ * Metadata of a follow-up command.
+ *
+ * @param isolated whether the command is written as if it came from outside the current processing
+ *     batch, see {@link ProcessingResultBuilder#appendIsolatedCommand}
+ */
 public record FollowUpCommandMetadata(
     long operationReference,
     long batchOperationReference,
     InternalOperationReference internalOperationReference,
-    AuthInfo authInfo) {
+    AuthInfo authInfo,
+    boolean isolated) {
 
   public static FollowUpCommandMetadata empty() {
     return of(builder -> {});
@@ -33,6 +40,7 @@ public record FollowUpCommandMetadata(
     private long batchOperationReference = RecordMetadataDecoder.batchOperationReferenceNullValue();
     private InternalOperationReference internalOperationReference = InternalOperationReference.NONE;
     private AuthInfo authInfo = AuthInfo.EMPTY;
+    private boolean isolated = false;
 
     public Builder operationReference(final long operationReference) {
       this.operationReference = operationReference;
@@ -55,9 +63,22 @@ public record FollowUpCommandMetadata(
       return this;
     }
 
+    /**
+     * Writes the command as if it came from outside the current processing batch: it inherits no
+     * metadata from the batch and is processed in a batch of its own.
+     */
+    public Builder isolated() {
+      isolated = true;
+      return this;
+    }
+
     public FollowUpCommandMetadata build() {
       return new FollowUpCommandMetadata(
-          operationReference, batchOperationReference, internalOperationReference, authInfo);
+          operationReference,
+          batchOperationReference,
+          internalOperationReference,
+          authInfo,
+          isolated);
     }
   }
 }

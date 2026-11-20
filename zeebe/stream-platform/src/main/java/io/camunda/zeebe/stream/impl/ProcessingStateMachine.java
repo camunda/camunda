@@ -498,25 +498,26 @@ public final class ProcessingStateMachine implements CloseableSilently {
     final var commandsToProcess = new ArrayList<TypedRecord<?>>();
     final var toWriteEntries = new ArrayList<LogAppendEntry>();
 
-    processingResult.getRecordBatch().entries().stream()
-        .skip(lastProcessingResultSize) // because the result builder is reused
-        .forEachOrdered(
-            entry -> {
-              var toWriteEntry = entry;
-              final int potentialBatchSize = currentBatchSize + commandsToProcess.size();
-              if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
-                  && potentialBatchSize < currentProcessingBatchLimit
-                  && !processingResult.shouldProcessInASeparateBatch()) {
-                commandsToProcess.add(
-                    new UnwrittenRecord(
-                        entry.key(),
-                        context.getPartitionId(),
-                        entry.recordValue(),
-                        entry.recordMetadata()));
-                toWriteEntry = LogAppendEntry.ofProcessed(entry);
-              }
-              toWriteEntries.add(toWriteEntry);
-            });
+    final var entries = processingResult.getRecordBatch().entries();
+    // skip the entries of earlier commands, because the result builder is reused
+    for (int index = lastProcessingResultSize; index < entries.size(); index++) {
+      final var entry = entries.get(index);
+      var toWriteEntry = entry;
+      final int potentialBatchSize = currentBatchSize + commandsToProcess.size();
+      if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
+          && potentialBatchSize < currentProcessingBatchLimit
+          && !processingResult.shouldProcessInASeparateBatch()
+          && !processingResult.isIsolatedCommand(index)) {
+        commandsToProcess.add(
+            new UnwrittenRecord(
+                entry.key(),
+                context.getPartitionId(),
+                entry.recordValue(),
+                entry.recordMetadata()));
+        toWriteEntry = LogAppendEntry.ofProcessed(entry);
+      }
+      toWriteEntries.add(toWriteEntry);
+    }
 
     return new BatchProcessingStepResult(commandsToProcess, toWriteEntries);
   }

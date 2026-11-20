@@ -13,6 +13,7 @@ import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.impl.BufferedProcessingResultBuilder.ProcessingResponseImpl;
+import java.util.BitSet;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -27,16 +28,19 @@ final class BufferedResult implements ProcessingResult, TaskResult {
   private final ImmutableRecordBatch immutableRecordBatch;
   private final @Nullable ProcessingResponseImpl processingResponse;
   private final boolean processInASeparateBatch;
+  private final BitSet isolatedCommands;
 
   BufferedResult(
       final ImmutableRecordBatch immutableRecordBatch,
       final @Nullable ProcessingResponseImpl processingResponse,
       final List<PostCommitTask> postCommitTasks,
-      final boolean processInASeparateBatch) {
+      final boolean processInASeparateBatch,
+      final BitSet isolatedCommands) {
     this.postCommitTasks = List.copyOf(postCommitTasks);
     this.processingResponse = processingResponse;
     this.immutableRecordBatch = immutableRecordBatch;
     this.processInASeparateBatch = processInASeparateBatch;
+    this.isolatedCommands = (BitSet) isolatedCommands.clone();
   }
 
   @Override
@@ -64,5 +68,10 @@ final class BufferedResult implements ProcessingResult, TaskResult {
   @Override
   public boolean shouldProcessInASeparateBatch() {
     return processInASeparateBatch;
+  }
+
+  @Override
+  public boolean isIsolatedCommand(final int entryIndex) {
+    return isolatedCommands.get(entryIndex);
   }
 }
