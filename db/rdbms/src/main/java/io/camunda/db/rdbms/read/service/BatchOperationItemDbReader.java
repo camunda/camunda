@@ -43,25 +43,20 @@ public class BatchOperationItemDbReader extends AbstractEntityReader<BatchOperat
             query.sort(),
             BatchOperationItemSearchColumn.BATCH_OPERATION_KEY,
             BatchOperationItemSearchColumn.ITEM_KEY);
-    if (hasNoBatchReadAccess(resourceAccessChecks)) {
+    if (BatchOperationDbReader.hasNoBatchReadAccess(resourceAccessChecks)) {
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
     final var dbQuery =
         BatchOperationItemDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for batch operation items with filter {}", dbQuery);
     final var totalHits = batchOperationMapper.countItems(dbQuery);
     final var hits = batchOperationMapper.searchItems(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
-  }
-
-  /**
-   * Batch operation items carry no tenant, so only the authorization check applies, as on
-   * Elasticsearch/OpenSearch.
-   */
-  private static boolean hasNoBatchReadAccess(final ResourceAccessChecks resourceAccessChecks) {
-    return resourceAccessChecks.authorizationCheck().enabled()
-        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty();
   }
 }

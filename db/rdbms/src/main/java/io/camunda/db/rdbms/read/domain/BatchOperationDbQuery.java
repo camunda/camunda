@@ -16,7 +16,10 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record BatchOperationDbQuery(
-    BatchOperationFilter filter, DbQuerySorting<BatchOperationEntity> sort, DbQueryPage page) {
+    BatchOperationFilter filter,
+    List<String> authorizedResourceIds,
+    DbQuerySorting<BatchOperationEntity> sort,
+    DbQueryPage page) {
 
   public static BatchOperationDbQuery of(
       final Function<BatchOperationDbQuery.Builder, ObjectBuilder<BatchOperationDbQuery>> fn) {
@@ -29,11 +32,17 @@ public record BatchOperationDbQuery(
         FilterBuilders.batchOperation().build();
 
     private BatchOperationFilter filter;
+    private List<String> authorizedResourceIds = List.of();
     private DbQuerySorting<BatchOperationEntity> sort;
     private DbQueryPage page;
 
     public Builder filter(final BatchOperationFilter value) {
       filter = value;
+      return this;
+    }
+
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
       return this;
     }
 
@@ -63,8 +72,9 @@ public record BatchOperationDbQuery(
     @Override
     public BatchOperationDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new BatchOperationDbQuery(filter, sort, page);
+      return new BatchOperationDbQuery(filter, authorizedResourceIds, sort, page);
     }
   }
 }

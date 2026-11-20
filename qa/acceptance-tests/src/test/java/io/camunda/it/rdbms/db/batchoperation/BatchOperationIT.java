@@ -934,6 +934,82 @@ public class BatchOperationIT {
     assertThat(result.items()).hasSize(2);
   }
 
+  @TestTemplate
+  public void shouldOnlyFindAuthorizedBatchOperationsAndItems(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+
+    // given
+    final var authorized = createAndSaveBatchOperation(writer, b -> b);
+    final var other = createAndSaveBatchOperation(writer, b -> b);
+    createAndSaveRandomBatchOperationItems(writer, authorized.batchOperationKey(), 2);
+    createAndSaveRandomBatchOperationItems(writer, other.batchOperationKey(), 2);
+    final var accessChecks = resourceAccessChecksFromResourceIds(authorized.batchOperationKey());
+
+    // when
+    final var batchOperations =
+        rdbmsService
+            .getBatchOperationReader()
+            .search(
+                new BatchOperationQuery(
+                    new BatchOperationFilter.Builder()
+                        .batchOperationKeys(
+                            authorized.batchOperationKey(), other.batchOperationKey())
+                        .build(),
+                    BatchOperationSort.of(b -> b),
+                    SearchQueryPage.of(b -> b)),
+                accessChecks);
+    final var items =
+        rdbmsService
+            .getBatchOperationItemReader()
+            .search(
+                new BatchOperationItemQuery(
+                    new BatchOperationItemFilter.Builder()
+                        .batchOperationKeys(
+                            authorized.batchOperationKey(), other.batchOperationKey())
+                        .build(),
+                    BatchOperationItemSort.of(b -> b),
+                    SearchQueryPage.of(b -> b)),
+                accessChecks);
+
+    // then
+    assertThat(batchOperations.items())
+        .extracting(BatchOperationEntity::batchOperationKey)
+        .containsExactly(authorized.batchOperationKey());
+    assertThat(items.total()).isEqualTo(2);
+    assertThat(items.items())
+        .extracting(BatchOperationItemEntity::batchOperationKey)
+        .containsOnly(authorized.batchOperationKey());
+  }
+
+  @TestTemplate
+  public void shouldReturnNoBatchOperationsWithoutBatchReadAccess(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+
+    // given
+    final var batchOperation = createAndSaveBatchOperation(writer, b -> b);
+
+    // when
+    final var result =
+        rdbmsService
+            .getBatchOperationReader()
+            .search(
+                new BatchOperationQuery(
+                    new BatchOperationFilter.Builder()
+                        .batchOperationKeys(batchOperation.batchOperationKey())
+                        .build(),
+                    BatchOperationSort.of(b -> b),
+                    SearchQueryPage.of(b -> b)),
+                resourceAccessChecksFromResourceIds(List.of()));
+
+    // then
+    assertThat(result.total()).isZero();
+    assertThat(result.items()).isEmpty();
+  }
+
   private static SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       final RdbmsService rdbmsService,
       final String batchOperationKey,
