@@ -32,7 +32,7 @@ const DecisionInstanceHeading: React.FC = () => {
 
 	return (
 		<Heading as="h1" id="operate-decision-instance-heading" tabIndex={-1} className="sr-only">
-			{t('operate.decisionInstance.title')}
+			{t('operate.decisionInstance.ds.title')}
 		</Heading>
 	);
 };
@@ -173,17 +173,19 @@ const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPa
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
 			<DecisionInstanceHeading />
-			<div className={cn('relative flex flex-col', isPending ? 'h-dvh' : 'h-full')}>
-				<div>{header}</div>
-				<div ref={splitContainerRef} className="relative min-h-0 grow">
-					<ResizablePanel
-						panelId="decision-detail-vertical-panel"
-						direction={SplitDirection.Vertical}
-						minHeights={[panelMinHeight, panelMinHeight]}
-					>
-						{topPanel ?? pendingTopPanel}
-						{bottomPanel ?? <VariablesPanelPending />}
-					</ResizablePanel>
+			<div className={cn('relative flex', isPending ? 'h-dvh' : 'h-full')}>
+				<div className="flex min-w-0 grow flex-col">
+					<div className="overflow-x-auto [&>header]:min-w-max">{header}</div>
+					<div ref={splitContainerRef} className="relative min-h-0 grow">
+						<ResizablePanel
+							panelId="decision-detail-vertical-panel"
+							direction={SplitDirection.Vertical}
+							minHeights={[panelMinHeight, panelMinHeight]}
+						>
+							{topPanel ?? pendingTopPanel}
+							{bottomPanel ?? <VariablesPanelPending />}
+						</ResizablePanel>
+					</div>
 				</div>
 				{rightPanel}
 			</div>

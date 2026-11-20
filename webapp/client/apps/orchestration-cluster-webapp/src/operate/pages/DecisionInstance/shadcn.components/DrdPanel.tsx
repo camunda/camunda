@@ -18,7 +18,7 @@ const DrdPanel: React.FC<Props> = ({children}) => {
 	const {panelRef, handleRef, width, maxWidth, minWidth} = useDrdPanelResize();
 
 	return (
-		<div className="absolute inset-y-0 right-0 z-10 flex">
+		<div className="relative flex shrink-0">
 			<section
 				id="operate-decision-drd-panel"
 				ref={panelRef}

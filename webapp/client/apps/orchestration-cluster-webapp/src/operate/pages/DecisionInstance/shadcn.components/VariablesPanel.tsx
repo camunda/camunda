@@ -100,7 +100,7 @@ const VariablesPanelPending: React.FC = () => {
 					<InputsAndOutputsLayout>
 						<section
 							aria-label={t('operate.decisionInstance.variablesPanel.inputVariables')}
-							className="grid h-full grid-rows-[auto_1fr] overflow-hidden max-sm:h-auto max-sm:shrink-0"
+							className="grid h-full grid-rows-[auto_1fr] overflow-hidden"
 						>
 							<Heading as="h2" variant="heading-sm" className="m-0 mt-4 ml-4 text-muted-foreground">
 								{t('operate.decisionInstance.variablesPanel.inputs')}
@@ -109,7 +109,7 @@ const VariablesPanelPending: React.FC = () => {
 						</section>
 						<section
 							aria-label={t('operate.decisionInstance.variablesPanel.outputVariables')}
-							className="grid h-full grid-rows-[auto_1fr] overflow-hidden max-sm:h-auto max-sm:shrink-0"
+							className="grid h-full grid-rows-[auto_1fr] overflow-hidden"
 						>
 							<Heading as="h2" variant="heading-sm" className="m-0 mt-4 ml-4 text-muted-foreground">
 								{t('operate.decisionInstance.variablesPanel.outputs')}

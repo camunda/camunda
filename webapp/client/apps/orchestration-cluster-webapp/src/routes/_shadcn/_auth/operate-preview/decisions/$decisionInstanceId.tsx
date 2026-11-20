@@ -26,7 +26,7 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/decisions/$
 		meta: loaderData
 			? [
 					{
-						title: t('operate.decisionInstance.pageTitle', {
+						title: t('operate.decisionInstance.ds.pageTitle', {
 							decisionInstanceId,
 							name: loaderData.decisionDefinitionName,
 						}),

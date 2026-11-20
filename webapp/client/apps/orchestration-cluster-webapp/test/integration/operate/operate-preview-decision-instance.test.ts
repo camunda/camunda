@@ -89,7 +89,7 @@ test.describe('Operate Decision Instance DS preview (/operate-preview/decisions/
 		await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_ID);
 
 		await expect(page.getByTestId('instance-header')).toContainText(DECISION_INSTANCE_ID);
-		await expect(page).toHaveTitle(`Operate: Decision Instance ${DECISION_INSTANCE_ID} of Invoice Classification`);
+		await expect(page).toHaveTitle(`Operate: Decision instance ${DECISION_INSTANCE_ID} of Invoice Classification`);
 		await expect(operateDecisionInstancePage.decisionTableLabel).toBeVisible();
 		await expect(operateDecisionInstancePage.drdPanel.getByTestId('state-overlay-EVALUATED')).toBeVisible();
 		await expect(page.getByRole('tab', {name: 'Inputs and outputs'})).toBeVisible();
@@ -130,6 +130,76 @@ test.describe('Operate Decision Instance DS preview (/operate-preview/decisions/
 
 		await page.getByRole('button', {name: 'Open decision requirements diagram'}).click();
 		await expect(operateDecisionInstancePage.drdPanel).toBeVisible();
+	});
+
+	test('should keep the full failure message reachable while the DRD panel is open', async ({
+		network,
+		page,
+		operateDecisionInstancePage,
+	}) => {
+		network.use(
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createDecisionInstance({
+						...DECISION_INSTANCE,
+						state: 'FAILED',
+						evaluationFailure: `Failed to evaluate expression 'amount > limit': ${'no variable found for name limit. '.repeat(20)}`,
+					}),
+				),
+			}),
+		);
+		await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_ID);
+		await expect(operateDecisionInstancePage.drdPanel).toBeVisible();
+
+		await page.getByRole('button', {name: 'Show full message'}).click();
+
+		await expect(page.getByRole('button', {name: 'Collapse message'})).toBeVisible();
+
+		await page.getByRole('button', {name: 'Collapse message'}).click();
+
+		await expect(page.getByRole('button', {name: 'Show full message'})).toBeVisible();
+	});
+
+	test('should fit the whole DRD into the panel again after resizing it', async ({operateDecisionInstancePage}) => {
+		await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_ID);
+		const decision = operateDecisionInstancePage.drdPanel.getByRole('button', {name: 'invoiceClassification'});
+		await expect(decision).toBeInViewport({ratio: 1});
+
+		const zoomIn = operateDecisionInstancePage.drdPanel.getByRole('button', {name: 'Zoom in'});
+		await zoomIn.click();
+		await zoomIn.click();
+		await zoomIn.click();
+		await expect(decision).not.toBeInViewport({ratio: 1});
+
+		await operateDecisionInstancePage.drdResizeHandle.press('ArrowLeft');
+
+		await expect(decision).toBeInViewport({ratio: 1});
+	});
+
+	test('should keep the inputs, outputs and header reachable next to the DRD panel on a narrow screen', async ({
+		page,
+		operateDecisionInstancePage,
+	}) => {
+		await page.setViewportSize({width: 1024, height: 768});
+		await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_ID);
+		await expect(operateDecisionInstancePage.drdPanel).toBeVisible();
+
+		const inputs = page.getByRole('heading', {name: 'Inputs'});
+		const outputs = page.getByRole('heading', {name: 'Outputs'});
+		const lastHeaderLink = page.getByTestId('instance-header').getByRole('link').last();
+
+		await expect(inputs).toBeInViewport();
+		await expect(outputs).toBeInViewport();
+		const inputsBounds = await operateDecisionInstancePage.boundsOf(inputs);
+		const outputsBounds = await operateDecisionInstancePage.boundsOf(outputs);
+		expect(outputsBounds.y).toBeGreaterThan(inputsBounds.y);
+		expect(outputsBounds.x).toBe(inputsBounds.x);
+
+		await lastHeaderLink.scrollIntoViewIfNeeded();
+		await expect(lastHeaderLink).toBeInViewport();
+		const lastHeaderLinkBounds = await operateDecisionInstancePage.boundsOf(lastHeaderLink);
+		const drdPanelBounds = await operateDecisionInstancePage.boundsOf(operateDecisionInstancePage.drdPanel);
+		expect(drdPanelBounds.x).toBeGreaterThan(lastHeaderLinkBounds.x);
 	});
 
 	test('should navigate to the related evaluated decision selected in the DRD', async ({

@@ -1622,6 +1622,8 @@
 					"unknownEvaluationFailure": "Auswertung ist mit einem unbekannten Fehler fehlgeschlagen"
 				},
 				"ds": {
+					"title": "Operate Entscheidungsinstanz",
+					"pageTitle": "Operate: Entscheidungsinstanz {{decisionInstanceId}} von {{name}}",
 					"drd": {
 						"title": "Entscheidungsanforderungsdiagramm",
 						"resize": "Größe des DRD-Bereichs ändern",

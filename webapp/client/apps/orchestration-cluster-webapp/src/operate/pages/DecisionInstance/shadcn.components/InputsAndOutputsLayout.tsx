@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMediaQuery} from '@camunda/design-system';
+import {useLayoutEffect, useRef, useState} from 'react';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
+
+const NARROW_WIDTH = 640;
 
 type Props = {
 	minWidths?: number[];
@@ -15,20 +17,39 @@ type Props = {
 };
 
 const InputsAndOutputsLayout: React.FC<Props> = ({minWidths, children}) => {
-	const isNarrow = useMediaQuery('(width < 40rem)');
+	const containerRef = useRef<HTMLDivElement>(null);
+	const [isNarrow, setIsNarrow] = useState(false);
 
-	if (isNarrow) {
-		return <div className="flex h-full flex-col overflow-y-auto">{children}</div>;
-	}
+	useLayoutEffect(() => {
+		const container = containerRef.current;
+		if (container === null) {
+			return;
+		}
+
+		const update = () => setIsNarrow(container.clientWidth < NARROW_WIDTH);
+		update();
+		const observer = new ResizeObserver(update);
+		observer.observe(container);
+
+		return () => observer.disconnect();
+	}, []);
 
 	return (
-		<ResizablePanel
-			panelId="decision-instance-horizontal-panel"
-			direction={SplitDirection.Horizontal}
-			minWidths={minWidths}
-		>
-			{children}
-		</ResizablePanel>
+		<div ref={containerRef} className="h-full">
+			{isNarrow ? (
+				<div className="grid h-full grid-rows-[fit-content(50%)_minmax(0,1fr)] [&>section]:h-auto [&>section]:min-h-0">
+					{children}
+				</div>
+			) : (
+				<ResizablePanel
+					panelId="decision-instance-horizontal-panel"
+					direction={SplitDirection.Horizontal}
+					minWidths={minWidths}
+				>
+					{children}
+				</ResizablePanel>
+			)}
+		</div>
 	);
 };
 

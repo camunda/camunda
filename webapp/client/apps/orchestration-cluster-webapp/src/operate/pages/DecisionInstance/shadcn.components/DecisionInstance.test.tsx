@@ -102,7 +102,7 @@ describe('<DecisionInstance /> (design system)', () => {
 			{path: PATH, initialEntry: INITIAL_ENTRY},
 		);
 
-		await expect.element(screen.getByRole('heading', {name: 'Operate Decision Instance'})).toBeInTheDocument();
+		await expect.element(screen.getByRole('heading', {name: 'Operate decision instance'})).toBeInTheDocument();
 		await expect.element(screen.getByTestId('diagram-spinner')).toBeVisible();
 		await expect.element(screen.getByTestId('inputs-skeleton')).toBeVisible();
 		await expect.element(screen.getByTestId('outputs-skeleton')).toBeVisible();
@@ -114,7 +114,7 @@ describe('<DecisionInstance /> (design system)', () => {
 		const screen = await renderPage();
 
 		await expect.element(screen.getByTestId('instance-header')).toBeVisible();
-		await expect.element(screen.getByRole('heading', {name: 'Operate Decision Instance'})).toBeInTheDocument();
+		await expect.element(screen.getByRole('heading', {name: 'Operate decision instance'})).toBeInTheDocument();
 		await expect
 			.element(screen.getByRole('region', {name: 'decision panel'}).getByText('Invoice Amount'))
 			.toBeVisible();

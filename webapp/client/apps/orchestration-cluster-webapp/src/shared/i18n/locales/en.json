@@ -1634,6 +1634,8 @@
 					"unknownEvaluationFailure": "Evaluation failed with unknown error"
 				},
 				"ds": {
+					"title": "Operate decision instance",
+					"pageTitle": "Operate: Decision instance {{decisionInstanceId}} of {{name}}",
 					"drd": {
 						"title": "Decision requirements diagram",
 						"resize": "Resize DRD panel",
