@@ -9,9 +9,11 @@ package io.camunda.configuration.data;
 
 import io.camunda.configuration.data.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /** Configuration for audit logging, including separate settings for user and client operations. */
+@NullMarked
 public class AuditLog {
   private boolean enabled = true;
 

@@ -10,7 +10,9 @@ package io.camunda.zeebe.exporter.common.auditlog;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class AuditLogConfiguration implements AuditLogCheck {
 
   private boolean enabled = true;
