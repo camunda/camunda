@@ -24,5 +24,7 @@ public final class Loggers {
       LoggerFactory.getLogger("io.camunda.client.job.poller");
   public static final Logger JOB_WORKER_LOGGER =
       LoggerFactory.getLogger("io.camunda.client.job.worker");
+  public static final Logger PROBE_WORKER_LOGGER =
+      LoggerFactory.getLogger("io.camunda.client.probe.worker");
   public static final Logger LOGGER = LoggerFactory.getLogger("io.camunda.client");
 }

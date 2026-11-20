@@ -54,6 +54,7 @@ import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
 import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
+import io.camunda.client.api.command.CreateProbeCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
@@ -226,6 +227,7 @@ import io.camunda.client.api.statistics.request.ProcessInstanceWaitStateStatisti
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandImpl;
 import io.camunda.client.impl.command.AddClockCommandImpl;
 import io.camunda.client.impl.command.AssignClientToGroupCommandImpl;
@@ -256,6 +258,7 @@ import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.client.impl.command.CreateGlobalTaskListenerCommandImpl;
 import io.camunda.client.impl.command.CreateGroupCommandImpl;
 import io.camunda.client.impl.command.CreateMappingRuleCommandImpl;
+import io.camunda.client.impl.command.CreateProbeCommandImpl;
 import io.camunda.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.client.impl.command.CreateTenantCommandImpl;
@@ -433,6 +436,7 @@ import io.camunda.client.impl.util.JobWorkerExecutors;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
 import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
+import io.camunda.client.impl.worker.probe.ProbeWorkerBuilderImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.CallCredentials;
@@ -953,6 +957,17 @@ public final class CamundaClientImpl implements CamundaClient {
     return new JobWorkerBuilderImpl(
         config,
         jobClient,
+        executorResource.scheduledExecutor(),
+        executorResource.jobHandlingExecutor(),
+        closeables);
+  }
+
+  @Override
+  public ProbeWorkerBuilderStep1 newProbeWorker() {
+    return new ProbeWorkerBuilderImpl(
+        config,
+        httpClient,
+        jsonMapper,
         executorResource.scheduledExecutor(),
         executorResource.jobHandlingExecutor(),
         closeables);
@@ -1825,6 +1840,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public EvaluateExpressionCommandStep1 newEvaluateExpressionCommand() {
     return new EvaluateExpressionCommandImpl(config, httpClient, jsonMapper);
+  }
+
+  @Override
+  public CreateProbeCommandStep1 newCreateProbeCommand() {
+    return new CreateProbeCommandImpl(config, httpClient, jsonMapper);
   }
 
   @Override
