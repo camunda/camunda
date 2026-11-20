@@ -109,7 +109,7 @@ test.describe('Process Definition Draining State', () => {
     expect(res.status()).toBe(400);
     expect((await res.json()).detail).toBe(
       "Unexpected value 'BOGUS' for enum field 'state'. " +
-        'Use any of the following values: [ACTIVE, DRAINING, DELETED]',
+        'Use any of the following values: [ACTIVE, DRAINING, DELETED, SUSPENDED]',
     );
   });
 
