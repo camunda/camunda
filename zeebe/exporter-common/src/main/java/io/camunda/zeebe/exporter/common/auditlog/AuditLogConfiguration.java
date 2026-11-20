@@ -20,6 +20,7 @@ public final class AuditLogConfiguration implements AuditLogCheck {
   private ActorAuditLogConfiguration user = ActorAuditLogConfiguration.logAll();
   private ActorAuditLogConfiguration client = ActorAuditLogConfiguration.logNone();
   private ActorAuditLogConfiguration unknown = ActorAuditLogConfiguration.logNone();
+  private ActorAuditLogConfiguration engine = ActorAuditLogConfiguration.logNone();
 
   public ActorAuditLogConfiguration getUser() {
     return user;
@@ -48,6 +49,15 @@ public final class AuditLogConfiguration implements AuditLogCheck {
     return this;
   }
 
+  public ActorAuditLogConfiguration getEngine() {
+    return engine;
+  }
+
+  public AuditLogConfiguration setEngine(final ActorAuditLogConfiguration engine) {
+    this.engine = engine;
+    return this;
+  }
+
   @Override
   public String toString() {
     return "AuditLogConfiguration{"
@@ -59,6 +69,8 @@ public final class AuditLogConfiguration implements AuditLogCheck {
         + client
         + ", unknown="
         + unknown
+        + ", engine="
+        + engine
         + '}';
   }
 
@@ -66,7 +78,8 @@ public final class AuditLogConfiguration implements AuditLogCheck {
     return enabled
         && !(getUser().getCategories().isEmpty()
             && getClient().getCategories().isEmpty()
-            && getUnknown().getCategories().isEmpty());
+            && getUnknown().getCategories().isEmpty()
+            && getEngine().getCategories().isEmpty());
   }
 
   public void setEnabled(final boolean enabled) {

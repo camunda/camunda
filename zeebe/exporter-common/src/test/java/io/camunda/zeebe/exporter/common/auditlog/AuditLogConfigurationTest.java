@@ -44,6 +44,7 @@ class AuditLogConfigurationTest {
     assertThat(config.getUser()).isNotNull();
     assertThat(config.getClient()).isNotNull();
     assertThat(config.getUnknown()).isNotNull();
+    assertThat(config.getEngine()).isNotNull();
     assertThat(config.getUser().getCategories())
         .as("User categories should include all categories by default")
         .containsExactlyInAnyOrder(
@@ -56,6 +57,12 @@ class AuditLogConfigurationTest {
     assertThat(config.getUnknown().getCategories())
         .as("Unknown categories should be empty by default (opt-in logging)")
         .isEmpty();
+    assertThat(config.getEngine().getCategories())
+        .as("Engine categories should be empty by default (opt-in logging)")
+        .isEmpty();
+    assertThat(config.getEngine().getExcludes())
+        .as("Engine excludes should be empty by default")
+        .isEmpty();
   }
 
   @Test
@@ -64,6 +71,7 @@ class AuditLogConfigurationTest {
     config.getUser().setCategories(Set.of());
     config.getClient().setCategories(Set.of());
     config.getUnknown().setCategories(Set.of());
+    config.getEngine().setCategories(Set.of());
 
     assertThat(config.isEnabled()).isFalse();
   }
@@ -94,6 +102,22 @@ class AuditLogConfigurationTest {
     config.getClient().setCategories(Set.of());
 
     assertThat(config.isEnabled()).isTrue();
+  }
+
+  @Test
+  void shouldBeEnabledWhenEngineCategoryConfigured() {
+    // given only the engine section has categories
+    final var config = new AuditLogConfiguration();
+    config.getEngine().setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+    config.getUser().setCategories(Set.of());
+    config.getClient().setCategories(Set.of());
+    config.getUnknown().setCategories(Set.of());
+
+    // when
+    final var enabled = config.isEnabled();
+
+    // then
+    assertThat(enabled).isTrue();
   }
 
   @Test
