@@ -367,6 +367,7 @@ public class SecretStoreConfiguration {
         storeId,
         tenantId);
     return AzureKeyVaultSecretStore.fromConfig(
+        tenantId,
         // the store tags its meters with this ID, which must match the registered one
         normalizeStoreId(storeId),
         new AzureKeyVaultStoreConfig(

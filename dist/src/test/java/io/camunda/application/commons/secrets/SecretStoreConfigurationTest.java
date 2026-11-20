@@ -13,8 +13,9 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.shared.management.ActorClockEndpoint;
 import io.camunda.zeebe.shared.management.ActorClockService;
 import io.camunda.zeebe.shared.management.ControlledActorClockService;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -61,12 +63,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedConstruction;
+import org.mockito.MockedStatic;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.MapPropertySource;
@@ -76,6 +81,29 @@ class SecretStoreConfigurationTest {
 
   private static final SecretStoreConfiguration CONFIG = new SecretStoreConfiguration();
   private static final ActorClockService CLOCK_SERVICE = System::currentTimeMillis;
+
+  // a real Azure store checks its vault while it is built, over the network, for up to its call
+  // timeout; the check itself is covered by the store module's tests
+  private MockedStatic<AzureKeyVaultSecretStore> azureStores;
+
+  @BeforeEach
+  void stubAzureStores() {
+    azureStores = mockStatic(AzureKeyVaultSecretStore.class);
+    azureStores
+        .when(() -> AzureKeyVaultSecretStore.fromConfig(any(), any(), any(), any()))
+        .thenAnswer(invocation -> azureStore());
+  }
+
+  @AfterEach
+  void closeAzureStores() {
+    azureStores.close();
+  }
+
+  private static AzureKeyVaultSecretStore azureStore() {
+    final var store = mock(AzureKeyVaultSecretStore.class);
+    when(store.is(any())).thenCallRealMethod();
+    return store;
+  }
 
   @Test
   void shouldFallbackToNoopStoreForDefaultTenantWhenNoStoresConfigured() {
@@ -648,8 +676,7 @@ class SecretStoreConfigurationTest {
 
   @Test
   void shouldBuildAzureKeyVaultStoreEvenWithoutAReachableVault() {
-    // given a vault URL nothing answers on; building the store must not call Azure, so startup does
-    // not depend on the vault being reachable
+    // given a vault URL nothing answers on; the store checks it best-effort and is built anyway
     final var resolver =
         resolverFor(
             Map.of(
@@ -678,11 +705,23 @@ class SecretStoreConfigurationTest {
     final var backend = new SimpleMeterRegistry();
     final var clusterRegistry = new CompositeMeterRegistry();
     clusterRegistry.add(backend);
+    // each store publishes its sign-in failures to the registry it is handed, as the real one does
+    azureStores
+        .when(() -> AzureKeyVaultSecretStore.fromConfig(any(), any(), any(), any()))
+        .thenAnswer(
+            invocation -> {
+              Counter.builder(SecretStoreMetricsDoc.SIGNIN_FAILURES.getName())
+                  .tag(SecretStoreKeyNames.STORE.asString(), invocation.<String>getArgument(1))
+                  .tag(SecretStoreKeyNames.STORE_TYPE.asString(), "azure")
+                  .register(invocation.<MeterRegistry>getArgument(3));
+              return azureStore();
+            });
 
     // when
     final var registries = CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, clusterRegistry);
 
-    // then each tenant's store has its own series, which closing the registries removes again
+    // then each tenant's store publishes to its own tenant's series, which closing the registries
+    // removes again
     assertThat(signInFailureTenants(backend))
         .containsExactlyInAnyOrder(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "pt1");
     registries.close();
@@ -697,15 +736,16 @@ class SecretStoreConfigurationTest {
             Map.of(
                 "camunda.secrets.stores.azure.Default.vault-url",
                 "https://default.vault.azure.net"));
-    final var meterRegistry = new SimpleMeterRegistry();
 
     // when
     try (final var registries =
-        CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, meterRegistry)) {
+        CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, new SimpleMeterRegistry())) {
 
-      // then the sign-in series joins the cache series on the same store tag
-      assertThat(signInFailureTenants(meterRegistry))
-          .containsExactly(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+      // then the store tags its sign-in series with the registered ID, joining the cache series
+      azureStores.verify(
+          () ->
+              AzureKeyVaultSecretStore.fromConfig(
+                  any(), eq(SecretStoreRegistry.DEFAULT_STORE_ID), any(), any()));
     }
   }
 
@@ -755,11 +795,9 @@ class SecretStoreConfigurationTest {
     final var built = ArgumentCaptor.forClass(AzureKeyVaultStoreConfig.class);
 
     // when
-    try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
-      registries(resolver);
-      factory.verify(
-          () -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()), times(2));
-    }
+    registries(resolver);
+    azureStores.verify(
+        () -> AzureKeyVaultSecretStore.fromConfig(any(), any(), built.capture(), any()), times(2));
 
     // then the default tenant's store gets every setting, unchanged by pt1's overrides
     assertThat(built.getAllValues())
@@ -794,10 +832,9 @@ class SecretStoreConfigurationTest {
     final var built = ArgumentCaptor.forClass(AzureKeyVaultStoreConfig.class);
 
     // when
-    try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
-      registries(resolver);
-      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()));
-    }
+    registries(resolver);
+    azureStores.verify(
+        () -> AzureKeyVaultSecretStore.fromConfig(any(), any(), built.capture(), any()));
 
     // then the two modules' defaults have not drifted apart
     assertThat(built.getValue())
@@ -836,10 +873,9 @@ class SecretStoreConfigurationTest {
     final var built = ArgumentCaptor.forClass(AzureKeyVaultStoreConfig.class);
 
     // when
-    try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
-      registries(resolver);
-      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()));
-    }
+    registries(resolver);
+    azureStores.verify(
+        () -> AzureKeyVaultSecretStore.fromConfig(any(), any(), built.capture(), any()));
 
     // then
     assertThat(built.getValue().vaultUrl()).isEqualTo("https://my-vault.vault.azure.net");
@@ -890,11 +926,9 @@ class SecretStoreConfigurationTest {
     final var built = ArgumentCaptor.forClass(AzureKeyVaultStoreConfig.class);
 
     // when
-    try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
-      registries(resolver);
-      factory.verify(
-          () -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()), times(2));
-    }
+    registries(resolver);
+    azureStores.verify(
+        () -> AzureKeyVaultSecretStore.fromConfig(any(), any(), built.capture(), any()), times(2));
 
     // then pt1's store gets the merged timeouts
     assertThat(built.getAllValues())
@@ -913,11 +947,9 @@ class SecretStoreConfigurationTest {
     final var built = ArgumentCaptor.forClass(AzureKeyVaultStoreConfig.class);
 
     // when
-    try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
-      registries(resolver);
-      factory.verify(
-          () -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()), times(2));
-    }
+    registries(resolver);
+    azureStores.verify(
+        () -> AzureKeyVaultSecretStore.fromConfig(any(), any(), built.capture(), any()), times(2));
 
     // then startup succeeds, pt1's attempt bound follows its call bound and the root keeps 2s
     assertThat(built.getAllValues())
