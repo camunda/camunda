@@ -62,7 +62,7 @@ import reactor.core.publisher.Mono;
 @WebMvcTest(UserTaskController.class)
 public class ErrorMapperTest extends RestControllerTest {
 
-  private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
+  private static final String USER_TASKS_BASE_URL = "/v2/user-tasks";
 
   @MockitoBean UserTaskServices userTaskServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -229,7 +229,7 @@ public class ErrorMapperTest extends RestControllerTest {
               "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
               "instance": "%s"
             }"""
-            .formatted(rejectionType, "/v1/user-tasks/1/completion");
+            .formatted(rejectionType, USER_TASKS_BASE_URL + "/1/completion");
 
     // when / then
     webClient
@@ -270,7 +270,7 @@ public class ErrorMapperTest extends RestControllerTest {
               "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
               "instance": "%s"
             }"""
-            .formatted(rejectionType, "/v1/user-tasks/1/completion");
+            .formatted(rejectionType, USER_TASKS_BASE_URL + "/1/completion");
 
     // when / then
     webClient

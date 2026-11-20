@@ -43,7 +43,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
@@ -52,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -73,36 +73,6 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ServiceRegistry serviceRegistry;
 
-  static Stream<String> urls() {
-    return Stream.of("/v1/user-tasks", "/v2/user-tasks");
-  }
-
-  static Stream<Pair<RejectionType, String>> invalidArgumentAndUrls() {
-    return urls()
-        .flatMap(
-            url ->
-                Stream.of(RejectionType.INVALID_ARGUMENT).flatMap(r -> Stream.of(Pair.of(r, url))));
-  }
-
-  static Stream<Pair<RejectionType, String>> alreadyExistsAndUrls() {
-    return urls()
-        .flatMap(
-            url ->
-                Stream.of(RejectionType.ALREADY_EXISTS).flatMap(r -> Stream.of(Pair.of(r, url))));
-  }
-
-  static Stream<Pair<String, String>> validDateInputsAndUrls() {
-    return urls()
-        .flatMap(
-            url ->
-                Stream.of(
-                        "2023-11-11T10:10:10.1010Z",
-                        "2023-11-11T10:10:10Z",
-                        "2023-11-11T10:10:10.1010+01:00",
-                        "2023-11-11T10:10:10.101010101+01:00")
-                    .flatMap(date -> Stream.of(Pair.of(date, url))));
-  }
-
   @BeforeEach
   void setupServices() {
     when(serviceRegistry.userTaskServices(any())).thenReturn(userTaskServices);
@@ -110,16 +80,15 @@ public class UserTaskControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldCompleteTaskWithoutActionAndVariables(final String baseUrl) {
+  @Test
+  void shouldCompleteTaskWithoutActionAndVariables() {
     // given
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/2251799813685732/completion")
+        .uri(USER_TASKS_V2_URL + "/2251799813685732/completion")
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -131,9 +100,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .completeUserTask(eq(2251799813685732L), eq(Map.of()), eq(""), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldCompleteTaskWithAction(final String baseUrl) {
+  @Test
+  void shouldCompleteTaskWithAction() {
     // given
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
@@ -146,7 +114,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/1/completion")
+        .uri(USER_TASKS_V2_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -160,9 +128,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .completeUserTask(eq(1L), eq(Map.of()), eq("customAction"), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldCompleteTaskWithVariables(final String baseUrl) {
+  @Test
+  void shouldCompleteTaskWithVariables() {
     // given
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
@@ -178,7 +145,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/1/completion")
+        .uri(USER_TASKS_V2_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -192,9 +159,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .completeUserTask(eq(1L), eq(Map.of("foo", "bar", "baz", 1234)), eq(""), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldCompleteTaskWithActionAndVariables(final String baseUrl) {
+  @Test
+  void shouldCompleteTaskWithActionAndVariables() {
     // given
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
@@ -211,7 +177,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/1/completion")
+        .uri(USER_TASKS_V2_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -225,9 +191,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .completeUserTask(eq(1L), eq(Map.of("foo", "bar", "baz", 1234)), eq("customAction"), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldUpdateTaskWithAction(final String baseUrl) {
+  @Test
+  void shouldUpdateTaskWithAction() {
     // given
     Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
@@ -240,7 +205,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -261,9 +226,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .hasNoCandidateUsersList();
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldUpdateTaskWithChanges(final String baseUrl) {
+  @Test
+  void shouldUpdateTaskWithChanges() {
     // given
     Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
@@ -283,7 +247,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -310,9 +274,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .hasPriority(33);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldUpdateTaskWithPartialChanges(final String baseUrl) {
+  @Test
+  void shouldUpdateTaskWithPartialChanges() {
     // given
     Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
@@ -329,7 +292,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -350,9 +313,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .hasNoCandidateUsersList();
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldUpdateTaskWithPartialEmptyValueChanges(final String baseUrl) {
+  @Test
+  void shouldUpdateTaskWithPartialEmptyValueChanges() {
     // given
     Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
@@ -368,7 +330,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -389,9 +351,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .hasNoCandidateUsersList();
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldUpdateTaskWithActionAndChanges(final String baseUrl) {
+  @Test
+  void shouldUpdateTaskWithActionAndChanges() {
     // given
     Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
@@ -412,7 +373,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -440,8 +401,14 @@ public class UserTaskControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("validDateInputsAndUrls")
-  void shouldUpdateTaskWithDateChanges(final Pair<String, String> dateAndUrl) {
+  @ValueSource(
+      strings = {
+        "2023-11-11T10:10:10.1010Z",
+        "2023-11-11T10:10:10Z",
+        "2023-11-11T10:10:10.1010+01:00",
+        "2023-11-11T10:10:10.101010101+01:00"
+      })
+  void shouldUpdateTaskWithDateChanges(final String date) {
     // given
     Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
@@ -453,12 +420,12 @@ public class UserTaskControllerTest extends RestControllerTest {
                 "followUpDate": "%s"
               }
             }"""
-            .formatted(dateAndUrl.getLeft(), dateAndUrl.getLeft());
+            .formatted(date, date);
 
     // when / then
     webClient
         .patch()
-        .uri(dateAndUrl.getRight() + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -473,13 +440,12 @@ public class UserTaskControllerTest extends RestControllerTest {
         .updateUserTask(eq(1L), argumentCaptor.capture(), eq(""), any());
     Assertions.assertThat(argumentCaptor.getValue())
         .hasChangedAttributes(UserTaskRecord.DUE_DATE, UserTaskRecord.FOLLOW_UP_DATE)
-        .hasDueDate(dateAndUrl.getLeft())
-        .hasFollowUpDate(dateAndUrl.getLeft());
+        .hasDueDate(date)
+        .hasFollowUpDate(date);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithoutActionAndChanges(final String baseUrl) {
+  @Test
+  void shouldYieldBadRequestWhenUpdateTaskWithoutActionAndChanges() {
     // given
     final var expectedBody =
         """
@@ -491,12 +457,12 @@ public class UserTaskControllerTest extends RestControllerTest {
             for a supported attribute in the \\"changeset\\".",
                       "instance": "%s"
                     }"""
-            .formatted(baseUrl + "/1");
+            .formatted(USER_TASKS_V2_URL + "/1");
 
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
@@ -510,9 +476,8 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verifyNoInteractions(userTaskServices);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedDueDate(final String baseUrl) {
+  @Test
+  void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedDueDate() {
     // given
     final var request =
         """
@@ -531,12 +496,12 @@ public class UserTaskControllerTest extends RestControllerTest {
               "detail": "The provided due date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.",
               "instance": "%s"
             }"""
-            .formatted(baseUrl + "/1");
+            .formatted(USER_TASKS_V2_URL + "/1");
 
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -551,9 +516,8 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verifyNoInteractions(userTaskServices);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithMalformedFollowUpDate(final String baseUrl) {
+  @Test
+  void shouldYieldBadRequestWhenUpdateTaskWithMalformedFollowUpDate() {
     // given
     final var request =
         """
@@ -572,12 +536,12 @@ public class UserTaskControllerTest extends RestControllerTest {
               "detail": "The provided follow-up date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.",
               "instance": "%s"
             }"""
-            .formatted(baseUrl + "/1");
+            .formatted(USER_TASKS_V2_URL + "/1");
 
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -592,9 +556,8 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verifyNoInteractions(userTaskServices);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithInvalidOffsetFollowUpDate(final String baseUrl) {
+  @Test
+  void shouldYieldBadRequestWhenUpdateTaskWithInvalidOffsetFollowUpDate() {
     // given
     final var request =
         """
@@ -617,12 +580,12 @@ public class UserTaskControllerTest extends RestControllerTest {
             section 5.6.",
               "instance": "%s"
             }"""
-            .formatted(baseUrl + "/1");
+            .formatted(USER_TASKS_V2_URL + "/1");
 
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -637,9 +600,8 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verifyNoInteractions(userTaskServices);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedFollowUpAndDueDate(final String baseUrl) {
+  @Test
+  void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedFollowUpAndDueDate() {
     // given
     final var request =
         """
@@ -661,12 +623,12 @@ public class UserTaskControllerTest extends RestControllerTest {
             RFC 3339, section 5.6.",
                           "instance": "%s"
                         }"""
-            .formatted(baseUrl + "/1");
+            .formatted(USER_TASKS_V2_URL + "/1");
 
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -681,9 +643,8 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verifyNoInteractions(userTaskServices);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithUntrackedChanges(final String baseUrl) {
+  @Test
+  void shouldYieldBadRequestWhenUpdateTaskWithUntrackedChanges() {
     // given
     final var request =
         """
@@ -700,12 +661,12 @@ public class UserTaskControllerTest extends RestControllerTest {
               "detail": "No update data provided. Provide at least an \\"action\\" or a non-null value for a supported attribute in the \\"changeset\\".",
               "instance": "%s"
             }"""
-            .formatted(baseUrl + "/1");
+            .formatted(USER_TASKS_V2_URL + "/1");
 
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -720,9 +681,8 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verifyNoInteractions(userTaskServices);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithOnlyUnknownProperties(final String baseUrl) {
+  @Test
+  void shouldYieldBadRequestWhenUpdateTaskWithOnlyUnknownProperties() {
     // given
     final var request =
         """
@@ -741,12 +701,12 @@ public class UserTaskControllerTest extends RestControllerTest {
               "detail": "No update data provided. Provide at least an \\"action\\" or a non-null value for a supported attribute in the \\"changeset\\".",
               "instance": "%s"
             }"""
-            .formatted(baseUrl + "/1");
+            .formatted(USER_TASKS_V2_URL + "/1");
 
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -761,14 +721,9 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verifyNoInteractions(userTaskServices);
   }
 
-  static Stream<Arguments> urlsAndPriorityValue() {
-    return urls().flatMap(url -> Stream.of(Arguments.of(url, -1), Arguments.of(url, 101)));
-  }
-
   @ParameterizedTest
-  @MethodSource("urlsAndPriorityValue")
-  void shouldYieldBadRequestWhenUpdateTaskWithPriorityOutOfBounds(
-      final String baseUrl, final int priority) {
+  @ValueSource(ints = {-1, 101})
+  void shouldYieldBadRequestWhenUpdateTaskWithPriorityOutOfBounds(final int priority) {
     // given
     final var request =
         """
@@ -788,12 +743,12 @@ public class UserTaskControllerTest extends RestControllerTest {
               "detail": "The value for priority is '%s' but must be within the [0,100] range.",
               "instance": "%s"
             }"""
-            .formatted(priority, baseUrl + "/1");
+            .formatted(priority, USER_TASKS_V2_URL + "/1");
 
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -810,9 +765,8 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verifyNoInteractions(userTaskServices);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldYieldNotFoundWhenTaskNotFound(final String baseUrl) {
+  @Test
+  void shouldYieldNotFoundWhenTaskNotFound() {
     // given
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
@@ -830,12 +784,12 @@ public class UserTaskControllerTest extends RestControllerTest {
               "detail": "Command 'COMPLETE' rejected with code 'NOT_FOUND': Task not found",
               "instance": "%s"
             }"""
-            .formatted(baseUrl + "/1/completion");
+            .formatted(USER_TASKS_V2_URL + "/1/completion");
 
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/1/completion")
+        .uri(USER_TASKS_V2_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
@@ -849,9 +803,8 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldReturnGatewayTimeoutWhenCompleteTaskTimesOut(final String baseUrl) {
+  @Test
+  void shouldReturnGatewayTimeoutWhenCompleteTaskTimesOut() {
     // given
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
@@ -861,7 +814,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/1/completion")
+        .uri(USER_TASKS_V2_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -877,9 +830,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEqualTo(504);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldYieldConflictWhenInvalidState(final String baseUrl) {
+  @Test
+  void shouldYieldConflictWhenInvalidState() {
     // given
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
@@ -900,12 +852,12 @@ public class UserTaskControllerTest extends RestControllerTest {
               "detail": "Command 'COMPLETE' rejected with code 'INVALID_STATE': Task is not in state CREATED",
               "instance": "%s"
             }"""
-            .formatted(baseUrl + "/1/completion");
+            .formatted(USER_TASKS_V2_URL + "/1/completion");
 
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/1/completion")
+        .uri(USER_TASKS_V2_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
@@ -919,17 +871,16 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("invalidArgumentAndUrls")
-  public void shouldYieldBadRequestWhenRejectionOfInput(
-      final Pair<RejectionType, String> parameters) {
+  @Test
+  public void shouldYieldBadRequestWhenRejectionOfInput() {
     // given
+    final var rejectionType = RejectionType.INVALID_ARGUMENT;
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
-                        UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
+                        UserTaskIntent.COMPLETE, 1L, rejectionType, "Just an error"))));
 
     final var expectedBody =
         """
@@ -940,15 +891,12 @@ public class UserTaskControllerTest extends RestControllerTest {
               "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
               "instance": "%s"
             }"""
-            .formatted(
-                parameters.getLeft().name(),
-                parameters.getLeft(),
-                parameters.getRight() + "/1/completion");
+            .formatted(rejectionType.name(), rejectionType, USER_TASKS_V2_URL + "/1/completion");
 
     // when / then
     webClient
         .post()
-        .uri(parameters.getRight() + "/1/completion")
+        .uri(USER_TASKS_V2_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
@@ -962,17 +910,16 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("alreadyExistsAndUrls")
-  public void shouldYieldConflictWhenRejectionOfInput(
-      final Pair<RejectionType, String> parameters) {
+  @Test
+  public void shouldYieldConflictWhenRejectionOfInput() {
     // given
+    final var rejectionType = RejectionType.ALREADY_EXISTS;
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
-                        UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
+                        UserTaskIntent.COMPLETE, 1L, rejectionType, "Just an error"))));
 
     final var expectedBody =
         """
@@ -983,15 +930,12 @@ public class UserTaskControllerTest extends RestControllerTest {
               "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
               "instance": "%s"
             }"""
-            .formatted(
-                parameters.getLeft().name(),
-                parameters.getLeft(),
-                parameters.getRight() + "/1/completion");
+            .formatted(rejectionType.name(), rejectionType, USER_TASKS_V2_URL + "/1/completion");
 
     // when / then
     webClient
         .post()
-        .uri(parameters.getRight() + "/1/completion")
+        .uri(USER_TASKS_V2_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
@@ -1005,9 +949,8 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldAssignTaskWithoutActionAndAllowOverride(final String baseUrl) {
+  @Test
+  void shouldAssignTaskWithoutActionAndAllowOverride() {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
@@ -1022,7 +965,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/2251799813685732/assignment")
+        .uri(USER_TASKS_V2_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1036,9 +979,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .assignUserTask(eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(true), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldAssignTaskWithActionWithoutAllowOverride(final String baseUrl) {
+  @Test
+  void shouldAssignTaskWithActionWithoutAllowOverride() {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
@@ -1054,7 +996,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/2251799813685732/assignment")
+        .uri(USER_TASKS_V2_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1069,9 +1011,8 @@ public class UserTaskControllerTest extends RestControllerTest {
             eq(2251799813685732L), eq("Test Assignee"), eq("custom action"), eq(true), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldAssignTaskWithActionWithAllowOverrideTrue(final String baseUrl) {
+  @Test
+  void shouldAssignTaskWithActionWithAllowOverrideTrue() {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
@@ -1088,7 +1029,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when/then
     webClient
         .post()
-        .uri(baseUrl + "/2251799813685732/assignment")
+        .uri(USER_TASKS_V2_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1103,9 +1044,8 @@ public class UserTaskControllerTest extends RestControllerTest {
             eq(2251799813685732L), eq("Test Assignee"), eq("custom action"), eq(true), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldAssignTaskWithActionWithAllowOverrideFalse(final String baseUrl) {
+  @Test
+  void shouldAssignTaskWithActionWithAllowOverrideFalse() {
     // gíven
     Mockito.when(
             userTaskServices.assignUserTask(
@@ -1122,7 +1062,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/2251799813685732/assignment")
+        .uri(USER_TASKS_V2_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1137,9 +1077,8 @@ public class UserTaskControllerTest extends RestControllerTest {
             eq(2251799813685732L), eq("Test Assignee"), eq("custom action"), eq(false), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldAssignTaskWithoutActionWithAllowOverrideTrue(final String baseUrl) {
+  @Test
+  void shouldAssignTaskWithoutActionWithAllowOverrideTrue() {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
@@ -1155,7 +1094,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/2251799813685732/assignment")
+        .uri(USER_TASKS_V2_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1169,9 +1108,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .assignUserTask(eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(true), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldAssignTaskWithoutActionWithAllowOverrideFalse(final String baseUrl) {
+  @Test
+  void shouldAssignTaskWithoutActionWithAllowOverrideFalse() {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
@@ -1187,7 +1125,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/2251799813685732/assignment")
+        .uri(USER_TASKS_V2_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1201,9 +1139,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .assignUserTask(eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(false), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldYieldBadRequestWhenNoAssigneeForTaskAssignment(final String baseUrl) {
+  @Test
+  void shouldYieldBadRequestWhenNoAssigneeForTaskAssignment() {
     // given
     final var request = "{}";
 
@@ -1216,12 +1153,12 @@ public class UserTaskControllerTest extends RestControllerTest {
               "detail": "No assignee provided",
               "instance": "%s"
             }"""
-            .formatted(baseUrl + "/1/assignment");
+            .formatted(USER_TASKS_V2_URL + "/1/assignment");
 
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/1/assignment")
+        .uri(USER_TASKS_V2_URL + "/1/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1236,9 +1173,8 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verifyNoInteractions(userTaskServices);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldReturnGatewayTimeoutWhenAssignTaskTimesOut(final String baseUrl) {
+  @Test
+  void shouldReturnGatewayTimeoutWhenAssignTaskTimesOut() {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
@@ -1256,7 +1192,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(baseUrl + "/1/assignment")
+        .uri(USER_TASKS_V2_URL + "/1/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1274,9 +1210,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEqualTo(504);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldReturnGatewayTimeoutWhenUpdateTaskTimesOut(final String baseUrl) {
+  @Test
+  void shouldReturnGatewayTimeoutWhenUpdateTaskTimesOut() {
     // given
     Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
@@ -1294,7 +1229,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .patch()
-        .uri(baseUrl + "/1")
+        .uri(USER_TASKS_V2_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1312,16 +1247,15 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEqualTo(504);
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldUnassignTask(final String baseUrl) {
+  @Test
+  void shouldUnassignTask() {
     // given
     Mockito.when(userTaskServices.unassignUserTask(anyLong(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
     // when / then
     webClient
         .delete()
-        .uri(baseUrl + "/2251799813685732/assignee")
+        .uri(USER_TASKS_V2_URL + "/2251799813685732/assignee")
         .exchange()
         .expectStatus()
         .isNoContent()
@@ -1331,9 +1265,8 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.verify(userTaskServices).unassignUserTask(eq(2251799813685732L), eq("unassign"), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("urls")
-  void shouldReturnGatewayTimeoutWhenUnassignTaskTimesOut(final String baseUrl) {
+  @Test
+  void shouldReturnGatewayTimeoutWhenUnassignTaskTimesOut() {
     // given
     Mockito.when(userTaskServices.unassignUserTask(anyLong(), anyString(), any()))
         .thenReturn(
@@ -1343,7 +1276,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // when / then
     webClient
         .delete()
-        .uri(baseUrl + "/1/assignee")
+        .uri(USER_TASKS_V2_URL + "/1/assignee")
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()

@@ -70,9 +70,6 @@ final class SpecControllerAlignmentTest {
   private static final String SPEC_RELATIVE_PATH =
       "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml";
   private static final String CONTROLLER_BASE_PACKAGE = "io.camunda.zeebe.gateway.rest";
-  // Pre-8.6 aliases that share handlers with documented /v2 endpoints (e.g. UserTaskController,
-  // TopologyController), so @Hidden cannot exclude them per path.
-  private static final String LEGACY_V1_PREFIX = "/v1/";
   private static final Pattern PATH_VARIABLE = Pattern.compile("\\{[^}]*}");
   private static final Pattern REPEATED_SLASHES = Pattern.compile("/{2,}");
 
@@ -120,9 +117,6 @@ final class SpecControllerAlignmentTest {
     final List<String> undocumented =
         controllerEndpoints.stream()
             .filter(controllerEndpoint -> !controllerEndpoint.hidden())
-            .filter(
-                controllerEndpoint ->
-                    !controllerEndpoint.endpoint().path().startsWith(LEGACY_V1_PREFIX))
             .filter(controllerEndpoint -> !specEndpoints.contains(controllerEndpoint.endpoint()))
             .sorted(
                 Comparator.comparing(controllerEndpoint -> controllerEndpoint.endpoint().path()))
