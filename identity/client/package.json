@@ -21,6 +21,9 @@
     "@camunda/oc-saas-notifications": {
       "@camunda/design-system": "$@camunda/design-system",
       "@camunda/camunda-composite-components": "$@camunda/camunda-composite-components"
+    },
+    "monaco-editor": {
+      "dompurify": "3.4.17"
     }
   },
   "dependencies": {
