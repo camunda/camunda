@@ -19,9 +19,8 @@ package org.camunda.bpm.model.xml.test;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
-import org.junit.rules.TestRule;
 
-public interface GetModelElementTypeRule extends TestRule {
+public interface GetModelElementTypeRule {
 
   ModelInstance getModelInstance();
 

@@ -22,7 +22,7 @@ import static org.camunda.bpm.model.xml.impl.util.StringUtil.splitCommaSeparated
 
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Sebastian Menski
