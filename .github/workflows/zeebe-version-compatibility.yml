@@ -21,6 +21,10 @@ env:
 
 jobs:
   prepare-report:
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
     name: Prepare Previous Report
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -59,9 +63,14 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
   released-versions:
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
     name: Released Versions
     needs: prepare-report
     runs-on: ubuntu-latest
@@ -90,8 +99,9 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -PskipFrontendBuild
@@ -127,9 +137,14 @@ jobs:
           job_name: "released-versions/${{ matrix.shards }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
   current-snapshot:
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
     name: Current Snapshot
     runs-on: ubuntu-latest
     if: always()
@@ -146,8 +161,9 @@ jobs:
         with:
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
@@ -183,9 +199,14 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
   update-shared-report:
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
     name: Update Report
     runs-on: ubuntu-latest
     needs: released-versions
@@ -214,5 +235,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}

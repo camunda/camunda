@@ -52,6 +52,9 @@ jobs:
           build_status: ${{ job.status }}
           job_name: run-cpt-tests (branch=${{ inputs.branch }}, runtime=${{ inputs.camunda_image_version }})
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
@@ -59,6 +62,9 @@ jobs:
         with:
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
@@ -128,6 +134,9 @@ jobs:
           build_status: ${{ job.status }}
           job_name: run-cpt-tests (branch=${{ inputs.branch }}, runtime=${{ inputs.camunda_image_version }})
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
@@ -137,7 +146,8 @@ jobs:
     timeout-minutes: 5
     needs: [run-cpt-tests]
     if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Import Secrets
@@ -145,9 +155,10 @@ jobs:
         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_CPT_ZPT_CI_WEBHOOK;
@@ -184,5 +195,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
