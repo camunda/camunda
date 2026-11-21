@@ -562,5 +562,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/44875341909",
     "updated_at": "2026-11-21T06:51:02Z",
     "cooldown_until": "2026-11-24T06:51:02Z"
+  },
+  "ad0c6beb": {
+    "version": "8.10",
+    "file": "tests/api/v2/authorization/search-authorization-api.spec.ts",
+    "titlePath": [
+      "Search Authorization API",
+      "Search Authorization - filtered by ownerId and resourceIds - multiple results - 200 Success"
+    ],
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 80 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44875376416",
+    "updated_at": "2026-11-21T06:51:23Z",
+    "cooldown_until": "2026-11-24T06:51:23Z"
   }
 }
