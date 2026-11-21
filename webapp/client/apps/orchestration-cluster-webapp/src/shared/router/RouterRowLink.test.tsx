@@ -6,17 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useRouter} from '@tanstack/react-router';
 import {cleanup} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {afterEach, describe, expect} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {RouterRowLink} from './RouterRowLink';
-import {useAdminDetailPath} from './useAdminDetailPath';
 
 const RowLink: React.FC = () => {
-	const detailPath = useAdminDetailPath();
-	return <RouterRowLink href={detailPath.user('ops/1')}>ops/1</RouterRowLink>;
+	const router = useRouter();
+	const href = router.buildLocation({to: '/admin/users/$username', params: {username: 'ops/1'}}).pathname;
+	return <RouterRowLink href={href}>ops/1</RouterRowLink>;
 };
 
 describe('<RouterRowLink />', () => {
