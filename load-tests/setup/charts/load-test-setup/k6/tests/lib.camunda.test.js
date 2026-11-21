@@ -225,5 +225,25 @@ describe("Client.deploy", () => {
       resources: { content: "<bpmn/>", name: "my.bpmn" },
     });
     assert.equal(params.headers.Authorization, "Bearer token-1");
+    assert.deepEqual(params.tags, { name: "/v2/deployments" });
+  });
+});
+
+describe("Client.decisionDefinitionEvaluation", () => {
+  it("should evaluate the decision with the given variables", () => {
+    // given
+    const client = new Client();
+
+    // when
+    client.decisionDefinitionEvaluation("my-decision", { category: "a" });
+
+    // then
+    const [method, url, body] = http.request.mock.calls[0].arguments;
+    assert.equal(method, "POST");
+    assert.equal(url, "http://camunda:8080/v2/decision-definitions/evaluation");
+    assert.deepEqual(JSON.parse(body), {
+      decisionDefinitionId: "my-decision",
+      variables: { category: "a" },
+    });
   });
 });
