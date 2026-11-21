@@ -123,6 +123,15 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
     return new ExpressionLabel("version tag expression", businessRuleTask(businessRuleTaskId));
   }
 
+  /**
+   * Labels an expression as the message name expression of a message catch element. The element is
+   * not always an event (e.g. a receive task), so it is named "element".
+   */
+  public static ExpressionLabel messageNameExpression(final DirectBuffer elementId) {
+    return new ExpressionLabel(
+        "message name expression", "element '%s'".formatted(BufferUtil.bufferAsString(elementId)));
+  }
+
   /** Labels an expression as the signal name expression of a throwing or catching event. */
   public static ExpressionLabel signalNameExpression(final DirectBuffer eventId) {
     return new ExpressionLabel("signal name expression", event(eventId));

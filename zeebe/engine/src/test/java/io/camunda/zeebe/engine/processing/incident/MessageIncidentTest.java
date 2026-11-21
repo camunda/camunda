@@ -91,7 +91,8 @@ public final class MessageIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'nameLookup' to be 'STRING', but was 'NULL'. \
+            Expected result of the message name expression 'nameLookup' of element 'catch' to be \
+            'STRING', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'nameLookup'""")
         .hasBpmnProcessId("UNRESOLVABLE_NAME_EXPRESSION")
@@ -132,13 +133,51 @@ public final class MessageIncidentTest {
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression 'nameLookup' to be 'STRING', but was 'NUMBER'.")
+            "Expected result of the message name expression 'nameLookup' of element 'catch' to be 'STRING', but was 'NUMBER'.")
         .hasBpmnProcessId("NAME_EXPRESSION_INVALID_TYPE")
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("catch")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L)
         .hasVariableScopeKey(failureEvent.getKey());
+  }
+
+  @Test
+  public void shouldNameMessageNameExpressionOfReceiveTaskIfItEvaluatesToWrongType() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var elementId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .receiveTask(elementId)
+                .message(m -> m.nameExpression("nameLookup").zeebeCorrelationKeyExpression("12345"))
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("nameLookup", 25)
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentRecord.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the message name expression 'nameLookup' of element '%s' to be 'STRING', but was 'NUMBER'."
+                .formatted(elementId))
+        .hasBpmnProcessId(processId)
+        .hasElementId(elementId);
   }
 
   @Test
