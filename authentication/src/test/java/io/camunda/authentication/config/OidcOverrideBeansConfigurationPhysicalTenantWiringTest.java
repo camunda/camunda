@@ -71,13 +71,13 @@ final class OidcOverrideBeansConfigurationPhysicalTenantWiringTest {
   }
 
   @Test
-  void buildsPhysicalTenantAwareConverterWhenPhysicalTenantsAreConfigured() {
+  void shouldBuildPhysicalTenantAwareConverterWhenPhysicalTenantsAreConfigured() {
     assertThat(buildConverter(environmentWithTenantA()))
         .isInstanceOf(PhysicalTenantAwareOidcTokenAuthenticationConverter.class);
   }
 
   @Test
-  void resolvesATenantTokenWithTheTenantsOwnFlatSlotClaim() {
+  void shouldResolveATenantTokenWithTheTenantsOwnFlatSlotClaim() {
     final var converter = buildConverter(environmentWithTenantA());
     bindRequestForTenant(TENANT_A);
 
@@ -88,7 +88,7 @@ final class OidcOverrideBeansConfigurationPhysicalTenantWiringTest {
   }
 
   @Test
-  void resolvesATenantTokenFromItsNamedProviderWithThatProvidersClaim() {
+  void shouldResolveATenantTokenFromItsNamedProviderWithThatProvidersClaim() {
     // Precedence within a tenant: a token from the named providers.oidc.* issuer resolves with that
     // provider's own claim, not the tenant's flat-slot claim — covering the per-issuer map built in
     // buildPhysicalTenantConverter from both the flat slot and the named providers.
@@ -101,7 +101,7 @@ final class OidcOverrideBeansConfigurationPhysicalTenantWiringTest {
   }
 
   @Test
-  void rejectsOnTheClusterSurfaceATokenCarryingOnlyATenantsClaim() {
+  void shouldRejectOnTheClusterSurfaceATokenCarryingOnlyATenantsClaim() {
     // The exact #64685 inverse: the token the tenant accepts is rejected on the unprefixed cluster
     // surface (unstamped request -> default/root converter), proving the per-tenant converter uses
     // the tenant's claim config and NOT the root's.
