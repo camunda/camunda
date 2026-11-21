@@ -22,6 +22,14 @@
     gap: 0.5rem;
   }
 
+  .agentScope,
+  .modelScope {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 12rem;
+  }
+
   .versionScope {
     display: flex;
     align-items: center;

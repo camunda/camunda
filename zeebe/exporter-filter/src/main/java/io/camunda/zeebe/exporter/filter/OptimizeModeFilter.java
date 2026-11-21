@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.filter;
 
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
  *   <li>USER_TASK: ASSIGNED, CANCELED, COMPLETED, CREATING
  *   <li>VARIABLE: CREATED, UPDATED
  *   <li>AGENT_INSTANCE: CREATED, UPDATED, COMPLETED
+ *   <li>AGENT_DEFINITION: CREATED
  * </ul>
  *
  * <p>The filter is applied only if the broker version is at least 8.9.0.
@@ -83,6 +85,7 @@ public final class OptimizeModeFilter implements ExporterRecordFilter, RecordVer
           case USER_TASK -> isAcceptedUserTask(record);
           case VARIABLE -> isAcceptedVariable(record);
           case AGENT_INSTANCE -> isAcceptedAgentInstance(record);
+          case AGENT_DEFINITION -> isAcceptedAgentDefinition(record);
           default -> false;
         };
     if (!accepted && LOG.isTraceEnabled()) {
@@ -132,6 +135,10 @@ public final class OptimizeModeFilter implements ExporterRecordFilter, RecordVer
   private boolean isAcceptedAgentInstance(final Record<?> record) {
     final var intent = (AgentInstanceIntent) record.getIntent();
     return ALLOWED_AGENT_INSTANCE_INTENTS.contains(intent);
+  }
+
+  private boolean isAcceptedAgentDefinition(final Record<?> record) {
+    return record.getIntent() == AgentDefinitionIntent.CREATED;
   }
 
   @Override

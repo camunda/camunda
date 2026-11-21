@@ -1,0 +1,67 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {Tag} from '@carbon/react';
+
+import {t} from 'translation';
+
+import type {FailureReason} from './service';
+
+const KIND_TAG_TYPES = {
+  LIMIT: 'warm-gray',
+  AGENT_INCIDENT: 'red',
+  TOOL_INCIDENT: 'magenta',
+} as const;
+
+const KNOWN_LIMITS = ['MODEL_CALLS', 'TOOL_CALLS', 'TOKENS'];
+
+export function limitLabel(limit: string | null): string {
+  if (limit && KNOWN_LIMITS.includes(limit)) {
+    return t(`agenticControlPlane.limits.${limit}`) as string;
+  }
+  return limit ?? (t('agenticControlPlane.failureReason.unknownLimit') as string);
+}
+
+// The element a reason belongs to: a limit, the agent element itself, or one of its tools.
+export function failureElement(reason: FailureReason): string {
+  if (reason.kind === 'LIMIT') {
+    return t('agenticControlPlane.failureReason.limitHit', {
+      limit: limitLabel(reason.limit),
+    }) as string;
+  }
+  if (reason.kind === 'TOOL_INCIDENT') {
+    return t('agenticControlPlane.failureReason.tool', {
+      tool: reason.toolName ?? reason.flowNodeId ?? '',
+    }) as string;
+  }
+  return t('agenticControlPlane.failureReason.agentElement') as string;
+}
+
+export function FailureKindTag({kind}: {kind: FailureReason['kind']}) {
+  return (
+    <Tag size="sm" type={KIND_TAG_TYPES[kind]}>
+      {t(`agenticControlPlane.failureReason.kind.${kind}`)}
+    </Tag>
+  );
+}
+
+// Compact one-line summary used where several reasons share a cell.
+export function FailureReasonLabel({reason}: {reason: FailureReason}) {
+  const detail = [reason.errorType, reason.message].filter(Boolean).join(' · ');
+  return (
+    <>
+      <FailureKindTag kind={reason.kind} />
+      {failureElement(reason)} ({formatRuns(reason.runs)})
+      {detail && <span className="secondary">{detail}</span>}
+    </>
+  );
+}
+
+function formatRuns(runs: number) {
+  return t('agenticControlPlane.failureReason.runs', {runs}) as string;
+}

@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.report.interpreter.plan.process;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
@@ -46,7 +47,9 @@ public interface ProcessExecutionPlanInterpreter
           FlowNodeStartDateFilterDto.class,
           FlowNodeEndDateFilterDto.class,
           CompletedInstancesOnlyFilterDto.class,
-          HasAgentInstancesFilterDto.class);
+          HasAgentInstancesFilterDto.class,
+          // the executed agent element filter the agentic dashboard adds at evaluation time
+          ExecutedFlowNodeFilterDto.class);
 
   default Map<String, List<ProcessFilterDto<?>>> buildBaselineFiltersByDefinition(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {

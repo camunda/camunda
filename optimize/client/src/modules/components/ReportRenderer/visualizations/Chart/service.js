@@ -125,12 +125,23 @@ export function getLabel({property, aggregationType, userTaskDurationTime}) {
   );
 }
 
-export function getAxisIdx(measures, measureIdx) {
-  // A second axis only exists when a report mixes frequency and duration measures.
-  const hasFrequencyAndDuration = ['frequency', 'duration'].every((prop) =>
-    measures.some((measure) => measure.property === prop)
+// A report gets a second axis when it mixes a count with a measure on another scale, e.g. instance
+// count with duration, or agent run count with tokens.
+const SECONDARY_AXIS_PROPERTIES = ['duration', 'totalTokens'];
+
+export function getSecondaryAxisProperty(measures) {
+  if (!measures.some((measure) => measure.property === 'frequency')) {
+    return null;
+  }
+  return (
+    SECONDARY_AXIS_PROPERTIES.find((prop) =>
+      measures.some((measure) => measure.property === prop)
+    ) ?? null
   );
-  if (!hasFrequencyAndDuration) {
+}
+
+export function getAxisIdx(measures, measureIdx) {
+  if (!getSecondaryAxisProperty(measures)) {
     // All measures share a single axis (e.g. input and output tokens).
     return 0;
   }
