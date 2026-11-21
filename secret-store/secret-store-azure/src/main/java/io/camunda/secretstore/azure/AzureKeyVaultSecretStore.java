@@ -35,8 +35,11 @@ import org.jspecify.annotations.Nullable;
  * the vault through its own {@link SecretClient}, so two physical tenants never share an identity
  * or a cached token. No credential is read from the configuration.
  *
- * <p>Reading the vault is not implemented yet (camunda/camunda#67226): until then {@link #resolve}
- * reports every name as not found and {@link #list} returns no names.
+ * <p>In one-by-one mode, {@link #resolve} reads each reference's latest version from the vault;
+ * container mode and {@link #list} are not implemented yet (camunda/camunda#67226): they report
+ * every name as not found and list no names. The store keeps no cache: the registry wraps it in
+ * {@link io.camunda.secretstore.CachingSecretStore} and {@link
+ * io.camunda.secretstore.ConcurrentSecretStore}, which fans a request out one name per call.
  *
  * <p>This class is thread-safe: its resolvers keep no mutable state, and its {@link SignInMonitor}
  * is thread-safe.
@@ -129,13 +132,13 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
 
   private static AzureSecretResolver resolver(
       final AzureKeyVaultStoreConfig config, final SecretClient client) {
+    final var configuredPrefix = config.pathPrefix();
+    final var pathPrefix = configuredPrefix == null ? "" : configuredPrefix;
     final var containerSecretId = config.containerSecretId();
     if (containerSecretId == null) {
-      return new OneByOneSecretResolver(client);
+      return new OneByOneSecretResolver(client, pathPrefix);
     }
-    final var pathPrefix = config.pathPrefix();
-    return new ContainerSecretResolver(
-        client, (pathPrefix == null ? "" : pathPrefix) + containerSecretId);
+    return new ContainerSecretResolver(client, pathPrefix + containerSecretId);
   }
 
   /**
@@ -163,9 +166,7 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
     return builder.buildClient();
   }
 
-  /**
-   * The client {@link #resolve} and {@link #list} will read the vault with (camunda/camunda#67226).
-   */
+  /** The client {@link #resolve} and {@link #list} read the vault with. */
   SecretClient client() {
     return client;
   }

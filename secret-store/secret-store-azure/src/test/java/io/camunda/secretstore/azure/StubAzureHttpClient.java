@@ -21,11 +21,15 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -38,7 +42,12 @@ final class StubAzureHttpClient implements HttpClient {
 
   static final String TOKEN = "stub-access-token";
 
+  private static final Pattern SECRET_PATH = Pattern.compile("/secrets/([^/?]+)(?:/[^/?]*)?");
+
   private final List<Request> requests = new CopyOnWriteArrayList<>();
+  // keyed by lower-cased name, as Key Vault compares names case-insensitively
+  private final Map<String, String> secrets = new ConcurrentHashMap<>();
+  private volatile boolean holdingSecrets;
   private final Function<Request, Mono<HttpResponse>> router;
   private final AtomicBoolean rejectingSignIn;
   private final AtomicInteger vaultStatus;
@@ -110,6 +119,17 @@ final class StubAzureHttpClient implements HttpClient {
     vaultStatus.set(status);
   }
 
+  /**
+   * Stores {@code value} as the latest version of the secret {@code name}. From the first call on,
+   * the vault holds only the secrets put, answering any other name with 404, rather than one
+   * placeholder value for every name.
+   */
+  StubAzureHttpClient putSecret(final String name, final String value) {
+    secrets.put(name.toLowerCase(Locale.ROOT), value);
+    holdingSecrets = true;
+    return this;
+  }
+
   /** An environment holding only {@code variables}, isolated from this process's. */
   static Configuration environment(final Map<String, String> variables) {
     final ConfigurationSource source = path -> path == null ? variables : Map.of();
@@ -127,6 +147,12 @@ final class StubAzureHttpClient implements HttpClient {
             body == null ? "" : body.toString(),
             request.getHeaders().getValue(HttpHeaderName.AUTHORIZATION));
     requests.add(recorded);
+    if (holdingSecrets && vaultStatus.get() == 0 && recorded.isAuthorizedVaultRequest()) {
+      final var secretName = recorded.secretName();
+      if (secretName != null) {
+        return Mono.just(secret(recorded, secretName));
+      }
+    }
     return router.apply(recorded);
   }
 
@@ -198,6 +224,40 @@ final class StubAzureHttpClient implements HttpClient {
             .formatted(request.url().replaceAll("\\?.*", "")));
   }
 
+  private HttpResponse secret(final Request request, final String name) {
+    final var value = secrets.get(name.toLowerCase(Locale.ROOT));
+    if (value == null) {
+      return json(
+          request,
+          404,
+          """
+          {"error":{"code":"SecretNotFound","message":"A secret with (name/id) %s was not found in this key vault."}}
+          """
+              .formatted(name));
+    }
+    return json(
+        request,
+        200,
+        """
+        {"value":"%s","id":"https://%s/secrets/%s/1","attributes":{"enabled":true}}
+        """
+            .formatted(jsonEscape(value), request.host(), name));
+  }
+
+  private static String jsonEscape(final String value) {
+    final var escaped = new StringBuilder(value.length());
+    for (final char c : value.toCharArray()) {
+      if (c == '"' || c == '\\') {
+        escaped.append('\\').append(c);
+      } else if (c < 0x20) {
+        escaped.append("\\u%04x".formatted((int) c));
+      } else {
+        escaped.append(c);
+      }
+    }
+    return escaped.toString();
+  }
+
   private static HttpResponse invalidClient(final Request request) {
     return json(
         request,
@@ -243,6 +303,12 @@ final class StubAzureHttpClient implements HttpClient {
 
     boolean isAuthorizedVaultRequest() {
       return !isTokenRequest() && authorization != null;
+    }
+
+    /** The secret a {@code getSecret} request reads, or {@code null} for any other request. */
+    @Nullable String secretName() {
+      final var matcher = SECRET_PATH.matcher(original.getUrl().getPath());
+      return "GET".equals(method) && matcher.matches() ? matcher.group(1) : null;
     }
   }
 
