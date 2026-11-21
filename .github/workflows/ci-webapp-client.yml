@@ -340,7 +340,7 @@ jobs:
           max_attempts: "2"
           timeout_minutes: "6"
       - name: Build frontend
-        run: npm run build -w @camunda/orchestration-cluster-webapp
+        run: npm run build:test -w @camunda/orchestration-cluster-webapp
       - name: Integration tests
         run: npm run test:integration -w @camunda/orchestration-cluster-webapp -- test/integration/${{ matrix.component }}/
       - name: Upload Playwright report
