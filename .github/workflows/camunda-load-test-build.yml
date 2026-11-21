@@ -1,0 +1,364 @@
+# description: Reusable workflow that calculates the image tag of a load test and builds the
+#              images it needs: Camunda, Optimize, the load test client (starter and worker) and
+#              the metrics exporter. The flags build-camunda, build-optimize,
+#              build-load-test-client and build-metrics-exporter select the images. It deploys
+#              nothing. A caller that deploys the versions committed in the setup folder builds
+#              only the load test client with build-camunda: false, build-optimize: false and
+#              build-metrics-exporter: false, then passes image-tag as load-test-image-tag to
+#              camunda-load-test-deploy.yml without any platform image input.
+# called-by: camunda-load-test.yml
+# type: CI
+# owner: @camunda/reliability-testing
+#
+# Infos from Infra:
+# - Camunda images are pushed to registry.camunda.cloud/team-zeebe and pulled from there.
+
+name: Camunda load test build
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: 'Name of the load test, used as prefix of the calculated image tag'
+        type: string
+        required: true
+      ref:
+        description: 'Git ref (branch, tag or commit SHA) to build from'
+        type: string
+        default: 'main'
+        required: false
+      reuse-tag:
+        description: 'Pre-built image tag from the internal registry. Skips the Camunda, Optimize, load test client and metrics exporter builds. Cannot be used with orchestration-tag.'
+        type: string
+        default: ""
+        required: false
+      orchestration-tag:
+        description: 'Docker Hub orchestration tag. Skips the Camunda and Optimize builds. Cannot be used with reuse-tag.'
+        type: string
+        default: ""
+        required: false
+      optimize-tag:
+        description: 'Optimize tag on Docker Hub, validated when set'
+        type: string
+        default: ""
+        required: false
+      identity-tag:
+        description: 'Identity tag on Docker Hub, validated when set'
+        type: string
+        default: ""
+        required: false
+      connectors-tag:
+        description: 'Connectors tag on Docker Hub, validated when set'
+        type: string
+        default: ""
+        required: false
+      enable-optimize:
+        description: 'Whether Optimize is part of the deployment'
+        type: boolean
+        default: true
+        required: false
+      build-frontend:
+        description: 'Build the frontend assets as part of the Camunda image build'
+        type: boolean
+        default: false
+        required: false
+      build-camunda:
+        description: 'Build the Camunda image (and Optimize, see build-optimize) from ref. Applies when neither reuse-tag nor orchestration-tag is set.'
+        type: boolean
+        default: true
+        required: false
+      build-optimize:
+        description: 'Build the Optimize image together with the Camunda image. Applies when enable-optimize and build-camunda are true.'
+        type: boolean
+        default: true
+        required: false
+      build-load-test-client:
+        description: 'Build the load test client images (starter and worker). Skipped when reuse-tag is set without orchestration-tag.'
+        type: boolean
+        default: true
+        required: false
+      build-metrics-exporter:
+        description: 'Build the metrics exporter image. Skipped when reuse-tag is set without orchestration-tag.'
+        type: boolean
+        default: true
+        required: false
+    outputs:
+      orchestration-tag:
+        description: 'Tag of the Camunda image: orchestration-tag, else reuse-tag, else the calculated tag when the image is built. Empty when no Camunda image is provided.'
+        value: ${{ jobs.calculate-image-tag.outputs.orchestration-tag }}
+      optimize-tag:
+        description: 'Tag of the Optimize image: the optimize-tag input, else reuse-tag, else the calculated tag when the image is built. Empty when no Optimize image is provided or when orchestration-tag is set without optimize-tag.'
+        value: ${{ jobs.calculate-image-tag.outputs.optimize-tag }}
+      load-test-client-tag:
+        description: 'Tag of the load test client images: orchestration-tag, else reuse-tag, else the calculated tag. Empty when the images are neither built nor reused.'
+        value: ${{ jobs.calculate-image-tag.outputs.load-test-client-tag }}
+      metrics-exporter-tag:
+        description: 'Tag of the metrics exporter image. Empty when the image was not built by this workflow.'
+        value: ${{ jobs.calculate-image-tag.outputs.metrics-exporter-tag }}
+      image-repository:
+        description: 'Repository of the load test client images'
+        value: ${{ jobs.calculate-image-tag.outputs.image-repository }}
+      camunda-built:
+        description: 'true when the Camunda image was built by this workflow'
+        value: ${{ jobs.calculate-image-tag.outputs.camunda-built }}
+      optimize-built:
+        description: 'true when the Optimize image was built by this workflow'
+        value: ${{ jobs.calculate-image-tag.outputs.optimize-built }}
+
+env:
+  IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
+  ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  calculate-image-tag:
+    name: Calculate Image Tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      # Tag of the images that this workflow builds: orchestration-tag, else reuse-tag, else
+      # <name>-<short sha of ref>. The build jobs of this workflow use it. Callers read the tag of
+      # a specific image below, because this one is set even when the image is not provided.
+      image-tag: ${{ steps.image-tag.outputs.image-tag }}
+      # Repository of the load test client images. Pass it to the deploy workflow.
+      image-repository: ${{ env.IMAGE_REPOSITORY }}
+      # Tag of the Camunda image to deploy. Empty when no Camunda image is provided, so that the
+      # deploy keeps the value of the setup folder.
+      orchestration-tag: ${{ (inputs.build-camunda || inputs.reuse-tag != '' || inputs.orchestration-tag != '') && steps.image-tag.outputs.image-tag || '' }}
+      # Tag of the Optimize image to deploy. Empty when no Optimize image is provided.
+      optimize-tag: ${{ inputs.optimize-tag != '' && inputs.optimize-tag || ((inputs.build-camunda && inputs.build-optimize && inputs.enable-optimize || inputs.reuse-tag != '') && inputs.orchestration-tag == '' && steps.image-tag.outputs.image-tag || '') }}
+      # Tag of the load test client images (starter and worker) to deploy. Empty when they are
+      # neither built nor reused.
+      load-test-client-tag: ${{ (inputs.build-load-test-client || inputs.reuse-tag != '') && steps.image-tag.outputs.image-tag || '' }}
+      # Tag of the metrics exporter image to deploy. Empty when it is not built, so that the deploy
+      # uses the latest tag.
+      metrics-exporter-tag: ${{ inputs.build-metrics-exporter && (inputs.reuse-tag == '' || inputs.orchestration-tag != '') && steps.image-tag.outputs.image-tag || '' }}
+      # Conditions of the build jobs below.
+      camunda-built: ${{ inputs.build-camunda && inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
+      optimize-built: ${{ inputs.build-camunda && inputs.build-optimize && inputs.enable-optimize && inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
+      load-test-client-built: ${{ inputs.build-load-test-client && (inputs.reuse-tag == '' || inputs.orchestration-tag != '') }}
+      metrics-exporter-built: ${{ inputs.build-metrics-exporter && (inputs.reuse-tag == '' || inputs.orchestration-tag != '') }}
+    steps:
+      - name: Validate mutually exclusive inputs
+        if: ${{ inputs.orchestration-tag != '' && inputs.reuse-tag != '' }}
+        run: |
+          echo "::error::Invalid input combination: 'orchestration-tag' and 'reuse-tag' cannot both be provided. Use 'orchestration-tag' for official Docker Hub images or 'reuse-tag' for reusing pre-built images from the internal registry."
+          exit 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      - name: Get image tag
+        id: image-tag
+        env:
+          NAME: ${{ inputs.name }}
+          REUSE_TAG: ${{ inputs.reuse-tag }}
+        run: |
+          if [[ -n "${ORCHESTRATION_TAG}" ]]; then
+            image_tag="${ORCHESTRATION_TAG}"
+          elif [[ -n "${REUSE_TAG}" ]]; then
+            image_tag="${REUSE_TAG}"
+          else
+            image_tag="${NAME}-$(git rev-parse --short HEAD)"
+            echo "**Built image tag:** \`${image_tag}\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "image-tag=${image_tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate Docker image tags exist
+        if: ${{ inputs.orchestration-tag != '' || inputs.optimize-tag != '' || inputs.identity-tag != '' || inputs.connectors-tag != '' }}
+        # Add -x to trace the call to the script and make it easier to reproduce it locally.
+        shell: bash --noprofile --norc -exo pipefail {0}
+        env:
+          CONNECTORS_TAG: ${{ inputs.connectors-tag }}
+          ENABLE_OPTIMIZE: ${{ inputs.enable-optimize }}
+          IDENTITY_TAG: ${{ inputs.identity-tag }}
+          OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
+        run: |
+          .github/scripts/load-test-validate-docker-image-tags.sh \
+            "${ORCHESTRATION_TAG}" \
+            "${OPTIMIZE_TAG}" \
+            "${IDENTITY_TAG}" \
+            "${CONNECTORS_TAG}" \
+            "${ENABLE_OPTIMIZE}"
+
+  build-camunda-image:
+    name: Build Camunda
+    needs: calculate-image-tag
+    if: ${{ needs.calculate-image-tag.outputs.camunda-built == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: {}
+    env:
+      CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: ./.github/actions/build-frontend
+        name: Build Operate Frontend
+        id: build-operate-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Unified Webapp Frontend
+        id: build-webapp-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./webapp/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Identity Frontend
+        id: build-identity-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./identity/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Optimize Frontend
+        id: build-optimize-fe
+        if: ${{ inputs.build-frontend && needs.calculate-image-tag.outputs.optimize-built == 'true' }}
+        with:
+          directory: ./optimize/client
+          package-manager: "yarn"
+      - uses: ./.github/actions/build-zeebe
+        name: Build Camunda Platform
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild ${{ needs.calculate-image-tag.outputs.optimize-built == 'true' && '-Pinclude-optimize' || '-P\!include-optimize' }}
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Camunda Docker Image
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/camunda'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ env.CALCULATED_IMAGE_TAG }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          dockerfile: 'camunda.Dockerfile'
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Optimize Docker Image
+        if: ${{ needs.calculate-image-tag.outputs.optimize-built == 'true' }}
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/optimize'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ env.CALCULATED_IMAGE_TAG }}
+          distball: 'optimize-distro/target/camunda-optimize-*.tar.gz'
+          dockerfile: 'optimize.Dockerfile'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build-load-test-images:
+    name: Build Starter and Worker
+    if: ${{ needs.calculate-image-tag.outputs.load-test-client-built == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: calculate-image-tag
+    permissions: {}
+    env:
+      IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
+      # registry.camunda.cloud intermittently stops answering the manifest PUT at the end of the
+      # push. jib's own retries all fall inside a ~5 minute window, so they re-hit the same bad
+      # spell and the job fails. Each attempt here is capped well above the ~15s a healthy push
+      # takes, so a hung one is abandoned quickly and the registry is sampled again a minute later.
+      #
+      # This is mitigation, not a fix — it makes a hanging registry survivable, it does not stop it
+      # hanging. Drop both wrappers once these images are published to GAR instead
+      # (camunda/team-infrastructure#992), which removes the dependency on this registry altogether.
+      - name: Build Starter Image
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 60
+          timeout_minutes: 2
+          shell: bash
+          command: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}"
+      - name: Build Worker Image
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 60
+          timeout_minutes: 2
+          shell: bash
+          command: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build-metrics-exporter-image:
+    name: Build Metrics Exporter
+    if: ${{ needs.calculate-image-tag.outputs.metrics-exporter-built == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: calculate-image-tag
+    permissions: {}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build and push image
+        working-directory: ./load-tests/metrics-exporter
+        run: make docker "IMAGE=registry.camunda.cloud/team-reliability-testing/metrics-exporter:${IMAGE_TAG}" DOCKER_PUSH=true
+        env:
+          IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
