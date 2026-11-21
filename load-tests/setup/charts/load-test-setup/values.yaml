@@ -87,6 +87,19 @@ chaosKiller:
 # generators (e.g. for a bare cluster setup).
 load-tester:
   enabled: true
+  starter:
+    startupProbe:
+      enabled: true
+    readinessProbe:
+      enabled: true
+    livenessProbe:
+      enabled: true
+  workers:
+    worker:
+      startupProbe:
+        enabled: true
+      readinessProbe:
+        enabled: true
 
 # -- Configuration for the load test applications.
 loadTest:
