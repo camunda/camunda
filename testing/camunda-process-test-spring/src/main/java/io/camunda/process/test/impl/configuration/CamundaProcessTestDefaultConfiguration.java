@@ -91,7 +91,9 @@ public class CamundaProcessTestDefaultConfiguration {
     // executor when a test client is closed. Each test creates and closes its own CamundaClient,
     // and we reuse this executor across all clients within the test class.
     final ScheduledExecutorService scheduledExecutor =
-        Executors.newScheduledThreadPool(clientProperties.getExecutionThreads());
+        Executors.newScheduledThreadPool(
+            Optional.ofNullable(clientProperties.getExecutionThreads())
+                .orElse(CamundaClientBuilderImpl.DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS));
     final CamundaClientExecutorService executorService =
         new CamundaClientExecutorService(scheduledExecutor, false);
 
