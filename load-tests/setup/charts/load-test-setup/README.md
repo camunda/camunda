@@ -156,6 +156,9 @@ See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/
   input is false). Also disabled for 8.7, which does not have the
   `/v2/process-definitions/search` endpoint (`k6_data_read_supported=false` in
   `stable-87/Makefile`).
+* `optimize`: opens the Optimize management and instant dashboards every minute and evaluates
+  their reports. It needs Optimize and is disabled by default
+  (`--set k6.tests.optimize.enabled=true`).
 
 ### How to add a new test?
 
