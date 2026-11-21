@@ -10,6 +10,16 @@
 
 camunda: # Type: io.camunda.configuration.Camunda  
   api: # Type: io.camunda.configuration.Api  
+    cluster: # Type: io.camunda.configuration.api.ClusterApi  
+      # Bind address of the dedicated cluster API port. Defaults to `server.address`. Required when
+      # cluster-admin authentication is `none`. Startup fails if it cannot be resolved.
+      address: null # Type: String, Env: CAMUNDA_API_CLUSTER_ADDRESS
+      # Dedicated port for the cluster API. When unset, the cluster API shares `server.port` with the rest
+      # of the REST API. When set, the cluster API is served only on this port (except its public status
+      # endpoints), and the main port no longer serves it. The port inherits the main port's TLS and
+      # connector settings.
+      port: null # Type: Integer, Env: CAMUNDA_API_CLUSTER_PORT
+    
     # Enables the gateway (gRPC, REST and MCP API). For a broker with an embedded gateway, disables the
     # embedded gateway entirely. For a standalone gateway process, disables its REST and MCP endpoints
     # (the gRPC API itself is controlled independently by how the process is started) — mirroring the
@@ -1975,6 +1985,12 @@ camunda: # Type: io.camunda.configuration.Camunda
     
     authorizations: null # Type: io.camunda.security.api.model.config.AuthorizationsConfiguration, Env: CAMUNDA_SECURITY_AUTHORIZATIONS
     cluster-admin: # Type: io.camunda.configuration.security.ClusterAdmin  
+      authentication: # Type: io.camunda.configuration.security.clusteradmin.ClusterAdminAuthentication  
+        # Authentication of the cluster-admin API: `basic`, `oidc` or `none`. When unset, follows
+        # `camunda.security.authentication.method`. `oidc` requires the deployment to use OIDC; `none`
+        # requires a dedicated cluster API port (`camunda.api.cluster.port`).
+        method: null # Type: String, Env: CAMUNDA_SECURITY_CLUSTERADMIN_AUTHENTICATION_METHOD
+      
       basic: # Type: io.camunda.configuration.security.clusteradmin.ClusterAdminBasic  
         # Statically configured cluster-admin users for HTTP Basic authentication.
         users: null # Type: List<io.camunda.configuration.security.clusteradmin.ClusterAdminUser>, Env: CAMUNDA_SECURITY_CLUSTERADMIN_BASIC_USERS
