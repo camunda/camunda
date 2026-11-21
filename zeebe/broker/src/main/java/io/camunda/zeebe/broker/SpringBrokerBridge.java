@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.camunda.zeebe.broker.hub.HubClientFactory;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -36,6 +37,7 @@ public class SpringBrokerBridge {
   private Supplier<Collection<JobStreamService>> jobStreamServicesSupplier;
   private Function<String, JobStreamService> jobStreamServiceByTenantLookup;
   private Function<String, Runnable> tenantSchemaInitializer;
+  private HubClientFactory hubClientFactory;
 
   private BiConsumer<Integer, String> shutdownHelper;
 
@@ -115,6 +117,18 @@ public class SpringBrokerBridge {
   public Optional<Runnable> getSchemaInitializer(final String physicalTenantId) {
     return Optional.ofNullable(tenantSchemaInitializer)
         .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
+  }
+
+  /**
+   * Registers the factory of the Hub clients. Without it, no physical tenant is connected to Hub.
+   */
+  public void registerHubClientFactory(final HubClientFactory hubClientFactory) {
+    this.hubClientFactory = hubClientFactory;
+  }
+
+  /** Returns the factory of the Hub clients, if one is registered. */
+  public Optional<HubClientFactory> getHubClientFactory() {
+    return Optional.ofNullable(hubClientFactory);
   }
 
   /**

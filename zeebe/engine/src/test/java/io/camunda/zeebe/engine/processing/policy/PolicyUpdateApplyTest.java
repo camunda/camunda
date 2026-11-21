@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.policy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
@@ -195,8 +197,23 @@ public final class PolicyUpdateApplyTest {
   }
 
   @Test
-  public void shouldRejectAnAppendedChunkSentAsClientRequest() {
-    assertRejectedAsClientRequest(PolicyUpdateIntent.APPEND_CHUNK);
+  public void shouldAppendAndRespondToAChunkSentAsRequest() {
+    // given
+    final var roleId = "role-" + uid();
+    final var chunk =
+        chunk()
+            .setRoles(List.<RoleRecordValue>of(new RoleRecord().setRoleId(roleId).setName(roleId)));
+
+    // when the broker's Hub receiver sends the chunk through the command API
+    ENGINE.writeRecords(
+        RecordToWrite.commandFromRequest("user-" + uid())
+            .policyUpdate(PolicyUpdateIntent.APPEND_CHUNK, chunk));
+
+    // then
+    assertThat(appliedRecord(chunk.getUpdateId()).getValue().getPolicyId())
+        .isEqualTo(chunk.getPolicyId());
+    verify(ENGINE.getCommandResponseWriter(), timeout(5000).atLeastOnce())
+        .intent(PolicyUpdateIntent.CHUNK_APPENDED);
   }
 
   @Test
@@ -205,9 +222,9 @@ public final class PolicyUpdateApplyTest {
   }
 
   @Test
-  public void shouldNotAcceptPolicyUpdatesThroughTheCommandApi() {
-    // policy updates skip the user authorization check, so clients must not be able to send them
-    assertThat(ValueTypes.isUserCommand(ValueType.POLICY_UPDATE)).isFalse();
+  public void shouldAcceptPolicyUpdatesThroughTheCommandApi() {
+    // the broker's Hub receiver sends the chunks with the broker client; no public API maps to them
+    assertThat(ValueTypes.isUserCommand(ValueType.POLICY_UPDATE)).isTrue();
   }
 
   static PolicyUpdateRecord chunk() {

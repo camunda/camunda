@@ -24,6 +24,7 @@ import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.hub.HubUpdateReceiver;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
 import io.camunda.zeebe.broker.jobstream.YieldingJobStreamErrorHandler;
@@ -365,6 +366,45 @@ class PartitionManagerStepTest {
       assertThat(listeners).anySatisfy(l -> assertThat(l).isSameAs(errorHandler));
       assertThat(testBrokerStartupContext.getPartitionListeners())
           .noneSatisfy(l -> assertThat(l).isSameAs(errorHandler));
+    }
+
+    @Test
+    void shouldRegisterHubUpdateReceiverInPartitionListeners() throws Exception {
+      // given — a job stream service, which every partition manager needs, and a Hub receiver
+      final var jobStreamService = mock(JobStreamService.class);
+      when(jobStreamService.errorHandlerService())
+          .thenReturn(new RemoteJobStreamErrorHandlerService(new YieldingJobStreamErrorHandler()));
+      final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
+      testBrokerStartupContext.setPhysicalTenantContext(
+          PHYSICAL_TENANT_ID,
+          new PhysicalTenantContext(
+              secCfg,
+              new BrokerRequestAuthorizationConverter(secCfg),
+              FeatureFlags.createDefaultForTests(),
+              testBrokerStartupContext.getBrokerConfiguration(),
+              new ExporterRepository(),
+              new SecretStoreRegistry(Map.of())));
+      testBrokerStartupContext.addJobStreamService(PHYSICAL_TENANT_ID, jobStreamService);
+      final var receiver = mock(HubUpdateReceiver.class);
+      testBrokerStartupContext.addHubUpdateReceiver(PHYSICAL_TENANT_ID, receiver);
+
+      // when
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+
+      // then — the receiver listens to the partitions of its own tenant only
+      final var factoryField = PartitionManagerImpl.class.getDeclaredField("zeebePartitionFactory");
+      factoryField.setAccessible(true);
+      final var listenersField = ZeebePartitionFactory.class.getDeclaredField("partitionListeners");
+      listenersField.setAccessible(true);
+
+      final var manager =
+          (PartitionManagerImpl)
+              testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      final var listeners = (List<?>) listenersField.get(factoryField.get(manager));
+      assertThat(listeners).anySatisfy(l -> assertThat(l).isSameAs(receiver));
+      assertThat(testBrokerStartupContext.getPartitionListeners())
+          .noneSatisfy(l -> assertThat(l).isSameAs(receiver));
     }
   }
 

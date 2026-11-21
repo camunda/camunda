@@ -62,6 +62,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.PolicyStatusIntent;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
@@ -240,6 +241,7 @@ public final class EventAppliers implements EventApplier {
         PolicyUpdateIntent.CANCELED, new PolicyUpdateCanceledApplier(state.getPolicyUpdateState()));
     register(
         PolicyUpdateIntent.FAILED, new PolicyUpdateFailedApplier(state.getPolicyUpdateState()));
+    register(PolicyStatusIntent.QUERIED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProbeAppliers(final MutableProcessingState state) {

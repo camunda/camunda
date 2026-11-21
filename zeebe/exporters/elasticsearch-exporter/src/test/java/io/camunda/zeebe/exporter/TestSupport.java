@@ -160,6 +160,7 @@ final class TestSupport {
             ValueType.AGENT_HISTORY_BATCH,
             // a read of the engine state that changes nothing, never exported by design
             ValueType.USER_TASK_LOOKUP,
+            ValueType.POLICY_STATUS,
             // no templates yet, they come with the probe export (#68870)
             ValueType.PROBE,
             ValueType.PROBE_BATCH,

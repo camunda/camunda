@@ -65,7 +65,9 @@ public final class ValueTypes {
           ValueType.GLOBAL_LISTENER,
           ValueType.AGENT_INSTANCE,
           ValueType.PROBE,
-          ValueType.PROBE_BATCH);
+          ValueType.PROBE_BATCH,
+          ValueType.POLICY_UPDATE,
+          ValueType.POLICY_STATUS);
 
   private ValueTypes() {}
 

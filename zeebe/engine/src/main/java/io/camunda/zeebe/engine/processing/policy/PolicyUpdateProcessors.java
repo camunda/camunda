@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.PolicyStatusIntent;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
@@ -42,6 +43,11 @@ public final class PolicyUpdateProcessors {
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.COMMIT_VERSION,
-            new PolicyUpdateCommitVersionProcessor(keyGenerator, distributionBehavior, writers));
+            new PolicyUpdateCommitVersionProcessor(keyGenerator, distributionBehavior, writers))
+        .onCommand(
+            ValueType.POLICY_STATUS,
+            PolicyStatusIntent.QUERY,
+            new PolicyStatusQueryProcessor(
+                processingState.getPolicyState(), policyUpdateState, keyGenerator, writers));
   }
 }
