@@ -1170,7 +1170,49 @@
 					"filters": {
 						"searchByName": "Search by process name",
 						"selectVersion": "Select a process version",
-						"searchByElement": "Search by process element"
+						"searchByElement": "Search by process element",
+						"batchOperationKey": "Batch operation key",
+						"endDateRange": "End date range",
+						"errorMessage": "Error message",
+						"finishedInstances": "Finished instances",
+						"instancesStates": "Instance states",
+						"parentProcessInstanceKey": "Parent process instance key",
+						"processInstanceKey": "Process instance key(s)",
+						"removeFilter": "Remove filter: {{label}}",
+						"runningInstances": "Running instances",
+						"startDateRange": "Start date range"
+					},
+					"instancesTable": {
+						"title": "Process instances",
+						"panelLabel": "Process instances panel",
+						"processInstanceKey": "Process instance key",
+						"parentProcessInstanceKey": "Parent process instance key",
+						"versionTag": "Version tag",
+						"startDate": "Start date",
+						"endDate": "End date",
+						"operationState": "Operation state",
+						"operationStateLoading": "Loading operation states",
+						"emptyMessage": "No instances match these filters",
+						"emptyAdditionalInfo": "To see results, select at least one instance state"
+					},
+					"toolbar": {
+						"selectAll": "Select all instances",
+						"selected": "{{total}} instances selected",
+						"selected_other": "{{total}} instances selected",
+						"selected_one": "{{total}} instance selected"
+					},
+					"diagramPanel": {
+						"ariaLabel": "Diagram panel",
+						"multipleTenantsSelected": "Process \"{{name}}\" exists in more than one tenant",
+						"multipleVersionsSelected": "There is more than one version selected for process \"{{name}}\"",
+						"noProcessSelected": "There is no process selected",
+						"selectProcessInFilters": "To see a diagram, select a process in the filters panel",
+						"selectSingleTenant": "To see a diagram, select a single tenant",
+						"selectSingleVersion": "To see a diagram, select a single version"
+					},
+					"diagramHeader": {
+						"copyButtonDescription": "Process ID / click to copy",
+						"copyButtonTitle": "Copy process ID: {{id}}"
 					}
 				},
 				"migration": {
@@ -2609,6 +2651,16 @@
 				},
 				"sortableTable": {
 					"sortBy": "Sort by {{label}}"
+				},
+				"ds": {
+					"operations": {
+						"retryTitle": "Retry instance {{processInstanceKey}}",
+						"cancelTitle": "Cancel instance {{processInstanceKey}}",
+						"modifyTitle": "Modify instance {{processInstanceKey}}",
+						"deleteTitle": "Delete instance {{processInstanceKey}}",
+						"suspendTitle": "Suspend instance {{processInstanceKey}}",
+						"resumeTitle": "Resume instance {{processInstanceKey}}"
+					}
 				}
 			}
 		}

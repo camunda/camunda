@@ -23,7 +23,7 @@ const Resume: React.FC<Props> = ({processInstanceKey, onExecute, disabled = fals
 		<OperationItem
 			type="RESUME_PROCESS_INSTANCE"
 			onClick={onExecute}
-			title={t('operate.shared.operations.resumeTitle', {processInstanceKey})}
+			title={t('operate.shared.ds.operations.resumeTitle', {processInstanceKey})}
 			disabled={disabled}
 			size="sm"
 		/>

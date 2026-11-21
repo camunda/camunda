@@ -30,9 +30,4 @@ type OptionalFilterValues = {
 	endDateTo?: string;
 };
 
-type VariableFieldValues = {
-	variableName?: string;
-	variableValues?: string;
-};
-
-export type {OptionalFilter, OptionalFilterValues, VariableFieldValues};
+export type {OptionalFilter, OptionalFilterValues};

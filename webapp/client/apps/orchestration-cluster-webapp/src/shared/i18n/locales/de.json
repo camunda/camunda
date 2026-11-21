@@ -1158,7 +1158,49 @@
 					"filters": {
 						"searchByName": "Nach Prozessname suchen",
 						"selectVersion": "Prozessversion auswählen",
-						"searchByElement": "Nach Prozesselement suchen"
+						"searchByElement": "Nach Prozesselement suchen",
+						"batchOperationKey": "Batch-Operation-Schlüssel",
+						"endDateRange": "Enddatumsbereich",
+						"errorMessage": "Fehlermeldung",
+						"finishedInstances": "Abgeschlossene Instanzen",
+						"instancesStates": "Instanzstatus",
+						"parentProcessInstanceKey": "Schlüssel der übergeordneten Prozessinstanz",
+						"processInstanceKey": "Prozessinstanz-Schlüssel",
+						"removeFilter": "Filter entfernen: {{label}}",
+						"runningInstances": "Laufende Instanzen",
+						"startDateRange": "Startdatumsbereich"
+					},
+					"instancesTable": {
+						"title": "Prozessinstanzen",
+						"panelLabel": "Bereich Prozessinstanzen",
+						"processInstanceKey": "Prozessinstanz-Schlüssel",
+						"parentProcessInstanceKey": "Übergeordneter Prozessinstanz-Schlüssel",
+						"versionTag": "Versions-Tag",
+						"startDate": "Startdatum",
+						"endDate": "Enddatum",
+						"operationState": "Vorgangsstatus",
+						"operationStateLoading": "Vorgangsstatus werden geladen",
+						"emptyMessage": "Keine Instanzen entsprechen diesen Filtern",
+						"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen"
+					},
+					"toolbar": {
+						"selectAll": "Alle Instanzen auswählen",
+						"selected": "{{total}} Instanzen ausgewählt",
+						"selected_other": "{{total}} Instanzen ausgewählt",
+						"selected_one": "{{total}} Instanz ausgewählt"
+					},
+					"diagramPanel": {
+						"ariaLabel": "Diagrammbereich",
+						"multipleTenantsSelected": "Prozess \"{{name}}\" ist in mehreren Mandanten vorhanden",
+						"multipleVersionsSelected": "Für den Prozess \"{{name}}\" ist mehr als eine Version ausgewählt",
+						"noProcessSelected": "Es ist kein Prozess ausgewählt",
+						"selectProcessInFilters": "Um ein Diagramm zu sehen, wählen Sie einen Prozess im Filterbereich aus",
+						"selectSingleTenant": "Um ein Diagramm zu sehen, wählen Sie einen einzelnen Mandanten aus",
+						"selectSingleVersion": "Um ein Diagramm zu sehen, wählen Sie eine einzelne Version aus"
+					},
+					"diagramHeader": {
+						"copyButtonDescription": "Prozess-ID / Klicken zum Kopieren",
+						"copyButtonTitle": "Prozess-ID kopieren: {{id}}"
 					}
 				},
 				"migration": {
@@ -2597,6 +2639,16 @@
 				},
 				"sortableTable": {
 					"sortBy": "Sortieren nach {{label}}"
+				},
+				"ds": {
+					"operations": {
+						"retryTitle": "Instanz {{processInstanceKey}} wiederholen",
+						"cancelTitle": "Instanz {{processInstanceKey}} abbrechen",
+						"modifyTitle": "Instanz {{processInstanceKey}} ändern",
+						"deleteTitle": "Instanz {{processInstanceKey}} löschen",
+						"suspendTitle": "Instanz {{processInstanceKey}} anhalten",
+						"resumeTitle": "Instanz {{processInstanceKey}} fortsetzen"
+					}
 				}
 			}
 		}

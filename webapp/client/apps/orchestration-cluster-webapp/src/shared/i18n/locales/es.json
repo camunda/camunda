@@ -1158,7 +1158,49 @@
 					"filters": {
 						"searchByName": "Buscar por nombre de proceso",
 						"selectVersion": "Seleccionar una versión de proceso",
-						"searchByElement": "Buscar por elemento de proceso"
+						"searchByElement": "Buscar por elemento de proceso",
+						"batchOperationKey": "Clave de operación por lotes",
+						"endDateRange": "Rango de fecha de fin",
+						"errorMessage": "Mensaje de error",
+						"finishedInstances": "Instancias finalizadas",
+						"instancesStates": "Estados de instancias",
+						"parentProcessInstanceKey": "Clave de la instancia de proceso padre",
+						"processInstanceKey": "Clave(s) de instancia de proceso",
+						"removeFilter": "Eliminar filtro: {{label}}",
+						"runningInstances": "Instancias en ejecución",
+						"startDateRange": "Rango de fecha de inicio"
+					},
+					"instancesTable": {
+						"title": "Instancias de proceso",
+						"panelLabel": "Panel de instancias de proceso",
+						"processInstanceKey": "Clave de instancia de proceso",
+						"parentProcessInstanceKey": "Clave de instancia de proceso principal",
+						"versionTag": "Etiqueta de versión",
+						"startDate": "Fecha de inicio",
+						"endDate": "Fecha de fin",
+						"operationState": "Estado de la operación",
+						"operationStateLoading": "Cargando estados de las operaciones",
+						"emptyMessage": "Ninguna instancia coincide con estos filtros",
+						"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia"
+					},
+					"toolbar": {
+						"selectAll": "Seleccionar todas las instancias",
+						"selected": "{{total}} instancias seleccionadas",
+						"selected_other": "{{total}} instancias seleccionadas",
+						"selected_one": "{{total}} instancia seleccionada"
+					},
+					"diagramPanel": {
+						"ariaLabel": "Panel del diagrama",
+						"multipleTenantsSelected": "El proceso \"{{name}}\" existe en varios inquilinos",
+						"multipleVersionsSelected": "Hay más de una versión seleccionada para el proceso \"{{name}}\"",
+						"noProcessSelected": "No hay ningún proceso seleccionado",
+						"selectProcessInFilters": "Para ver un diagrama, seleccione un proceso en el panel de filtros",
+						"selectSingleTenant": "Para ver un diagrama, seleccione un solo inquilino",
+						"selectSingleVersion": "Para ver un diagrama, seleccione una única versión"
+					},
+					"diagramHeader": {
+						"copyButtonDescription": "ID del proceso / Clic para copiar",
+						"copyButtonTitle": "Copiar ID del proceso: {{id}}"
 					}
 				},
 				"migration": {
@@ -2597,6 +2639,16 @@
 				},
 				"sortableTable": {
 					"sortBy": "Ordenar por {{label}}"
+				},
+				"ds": {
+					"operations": {
+						"retryTitle": "Reintentar instancia {{processInstanceKey}}",
+						"cancelTitle": "Cancelar instancia {{processInstanceKey}}",
+						"modifyTitle": "Modificar instancia {{processInstanceKey}}",
+						"deleteTitle": "Eliminar instancia {{processInstanceKey}}",
+						"suspendTitle": "Suspender instancia {{processInstanceKey}}",
+						"resumeTitle": "Reanudar instancia {{processInstanceKey}}"
+					}
 				}
 			}
 		}

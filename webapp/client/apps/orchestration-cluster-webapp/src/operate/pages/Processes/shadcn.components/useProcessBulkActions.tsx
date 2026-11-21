@@ -66,7 +66,7 @@ function useProcessBulkActions({selection, isSubmitting, onSubmit, migration}: P
 		),
 		...(!ENABLE_PROCESS_MIGRATION || migrateAction.disabledReason === undefined ? [] : [migrateAction.disabledReason]),
 	];
-	const selectedLabel = t('operate.processes.toolbar.selected', {count: selectedCount, total});
+	const selectedLabel = t('operate.processes.ds.toolbar.selected', {count: selectedCount, total});
 	const unavailableText = unavailableReasons.join(' ');
 	// Reasons stay out of the visible bar (Carbon shows them as a button title) but remain available on hover and to screen readers.
 	const selectionCountLabel = (

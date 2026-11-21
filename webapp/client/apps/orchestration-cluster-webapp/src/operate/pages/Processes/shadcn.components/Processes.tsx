@@ -17,8 +17,7 @@ import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/sh
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {ProcessesSearch} from '../processesFilter';
 import {setVariableConditions, useVariableConditions} from '../VariablesFilter/variableFilterStore';
-import {getInlineCondition} from '../VariablesFilter/variableConditions';
-import type {OptionalFilter, OptionalFilterValues, VariableFieldValues} from './optionalFilters';
+import type {OptionalFilter, OptionalFilterValues} from './optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 import {ProcessFilters} from './ProcessFilters';
 import {InstancesTable} from './InstancesTable';
@@ -28,15 +27,7 @@ import {MigrationView} from './MigrationView';
 import {ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
 import {getInstanceMigration} from '../instanceMigration';
 
-type FilterFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
-
-const SESSION_FILTER_FIELDS = new Set(['variableName', 'variableValues']);
-
-// The variable fields follow session storage; re-initialising on their change would discard unsubmitted URL filter edits.
-function areUrlFilterValuesEqual(previous: Record<string, unknown> = {}, next: Record<string, unknown> = {}) {
-	const keys = new Set([...Object.keys(previous), ...Object.keys(next)]);
-	return [...keys].every((key) => SESSION_FILTER_FIELDS.has(key) || previous[key] === next[key]);
-}
+type FilterFormValues = OptionalFilterValues & {tenantId?: string};
 
 type Props = {
 	search: ProcessesSearch;
@@ -59,7 +50,6 @@ const Processes: React.FC<Props> = ({search}) => {
 		tenantId: search.tenantId,
 	});
 	const instancesSearch = useMemo<ProcessesSearch>(() => ({...search, variable}), [search, variable]);
-	const inlineVariableCondition = getInlineCondition(variable);
 	const {
 		processInstanceKey,
 		parentProcessInstanceKey,
@@ -102,10 +92,8 @@ const Processes: React.FC<Props> = ({search}) => {
 		() => ({
 			tenantId: search.tenantId,
 			...optionalFilterValues,
-			variableName: inlineVariableCondition?.name,
-			variableValues: inlineVariableCondition?.value,
 		}),
-		[search.tenantId, optionalFilterValues, inlineVariableCondition?.name, inlineVariableCondition?.value],
+		[search.tenantId, optionalFilterValues],
 	);
 	const hasOptionalFilters =
 		search.tenantId !== undefined ||
@@ -194,7 +182,6 @@ const Processes: React.FC<Props> = ({search}) => {
 						});
 					}}
 					initialValues={filterFormValues}
-					initialValuesEqual={areUrlFilterValuesEqual}
 				>
 					{({handleSubmit, form}) => (
 						<form onSubmit={handleSubmit} className="flex h-full min-h-0">
