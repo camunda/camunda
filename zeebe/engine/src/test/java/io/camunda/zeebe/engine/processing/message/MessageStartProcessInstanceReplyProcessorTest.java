@@ -19,6 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageCorrelationState;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -150,6 +152,10 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
     return stored;
   }
 
+  private static Consumer<FollowUpEventMetadata.Builder> anyMetadata() {
+    return any();
+  }
+
   @Nested
   class StartReplyProcessor {
 
@@ -251,7 +257,8 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
           .appendFollowUpEvent(
               eq(MESSAGE_KEY),
               eq(MessageCorrelationIntent.CORRELATED),
-              correlationCaptor.capture());
+              correlationCaptor.capture(),
+              anyMetadata());
       assertThat(correlationCaptor.getValue().getProcessInstanceKey())
           .isEqualTo(PROCESS_INSTANCE_KEY);
       assertThat(correlationCaptor.getValue().getStorageOrdinal()).isEqualTo(1234);
@@ -280,7 +287,8 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
 
       // then no MessageCorrelation response is produced
       verify(mockStateWriter, never())
-          .appendFollowUpEvent(eq(MESSAGE_KEY), eq(MessageCorrelationIntent.CORRELATED), any());
+          .appendFollowUpEvent(
+              eq(MESSAGE_KEY), eq(MessageCorrelationIntent.CORRELATED), any(), anyMetadata());
       verify(mockResponseWriter, never())
           .writeAcceptedResponse(anyLong(), any(), any(), any(), anyLong(), anyInt());
     }
@@ -345,7 +353,8 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
       // reason names the business ID, and the fire-and-forget correlate message is expired so the
       // pending ask is cleared and no late instance is started
       verify(mockStateWriter)
-          .appendFollowUpEvent(eq(MESSAGE_KEY), eq(MessageCorrelationIntent.NOT_CORRELATED), any());
+          .appendFollowUpEvent(
+              eq(MESSAGE_KEY), eq(MessageCorrelationIntent.NOT_CORRELATED), any(), anyMetadata());
       verify(mockResponseWriter)
           .writeRejectedResponse(
               eq(MESSAGE_KEY),
@@ -385,7 +394,10 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
       // then no instance is known, so the NOT_CORRELATED event is not ordinal controlled
       verify(mockStateWriter)
           .appendFollowUpEvent(
-              eq(MESSAGE_KEY), eq(MessageCorrelationIntent.NOT_CORRELATED), captor.capture());
+              eq(MESSAGE_KEY),
+              eq(MessageCorrelationIntent.NOT_CORRELATED),
+              captor.capture(),
+              anyMetadata());
       assertThat(captor.getValue().getStorageOrdinal())
           .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     }
@@ -403,7 +415,8 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
 
       // then the buffered publish message is left untouched for the retry mechanism
       verify(mockStateWriter, never())
-          .appendFollowUpEvent(eq(MESSAGE_KEY), eq(MessageCorrelationIntent.NOT_CORRELATED), any());
+          .appendFollowUpEvent(
+              eq(MESSAGE_KEY), eq(MessageCorrelationIntent.NOT_CORRELATED), any(), anyMetadata());
       verify(mockStateWriter, never())
           .appendFollowUpEvent(eq(MESSAGE_KEY), eq(MessageIntent.EXPIRED), any());
     }
@@ -467,7 +480,8 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
       // then the deferred NOT_CORRELATED event, a NOT_FOUND rejected response, and the message
       // expiry are written
       verify(mockStateWriter)
-          .appendFollowUpEvent(eq(MESSAGE_KEY), eq(MessageCorrelationIntent.NOT_CORRELATED), any());
+          .appendFollowUpEvent(
+              eq(MESSAGE_KEY), eq(MessageCorrelationIntent.NOT_CORRELATED), any(), anyMetadata());
       verify(mockResponseWriter)
           .writeRejectedResponse(
               eq(MESSAGE_KEY),
@@ -495,7 +509,8 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
 
       // then the NOT_CORRELATED response is still written, but no EXPIRED event
       verify(mockStateWriter)
-          .appendFollowUpEvent(eq(MESSAGE_KEY), eq(MessageCorrelationIntent.NOT_CORRELATED), any());
+          .appendFollowUpEvent(
+              eq(MESSAGE_KEY), eq(MessageCorrelationIntent.NOT_CORRELATED), any(), anyMetadata());
       verify(mockStateWriter, never())
           .appendFollowUpEvent(eq(MESSAGE_KEY), eq(MessageIntent.EXPIRED), any());
     }

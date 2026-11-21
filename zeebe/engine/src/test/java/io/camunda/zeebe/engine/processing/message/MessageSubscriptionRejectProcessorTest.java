@@ -284,6 +284,43 @@ public final class MessageSubscriptionRejectProcessorTest {
   }
 
   @Test
+  public void shouldPropagateOperationReferenceOnNotCorrelatedResponse() {
+    // given a synchronous correlate carrying an operation reference that locked the subscription
+    final MessageSubscriptionRecord subscription = subscription().setElementInstanceKey(11L);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
+    awaitFirstByElement(subscription.getElementInstanceKey(), MessageSubscriptionIntent.CREATED);
+    final long operationReference = 314159L;
+    rule.writeCommandOnPartition(
+        PARTITION_ID,
+        writer ->
+            writer
+                .intent(MessageCorrelationIntent.CORRELATE)
+                .requestId(1L)
+                .requestStreamId(1)
+                .authorizations(DEFAULT_TENANT)
+                .operationReference(operationReference)
+                .event(
+                    new MessageCorrelationRecord()
+                        .setName("order canceled")
+                        .setCorrelationKey("order-123")
+                        .setTenantId(DEFAULT_TENANT)));
+
+    final long messageKey =
+        awaitFirstByElement(
+                subscription.getElementInstanceKey(), MessageSubscriptionIntent.CORRELATING)
+            .getValue()
+            .getMessageKey();
+
+    // when
+    rule.writeCommand(MessageSubscriptionIntent.REJECT, subscription.setMessageKey(messageKey));
+
+    // then
+    waitUntil(() -> notCorrelatedEvents().findFirst().isPresent());
+    assertThat(notCorrelatedEvents().findFirst().get().getOperationReference())
+        .isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldKeepStorageOrdinalOnRejectedEvent() {
     // given
     final MessageSubscriptionRecord subscription =

@@ -2977,7 +2977,8 @@ final class JsonSerializableToJsonTest {
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord)
                   .setAuthInfo(AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "foo")))
-                  .setStartTime(123L);
+                  .setStartTime(123L)
+                  .setOperationReference(456L);
             },
         """
                 {
@@ -3691,7 +3692,8 @@ final class JsonSerializableToJsonTest {
                   .setRequestStreamId(requestStreamId)
                   .setProcessDefinitionKey(5L)
                   .setBusinessId("biz-42")
-                  .setStorageOrdinal(storageOrdinal);
+                  .setStorageOrdinal(storageOrdinal)
+                  .setOperationReference(7L);
             },
         """
                 {

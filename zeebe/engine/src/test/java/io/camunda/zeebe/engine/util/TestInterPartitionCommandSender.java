@@ -41,12 +41,17 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
       final Intent intent,
       final Long recordKey,
       final UnifiedRecordValue command,
-      final AuthInfo authInfo) {
+      final AuthInfo authInfo,
+      final long operationReference) {
     if (!interceptor.shouldSend(receiverPartitionId, valueType, intent, recordKey, command)) {
       return;
     }
     final var metadata =
-        new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(intent)
+            .valueType(valueType)
+            .operationReference(operationReference);
 
     if (authInfo != null) {
       metadata.authorization(authInfo);

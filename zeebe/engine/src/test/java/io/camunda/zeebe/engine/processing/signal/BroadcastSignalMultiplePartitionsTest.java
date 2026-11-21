@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.SignalClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -70,6 +71,40 @@ public class BroadcastSignalMultiplePartitionsTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @Test
+  public void shouldPropagateOperationReferenceToReceivingPartitions() {
+    // given
+    final String signalName = newRandomSignal();
+    final long deploymentKey =
+        deploySignalCatchingProcess(Strings.newRandomValidBpmnId(), signalName);
+    assertThat(deploymentKey).isPositive();
+    final long operationReference = 123456789L;
+
+    // when — broadcast a signal carrying an operation reference
+    final var position =
+        ENGINE.writeCommandOnPartition(
+            Protocol.DEPLOYMENT_PARTITION,
+            writer ->
+                writer
+                    .intent(SignalIntent.BROADCAST)
+                    .authorizationsWithUsername(DEFAULT_USER.getUsername())
+                    .operationReference(operationReference)
+                    .event(new SignalRecord().setSignalName(signalName)));
+
+    // then — the BROADCASTED records on all partitions carry the operation reference
+    final var broadcasted =
+        RecordingExporter.signalRecords(SignalIntent.BROADCASTED)
+            .withSignalName(signalName)
+            .limit(PARTITION_COUNT)
+            .asList();
+
+    assertThat(broadcasted).hasSize(PARTITION_COUNT);
+    assertThat(broadcasted)
+        .allMatch(r -> r.getOperationReference() == operationReference)
+        .extracting(Record::getPartitionId)
+        .containsExactlyInAnyOrder(1, 2, 3);
+  }
 
   @Test
   public void shouldWriteDistributingRecordsForOtherPartitions() {

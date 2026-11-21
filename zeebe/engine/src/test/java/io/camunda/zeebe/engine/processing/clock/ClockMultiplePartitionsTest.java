@@ -12,12 +12,14 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.ClockClient;
+import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -213,6 +215,56 @@ public class ClockMultiplePartitionsTest {
         .extracting(event -> event.getValue().getTime())
         .containsOnly(newPinnedAt.toEpochMilli());
     awaitClockOnAllPartitions(Modification.pinAt(newPinnedAt));
+  }
+
+  @Test
+  public void shouldPropagateOperationReferenceWhenAddingToRunningClock() {
+    // given
+    awaitOnAllPartitions(clockClient.reset(), ClockIntent.RESETTED);
+    final long operationReference = 515151L;
+
+    // when
+    writeAddCommand(operationReference);
+
+    // then
+    assertOperationReferenceOnOtherPartitions(ClockIntent.OFFSETTED, operationReference);
+  }
+
+  @Test
+  public void shouldPropagateOperationReferenceWhenAddingToPinnedClock() {
+    // given
+    final var pinnedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    awaitOnAllPartitions(clockClient.pinAt(pinnedAt), ClockIntent.PINNED);
+    final long operationReference = 525252L;
+
+    // when
+    writeAddCommand(operationReference);
+
+    // then
+    assertOperationReferenceOnOtherPartitions(ClockIntent.PINNED, operationReference);
+  }
+
+  private static void writeAddCommand(final long operationReference) {
+    ENGINE.writeCommandOnPartition(
+        1,
+        writer ->
+            writer
+                .intent(ClockIntent.ADD)
+                .authorizations(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                .operationReference(operationReference)
+                .event(new ClockRecord().offsetBy(Duration.ofMinutes(5).toMillis())));
+  }
+
+  private static void assertOperationReferenceOnOtherPartitions(
+      final ClockIntent intent, final long operationReference) {
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.clockRecords(intent)
+                  .withPartitionId(partitionId)
+                  .filter(r -> r.getOperationReference() == operationReference)
+                  .getFirst())
+          .isNotNull();
+    }
   }
 
   /** Returns the event with the key of the given record from each partition. */

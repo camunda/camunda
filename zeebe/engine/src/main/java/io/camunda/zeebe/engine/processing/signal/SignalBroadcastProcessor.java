@@ -150,7 +150,12 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       commandDistributionBehavior
           .withKey(eventKey)
           .unordered()
-          .distribute(command.getValueType(), command.getIntent(), command.getValue(), authInfo);
+          .distribute(
+              command.getValueType(),
+              command.getIntent(),
+              command.getValue(),
+              authInfo,
+              command.getOperationReference());
     }
   }
 

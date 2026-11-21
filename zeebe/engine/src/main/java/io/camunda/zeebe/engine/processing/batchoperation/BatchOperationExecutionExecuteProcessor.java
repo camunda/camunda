@@ -281,7 +281,8 @@ public final class BatchOperationExecutionExecuteProcessor
               ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
               BatchOperationIntent.COMPLETE_PARTITION,
               batchInternalComplete,
-              command.getAuthInfo());
+              command.getAuthInfo(),
+              command.getOperationReference());
     }
   }
 

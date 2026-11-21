@@ -12,12 +12,14 @@ import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -96,6 +98,35 @@ public class UpdateTenantMultiPartitionTest {
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
           .containsSubsequence(TenantIntent.UPDATE, TenantIntent.UPDATED);
+    }
+  }
+
+  @Test
+  public void shouldPropagateOperationReferenceToReceivingPartitions() {
+    // given
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
+    final long operationReference = 424242L;
+
+    // when
+    engine.writeCommandOnPartition(
+        1,
+        writer ->
+            writer
+                .intent(TenantIntent.UPDATE)
+                .authorizations(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                .operationReference(operationReference)
+                .event(new TenantRecord().setTenantId(tenantId).setName("Tenant 2")));
+
+    // then
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.tenantRecords(TenantIntent.UPDATED)
+                  .withPartitionId(partitionId)
+                  .withTenantId(tenantId)
+                  .getFirst()
+                  .getOperationReference())
+          .isEqualTo(operationReference);
     }
   }
 

@@ -64,7 +64,14 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       final Intent intent,
       final @Nullable Long recordKey,
       final UnifiedRecordValue command) {
-    sendCommand(receiverPartitionId, valueType, intent, recordKey, command, null);
+    sendCommand(
+        receiverPartitionId,
+        valueType,
+        intent,
+        recordKey,
+        command,
+        null,
+        InterPartitionMessageEncoder.operationReferenceNullValue());
   }
 
   @Override
@@ -74,7 +81,8 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       final Intent intent,
       final @Nullable Long recordKey,
       final UnifiedRecordValue command,
-      final @Nullable AuthInfo authInfo) {
+      final @Nullable AuthInfo authInfo,
+      final long operationReference) {
     final var partitionLeader = partitionLeaders.get(receiverPartitionId);
     if (partitionLeader == null) {
       LOG.warn(
@@ -101,7 +109,8 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
             intent,
             recordKey,
             command,
-            authInfo);
+            authInfo,
+            operationReference);
 
     communicationService.unicast(
         sendingSubjectPrefix + receiverPartitionId,
@@ -130,7 +139,8 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
         final Intent intent,
         final @Nullable Long recordKey,
         final BufferWriter command,
-        final @Nullable BufferWriter authInfo) {
+        final @Nullable BufferWriter authInfo,
+        final long operationReference) {
       final var commandLength = command.getLength();
       final var authInfoLength = authInfo != null ? authInfo.getLength() : 0;
       final var messageLength =
@@ -153,6 +163,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
           .receiverPartitionId(receiverPartitionId)
           .valueType(valueType.value())
           .intent(intent.value())
+          .operationReference(operationReference)
           .putCommand(commandBuffer, 0, commandLength);
 
       if (authInfo != null) {
