@@ -26,6 +26,8 @@ runs:
   #
   # The last attempt deliberately omits `continue-on-error` so an exhausted
   # retry fails the job.
+  #
+  # Waits grow (30s, 60s) so retries outlast short DNS blips (INC-9252).
   steps:
     - name: Setup Java (attempt 1 of 3)
       id: attempt-1
@@ -39,7 +41,7 @@ runs:
     - name: Wait before attempt 2
       if: steps.attempt-1.outcome == 'failure'
       shell: bash
-      run: sleep 10
+      run: sleep 30
 
     - name: Setup Java (attempt 2 of 3)
       id: attempt-2
@@ -54,7 +56,7 @@ runs:
     - name: Wait before attempt 3
       if: steps.attempt-2.outcome == 'failure'
       shell: bash
-      run: sleep 10
+      run: sleep 60
 
     - name: Setup Java (attempt 3 of 3)
       if: steps.attempt-2.outcome == 'failure'
