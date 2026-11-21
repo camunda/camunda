@@ -17,10 +17,12 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component(value = "jobStreamService")
+@NullMarked
 final class BrokerJobStreamService implements JobStreamEndpoint.Service {
   private final SpringBrokerBridge bridge;
   private final BrokerEmbeddedGateway embeddedGateway;
@@ -45,6 +47,14 @@ final class BrokerJobStreamService implements JobStreamEndpoint.Service {
   }
 
   @Override
+  public Collection<ClientStream<JobActivationProperties>> clientJobStreams() {
+    return Optional.ofNullable(embeddedGateway.jobStreamClient())
+        .map(JobStreamClient::list)
+        .map(ActorFuture::join)
+        .orElse(Collections.emptyList());
+  }
+
+  @Override
   public Collection<RemoteStreamInfo<JobActivationProperties>> remoteJobStreams(
       final Optional<String> physicalTenantId) {
     if (physicalTenantId.isEmpty()) {
@@ -53,15 +63,6 @@ final class BrokerJobStreamService implements JobStreamEndpoint.Service {
     return bridge
         .getJobStreamService(physicalTenantId.get())
         .map(svc -> svc.remoteStreamService().streams())
-        .orElse(Collections.emptyList());
-  }
-
-  @Override
-  public Collection<ClientStream<JobActivationProperties>> clientJobStreams() {
-    return embeddedGateway
-        .jobStreamClient()
-        .map(JobStreamClient::list)
-        .map(ActorFuture::join)
         .orElse(Collections.emptyList());
   }
 

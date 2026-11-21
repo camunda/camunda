@@ -29,6 +29,35 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class ApiPropertiesTest {
 
   @Nested
+  class WithNothingSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithNothingSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldBeEnabledByDefault() {
+      assertThat(brokerCfg.getGateway().isEnable()).isTrue();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"zeebe.broker.gateway.enable=true"})
+  class WithLegacyEnabled {
+    final BrokerBasedProperties brokerCfg;
+
+    WithLegacyEnabled(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetEnabled() {
+      assertThat(brokerCfg.getGateway().isEnable()).isTrue();
+    }
+  }
+
+  @Nested
   @TestPropertySource(properties = {"camunda.api.enabled=false"})
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;

@@ -9,7 +9,6 @@ package io.camunda.zeebe.it.cluster.clustering;
 
 import static io.camunda.zeebe.broker.Broker.LOG;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
-import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.DISABLE_EMBEDDED_GATEWAY;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setCluster;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInitialContactPoints;
@@ -451,7 +450,6 @@ public class ClusteringRule extends ExternalResource {
     TEST_RECORDER.accept(brokerCfg);
 
     // disable embedded gateway
-    DISABLE_EMBEDDED_GATEWAY.accept(brokerCfg);
 
     // configure cluster
     setCluster(nodeId, partitionCount, replicationFactor, clusterSize, clusterName)
