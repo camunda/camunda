@@ -575,5 +575,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/44875376416",
     "updated_at": "2026-11-21T06:51:23Z",
     "cooldown_until": "2026-11-24T06:51:23Z"
+  },
+  "250bcdc7": {
+    "version": "8.10",
+    "file": "tests/api/v2/authorization/create-authorization-for-user-api.spec.ts",
+    "titlePath": [
+      "Create Authorization API - Unhappy paths",
+      "Create Authorization for user - 400 Bad Request - wrong value for resourceType"
+    ],
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 80 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44875358960",
+    "updated_at": "2026-11-21T06:52:07Z",
+    "cooldown_until": "2026-11-24T06:52:07Z"
   }
 }
