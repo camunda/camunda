@@ -114,11 +114,18 @@
         </foreach>
       </if>
       <if test="filter.evaluationFailures != null and !filter.evaluationFailures.isEmpty()">
-        AND di.EVALUATION_FAILURE IN
+        <!-- The exporter writes the failure to EVALUATION_FAILURE_MESSAGE; the legacy
+          EVALUATION_FAILURE column is matched as well, like the document-store filter. -->
+        AND (di.EVALUATION_FAILURE_MESSAGE IN
         <foreach collection="filter.evaluationFailures" item="value" open="(" close=")"
           separator=", ">
           #{value}
         </foreach>
+        OR di.EVALUATION_FAILURE IN
+        <foreach collection="filter.evaluationFailures" item="value" open="(" close=")"
+          separator=", ">
+          #{value}
+        </foreach>)
       </if>
       <if test="filter.decisionDefinitionIds != null and !filter.decisionDefinitionIds.isEmpty()">
         AND di.DECISION_DEFINITION_ID IN

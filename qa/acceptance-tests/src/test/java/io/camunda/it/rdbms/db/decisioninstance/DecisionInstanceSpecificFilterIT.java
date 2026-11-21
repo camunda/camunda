@@ -108,6 +108,7 @@ public class DecisionInstanceSpecificFilterIT {
                     .rootDecisionDefinitionKey(rootDecisionDefinitionKey)
                     .decisionRequirementsKey(567L)
                     .evaluationFailure("failure-42")
+                    .evaluationFailureMessage("failure-message-42")
                     .tenantId("unique-tenant-42")
                     .result("result-42")
                     .partitionId(1)));
@@ -142,6 +143,7 @@ public class DecisionInstanceSpecificFilterIT {
         DecisionInstanceFilter.of(b -> b.stateOperations(Operation.in("EVALUATED"))),
         DecisionInstanceFilter.of(b -> b.decisionTypes(DecisionDefinitionType.DECISION_TABLE)),
         DecisionInstanceFilter.of(b -> b.evaluationFailures("failure-42")),
+        DecisionInstanceFilter.of(b -> b.evaluationFailures("failure-message-42")),
         DecisionInstanceFilter.of(b -> b.decisionDefinitionNames("Decision 100")),
         DecisionInstanceFilter.of(b -> b.decisionDefinitionKeyOperations(Operation.eq(100L))),
         DecisionInstanceFilter.of(b -> b.flowNodeInstanceKeyOperations(Operation.eq(126L))),
