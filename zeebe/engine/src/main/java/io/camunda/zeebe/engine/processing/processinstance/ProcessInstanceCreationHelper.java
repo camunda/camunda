@@ -42,6 +42,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TagUtil;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -49,6 +50,8 @@ import org.agrona.DirectBuffer;
 public class ProcessInstanceCreationHelper {
   public static final String ERROR_MESSAGE_PROCESS_IS_DRAINING =
       "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted";
+  public static final String ERROR_MESSAGE_PROCESS_IS_SUSPENDED =
+      "Expected to create instance of process with ID '%s' and version %d (key %d), but it is suspended";
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS =
@@ -108,16 +111,14 @@ public class ProcessInstanceCreationHelper {
       final ProcessInstanceCreationRecord record) {
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
 
-    final Either<Rejection, DeployedProcess> process;
     if (bpmnProcessId.capacity() > 0) {
-      process = findProcessById(bpmnProcessId, record);
+      return findProcessById(bpmnProcessId, record);
     } else if (record.getProcessDefinitionKey() >= 0) {
-      process = findProcessByKey(record);
+      return findProcessByKey(record);
     } else {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
-    return process.flatMap(this::rejectIfDraining);
   }
 
   private Either<Rejection, DeployedProcess> findProcessById(
@@ -164,21 +165,40 @@ public class ProcessInstanceCreationHelper {
   }
 
   /**
-   * A process definition that is being deleted is kept in state so its already-running instances
-   * can finish, but no new instances may be created for it.
+   * Rejects a version that was targeted directly but takes no new instances. Creation by BPMN
+   * process ID only already skips such versions. Runs after the authorization check, so callers
+   * without access can't learn the version's state.
    */
-  private Either<Rejection, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
+  public Either<Rejection, DeployedProcess> rejectIfCannotCreateNewInstances(
+      final DeployedProcess process) {
+    return cannotCreateNewInstancesReason(process, processState.isSuspended(process.getKey()))
+        .<Either<Rejection, DeployedProcess>>map(
+            reason -> Either.left(new Rejection(RejectionType.INVALID_STATE, reason)))
+        .orElseGet(() -> Either.right(process));
+  }
+
+  /**
+   * A version that is being deleted (draining) or is suspended stays in state, so its running
+   * instances can continue, but no new instances may be created for it.
+   *
+   * @return why no new instances may be created, or empty if they may
+   */
+  public static Optional<String> cannotCreateNewInstancesReason(
+      final DeployedProcess process, final boolean suspended) {
+    final String message;
     if (process.isDraining()) {
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_STATE,
-              String.format(
-                  ERROR_MESSAGE_PROCESS_IS_DRAINING,
-                  bufferAsString(process.getBpmnProcessId()),
-                  process.getVersion(),
-                  process.getKey())));
+      message = ERROR_MESSAGE_PROCESS_IS_DRAINING;
+    } else if (suspended) {
+      message = ERROR_MESSAGE_PROCESS_IS_SUSPENDED;
+    } else {
+      return Optional.empty();
     }
-    return Either.right(process);
+    return Optional.of(
+        String.format(
+            message,
+            bufferAsString(process.getBpmnProcessId()),
+            process.getVersion(),
+            process.getKey()));
   }
 
   public ProcessInstanceRecord initProcessInstanceRecord(
