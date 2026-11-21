@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -60,6 +62,7 @@ public final class TimerTriggerProcessor
   private final TypedRejectionWriter rejectionWriter;
 
   private final EventHandle eventHandle;
+  private final StorageOrdinalProvider storageOrdinalProvider;
   private final InstantSource clock;
 
   public TimerTriggerProcessor(
@@ -72,6 +75,7 @@ public final class TimerTriggerProcessor
     expressionProcessor = bpmnBehaviors.expressionProcessor();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    storageOrdinalProvider = bpmnBehaviors.storageOrdinalProvider();
 
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
@@ -85,7 +89,7 @@ public final class TimerTriggerProcessor
             processState,
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior(),
-            bpmnBehaviors.storageOrdinalProvider());
+            storageOrdinalProvider);
   }
 
   @Override
@@ -130,14 +134,20 @@ public final class TimerTriggerProcessor
         return;
       }
       final long processInstanceKey = keyGenerator.nextKey();
-      timer.setProcessInstanceKey(processInstanceKey);
+      final int storageOrdinal = storageOrdinalProvider.getStorageOrdinal();
+      timer.setProcessInstanceKey(processInstanceKey).setStorageOrdinal(storageOrdinal);
       stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
       eventHandle.activateProcessInstanceForStartEvent(
           processDefinitionKey,
           processInstanceKey,
           timer.getTargetElementIdBuffer(),
           NO_VARIABLES,
-          tenantId);
+          tenantId,
+          null,
+          storageOrdinal);
+      // The same record is reused for the rescheduled CREATED below. A start timer belongs to
+      // the definition, so it must not inherit the ordinal of the instance it just started.
+      timer.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
       if (!eventHandle.canTriggerElement(elementInstance, timer.getTargetElementIdBuffer())) {
