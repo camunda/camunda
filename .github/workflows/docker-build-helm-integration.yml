@@ -1281,6 +1281,9 @@ jobs:
     # PR. Mirrors the gate on main (#59386).
     if: ${{ always() && contains(needs.*.result, 'failure')
             && !github.event.pull_request.draft }}
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login in the called workflow
     uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
     secrets: inherit
     with:
