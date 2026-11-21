@@ -42,6 +42,7 @@ import io.camunda.service.ManagementServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.service.ProbeServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.RecoveryServices;
@@ -96,6 +97,7 @@ public record DefaultServiceRegistry(
     Map<String, MessageServices> messageByTenant,
     Map<String, MessageSubscriptionServices> messageSubscriptionByTenant,
     Map<String, ProcessDefinitionServices> processDefinitionByTenant,
+    Map<String, ProbeServices> probeByTenant,
     Map<String, ProcessInstanceServices> processInstanceByTenant,
     Map<String, RecoveryServices> recoveryByTenant,
     Map<String, ResourceServices> resourceByTenant,
@@ -267,6 +269,11 @@ public record DefaultServiceRegistry(
   @Override
   public ProcessDefinitionServices processDefinitionServices(final String physicalTenantId) {
     return byTenant(processDefinitionByTenant, physicalTenantId);
+  }
+
+  @Override
+  public ProbeServices probeServices(final String physicalTenantId) {
+    return byTenant(probeByTenant, physicalTenantId);
   }
 
   @Override
@@ -451,6 +458,7 @@ public record DefaultServiceRegistry(
         new HashMap<>();
     private final Map<String, ProcessDefinitionServices> processDefinitionByTenant =
         new HashMap<>();
+    private final Map<String, ProbeServices> probeByTenant = new HashMap<>();
     private final Map<String, ProcessInstanceServices> processInstanceByTenant = new HashMap<>();
     private final Map<String, RecoveryServices> recoveryByTenant = new HashMap<>();
     private final Map<String, ResourceServices> resourceByTenant = new HashMap<>();
@@ -627,6 +635,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder probeServices(final String tenantId, final ProbeServices service) {
+      probeByTenant.put(tenantId, service);
+      return this;
+    }
+
     public Builder processInstanceServices(
         final String tenantId, final ProcessInstanceServices service) {
       processInstanceByTenant.put(tenantId, service);
@@ -763,6 +776,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(messageByTenant),
           Map.copyOf(messageSubscriptionByTenant),
           Map.copyOf(processDefinitionByTenant),
+          Map.copyOf(probeByTenant),
           Map.copyOf(processInstanceByTenant),
           Map.copyOf(recoveryByTenant),
           Map.copyOf(resourceByTenant),

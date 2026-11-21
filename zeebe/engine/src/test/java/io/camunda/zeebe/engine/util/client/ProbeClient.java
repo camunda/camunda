@@ -163,6 +163,16 @@ public final class ProbeClient {
     return expectation.apply(writer.writeCommand(probeKey, ProbeIntent.YIELD, new ProbeRecord()));
   }
 
+  /**
+   * As {@link #yield(long)}, sent as a request with the stream and request IDs of {@link
+   * #withRequest}, as the gateway sends it; returns {@code YIELDED}, or the rejection.
+   */
+  public Record<ProbeRecordValue> yieldAsRequest(final long probeKey) {
+    return expectation.apply(
+        writer.writeCommand(
+            probeKey, requestStreamId, requestId, ProbeIntent.YIELD, new ProbeRecord()));
+  }
+
   /** As {@link #yield(long)}, sent with the user's claims rather than by the broker itself. */
   public Record<ProbeRecordValue> yield(final long probeKey, final String username) {
     return expectation.apply(
