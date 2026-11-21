@@ -420,7 +420,7 @@ Before the metrics window starts the stress tests get a 15 minute warmup period.
 
 ### Ad-hoc load tests
 
-On top of the previous automated occasions, when load tests run, we support running ad-hoc load tests. They can be either set up by labeling an existing pull-request (PR) at the mono repository with a **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Charts [manually](setup/README.md).
+On top of the previous automated occasions, when load tests run, we support running ad-hoc load tests. They can be either set up by labeling an existing pull-request (PR) at the mono repository with a **regression-load-test** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Charts [manually](setup/README.md).
 
 **Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
 
@@ -434,9 +434,9 @@ On top of the previous automated occasions, when load tests run, we support runn
 
 #### Labeling a PR
 
-It is as easy as it sounds; we can label an existing PR with a benchmark label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
+It is as easy as it sounds; we can label an existing PR with a regression load test label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
 
-The label selects the secondary storage and the client protocol: `benchmark-<storage>-<protocol>`, for example `benchmark-elasticsearch-rest` or `benchmark-none-grpc`. All storages have a REST label. Only Elasticsearch and `none` have a gRPC label, because only these setups have a daily gRPC run to compare with. See the [benchmark labels](https://github.com/camunda/camunda/labels?q=benchmark-).
+The label selects the secondary storage and the client protocol: `regression-load-test-<storage>-<protocol>`, for example `regression-load-test-elasticsearch-rest` or `regression-load-test-none-grpc`. All storages have a REST label. Only Elasticsearch and `none` have a gRPC label, because only these setups have a daily gRPC run to compare with. See the [regression load test labels](https://github.com/camunda/camunda/labels?q=regression-load-test-).
 
 > [!NOTE]
 >
