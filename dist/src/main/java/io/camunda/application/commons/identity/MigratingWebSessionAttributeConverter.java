@@ -85,6 +85,7 @@ final class MigratingWebSessionAttributeConverter implements WebSessionAttribute
           "java.util.TreeMap",
           "java.util.TreeSet",
           "java.util.CollSer",
+          "java.util.Date",
           // the JDK picks the nested class by size (List12, ListN, ...); the trailing * is a prefix
           // match, "$**" would match nothing
           "java.util.ImmutableCollections$*",
@@ -110,23 +111,6 @@ final class MigratingWebSessionAttributeConverter implements WebSessionAttribute
           "maxdepth=50;maxrefs=100000;maxarray=100000;"
               + String.join(";", ALLOWED_CLASSES)
               + ";!*");
-
-  // The JDK exception does not name the rejected class; the log is how an operator finds out which
-  // class a session attribute needs added to the allowlist.
-  private static final ObjectInputFilter FILTER =
-      info -> {
-        final var status = ALLOWLIST.checkInput(info);
-        if (status == ObjectInputFilter.Status.REJECTED) {
-          LOG.warn(
-              "Rejected deserialization of a session attribute: class={}, depth={}, references={},"
-                  + " arrayLength={}",
-              info.serialClass(),
-              info.depth(),
-              info.references(),
-              info.arrayLength());
-        }
-        return status;
-      };
 
   private final GenericConversionService conversionService;
 
@@ -162,11 +146,41 @@ final class MigratingWebSessionAttributeConverter implements WebSessionAttribute
     }
   }
 
+  /**
+   * The JDK exception does not name the rejected class; the log is how an operator finds out which
+   * class a session attribute needs added to the allowlist. The attribute name does not reach this
+   * converter, so the log names the type the stream starts with instead, for example {@code
+   * SecurityContextImpl}. One instance filters one stream, so it can remember that type.
+   */
+  private static final class LoggingFilter implements ObjectInputFilter {
+
+    private Class<?> rootType;
+
+    @Override
+    public Status checkInput(final FilterInfo info) {
+      if (rootType == null) {
+        rootType = info.serialClass();
+      }
+      final var status = ALLOWLIST.checkInput(info);
+      if (status == Status.REJECTED) {
+        LOG.warn(
+            "Rejected deserialization of a session attribute: root={}, class={}, depth={},"
+                + " references={}, arrayLength={}",
+            rootType,
+            info.serialClass(),
+            info.depth(),
+            info.references(),
+            info.arrayLength());
+      }
+      return status;
+    }
+  }
+
   private static final class MigratingObjectInputStream extends ObjectInputStream {
 
     MigratingObjectInputStream(final InputStream in) throws IOException {
       super(in);
-      setObjectInputFilter(FILTER);
+      setObjectInputFilter(new LoggingFilter());
     }
 
     @Override
