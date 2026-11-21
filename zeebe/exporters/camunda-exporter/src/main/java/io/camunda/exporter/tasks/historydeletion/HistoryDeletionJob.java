@@ -268,14 +268,16 @@ public class HistoryDeletionJob implements BackgroundTask {
    */
   private CompletableFuture<List<String>> markOperationAsCompleted(
       final HistoryDeletionBatch batch, final HistoryDeletionType historyDeletionType) {
-    final var operationIds =
+    final var operations =
         batch.getEntities(historyDeletionType).stream()
             .map(
                 entity ->
-                    AbstractOperationHandler.ID_PATTERN.formatted(
-                        entity.getBatchOperationKey(), entity.getResourceKey()))
+                    new OperationToComplete(
+                        entity,
+                        AbstractOperationHandler.ID_PATTERN.formatted(
+                            entity.getBatchOperationKey(), entity.getResourceKey())))
             .toList();
-    return deleterRepository.completeOperations(operationIds);
+    return deleterRepository.completeOperations(operations);
   }
 
   /**

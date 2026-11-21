@@ -1095,10 +1095,14 @@ final class HistoryDeletionJobTest {
     verify(repository)
         .completeOperations(
             List.of(
-                AbstractOperationHandler.ID_PATTERN.formatted(
-                    entity1.getBatchOperationKey(), entity1.getResourceKey()),
-                AbstractOperationHandler.ID_PATTERN.formatted(
-                    entity2.getBatchOperationKey(), entity2.getResourceKey())));
+                new OperationToComplete(
+                    entity1,
+                    AbstractOperationHandler.ID_PATTERN.formatted(
+                        entity1.getBatchOperationKey(), entity1.getResourceKey())),
+                new OperationToComplete(
+                    entity2,
+                    AbstractOperationHandler.ID_PATTERN.formatted(
+                        entity2.getBatchOperationKey(), entity2.getResourceKey()))));
   }
 
   @Test
@@ -1133,10 +1137,14 @@ final class HistoryDeletionJobTest {
     verify(repository)
         .completeOperations(
             List.of(
-                AbstractOperationHandler.ID_PATTERN.formatted(
-                    entity1.getBatchOperationKey(), entity1.getResourceKey()),
-                AbstractOperationHandler.ID_PATTERN.formatted(
-                    entity2.getBatchOperationKey(), entity2.getResourceKey())));
+                new OperationToComplete(
+                    entity1,
+                    AbstractOperationHandler.ID_PATTERN.formatted(
+                        entity1.getBatchOperationKey(), entity1.getResourceKey())),
+                new OperationToComplete(
+                    entity2,
+                    AbstractOperationHandler.ID_PATTERN.formatted(
+                        entity2.getBatchOperationKey(), entity2.getResourceKey()))));
   }
 
   @Test

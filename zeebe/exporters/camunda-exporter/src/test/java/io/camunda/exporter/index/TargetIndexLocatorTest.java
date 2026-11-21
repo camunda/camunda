@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import org.junit.jupiter.api.Test;
@@ -82,6 +83,45 @@ class TargetIndexLocatorTest {
     // when
     final var targetIndex =
         targetIndexLocator.locateHistoryDeletionOrdinalIndex("test-index", historyDeletion);
+
+    // then
+    assertThat(targetIndex.name()).isEqualTo("test-index");
+  }
+
+  @Test
+  void shouldLocateHistoryDeletionEntityIndexFromResourceOrdinal() {
+    // given
+    final var entity = new HistoryDeletionEntity().setResourceStorageOrdinal(5);
+
+    // when
+    final var targetIndex =
+        targetIndexLocator.locateHistoryDeletionOrdinalIndex("test-index", entity);
+
+    // then
+    assertThat(targetIndex.name()).isEqualTo("test-indexord00005");
+  }
+
+  @Test
+  void shouldLocateHistoryDeletionEntityIndexFromDefaultResourceOrdinal() {
+    // given
+    final var entity = new HistoryDeletionEntity().setResourceStorageOrdinal(0);
+
+    // when
+    final var targetIndex =
+        targetIndexLocator.locateHistoryDeletionOrdinalIndex("test-index", entity);
+
+    // then
+    assertThat(targetIndex.name()).isEqualTo("test-index");
+  }
+
+  @Test
+  void shouldLocateHistoryDeletionEntityIndexFromMissingResourceOrdinal() {
+    // given
+    final var entity = new HistoryDeletionEntity();
+
+    // when
+    final var targetIndex =
+        targetIndexLocator.locateHistoryDeletionOrdinalIndex("test-index", entity);
 
     // then
     assertThat(targetIndex.name()).isEqualTo("test-index");

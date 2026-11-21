@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.historydeletion;
 
 import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
@@ -52,6 +53,7 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
   private final HistoryDeletionConfiguration config;
   private final InstantSource clock;
   private final OperationTemplate operationIndexTemplateDescriptor;
+  private final TargetIndexLocator targetIndexLocator;
 
   public OpenSearchHistoryDeletionRepository(
       final ExporterResourceProvider resourceProvider,
@@ -60,7 +62,8 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
       final Logger logger,
       final int partitionId,
       final HistoryDeletionConfiguration config,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final TargetIndexLocator targetIndexLocator) {
     super(client, executor, logger);
     indexDescriptor =
         resourceProvider.getIndexDescriptors().stream()
@@ -79,6 +82,7 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
     this.partitionId = partitionId;
     this.config = config;
     this.clock = clock;
+    this.targetIndexLocator = targetIndexLocator;
   }
 
   @Override
@@ -226,7 +230,9 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<List<String>> completeOperations(final List<String> ids) {
+  public CompletableFuture<List<String>> completeOperations(
+      final List<OperationToComplete> operations) {
+    final var ids = operations.stream().map(OperationToComplete::id).toList();
     final var bulkRequestBuilder = new BulkRequest.Builder();
 
     final var fieldsToUpdate =
@@ -236,14 +242,14 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
             OperationTemplate.COMPLETED_DATE,
             OffsetDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
 
-    ids.forEach(
-        id ->
+    operations.forEach(
+        operation ->
             bulkRequestBuilder.operations(
                 op ->
                     op.update(
                         u ->
-                            u.index(operationIndexTemplateDescriptor.getFullQualifiedName())
-                                .id(id)
+                            u.index(operationIndex(operation))
+                                .id(operation.id())
                                 .document(fieldsToUpdate)
                                 .retryOnConflict(3))));
 
@@ -252,6 +258,13 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
             client
                 .bulk(bulkRequestBuilder.build())
                 .thenComposeAsync(response -> handleBulkResponseErrors(response, ids), executor));
+  }
+
+  private String operationIndex(final OperationToComplete operation) {
+    return targetIndexLocator
+        .locateHistoryDeletionOrdinalIndex(
+            operationIndexTemplateDescriptor.getFullQualifiedName(), operation.entity())
+        .name();
   }
 
   /**

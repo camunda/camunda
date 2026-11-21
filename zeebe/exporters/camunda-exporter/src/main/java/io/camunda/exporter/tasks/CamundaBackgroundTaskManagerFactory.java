@@ -16,6 +16,7 @@ import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
@@ -98,6 +99,7 @@ public final class CamundaBackgroundTaskManagerFactory {
   private AuditLogArchiverRepository auditLogArchiverRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private final InstantSource clock;
+  private final TargetIndexLocator indexLocator;
 
   public CamundaBackgroundTaskManagerFactory(
       final int partitionId,
@@ -109,7 +111,8 @@ public final class CamundaBackgroundTaskManagerFactory {
       final ExporterMetadata metadata,
       final ObjectMapper objectMapper,
       final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final TargetIndexLocator indexLocator) {
     this.partitionId = partitionId;
     this.exporterId = exporterId;
     this.config = config;
@@ -120,6 +123,7 @@ public final class CamundaBackgroundTaskManagerFactory {
     this.objectMapper = objectMapper;
     this.processCache = processCache;
     this.clock = clock;
+    this.indexLocator = indexLocator;
   }
 
   public CamundaBackgroundTaskManager build() {
@@ -303,7 +307,8 @@ public final class CamundaBackgroundTaskManagerFactory {
         logger,
         partitionId,
         config.getHistoryDeletion(),
-        clock);
+        clock,
+        indexLocator);
   }
 
   private ElasticsearchHistoryDeletionRepository createHistoryDeletionRepository(
@@ -315,7 +320,8 @@ public final class CamundaBackgroundTaskManagerFactory {
         logger,
         partitionId,
         config.getHistoryDeletion(),
-        clock);
+        clock,
+        indexLocator);
   }
 
   private OpensearchAuditLogArchiverRepository createAuditLogArchiverRepository(

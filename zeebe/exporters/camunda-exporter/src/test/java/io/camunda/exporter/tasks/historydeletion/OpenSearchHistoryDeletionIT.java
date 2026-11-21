@@ -7,12 +7,16 @@
  */
 package io.camunda.exporter.tasks.historydeletion;
 
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.io.IOException;
 import java.time.InstantSource;
+import java.util.Map;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +40,8 @@ public class OpenSearchHistoryDeletionIT extends HistoryDeletionRepositoryIT {
         LOGGER,
         partitionId,
         config.getHistoryDeletion(),
-        InstantSource.system());
+        InstantSource.system(),
+        new TargetIndexLocator());
   }
 
   @Override
@@ -55,5 +60,24 @@ public class OpenSearchHistoryDeletionIT extends HistoryDeletionRepositoryIT {
   protected long countAuditLogCleanupEntries() throws IOException {
     client.indices().refresh(r -> r.index(auditLogCleanupIndex.getFullQualifiedName())).join();
     return client.count(c -> c.index(auditLogCleanupIndex.getFullQualifiedName())).join().count();
+  }
+
+  @Override
+  protected void indexOperation(final String indexName, final String id) throws IOException {
+    client
+        .index(
+            b ->
+                b.index(indexName)
+                    .id(id)
+                    .document(Map.of("id", id, "state", OperationState.SCHEDULED.name()))
+                    .refresh(Refresh.True))
+        .join();
+  }
+
+  @Override
+  protected String getOperationState(final String indexName, final String id) throws IOException {
+    client.indices().refresh(r -> r.index(indexName)).join();
+    final var response = client.get(g -> g.index(indexName).id(id), Map.class).join();
+    return (String) response.source().get("state");
   }
 }
