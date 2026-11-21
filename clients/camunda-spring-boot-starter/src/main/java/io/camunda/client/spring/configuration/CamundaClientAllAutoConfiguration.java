@@ -45,6 +45,8 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnCamundaClientEnabled
 @Import({
   AnnotationProcessorConfiguration.class,
+  // opt-in; must come before the default JSON mapper configurations so that they back off
+  SpringObjectMapperJsonMapperConfiguration.class,
   JsonMapperConfiguration.class,
   Jackson3JsonMapperConfiguration.class,
   DefaultJsonMapperConfiguration.class

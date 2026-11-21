@@ -68,6 +68,9 @@ public class AlignmentTest {
               "camunda.client.use-client-side-load-balancing",
               new Getter(CamundaClientProperties::isUseClientSideLoadBalancing)),
           entry(
+              "camunda.client.use-spring-object-mapper",
+              new Getter(CamundaClientProperties::isUseSpringObjectMapper)),
+          entry(
               "camunda.client.execution-threads",
               new Getter(CamundaClientProperties::getExecutionThreads)),
           entry(

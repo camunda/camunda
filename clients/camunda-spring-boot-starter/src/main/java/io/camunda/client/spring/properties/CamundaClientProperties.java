@@ -145,6 +145,16 @@ public class CamundaClientProperties {
    */
   private boolean useClientSideLoadBalancing = DEFAULT_CLIENT_SIDE_LOAD_BALANCING;
 
+  /**
+   * If <code>true</code>, variables are serialized and deserialized with a copy of the
+   * application's Jackson 2 ObjectMapper bean instead of the default Camunda JSON mapper, as in
+   * 8.8. This changes the JSON format of some variables, for example dates are written as ISO-8601
+   * strings instead of epoch milliseconds, and the application's Jackson settings apply. Has no
+   * effect if the application defines its own JsonMapper bean. Without a Jackson 2 ObjectMapper
+   * bean, the default Camunda JSON mapper is used.
+   */
+  private boolean useSpringObjectMapper = false;
+
   public CamundaClientCloudProperties getCloud() {
     return cloud;
   }
@@ -347,6 +357,14 @@ public class CamundaClientProperties {
     this.useClientSideLoadBalancing = useClientSideLoadBalancing;
   }
 
+  public boolean isUseSpringObjectMapper() {
+    return useSpringObjectMapper;
+  }
+
+  public void setUseSpringObjectMapper(final boolean useSpringObjectMapper) {
+    this.useSpringObjectMapper = useSpringObjectMapper;
+  }
+
   @Override
   public String toString() {
     return "CamundaClientProperties{"
@@ -382,6 +400,8 @@ public class CamundaClientProperties {
         + maxHttpConnections
         + ", useClientSideLoadBalancing="
         + useClientSideLoadBalancing
+        + ", useSpringObjectMapper="
+        + useSpringObjectMapper
         + ", grpcAddress="
         + grpcAddress
         + ", restAddress="

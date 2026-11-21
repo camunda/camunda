@@ -49,6 +49,8 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnCamundaClientEnabled
 @Import({
   AnnotationProcessorConfiguration.class,
+  // opt-in; must come before the default JSON mapper configurations so that they back off
+  SpringObjectMapperJsonMapperConfiguration.class,
   JsonMapperConfiguration.class,
   // fasterxml-based fallback JsonMapper (not Jackson 3.x specific) so a JsonMapper is always
   // available on the unified path, even without a Spring ObjectMapper bean
