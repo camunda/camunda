@@ -155,6 +155,64 @@ public final class JobPollerImplTest extends ClientTest {
             });
   }
 
+  @Test
+  public void shouldCallbackWithoutLoggingWhenPollFailedAfterWorkerClosed() {
+    shouldCallbackWithoutLoggingWhenPollFailedAfterWorkerClosed(Status.UNAVAILABLE);
+  }
+
+  @Test
+  public void shouldCallbackWithoutLoggingWhenPollTimedOutAfterWorkerClosed() {
+    shouldCallbackWithoutLoggingWhenPollFailedAfterWorkerClosed(Status.DEADLINE_EXCEEDED);
+  }
+
+  private void shouldCallbackWithoutLoggingWhenPollFailedAfterWorkerClosed(final Status status) {
+    // given
+    gatewayService.onActivateJobsRequest(new StatusRuntimeException(status));
+
+    // when
+    getJobPoller().poll(123, jobConsumer, doneCallback, errorCallback, () -> false);
+
+    // then
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              verify(errorCallback).accept(any(StatusRuntimeException.class));
+              verify(doneCallback, never()).accept(any(Integer.class));
+              assertThat(logCapture.getEvents())
+                  .as("%s after close should not be logged", status.getCode())
+                  .noneSatisfy(
+                      e ->
+                          assertThat(e.getMessage().getFormattedMessage())
+                              .contains("Failed to activate jobs"));
+            });
+  }
+
+  @Test
+  public void shouldLogWhenHandlingPollFailureThrows() {
+    // given
+    gatewayService.onActivateJobsRequest(new StatusRuntimeException(Status.UNAVAILABLE));
+    Mockito.doThrow(new IllegalStateException("handling failed"))
+        .when(errorCallback)
+        .accept(any(Throwable.class));
+
+    // when
+    getJobPoller().poll(123, jobConsumer, doneCallback, errorCallback, () -> true);
+
+    // then
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(eventsAt(Level.WARN))
+                    .anySatisfy(
+                        e -> {
+                          assertThat(e.getMessage().getFormattedMessage())
+                              .contains("Failed to handle the result of activating jobs");
+                          assertThat(e.getThrown()).isInstanceOf(IllegalStateException.class);
+                        }));
+  }
+
   private List<LogEvent> eventsAt(final Level level) {
     return logCapture.getEvents().stream()
         .filter(e -> JOB_POLLER_LOGGER_NAME.equals(e.getLoggerName()))
