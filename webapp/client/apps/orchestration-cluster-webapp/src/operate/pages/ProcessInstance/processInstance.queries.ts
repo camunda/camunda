@@ -15,7 +15,7 @@ import type {
 	QueryElementInstancesRequestBody,
 	QuerySortOrder,
 } from '@camunda/camunda-api-zod-schemas/8.11';
-import {request, requestErrorSchema} from '#/shared/http/request';
+import {request, requestErrorSchema, type RequestError} from '#/shared/http/request';
 import {ForbiddenError} from '#/shared/errors';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
@@ -62,10 +62,26 @@ function instanceLastMigrationQuery(processInstanceKey: string) {
 	});
 }
 
+function getResponseStatus(error: unknown) {
+	const requestError = requestErrorSchema.safeParse(error);
+	return requestError.success ? requestError.data.response?.status : undefined;
+}
+
+function isNumericKey(key: string) {
+	return /^-?\d+$/.test(key);
+}
+
 function processInstanceQuery(processInstanceKey: string) {
 	return queryOptions({
 		queryKey: ['processInstance', processInstanceKey] as const,
 		queryFn: async (): Promise<ProcessInstance> => {
+			if (!isNumericKey(processInstanceKey)) {
+				throw {
+					variant: 'failed-response',
+					response: new Response(null, {status: 404}),
+					networkError: null,
+				} satisfies RequestError;
+			}
 			const {response, error} = await request(endpoints.getProcessInstance(processInstanceKey));
 			if (error !== null) {
 				throw mapQueryError(error);
@@ -156,12 +172,16 @@ function getProcessInstanceErrorKind(error: unknown): 'forbidden' | 'notFound' |
 	if (error instanceof ForbiddenError) {
 		return 'forbidden';
 	}
-	const requestError = requestErrorSchema.safeParse(error);
-	return requestError.success && requestError.data.response?.status === 404 ? 'notFound' : 'generic';
+	const status = getResponseStatus(error);
+	return status === 400 || status === 404 ? 'notFound' : 'generic';
 }
 
 function useProcessInstance(processInstanceKey: string) {
-	const query = useQuery(processInstanceQuery(processInstanceKey));
+	const query = useQuery({
+		...processInstanceQuery(processInstanceKey),
+		retry: (failureCount, error) =>
+			isNumericKey(processInstanceKey) && getResponseStatus(error) !== 400 && failureCount < 3,
+	});
 	const errorKind = query.isError ? getProcessInstanceErrorKind(query.error) : null;
 
 	return {
