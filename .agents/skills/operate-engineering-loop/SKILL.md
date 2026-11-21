@@ -44,6 +44,7 @@ For bugs, ask about backports before opening the PR.
    Run the cheapest affected checks first, then the full applicable **local** tier before publication; the PR tier and visual CI follow draft creation.
    Coordinate and release exclusive browser preview ports when other sessions run Playwright.
 4. **Review locally before pushing.** Use two independent perspectives: Operate frontend fidelity and high-confidence code correctness.
+   Check the diff against the "Review pitfalls" section of [operate-frontend](../operate-frontend/SKILL.md) first.
    Give reviewers the issue, acceptance matrix, exact diff, and check results; respect the user's agent-type restrictions.
    Verify findings, fix valid ones, and rerun affected checks/reviews; max 3 rounds per perspective.
    Genuine IDE review, if available, adds evidence but **cannot guarantee** GitHub Copilot approval.
