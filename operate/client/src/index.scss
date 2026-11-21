@@ -432,7 +432,7 @@ svg {
 
 .bjs-breadcrumbs {
   display: flex;
-  background-color: #ffffff;
+  background-color: var(--cds-layer-01) !important;
   border-radius: 8px;
   padding: 8px !important;
   padding-bottom: 4px !important;
@@ -442,7 +442,11 @@ svg {
 }
 
 .bjs-breadcrumbs li:last-of-type a {
-  color: #161616 !important;
+  color: var(--cds-text-primary) !important;
+}
+
+.cds--g100 .bjs-breadcrumbs li:not(:first-child)::before {
+  filter: invert(1);
 }
 
 .bjs-container {
