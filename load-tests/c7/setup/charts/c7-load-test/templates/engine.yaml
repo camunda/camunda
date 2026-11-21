@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engine
+  labels:
+    {{- include "c7.labels" . | nindent 4 }}
+    app.kubernetes.io/component: engine
+spec:
+  replicas: {{ .Values.engine.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: c7-benchmark
+      app.kubernetes.io/component: engine
+  template:
+    metadata:
+      labels:
+        {{- include "c7.labels" . | nindent 8 }}
+        app.kubernetes.io/component: engine
+    spec:
+      {{- include "c7.podSpecCommon" . | nindent 6 }}
+      containers:
+        - name: engine
+          image: {{ include "c7.image" (dict "root" . "image" .Values.engine.image) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          env:
+            - name: DB_URL
+              value: "jdbc:postgresql://{{ .Values.postgresql.clusterName }}-rw:5432/{{ .Values.postgresql.database.name }}"
+            - name: DB_USERNAME
+              valueFrom: {secretKeyRef: {name: {{ .Values.postgresql.clusterName }}-camunda, key: username}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ .Values.postgresql.clusterName }}-camunda, key: password}}
+            - name: DB_POOL_SIZE
+              value: {{ .Values.engine.dbPoolSize | quote }}
+            - name: HISTORY_LEVEL
+              value: {{ .Values.engine.historyLevel | quote }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{ ternary "history-cleanup" "default" .Values.engine.historyCleanup | quote }}
+            - name: COCKPIT_ENABLED
+              value: {{ .Values.engine.cockpit | quote }}
+            - name: JAVA_OPTS
+              value: {{ .Values.engine.javaOpts | quote }}
+            {{- with .Values.engine.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - {name: http, containerPort: 8080}
+            - {name: metrics, containerPort: 9600}
+          readinessProbe:
+            httpGet: {path: /health/readiness, port: metrics}
+            periodSeconds: 5
+          startupProbe:
+            httpGet: {path: /health/liveness, port: metrics}
+            periodSeconds: 5
+            failureThreshold: 60
+          resources:
+            {{- toYaml .Values.engine.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engine
+  labels:
+    {{- include "c7.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/part-of: c7-benchmark
+    app.kubernetes.io/component: engine
+  ports:
+    - {name: http, port: 8080, targetPort: http}

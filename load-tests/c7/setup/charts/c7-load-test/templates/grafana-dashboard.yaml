@@ -1,0 +1,11 @@
+{{- if .Values.monitoring.grafanaDashboard.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: c7-benchmark-dashboard
+  labels:
+    {{- toYaml .Values.monitoring.grafanaDashboard.labels | nindent 4 }}
+data:
+  c7-benchmark.json: |
+    {{- .Files.Get "files/c7-benchmark.json" | nindent 4 }}
+{{- end }}

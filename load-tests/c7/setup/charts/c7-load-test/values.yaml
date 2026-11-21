@@ -1,0 +1,135 @@
+# Values for the C7 load test. Layout follows load-tests/setup/charts/load-test-setup
+# in camunda/camunda so the same cluster conventions apply (TTL label, zone pinning,
+# CNPG PostgreSQL, Prometheus Operator scraping).
+
+# -- Who created the load test (label camunda.io/created-by).
+author: ""
+# -- Namespace TTL. The TTL cleanup workflow deletes the namespace on this date (YYYY-MM-DD).
+deadlineDate: ""
+# -- Optional zone to pin all pods to (e.g. europe-west1-b).
+topologyZone: ""
+
+global:
+  image:
+    registry: registry.camunda.cloud/team-zeebe
+    tag: "7.24.0-SNAPSHOT"
+    pullPolicy: Always
+    pullSecrets:
+      - name: harbor-registry
+  # -- Node selector for all app pods. The workshop agreed not to use N2 nodes for C7
+  # (unreliable performance). Set the pool here, e.g. {component: benchmark-c3-standard-8}.
+  nodeSelector: {}
+  tolerations: []
+
+engine:
+  image: c7-benchmark-engine
+  # -- Engines sharing one database (C7 homogeneous cluster).
+  replicas: 1
+  javaOpts: "-XX:MaxRAMPercentage=70 -XX:+UseG1GC"
+  dbPoolSize: 30
+  # -- none | activity | audit | full
+  historyLevel: full
+  # -- Enable history cleanup (keeps state bounded). Off = growing state.
+  historyCleanup: false
+  # -- Serve Cockpit at :8080/camunda (user demo/demo). Off so the engine only serves the
+  # benchmark load; reach it with kubectl port-forward svc/engine 8080 when enabled.
+  cockpit: false
+  resources:
+    requests: {cpu: 3, memory: 4Gi}
+    limits: {cpu: 3, memory: 4Gi}
+  extraEnv: []
+
+starter:
+  image: c7-benchmark-load-tester
+  replicas: 1
+  # -- Process instances per rateDuration (C8 default: 300/s).
+  rate: 300
+  rateDuration: 1s
+  threads: 4
+  processId: benchmark
+  bpmnXmlPath: bpmn/one_task.bpmn
+  payloadPath: payload/typical_payload.json
+  # -- Overrides camunda:historyTimeToLive of the deployed BPMN (e.g. P1D). Empty keeps P30D.
+  historyTimeToLive: ""
+  workloadModel: open
+  durationLimit: 0
+  resources:
+    requests: {cpu: 1, memory: 1Gi}
+    limits: {cpu: 2, memory: 1Gi}
+  extraEnv: []
+
+worker:
+  image: c7-benchmark-load-tester
+  # -- C8 defaults: 3 workers, capacity 60, 10 threads, 50ms completion delay.
+  replicas: 3
+  topic: benchmark-task
+  maxTasks: 30
+  capacity: 60
+  threads: 10
+  completionDelay: 50ms
+  lockDuration: 30s
+  asyncResponseTimeout: 20s
+  payloadPath: payload/typical_payload.json
+  completeWithPayload: true
+  resources:
+    requests: {cpu: 500m, memory: 512Mi}
+    limits: {cpu: 1, memory: 512Mi}
+  extraEnv: []
+
+# -- CNPG-managed PostgreSQL. Same image and tuning as the C8 rdbms load tests.
+postgresql:
+  enabled: true
+  clusterName: postgresql
+  image:
+    registry: europe-west1-docker.pkg.dev/camunda-benchmark
+    repository: dockerhub/postgres
+    tag: "18.4"
+  postgresUID: 999
+  postgresGID: 999
+  resources:
+    requests: {memory: 8Gi, cpu: 3000m}
+    limits: {memory: 12Gi, cpu: 3000m}
+  storage:
+    size: 256Gi
+    storageClass: benchmark-ssd-zonal-v1
+  database:
+    name: camunda
+    user: camunda
+    password: camunda
+  # -- Leave empty to use global.nodeSelector.
+  nodeSelector: {}
+  tolerations: []
+  shared_preload_libraries:
+    - pg_stat_statements
+  parameters:
+    max_connections: "300"
+    wal_buffers: 128MB
+    max_wal_size: 4GB
+    min_wal_size: 1GB
+    checkpoint_timeout: 20min
+    checkpoint_completion_target: "0.9"
+    wal_writer_delay: 200ms
+    wal_writer_flush_after: 1MB
+    shared_buffers: 2GB
+    effective_cache_size: 7GB
+    work_mem: 32MB
+    maintenance_work_mem: 1GB
+    autovacuum_max_workers: "6"
+    autovacuum_naptime: 15s
+    autovacuum_vacuum_scale_factor: "0.03"
+    autovacuum_analyze_scale_factor: "0.02"
+    autovacuum_vacuum_cost_limit: "5000"
+    pg_stat_statements.track: all
+    pg_stat_statements.max: "10000"
+    track_io_timing: "on"
+    track_functions: all
+
+monitoring:
+  # -- Labels the cluster's Prometheus uses to select PodMonitors.
+  labels:
+    release: monitoring
+  # -- Ship the Grafana dashboard as a ConfigMap (Grafana sidecar label).
+  grafanaDashboard:
+    enabled: false
+    labels:
+      grafana_dashboard: "1"

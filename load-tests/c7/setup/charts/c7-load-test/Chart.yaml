@@ -1,0 +1,6 @@
+apiVersion: v2
+name: c7-load-test
+description: Camunda 7 load test (engine, starter, external task workers, CNPG PostgreSQL, monitoring)
+type: application
+version: 0.1.0
+appVersion: "7.24.0"
