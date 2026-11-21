@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.util;
 
 import com.google.common.collect.ImmutableMap;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
@@ -151,6 +152,133 @@ public abstract class AbstractRepositoryTest {
                     "joinRelation" : {
                       "value" : "processInstance"
                     }
+                  }
+                } ]
+              }
+            }"""));
+  }
+
+  static Stream<Arguments> completedProcessInstances() {
+    return Stream.of(
+        Arguments.of(
+            "now-1h",
+            1,
+            ProcessInstanceRetentionMode.PI_HIERARCHY,
+            """
+            {
+              "bool" : {
+                "filter" : [ {
+                  "range" : {
+                    "endDate" : {
+                      "lte" : "now-1h"
+                    }
+                  }
+                }, {
+                  "term" : {
+                    "joinRelation" : {
+                      "value" : "processInstance"
+                    }
+                  }
+                }, {
+                  "term" : {
+                    "partitionId" : {
+                      "value" : 1
+                    }
+                  }
+                }, {
+                  "bool" : {
+                    "minimum_should_match" : "1",
+                    "should" : [ {
+                      "bool" : {
+                        "must" : [ {
+                          "exists" : {
+                            "field" : "rootProcessInstanceKey"
+                          }
+                        } ],
+                        "must_not" : [ {
+                          "exists" : {
+                            "field" : "parentProcessInstanceKey"
+                          }
+                        } ]
+                      }
+                    }, {
+                      "bool" : {
+                        "must_not" : [ {
+                          "exists" : {
+                            "field" : "rootProcessInstanceKey"
+                          }
+                        } ]
+                      }
+                    } ]
+                  }
+                } ]
+              }
+            }"""),
+        Arguments.of(
+            "now-30d",
+            2,
+            ProcessInstanceRetentionMode.PI,
+            """
+            {
+              "bool" : {
+                "filter" : [ {
+                  "range" : {
+                    "endDate" : {
+                      "lte" : "now-30d"
+                    }
+                  }
+                }, {
+                  "term" : {
+                    "joinRelation" : {
+                      "value" : "processInstance"
+                    }
+                  }
+                }, {
+                  "term" : {
+                    "partitionId" : {
+                      "value" : 2
+                    }
+                  }
+                } ]
+              }
+            }"""),
+        Arguments.of(
+            "now-180d",
+            3,
+            ProcessInstanceRetentionMode.PI_HIERARCHY_IGNORE_LEGACY,
+            """
+            {
+              "bool" : {
+                "filter" : [ {
+                  "range" : {
+                    "endDate" : {
+                      "lte" : "now-180d"
+                    }
+                  }
+                }, {
+                  "term" : {
+                    "joinRelation" : {
+                      "value" : "processInstance"
+                    }
+                  }
+                }, {
+                  "term" : {
+                    "partitionId" : {
+                      "value" : 3
+                    }
+                  }
+                }, {
+                  "bool" : {
+                    "must" : [ {
+                      "exists" : {
+                        "field" : "rootProcessInstanceKey"
+                      }
+                    } ],
+                    "must_not" : [ {
+                      "exists" : {
+                        "field" : "parentProcessInstanceKey"
+                      }
+                    } ]
                   }
                 } ]
               }
