@@ -272,6 +272,38 @@ public class BatchOperationCancelProcessInstanceIT {
   }
 
   /**
+   * Regression test: an empty $in list is dropped by the request mapper, so a filter holding only
+   * that list was treated as "no condition" and passed the empty-filter check, cancelling every
+   * running instance. It must be rejected like an empty filter.
+   */
+  @RegressionTest("https://github.com/camunda/camunda/issues/70111")
+  void shouldRejectCancellationWhenFilterHasOnlyAnEmptyInList() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newCreateBatchOperationCommand()
+                    .processInstanceCancel()
+                    .filter(f -> f.processDefinitionKey(k -> k.in(List.of())))
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining(
+            "The filter property 'processDefinitionKey' must contain at least one value");
+
+    // and - nothing was canceled
+    activeProcessInstances.forEach(
+        instance ->
+            assertThat(
+                    camundaClient
+                        .newProcessInstanceGetRequest(instance.getProcessInstanceKey())
+                        .send()
+                        .join()
+                        .getState())
+                .isEqualTo(ProcessInstanceState.ACTIVE));
+  }
+
+  /**
    * Regression test: a filter on only the parentProcessInstanceKey, as sent by Operate's "View all
    * called instances" page, used to have the parent filter dropped, cancelling every root instance
    * in the cluster. Since only root instances are cancelled, such a filter matches nothing.
