@@ -18,6 +18,7 @@ package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import java.util.NoSuchElementException;
 
 /** Raft log reader that reads only committed entries. */
@@ -29,16 +30,97 @@ public class RaftLogCommittedReader implements RaftLogReader {
   // inconsistencies when the log is truncated/compacted/etc.
   private long nextIndex;
   private final RaftLogUncommittedReader reader;
+  private final boolean failOnMissingCommittedEntry;
 
   RaftLogCommittedReader(final RaftLog log, final RaftLogUncommittedReader reader) {
+    this(log, reader, false);
+  }
+
+  /**
+   * @param failOnMissingCommittedEntry whether {@link #hasNext()} throws a {@link
+   *     CorruptedJournalException} when the log cannot return an entry at or below the commit
+   *     index, instead of reporting the end of the log
+   */
+  RaftLogCommittedReader(
+      final RaftLog log,
+      final RaftLogUncommittedReader reader,
+      final boolean failOnMissingCommittedEntry) {
     this.log = log;
     this.reader = reader;
+    this.failOnMissingCommittedEntry = failOnMissingCommittedEntry;
     nextIndex = log.getFirstIndex();
   }
 
   @Override
   public boolean hasNext() {
-    return nextIndex <= log.getCommitIndex() && reader.hasNext();
+    final long commitIndex = log.getCommitIndex();
+    if (nextIndex > commitIndex) {
+      return false;
+    }
+    if (reader.hasNext()) {
+      return true;
+    }
+    if (failOnMissingCommittedEntry && isMissingFromLog(nextIndex)) {
+      throw missingCommittedEntry(nextIndex, commitIndex);
+    }
+    return false;
+  }
+
+  /**
+   * Tells a missing entry apart from a reader that has nothing to read because it was left behind:
+   * the segment it reads was compacted away, or the log was reset for a snapshot. Only a new reader
+   * shows which one it is, and it must not move this reader, which stays where it is until it is
+   * sought again.
+   *
+   * <p>The new reader stops before the index if the log ends there, and after it if the index is
+   * compacted. The log can also be compacted or reset between the calls here, which is why the
+   * first index is read last: it is then already past the index. It is read without the journal
+   * lock, and is 0 while a reset has removed the segments but not yet added the new first one.
+   */
+  private boolean isMissingFromLog(final long index) {
+    try (final var probe = log.openUncommittedReader()) {
+      if (probe.seek(index) > index || probe.hasNext()) {
+        return false;
+      }
+      final long firstIndex = log.getFirstIndex();
+      return firstIndex > 0 && firstIndex <= index;
+    }
+  }
+
+  /**
+   * A seek to an ASQN reads on until it finds an entry with a higher one, and takes a missing entry
+   * for the end of the log, which leaves this reader at an earlier entry than the one asked for.
+   * Reads the same entries again to tell the two apart.
+   *
+   * <p>The reader that does so is itself left behind when the log is compacted or reset while it
+   * reads, so where it stops is looked up once more with a new reader.
+   */
+  private void failIfSeekStoppedAtMissingEntry(final long asqn, final long commitIndex) {
+    try (final var probe = log.openUncommittedReader()) {
+      long index = probe.seek(nextIndex);
+      while (index <= commitIndex) {
+        if (!probe.hasNext()) {
+          if (isMissingFromLog(index)) {
+            throw missingCommittedEntry(index, commitIndex);
+          }
+          return;
+        }
+        final var entry = probe.next();
+        if (entry.isApplicationEntry() && entry.getApplicationEntry().lowestPosition() > asqn) {
+          return;
+        }
+        index = entry.index() + 1;
+      }
+    } catch (final NoSuchElementException e) {
+      // compacted or reset between hasNext and next, so nothing is missing
+    }
+  }
+
+  private static CorruptedJournalException missingCommittedEntry(
+      final long index, final long commitIndex) {
+    return new CorruptedJournalException(
+        "Expected to read the committed entry at index %d (commit index %d), but the log has no entry at that index"
+            .formatted(index, commitIndex));
   }
 
   @Override
@@ -73,7 +155,11 @@ public class RaftLogCommittedReader implements RaftLogReader {
   }
 
   public long seekToAsqn(final long asqn) {
-    nextIndex = reader.seekToAsqn(asqn, log.getCommitIndex());
+    final long commitIndex = log.getCommitIndex();
+    nextIndex = reader.seekToAsqn(asqn, commitIndex);
+    if (failOnMissingCommittedEntry) {
+      failIfSeekStoppedAtMissingEntry(asqn, commitIndex);
+    }
     return nextIndex;
   }
 
