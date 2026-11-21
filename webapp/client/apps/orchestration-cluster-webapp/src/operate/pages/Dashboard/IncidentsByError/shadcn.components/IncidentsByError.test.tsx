@@ -246,7 +246,7 @@ describe('<IncidentsByError />', () => {
 
 		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate-preview'});
 
-		await expect.element(screen.getByRole('heading', {name: 'Process incidents by error message'})).toBeVisible();
+		await expect.element(screen.getByRole('table', {name: 'Process incidents by error message'})).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 	});
 

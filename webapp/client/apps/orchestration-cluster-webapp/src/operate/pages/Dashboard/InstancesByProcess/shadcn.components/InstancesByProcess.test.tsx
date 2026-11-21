@@ -102,7 +102,7 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
-		await expect.element(screen.getByRole('heading', {name: 'Process instances by name'})).toBeVisible();
+		await expect.element(screen.getByRole('table', {name: 'Process instances by name'})).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 	});
 
