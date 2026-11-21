@@ -27,11 +27,9 @@ class OpensearchDeletionRepositoryIT extends DeletionRepositoryIT {
   @Override
   protected DeletionRepository createRepository() {
     return new OpensearchDeletionRepository(
-        deleterConfig,
-        retentionConfig,
-        retentionMode,
         PARTITION_ID,
-        listViewTemplate,
+        config.getHistory(),
+        resourceProvider,
         client,
         Runnable::run,
         metrics,

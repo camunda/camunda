@@ -13,6 +13,7 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
@@ -26,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 public class CamundaExporterMetrics implements AutoCloseable {
 
@@ -114,6 +116,18 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of audit logs that have been archived. */
   private final Counter auditLogsArchived;
 
+  /** Count of process instances past retention that are in progress of deleting. */
+  private final Counter processInstancesDeleting;
+
+  /** Count of process instances past retention that have been deleted. */
+  private final Counter processInstancesDeleted;
+
+  private final Timer deletionDuration;
+  private final Timer deletionSearchTimer;
+  private final Timer deletionDocIdsBatchSearchTimer;
+  private final Timer deletionDeleteTimer;
+  private final Counter deletionDeletedDocs;
+
   private final Timer archiverSearchTimer;
   private final Timer archiverDocIdsBatchSearchTimer;
   private final Timer archiverDeleteTimer;
@@ -134,6 +148,8 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   private final Map<String, Timer> timersBySource = new ConcurrentHashMap<>();
   private final Map<String, Counter> docCountersBySource = new ConcurrentHashMap<>();
+  private final Map<String, Timer> deletionTimersBySource = new ConcurrentHashMap<>();
+  private final Map<String, Counter> deletionDocCountersBySource = new ConcurrentHashMap<>();
 
   private final AtomicReference<Instant> lastFlushTime = new AtomicReference<>(Instant.now());
   private final AtomicInteger processInstancesAwaitingArchival = new AtomicInteger(0);
@@ -282,6 +298,50 @@ public class CamundaExporterMetrics implements AutoCloseable {
         Counter.builder(meterName("deletion.batch.retries"))
             .description(
                 "Count of deletion batch retries due to retryable errors (e.g. socket timeouts, search engine exceptions).")
+            .register(meterRegistry);
+    processInstancesDeleting =
+        Counter.builder(meterName("deletion.process.instances"))
+            .tag("state", "deleting")
+            .description(
+                "Count of process instances past their retention period that have been found, and are now in progress of deleting.")
+            .register(meterRegistry);
+    processInstancesDeleted =
+        Counter.builder(meterName("deletion.process.instances"))
+            .tag("state", "deleted")
+            .description(
+                "Count of process instances past their retention period, that have been deleted.")
+            .register(meterRegistry);
+    deletionDuration =
+        Timer.builder(meterName("deletion.duration"))
+            .description(
+                "Duration of how long it takes from resolving to deleting process instances, all in all together.")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    deletionSearchTimer =
+        Timer.builder(meterName("deletion.request.duration"))
+            .description(
+                "Duration of how long it takes to run the search request to resolve process instances, that need to be deleted.")
+            .tags("type", "search")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    deletionDocIdsBatchSearchTimer =
+        Timer.builder(meterName("deletion.request.duration"))
+            .description(
+                "Duration of how long it takes to run the search request to resolve the IDs of documents, that need to be deleted.")
+            .tags("type", "search-docid-batch")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    deletionDeleteTimer =
+        Timer.builder(meterName("deletion.request.duration"))
+            .description(
+                "Duration of how long it takes to run the bulk request that deletes documents.")
+            .tags("type", "delete")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    deletionDeletedDocs =
+        Counter.builder(meterName("deletion.docs"))
+            .tags("type", "delete")
+            .description("Count of how many documents the deleter has deleted.")
             .register(meterRegistry);
     incidentUpdatesRetriesNeeded =
         Counter.builder(meterName("incident.updates"))
@@ -627,6 +687,79 @@ public class CamundaExporterMetrics implements AutoCloseable {
     counter.increment(count == null ? 0 : count);
   }
 
+  public void recordProcessInstancesDeleting(final int count) {
+    processInstancesDeleting.increment(count);
+  }
+
+  public void recordProcessInstancesDeleted(final int count) {
+    processInstancesDeleted.increment(count);
+  }
+
+  public void measureDeletionDuration(final Sample timer) {
+    timer.stop(deletionDuration);
+  }
+
+  public void measureDeletionSearch(final Sample timer) {
+    timer.stop(deletionSearchTimer);
+  }
+
+  public void measureDeletionDocIdsSearchDuration(final Sample timer) {
+    timer.stop(deletionDocIdsBatchSearchTimer);
+  }
+
+  public void measureDeletionDelete(final Long docsDeleted, final Sample timer) {
+    if (docsDeleted != null) {
+      deletionDeletedDocs.increment(docsDeleted);
+    }
+    timer.stop(deletionDeleteTimer);
+  }
+
+  /**
+   * Measures how long it took to delete documents from an index, and how many were deleted. The
+   * metrics are tagged with the main index name, so all ordinal indices of an index share the same
+   * metrics.
+   */
+  public void measureDeletionIndexDuration(
+      final String sourceIndex, final Sample sample, final Long count) {
+    final var timer =
+        getOrRegister(
+            deletionTimersBySource,
+            sourceIndex,
+            () ->
+                Timer.builder(meterName("deletion.index.duration"))
+                    .description("Duration of how long it takes to delete docs from " + sourceIndex)
+                    .tag("source", sourceIndex)
+                    .publishPercentileHistogram()
+                    .register(meterRegistry));
+    sample.stop(timer);
+
+    final var counter =
+        getOrRegister(
+            deletionDocCountersBySource,
+            sourceIndex,
+            () ->
+                Counter.builder(meterName("deletion.index.docs"))
+                    .tag("source", sourceIndex)
+                    .description("Count of how many " + sourceIndex + " documents deleted.")
+                    .register(meterRegistry));
+    counter.increment(count == null ? 0 : count);
+  }
+
+  private static <T extends Meter> T getOrRegister(
+      final Map<String, T> meters, final String key, final Supplier<T> registration) {
+    // NOTE: We intentionally use get() + putIfAbsent() instead of compute() here.
+    // Using compute() could cause a deadlock because ConcurrentHashMap holds a bucket lock
+    // while executing the remapping function, and register() acquires internal locks in the
+    // CompositeMeterRegistry. See https://github.com/camunda/camunda/issues/33941
+    final T existing = meters.get(key);
+    if (existing != null) {
+      return existing;
+    }
+    final T registered = registration.get();
+    final T raced = meters.putIfAbsent(key, registered);
+    return raced != null ? raced : registered;
+  }
+
   @Override
   public void close() {
     // clean up all registered meters
@@ -670,11 +803,20 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(auditLogsArchived);
     meterRegistry.remove(archiverBatchRetries);
     meterRegistry.remove(deletionBatchRetries);
+    meterRegistry.remove(processInstancesDeleting);
+    meterRegistry.remove(processInstancesDeleted);
+    meterRegistry.remove(deletionDuration);
+    meterRegistry.remove(deletionSearchTimer);
+    meterRegistry.remove(deletionDocIdsBatchSearchTimer);
+    meterRegistry.remove(deletionDeleteTimer);
+    meterRegistry.remove(deletionDeletedDocs);
 
     meterRegistry.find(FLUSH_FAILURE_TYPE_METER_NAME).meters().forEach(meterRegistry::remove);
 
     timersBySource.values().forEach(meterRegistry::remove);
     docCountersBySource.values().forEach(meterRegistry::remove);
+    deletionTimersBySource.values().forEach(meterRegistry::remove);
+    deletionDocCountersBySource.values().forEach(meterRegistry::remove);
 
     // Remove custom gauges by their names if needed
     removeGaugeIfExists(SINCE_LAST_FLUSH_SECONDS_METER_NAME);

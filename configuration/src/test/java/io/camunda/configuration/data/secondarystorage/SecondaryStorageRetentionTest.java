@@ -17,6 +17,7 @@ import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOve
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.search.schema.config.DeleterConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Map;
@@ -286,6 +287,73 @@ public class SecondaryStorageRetentionTest {
           .returns(
               "camunda-usage-metrics-retention-policy",
               SearchEngineRetentionProperties::getUsageMetricsPolicyName);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.retention.deleter.document-batch-size=1000",
+        "camunda.data.secondary-storage.retention.deleter.entity-batch-size=200",
+        "camunda.data.secondary-storage.retention.deleter.max-retry-attempts=5",
+        "camunda.data.secondary-storage.retention.deleter.retry-delay=3s",
+        "camunda.data.secondary-storage.retention.deleter.delay-between-runs=5s",
+        "camunda.data.secondary-storage.retention.deleter.max-delay-between-runs=2m",
+      })
+  class WithDeleterSet {
+    final BrokerBasedProperties brokerBasedProperties;
+
+    WithDeleterSet(@Autowired final BrokerBasedProperties brokerBasedProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+    }
+
+    @Test
+    void shouldApplyDeleterToCamundaExporter() {
+      // given
+      final Map<String, Object> args = brokerBasedProperties.getCamundaExporter().getArgs();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getHistory().getRetention().getDeleter())
+          .returns(1000, DeleterConfiguration::getDocumentBatchSize)
+          .returns(200, DeleterConfiguration::getEntityBatchSize)
+          .returns(5, DeleterConfiguration::getMaxRetryAttempts)
+          .returns(3000, DeleterConfiguration::getRetryDelayMs)
+          .returns(5000, DeleterConfiguration::getDelayBetweenRuns)
+          .returns(120000, DeleterConfiguration::getMaxDelayBetweenRuns);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=elasticsearch"})
+  class WithDeleterNotSet {
+    final BrokerBasedProperties brokerBasedProperties;
+
+    WithDeleterNotSet(@Autowired final BrokerBasedProperties brokerBasedProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+    }
+
+    @Test
+    void shouldApplyDeleterDefaultsToCamundaExporter() {
+      // given
+      final Map<String, Object> args = brokerBasedProperties.getCamundaExporter().getArgs();
+
+      // when
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      // then
+      assertThat(exporterConfiguration.getHistory().getRetention().getDeleter())
+          .returns(2500, DeleterConfiguration::getDocumentBatchSize)
+          .returns(500, DeleterConfiguration::getEntityBatchSize)
+          .returns(3, DeleterConfiguration::getMaxRetryAttempts)
+          .returns(1000, DeleterConfiguration::getRetryDelayMs)
+          .returns(2000, DeleterConfiguration::getDelayBetweenRuns)
+          .returns(60000, DeleterConfiguration::getMaxDelayBetweenRuns);
     }
   }
 }

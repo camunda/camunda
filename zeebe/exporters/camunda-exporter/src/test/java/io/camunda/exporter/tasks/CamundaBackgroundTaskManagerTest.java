@@ -14,6 +14,7 @@ import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import io.camunda.exporter.tasks.archiver.AuditLogArchiverRepository;
 import io.camunda.exporter.tasks.archiver.NoopArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NoopBatchOperationUpdateRepository;
+import io.camunda.exporter.tasks.deletion.NoopDeletionRepository;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository.NoopHistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
 import java.time.Duration;
@@ -34,6 +35,8 @@ final class CamundaBackgroundTaskManagerTest {
   final class CloseTest {
     private final CloseableArchiverRepository archiverRepository =
         new CloseableArchiverRepository();
+    private final CloseableDeletionRepository deletionRepository =
+        new CloseableDeletionRepository();
     private final CloseableAuditLogArchiverRepository auditLogArchiverRepository =
         new CloseableAuditLogArchiverRepository();
     private final CloseableIncidentRepository incidentRepository =
@@ -46,6 +49,7 @@ final class CamundaBackgroundTaskManagerTest {
         new CamundaBackgroundTaskManager(
             1,
             archiverRepository,
+            deletionRepository,
             auditLogArchiverRepository,
             incidentRepository,
             batchOperationUpdateRepository,
@@ -66,6 +70,7 @@ final class CamundaBackgroundTaskManagerTest {
 
       // then
       assertThat(archiverRepository.isClosed).isTrue();
+      assertThat(deletionRepository.isClosed).isTrue();
       assertThat(auditLogArchiverRepository.isClosed).isTrue();
       assertThat(incidentRepository.isClosed).isTrue();
       assertThat(batchOperationUpdateRepository.isClosed).isTrue();
@@ -79,6 +84,31 @@ final class CamundaBackgroundTaskManagerTest {
 
       // when
       assertThatCode(taskManager::close).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldNotThrowOnDeletionRepositoryCloseError() {
+      // given
+      deletionRepository.exception = new RuntimeException("foo");
+
+      // when
+      assertThatCode(taskManager::close).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldCloseOtherRepositoriesWhenDeletionRepositoryCloseFails() {
+      // given
+      deletionRepository.exception = new RuntimeException("foo");
+
+      // when
+      taskManager.close();
+
+      // then
+      assertThat(archiverRepository.isClosed).isTrue();
+      assertThat(auditLogArchiverRepository.isClosed).isTrue();
+      assertThat(incidentRepository.isClosed).isTrue();
+      assertThat(batchOperationUpdateRepository.isClosed).isTrue();
+      assertThat(historyDeletionRepository.isClosed).isTrue();
     }
 
     @Test
@@ -145,6 +175,20 @@ final class CamundaBackgroundTaskManagerTest {
     }
 
     private static final class CloseableArchiverRepository extends NoopArchiverRepository {
+      private boolean isClosed;
+      private Exception exception;
+
+      @Override
+      public void close() throws Exception {
+        if (exception != null) {
+          throw exception;
+        }
+
+        isClosed = true;
+      }
+    }
+
+    private static final class CloseableDeletionRepository extends NoopDeletionRepository {
       private boolean isClosed;
       private Exception exception;
 

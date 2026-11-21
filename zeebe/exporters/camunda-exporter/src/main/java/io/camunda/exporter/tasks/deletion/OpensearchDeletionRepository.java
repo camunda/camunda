@@ -7,24 +7,25 @@
  */
 package io.camunda.exporter.tasks.deletion;
 
-import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
+import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.exporter.tasks.util.SearchAfter;
 import io.camunda.exporter.tasks.util.SearchAfterOS;
-import io.camunda.search.schema.config.DeleterConfiguration;
-import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
+import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
+import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOptions;
@@ -41,29 +42,26 @@ import org.slf4j.Logger;
 public class OpensearchDeletionRepository extends OpensearchRepository
     implements DeletionRepository {
   private final DeleteByIdPipeline pipeline;
-  private final DeleterConfiguration config;
-  private final RetentionConfiguration retention;
-  private final ProcessInstanceRetentionMode retentionMode;
   private final int partitionId;
+  private final HistoryConfiguration config;
   private final IndexTemplateDescriptor listViewTemplate;
+  private final CamundaExporterMetrics metrics;
 
   public OpensearchDeletionRepository(
-      final DeleterConfiguration config,
-      final RetentionConfiguration retention,
-      final ProcessInstanceRetentionMode retentionMode,
       final int partitionId,
-      final IndexTemplateDescriptor listViewTemplate,
-      final OpenSearchAsyncClient client,
+      final HistoryConfiguration config,
+      final ExporterResourceProvider resourceProvider,
+      @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
     super(client, executor, logger);
-    this.config = config;
-    this.retention = retention;
-    this.retentionMode = retentionMode;
     this.partitionId = partitionId;
-    this.listViewTemplate = listViewTemplate;
-    pipeline = new DeleteByIdPipeline(config, this, metrics, logger);
+    this.config = config;
+    listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    this.metrics = metrics;
+
+    pipeline = new DeleteByIdPipeline(config.getRetention().getDeleter(), this, metrics, logger);
   }
 
   @Override
@@ -77,8 +75,10 @@ public class OpensearchDeletionRepository extends OpensearchRepository
             .ignoreUnavailable(true)
             .query(
                 finishedProcessInstancesQuery(
-                    "now-" + retention.getMinimumAge(), partitionId, retentionMode))
-            .size(config.getEntityBatchSize())
+                    "now-" + config.getRetention().getMinimumAge(),
+                    partitionId,
+                    config.getProcessInstanceRetentionMode()))
+            .size(config.getRetention().getDeleter().getEntityBatchSize())
             .source(
                 s ->
                     s.filter(
@@ -105,13 +105,16 @@ public class OpensearchDeletionRepository extends OpensearchRepository
                             field -> field.field(ListViewTemplate.END_DATE).order(SortOrder.Asc))))
             .build();
 
+    final var timer = Timer.start();
     try {
       return client
           .search(request, ProcessInstanceForListViewEntity.class)
+          .whenCompleteAsync((ignored, error) -> metrics.measureDeletionSearch(timer), executor)
           .thenApplyAsync(
               response ->
                   ProcessInstanceDeletionBatch.from(
-                      response.hits().hits().stream().map(Hit::source).toList(), retentionMode),
+                      response.hits().hits().stream().map(Hit::source).toList(),
+                      config.getProcessInstanceRetentionMode()),
               executor);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);
@@ -148,9 +151,12 @@ public class OpensearchDeletionRepository extends OpensearchRepository
       ((SearchAfterOS) searchAfter).apply(requestBuilder);
     }
 
+    final var timer = Timer.start();
     try {
       return client
           .search(requestBuilder.build(), Object.class)
+          .whenCompleteAsync(
+              (response, error) -> metrics.measureDeletionDocIdsSearchDuration(timer), executor)
           .thenApply(
               response -> {
                 final List<Hit<Object>> hits = response.hits().hits();
@@ -187,10 +193,13 @@ public class OpensearchDeletionRepository extends OpensearchRepository
 
     final BulkRequest request = BulkRequest.of(b -> b.operations(operations));
 
+    final var timer = Timer.start();
     try {
       return client
           .bulk(request)
           .thenApplyAsync(this::getDeletedDocCount, executor)
+          .whenCompleteAsync(
+              (deleted, error) -> metrics.measureDeletionDelete(deleted, timer), executor)
           .thenApply(Math::toIntExact);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);

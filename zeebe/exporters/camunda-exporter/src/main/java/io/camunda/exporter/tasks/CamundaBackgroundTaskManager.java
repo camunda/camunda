@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.AuditLogArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
+import io.camunda.exporter.tasks.deletion.DeletionRepository;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTaskManager;
@@ -31,6 +32,7 @@ import org.slf4j.Logger;
 public final class CamundaBackgroundTaskManager implements CloseableSilently {
   private final int partitionId;
   private final ArchiverRepository archiverRepository;
+  private final DeletionRepository deletionRepository;
   private final AuditLogArchiverRepository auditLogArchiverRepository;
   private final IncidentUpdateRepository incidentRepository;
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
@@ -41,6 +43,7 @@ public final class CamundaBackgroundTaskManager implements CloseableSilently {
   CamundaBackgroundTaskManager(
       final int partitionId,
       final @WillCloseWhenClosed ArchiverRepository archiverRepository,
+      final @WillCloseWhenClosed DeletionRepository deletionRepository,
       final @WillCloseWhenClosed AuditLogArchiverRepository auditLogArchiverRepository,
       final @WillCloseWhenClosed IncidentUpdateRepository incidentRepository,
       final @WillCloseWhenClosed BatchOperationUpdateRepository batchOperationUpdateRepository,
@@ -52,6 +55,8 @@ public final class CamundaBackgroundTaskManager implements CloseableSilently {
     this.partitionId = partitionId;
     this.archiverRepository =
         Objects.requireNonNull(archiverRepository, "must specify an archiver repository");
+    this.deletionRepository =
+        Objects.requireNonNull(deletionRepository, "must specify a deletion repository");
     this.auditLogArchiverRepository =
         Objects.requireNonNull(
             auditLogArchiverRepository, "must specify an audit log archiver repository");
@@ -76,6 +81,7 @@ public final class CamundaBackgroundTaskManager implements CloseableSilently {
     CloseHelper.closeAll(
         error -> logger.warn("Failed to close resource for partition {}", partitionId, error),
         archiverRepository,
+        deletionRepository,
         auditLogArchiverRepository,
         incidentRepository,
         batchOperationUpdateRepository,

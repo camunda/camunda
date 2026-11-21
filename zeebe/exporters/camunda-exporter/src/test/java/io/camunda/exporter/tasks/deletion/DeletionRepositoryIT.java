@@ -10,14 +10,14 @@ package io.camunda.exporter.tasks.deletion;
 import static io.camunda.search.test.utils.SearchDBExtension.create;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
+import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.schema.SearchEngineClient;
-import io.camunda.search.schema.config.DeleterConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
-import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchClientAdapter;
@@ -28,6 +28,7 @@ import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
@@ -46,15 +47,13 @@ abstract class DeletionRepositoryIT {
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
   protected final ExporterConfiguration config;
-  protected final DeleterConfiguration deleterConfig = new DeleterConfiguration();
-  protected final RetentionConfiguration retentionConfig = new RetentionConfiguration();
-  protected ProcessInstanceRetentionMode retentionMode = ProcessInstanceRetentionMode.PI;
-  protected final CamundaExporterMetrics metrics =
-      new CamundaExporterMetrics(new SimpleMeterRegistry());
+  protected final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+  protected final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
   protected final SearchEngineClient engineClient;
   protected final SearchClientAdapter searchClientAdapter;
   protected final OperationTemplate operationTemplate;
-  protected final ListViewTemplate listViewTemplate;
+  protected final ExporterResourceProvider resourceProvider;
+  protected final IndexTemplateDescriptor listViewTemplate;
 
   protected DeletionRepositoryIT(final String databaseUrl, final boolean isElastic) {
     final var indexPrefix =
@@ -75,8 +74,10 @@ abstract class DeletionRepositoryIT {
     }
 
     operationTemplate = new OperationTemplate(indexPrefix, isElastic);
-    listViewTemplate = new ListViewTemplate(indexPrefix, isElastic);
-    retentionConfig.setMinimumAge("1h");
+    resourceProvider = new TestExporterResourceProvider(indexPrefix, isElastic);
+    listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    config.getHistory().getRetention().setMinimumAge("1h");
+    config.getHistory().setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI);
   }
 
   protected abstract DeletionRepository createRepository();
@@ -125,6 +126,41 @@ abstract class DeletionRepositoryIT {
   }
 
   @Test
+  void shouldRecordMetricsWhenDeletingDocuments() throws IOException {
+    // given
+    final var indexName = operationTemplate.getFullQualifiedName();
+    final var repository = createRepository();
+    indexOperation(indexName, 100L);
+    indexOperation(indexName, 100L);
+    indexOperation(indexName, 200L);
+    searchClientAdapter.refresh(indexName);
+
+    final var filter = FilterByKeysQuery.of(OperationTemplate.PROCESS_INSTANCE_KEY, List.of("100"));
+
+    // when
+    final var result = repository.deleteDocumentsById(indexName, filter, Runnable::run);
+
+    // then
+    assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
+    assertThat(requestTimer("search-docid-batch").count()).isPositive();
+    assertThat(requestTimer("delete").count()).isPositive();
+    assertThat(
+            meterRegistry
+                .get("zeebe.camunda.exporter.deletion.docs")
+                .tag("type", "delete")
+                .counter()
+                .count())
+        .isEqualTo(2);
+    assertThat(
+            meterRegistry
+                .get("zeebe.camunda.exporter.deletion.index.docs")
+                .tag("source", indexName)
+                .counter()
+                .count())
+        .isEqualTo(2);
+  }
+
+  @Test
   void shouldReturnExpiredProcessInstancesFromOrdinalIndicesOnly() throws IOException {
     // given
     final var expired = OffsetDateTime.now().minusHours(2);
@@ -154,12 +190,13 @@ abstract class DeletionRepositoryIT {
               assertThat(batch.processInstanceKeys()).containsExactlyInAnyOrder(1L, 2L);
               assertThat(batch.rootProcessInstanceKeys()).isEmpty();
             });
+    assertThat(requestTimer("search").count()).isEqualTo(1);
   }
 
   @Test
   void shouldLimitBatchToEntityBatchSizeReturningOldestFirst() throws IOException {
     // given
-    deleterConfig.setEntityBatchSize(2);
+    config.getHistory().getRetention().getDeleter().setEntityBatchSize(2);
     final var now = OffsetDateTime.now();
     indexProcessInstance(1, 1L, PARTITION_ID, now.minusHours(3));
     indexProcessInstance(1, 2L, PARTITION_ID, now.minusHours(5));
@@ -242,7 +279,7 @@ abstract class DeletionRepositoryIT {
   @Test
   void shouldSplitRootAndLegacyProcessInstancesInHierarchyMode() throws IOException {
     // given
-    retentionMode = ProcessInstanceRetentionMode.PI_HIERARCHY;
+    config.getHistory().setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI_HIERARCHY);
     final var expired = OffsetDateTime.now().minusHours(2);
     final var root = processInstance(1L, PARTITION_ID, expired).setRootProcessInstanceKey(1L);
     final var child =
@@ -267,6 +304,13 @@ abstract class DeletionRepositoryIT {
               assertThat(batch.rootProcessInstanceKeys()).containsExactly(1L);
               assertThat(batch.processInstanceKeys()).containsExactly(3L);
             });
+  }
+
+  private Timer requestTimer(final String type) {
+    return meterRegistry
+        .get("zeebe.camunda.exporter.deletion.request.duration")
+        .tag("type", type)
+        .timer();
   }
 
   private String ordinalIndex(final int ordinal) {

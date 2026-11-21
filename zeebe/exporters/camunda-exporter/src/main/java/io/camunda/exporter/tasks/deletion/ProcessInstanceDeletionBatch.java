@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.deletion;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
+import io.camunda.exporter.tasks.retention.ProcessInstanceRetentionBatch;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.ArrayList;
@@ -21,7 +22,8 @@ import java.util.Objects;
  * (legacy, or non-hierarchy mode) process instances.
  */
 public record ProcessInstanceDeletionBatch(
-    int storageOrdinal, List<Long> processInstanceKeys, List<Long> rootProcessInstanceKeys) {
+    int storageOrdinal, List<Long> processInstanceKeys, List<Long> rootProcessInstanceKeys)
+    implements ProcessInstanceRetentionBatch {
 
   public static ProcessInstanceDeletionBatch empty() {
     return new ProcessInstanceDeletionBatch(

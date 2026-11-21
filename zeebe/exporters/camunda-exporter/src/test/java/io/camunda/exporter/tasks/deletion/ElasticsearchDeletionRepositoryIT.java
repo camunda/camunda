@@ -26,11 +26,9 @@ final class ElasticsearchDeletionRepositoryIT extends DeletionRepositoryIT {
   @Override
   protected DeletionRepository createRepository() {
     return new ElasticsearchDeletionRepository(
-        deleterConfig,
-        retentionConfig,
-        retentionMode,
         PARTITION_ID,
-        listViewTemplate,
+        config.getHistory(),
+        resourceProvider,
         client,
         Runnable::run,
         metrics,
