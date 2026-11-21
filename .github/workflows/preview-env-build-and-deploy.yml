@@ -299,6 +299,9 @@ jobs:
       github.event_name == 'pull_request'
     name: Clean Preview Environment
     needs: [deploy-preview]
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login in the called workflow
     uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
     secrets: inherit
     with:
