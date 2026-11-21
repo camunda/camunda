@@ -28,7 +28,7 @@ dependencies {
   testImplementation(libs.com.tngtech.archunit.archunit)
   testImplementation(libs.com.tngtech.archunit.archunit.junit5.api)
   testImplementation(libs.com.tngtech.archunit.archunit.junit5.engine)
-  testImplementation(libs.org.camunda.bpm.model.camunda.xml.model)
+  testImplementation(project(":zeebe-xml-model"))
   testImplementation(libs.org.jspecify.jspecify)
   testImplementation(libs.org.ow2.asm.asm)
   testImplementation(libs.org.springframework.boot.spring.boot.autoconfigure)

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/DMN/20151101/dmn11.xsd"
+             id="definitions"
+             name="definitions"
+             namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="decision" name="Check Order">
+    <decisionTable id="decisionTable">
+      <input id="input1" label="Customer Status">
+        <inputExpression id="inputExpression1" typeRef="string">
+          <text>status</text>
+        </inputExpression>
+        <inputValues id="inputValues">
+          <text>"bronze","silver","gold"</text>
+        </inputValues>
+      </input>
+      <input id="input2" label="Order Sum">
+        <inputExpression id="inputExpression2" typeRef="double">
+          <text>sum</text>
+        </inputExpression>
+      </input>
+      <output id="output1" label="Check Result" name="result" typeRef="string">
+        <outputValues id="outputValues">
+          <text>"ok","notok"</text>
+        </outputValues>
+      </output>
+      <output id="output2" label="Reason" name="reason" typeRef="string" />
+      <rule id="rule1">
+        <inputEntry id="inputEntry1">
+          <text>"bronze"</text>
+        </inputEntry>
+        <inputEntry id="inputEntry2">
+          <text/>
+        </inputEntry>
+        <outputEntry id="outputEntry1">
+          <text>"notok"</text>
+        </outputEntry>
+        <outputEntry id="outputEntry2">
+          <text><![CDATA["work on your status first, as bronze you're not going to get anything"]]></text>
+        </outputEntry>
+      </rule>
+      <rule id="rule2">
+        <inputEntry id="inputEntry3">
+          <text>"silver"</text>
+        </inputEntry>
+        <inputEntry id="inputEntry4">
+          <text><![CDATA[< 1000]]></text>
+        </inputEntry>
+        <outputEntry id="outputEntry3">
+          <text>"ok"</text>
+        </outputEntry>
+        <outputEntry id="outputEntry4">
+          <text>"you little fish will get what you want"</text>
+        </outputEntry>
+      </rule>
+      <rule id="rule3">
+        <inputEntry id="inputEntry5">
+          <text>"silver"</text>
+        </inputEntry>
+        <inputEntry id="inputEntry6">
+          <text><![CDATA[>= 1000]]></text>
+        </inputEntry>
+        <outputEntry id="outputEntry5">
+          <text>"notok"</text>
+        </outputEntry>
+        <outputEntry id="outputEntry6">
+          <text>"you took too much man, you took too much!"</text>
+        </outputEntry>
+      </rule>
+      <rule id="rule4">
+        <inputEntry id="inputEntry7">
+          <text>"gold"</text>
+        </inputEntry>
+        <inputEntry id="inputEntry8">
+          <text/>
+        </inputEntry>
+        <outputEntry id="outputEntry7">
+          <text>"ok"</text>
+        </outputEntry>
+        <outputEntry id="outputEntry8">
+          <text>"you get anything you want"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

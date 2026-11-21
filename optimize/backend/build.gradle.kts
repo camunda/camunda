@@ -50,12 +50,7 @@ dependencies {
   annotationProcessor(libs.org.apache.logging.log4j.log4j.core)
   implementation(libs.org.apache.logging.log4j.log4j.layout.template.json)
   implementation(project(":optimize-commons"))
-  implementation(libs.org.camunda.bpm.model.camunda.bpmn.model)
-  implementation(libs.org.camunda.bpm.model.camunda.dmn.model)
-  implementation(libs.org.camunda.bpm.camunda.engine) {
-    exclude(group = "org.camunda.feel", module = "feel-engine")
-    exclude(group = "commons-logging", module = "commons-logging")
-  }
+  implementation(project(":zeebe-dmn-model"))
   implementation(project(":camunda-search-client-connect"))
   implementation(project(":zeebe-protocol"))
   implementation(libs.io.camunda.identity.spring.boot.starter)
@@ -133,7 +128,7 @@ dependencies {
   implementation(libs.org.apache.commons.commons.text)
   implementation(libs.com.github.wnameless.json.json.base)
   implementation(libs.com.google.guava.guava)
-  implementation(libs.org.camunda.bpm.model.camunda.xml.model)
+  implementation(project(":zeebe-xml-model"))
   implementation(libs.org.eclipse.angus.jakarta.mail)
   implementation(libs.org.apache.commons.commons.collections4)
   implementation(libs.org.apache.httpcomponents.httpclient)

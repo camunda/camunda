@@ -27,7 +27,6 @@ internal fun VersionCatalogBuilder.catalogVersions(
   version("awssdk", pomVersion("version.awssdk"))
   version("bouncycastle", pomVersion("version.bouncycastle"))
   version("caffeine", pomVersion("version.caffeine"))
-  version("camunda", pomVersion("version.camunda"))
   version("classgraph", pomVersion("version.classgraph"))
   version(
     "co-elastic-clients-elasticsearch-java",

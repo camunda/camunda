@@ -184,8 +184,6 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
     )
     .versionRef("tomcat")
   library("org-aspectj-aspectjweaver", "org.aspectj", "aspectjweaver").versionRef("aspectjweaver")
-  library("org-camunda-bpm-camunda-engine", "org.camunda.bpm", "camunda-engine")
-    .versionRef("camunda")
   library("org-camunda-bpm-camunda-license-check", "org.camunda.bpm", "camunda-license-check")
     .versionRef("org-camunda-bpm-camunda-license-check")
   library(
@@ -194,24 +192,6 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
       "dmn-engine",
     )
     .versionRef("dmn-scala")
-  library(
-      "org-camunda-bpm-model-camunda-bpmn-model",
-      "org.camunda.bpm.model",
-      "camunda-bpmn-model",
-    )
-    .versionRef("camunda")
-  library(
-      "org-camunda-bpm-model-camunda-dmn-model",
-      "org.camunda.bpm.model",
-      "camunda-dmn-model",
-    )
-    .versionRef("camunda")
-  library(
-      "org-camunda-bpm-model-camunda-xml-model",
-      "org.camunda.bpm.model",
-      "camunda-xml-model",
-    )
-    .versionRef("camunda")
   library("org-camunda-feel-feel-engine", "org.camunda.feel", "feel-engine")
     .versionRef("org-camunda-feel-feel-engine")
   library("org-checkerframework-checker-qual", "org.checkerframework", "checker-qual")

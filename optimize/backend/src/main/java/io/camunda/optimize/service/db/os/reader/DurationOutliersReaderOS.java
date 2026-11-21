@@ -39,6 +39,7 @@ import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhance
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.os.util.DefinitionQueryUtilOS;
 import io.camunda.optimize.service.db.reader.DurationOutliersReader;
+import io.camunda.optimize.service.db.reader.ExcludedFlowNodeType;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessVariableReader;
 import io.camunda.optimize.service.db.util.AggregationNameUtil;
@@ -51,6 +52,7 @@ import java.io.IOException;
 import java.time.ZoneId;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -232,8 +234,8 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
                                           .terms(
                                               tt ->
                                                   tt.value(
-                                                      generateListOfStandardExcludedFlowNodeTypes()
-                                                          .stream()
+                                                      Arrays.stream(ExcludedFlowNodeType.values())
+                                                          .map(ExcludedFlowNodeType::value)
                                                           .map(FieldValue::of)
                                                           .toList()))))));
     }

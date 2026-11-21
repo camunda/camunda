@@ -15,7 +15,7 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 dependencies {
-  api(libs.org.camunda.bpm.model.camunda.xml.model)
+  api(project(":zeebe-xml-model"))
   implementation(libs.org.slf4j.slf4j.api)
   testImplementation(libs.junit.junit)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)

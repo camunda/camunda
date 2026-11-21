@@ -403,6 +403,10 @@ registerProject(":operate-data-generator", "operate/data-generator")
 
 registerProject(":zeebe-bpmn-model", "zeebe/bpmn-model")
 
+registerProject(":zeebe-xml-model", "zeebe/xml-model")
+
+registerProject(":zeebe-dmn-model", "zeebe/dmn-model")
+
 registerProject(":camunda-secret-store-api", "secret-store/secret-store-api")
 
 registerProject(":camunda-secret-store-file", "secret-store/secret-store-file")
