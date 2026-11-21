@@ -64,7 +64,7 @@
     <!-- renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch -->
     <version.elasticsearch.container>9.5.6</version.elasticsearch.container>
     <version.error-prone>2.52.0</version.error-prone>
-    <version.nullaway>0.14.3</version.nullaway>
+    <version.nullaway>0.14.4</version.nullaway>
     <!-- override with -Derrorprone.skip, see the errorprone-skip profile -->
     <!-- off-by-default checks promoted to errors; Gradle reads this property as well -->
     <error-prone.checks>-XepDisableAllWarnings -Xep:LockNotBeforeTry:ERROR -Xep:HashCodeInObjectsHash:ERROR -Xep:ObjectsHashCodePrimitive:ERROR</error-prone.checks>
