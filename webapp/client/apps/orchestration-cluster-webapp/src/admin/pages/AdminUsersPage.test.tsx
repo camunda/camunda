@@ -29,7 +29,14 @@ const RETRY_BUDGET = {timeout: 10_000};
 async function renderPage(overrides: Partial<AdminUsersPageProps> = {}) {
 	const onSearchChange = vi.fn();
 	const screen = await render(
-		<AdminUsersPage users={[createUser()]} totalItems={1} search={{}} onSearchChange={onSearchChange} {...overrides} />,
+		<AdminUsersPage
+			users={[createUser()]}
+			totalItems={1}
+			idPattern={null}
+			search={{}}
+			onSearchChange={onSearchChange}
+			{...overrides}
+		/>,
 		{wrapper: createAdminPageWrapper()},
 	);
 
@@ -96,6 +103,7 @@ describe('<AdminUsersPage />', () => {
 			<AdminUsersPage
 				users={[createUser()]}
 				totalItems={1}
+				idPattern={null}
 				search={{search: 'previous'}}
 				onSearchChange={onSearchChange}
 			/>,
@@ -113,7 +121,13 @@ describe('<AdminUsersPage />', () => {
 
 		// when
 		await screen.rerender(
-			<AdminUsersPage users={[createUser()]} totalItems={1} search={{search: 'previous'}} onSearchChange={vi.fn()} />,
+			<AdminUsersPage
+				users={[createUser()]}
+				totalItems={1}
+				idPattern={null}
+				search={{search: 'previous'}}
+				onSearchChange={vi.fn()}
+			/>,
 		);
 
 		// then
@@ -206,6 +220,59 @@ describe('<AdminUsersPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Create user'}).last());
 
 		await expect.element(screen.getByText('Passwords do not match')).toBeVisible();
+	});
+
+	it('should reject a username that does not match the default ID pattern', async () => {
+		// given
+		const {screen} = await renderPage({users: []});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Create user'}));
+		await userEvent.fill(screen.getByLabelText('Username'), 'jane doe');
+		await userEvent.click(screen.getByRole('button', {name: 'Create user'}).last());
+
+		// then
+		await expect.element(screen.getByText('Please enter a valid username')).toBeVisible();
+	});
+
+	it('should name the configured pattern when a username does not match it', async () => {
+		// given
+		const {screen} = await renderPage({users: [], idPattern: '^[a-z]+$'});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Create user'}));
+		await userEvent.fill(screen.getByLabelText('Username'), 'jane1');
+		await userEvent.click(screen.getByRole('button', {name: 'Create user'}).last());
+
+		// then
+		await expect
+			.element(
+				screen.getByText(
+					'Must be at most 256 characters and match the ID pattern configured for this cluster: ^[a-z]+$',
+				),
+			)
+			.toBeVisible();
+	});
+
+	it('should accept a username that a looser configured pattern allows', async ({worker}) => {
+		// given
+		worker.use(
+			mockCreateUserEndpoint({successResponse: HttpResponse.json(createUser({username: 'jane doe'}))}),
+			mockQueryUsersEndpoint({
+				successResponse: HttpResponse.json({items: [createUser({username: 'jane doe'})], page: {totalItems: 1}}),
+			}),
+		);
+		const {screen} = await renderPage({users: [], idPattern: '^[a-z ]+$'});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Create user'}));
+		await userEvent.fill(screen.getByLabelText('Username'), 'jane doe');
+		await userEvent.fill(screen.getByLabelText('Password'), 'secret123');
+		await userEvent.fill(screen.getByLabelText('Confirm password'), 'secret123');
+		await userEvent.click(screen.getByRole('button', {name: 'Create user'}).last());
+
+		// then
+		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
 	});
 
 	it('should edit a user', async ({worker}) => {

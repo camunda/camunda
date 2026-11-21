@@ -275,7 +275,7 @@ const endpoints = {
 		}),
 
 	getUser: ({username}: Pick<User, 'username'>) =>
-		new Request(getFullURL(unifiedAPIEndpoints.getUser.getUrl({username})), {
+		new Request(getFullURL(unifiedAPIEndpoints.getUser.getUrl({username: encodeURIComponent(username)})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getUser.method,
 			headers: {'Content-Type': 'application/json'},
@@ -290,7 +290,7 @@ const endpoints = {
 		}),
 
 	updateUser: ({username, ...body}: Pick<User, 'username'> & UpdateUserRequestBody) =>
-		new Request(getFullURL(unifiedAPIEndpoints.updateUser.getUrl({username})), {
+		new Request(getFullURL(unifiedAPIEndpoints.updateUser.getUrl({username: encodeURIComponent(username)})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.updateUser.method,
 			body: JSON.stringify(body),
@@ -298,7 +298,7 @@ const endpoints = {
 		}),
 
 	deleteUser: ({username}: Pick<User, 'username'>) =>
-		new Request(getFullURL(unifiedAPIEndpoints.deleteUser.getUrl({username})), {
+		new Request(getFullURL(unifiedAPIEndpoints.deleteUser.getUrl({username: encodeURIComponent(username)})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.deleteUser.method,
 			headers: {'Content-Type': 'application/json'},
