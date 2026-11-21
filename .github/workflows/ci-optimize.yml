@@ -93,7 +93,8 @@ jobs:
     if: inputs.runBeTests
     runs-on: gcp-core-32-longrunning
     timeout-minutes: 30
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: IT
       TEST_OWNER: '@camunda/data-layer'
@@ -135,8 +136,9 @@ jobs:
           maven-cache-key-modifier: optimize-tests
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
       - name: Read DB versions
         id: db-versions
@@ -196,16 +198,18 @@ jobs:
         with:
           job_name: "optimize-it-elasticsearch/${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}"
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   optimize-it-opensearch:
     name: "Integration / OpenSearch ITs"
     if: inputs.runBeTests
     runs-on: gcp-core-32-longrunning
     timeout-minutes: 30
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: IT
       TEST_OWNER: '@camunda/data-layer'
@@ -243,8 +247,9 @@ jobs:
           maven-cache-key-modifier: optimize-tests
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
       - name: Read DB versions
         id: db-versions
@@ -304,16 +309,18 @@ jobs:
         with:
           job_name: "optimize-it-opensearch/${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}"
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   optimize-frontend-unit-tests:
     name: "Unit - Front End"
     if: inputs.runFeTests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     defaults:
       run:
         working-directory: optimize/client
@@ -362,15 +369,17 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   hadolint:
     if: inputs.runDockerfileChecks
     name: "Tool / Dockerfile / Hadolint"
     runs-on: ubuntu-latest
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     timeout-minutes: 4
     env:
       TEST_TYPE: Tool
@@ -399,15 +408,17 @@ jobs:
         with:
           job_name: "hadolint/${{ matrix.dockerfile }}"
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   validate-base-image:
     if: inputs.runDockerfileChecks && github.event_name != 'push' && github.event_name != 'schedule'
     name: "Tool / Dockerfile / Validate Base Image"
     runs-on: ubuntu-latest
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     timeout-minutes: 5
     env:
       TEST_TYPE: Tool
@@ -432,8 +443,9 @@ jobs:
         uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           minimus: true
       # Same class of check as camunda.Dockerfile gets in the docker-checks job
       # (.github/workflows/ci.yml), but here it's a metadata-only resolve since this job never
@@ -462,6 +474,7 @@ jobs:
         with:
           job_name: "validate-base-image/${{ matrix.dockerfile }}"
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}

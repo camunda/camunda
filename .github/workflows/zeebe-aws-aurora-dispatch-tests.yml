@@ -27,6 +27,7 @@ jobs:
     name: "[IT] Camunda QA Integration Module. Aurora"
     timeout-minutes: 70
     permissions:
+      id-token: write # Vault JWT login
       contents: read
       actions: write
     runs-on: aws-core-8-default
@@ -37,9 +38,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/camunda/aurorapg AURORA_POSTGRESQL_PASSWORD;
             secret/data/products/camunda/aurorapg AURORA_POSTGRESQL_USERNAME;
@@ -69,8 +71,9 @@ jobs:
         with:
           maven-cache-key-modifier: camunda-qa-acceptance-tests
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -121,9 +124,10 @@ jobs:
           job_name: "integration-tests/camunda-qa-acceptance-tests"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   send-slack-notification:
     name: "Send slack notification on fail"
@@ -132,6 +136,7 @@ jobs:
     if: (failure() || cancelled()) && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     timeout-minutes: 5
     permissions:
+      id-token: write # Vault JWT login
       contents: read
       actions: read
     steps:
@@ -155,9 +160,10 @@ jobs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
     - name: Send notification
@@ -181,9 +187,10 @@ jobs:
       uses: ./.github/actions/observe-build-status
       with:
         build_status: ${{ job.status }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Auto-retry when integration-tests failed because its self-hosted runner was terminated
   # mid-job rather than by a real test failure. Those runs end with "The runner has received a
@@ -192,6 +199,10 @@ jobs:
   rerun-failed-jobs:
     needs: integration-tests
     if: failure() && fromJSON(github.run_attempt) < 3
+    permissions:
+      actions: read
+      contents: read
+      id-token: write # Vault JWT login
     uses: ./.github/workflows/rerun-failed-jobs-reusable.yml
     with:
       test_owner: '@camunda/core-features'
