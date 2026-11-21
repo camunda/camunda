@@ -1,0 +1,28 @@
+zeebe:
+  image:
+    # CUSTOMIZATION: the zeebe, zeebeGateway, operate and tasklist tags are pinned to the
+    # released version instead of the chart default.
+    # Renovate does not update these tags: the update-release-load-test workflow
+    # sets them when a release is published.
+    tag: "8.7.45"
+zeebeGateway:
+  image:
+    tag: "8.7.45"
+operate:
+  image:
+    tag: "8.7.45"
+tasklist:
+  image:
+    tag: "8.7.45"
+optimize:
+  image:
+    # renovate: datasource=docker depName=docker.io/camunda/optimize
+    tag: "8.7.31"
+identity:
+  image:
+    # renovate: datasource=docker depName=docker.io/camunda/identity
+    tag: "8.7.29"
+connectors:
+  image:
+    # renovate: datasource=docker depName=docker.io/camunda/connectors-bundle
+    tag: "8.7.32"

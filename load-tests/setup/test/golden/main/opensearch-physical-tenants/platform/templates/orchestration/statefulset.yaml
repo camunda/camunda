@@ -52,7 +52,7 @@ spec:
         - name: harbor-registry
       containers:
         - name: orchestration
-          image: docker.io/camunda/camunda:SNAPSHOT
+          image: docker.io/camunda/camunda:8.11.0-alpha1-rc2
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: true
