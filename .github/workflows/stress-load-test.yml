@@ -15,9 +15,9 @@
 # note: every stable setup job's `uses:` ref is resolved when this workflow starts, also for the
 #       daily run on main. Remove a retired branch's setup-<X.Y> job here when the branch goes.
 # called-by: camunda-daily-load-tests.yml, camunda-stable-stress-tests.yml
-# note: this chain is 3 of GitHub's 4 allowed reusable-workflow nesting levels deep (calls 4 more
-#       reusable workflows); none of them may add another nested "uses:" job without breaking it.
-#       The stable branches' camunda-load-test.yml copies have no nested "uses:" either.
+# note: this chain is 4 reusable-workflow levels deep on main (camunda-daily-load-tests.yml,
+#       this workflow, camunda-load-test.yml, camunda-load-test-deploy.yml). GitHub allows ten
+#       levels. The stable branches' camunda-load-test.yml copies have no nested "uses:" either.
 # type: CI
 # owner: @camunda/reliability-testing
 name: Stress test
