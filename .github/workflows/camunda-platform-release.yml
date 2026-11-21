@@ -175,6 +175,36 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Pin Connectors Version for Process Test
+        run: |
+          # The Connectors version of Camunda Process Test follows the project version. On a stable
+          # branch, Renovate replaces it with a published Connectors version. A patch release must not
+          # ship the placeholder: Connectors X.Y.Z is published well after Camunda X.Y.Z, so the image
+          # wouldn't exist for a long time. If Renovate hasn't replaced it before the release, pin the
+          # latest published patch version of the minor line instead. A minor release keeps the
+          # placeholder, as Connectors X.Y.0 follows shortly after the release.
+          if [[ "$IS_STABLE_VERSION" != "true" || "$RELEASE_PATCH" == "0" ]]; then
+            echo "Skipping: ${RELEASE_VERSION} is not a patch release"
+            exit 0
+          fi
+
+          POM=testing/camunda-process-test-java/pom.xml
+          if ! grep -qF "<io.camunda.process.test.connectorsDockerImageVersion>\${project.version}<" "$POM"; then
+            echo "Skipping: the Connectors version is already pinned"
+            exit 0
+          fi
+
+          LINE="${RELEASE_MAJOR}.${RELEASE_MINOR}"
+          TAGS=$(curl -fsS --retry 5 --retry-all-errors "https://hub.docker.com/v2/repositories/camunda/connectors-bundle/tags?name=${LINE}.&page_size=100")
+          CONNECTORS_VERSION=$(jq -r '.results[].name' <<< "$TAGS" | { grep -E "^${LINE//./\\.}\.[0-9]+$" || true; } | sort -V | tail -n 1)
+          if [[ -z "$CONNECTORS_VERSION" ]]; then
+            echo "::error::No published camunda/connectors-bundle ${LINE}.x image found"
+            exit 1
+          fi
+          echo "Pinning the Connectors version to ${CONNECTORS_VERSION}"
+
+          ./mvnw -B versions:set-property -pl testing/camunda-process-test-java -DgenerateBackupPoms=false -Dproperty=io.camunda.process.test.connectorsDockerImageVersion -DnewVersion="${CONNECTORS_VERSION}" -P\!include-optimize
+          git commit -m "build: pin the CPT Connectors version to ${CONNECTORS_VERSION}" "$POM"
       - name: Maven Prepare Release
         id: maven-prepare-release
         run: |

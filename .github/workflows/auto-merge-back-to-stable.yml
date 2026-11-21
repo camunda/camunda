@@ -122,6 +122,8 @@ jobs:
           # - <backwards.compat.version>: Java API compatibility version
           # - <version.identity>: Identity component version (updated by automation)
           # - <zeebe.version>: Used in Optimize (updated by automation)
+          # - <io.camunda.process.test.connectorsDockerImageVersion>: Connectors version of Camunda
+          #   Process Test (pinned by the release workflow for patch releases if Renovate has not yet)
           ALLOWED_PATTERNS=(
             '^\+\+\+'                              # Diff header
             '^---'                                 # Diff header
@@ -129,6 +131,7 @@ jobs:
             '^[+-]\s*<backwards\.compat\.version>' # Backwards compatibility version
             '^[+-]\s*<version\.identity>'          # Identity version
             '^[+-]\s*<zeebe\.version>'             # Zeebe component version
+            '^[+-]\s*<io\.camunda\.process\.test\.connectorsDockerImageVersion>' # CPT Connectors version
           )
 
           # Build regex from allowed patterns (join with |)

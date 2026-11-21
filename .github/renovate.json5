@@ -136,7 +136,7 @@
       enabled: true,
     },
     {
-      description: "For stable branches, prevent minor/major connectors bundle Docker image updates in process test.",
+      description: "For stable branches, allow replacing the project version placeholder of the connectors bundle Docker image in the process test pom with a published version. The custom manager restricts the candidates to the minor line of the branch, so no other minor or major can be proposed.",
       matchManagers: [
         "custom.regex",
       ],
@@ -149,6 +149,19 @@
       matchUpdateTypes: [
         "minor",
         "major",
+      ],
+      enabled: true,
+    },
+    {
+      description: "On main, keep the project version placeholder of the connectors bundle Docker image in the process test pom. SNAPSHOT versions fall back to the default SNAPSHOT image.",
+      matchManagers: [
+        "custom.regex",
+      ],
+      matchPackageNames: [
+        "camunda/connectors-bundle",
+      ],
+      matchBaseBranches: [
+        "main",
       ],
       enabled: false,
     },
@@ -987,16 +1000,23 @@
       ],
     },
     {
-      description: "Track the connectors bundle Docker image override in process test pom.",
+      description: "Track the connectors bundle Docker image in process test pom. The version is the project version placeholder until Renovate replaces it on a stable branch with a published Connectors version, then it follows the patch releases. Candidates are restricted to the minor line of the pom's parent version.",
       customType: "regex",
       managerFilePatterns: [
         "/testing/camunda-process-test-java/pom\\.xml$/",
-        "/testing/camunda-process-test-java/build\\.gradle\\.kts$/",
       ],
+      // Recursive: the first match only provides `branchLine` from the parent version, the second
+      // narrows the text Renovate rewrites to the property. Otherwise it would also replace the
+      // current value inside the parent version (e.g. 8.10.3 in 8.10.30-SNAPSHOT).
+      matchStringsStrategy: "recursive",
       matchStrings: [
-        "<io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>(?<currentValue>\\d+\\.\\d+\\.\\d+)</io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>",
-        "\"io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion\" to \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\"",
+        "<parent>[\\s\\S]*?<version>(?<branchLine>\\d+\\.\\d+)\\.\\d+[^<]*</version>[\\s\\S]*?<io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>[^<]*</io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>",
+        "<io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>(?:(?<currentValue>\\d+\\.\\d+\\.\\d+)|\\$\\{project\\.version\\})</io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>",
       ],
+      // The placeholder has no version to compare with, so it counts as the oldest possible one.
+      currentValueTemplate: "{{#if currentValue}}{{{currentValue}}}{{else}}0.0.0{{/if}}",
+      extractVersionTemplate: "^(?<version>{{{branchLine}}}\\.\\d+)$",
+      autoReplaceStringTemplate: "<io.camunda.process.test.connectorsDockerImageVersion>{{{newValue}}}</io.camunda.process.test.connectorsDockerImageVersion>",
       depNameTemplate: "camunda/connectors-bundle",
       datasourceTemplate: "docker",
     },
