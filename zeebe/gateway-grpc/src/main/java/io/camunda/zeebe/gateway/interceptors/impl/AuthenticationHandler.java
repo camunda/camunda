@@ -33,6 +33,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoderInitializationException;
 import org.springframework.security.oauth2.jwt.JwtException;
 
 /** Used by the {@link AuthenticationInterceptor} to authenticate incoming requests. */
@@ -121,11 +122,23 @@ public sealed interface AuthenticationHandler {
       final Jwt token;
       try {
         token = jwtDecoder.decode(tokenValue);
+      } catch (final JwtDecoderInitializationException e) {
+        // The decoder could not resolve the identity provider configuration; retrying may
+        // succeed once it is reachable again. The description stays generic so it does not
+        // leak the IdP URL; the cause is logged server-side.
+        LOG.warn("Rejecting bearer token: OIDC issuer resolution failed: {}", e.getMessage());
+        return Either.left(Status.UNAVAILABLE.augmentDescription("Identity provider unavailable"));
       } catch (final JwtException e) {
         // Exception details may include the IdP URL or issuer mismatch strings; log them
         // server-side and return a generic status so API callers don't see them.
         LOG.debug("Rejecting bearer token: JWT decode failed", e);
         return Either.left(Status.UNAUTHENTICATED.augmentDescription("Invalid bearer token"));
+      } catch (final RuntimeException e) {
+        // authenticate must not throw, so any other decode failure is reported as a
+        // non-retryable status with a generic description instead of escaping the
+        // interceptor; retrying would only loop on the same bug and hide it.
+        LOG.warn("Rejecting bearer token: unexpected JWT decode failure", e);
+        return Either.left(Status.INTERNAL.augmentDescription("Internal authentication error"));
       }
 
       final ClaimSettings claimSettings =
