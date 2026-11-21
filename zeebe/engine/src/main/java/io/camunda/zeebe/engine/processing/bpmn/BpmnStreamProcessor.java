@@ -100,7 +100,8 @@ public final class BpmnStreamProcessor
             processingState.getAsyncRequestState(),
             config,
             suspensionState,
-            suspensionMetrics);
+            suspensionMetrics,
+            writers.state());
     stateBehavior = bpmnBehaviors.stateBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
