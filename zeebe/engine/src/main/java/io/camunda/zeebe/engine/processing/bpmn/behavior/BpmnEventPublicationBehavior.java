@@ -56,7 +56,10 @@ public final class BpmnEventPublicationBehavior {
             stateBehavior,
             storageOrdinalProvider);
     catchEventAnalyzer =
-        new CatchEventAnalyzer(processingState.getProcessState(), elementInstanceState);
+        new CatchEventAnalyzer(
+            processingState.getProcessState(),
+            elementInstanceState,
+            processingState.getEventScopeInstanceState());
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
   }
