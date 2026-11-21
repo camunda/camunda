@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -122,6 +123,7 @@ public final class ClusterRebalanceServices {
         switch (cause) {
           case final ConnectException ignored -> Status.UNAVAILABLE;
           case final NoSuchMemberException ignored -> Status.UNAVAILABLE;
+          case final NoRemoteHandler ignored -> Status.UNAVAILABLE;
           case final TimeoutException ignored -> Status.DEADLINE_EXCEEDED;
           default -> Status.ABORTED;
         };

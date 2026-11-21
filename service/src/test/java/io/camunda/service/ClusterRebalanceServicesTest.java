@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.camunda.service.ClusterRebalanceServices.ClusterRebalanceRequest;
 import io.camunda.service.exception.ServiceException;
@@ -316,6 +317,11 @@ final class ClusterRebalanceServicesTest {
   @Test
   void shouldMapANoSuchMemberExceptionToUnavailable() {
     givenForwardingFailure(new NoSuchMemberException("gone"), Status.UNAVAILABLE);
+  }
+
+  @Test
+  void shouldMapANoRemoteHandlerToUnavailable() {
+    givenForwardingFailure(new NoRemoteHandler("rebalance-status"), Status.UNAVAILABLE);
   }
 
   @Test
