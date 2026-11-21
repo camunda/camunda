@@ -15,7 +15,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -152,17 +154,24 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   }
 
   @Test
-  void shouldGenerateId() {
-    // Given
+  void shouldExtractIdAndIndexes() {
+    // given
     final var record = createCompletedRecord(123456789L);
+    final var indexLocator = mock(TargetIndexLocator.class);
+    final var index = TargetIndex.ordinalIndex(INDEX_NAME, 1005);
+    when(indexLocator.locateOrdinalIndex(eq(INDEX_NAME), eq(record.getValue()))).thenReturn(index);
 
-    // When
-    final var idList = underTest.generateIds(record);
+    // when
+    final var idAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
-    // Then - composite ID (processInstanceKey:batchOperationReference)
-    assertThat(idList)
+    // then - composite ID (processInstanceKey:batchOperationReference)
+    assertThat(idAndIndexes)
         .containsExactly(
-            record.getValue().getProcessInstanceKey() + ":" + record.getBatchOperationReference());
+            new IdAndIndex(
+                record.getValue().getProcessInstanceKey()
+                    + ":"
+                    + record.getBatchOperationReference(),
+                index));
   }
 
   @Test

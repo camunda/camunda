@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.batchoperations;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NotFinishedBatchOperation;
@@ -33,6 +34,7 @@ public class BatchOperationUpdateTaskTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationUpdateTaskTest.class);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   private static final int BATCH_SIZE = 100;
+  private static final String INDEX = "test-batch-operation";
   private final TestRepository repository = Mockito.spy(new TestRepository());
   private final BatchOperationUpdateTask task =
       new BatchOperationUpdateTask(repository, BATCH_SIZE, LOGGER, Runnable::run);
@@ -54,7 +56,7 @@ public class BatchOperationUpdateTaskTest {
     // given a completed batch operation whose item query matched nothing, so it has no items and no
     // single operations
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("1", BatchOperationState.COMPLETED, 0));
+        new NotFinishedBatchOperation("1", INDEX, BatchOperationState.COMPLETED, 0));
 
     // when
     final var result = task.execute();
@@ -64,14 +66,15 @@ public class BatchOperationUpdateTaskTest {
         .succeedsWithin(REQUEST_TIMEOUT)
         .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
         .isEqualTo(1);
-    assertThat(repository.documentUpdates).containsExactly(new DocumentUpdate("1", 0L, 0L, 0L, 0L));
+    assertThat(repository.documentUpdates)
+        .containsExactly(new DocumentUpdate("1", INDEX, 0L, 0L, 0L, 0L));
   }
 
   @Test
   void shouldNotUpdateRunningBatchOperationWithoutSingleOperations() {
     // given a running batch operation whose single operations are not exported yet
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("1", BatchOperationState.ACTIVE, 5));
+        new NotFinishedBatchOperation("1", INDEX, BatchOperationState.ACTIVE, 5));
 
     // when
     final var result = task.execute();
@@ -89,7 +92,7 @@ public class BatchOperationUpdateTaskTest {
     // given a completed batch operation that had items, but whose single operations left the
     // operation index, for example because they were archived
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("1", BatchOperationState.COMPLETED, 5));
+        new NotFinishedBatchOperation("1", INDEX, BatchOperationState.COMPLETED, 5));
 
     // when
     final var result = task.execute();
@@ -106,13 +109,13 @@ public class BatchOperationUpdateTaskTest {
   void shouldUpdateBatchOperations() {
     // given - when
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("1", BatchOperationState.ACTIVE, 5));
+        new NotFinishedBatchOperation("1", INDEX, BatchOperationState.ACTIVE, 5));
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("2", BatchOperationState.ACTIVE, 6));
+        new NotFinishedBatchOperation("2", INDEX, BatchOperationState.ACTIVE, 6));
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("3", BatchOperationState.COMPLETED, 0));
+        new NotFinishedBatchOperation("3", INDEX, BatchOperationState.COMPLETED, 0));
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("4", BatchOperationState.ACTIVE, 7));
+        new NotFinishedBatchOperation("4", INDEX, BatchOperationState.ACTIVE, 7));
     repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("COMPLETED", 5L)));
     repository.finishedOperationsCount.add(new OperationsAggData("2", Map.of("COMPLETED", 6L)));
     final var result = task.execute();
@@ -125,9 +128,39 @@ public class BatchOperationUpdateTaskTest {
         .isEqualTo(3);
     assertThat(repository.documentUpdates)
         .containsExactlyInAnyOrder(
-            new DocumentUpdate("1", 5L, 0L, 5L, 5L),
-            new DocumentUpdate("2", 6L, 0L, 6L, 6L),
-            new DocumentUpdate("3", 0L, 0L, 0L, 0L));
+            new DocumentUpdate("1", INDEX, 5L, 0L, 5L, 5L),
+            new DocumentUpdate("2", INDEX, 6L, 0L, 6L, 6L),
+            new DocumentUpdate("3", INDEX, 0L, 0L, 0L, 0L));
+  }
+
+  @Test
+  void shouldUpdateEachBatchOperationInTheIndexItWasFoundIn() {
+    // given - batch operations read from the main index and from ordinal indices, covering both
+    // an update from counted single operations and a finalization without any
+    final var mainIndex = "test-batch-operation_";
+    final var ordinalIndex = "test-batch-operation_ord01001";
+    final var otherOrdinalIndex = "test-batch-operation_ord01002";
+    repository.batchOperations.add(
+        new NotFinishedBatchOperation("1", mainIndex, BatchOperationState.ACTIVE, 5));
+    repository.batchOperations.add(
+        new NotFinishedBatchOperation("2", ordinalIndex, BatchOperationState.ACTIVE, 6));
+    repository.batchOperations.add(
+        new NotFinishedBatchOperation("3", otherOrdinalIndex, BatchOperationState.COMPLETED, 0));
+    repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("COMPLETED", 5L)));
+    repository.finishedOperationsCount.add(new OperationsAggData("2", Map.of("COMPLETED", 6L)));
+
+    // when
+    final var result = task.execute();
+
+    // then - each update targets the concrete index its batch operation document lives in
+    assertThat(result)
+        .succeedsWithin(REQUEST_TIMEOUT)
+        .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+        .isEqualTo(3);
+    assertThat(repository.documentUpdates)
+        .extracting(DocumentUpdate::id, DocumentUpdate::index)
+        .containsExactlyInAnyOrder(
+            tuple("1", mainIndex), tuple("2", ordinalIndex), tuple("3", otherOrdinalIndex));
   }
 
   @Test
@@ -148,11 +181,11 @@ public class BatchOperationUpdateTaskTest {
     // given - a full page of long running batch operations, and a completed one after them
     final var task = new BatchOperationUpdateTask(repository, 2, LOGGER, Runnable::run);
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("1", BatchOperationState.ACTIVE, 5));
+        new NotFinishedBatchOperation("1", INDEX, BatchOperationState.ACTIVE, 5));
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("2", BatchOperationState.ACTIVE, 5));
+        new NotFinishedBatchOperation("2", INDEX, BatchOperationState.ACTIVE, 5));
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("3", BatchOperationState.COMPLETED, 5));
+        new NotFinishedBatchOperation("3", INDEX, BatchOperationState.COMPLETED, 5));
     repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("ACTIVE", 5L)));
     repository.finishedOperationsCount.add(new OperationsAggData("2", Map.of("ACTIVE", 5L)));
     repository.finishedOperationsCount.add(new OperationsAggData("3", Map.of("COMPLETED", 5L)));
@@ -178,7 +211,7 @@ public class BatchOperationUpdateTaskTest {
     final var task = new BatchOperationUpdateTask(repository, 2, LOGGER, Runnable::run);
     for (final var id : List.of("1", "2", "3", "4")) {
       repository.batchOperations.add(
-          new NotFinishedBatchOperation(id, BatchOperationState.ACTIVE, 5));
+          new NotFinishedBatchOperation(id, INDEX, BatchOperationState.ACTIVE, 5));
       repository.finishedOperationsCount.add(new OperationsAggData(id, Map.of("ACTIVE", 5L)));
     }
 
@@ -201,7 +234,7 @@ public class BatchOperationUpdateTaskTest {
     // given - a refused write, then an accepted one
     final var task = new BatchOperationUpdateTask(repository, 100, LOGGER, Runnable::run);
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("1", BatchOperationState.ACTIVE, 5));
+        new NotFinishedBatchOperation("1", INDEX, BatchOperationState.ACTIVE, 5));
     repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("COMPLETED", 5L)));
     Mockito.doReturn(
             CompletableFuture.failedFuture(new BulkRequestTooLargeException("circuit_breaking")))
@@ -225,7 +258,7 @@ public class BatchOperationUpdateTaskTest {
     // given - one refused cycle, so the read is reduced
     final var task = new BatchOperationUpdateTask(repository, 100, LOGGER, Runnable::run);
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("1", BatchOperationState.ACTIVE, 5));
+        new NotFinishedBatchOperation("1", INDEX, BatchOperationState.ACTIVE, 5));
     repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("COMPLETED", 5L)));
     Mockito.doReturn(
             CompletableFuture.failedFuture(new BulkRequestTooLargeException("circuit_breaking")))
@@ -251,7 +284,7 @@ public class BatchOperationUpdateTaskTest {
     final var task = new BatchOperationUpdateTask(repository, 4, LOGGER, Runnable::run);
     for (final var id : List.of("1", "2", "3", "4")) {
       repository.batchOperations.add(
-          new NotFinishedBatchOperation(id, BatchOperationState.ACTIVE, 5));
+          new NotFinishedBatchOperation(id, INDEX, BatchOperationState.ACTIVE, 5));
       repository.finishedOperationsCount.add(new OperationsAggData(id, Map.of("COMPLETED", 5L)));
     }
     final var refused =
@@ -280,7 +313,7 @@ public class BatchOperationUpdateTaskTest {
     // given - one refused cycle, so the read is reduced
     final var task = new BatchOperationUpdateTask(repository, 100, LOGGER, Runnable::run);
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("1", BatchOperationState.ACTIVE, 5));
+        new NotFinishedBatchOperation("1", INDEX, BatchOperationState.ACTIVE, 5));
     repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("COMPLETED", 5L)));
     Mockito.doReturn(
             CompletableFuture.failedFuture(new BulkRequestTooLargeException("circuit_breaking")))
@@ -306,7 +339,7 @@ public class BatchOperationUpdateTaskTest {
     // given - one refused cycle, so the read is reduced
     final var task = new BatchOperationUpdateTask(repository, 100, LOGGER, Runnable::run);
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("1", BatchOperationState.ACTIVE, 5));
+        new NotFinishedBatchOperation("1", INDEX, BatchOperationState.ACTIVE, 5));
     repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("COMPLETED", 5L)));
     Mockito.doReturn(
             CompletableFuture.failedFuture(new BulkRequestTooLargeException("circuit_breaking")))
@@ -334,7 +367,7 @@ public class BatchOperationUpdateTaskTest {
     // given
     final var task = new BatchOperationUpdateTask(repository, 100, LOGGER, Runnable::run);
     repository.batchOperations.add(
-        new NotFinishedBatchOperation("1", BatchOperationState.ACTIVE, 5));
+        new NotFinishedBatchOperation("1", INDEX, BatchOperationState.ACTIVE, 5));
     repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("COMPLETED", 5L)));
     Mockito.doReturn(CompletableFuture.failedFuture(new RuntimeException("unrelated")))
         .when(repository)

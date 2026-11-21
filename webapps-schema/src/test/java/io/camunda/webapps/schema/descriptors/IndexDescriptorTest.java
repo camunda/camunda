@@ -9,9 +9,12 @@ package io.camunda.webapps.schema.descriptors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.platform.commons.support.ReflectionSupport;
@@ -51,5 +54,31 @@ public class IndexDescriptorTest {
     assertThat(index.getVersion())
         .as("Testing version for %s", index.getFullQualifiedName())
         .matches(INDEX_VERSION_PATTERN);
+  }
+
+  @Test
+  void shouldReturnMainAndOrdinalIndicesAsActiveNames() {
+    // given
+    final var template = new OperationTemplate("test", true);
+    final var fullQualifiedName = template.getFullQualifiedName();
+
+    // when
+    final var activeNames = template.getActiveNames();
+
+    // then
+    assertThat(activeNames).isEqualTo(fullQualifiedName + "," + fullQualifiedName + "ord*");
+  }
+
+  @Test
+  void shouldReturnOnlyMainIndexAsActiveNamesForPlainIndex() {
+    // given - a plain index, which never has ordinal indices
+    final var index = new AuthorizationIndex("test", true);
+
+    // when
+    final var activeIndexNames = index.getActiveIndexNames();
+
+    // then
+    assertThat(activeIndexNames).containsExactly(index.getFullQualifiedName());
+    assertThat(index.getActiveNames()).isEqualTo(index.getFullQualifiedName());
   }
 }

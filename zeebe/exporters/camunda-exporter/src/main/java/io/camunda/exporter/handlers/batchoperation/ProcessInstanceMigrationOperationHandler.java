@@ -22,7 +22,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
  * migration status and updating the corresponding batch operation item entity.
  */
 public class ProcessInstanceMigrationOperationHandler
-    extends AbstractOperationStatusHandler<ProcessInstanceMigrationRecordValue> {
+    extends AbstractOrdinalOperationStatusHandler<ProcessInstanceMigrationRecordValue> {
 
   public ProcessInstanceMigrationOperationHandler(
       final String indexName,

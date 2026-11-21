@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatException;
 import io.camunda.exporter.DefaultExporterResourceProvider;
 import io.camunda.exporter.cache.batchoperation.ElasticSearchBatchOperationCacheLoader;
 import io.camunda.exporter.cache.batchoperation.OpenSearchBatchOperationCacheLoader;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
@@ -28,7 +29,8 @@ import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperatio
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
-import java.util.function.Consumer;
+import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +45,14 @@ class BatchOperationCacheIT {
 
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
+  private static final String MAIN_INDEX = BATCH_OPERATION_INDEX.getFullQualifiedName();
+  private static final String ORDINAL_INDEX = TargetIndex.ordinalIndex(MAIN_INDEX, 1001).name();
+
+  /** A dated index as the archiver creates it, which holds historical data only. */
+  private static final String DATED_INDEX = MAIN_INDEX + "2026-11-16";
+
+  private static final List<String> ALL_INDICES = List.of(MAIN_INDEX, ORDINAL_INDEX, DATED_INDEX);
+
   @BeforeEach
   void setup() {
     if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
@@ -56,15 +66,9 @@ class BatchOperationCacheIT {
   @AfterEach
   void cleanup() throws IOException {
     if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
-      SEARCH_DB
-          .esClient()
-          .indices()
-          .delete(req -> req.index(BATCH_OPERATION_INDEX.getFullQualifiedName()));
+      SEARCH_DB.esClient().indices().delete(req -> req.index(ALL_INDICES).ignoreUnavailable(true));
     }
-    SEARCH_DB
-        .osClient()
-        .indices()
-        .delete(req -> req.index(BATCH_OPERATION_INDEX.getFullQualifiedName()));
+    SEARCH_DB.osClient().indices().delete(req -> req.index(ALL_INDICES).ignoreUnavailable(true));
   }
 
   @ParameterizedTest
@@ -85,7 +89,7 @@ class BatchOperationCacheIT {
     // given
     final var batchOperationEntity =
         new BatchOperationEntity().setId("3").setType(OperationType.RESOLVE_INCIDENT);
-    batchOperationCacheArgument.indexer().accept(batchOperationEntity);
+    batchOperationCacheArgument.indexer().accept(MAIN_INDEX, batchOperationEntity);
 
     // when
     final var batchOperation = batchOperationCacheArgument.batchOperationCache().get("3");
@@ -98,11 +102,44 @@ class BatchOperationCacheIT {
 
   @ParameterizedTest
   @MethodSource("provideBatchOperationCache")
+  void shouldLoadBatchOperationEntityFromOrdinalIndex(
+      final BatchOperationCacheArgument batchOperationCacheArgument) {
+    // given
+    final var batchOperationEntity =
+        new BatchOperationEntity().setId("5").setType(OperationType.CANCEL_PROCESS_INSTANCE);
+    batchOperationCacheArgument.indexer().accept(ORDINAL_INDEX, batchOperationEntity);
+
+    // when
+    final var batchOperation = batchOperationCacheArgument.batchOperationCache().get("5");
+
+    // then
+    assertThat(batchOperation)
+        .contains(new CachedBatchOperationEntity("5", BatchOperationType.CANCEL_PROCESS_INSTANCE));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideBatchOperationCache")
+  void shouldNotLoadBatchOperationEntityFromDatedIndex(
+      final BatchOperationCacheArgument batchOperationCacheArgument) {
+    // given - a batch operation the archiver has already moved out of the active indices
+    final var batchOperationEntity =
+        new BatchOperationEntity().setId("6").setType(OperationType.RESOLVE_INCIDENT);
+    batchOperationCacheArgument.indexer().accept(DATED_INDEX, batchOperationEntity);
+
+    // when
+    final var batchOperation = batchOperationCacheArgument.batchOperationCache().get("6");
+
+    // then
+    assertThat(batchOperation).isEmpty();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideBatchOperationCache")
   void shouldReturnEmptyOptionalIfBatchOperationHasNullType(
       final BatchOperationCacheArgument batchOperationCacheArgument) {
     // given
     final var batchOperationEntity = new BatchOperationEntity().setId("4").setType(null);
-    batchOperationCacheArgument.indexer().accept(batchOperationEntity);
+    batchOperationCacheArgument.indexer().accept(MAIN_INDEX, batchOperationEntity);
 
     // when
     final var batchOperation = batchOperationCacheArgument.batchOperationCache().get("4");
@@ -130,17 +167,15 @@ class BatchOperationCacheIT {
           Arguments.of(
               Named.of(
                   "ElasticSearch",
-                  getESBatchOperationCache(BATCH_OPERATION_INDEX.getFullQualifiedName()))),
+                  getESBatchOperationCache(BATCH_OPERATION_INDEX.getActiveNames()))),
           Arguments.of(
               Named.of(
-                  "OpenSearch",
-                  getOSBatchOperationCache(BATCH_OPERATION_INDEX.getFullQualifiedName()))));
+                  "OpenSearch", getOSBatchOperationCache(BATCH_OPERATION_INDEX.getActiveNames()))));
     } else {
       return Stream.of(
           Arguments.of(
               Named.of(
-                  "OpenSearch",
-                  getOSBatchOperationCache(BATCH_OPERATION_INDEX.getFullQualifiedName()))));
+                  "OpenSearch", getOSBatchOperationCache(BATCH_OPERATION_INDEX.getActiveNames()))));
     }
   }
 
@@ -175,14 +210,15 @@ class BatchOperationCacheIT {
         BatchOperationCacheIT::indexInOpenSearch);
   }
 
-  private static void indexInElasticSearch(final BatchOperationEntity batchOperationEntity) {
+  private static void indexInElasticSearch(
+      final String index, final BatchOperationEntity batchOperationEntity) {
     try {
       SEARCH_DB
           .esClient()
           .index(
               request ->
                   request
-                      .index(BATCH_OPERATION_INDEX.getFullQualifiedName())
+                      .index(index)
                       .id(batchOperationEntity.getId())
                       .document(batchOperationEntity)
                       .refresh(co.elastic.clients.elasticsearch._types.Refresh.True));
@@ -191,14 +227,15 @@ class BatchOperationCacheIT {
     }
   }
 
-  private static void indexInOpenSearch(final BatchOperationEntity batchOperationEntity) {
+  private static void indexInOpenSearch(
+      final String index, final BatchOperationEntity batchOperationEntity) {
     try {
       SEARCH_DB
           .osClient()
           .index(
               request ->
                   request
-                      .index(BATCH_OPERATION_INDEX.getFullQualifiedName())
+                      .index(index)
                       .id(batchOperationEntity.getId())
                       .document(batchOperationEntity)
                       .refresh(Refresh.True));
@@ -209,5 +246,5 @@ class BatchOperationCacheIT {
 
   record BatchOperationCacheArgument(
       ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache,
-      Consumer<BatchOperationEntity> indexer) {}
+      BiConsumer<String, BatchOperationEntity> indexer) {}
 }

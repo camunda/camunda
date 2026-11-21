@@ -26,12 +26,12 @@ public class OpenSearchBatchOperationCacheLoader
       LoggerFactory.getLogger(OpenSearchBatchOperationCacheLoader.class);
 
   private final OpenSearchClient client;
-  private final String batchOperationIndexName;
+  private final String batchOperationReadIndices;
 
   public OpenSearchBatchOperationCacheLoader(
-      final OpenSearchClient client, final String batchOperationIndexName) {
+      final OpenSearchClient client, final String batchOperationReadIndices) {
     this.client = client;
-    this.batchOperationIndexName = batchOperationIndexName;
+    this.batchOperationReadIndices = batchOperationReadIndices;
   }
 
   @Override
@@ -45,7 +45,7 @@ public class OpenSearchBatchOperationCacheLoader
         client.search(
             request ->
                 request
-                    .index(batchOperationIndexName)
+                    .index(batchOperationReadIndices)
                     .query(q -> q.ids(idQuery))
                     .source(s -> s.filter(sourceFilter))
                     .size(1),

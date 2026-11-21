@@ -11,8 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -58,23 +61,34 @@ class ListViewFromChunkItemHandlerTest {
   }
 
   @Test
-  void shouldGenerateIdsFromRecord() {
+  void shouldExtractIdAndIndexes() {
     // given
     final int numItems = 3;
     final Record<BatchOperationChunkRecordValue> record = aChunkRecordWithMultipleItems(numItems);
     factory.generateRecordWithIntent(
         ValueType.BATCH_OPERATION_CHUNK, BatchOperationChunkIntent.CREATED);
     final var batchOpKey = record.getValue().getBatchOperationKey();
-    final var expectedIds =
-        record.getValue().getItems().stream()
-            .map(item -> item.getProcessInstanceKey() + ":" + batchOpKey)
-            .toList();
+
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index1 = TargetIndex.mainIndex(indexName);
+    final TargetIndex index2 = TargetIndex.ordinalIndex(indexName, 1);
+    final TargetIndex index3 = TargetIndex.ordinalIndex(indexName, 2);
+
+    final var items = record.getValue().getItems();
+    when(indexLocator.locateOrdinalIndex(eq(indexName), eq(items.get(0)))).thenReturn(index1);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), eq(items.get(1)))).thenReturn(index2);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), eq(items.get(2)))).thenReturn(index3);
+
     // when
-    final var ids = underTest.generateIds(record);
+    final var idsAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(ids).hasSize(numItems);
-    assertThat(ids).containsExactlyInAnyOrderElementsOf(expectedIds);
+    assertThat(idsAndIndexes)
+        .isEqualTo(
+            List.of(
+                new IdAndIndex(items.get(0).getProcessInstanceKey() + ":" + batchOpKey, index1),
+                new IdAndIndex(items.get(1).getProcessInstanceKey() + ":" + batchOpKey, index2),
+                new IdAndIndex(items.get(2).getProcessInstanceKey() + ":" + batchOpKey, index3)));
   }
 
   @Test

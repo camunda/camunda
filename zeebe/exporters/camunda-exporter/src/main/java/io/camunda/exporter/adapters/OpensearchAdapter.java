@@ -73,8 +73,8 @@ class OpensearchAdapter implements ClientAdapter {
 
     @Override
     public CacheLoader<String, CachedBatchOperationEntity> getBatchOperationCacheLoader(
-        final String batchOperationIndexName) {
-      return new OpenSearchBatchOperationCacheLoader(client, batchOperationIndexName);
+        final String batchOperationReadIndices) {
+      return new OpenSearchBatchOperationCacheLoader(client, batchOperationReadIndices);
     }
 
     @Override

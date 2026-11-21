@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -50,6 +51,7 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -515,6 +517,20 @@ public class DefaultExporterResourceProviderTest {
   }
 
   @Test
+  void shouldLoadBatchOperationsIntoCacheFromActiveIndices() {
+    // given
+    final var cacheProvider = mock(ExporterEntityCacheProvider.class);
+
+    // when
+    final var resourceProvider = initializedProvider(cacheProvider);
+
+    // then - batch operations can live in ordinal indices as well as the main index
+    final var batchOperationTemplate =
+        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+    verify(cacheProvider).getBatchOperationCacheLoader(batchOperationTemplate.getActiveNames());
+  }
+
+  @Test
   void shouldIgnoreMissingDocumentErrorsOnlyForConfiguredIndices() {
     // given
     final var resourceProvider = initializedProvider(mock(ExporterEntityCacheProvider.class));
@@ -638,8 +654,8 @@ public class DefaultExporterResourceProviderTest {
    *       JobRecordValue>} -> returns {@code JobRecordValue.class}
    *   <li><b>Abstract class extension:</b> {@code class Handler extends
    *       AbstractHandler<IncidentRecordValue>} -> returns {@code IncidentRecordValue.class}
-   *   <li><b>Deep hierarchy:</b> Recursively searches parent classes when the type argument is not
-   *       directly visible
+   *   <li><b>Deep hierarchy:</b> Recursively searches parent classes, then implemented interfaces,
+   *       when the type argument is not directly visible
    * </ul>
    *
    * @param clazz the class to inspect for {@link RecordValue} type parameters
@@ -677,8 +693,15 @@ public class DefaultExporterResourceProviderTest {
       return (Class<? extends RecordValue>) result;
     }
 
-    // Recurse into superclass
-    return findRecordValueTypeParameterFromClass(clazz.getSuperclass());
+    // Recurse into the superclass first, then into the interfaces, as an interface can bind the
+    // type argument itself, e.g. BatchOperationChunkItemsExportHandler<T> extends
+    // ExportHandler<T, BatchOperationChunkRecordValue>
+    return Stream.concat(
+            Stream.ofNullable(clazz.getSuperclass()), Arrays.stream(clazz.getInterfaces()))
+        .map(DefaultExporterResourceProviderTest::findRecordValueTypeParameterFromClass)
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
   }
 
   private static ValueType getExpectedValueType(

@@ -9,7 +9,6 @@ package io.camunda.exporter.handlers.batchoperation;
 
 import com.google.common.base.Splitter;
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -21,7 +20,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
-import java.util.List;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * configuration <code>exportItemsOnCreation</code> is set to <code>true</code>.
  */
 public class BatchOperationChunkCreatedItemHandler
-    implements ExportHandler<OperationEntity, BatchOperationChunkRecordValue> {
+    implements BatchOperationChunkItemsExportHandler<OperationEntity> {
 
   protected static final String ID_PATTERN = "%s_%s";
   private static final Logger LOG =
@@ -60,13 +59,6 @@ public class BatchOperationChunkCreatedItemHandler
   @Override
   public boolean handlesRecord(final Record<BatchOperationChunkRecordValue> record) {
     return record.getIntent().equals(BatchOperationChunkIntent.CREATED);
-  }
-
-  @Override
-  public List<String> generateIds(final Record<BatchOperationChunkRecordValue> record) {
-    return record.getValue().getItems().stream()
-        .map(item -> generateId(record.getValue().getBatchOperationKey(), item.getItemKey()))
-        .toList();
   }
 
   @Override
@@ -136,11 +128,12 @@ public class BatchOperationChunkCreatedItemHandler
    * KEY and the itemKey
    *
    * @param batchOperationKey the ID of the batch operation
-   * @param itemKey the key of the item within the batch operation
+   * @param item the item within the batch operation
    * @return a unique identifier string for an item in a batch operation
    */
-  private String generateId(final long batchOperationKey, final long itemKey) {
-    return String.format(ID_PATTERN, batchOperationKey, itemKey);
+  @Override
+  public String generateId(final long batchOperationKey, final BatchOperationItemValue item) {
+    return String.format(ID_PATTERN, batchOperationKey, item.getItemKey());
   }
 
   private Long extractItemKey(final String id) {

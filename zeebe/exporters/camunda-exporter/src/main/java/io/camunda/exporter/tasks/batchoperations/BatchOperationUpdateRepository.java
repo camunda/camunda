@@ -14,7 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public interface BatchOperationUpdateRepository extends AutoCloseable {
 
   /**
@@ -31,7 +34,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    * BatchOperationUpdateTask}.
    */
   CompletionStage<List<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
-      int batchSize, String afterId);
+      int batchSize, @Nullable String afterId);
 
   /**
    * Counts amount of single operations by state that are included in given batch operations.
@@ -39,7 +42,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    * @param batchOperationKeys list of batch operation keys
    */
   CompletionStage<List<OperationsAggData>> getOperationsCount(
-      Collection<String> batchOperationKeys);
+      @Nullable Collection<String> batchOperationKeys);
 
   /**
    * Updates the batch operations with the different amounts operations by state. Update method
@@ -49,26 +52,30 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    * @param documentUpdates the update records
    * @return the number of updated documents
    */
-  CompletionStage<Integer> bulkUpdate(List<DocumentUpdate> documentUpdates);
+  CompletionStage<Integer> bulkUpdate(@Nullable List<DocumentUpdate> documentUpdates);
 
   /**
    * A batch operation that has no endDate yet, with the two stored fields the update task needs to
    * decide whether an endDate can be derived for it.
    *
    * @param id the batch operation key
+   * @param index the concrete index the batch operation document was found in; batch operations are
+   *     read across the main and ordinal indices, so updates must target this index
    * @param state the stored state, {@code null} if the document had no readable source
    * @param operationsTotalCount the number of items the engine selected for this batch operation
    */
   record NotFinishedBatchOperation(
-      String id, BatchOperationState state, long operationsTotalCount) {}
+      String id, String index, @Nullable BatchOperationState state, long operationsTotalCount) {}
 
   /**
    * Represents a specific document store agnostic update to execute.
    *
-   * <p>All fields are expected to be non-null.
+   * <p>All fields are expected to be non-null. {@code index} is the concrete index holding the
+   * batch operation document, as returned in {@link NotFinishedBatchOperation#index()}.
    */
   record DocumentUpdate(
       String id,
+      String index,
       long finishedOperationsCount,
       long failedOperationsCount,
       long completedOperationsCount,
@@ -97,18 +104,19 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
 
     @Override
     public CompletionStage<List<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
-        final int batchSize, final String afterId) {
+        final int batchSize, final @Nullable String afterId) {
       return CompletableFuture.completedFuture(List.of());
     }
 
     @Override
     public CompletionStage<List<OperationsAggData>> getOperationsCount(
-        final Collection<String> batchOperationKeys) {
+        final @Nullable Collection<String> batchOperationKeys) {
       return CompletableFuture.completedFuture(List.of());
     }
 
     @Override
-    public CompletionStage<Integer> bulkUpdate(final List<DocumentUpdate> documentUpdates) {
+    public CompletionStage<Integer> bulkUpdate(
+        final @Nullable List<DocumentUpdate> documentUpdates) {
       return CompletableFuture.completedFuture(0);
     }
 

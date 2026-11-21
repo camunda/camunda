@@ -22,6 +22,7 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.test.utils.SearchDBExtension;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -51,6 +52,7 @@ abstract class BatchOperationUpdateRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationUpdateRepositoryIT.class);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
+  private static final int ORDINAL = 1001;
   protected final BatchOperationTemplate batchOperationTemplate;
   protected final OperationTemplate operationTemplate;
   @AutoClose protected final ClientAdapter clientAdapter;
@@ -87,13 +89,36 @@ abstract class BatchOperationUpdateRepositoryIT {
 
   protected void indexBatchOperation(final BatchOperationEntity batchOperationEntity)
       throws PersistenceException {
+    indexBatchOperation(mainIndex(batchOperationTemplate), batchOperationEntity);
+  }
+
+  protected void indexBatchOperation(
+      final TargetIndex index, final BatchOperationEntity batchOperationEntity)
+      throws PersistenceException {
     final var batchRequest = clientAdapter.createBatchRequest();
-    batchRequest.add(
-        TargetIndex.mainIndex(batchOperationTemplate.getFullQualifiedName()), batchOperationEntity);
+    batchRequest.add(index, batchOperationEntity);
     batchRequest.executeWithRefresh();
   }
 
-  protected abstract BatchOperationEntity getBatchOperationEntity(final String id);
+  protected BatchOperationEntity getBatchOperationEntity(final String id) {
+    return getBatchOperationEntity(batchOperationTemplate.getFullQualifiedName(), id);
+  }
+
+  protected abstract BatchOperationEntity getBatchOperationEntity(
+      final String index, final String id);
+
+  private static TargetIndex mainIndex(final IndexTemplateDescriptor template) {
+    return TargetIndex.mainIndex(template.getFullQualifiedName());
+  }
+
+  private static TargetIndex ordinalIndex(final IndexTemplateDescriptor template) {
+    return TargetIndex.ordinalIndex(template.getFullQualifiedName(), ORDINAL);
+  }
+
+  /** A dated index as the archiver creates it, which holds historical data only. */
+  private static TargetIndex datedIndex(final IndexTemplateDescriptor template) {
+    return TargetIndex.mainIndex(template.getFullQualifiedName() + "2026-11-16");
+  }
 
   static final class ElasticsearchIT extends BatchOperationUpdateRepositoryIT {
 
@@ -110,18 +135,17 @@ abstract class BatchOperationUpdateRepositoryIT {
       return new ElasticsearchBatchOperationUpdateRepository(
           client,
           Runnable::run,
-          batchOperationTemplate.getFullQualifiedName(),
-          operationTemplate.getFullQualifiedName(),
+          batchOperationTemplate.getActiveNames(),
+          operationTemplate.getActiveNames(),
           LOGGER);
     }
 
     @Override
-    protected void indexBatchOperation(final BatchOperationEntity batchOperationEntity)
+    protected void indexBatchOperation(
+        final TargetIndex index, final BatchOperationEntity batchOperationEntity)
         throws PersistenceException {
       final var batchRequest = clientAdapter.createBatchRequest();
-      batchRequest.add(
-          TargetIndex.mainIndex(batchOperationTemplate.getFullQualifiedName()),
-          batchOperationEntity);
+      batchRequest.add(index, batchOperationEntity);
       Awaitility.await()
           .ignoreException(PersistenceException.class)
           .timeout(searchDB.dataAvailabilityTimeout())
@@ -133,14 +157,9 @@ abstract class BatchOperationUpdateRepositoryIT {
     }
 
     @Override
-    protected BatchOperationEntity getBatchOperationEntity(final String id) {
+    protected BatchOperationEntity getBatchOperationEntity(final String index, final String id) {
       try {
-        return client
-            .get(
-                r -> r.index(batchOperationTemplate.getFullQualifiedName()).id(id),
-                BatchOperationEntity.class)
-            .get()
-            .source();
+        return client.get(r -> r.index(index).id(id), BatchOperationEntity.class).get().source();
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new RuntimeException(e);
@@ -184,7 +203,12 @@ abstract class BatchOperationUpdateRepositoryIT {
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
-          .containsExactly(new NotFinishedBatchOperation("3", BatchOperationState.ACTIVE, 5));
+          .containsExactly(
+              new NotFinishedBatchOperation(
+                  "3",
+                  batchOperationTemplate.getFullQualifiedName(),
+                  BatchOperationState.ACTIVE,
+                  5));
     }
 
     @Test
@@ -200,7 +224,12 @@ abstract class BatchOperationUpdateRepositoryIT {
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
-          .containsExactly(new NotFinishedBatchOperation("1", BatchOperationState.COMPLETED, 0));
+          .containsExactly(
+              new NotFinishedBatchOperation(
+                  "1",
+                  batchOperationTemplate.getFullQualifiedName(),
+                  BatchOperationState.COMPLETED,
+                  0));
     }
 
     @Test
@@ -248,13 +277,52 @@ abstract class BatchOperationUpdateRepositoryIT {
           .containsExactly("c");
     }
 
+    @Test
+    void shouldReturnBatchOperationsFromMainAndOrdinalIndicesOnly() throws PersistenceException {
+      // given - unfinished batch operations in the main index, an ordinal index and a dated
+      // (historical) index
+      final var repository = createRepository();
+      createBatchOperationEntity(
+          mainIndex(batchOperationTemplate), "1", null, BatchOperationState.ACTIVE, 5);
+      createBatchOperationEntity(
+          ordinalIndex(batchOperationTemplate), "2", null, BatchOperationState.ACTIVE, 6);
+      createBatchOperationEntity(
+          datedIndex(batchOperationTemplate), "3", null, BatchOperationState.ACTIVE, 7);
+
+      // when
+      final var documents = repository.getNotFinishedBatchOperations(100, null);
+
+      // then - the active indices are read, each batch operation carries the index it lives in,
+      // and the dated index is not touched
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
+          .containsExactly(
+              new NotFinishedBatchOperation(
+                  "1", mainIndex(batchOperationTemplate).name(), BatchOperationState.ACTIVE, 5),
+              new NotFinishedBatchOperation(
+                  "2", ordinalIndex(batchOperationTemplate).name(), BatchOperationState.ACTIVE, 6));
+    }
+
     private void createBatchOperationEntity(
         final String id,
         final OffsetDateTime endTime,
         final BatchOperationState state,
         final int operationsTotalCount)
         throws PersistenceException {
+      createBatchOperationEntity(
+          mainIndex(batchOperationTemplate), id, endTime, state, operationsTotalCount);
+    }
+
+    private void createBatchOperationEntity(
+        final TargetIndex index,
+        final String id,
+        final OffsetDateTime endTime,
+        final BatchOperationState state,
+        final int operationsTotalCount)
+        throws PersistenceException {
       indexBatchOperation(
+          index,
           new BatchOperationEntity()
               .setId(id)
               .setEndDate(endTime)
@@ -319,19 +387,48 @@ abstract class BatchOperationUpdateRepositoryIT {
           .isEqualTo(expected);
     }
 
+    @Test
+    void shouldCountOperationsFromMainAndOrdinalIndicesOnly() throws PersistenceException {
+      // given - the single operations of one batch operation are spread over the main index and an
+      // ordinal index, with a stray one in a dated (historical) index
+      final var repository = createRepository();
+      createOperationEntity(mainIndex(operationTemplate), "111a", "1", OperationState.COMPLETED);
+      createOperationEntity(ordinalIndex(operationTemplate), "111b", "1", OperationState.FAILED);
+      createOperationEntity(ordinalIndex(operationTemplate), "111c", "1", OperationState.COMPLETED);
+      createOperationEntity(datedIndex(operationTemplate), "111d", "1", OperationState.COMPLETED);
+
+      // when
+      final var documents = repository.getOperationsCount(List.of("1"));
+
+      // then - operations in both active indices are counted, the dated one is not
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.list(OperationsAggData.class))
+          .containsExactly(new OperationsAggData("1", Map.of("COMPLETED", 2L, "FAILED", 1L)));
+    }
+
     private OperationEntity createOperationEntity(
         final String id, final String batchOperationKey, final OperationState state)
         throws PersistenceException {
+      return createOperationEntity(mainIndex(operationTemplate), id, batchOperationKey, state);
+    }
+
+    private OperationEntity createOperationEntity(
+        final TargetIndex index,
+        final String id,
+        final String batchOperationKey,
+        final OperationState state)
+        throws PersistenceException {
       final var operationEntity =
           new OperationEntity().setId(id).setBatchOperationId(batchOperationKey).setState(state);
-      indexOperation(operationEntity);
+      indexOperation(index, operationEntity);
       return operationEntity;
     }
 
-    private void indexOperation(final OperationEntity operationEntity) throws PersistenceException {
+    private void indexOperation(final TargetIndex index, final OperationEntity operationEntity)
+        throws PersistenceException {
       final var batchRequest = clientAdapter.createBatchRequest();
-      batchRequest.add(
-          TargetIndex.mainIndex(operationTemplate.getFullQualifiedName()), operationEntity);
+      batchRequest.add(index, operationEntity);
       batchRequest.executeWithRefresh();
     }
   }
@@ -353,9 +450,12 @@ abstract class BatchOperationUpdateRepositoryIT {
       final var updated =
           repository.bulkUpdate(
               List.of(
-                  new DocumentUpdate("1", 2, 0, 2, 2),
-                  new DocumentUpdate("2", 2, 0, 2, 2),
-                  new DocumentUpdate("3", 50, 0, 50, 50)));
+                  new DocumentUpdate(
+                      "1", batchOperationTemplate.getFullQualifiedName(), 2, 0, 2, 2),
+                  new DocumentUpdate(
+                      "2", batchOperationTemplate.getFullQualifiedName(), 2, 0, 2, 2),
+                  new DocumentUpdate(
+                      "3", batchOperationTemplate.getFullQualifiedName(), 50, 0, 50, 50)));
 
       // then
       assertThat(updated)
@@ -392,7 +492,11 @@ abstract class BatchOperationUpdateRepositoryIT {
       createBatchOperationEntity("1", 0, BatchOperationState.COMPLETED);
 
       // when
-      final var updated = repository.bulkUpdate(List.of(new DocumentUpdate("1", 0, 0, 0, 0)));
+      final var updated =
+          repository.bulkUpdate(
+              List.of(
+                  new DocumentUpdate(
+                      "1", batchOperationTemplate.getFullQualifiedName(), 0, 0, 0, 0)));
 
       // then
       assertThat(updated)
@@ -403,6 +507,33 @@ abstract class BatchOperationUpdateRepositoryIT {
       final BatchOperationEntity batchOperationEntity = getBatchOperationEntity("1");
       assertThat(batchOperationEntity.getEndDate()).isNotNull();
       assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldUpdateBatchOperationInTheGivenOrdinalIndex() throws PersistenceException {
+      // given - a completed batch operation stored in an ordinal index
+      final var repository = createRepository();
+      final var ordinalIndex = ordinalIndex(batchOperationTemplate);
+      indexBatchOperation(
+          ordinalIndex,
+          new BatchOperationEntity()
+              .setId("1")
+              .setOperationsTotalCount(2)
+              .setState(BatchOperationState.COMPLETED));
+
+      // when
+      final var updated =
+          repository.bulkUpdate(List.of(new DocumentUpdate("1", ordinalIndex.name(), 2, 0, 2, 2)));
+
+      // then - the document in the ordinal index is updated, and none is created in the main one
+      assertThat(updated)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+          .isEqualTo(1);
+      final var batchOperationEntity = getBatchOperationEntity(ordinalIndex.name(), "1");
+      assertThat(batchOperationEntity.getEndDate()).isNotNull();
+      assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(2);
+      assertThat(getBatchOperationEntity("1")).isNull();
     }
 
     private BatchOperationEntity createBatchOperationEntity(

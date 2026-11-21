@@ -12,7 +12,9 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperat
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -214,10 +216,37 @@ class ResolveIncidentOperationHandlerTest {
   }
 
   @Test
-  void shouldGenerateCorrectId() {
+  void shouldExtractIdAndOrdinalIndexForSuccessRecord() {
+    // given
     final var record = createSuccessRecord();
-    assertThat(handler.generateIds(record))
-        .containsExactly(batchOperationKey + "_" + handler.getItemKey(record));
+    final var indexLocator = mock(TargetIndexLocator.class);
+    final var index = TargetIndex.ordinalIndex(indexName, 1005);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), eq(record.getValue()))).thenReturn(index);
+
+    // when
+    final var idAndIndexes = handler.extractIdAndIndexes(indexLocator, record);
+
+    // then
+    assertThat(idAndIndexes)
+        .containsExactly(
+            new IdAndIndex(batchOperationKey + "_" + handler.getItemKey(record), index));
+  }
+
+  @Test
+  void shouldExtractIdAndOrdinalIndexForFailureRecord() {
+    // given
+    final var record = createFailureRecord();
+    final var indexLocator = mock(TargetIndexLocator.class);
+    final var index = TargetIndex.ordinalIndex(indexName, 1005);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), eq(record.getValue()))).thenReturn(index);
+
+    // when
+    final var idAndIndexes = handler.extractIdAndIndexes(indexLocator, record);
+
+    // then
+    assertThat(idAndIndexes)
+        .containsExactly(
+            new IdAndIndex(batchOperationKey + "_" + handler.getItemKey(record), index));
   }
 
   @Test

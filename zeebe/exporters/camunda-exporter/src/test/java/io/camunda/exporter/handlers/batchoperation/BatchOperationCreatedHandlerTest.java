@@ -13,9 +13,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
@@ -62,17 +65,22 @@ class BatchOperationCreatedHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
     final Record<BatchOperationCreationRecordValue> record =
         factory.generateRecordWithIntent(
             ValueType.BATCH_OPERATION_CREATION, BatchOperationIntent.CREATED);
+    final var indexLocator = mock(TargetIndexLocator.class);
+    final var index = TargetIndex.ordinalIndex(indexName, 1005);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), eq(record.getValue()))).thenReturn(index);
 
     // when
-    final var idList = underTest.generateIds(record);
+    final var idAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(record.getValue().getBatchOperationKey()));
+    assertThat(idAndIndexes)
+        .containsExactly(
+            new IdAndIndex(String.valueOf(record.getValue().getBatchOperationKey()), index));
   }
 
   @Test
