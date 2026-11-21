@@ -365,6 +365,10 @@ camunda: # Type: io.camunda.configuration.Camunda
         excludes: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogEntityType>, Env: CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES
       
       enabled: true # Type: Boolean, Env: CAMUNDA_DATA_AUDITLOG_ENABLED
+      engine: # Type: io.camunda.configuration.data.auditlog.AuditLogEntry  
+        categories: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogOperationCategory>, Env: CAMUNDA_DATA_AUDITLOG_ENGINE_CATEGORIES
+        excludes: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogEntityType>, Env: CAMUNDA_DATA_AUDITLOG_ENGINE_EXCLUDES
+      
       unknown: # Type: io.camunda.configuration.data.auditlog.AuditLogEntry  
         categories: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogOperationCategory>, Env: CAMUNDA_DATA_AUDITLOG_UNKNOWN_CATEGORIES
         excludes: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogEntityType>, Env: CAMUNDA_DATA_AUDITLOG_UNKNOWN_EXCLUDES
@@ -372,6 +376,9 @@ camunda: # Type: io.camunda.configuration.Camunda
       user: # Type: io.camunda.configuration.data.auditlog.AuditLogEntry  
         categories: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogOperationCategory>, Env: CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES
         excludes: null # Type: Set<io.camunda.search.entities.AuditLogEntity$AuditLogEntityType>, Env: CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES
+      
+      # Whether the variable history is recorded. It has no effect when the audit log is disabled.
+      variable-history-enabled: false # Type: Boolean, Env: CAMUNDA_DATA_AUDITLOG_VARIABLEHISTORYENABLED
     
     export: # Type: io.camunda.configuration.data.Export  
       # Configures the rate at which exporter positions are distributed to the followers. This is useful for
