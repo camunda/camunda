@@ -1,0 +1,143 @@
+# Relay for the c8-route team-routing agent.
+#
+# The agent itself does NOT run here. It runs in camunda/eng-kit-memory, which
+# is private, because it reads the ownership runbook and the team entries and
+# an agent run publishes its full transcript as a workflow artifact -- and in
+# a public repository that artifact is downloadable by anyone. Running the
+# agent where the private data already lives keeps the transcript private by
+# construction rather than by prompt instruction.
+#
+# This file therefore does one thing: decide that a Camunda engineer asked for
+# a routing, and hand the repository and issue number across. It reads nothing
+# private, runs no model, and uploads nothing.
+#
+# It is repository-agnostic on purpose -- it names no repository, taking its
+# own from GITHUB_REPOSITORY -- so onboarding another repository is a copy of
+# this file plus one line added to BOTH allowlists in
+# camunda/eng-kit-memory:.github/workflows/c8-route.md. The agent refuses to
+# run for a repository that is not on them.
+name: c8-route relay
+
+on:
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: c8-route-relay-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    # This repository is public; the routing runbook is not. Each trigger path
+    # is gated to Camunda people, but by a different mechanism, because the
+    # actor means a different thing on each:
+    #
+    #   label    -- the gate is GitHub's own permission model. Applying a label
+    #               requires triage access or better, which an external
+    #               contributor does not have. Deliberately NOT gated on
+    #               author_association: that field describes the issue's
+    #               AUTHOR, not the person who applied the label, and the
+    #               normal case is exactly an outside reporter filing a bug
+    #               that a Camunda engineer then labels for routing.
+    #   comment  -- gated on the commenter's own author_association, which
+    #               GitHub computes from their real relationship to the
+    #               repository. A commenter cannot set it, so no phrasing of
+    #               the comment gets an external contributor through.
+    #
+    # Both paths additionally exclude pull requests and bot actors, so no
+    # automation can drive this at itself.
+    if: >-
+      !github.event.issue.pull_request
+      && !endsWith(github.event.sender.login, '[bot]')
+      && (
+        (github.event_name == 'issues' && github.event.label.name == 'c8-route')
+        || (
+          github.event_name == 'issue_comment'
+          && startsWith(github.event.comment.body, '/c8-route')
+          && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+        )
+      )
+    steps:
+      # The label is a button, not a state: remove it so the next request is a
+      # fresh press. Mirrors what gh-aw's own label_command trigger does.
+      - name: Remove the c8-route label
+        if: github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh api --method DELETE \
+            "repos/${GITHUB_REPOSITORY}/issues/${ISSUE}/labels/c8-route" \
+            --silent || echo "::notice::label already removed"
+
+      # Acknowledge in the issue itself. The agent runs in a private repository,
+      # so an asker without access to it would otherwise see nothing happen
+      # until the routing comment arrives several minutes later.
+      - name: Acknowledge the request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/issues/${ISSUE}/reactions" \
+            -f content=eyes --silent || echo "::notice::could not add reaction"
+
+      # Scoped to camunda/eng-kit-memory and to one permission: starting a
+      # workflow there. It cannot read that repository's contents, so the
+      # public runner this step runs on never holds a token that could.
+      - name: Generate an eng-kit-memory dispatch token
+        id: dispatch-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@742815e8e42387c77e70b69f8747141dbf216607 # main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: eng-kit-memory
+
+      # Only the repository and the issue number cross. The agent fetches the
+      # issue itself, so no issue text passes through the dispatch payload --
+      # one less place for untrusted text to be mistaken for configuration.
+      # The repository is taken from GITHUB_REPOSITORY rather than written
+      # here, so this step is identical in every onboarded repository and
+      # cannot name one it is not running in.
+      - name: Dispatch the routing agent
+        env:
+          GH_TOKEN: ${{ steps.dispatch-token.outputs.token }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh workflow run c8-route.lock.yml \
+            --repo camunda/eng-kit-memory \
+            --ref main \
+            --field "repo=${GITHUB_REPOSITORY}" \
+            --field "issue_number=${ISSUE}"
+          echo "::notice::dispatched c8-route for ${GITHUB_REPOSITORY}#${ISSUE}"
+
+      # A failed dispatch would otherwise leave the asker watching an eyes
+      # reaction forever, with the error buried in a workflow log on a public
+      # repo nobody is subscribed to.
+      - name: Report a failed dispatch on the issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh issue comment "${ISSUE}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --body "**Could not start routing.** The \`c8-route\` relay failed before the routing agent ran, so no team has been named. A Camunda engineer can see why in [this run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})."
