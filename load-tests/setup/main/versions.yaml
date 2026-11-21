@@ -1,0 +1,18 @@
+orchestration:
+  image:
+    # CUSTOMIZATION: pinned to the released version instead of the chart default.
+    # Renovate does not update this tag: the update-release-load-test workflow
+    # sets it when a release is published.
+    tag: "8.11.0-alpha1-rc2"
+optimize:
+  image:
+    # renovate: datasource=docker depName=docker.io/camunda/optimize
+    tag: "8.10.9"
+identity:
+  image:
+    # renovate: datasource=docker depName=docker.io/camunda/identity
+    tag: "8.10.4"
+connectors:
+  image:
+    # renovate: datasource=docker depName=docker.io/camunda/connectors-bundle
+    tag: "8.10.4"
