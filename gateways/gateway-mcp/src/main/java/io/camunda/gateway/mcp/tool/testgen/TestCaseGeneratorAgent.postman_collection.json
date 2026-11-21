@@ -1,0 +1,141 @@
+{
+  "info": {
+    "name": "Test Case Generator Agent - MCP Tools",
+    "description": "Collection of MCP tool calls for the Test Case Generator Agent",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "epic_number",
+      "value": "123",
+      "type": "string"
+    },
+    {
+      "key": "testrail_project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "testrail_suite_id",
+      "value": "5",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Fetch Product Hub Epics",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"fetchProductHubEpics\",\n    \"arguments\": {\n      \"label\": \"epic\",\n      \"state\": \"open\"\n    }\n  },\n  \"id\": 1\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/mcp",
+          "host": ["{{base_url}}"],
+          "path": ["mcp"]
+        },
+        "description": "Fetches all open Epics from camunda/product-hub repository"
+      }
+    },
+    {
+      "name": "2. Validate TestRail Connection",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"validateTestRailConnection\",\n    \"arguments\": {\n      \"testRailProjectId\": \"{{testrail_project_id}}\"\n    }\n  },\n  \"id\": 2\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/mcp",
+          "host": ["{{base_url}}"],
+          "path": ["mcp"]
+        },
+        "description": "Validates TestRail API connection and returns project information"
+      }
+    },
+    {
+      "name": "3. Generate Test Cases from Epic",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"generateTestCasesFromEpic\",\n    \"arguments\": {\n      \"epicIssueNumber\": \"{{epic_number}}\",\n      \"testRailProjectId\": \"{{testrail_project_id}}\",\n      \"testRailSuiteId\": \"{{testrail_suite_id}}\"\n    }\n  },\n  \"id\": 3\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/mcp",
+          "host": ["{{base_url}}"],
+          "path": ["mcp"]
+        },
+        "description": "Generates test cases from a specific Epic and creates them in TestRail"
+      }
+    },
+    {
+      "name": "4. Bulk Generate Test Cases",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"bulkGenerateTestCases\",\n    \"arguments\": {\n      \"epicLabel\": \"epic\",\n      \"state\": \"open\",\n      \"testRailProjectId\": \"{{testrail_project_id}}\",\n      \"testRailSuiteId\": \"{{testrail_suite_id}}\"\n    }\n  },\n  \"id\": 4\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/mcp",
+          "host": ["{{base_url}}"],
+          "path": ["mcp"]
+        },
+        "description": "Processes multiple Epics in batch and creates test cases for all"
+      }
+    },
+    {
+      "name": "5. Fetch Closed Epics",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"fetchProductHubEpics\",\n    \"arguments\": {\n      \"label\": \"epic\",\n      \"state\": \"closed\"\n    }\n  },\n  \"id\": 5\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/mcp",
+          "host": ["{{base_url}}"],
+          "path": ["mcp"]
+        },
+        "description": "Fetches closed Epics from product-hub"
+      }
+    }
+  ]
+}
