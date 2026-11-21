@@ -549,5 +549,18 @@
     "updated_at": "2026-11-20T07:32:19Z",
     "cooldown_until": "2026-12-04T07:32:19Z",
     "pr": "https://github.com/camunda/camunda/pull/70187"
+  },
+  "f1577d5d": {
+    "version": "8.10",
+    "file": "tests/api/v2/authorization/create-authorization-for-role-api.spec.ts",
+    "titlePath": [
+      "Create Authorization API for role - Unhappy paths",
+      "Create Authorization for role - 400 Bad Request - wrong value for resourceType"
+    ],
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 80 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44875341909",
+    "updated_at": "2026-11-21T06:51:02Z",
+    "cooldown_until": "2026-11-24T06:51:02Z"
   }
 }
