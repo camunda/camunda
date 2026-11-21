@@ -22,6 +22,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
+import io.camunda.client.jobhandling.VirtualThreadExecutorService;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
 import java.util.List;
@@ -49,8 +50,11 @@ import org.springframework.beans.factory.ObjectProvider;
  *
  * <p>Executor sizing follows the client count: the sole (default) client reuses the shared context
  * executor bean (so overrides like {@code VirtualThreadsAutoConfiguration} apply and it matches the
- * former single-client path); with several named clients, each gets its own owned executor sized by
- * its {@code execution-threads}, so one client's shutdown cannot stop another's.
+ * former single-client path); with several named clients, each gets its own owned executor, so one
+ * client's shutdown cannot stop another's. The per-client executor preserves the shared bean's
+ * execution mode: a virtual-thread shared bean (from {@code VirtualThreadsAutoConfiguration})
+ * yields per-client virtual-thread executors, anything else yields the default platform-thread pool
+ * sized by the client's {@code execution-threads}.
  */
 public class CamundaClientFactory {
 
@@ -92,13 +96,13 @@ public class CamundaClientFactory {
     //
     // Executor: for the sole (default) client, use the shared context executor bean so overrides
     // such as VirtualThreadsAutoConfiguration's executor take effect. When several named clients
-    // are configured, each gets its own owned executor sized by its execution-threads, so one
-    // client's shutdown cannot stop another's and per-client sizing is honored.
+    // are configured, each gets its own owned executor, so one client's shutdown cannot stop
+    // another's and per-client sizing is honored.
     final CamundaClientExecutorService executor =
         useSharedExecutor
             ? executorService.getIfAvailable(
-                () -> CamundaClientExecutorService.createDefault(properties.getExecutionThreads()))
-            : CamundaClientExecutorService.createDefault(properties.getExecutionThreads());
+                () -> CamundaClientExecutorService.createDefault(executionThreads(properties)))
+            : createOwnedExecutor(properties);
     final CamundaClientConfiguration configuration =
         new SpringCamundaClientConfiguration(
             properties,
@@ -116,5 +120,46 @@ public class CamundaClientFactory {
         // variables override them (matching the single-client path)
         .applyEnvironmentVariableOverrides(false)
         .build();
+  }
+
+  /**
+   * Builds the owned executor for one of several named clients. A shared executor bean that runs
+   * jobs on virtual threads (the {@code VirtualThreadsAutoConfiguration} override) is replicated
+   * per client — one virtual-thread executor cannot be shared, because it is owned by its client
+   * and closed with it, which would silently stop job handling for every other client. Otherwise
+   * the default platform-thread pool applies, sized by the client's {@code execution-threads}.
+   *
+   * <p>Whether the shared bean is virtual-threaded is decided by an explicit capability — the
+   * {@link VirtualThreadExecutorService} marker it implements — not by inspecting the job-handling
+   * executor. The executor's class cannot answer this: the JDK's {@code ThreadPerTaskExecutor}
+   * backs both virtual and platform thread-per-task factories, and {@code
+   * ExecutorService#isVirtualThreadPerTaskExecutor()} only exists on Java 24+ while this starter
+   * runs on Java 17. A user-supplied platform thread-per-task bean would otherwise be misread as
+   * virtual, silently re-enabling virtual threads when they were disabled.
+   *
+   * <p>The per-client executor is deliberately not metered, even when the shared bean is: metering
+   * is a Micrometer concern, and Micrometer is an optional dependency, so this mandatory factory
+   * path must not reference its types (resolving them without {@code micrometer-core} on the
+   * classpath would fail client creation). Only the shared executor bean — created by {@code
+   * ExecutorServiceConfiguration} or {@code VirtualThreadsAutoConfiguration}, both
+   * classpath-guarded — carries metrics.
+   */
+  private CamundaClientExecutorService createOwnedExecutor(
+      final CamundaClientProperties properties) {
+    final CamundaClientExecutorService shared = executorService.getIfAvailable();
+    if (shared instanceof VirtualThreadExecutorService) {
+      // the shared bean declares it runs on virtual threads; it builds the per-client replacement
+      // itself (via the capability), so this starter — compiling at Java 17 — never touches the
+      // virtual-thread API
+      return ((VirtualThreadExecutorService) shared).createOwnedExecutor();
+    }
+    return CamundaClientExecutorService.createDefault(executionThreads(properties));
+  }
+
+  private static int executionThreads(final CamundaClientProperties properties) {
+    final Integer executionThreads = properties.getExecutionThreads();
+    // mirrors CamundaClientBuilderImpl's default; the property is only null when the Binder never
+    // touched the instance (e.g. tests constructing properties manually)
+    return executionThreads == null ? 1 : executionThreads;
   }
 }
