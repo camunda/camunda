@@ -65,6 +65,57 @@ describe('smartTransformValue', () => {
   it('should treat a quoted comma-string as a single string', () => {
     expect(smartTransformValue('"a, b"')).toBe('a, b');
   });
+
+  it('should keep integers up to the safe limit as numbers', () => {
+    expect(smartTransformValue('9007199254740991')).toBe(
+      Number.MAX_SAFE_INTEGER,
+    );
+    expect(smartTransformValue('-9007199254740991')).toBe(
+      Number.MIN_SAFE_INTEGER,
+    );
+  });
+
+  it('should keep the exact value of integers beyond the safe limit', () => {
+    expect(smartTransformValue('9007199254740993')).toBe(9007199254740993n);
+    expect(smartTransformValue('-9223372036854775808')).toBe(
+      -9223372036854775808n,
+    );
+    expect(smartTransformValue('1234567890123456789, two')).toEqual([
+      1234567890123456789n,
+      'two',
+    ]);
+    expect(smartTransformValue('[1234567890123456789, 2]')).toEqual([
+      1234567890123456789n,
+      2,
+    ]);
+    expect(smartTransformValue('{"a":{"b":[1234567890123456789]}}')).toEqual({
+      a: {b: [1234567890123456789n]},
+    });
+  });
+
+  it('should leave digits inside of strings untouched', () => {
+    expect(smartTransformValue('"1234567890123456789"')).toBe(
+      '1234567890123456789',
+    );
+    expect(
+      smartTransformValue(
+        '{"1234567890123456789":"a \\"1234567890123456789\\" b"}',
+      ),
+    ).toEqual({'1234567890123456789': 'a "1234567890123456789" b'});
+  });
+
+  it('should keep inputs that only contain large digit runs as strings', () => {
+    expect(smartTransformValue('order-1234567890123456789')).toBe(
+      'order-1234567890123456789',
+    );
+    expect(smartTransformValue('01234567890123456789')).toBe(
+      '01234567890123456789',
+    );
+  });
+
+  it('should throw on invalid JSON containing a large integer', () => {
+    expect(() => smartTransformValue('{"a":1234567890123456789')).toThrow();
+  });
 });
 
 describe('toStringFilterProperty', () => {
@@ -115,6 +166,36 @@ describe('toStringFilterProperty', () => {
     expect(toStringFilterProperty('oneOf', 'only')).toEqual({
       $in: ['"only"'],
     });
+  });
+
+  it.each([
+    ['a bare integer', '1234567890123456789'],
+    ['a negative integer', '-9223372036854775808'],
+    ['a just-unsafe integer', '9007199254740993'],
+    ['a nested integer', '{"a":{"b":[1234567890123456789]},"c":"d"}'],
+  ])('should not round %s in $eq and $neq', (_, input) => {
+    const value = smartTransformValue(input);
+
+    expect(toStringFilterProperty('equals', value)).toEqual({$eq: input});
+    expect(toStringFilterProperty('notEqual', value)).toEqual({$neq: input});
+  });
+
+  it.each([
+    ['a comma list', '1234567890123456789, two'],
+    ['a JSON array', '[1234567890123456789, "two"]'],
+  ])('should not round elements of %s in $in', (_, input) => {
+    expect(toStringFilterProperty('oneOf', smartTransformValue(input))).toEqual(
+      {$in: ['1234567890123456789', '"two"']},
+    );
+  });
+
+  it('should normalize whitespace of JSON values like JSON.stringify', () => {
+    expect(
+      toStringFilterProperty(
+        'equals',
+        smartTransformValue('{ "x" : [1, null] }'),
+      ),
+    ).toEqual({$eq: '{"x":[1,null]}'});
   });
 
   it('should map exists to $exists true (ignoring value)', () => {
