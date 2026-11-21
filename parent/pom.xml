@@ -178,7 +178,7 @@
     <version.jackson-annotations>2.22</version.jackson-annotations>
     <version.json-path>3.0.0</version.json-path>
     <version.swagger-annotations>2.2.56</version.swagger-annotations>
-    <version.swagger-parser>2.1.48</version.swagger-parser>
+    <version.swagger-parser>2.1.49</version.swagger-parser>
     <version.checker-qual>4.2.3</version.checker-qual>
     <version.java-jwt>4.6.2</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
