@@ -172,6 +172,27 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectUserCreationWithMissingUsernameWhenAdminUserExists() {
+    // given
+    final var request = Map.of("password", "zabraboof", "name", "Foo Bar", "email", "bar@baz.com");
+    whenAdminUserExists();
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No username provided.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
   void shouldRejectUserCreationWithMissingUsername() {
     // given
     final var request = Map.of("password", "zabraboof", "name", "Foo Bar", "email", "bar@baz.com");
