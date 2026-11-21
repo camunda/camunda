@@ -630,6 +630,30 @@ class RdbmsExporterTest {
   }
 
   @Test
+  void shouldRequestReopenWhenIntervalFlushDetectsPositionMismatch() {
+    // given
+    createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+    final var initialScheduleCount = 1; // only flush task
+    doAnswer(
+            invocation -> {
+              throw new ExporterPositionMismatchException(1, 4, 3);
+            })
+        .when(rdbmsWriters)
+        .flush(true);
+
+    // when + then
+    assertThatThrownBy(() -> exporter.flushAndReschedule())
+        .isInstanceOf(ExporterException.class)
+        .hasCauseInstanceOf(ExporterPositionMismatchException.class)
+        .satisfies(
+            e ->
+                assertThat(((ExporterException) e).getCompensation())
+                    .isEqualTo(ExporterException.Compensation.REOPEN));
+    verify(controller, times(initialScheduleCount + 1))
+        .scheduleCancellableTask(any(Duration.class), any());
+  }
+
+  @Test
   void shouldDelayNextIntervalFlushByFlushDurationWhenFlushIsSlow() {
     // given - the flush blocks for longer than the 500ms flush interval, as against a
     // high-latency database
@@ -855,6 +879,66 @@ class RdbmsExporterTest {
     // then - replay is requested from the DB position; the broker position (900) alone would not
     // have looked "ahead" of the DB (950), but this instance's own last-flushed position (1000) is
     verify(controller).requestReplay(dbPositionAfterFailover);
+  }
+
+  @Test
+  void shouldRequestReplayWhenReopenedBehindReceivedRecords() {
+    // given - the exporter flushed up to 100 and then received record 110 without flushing it
+    final var flushedRdbmsPosition =
+        new ExporterPositionModel(
+            0, RdbmsExporter.class.getSimpleName(), 100L, LocalDateTime.now(), LocalDateTime.now());
+    final var jobHandler = mockHandler(ValueType.JOB);
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler), true, true, flushedRdbmsPosition);
+    exporter.export(mockRecord(ValueType.JOB, 110L));
+
+    // the broker was acked up to 100, and another writer advanced the DB position to 105
+    when(controller.getLastExportedRecordPosition()).thenReturn(100L);
+    when(positionService.findOne(anyInt()))
+        .thenReturn(
+            new ExporterPositionModel(
+                0,
+                RdbmsExporter.class.getSimpleName(),
+                105L,
+                LocalDateTime.now(),
+                LocalDateTime.now()));
+    when(controller.requestReplay(anyLong())).thenReturn(true);
+
+    // when - the exporter is reopened after its final flush failed, which drops the unflushed
+    // record
+    exporter.open(controller);
+
+    // then - the records after the DB position are replayed instead of being skipped
+    verify(controller).requestReplay(105L);
+  }
+
+  @Test
+  void shouldRequestReplayOfReceivedRecordsWhenRetryingFailedOpen() {
+    // given - the exporter flushed up to 100 and then received record 110 without flushing it
+    final var flushedRdbmsPosition =
+        new ExporterPositionModel(
+            0, RdbmsExporter.class.getSimpleName(), 100L, LocalDateTime.now(), LocalDateTime.now());
+    final var jobHandler = mockHandler(ValueType.JOB);
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler), true, true, flushedRdbmsPosition);
+    exporter.export(mockRecord(ValueType.JOB, 110L));
+
+    // the broker was acked up to 100, and another writer advanced the DB position to 105
+    when(controller.getLastExportedRecordPosition()).thenReturn(100L);
+    when(positionService.findOne(anyInt()))
+        .thenReturn(
+            new ExporterPositionModel(
+                0,
+                RdbmsExporter.class.getSimpleName(),
+                105L,
+                LocalDateTime.now(),
+                LocalDateTime.now()));
+    when(controller.requestReplay(anyLong())).thenReturn(false, true);
+
+    // when - the first reopen fails because the replay is rejected, and the next one is retried
+    assertThatThrownBy(() -> exporter.open(controller)).isInstanceOf(ExporterException.class);
+    exporter.open(controller);
+
+    // then - the retried open still replays the records after the DB position
+    verify(controller, times(2)).requestReplay(105L);
   }
 
   @Test

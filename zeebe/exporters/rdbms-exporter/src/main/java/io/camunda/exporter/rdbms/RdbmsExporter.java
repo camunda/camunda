@@ -114,9 +114,12 @@ public final class RdbmsExporter {
   }
 
   public void open(final Controller controller) {
+    final long receivedPosition = lastPosition;
     try {
       doOpen(controller);
     } catch (final RuntimeException e) {
+      // keep the received records for the next attempt, which must still replay them
+      lastPosition = Math.max(lastPosition, receivedPosition);
       // open() may fail after allocating resources (replication controller, scheduled flush task,
       // background task manager). Release them via close() before propagating so a retried open
       // starts from a clean state instead of leaking the partial allocation.
@@ -141,6 +144,9 @@ public final class RdbmsExporter {
     }
 
     initializeRdbmsPosition();
+    // On an in-process reopen, the records up to here were already handed to this instance; any
+    // that were not flushed are dropped with the queue, so they must be replayed.
+    final long receivedPosition = lastPosition;
     // Use whichever of the broker-acked position and this instance's own last-flushed position
     // (preserved across a close+reopen on the same instance) is more advanced. On a cold start
     // lastFlushedPosition is still -1, so this is exactly the broker position, matching what a
@@ -167,11 +173,13 @@ public final class RdbmsExporter {
         // broker according to its replication policy (immediately for NONE, once confirmed for
         // LSN).
         replicationController.onFlush(lastPosition);
-      } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
+      }
+      final long expectedPosition = Math.max(lastPosition, receivedPosition);
+      if (expectedPosition > exporterRdbmsPosition.lastExportedPosition()) {
         log(
             INFO,
             "Broker position {} is more advanced than rdbms position {}. Requesting replay from {}",
-            lastPosition,
+            expectedPosition,
             exporterRdbmsPosition.lastExportedPosition(),
             exporterRdbmsPosition.lastExportedPosition());
         lastPosition = exporterRdbmsPosition.lastExportedPosition();
@@ -328,16 +336,7 @@ public final class RdbmsExporter {
           resetIntervalFlush(exportStartNanos);
         }
       } catch (final ExporterPositionMismatchException e) {
-        log(
-            WARN,
-            "Exporter position conflict detected during flush — requesting reopen to re-sync from DB position.");
-        throw new ExporterException(
-            String.format(
-                "[RDBMS Exporter P%d T-%s] Flush failed due to exporter position conflict;"
-                    + " exporter will reopen to re-sync.",
-                partitionId, physicalTenantId),
-            e,
-            ExporterException.Compensation.REOPEN);
+        throw reopenOnPositionMismatch(e);
       } catch (final Exception e) {
         log(
             WARN,
@@ -454,6 +453,8 @@ public final class RdbmsExporter {
     final long workStartNanos = nanoClock.getAsLong();
     try {
       flushExecutionQueue();
+    } catch (final ExporterPositionMismatchException e) {
+      throw reopenOnPositionMismatch(e);
     } catch (final Exception e) {
       log(
           WARN,
@@ -463,6 +464,19 @@ public final class RdbmsExporter {
     } finally {
       scheduleIntervalFlush(workStartNanos);
     }
+  }
+
+  private ExporterException reopenOnPositionMismatch(final ExporterPositionMismatchException e) {
+    log(
+        WARN,
+        "Exporter position conflict detected during flush — requesting reopen to re-sync from DB position.");
+    return new ExporterException(
+        String.format(
+            "[RDBMS Exporter P%d T-%s] Flush failed due to exporter position conflict;"
+                + " exporter will reopen to re-sync.",
+            partitionId, physicalTenantId),
+        e,
+        ExporterException.Compensation.REOPEN);
   }
 
   @VisibleForTesting(
