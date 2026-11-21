@@ -15,6 +15,9 @@ permissions:
 
 jobs:
   nightly-api-tests-es:
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-api-tests.yml
     with:
       branch: stable/8.7

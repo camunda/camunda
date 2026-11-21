@@ -121,7 +121,8 @@ jobs:
     # block the expensive downstream stages — including on merge_group runs
     # (one of the two protected events this hardening targets). Letting
     # preflight failures pass through here would defeat the entire rationale.
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Checkout (for observe-build-status)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -132,14 +133,16 @@ jobs:
         id: check-secrets
         env:
           VAULT_ADDR_PRESENT: ${{ secrets.VAULT_ADDR != '' }}
-          VAULT_ROLE_ID_PRESENT: ${{ secrets.VAULT_ROLE_ID != '' }}
-          VAULT_SECRET_ID_PRESENT: ${{ secrets.VAULT_SECRET_ID != '' }}
+          VAULT_JWT_ROLE_PRESENT: ${{ secrets.VAULT_JWT_ROLE != '' }}
+          VAULT_JWT_PATH_PRESENT: ${{ secrets.VAULT_JWT_PATH != '' }}
+          VAULT_JWT_AUDIENCE_PRESENT: ${{ secrets.VAULT_JWT_AUDIENCE != '' }}
         run: |
           set -euo pipefail
           missing=()
           [[ "$VAULT_ADDR_PRESENT" == "true" ]] || missing+=(VAULT_ADDR)
-          [[ "$VAULT_ROLE_ID_PRESENT" == "true" ]] || missing+=(VAULT_ROLE_ID)
-          [[ "$VAULT_SECRET_ID_PRESENT" == "true" ]] || missing+=(VAULT_SECRET_ID)
+          [[ "$VAULT_JWT_ROLE_PRESENT" == "true" ]] || missing+=(VAULT_JWT_ROLE)
+          [[ "$VAULT_JWT_PATH_PRESENT" == "true" ]] || missing+=(VAULT_JWT_PATH)
+          [[ "$VAULT_JWT_AUDIENCE_PRESENT" == "true" ]] || missing+=(VAULT_JWT_AUDIENCE)
           if (( ${#missing[@]} > 0 )); then
             echo "Missing org secrets: ${missing[*]}" >&2
             exit 1
@@ -155,9 +158,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
@@ -230,14 +234,16 @@ jobs:
           build_status: ${{ job.status }}
           job_name: docker-build-helm-integration-preflight
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Parallel frontend builds
   build-operate-frontend:
     name: Build Operate Frontend
     needs: preflight
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: ${{ github.event_name == 'merge_group' }}
@@ -262,8 +268,9 @@ jobs:
           build_status: ${{ job.status }}
           job_name: docker-build-helm-integration-operate-frontend
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Emit AlwaysGreen failure context
         if: ${{ always() && (failure() || cancelled()) }}
         run: |
@@ -293,7 +300,8 @@ jobs:
   build-unified-webapp-frontend:
     name: Build Unified Webapp Frontend
     needs: preflight
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: ${{ github.event_name == 'merge_group' }}
@@ -319,8 +327,9 @@ jobs:
           build_status: ${{ job.status }}
           job_name: docker-build-helm-integration-unified-webapp-frontend
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Emit AlwaysGreen failure context
         if: ${{ always() && (failure() || cancelled()) }}
         run: |
@@ -350,7 +359,8 @@ jobs:
   build-identity-frontend:
     name: Build Identity Frontend
     needs: preflight
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: ${{ github.event_name == 'merge_group' }}
@@ -375,8 +385,9 @@ jobs:
           build_status: ${{ job.status }}
           job_name: docker-build-helm-integration-identity-frontend
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Emit AlwaysGreen failure context
         if: ${{ always() && (failure() || cancelled()) }}
         run: |
@@ -407,7 +418,8 @@ jobs:
   build-and-push:
     name: Build and Push Docker Image
     needs: [build-operate-frontend, build-unified-webapp-frontend, build-identity-frontend]
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
     continue-on-error: ${{ github.event_name == 'merge_group' }}
@@ -423,8 +435,9 @@ jobs:
           dockerhub-readonly: true
           harbor: true
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           minimus: true
 
       - name: Get Maven project version
@@ -509,8 +522,9 @@ jobs:
           build_status: ${{ job.status }}
           job_name: docker-build-helm-integration-build
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Emit AlwaysGreen failure context
         if: ${{ always() && (failure() || cancelled()) }}
         run: |
@@ -641,6 +655,7 @@ jobs:
     timeout-minutes: 5
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions:
+      id-token: write # Vault JWT login
       contents: read
       actions: read
     # Surfaced so alwaysgreen-triage can reply in the feedback message's thread rather
@@ -665,9 +680,10 @@ jobs:
         uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
       - name: Generate GitHub App Token
@@ -679,9 +695,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda
@@ -743,8 +760,9 @@ jobs:
           build_status: ${{ needs.helm-deploy.result }}
           job_name: docker-build-helm-integration-helm-deploy
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Emit AlwaysGreen failure context
         if: ${{ always() && (needs.helm-deploy.result == 'failure' || needs.helm-deploy.result == 'cancelled') }}
         run: |
@@ -790,7 +808,8 @@ jobs:
     # hangs indefinitely rather than returning an error to retry.
     timeout-minutes: 75
     continue-on-error: ${{ github.event_name == 'merge_group' }}
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     # Surfaced for the same reason as helm-deploy-status: a SaaS-only failure must
     # still give alwaysgreen-triage a thread parent, otherwise one failure produces
     # two unrelated top-level Slack messages.
@@ -818,9 +837,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda,c8-cross-component-e2e-tests
@@ -920,9 +940,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda,c8-cross-component-e2e-tests
@@ -1196,9 +1217,10 @@ jobs:
         uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
       # downstream-category speaks the ci-failure-categories.md vocabulary
@@ -1286,8 +1308,9 @@ jobs:
           build_status: ${{ job.status }}
           job_name: docker-build-helm-integration-trigger-saas-e2e
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Emit AlwaysGreen failure context
         if: ${{ always() && (failure() || cancelled()) }}
         run: |
@@ -1353,6 +1376,9 @@ jobs:
     # Local path, not `@main`: on main the two resolve to the same file, and a local
     # ref is what lets a change to the shim be tested by the PR that makes it. The
     # stable branches pin `@main` instead, because they have no copy of their own.
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     uses: ./.github/workflows/alwaysgreen-triage.yml
     secrets: inherit
     with:

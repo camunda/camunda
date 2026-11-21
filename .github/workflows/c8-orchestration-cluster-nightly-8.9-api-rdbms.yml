@@ -16,12 +16,18 @@ permissions:
 
 jobs:
   nightly-api-tests-rdbms:
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-rdbms-api-tests.yml
     with:
       branch: stable/8.9
     secrets: inherit
 
   nightly-api-tests-rdbms-all-in-one:
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-rdbms-api-tests.yml
     with:
       branch: stable/8.9
@@ -34,6 +40,9 @@ jobs:
   # jobs when one of the runner-shutdown messages is present in the run logs, so
   # genuine test failures are never masked. Capped at two retries via run_attempt.
   rerun-failed-jobs:
+    permissions:
+      contents: read
+      id-token: write
     needs:
       - nightly-api-tests-rdbms
       - nightly-api-tests-rdbms-all-in-one
@@ -49,8 +58,10 @@ jobs:
           run-id: ${{ github.run_id }}
           repository: ${{ github.repository }}
           vault-addr: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -62,5 +73,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}

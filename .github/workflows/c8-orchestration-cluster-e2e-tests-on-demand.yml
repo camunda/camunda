@@ -27,7 +27,8 @@ jobs:
     # Unshallowed checkout plus six branch fetches; 5 minutes was sized for a
     # depth-1 clone.
     timeout-minutes: 15
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     outputs:
       base: ${{ steps.detect-base.outputs.base }}
     steps:
@@ -100,14 +101,16 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   tests:
     needs: validate-branch
     uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable.yml
     secrets: inherit
     permissions:
+      id-token: write # Vault JWT login
       contents: read
     with:
       ref: ${{ github.event.inputs.branch }}
