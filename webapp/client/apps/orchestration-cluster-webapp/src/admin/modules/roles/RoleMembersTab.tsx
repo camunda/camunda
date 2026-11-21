@@ -9,7 +9,15 @@
 import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Trash2} from '@camunda/design-system/icons';
-import {Button, DataTable, type DataTableColumn, type DataTableRowAction} from '@camunda/design-system';
+import {
+	Button,
+	DataTable,
+	Label,
+	SearchInput,
+	type DataTableColumn,
+	type DataTableRowAction,
+} from '@camunda/design-system';
+import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 import {AssignEmptyState} from '#/admin/modules/shared/AssignEmptyState';
 import {AssignMemberModal} from './AssignMemberModal';
 import {RemoveMemberModal} from './RemoveMemberModal';
@@ -43,6 +51,10 @@ const RoleMembersTab: React.FC<Props> = ({
 	onSearchChange,
 }) => {
 	const {t} = useTranslation();
+	const appliedSearchTerm = search.search ?? '';
+	const [searchDraft, setSearchDraft] = useDebouncedUrlFilter(appliedSearchTerm, (nextSearch) =>
+		onSearchChange({search: nextSearch, page: undefined}),
+	);
 	const [isAssignOpen, setIsAssignOpen] = useState(false);
 	const [memberToRemove, setMemberToRemove] = useState<MemberRow | null>(null);
 
@@ -70,7 +82,8 @@ const RoleMembersTab: React.FC<Props> = ({
 		[kind, t],
 	);
 
-	const isEmpty = totalItems === 0;
+	const isSearchable = kind === 'users';
+	const isEmpty = totalItems === 0 && (!isSearchable || appliedSearchTerm === '');
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -83,7 +96,24 @@ const RoleMembersTab: React.FC<Props> = ({
 				/>
 			) : (
 				<>
-					<div className="flex justify-end">
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+						<div className="sm:flex-1">
+							{isSearchable && (
+								<>
+									<Label htmlFor="role-users-search" className="sr-only">
+										{t('admin.users.searchByUsername')}
+									</Label>
+									<SearchInput
+										id="role-users-search"
+										className="w-full sm:max-w-sm sm:min-w-48"
+										placeholder={t('admin.users.searchByUsername')}
+										value={searchDraft}
+										onChange={(event) => setSearchDraft(event.target.value)}
+										onClear={() => setSearchDraft('')}
+									/>
+								</>
+							)}
+						</div>
 						<Button type="button" onClick={() => setIsAssignOpen(true)}>
 							{t(`admin.roles.members.${kind}.assign`)}
 						</Button>
@@ -97,6 +127,7 @@ const RoleMembersTab: React.FC<Props> = ({
 							aria-label={t(`admin.roles.members.${kind}.title`)}
 							columns={columns}
 							data={rows}
+							emptyState={isSearchable ? t('admin.users.noUsersFound') : undefined}
 							getRowId={(row) => row.id}
 							rowActions={rowActions}
 							inlineActionsThreshold={2}
