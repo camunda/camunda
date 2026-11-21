@@ -5,6 +5,16 @@
 
 <mapper namespace="io.camunda.db.rdbms.sql.BatchOperationMapper">
 
+  <!-- BATCH_OPERATION_KEY is VARCHAR, but the SQL Server driver sends strings as NVARCHAR. NVARCHAR
+  ranks higher, so SQL Server would convert the column, not the parameter: no key seek, and the
+  statement reads (and locks) other batch operations' rows. Casting the parameter keeps the seek. -->
+  <sql id="batchOperationKey">
+    <choose>
+      <when test="_databaseId == 'mssql'">CAST(#{${key}} AS VARCHAR(255))</when>
+      <otherwise>#{${key}}</otherwise>
+    </choose>
+  </sql>
+
   <resultMap id="BatchOperationResultMap"
     type="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
     <constructor>
@@ -254,7 +264,7 @@
     UPDATE ${prefix}BATCH_OPERATION
     SET STATE      = 'ACTIVE',
         START_DATE = #{startDate, jdbcType=TIMESTAMP}
-    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+    WHERE BATCH_OPERATION_KEY = <include refid="batchOperationKey"><property name="key" value="batchOperationKey"/></include>
       AND STATE != 'COMPLETED'
   </update>
 
@@ -263,7 +273,7 @@
     UPDATE ${prefix}BATCH_OPERATION
     SET STATE = #{state},
     END_DATE = #{endDate, jdbcType=TIMESTAMP}
-    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+    WHERE BATCH_OPERATION_KEY = <include refid="batchOperationKey"><property name="key" value="batchOperationKey"/></include>
   </update>
 
 
@@ -289,7 +299,7 @@
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
     databaseId="mssql">
     MERGE ${prefix}BATCH_OPERATION_ITEM AS target
-    USING (SELECT #{batchOperationKey}   AS BATCH_OPERATION_KEY,
+    USING (SELECT CAST(#{batchOperationKey} AS VARCHAR(255)) AS BATCH_OPERATION_KEY,
                   #{itemKey}            AS ITEM_KEY,
                   #{processInstanceKey} AS PROCESS_INSTANCE_KEY,
                   #{rootProcessInstanceKey} AS ROOT_PROCESS_INSTANCE_KEY,
@@ -396,7 +406,7 @@
         PROCESSED_DATE = #{processedDate, jdbcType=TIMESTAMP}
     WHERE
     <foreach collection="items" item="item" separator=" OR " open="(" close=")">
-      (BATCH_OPERATION_KEY = #{item.batchOperationKey} AND ITEM_KEY = #{item.itemKey})
+      (BATCH_OPERATION_KEY = <include refid="batchOperationKey"><property name="key" value="item.batchOperationKey"/></include> AND ITEM_KEY = #{item.itemKey})
     </foreach>
   </update>
 
@@ -404,7 +414,7 @@
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemStatusUpdateDto">
     UPDATE ${prefix}BATCH_OPERATION_ITEM
     SET STATE = #{newState}
-    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+    WHERE BATCH_OPERATION_KEY = <include refid="batchOperationKey"><property name="key" value="batchOperationKey"/></include>
     AND STATE = #{oldState}
   </update>
 
@@ -412,28 +422,28 @@
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateTotalCountDto">
     UPDATE ${prefix}BATCH_OPERATION
     SET OPERATIONS_TOTAL_COUNT = OPERATIONS_TOTAL_COUNT + #{operationsTotalCount}
-    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+    WHERE BATCH_OPERATION_KEY = <include refid="batchOperationKey"><property name="key" value="batchOperationKey"/></include>
   </update>
 
   <update id="incrementFailedOperationsCount"
     parameterType="java.lang.String">
     UPDATE ${prefix}BATCH_OPERATION
     SET OPERATIONS_FAILED_COUNT = OPERATIONS_FAILED_COUNT + 1
-    WHERE BATCH_OPERATION_KEY = #{id}
+    WHERE BATCH_OPERATION_KEY = <include refid="batchOperationKey"><property name="key" value="id"/></include>
   </update>
 
   <update id="incrementCompletedOperationsCount"
     parameterType="java.lang.String">
     UPDATE ${prefix}BATCH_OPERATION
     SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + 1
-    WHERE BATCH_OPERATION_KEY = #{id}
+    WHERE BATCH_OPERATION_KEY = <include refid="batchOperationKey"><property name="key" value="id"/></include>
   </update>
 
   <update id="bulkIncrementCompletedOperationsCount"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateTotalCountDto">
     UPDATE ${prefix}BATCH_OPERATION
     SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + #{operationsTotalCount}
-    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+    WHERE BATCH_OPERATION_KEY = <include refid="batchOperationKey"><property name="key" value="batchOperationKey"/></include>
   </update>
 
   <select id="count" resultType="java.lang.Long">
@@ -608,7 +618,7 @@
   <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}BATCH_OPERATION
     SET HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+    WHERE BATCH_OPERATION_KEY = <include refid="batchOperationKey"><property name="key" value="batchOperationKey"/></include>
   </update>
 
   <delete id="cleanupHistory">
