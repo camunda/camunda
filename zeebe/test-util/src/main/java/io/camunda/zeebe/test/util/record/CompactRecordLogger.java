@@ -169,6 +169,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -476,7 +477,7 @@ public class CompactRecordLogger {
                     String.format(
                         "[%s] ------%n%s%n",
                         formatKey(process.getProcessDefinitionKey()),
-                        new String(process.getResource()))));
+                        new String(process.getResource(), StandardCharsets.UTF_8))));
   }
 
   private void addDecomposedKeys(final StringBuilder bulkMessage) {

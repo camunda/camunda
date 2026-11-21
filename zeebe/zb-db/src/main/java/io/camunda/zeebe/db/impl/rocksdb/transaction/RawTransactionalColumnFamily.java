@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.nio.charset.StandardCharsets;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 import org.rocksdb.ReadOptions;
@@ -151,7 +152,10 @@ public class RawTransactionalColumnFamily {
             visitor.visit(keyBytes, 0, keyBytes.length, valueBytes, 0, valueBytes.length);
       } catch (final Exception e) {
         LOG.error(
-            "Error visiting key {} in column family {}", new String(keyBytes), columnFamily, e);
+            "Error visiting key {} in column family {}",
+            new String(keyBytes, StandardCharsets.UTF_8),
+            columnFamily,
+            e);
         shouldVisitNext = false;
       }
     }
@@ -199,7 +203,7 @@ public class RawTransactionalColumnFamily {
       } catch (final Exception e) {
         LOG.error(
             "Error visiting key {} in column family {}",
-            new String(keyBytes, 0, keyLen),
+            new String(keyBytes, 0, keyLen, StandardCharsets.UTF_8),
             columnFamily,
             e);
         shouldVisitNext = false;
@@ -240,7 +244,10 @@ public class RawTransactionalColumnFamily {
         shouldVisitNext = visitor.visit(keyBytes, 0, keyBytes.length);
       } catch (final Exception e) {
         LOG.error(
-            "Error visiting key {} in column family {}", new String(keyBytes), columnFamily, e);
+            "Error visiting key {} in column family {}",
+            new String(keyBytes, StandardCharsets.UTF_8),
+            columnFamily,
+            e);
         shouldVisitNext = false;
       }
     }

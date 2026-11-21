@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -148,7 +149,7 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & 
                               LOG.error(
                                   "Failed to copy column family '{}' on key {} and value with length {} terminating.",
                                   cf,
-                                  new String(key, 0, keyLen),
+                                  new String(key, 0, keyLen, StandardCharsets.UTF_8),
                                   value.length,
                                   e);
                               abort.set(true);

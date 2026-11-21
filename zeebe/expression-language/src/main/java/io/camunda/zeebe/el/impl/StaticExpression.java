@@ -13,6 +13,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;
@@ -142,7 +143,7 @@ public final class StaticExpression implements Expression, EvaluationResult {
       case STRING -> {
         final String stringValue = (String) result;
         final DirectBuffer stringWrapper = new UnsafeBuffer();
-        stringWrapper.wrap(stringValue.getBytes());
+        stringWrapper.wrap(stringValue.getBytes(StandardCharsets.UTF_8));
         writer.writeString(stringWrapper);
       }
       default -> writer.writeNil();

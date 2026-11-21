@@ -22,6 +22,7 @@ import io.camunda.client.api.command.DocumentBuilderStep1.DocumentBuilderStep2;
 import io.camunda.client.protocol.rest.DocumentMetadata;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -49,7 +50,7 @@ public class DocumentBuilder implements DocumentBuilderStep1, DocumentBuilderSte
   @Override
   public DocumentBuilderStep2 content(final String content) {
     ensureNotNull("content", content);
-    this.content = new ByteArrayInputStream(content.getBytes());
+    this.content = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
     return this;
   }
 
