@@ -19,7 +19,6 @@ import DeleteModal from "src/pages/roles/detail/members/DeleteModal";
 import { UserKeys } from "src/utility/api/users";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 import TabEmptyState from "src/components/layout/TabEmptyState";
-import { useListPollingReload } from "src/utility/hooks/useListPollingReload";
 
 type MembersProps = {
   roleId: string;
@@ -37,23 +36,17 @@ const Members: FC<MembersProps> = ({ roleId, isOIDC }) => {
     },
     isOIDC,
   );
-  const { startPolling } = useListPollingReload(
-    reload,
-    users,
-    "username",
-    paginationProps.page.totalItems,
-  );
 
   const isUsersListEmpty = !users || users?.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
     isOIDC ? AssignMemberModal : AssignMembersModal,
     () => {},
-    { assignedUsers: users, onItemsAssigned: startPolling },
+    { assignedUsers: users },
   );
   const openAssignModal = () => assignUsers({ roleId });
   const [unassignMember, unassignMemberModal] = useEntityModal(
     DeleteModal,
-    () => startPolling(-1),
+    () => {},
     {
       roleId,
     },

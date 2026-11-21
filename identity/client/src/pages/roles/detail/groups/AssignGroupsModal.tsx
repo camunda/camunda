@@ -20,17 +20,9 @@ const AssignGroupsModal: FC<
     { roleId: Role["roleId"] },
     {
       assignedGroups: Group[];
-      onItemsAssigned: (count: number) => void;
     }
   >
-> = ({
-  entity: { roleId },
-  assignedGroups,
-  onSuccess,
-  onItemsAssigned,
-  open,
-  onClose,
-}) => {
+> = ({ entity: { roleId }, assignedGroups, onSuccess, open, onClose }) => {
   const { t } = useTranslate("roles");
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
   const [loadingAssignGroup, setLoadingAssignGroup] = useState(false);
@@ -52,7 +44,6 @@ const AssignGroupsModal: FC<
           callAssignGroup({ groupId, roleId }),
         ),
       );
-      onItemsAssigned(selectedGroups.length);
       onSuccess();
     } catch {
       // error handled globally

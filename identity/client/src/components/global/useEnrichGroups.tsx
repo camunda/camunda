@@ -7,7 +7,11 @@
  */
 
 import { useMemo } from "react";
-import { useQuery, type QueryObserverBaseResult } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQuery,
+  type QueryObserverBaseResult,
+} from "@tanstack/react-query";
 import { ApiDefinition, unwrap } from "src/utility/api/request";
 import { searchGroups } from "src/utility/api/groups";
 import { usePagination } from "src/utility/api";
@@ -71,6 +75,7 @@ export function useEnrichedGroups<P>(
     queryKey: ["enrichedGroups", "groupDetails", groupIds],
     queryFn: () => unwrap(searchGroups({ groupIds })(getApiBaseUrl())),
     enabled: isCamundaGroupsEnabled && groupIds.length > 0,
+    placeholderData: keepPreviousData,
   });
 
   const groups = useMemo<GroupWithId[]>(() => {

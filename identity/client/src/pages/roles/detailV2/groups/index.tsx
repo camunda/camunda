@@ -19,7 +19,6 @@ import DeleteModal from "src/pages/roles/detailV2/groups/DeleteModal";
 import { GroupKeys } from "src/utility/api/groups";
 import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 import TabEmptyState from "src/components/layoutV2/TabEmptyState";
-import { useListPollingReload } from "src/utility/hooks/useListPollingReload";
 
 type GroupsProps = {
   roleId: string;
@@ -40,24 +39,17 @@ const Groups: FC<GroupsProps> = ({ roleId, isCamundaGroupsEnabled }) => {
     );
 
   const isGroupsEmpty = !groups || groups.length === 0;
-  const { startPolling } = useListPollingReload(
-    reload,
-    groups,
-    "groupId",
-    paginationProps.page.totalItems,
-  );
   const [assignGroups, assignGroupsModal] = useEntityModal(
     isCamundaGroupsEnabled ? AssignGroupsModal : AssignGroupModal,
     () => {},
     {
       assignedGroups: groups,
-      onItemsAssigned: startPolling,
     },
   );
   const openAssignModal = () => assignGroups({ roleId });
   const [unassignGroup, unassignGroupModal] = useEntityModal(
     DeleteModal,
-    () => startPolling(-1),
+    () => {},
     {
       role: roleId,
     },
