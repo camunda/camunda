@@ -1,0 +1,348 @@
+# description: Deploys the release load tests from the image tags committed in the versions.yaml of
+#              each load-tests/setup folder (main, stable-87, stable-88, stable-89, stable-810).
+#              On push to main it deploys the folders whose files changed, or all folders when a
+#              shared file changed. On workflow_dispatch and workflow_call it deploys the requested
+#              versions. Uses official Docker images with scenario: realistic, Elasticsearch and
+#              stable VMs. It passes no platform image tag.
+#              Namespaces: c8-<name-prefix>-8-<minor>-x for stable folders, c8-<name-prefix>-main
+#              for main.
+#              The setup folder comes from main. The load test client images (starter and worker)
+#              are built from the release branch: stable folders build from stable/8.x.
+#              Changes to this workflow file do not redeploy anything.
+# called-by: push to main (paths under load-tests/setup), workflow_dispatch,
+#            camunda-scheduled-release-load-tests.yml
+# calls: camunda-load-test-build.yml, camunda-load-test-deploy.yml
+# type: CI
+# owner: @camunda/reliability-testing
+name: Deploy release load tests
+run-name: "Deploy release load tests: ${{ inputs.versions || github.event_name }}"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'load-tests/setup/**'
+      - '!load-tests/setup/test/**'
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: 'Version to deploy. all deploys main and every stable version.'
+        type: choice
+        options:
+          - main
+          - '8.10'
+          - '8.9'
+          - '8.8'
+          - '8.7'
+          - all
+        required: true
+  workflow_call:
+    inputs:
+      versions:
+        description: 'Comma-separated list of versions to deploy: 8.7, 8.8, 8.9, 8.10, main (folder names such as stable-88 also work).'
+        type: string
+        required: true
+      name-prefix:
+        description: 'Prefix of the load test names. The namespaces are c8-<name-prefix>-8-<minor>-x and c8-<name-prefix>-main.'
+        type: string
+        default: release
+        required: false
+      notify-on-failure:
+        description: 'Send the failure notification to Slack. Set to false when the caller notifies.'
+        type: boolean
+        default: true
+        required: false
+    outputs:
+      folders:
+        description: 'JSON array of the folders that were selected for deployment.'
+        value: ${{ jobs.prepare.outputs.folders }}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+
+jobs:
+  prepare:
+    name: Select folders to deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      folders: ${{ steps.select.outputs.folders }}
+      name-prefix: ${{ steps.sanitize.outputs.branch_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .ci
+            .github
+            load-tests/setup
+      - name: Select folders
+        id: select
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          VERSIONS: ${{ inputs.versions }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: .github/scripts/load-test-select-release-folders.sh
+      - id: sanitize
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name-1.0.0
+        with:
+          branch: ${{ inputs.name-prefix || 'release' }}
+          max_length: 43  # the namespace is c8-<prefix>-8-10-x, which must stay within 50 characters
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # A reusable workflow reference cannot come from a matrix value, so there are two jobs per folder.
+
+  build-main:
+    name: Build load test client (main)
+    needs: prepare
+    if: ${{ contains(fromJSON(needs.prepare.outputs.folders), 'main') }}
+    permissions: {}
+    uses: ./.github/workflows/camunda-load-test-build.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.prepare.outputs.name-prefix }}-main
+      ref: main
+      build-camunda: false
+      build-optimize: false
+      build-metrics-exporter: false
+
+  deploy-main:
+    name: Deploy release load test (main)
+    needs: [prepare, build-main]
+    if: ${{ needs.build-main.result == 'success' }}
+    concurrency:
+      group: deploy-release-load-test-main
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test-deploy.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.prepare.outputs.name-prefix }}-main
+      ref: main
+      ttl: 60
+      scenario: 'realistic'
+      stable-vms: true
+      secondary-storage-type: elasticsearch
+      target-version: main
+      load-test-image-tag: ${{ needs.build-main.outputs.load-test-client-tag }}
+      load-test-image-repository: ${{ needs.build-main.outputs.image-repository }}
+
+  build-8-7:
+    name: Build load test client (8.7)
+    needs: prepare
+    if: ${{ contains(fromJSON(needs.prepare.outputs.folders), 'stable-87') }}
+    permissions: {}
+    uses: ./.github/workflows/camunda-load-test-build.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.prepare.outputs.name-prefix }}-8-7-x
+      ref: stable/8.7
+      build-camunda: false
+      build-optimize: false
+      build-metrics-exporter: false
+
+  deploy-8-7:
+    name: Deploy release load test (8.7)
+    needs: [prepare, build-8-7]
+    if: ${{ needs.build-8-7.result == 'success' }}
+    concurrency:
+      group: deploy-release-load-test-stable-87
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test-deploy.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.prepare.outputs.name-prefix }}-8-7-x
+      ref: main
+      ttl: 60
+      scenario: 'realistic'
+      stable-vms: true
+      secondary-storage-type: elasticsearch
+      target-version: stable-87
+      load-test-image-tag: ${{ needs.build-8-7.outputs.load-test-client-tag }}
+      load-test-image-repository: ${{ needs.build-8-7.outputs.image-repository }}
+
+  build-8-8:
+    name: Build load test client (8.8)
+    needs: prepare
+    if: ${{ contains(fromJSON(needs.prepare.outputs.folders), 'stable-88') }}
+    permissions: {}
+    uses: ./.github/workflows/camunda-load-test-build.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.prepare.outputs.name-prefix }}-8-8-x
+      ref: stable/8.8
+      build-camunda: false
+      build-optimize: false
+      build-metrics-exporter: false
+
+  deploy-8-8:
+    name: Deploy release load test (8.8)
+    needs: [prepare, build-8-8]
+    if: ${{ needs.build-8-8.result == 'success' }}
+    concurrency:
+      group: deploy-release-load-test-stable-88
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test-deploy.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.prepare.outputs.name-prefix }}-8-8-x
+      ref: main
+      ttl: 60
+      scenario: 'realistic'
+      stable-vms: true
+      secondary-storage-type: elasticsearch
+      target-version: stable-88
+      load-test-image-tag: ${{ needs.build-8-8.outputs.load-test-client-tag }}
+      load-test-image-repository: ${{ needs.build-8-8.outputs.image-repository }}
+
+  build-8-9:
+    name: Build load test client (8.9)
+    needs: prepare
+    if: ${{ contains(fromJSON(needs.prepare.outputs.folders), 'stable-89') }}
+    permissions: {}
+    uses: ./.github/workflows/camunda-load-test-build.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.prepare.outputs.name-prefix }}-8-9-x
+      ref: stable/8.9
+      build-camunda: false
+      build-optimize: false
+      build-metrics-exporter: false
+
+  deploy-8-9:
+    name: Deploy release load test (8.9)
+    needs: [prepare, build-8-9]
+    if: ${{ needs.build-8-9.result == 'success' }}
+    concurrency:
+      group: deploy-release-load-test-stable-89
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test-deploy.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.prepare.outputs.name-prefix }}-8-9-x
+      ref: main
+      ttl: 60
+      scenario: 'realistic'
+      stable-vms: true
+      secondary-storage-type: elasticsearch
+      target-version: stable-89
+      load-test-image-tag: ${{ needs.build-8-9.outputs.load-test-client-tag }}
+      load-test-image-repository: ${{ needs.build-8-9.outputs.image-repository }}
+
+  build-8-10:
+    name: Build load test client (8.10)
+    needs: prepare
+    if: ${{ contains(fromJSON(needs.prepare.outputs.folders), 'stable-810') }}
+    permissions: {}
+    uses: ./.github/workflows/camunda-load-test-build.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.prepare.outputs.name-prefix }}-8-10-x
+      ref: stable/8.10
+      build-camunda: false
+      build-optimize: false
+      build-metrics-exporter: false
+
+  deploy-8-10:
+    name: Deploy release load test (8.10)
+    needs: [prepare, build-8-10]
+    if: ${{ needs.build-8-10.result == 'success' }}
+    concurrency:
+      group: deploy-release-load-test-stable-810
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test-deploy.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.prepare.outputs.name-prefix }}-8-10-x
+      ref: main
+      ttl: 60
+      scenario: 'realistic'
+      stable-vms: true
+      secondary-storage-type: elasticsearch
+      target-version: stable-810
+      load-test-image-tag: ${{ needs.build-8-10.outputs.load-test-client-tag }}
+      load-test-image-repository: ${{ needs.build-8-10.outputs.image-repository }}
+
+  notify-on-failure:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [prepare, build-main, build-8-7, build-8-8, build-8-9, build-8-10, deploy-main, deploy-8-7, deploy-8-8, deploy-8-9, deploy-8-10]
+    if: failure() && (github.event_name != 'workflow_call' || inputs.notify-on-failure)
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .ci
+            .github
+      - name: Import Slack webhook from Vault
+        id: slack-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
+      - id: slack-notify
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |-
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: ":alarm: *Release load test creation failed:*"
+
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "@reliability-testing-team Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
