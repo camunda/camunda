@@ -880,12 +880,29 @@ public final class CamundaClientBuilderImpl
 
   private void applyOverrides() {
     applyEnvironmentValueIfNotNull(this::caCertificatePath, CA_CERTIFICATE_VAR);
-    applyEnvironmentValueIfNotNull(value -> mtlsCertPath = value, MTLS_CERT_PATH_VAR);
+    // A path from the environment replaces inline content from the builder (inline content would
+    // otherwise win over any path), so that the environment overrides programmatic configuration.
+    applyEnvironmentValueIfNotNull(
+        value -> {
+          mtlsCertPath = value;
+          mtlsCert = null;
+        },
+        MTLS_CERT_PATH_VAR);
     applyEnvironmentValueIfNotNull(value -> mtlsCert = value, MTLS_CERT_VAR);
-    applyEnvironmentValueIfNotNull(value -> mtlsKeyPath = value, MTLS_KEY_PATH_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> {
+          mtlsKeyPath = value;
+          mtlsKey = null;
+        },
+        MTLS_KEY_PATH_VAR);
     applyEnvironmentValueIfNotNull(value -> mtlsKey = value, MTLS_KEY_VAR);
     applyEnvironmentValueIfNotNull(value -> mtlsKeyPassphrase = value, MTLS_KEY_PASSPHRASE_VAR);
-    applyEnvironmentValueIfNotNull(value -> mtlsCaPath = value, MTLS_CA_PATH_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> {
+          mtlsCaPath = value;
+          mtlsCa = null;
+        },
+        MTLS_CA_PATH_VAR);
     applyEnvironmentValueIfNotNull(value -> mtlsCa = value, MTLS_CA_VAR);
     applyEnvironmentValueIfNotNull(value -> mtlsKeystorePath = value, MTLS_KEYSTORE_PATH_VAR);
     applyEnvironmentValueIfNotNull(
