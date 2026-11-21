@@ -1,0 +1,42 @@
+on:
+  issues:
+    types: [closed]
+
+jobs:
+  reopenIfNoVersionLabel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Reopen issue and add comment if no version label and has support label
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const hasVersionLabel = issue.labels.some(label => label.name.startsWith('version:'));
+            const hasSupportLabel = issue.labels.some(label => label.name === 'support');
+
+            if (!hasVersionLabel && hasSupportLabel) {
+              const comment = "This issue was closed without a 'version:' label and has been reopened as it has a 'support' label. Please add the version: label and close the issue after.";
+              const issue_number = issue.number;
+              const repository = context.repo.repo;
+              const owner = context.repo.owner;
+
+              // Reopen the issue
+              await github.rest.issues.update({
+                owner,
+                repo: repository,
+                issue_number,
+                state: 'open'
+              });
+
+              // Add a comment to the issue
+              await github.rest.issues.createComment({
+                owner,
+                repo: repository,
+                issue_number,
+                body: comment
+              });
+            }
+          github-token: ${{ secrets.GITHUB_TOKEN }}
