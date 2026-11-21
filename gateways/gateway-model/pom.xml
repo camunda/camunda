@@ -209,6 +209,7 @@
                 <typeMapping>ScopeKeyFilterProperty=String</typeMapping>
                 <typeMapping>StringFilterProperty=String</typeMapping>
                 <typeMapping>VariableKeyFilterProperty=String</typeMapping>
+                <typeMapping>VariableHistoryItemKeyFilterProperty=String</typeMapping>
                 <!-- map to custom model classes -->
                 <typeMapping>DateTimeFilterProperty=SimpleDateTimeFilterProperty</typeMapping>
                 <!-- enum filter properties mapped to advanced model enum types for equality behavior and simple -> advanced mapping is simple this way -->
@@ -232,6 +233,9 @@
                 <typeMapping>ProcessInstanceStateFilterProperty=io.camunda.gateway.protocol.model.ProcessInstanceStateEnum</typeMapping>
                 <typeMapping>OperationTypeFilterProperty=io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum</typeMapping>
                 <typeMapping>UserTaskStateFilterProperty=io.camunda.gateway.protocol.model.UserTaskStateEnum</typeMapping>
+                <typeMapping>VariableHistoryItemOperationTypeFilterProperty=io.camunda.gateway.protocol.model.VariableHistoryItemOperationTypeEnum</typeMapping>
+                <typeMapping>VariableHistoryItemVariableOperationTypeFilterProperty=io.camunda.gateway.protocol.model.VariableHistoryItemVariableOperationTypeEnum</typeMapping>
+                <typeMapping>VariableHistoryItemActorTypeFilterProperty=io.camunda.gateway.protocol.model.VariableHistoryItemActorTypeEnum</typeMapping>
                 <!-- sort requests mapped to advanced counterpart since they are equal and simple -> advanced mapping is simple this way -->
                 <typeMapping>AuditLogSearchQuerySortRequest=io.camunda.gateway.protocol.model.AuditLogSearchQuerySortRequest</typeMapping>
                 <typeMapping>AuthorizationSearchQuerySortRequest=io.camunda.gateway.protocol.model.AuthorizationSearchQuerySortRequest</typeMapping>
@@ -264,6 +268,7 @@
                 <typeMapping>UserSearchQuerySortRequest=io.camunda.gateway.protocol.model.UserSearchQuerySortRequest</typeMapping>
                 <typeMapping>UserTaskSearchQuerySortRequest=io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest</typeMapping>
                 <typeMapping>UserTaskVariableSearchQuerySortRequest=io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest</typeMapping>
+                <typeMapping>VariableHistoryItemSearchQuerySortRequest=io.camunda.gateway.protocol.model.VariableHistoryItemSearchQuerySortRequest</typeMapping>
                 <typeMapping>VariableSearchQuerySortRequest=io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest</typeMapping>
               </typeMappings>
               <generateApis>false</generateApis>

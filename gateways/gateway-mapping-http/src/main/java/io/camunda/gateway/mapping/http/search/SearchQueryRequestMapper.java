@@ -58,6 +58,7 @@ import io.camunda.search.query.TypedSearchQueryBuilder;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableHistoryItemQuery;
 import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.SortOption;
@@ -826,6 +827,24 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyAuditLogSortField);
     final var filter = SearchQueryFilterMapper.toAuditLogFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
+  }
+
+  public static Either<ProblemDetail, VariableHistoryItemQuery> toVariableHistoryItemQuery(
+      final @Nullable VariableHistoryItemSearchQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.variableHistoryItemSearchQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromVariableHistoryItemSearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::variableHistoryItem,
+            SearchQuerySortRequestMapper::applyVariableHistoryItemSortField);
+    final var filter = SearchQueryFilterMapper.toVariableHistoryItemFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, sort, page, SearchQueryBuilders::variableHistoryItemSearchQuery);
   }
 
   public static Either<ProblemDetail, AuditLogQuery> toUserTaskAuditLogQuery(

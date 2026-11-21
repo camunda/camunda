@@ -570,6 +570,8 @@ paths:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1variables~1search'
 
   # Variable endpoints
+  /variables/history/search:
+    $ref: 'variables.yaml#/paths/~1variables~1history~1search'
   /variables/search:
     $ref: 'variables.yaml#/paths/~1variables~1search'
   /variables/{variableKey}:
