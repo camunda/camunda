@@ -588,5 +588,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/44875358960",
     "updated_at": "2026-11-21T06:52:07Z",
     "cooldown_until": "2026-11-24T06:52:07Z"
+  },
+  "17518930": {
+    "version": "main",
+    "file": "tests/api/v2/process-definition/process-definition-draining-state.spec.ts",
+    "titlePath": [
+      "Process Definition Draining State",
+      "The state filter rejects a value outside the enum"
+    ],
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 80 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44993576750",
+    "updated_at": "2026-11-22T06:49:58Z",
+    "cooldown_until": "2026-11-25T06:49:58Z"
   }
 }
