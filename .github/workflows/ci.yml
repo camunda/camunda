@@ -3006,6 +3006,8 @@ jobs:
         run: bats .github/scripts/validate-flattened-poms.bats
       - name: Run release merge-back script tests
         run: bats .github/scripts/mergeback/mergeback.bats
+      - name: Run load test dispatch script tests
+        run: bats .github/scripts/load-test-dispatch-workflow.bats
       - name: Run scoped-run verdict tests
         run: node --test .github/scripts/scoped-run-junit-verdict.test.mjs
       - name: Run e2e scoped-run verdict tests
