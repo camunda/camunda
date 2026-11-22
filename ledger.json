@@ -354,11 +354,12 @@
       "Search Message Subscription API Tests",
       "Search Message Flow"
     ],
-    "last_action": "not_reproduced",
-    "last_reason": "baseline passed all 40 runs; the nightly flake did not reproduce",
-    "last_run": "https://github.com/camunda/camunda/actions/runs/43817597980",
-    "updated_at": "2026-11-16T07:00:36Z",
-    "cooldown_until": "2026-11-19T07:00:36Z"
+    "last_action": "open_pr",
+    "last_reason": "iter1 100% vs baseline 90% (+10pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44993563919",
+    "updated_at": "2026-11-22T07:23:49Z",
+    "cooldown_until": "2026-12-06T07:23:49Z",
+    "pr": "https://github.com/camunda/camunda/pull/70402"
   },
   "449b7818": {
     "version": "8.9",
