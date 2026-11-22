@@ -11597,7 +11597,10 @@ components:
           example: <default>
         variables:
           additionalProperties: true
-          description: All the variables visible in the root scope.
+          description: |
+            The result variables of the process instance. Only filled when the request sets
+            `awaitCompletion` to `true`; otherwise this is an empty object. Use `fetchVariables`
+            to limit which variables are returned.
           type: object
         processDefinitionKey:
           allOf:
