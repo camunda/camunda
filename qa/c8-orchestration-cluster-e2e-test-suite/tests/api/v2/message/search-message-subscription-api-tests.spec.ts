@@ -226,48 +226,61 @@ test.describe('Search Message Subscription API Tests', () => {
     });
 
     await test.step('Search Message Subscriptions By Message Subscription State', async () => {
-      const res = await request.post(
-        buildUrl('/message-subscriptions/search'),
-        {
-          headers: jsonHeaders(),
-          data: {
-            filter: {
-              messageSubscriptionState: 'CREATED',
+      // The messageSubscriptionState=CREATED search is a global query whose
+      // result set churns as other parallel API tests create, correlate and
+      // delete their own subscriptions. Under that churn the filtered query can
+      // transiently return a stale, incomplete page even though both of our
+      // subscriptions are already indexed and CREATED (a broader, unfiltered
+      // query taken milliseconds earlier returns them). Poll until the state
+      // filter returns a consistent set containing both, mirroring the retry
+      // used by the first search step above, instead of trusting a single read.
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/message-subscriptions/search'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                messageSubscriptionState: 'CREATED',
+              },
             },
           },
-        },
-      );
-      await assertStatusCode(res, 200);
-      await validateResponse(
-        {
-          path: '/message-subscriptions/search',
-          method: 'POST',
-          status: '200',
-        },
-        res,
-      );
-      const json = await res.json();
-      expect(json.page.totalItems).toBeGreaterThan(1);
-      const matchingItem1 = json.items.find(
-        (it: {processDefinitionId: string}) =>
-          it.processDefinitionId === 'messageCatchEvent1',
-      );
-      const matchingItem2 = json.items.find(
-        (it: {processDefinitionId: string}) =>
-          it.processDefinitionId === 'messageCatchEvent2',
-      );
-      assertEqualsForKeys(matchingItem1, expectedMessageSubscription1, [
-        'correlationKey',
-        'tenantId',
-        'elementId',
-        'messageName',
-      ]);
-      assertEqualsForKeys(matchingItem2, expectedMessageSubscription2, [
-        'correlationKey',
-        'tenantId',
-        'elementId',
-        'messageName',
-      ]);
+        );
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/message-subscriptions/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
+        const json = await res.json();
+        expect(json.page.totalItems).toBeGreaterThan(1);
+        const matchingItem1 = json.items.find(
+          (it: {processDefinitionId: string}) =>
+            it.processDefinitionId === 'messageCatchEvent1',
+        );
+        const matchingItem2 = json.items.find(
+          (it: {processDefinitionId: string}) =>
+            it.processDefinitionId === 'messageCatchEvent2',
+        );
+        assertEqualsForKeys(matchingItem1, expectedMessageSubscription1, [
+          'correlationKey',
+          'tenantId',
+          'elementId',
+          'messageName',
+        ]);
+        assertEqualsForKeys(matchingItem2, expectedMessageSubscription2, [
+          'correlationKey',
+          'tenantId',
+          'elementId',
+          'messageName',
+        ]);
+      }).toPass({
+        intervals: [5_000, 10_000, 15_000],
+        timeout: 30_000,
+      });
     });
 
     await test.step('Search Message Subscriptions By Element Id', async () => {
