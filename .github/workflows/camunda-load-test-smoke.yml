@@ -8,7 +8,7 @@
 #              In the upgrade chain, the k6 operator does not restart a TestRun when it is updated, so
 #              the TestRun status left by the main deployment satisfies the check after the update.
 # calls: camunda-load-test.yml (scenario: realistic),
-#        camunda-load-test.yml@main (base deployment of the upgrade chain),
+#        camunda-load-test.yml@load-test/sim-inc-7100-base (base deployment of the upgrade chain),
 #        camunda-verify-load-test.yml (verify connectivity),
 #        camunda-delete-load-test.yml (delete namespace)
 # type: CI
@@ -171,11 +171,11 @@ jobs:
     permissions:
       contents: read
       id-token: write # Teleport auth in called workflow
-    uses: camunda/camunda/.github/workflows/camunda-load-test.yml@main
+    uses: camunda/camunda/.github/workflows/camunda-load-test.yml@load-test/sim-inc-7100-base
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
-      ref: main
+      ref: load-test/sim-inc-7100-base
       scenario: realistic
       secondary-storage-type: elasticsearch
       ttl: 1
