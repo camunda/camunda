@@ -50,7 +50,7 @@ jobs:
       # agent's job gets the Anthropic key as a single-use wrapping token.
       id-token: write
     # No release tag exists yet; pinned to main.
-    uses: camunda/pr-review-agent/.github/workflows/pr-review.yml@177467c59759473bd67b15e02c34fb0b1a0964ee # main
+    uses: camunda/pr-review-agent/.github/workflows/pr-review.yml@3f0aaa55e999ebadf749b542a741c9295f834ea4 # main
     with:
       config: operate-admin
       force_shadow_mode: true
