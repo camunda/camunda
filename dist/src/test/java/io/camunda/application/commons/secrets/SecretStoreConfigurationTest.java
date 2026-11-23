@@ -916,6 +916,23 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
+  void shouldNameTheRootPropertyWhenAnInheritedRootEnvPrefixIsInvalid() {
+    // given a blank root env store prefix, inherited by a declared physical tenant; a non-blank
+    // inherited prefix never gets here, as the cross-tenant overlap check refuses it first
+    final var properties = new HashMap<String, Object>();
+    properties.put("camunda.secrets.stores.env.default.prefix", " ");
+    properties.putAll(physicalTenant("tenanta"));
+    final var resolver = resolverFor(properties);
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining("invalid camunda.secrets.stores.env.default.prefix")
+        .withMessageContaining("prefix is missing")
+        .withMessageNotContaining("camunda.physical-tenants.tenanta");
+  }
+
+  @Test
   void shouldRefuseAzureStoreOverPlainHttpForThePhysicalTenantThatConfiguresIt() {
     // given pt1 pointing its azure store at a vault over plain http
     final var resolver =
