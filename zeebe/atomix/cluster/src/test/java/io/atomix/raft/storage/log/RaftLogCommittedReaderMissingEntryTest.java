@@ -406,6 +406,25 @@ class RaftLogCommittedReaderMissingEntryTest {
   }
 
   @Test
+  void shouldNotFailWhenLogIsResetToTheCommitIndexAndNotAppendedToYet() {
+    // given - a reader at the last committed entry
+    appendEntries(5);
+    raftLog.setCommitIndex(3);
+    assertThat(reader.next().index()).isEqualTo(1);
+    assertThat(reader.next().index()).isEqualTo(2);
+
+    // when - a follower resets its log to an index before it appends the entries from there on
+    raftLog.reset(3);
+
+    // then - the log is empty and starts at the index the reader is at, but nothing is missing
+    assertThat(raftLog.getFirstIndex()).isEqualTo(3);
+    assertThat(reader.hasNext()).isFalse();
+    appendEntries(1);
+    assertThat(reader.seek(3)).isEqualTo(3);
+    assertThat(reader.next().index()).isEqualTo(3);
+  }
+
+  @Test
   void shouldNotFailWhileEntriesAreAppendedCommittedAndCompactedConcurrently() throws Exception {
     // given
     final int entryCount = 20_000;
