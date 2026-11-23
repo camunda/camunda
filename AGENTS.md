@@ -114,60 +114,6 @@ Always scope work to the relevant module(s). Never run full-repo builds for sing
 Before every commit, format the code, build the changed module, and run its tests with zero
 failures. Skipping formatting reliably breaks the `Java checks` CI job.
 
-#### Always-green policy
-
-Before every AI-assisted session, establish a green baseline in two steps:
-
-**Step 1 — Check that `main` CI is healthy** (before pulling or branching):
-
-```bash
-gh run list --branch main --limit 5 --repo camunda/camunda
-```
-
-If `main` is red, inform the engineer and continue — CI can fail for infra reasons unrelated to
-the code. Do not block on this, but note any failures so they are not confused with regressions
-introduced during the session.
-
-**Step 2 — Build the full repo locally right after branching** (blocking):
-
-```bash
-./mvnw install -Dquickly -T1C
-```
-
-This installs all module JARs and catches any cross-module compilation errors before work begins
-(e.g. an API change on `main` that breaks a downstream module). Do not proceed until this is
-green — a compilation error here will waste far more time if discovered mid-session.
-
-**Step 3 — Once the target module is known, verify it passes locally:**
-
-```bash
-./mvnw verify -pl <module> -Dquickly -DskipTests=false -T1C
-```
-
-If the module has sub-modules, target the specific sub-module where the code lives rather than the top-level directory, otherwise you may get a false green with no tests run.
-
-Any pre-existing failure here must be noted before the session begins — do not absorb it silently.
-
-Never suppress warnings or failures to force a build to pass.
-
-```bash
-# Fast inner loop (single module / affected tests only) to iterate quickly
-./mvnw verify -pl <module> -Dtest=<TestClassName> -DskipTests=false -DskipITs -Dquickly
-
-# Full pipeline before committing the change
-./mvnw license:format spotless:apply -T1C && ./mvnw verify -pl <module> -DskipTests=false -Dquickly
-```
-
-Do not proceed without a green baseline.
-
-If a test fails during the baseline check, re-run it once to determine whether it is flaky. If it
-passes on retry, treat the baseline as green and proceed. If it fails consistently, it should not
-be on the target branch — stop and inform the engineer.
-
-If it is flaky (non-deterministic), it does not block the session: treat the baseline as passed and
-proceed. Never disable the test. Track the flake as described in
-`.agents/skills/ci-fix-failure/references/flaky-tests.md`.
-
 ### Scoped instructions
 
 Load extra context on demand — only when relevant, only if the files exist.

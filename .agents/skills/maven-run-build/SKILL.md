@@ -43,6 +43,25 @@ For the experimental Gradle build, use `gradle-run-build`.
 ./mvnw verify -pl <module> -Dquickly -DskipTests=false -T1C
 ```
 
+## Green baseline
+
+Partial Maven builds (`-pl` without `-am`) resolve other modules from the installed artifacts
+in `~/.m2`, which can be stale or from another branch. The build cache can also skip modules
+whose inputs it wrongly considers unchanged. The extensions in `.mvn/extensions.xml` (build
+cache, branch-scoped local repository) reduce this but do not fully fix it. A stale artifact
+shows up as a compile error or a test failure that is not caused by your change. Check the
+baseline right after branching:
+
+1. Build the full repo to catch cross-module compile errors (e.g. an API change on `main` that
+   breaks a downstream module): `./mvnw install -Dquickly -T1C`. Do not continue until it is
+   green.
+2. Once you know the target module, verify its tests pass:
+   `./mvnw verify -pl <module> -Dquickly -DskipTests=false -T1C`. Target the sub-module that
+   holds the tests, otherwise you can get a false green with no tests run.
+
+Note any failure that exists before your change; do not absorb it silently. A baseline failure
+that is not flaky should not be on the branch: stop and tell the engineer.
+
 ## Formatting
 
 Format before every commit that touches Java sources, markdown, or `pom.xml` files. Run it
