@@ -1,0 +1,50 @@
+# Domain file for operation-operationId rule test fixture.
+openapi: "3.0.3"
+info:
+  title: Things domain (test fixture)
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid: operation has an operationId ──────────────────────
+  # Path-level parameters are not an operation and must not be flagged.
+  /valid/thing:
+    parameters:
+      - name: filter
+        in: query
+        description: Filters the things.
+        schema:
+          type: string
+    post:
+      operationId: createThing
+      summary: Create a thing
+      description: Creates a new thing.
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was created.
+
+  # ── Invalid: operation has no operationId ────────────────────
+  /missing/thing:
+    post:
+      summary: Create a thing without an operation ID
+      description: Creates a new thing.
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was created.
+
+  # ── Invalid: operation has an empty operationId ──────────────
+  /empty/thing:
+    delete:
+      operationId: ""
+      summary: Delete a thing with an empty operation ID
+      description: Deletes a thing.
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was deleted.

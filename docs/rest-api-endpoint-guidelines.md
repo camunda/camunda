@@ -1637,6 +1637,7 @@ The ruleset lives in `zeebe/gateway-protocol/.spectral.yaml`. Custom functions a
 |                    Rule                    | Severity |                                                                  What it checks                                                                   |
 |--------------------------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------|
 | `operation-tag-defined`                    | error    | Every operation must have at least one tag                                                                                                        |
+| `operation-operationId`                    | error    | Every operation must have an `operationId` (see §2.3)                                                                                             |
 | `no-period-in-summary`                     | error    | Path summaries must not end with a period                                                                                                         |
 | `no-flow-node-in-*` (5 rules)              | error    | "flow node" terminology is banned; use "element"                                                                                                  |
 | `require-property-descriptions`            | error    | Every schema property must have a `description`                                                                                                   |
