@@ -41,6 +41,12 @@ const DecisionsWithSearch = () => {
 	);
 };
 
+const DecisionsInFullHeightShell = () => (
+	<div style={{height: '100vh'}}>
+		<DecisionsWithSearch />
+	</div>
+);
+
 function mockInstances() {
 	return mockQueryDecisionInstancesEndpoint({
 		successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
@@ -237,20 +243,17 @@ describe('<Decisions />', () => {
 
 	it('should discard an invalid draft when resetting after removing an empty filter', async ({worker}) => {
 		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		const screen = await renderWithRouter(DecisionsInFullHeightShell, {path: '/operate-preview/decisions'});
+		const moreFilters = screen.getByRole('button', {name: 'More filters'});
 
-		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
-		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
-		await userEvent.keyboard('{Enter}');
+		await userEvent.click(moreFilters);
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key'}));
 		await userEvent.fill(screen.getByLabelText('Process instance key', {exact: true}), 'abc');
-		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
-		await userEvent.keyboard('{Enter}');
+		await userEvent.click(moreFilters);
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Business ID'}));
-		(screen.getByRole('button', {name: 'Remove Business ID filter'}).element() as HTMLElement).click();
-		(screen.getByRole('button', {name: 'Reset filters'}).element() as HTMLElement).click();
-		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
-		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('button', {name: 'Remove Business ID filter'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
+		await userEvent.click(moreFilters);
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key'}));
 
 		await expect.element(screen.getByLabelText('Process instance key', {exact: true})).toHaveValue('');

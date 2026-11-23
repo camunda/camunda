@@ -38,6 +38,7 @@ function setUp(initial: {items: {username: string}[]; page: {totalItems: number}
 
 describe('useGroupMemberMutations', () => {
 	afterEach(async () => {
+		vi.useRealTimers();
 		vi.restoreAllMocks();
 		await cleanup();
 	});
@@ -96,6 +97,7 @@ describe('useGroupMemberMutations', () => {
 		worker,
 	}) => {
 		// given
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		const {unsubscribe, Wrapper} = setUp({items: [{username: 'carol'}], page: {totalItems: 1}});
 		vi.spyOn(toast, 'success').mockImplementation(() => 'summary-toast');
 		const warning = vi.spyOn(toast, 'warning').mockImplementation(() => '');
@@ -112,7 +114,12 @@ describe('useGroupMemberMutations', () => {
 		await result.current.assign.mutateAsync({kind: 'users', ids: ['alice', 'bob']});
 
 		// then
-		await vi.waitFor(() => expect(warning).toHaveBeenCalledOnce(), {timeout: 10_000});
+		await expect
+			.poll(async () => {
+				await vi.advanceTimersByTimeAsync(1000);
+				return warning;
+			})
+			.toHaveBeenCalledOnce();
 		expect(dismiss).toHaveBeenCalledExactlyOnceWith('summary-toast');
 		unsubscribe();
 	});
