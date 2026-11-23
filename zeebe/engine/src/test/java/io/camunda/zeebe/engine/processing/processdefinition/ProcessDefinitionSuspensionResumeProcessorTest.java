@@ -12,15 +12,19 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.core.authz.TenantAccess;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -34,6 +38,8 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -57,6 +63,8 @@ class ProcessDefinitionSuspensionResumeProcessorTest {
   private final ProcessState processState = mock(ProcessState.class);
   private final StateWriter stateWriter = mock(StateWriter.class);
   private final TypedResponseWriter responseWriter = mock(TypedResponseWriter.class);
+  private final CommandDistributionBehavior commandDistributionBehavior =
+      mock(CommandDistributionBehavior.class, RETURNS_DEEP_STUBS);
   private ProcessingState processingState;
   private Writers writers;
   private CslAuthorizationCheck cslCheck;
@@ -100,7 +108,12 @@ class ProcessDefinitionSuspensionResumeProcessorTest {
     when(processState.getKnownProcessVersions(PROCESS_ID, TENANT_ID)).thenReturn(List.of(1L, 2L));
     final var processor =
         new ProcessDefinitionSuspensionResumeProcessor(
-            processingState, keyGenerator, writers, cslCheck, tenantCheck);
+            processingState,
+            keyGenerator,
+            writers,
+            cslCheck,
+            tenantCheck,
+            commandDistributionBehavior);
     final var command =
         command(new ProcessDefinitionSuspensionRecord().setBpmnProcessId(PROCESS_ID));
 
@@ -133,7 +146,12 @@ class ProcessDefinitionSuspensionResumeProcessorTest {
     deployedProcess(10L, 1);
     final var processor =
         new ProcessDefinitionSuspensionResumeProcessor(
-            processingState, keyGenerator, writers, cslCheck, tenantCheck);
+            processingState,
+            keyGenerator,
+            writers,
+            cslCheck,
+            tenantCheck,
+            commandDistributionBehavior);
 
     // when
     processor.processRecord(
@@ -150,6 +168,50 @@ class ProcessDefinitionSuspensionResumeProcessorTest {
             anyLong(),
             eq(ProcessDefinitionSuspensionIntent.RESUMED),
             any(ProcessDefinitionSuspensionRecord.class));
+  }
+
+  @Test
+  void shouldNotAcknowledgeDistributedCommandThatFailsUnexpectedly() {
+    // given
+    final var processor = newProcessor();
+    final var command = distributedCommand();
+
+    // when
+    final var error = processor.tryHandleError(command, new IllegalStateException("expected"));
+
+    // then - the distributing partition sends it again, instead of this partition silently
+    // keeping the previous state
+    assertThat(error).isEqualTo(ProcessingError.UNEXPECTED_ERROR);
+    verify(commandDistributionBehavior, never()).acknowledgeCommand(any());
+  }
+
+  @Test
+  void shouldAcknowledgeDistributedCommandThatExceedsTheBatchSize() {
+    // given
+    final var processor = newProcessor();
+    final var command = distributedCommand();
+
+    // when
+    final var error =
+        processor.tryHandleError(command, mock(ExceededBatchRecordSizeException.class));
+
+    // then - it is rejected and would exceed the batch size on every attempt
+    assertThat(error).isEqualTo(ProcessingError.EXPECTED_ERROR);
+    verify(commandDistributionBehavior).acknowledgeCommand(command);
+  }
+
+  private ProcessDefinitionSuspensionResumeProcessor newProcessor() {
+    return new ProcessDefinitionSuspensionResumeProcessor(
+        processingState, keyGenerator, writers, cslCheck, tenantCheck, commandDistributionBehavior);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static TypedRecord<ProcessDefinitionSuspensionRecord> distributedCommand() {
+    final TypedRecord<ProcessDefinitionSuspensionRecord> command = mock(TypedRecord.class);
+    when(command.isCommandDistributed()).thenReturn(true);
+    when(command.getValue())
+        .thenReturn(new ProcessDefinitionSuspensionRecord().setBpmnProcessId(PROCESS_ID));
+    return command;
   }
 
   private DeployedProcess deployedProcess(final long key, final int version) {
