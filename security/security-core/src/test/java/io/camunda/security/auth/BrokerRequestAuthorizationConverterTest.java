@@ -18,6 +18,7 @@ import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.ProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import java.util.Map;
@@ -216,5 +217,55 @@ public class BrokerRequestAuthorizationConverterTest {
     assertThat(brokerRequestAuth).hasSize(2);
     assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true);
     assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_USERS_ENABLED, false);
+  }
+
+  @Test
+  void shouldContainGroupsOfAProviderWithAGroupsClaimInAMixedSetup() {
+    // given
+    final var groups = List.of("group1", "group2");
+    final var authentication =
+        CamundaAuthentication.of(
+            b -> b.groupIds(groups).claims(Map.of("iss", "https://partner.example.com")));
+    final var converter = new BrokerRequestAuthorizationConverter(mixedProvidersConfiguration());
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(brokerRequestAuth).containsEntry(USER_GROUPS_CLAIMS, groups);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, false);
+  }
+
+  @Test
+  void shouldLetCamundaManageTheGroupsOfAProviderWithoutAGroupsClaimInAMixedSetup() {
+    // given
+    final var authentication =
+        CamundaAuthentication.of(
+            b ->
+                b.groupIds(List.of("group1")).claims(Map.of("iss", "https://default.example.com")));
+    final var converter = new BrokerRequestAuthorizationConverter(mixedProvidersConfiguration());
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(brokerRequestAuth).doesNotContainKey(USER_GROUPS_CLAIMS);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true);
+  }
+
+  private static SecurityConfiguration mixedProvidersConfiguration() {
+    final var defaultOidc = new OidcAuthenticationConfiguration();
+    defaultOidc.setIssuerUri("https://default.example.com");
+    final var partnerOidc = new OidcAuthenticationConfiguration();
+    partnerOidc.setIssuerUri("https://partner.example.com");
+    partnerOidc.setGroupsClaim("groups");
+    final var providers = new ProvidersConfiguration();
+    providers.setOidc(Map.of("partner", partnerOidc));
+
+    final var securityConfiguration = new SecurityConfiguration();
+    securityConfiguration.getAuthentication().setMethod(OIDC);
+    securityConfiguration.getAuthentication().setOidc(defaultOidc);
+    securityConfiguration.getAuthentication().setProviders(providers);
+    return securityConfiguration;
   }
 }

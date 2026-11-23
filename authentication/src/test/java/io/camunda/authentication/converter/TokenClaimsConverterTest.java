@@ -60,7 +60,8 @@ public class TokenClaimsConverterTest {
     @Mock private RoleServices roleServices;
     @Mock private GroupServices groupServices;
     @Mock private SecurityConfiguration securityConfiguration;
-    @Mock private AuthenticationConfiguration authenticationConfiguration;
+    private final AuthenticationConfiguration authenticationConfiguration =
+        new AuthenticationConfiguration();
     @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
 
     @BeforeEach
@@ -68,7 +69,7 @@ public class TokenClaimsConverterTest {
       MockitoAnnotations.openMocks(this).close();
 
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
-      when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
+      authenticationConfiguration.setOidc(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(USERNAME_CLAIM);
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
 
@@ -167,7 +168,8 @@ public class TokenClaimsConverterTest {
     @Mock private RoleServices roleServices;
     @Mock private GroupServices groupServices;
     @Mock private SecurityConfiguration securityConfiguration;
-    @Mock private AuthenticationConfiguration authenticationConfiguration;
+    private final AuthenticationConfiguration authenticationConfiguration =
+        new AuthenticationConfiguration();
     @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
 
     @BeforeEach
@@ -175,7 +177,7 @@ public class TokenClaimsConverterTest {
       MockitoAnnotations.openMocks(this).close();
 
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
-      when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
+      authenticationConfiguration.setOidc(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(USERNAME_CLAIM);
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
 
@@ -399,7 +401,8 @@ public class TokenClaimsConverterTest {
     @Mock private RoleServices roleServices;
     @Mock private GroupServices groupServices;
     @Mock private SecurityConfiguration securityConfiguration;
-    @Mock private AuthenticationConfiguration authenticationConfiguration;
+    private final AuthenticationConfiguration authenticationConfiguration =
+        new AuthenticationConfiguration();
     @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
 
     @BeforeEach
@@ -407,7 +410,7 @@ public class TokenClaimsConverterTest {
       MockitoAnnotations.openMocks(this).close();
 
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
-      when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
+      authenticationConfiguration.setOidc(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("sub");
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
       when(oidcAuthenticationConfiguration.isGroupsClaimConfigured()).thenReturn(true);

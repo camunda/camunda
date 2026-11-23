@@ -16,24 +16,30 @@ import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
 import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 
+import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.HashMap;
 import java.util.Map;
 
 public class BrokerRequestAuthorizationConverter {
 
-  private final boolean camundaGroupsEnabled;
+  private final AuthenticationConfiguration authenticationConfiguration;
   private final boolean camundaUsersEnabled;
 
   public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
-    camundaGroupsEnabled = isCamundaGroupsEnabled(securityConfiguration);
+    authenticationConfiguration = securityConfiguration.getAuthentication();
     camundaUsersEnabled = isCamundaUsersEnabled(securityConfiguration);
   }
 
-  protected boolean isCamundaGroupsEnabled(final SecurityConfiguration securityConfiguration) {
-    final var authenticationConfiguration = securityConfiguration.getAuthentication();
+  /**
+   * Whether Camunda manages the groups of the user. With several OIDC providers, only some may have
+   * a groups claim, so this depends on the provider that issued the user's token.
+   */
+  protected boolean isCamundaGroupsEnabled(final Map<String, Object> tokenClaims) {
     return !(authenticationConfiguration.getMethod() == OIDC
-        && authenticationConfiguration.getOidc().isGroupsClaimConfigured());
+        && authenticationConfiguration
+            .oidcForIssuer(TokenIssuer.of(tokenClaims))
+            .isGroupsClaimConfigured());
   }
 
   protected boolean isCamundaUsersEnabled(final SecurityConfiguration securityConfiguration) {
@@ -43,6 +49,7 @@ public class BrokerRequestAuthorizationConverter {
 
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
 
+    final var camundaGroupsEnabled = isCamundaGroupsEnabled(authentication.claims());
     final var authorization = new HashMap<String, Object>();
     authorization.put(IS_CAMUNDA_GROUPS_ENABLED, camundaGroupsEnabled);
     authorization.put(IS_CAMUNDA_USERS_ENABLED, camundaUsersEnabled);

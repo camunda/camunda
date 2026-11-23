@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.List;
@@ -19,14 +18,10 @@ import org.springframework.stereotype.Service;
 @ConditionalOnSecondaryStorageDisabled
 public class NoDBMembershipService implements MembershipService {
 
-  private final OidcGroupsLoader oidcGroupsLoader;
-  private final boolean isGroupsClaimConfigured;
+  private final ProviderGroupsClaims groupsClaims;
 
   public NoDBMembershipService(final SecurityConfiguration securityConfiguration) {
-    oidcGroupsLoader =
-        new OidcGroupsLoader(securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
-    isGroupsClaimConfigured =
-        securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
+    groupsClaims = new ProviderGroupsClaims(securityConfiguration.getAuthentication());
   }
 
   @Override
@@ -36,10 +31,9 @@ public class NoDBMembershipService implements MembershipService {
       final PrincipalType principalType)
       throws OAuth2AuthenticationException {
     // No secondary storage means roles/tenants/mappingRules can't be resolved at all, and groups
-    // only come from the OIDC token claim when one is configured. Evaluate the claim eagerly so
+    // only come from the OIDC token claim when its provider has one. Evaluate the claim eagerly so
     // malformed input fails fast.
-    final List<String> groups =
-        isGroupsClaimConfigured ? List.copyOf(oidcGroupsLoader.load(tokenClaims)) : List.of();
+    final List<String> groups = groupsClaims.groupIds(tokenClaims).orElse(List.of());
     return new StaticResolver(groups);
   }
 

@@ -60,4 +60,37 @@ public class AuthenticationConfiguration {
   public void setProviders(final ProvidersConfiguration providers) {
     this.providers = providers;
   }
+
+  /**
+   * @param issuer the {@code iss} of a token, or {@code null}
+   * @return the configuration of the OIDC provider that issued the token, or the default one when
+   *     no provider has this issuer. Issuers that differ only by a trailing slash are the same.
+   */
+  public OidcAuthenticationConfiguration oidcForIssuer(final String issuer) {
+    if (issuer == null) {
+      return oidcAuthenticationConfiguration;
+    }
+    if (hasIssuer(oidcAuthenticationConfiguration, issuer)) {
+      return oidcAuthenticationConfiguration;
+    }
+    if (providers != null && providers.getOidc() != null) {
+      for (final var provider : providers.getOidc().values()) {
+        if (hasIssuer(provider, issuer)) {
+          return provider;
+        }
+      }
+    }
+    return oidcAuthenticationConfiguration;
+  }
+
+  private static boolean hasIssuer(
+      final OidcAuthenticationConfiguration configuration, final String issuer) {
+    final var issuerUri = configuration.getIssuerUri();
+    return issuerUri != null
+        && withoutTrailingSlash(issuerUri).equals(withoutTrailingSlash(issuer));
+  }
+
+  private static String withoutTrailingSlash(final String uri) {
+    return uri.endsWith("/") ? uri.substring(0, uri.length() - 1) : uri;
+  }
 }

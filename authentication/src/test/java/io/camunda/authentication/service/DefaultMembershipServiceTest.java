@@ -24,6 +24,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.ProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -46,16 +47,17 @@ public class DefaultMembershipServiceTest {
   @Mock private RoleServices roleServices;
   @Mock private GroupServices groupServices;
   @Mock private SecurityConfiguration securityConfiguration;
-  @Mock private AuthenticationConfiguration authenticationConfiguration;
   @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
 
+  private final AuthenticationConfiguration authenticationConfiguration =
+      new AuthenticationConfiguration();
   private DefaultMembershipService membershipService;
 
   @BeforeEach
   void setUp() throws Exception {
     MockitoAnnotations.openMocks(this).close();
     when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
-    when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
+    authenticationConfiguration.setOidc(oidcAuthenticationConfiguration);
     when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any())).thenReturn(List.of());
     when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any())).thenReturn(List.of());
     when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any())).thenReturn(List.of());
@@ -279,6 +281,52 @@ public class DefaultMembershipServiceTest {
     // when / then
     assertThatThrownBy(resolver::groups).isInstanceOf(IllegalStateException.class);
     verify(groupServices, times(1)).getGroupsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
+  void shouldReadGroupsFromTheClaimOfTheProviderThatIssuedTheToken() {
+    // given — only the additional provider has a groups claim
+    final var service = serviceWithAProviderThatHasAGroupsClaim();
+    final var resolver =
+        service.newResolver(
+            Map.of("sub", "demo", "iss", "https://partner.example.com", "groups", List.of("g1")),
+            "demo",
+            PrincipalType.USER);
+
+    // when / then
+    assertThat(resolver.groups()).containsExactly("g1");
+    verify(groupServices, never()).getGroupsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
+  void shouldLoadGroupsFromCamundaForAProviderWithoutAGroupsClaim() {
+    // given — the token carries a "groups" claim, but its provider does not read one
+    final var service = serviceWithAProviderThatHasAGroupsClaim();
+    final var resolver =
+        service.newResolver(
+            Map.of("sub", "demo", "iss", "https://default.example.com", "groups", List.of("g1")),
+            "demo",
+            PrincipalType.USER);
+
+    // when
+    resolver.groups();
+
+    // then
+    verify(groupServices).getGroupsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  private DefaultMembershipService serviceWithAProviderThatHasAGroupsClaim() {
+    final var defaultOidc = new OidcAuthenticationConfiguration();
+    defaultOidc.setIssuerUri("https://default.example.com");
+    final var partnerOidc = new OidcAuthenticationConfiguration();
+    partnerOidc.setIssuerUri("https://partner.example.com");
+    partnerOidc.setGroupsClaim("groups");
+    final var providers = new ProvidersConfiguration();
+    providers.setOidc(Map.of("partner", partnerOidc));
+    authenticationConfiguration.setOidc(defaultOidc);
+    authenticationConfiguration.setProviders(providers);
+    return new DefaultMembershipService(
+        mappingRuleServices, tenantServices, roleServices, groupServices, securityConfiguration);
   }
 
   /**
