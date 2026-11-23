@@ -7,7 +7,7 @@
  */
 
 import {test} from 'fixtures';
-import {expect} from '@playwright/test';
+import {expect, type Page} from '@playwright/test';
 import {randomUUID} from 'crypto';
 import {
   deployWithSubstitutions,
@@ -18,6 +18,35 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {jsonHeaders} from 'utils/http';
+import type {LoginPage} from '@pages/LoginPage';
+import type {OperateHomePage} from '@pages/OperateHomePage';
+
+// Recovery step for the retry fallbacks below. The worker-scoped `demo` session
+// cookie is shared across this worker's tests and can be invalidated mid-run
+// (another worker re-authenticating the shared user, or a session timeout),
+// which bounces the page to the login screen — every failing run of this spec
+// captured the login form in its DOM snapshot, with 401/403 responses in the
+// trace. A plain page.reload() cannot recover from that: reloading a page whose
+// session is gone just re-renders the login screen, so the retried assertion
+// waits out its whole budget there. Re-authenticate when the form is present
+// (Operate restores the deep-linked processes URL, filters included, after
+// login) so the retry runs against the authenticated app again; when the
+// session is still valid this is just the reload it replaces.
+async function recoverOperateSession(
+  page: Page,
+  operateHomePage: OperateHomePage,
+  loginPage: LoginPage,
+  loginUser: {username: string; password: string},
+): Promise<void> {
+  await page.reload();
+  await expect(
+    operateHomePage.operateBanner.or(loginPage.usernameInput),
+  ).toBeVisible({timeout: 90000});
+  if (await loginPage.usernameInput.isVisible()) {
+    await loginPage.login(loginUser.username, loginUser.password);
+    await expect(operateHomePage.operateBanner).toBeVisible({timeout: 30000});
+  }
+}
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -172,6 +201,9 @@ test.describe('Operations', () => {
     operateProcessesPage,
     operateFiltersPanelPage,
     page,
+    operateHomePage,
+    loginPage,
+    loginUser,
   }) => {
     test.slow();
     const instances = initialData.batchOperationInstances.slice(0, 5);
@@ -217,7 +249,12 @@ test.describe('Operations', () => {
           ).toBeChecked();
         },
         onFailure: async () => {
-          await page.reload();
+          await recoverOperateSession(
+            page,
+            operateHomePage,
+            loginPage,
+            loginUser,
+          );
         },
       });
 
@@ -233,7 +270,12 @@ test.describe('Operations', () => {
           ).toBeVisible({timeout: 5000});
         },
         onFailure: async () => {
-          await page.reload();
+          await recoverOperateSession(
+            page,
+            operateHomePage,
+            loginPage,
+            loginUser,
+          );
         },
       });
 
@@ -251,7 +293,12 @@ test.describe('Operations', () => {
           );
         },
         onFailure: async () => {
-          await page.reload();
+          await recoverOperateSession(
+            page,
+            operateHomePage,
+            loginPage,
+            loginUser,
+          );
         },
       });
     });
