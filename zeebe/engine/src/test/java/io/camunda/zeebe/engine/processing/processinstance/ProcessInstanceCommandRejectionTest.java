@@ -431,6 +431,52 @@ public final class ProcessInstanceCommandRejectionTest {
   }
 
   @Test
+  public void shouldRejectCompleteIfFlowScopeIsNotTheProcessInstance() {
+    // given - the flow scope of the task is the subprocess, not the process instance
+    final var processInstanceKey =
+        createProcessInstance(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    s ->
+                        s.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("a", t -> t.zeebeJobType("a"))
+                            .endEvent())
+                .boundaryEvent("boundary", b -> b.timerWithDuration("PT1M"))
+                .endEvent()
+                .done());
+
+    final var timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final var jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when - the boundary event terminates the subprocess while the process instance stays active
+    engine.writeRecords(triggerTimerCommand(timerCreated), jobCompleteCommand(jobCreated));
+
+    // then
+    final var rejectedCommand =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId("a")
+            .getFirst();
+
+    assertThatCommandIsRejected(
+        rejectedCommand,
+        String.format(
+            "Expected flow scope instance to be in state '%s' but was '%s'.",
+            ProcessInstanceIntent.ELEMENT_ACTIVATED, ProcessInstanceIntent.ELEMENT_TERMINATING));
+  }
+
+  @Test
   public void shouldRejectCompleteIfElementIsActivating() {
     // given (synthetic situation - is not expected in regular processing)
     final var processInstanceKey =
