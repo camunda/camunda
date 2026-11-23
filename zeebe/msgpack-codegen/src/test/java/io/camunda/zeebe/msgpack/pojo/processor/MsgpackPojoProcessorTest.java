@@ -428,6 +428,26 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
+  void shouldRejectAnEnumCompiledSeparatelyWithAConstantBody(@TempDir final Path classes)
+      throws Exception {
+    // given the enum is only available as a class file, where the constant body is not visible
+    final var previous =
+        compile(
+            source(
+                "BadKind",
+                "public enum BadKind { ONE { @Override public String toString() { return \"one\"; } } }"));
+    assertThat(previous.errors()).isEmpty();
+    previous.writeTo(classes);
+    final var source = pojo("Sample", "BadKind kind = BadKind.ONE;");
+
+    // when
+    final var result = compile(classes, source);
+
+    // then
+    assertThat(result.errors()).anyMatch(e -> e.contains("has a constant with a body"));
+  }
+
+  @Test
   void shouldRoundTripAgronaPrimitiveLists() throws Exception {
     // given
     final var codec =

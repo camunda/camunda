@@ -109,6 +109,15 @@ final class MsgpackPojoProcessorRejectionTest {
                     "public enum BadKind { ONE; @Override public String toString() { return \"one\"; } }"),
                 pojo("Sample", "BadKind kind = BadKind.ONE;")),
             "overrides toString()"),
+        classes(
+            "enum constant overriding toString()",
+            List.of(
+                source(
+                    "BadKind",
+                    "public enum BadKind { ONE { @Override public String toString() { return \"one\"; } } }"),
+                pojo("Sample", "BadKind kind = BadKind.ONE;")),
+            "BadKind",
+            "has a constant with a body"),
         // agrona lists
         fields("IntArrayList key = new IntArrayList();", "key", "must be final"),
         fields("LongArrayList key = new LongArrayList();", "key", "must be final"),

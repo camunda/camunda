@@ -390,9 +390,16 @@ final class ModelBuilder {
 
   /**
    * Enums are written by {@code toString()} and read by {@code name()}, like {@code EnumValue}, so
-   * an enum that overrides {@code toString()} could not be read back.
+   * an enum that overrides {@code toString()} could not be read back. A constant with a body could
+   * override it without it being visible here, so such enums are rejected too: an enum is final
+   * unless a constant has a body, also when it is read from a class file.
    */
   private static void requireNoToString(final TypeElement enumType, final String field) {
+    if (!enumType.getModifiers().contains(Modifier.FINAL)) {
+      throw new IllegalArgumentException(
+          "Enum %s of field %s has a constant with a body, which could override toString(), but it is stored by toString() and read by name()"
+              .formatted(enumType.getQualifiedName(), field));
+    }
     final boolean overridden =
         enumType.getEnclosedElements().stream()
             .anyMatch(
