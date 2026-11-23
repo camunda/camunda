@@ -65,48 +65,48 @@ are observable.**
 - `onAllAcknowledged` replaces `afterQueue(...).continueWith(...)` and the `CONTINUATION_*`
   intents. These are deprecated.
 
-**D3. A partition holds back its completion under a key the domain chooses, and releases it later.**
+**D3. A partition defers its completion under a key the domain chooses, and acknowledges it later.**
 
 - While processing the command, a processor that starts further work calls
-  `distribution.holdCompletion(command, completionKey)`. Without that call, the partition is
+  `distribution.deferCompletion(command, completionKey)`. Without that call, the partition is
   COMPLETED when it acknowledges.
 - When the domain decides the work is done, it calls
-  `distribution.releaseCompletion(completionKey)`. It may pass an outcome and a reason: `COMPLETED`,
+  `distribution.ackCompletion(completionKey)`. It may pass an outcome and a reason: `COMPLETED`,
   or `CANCELLED` when a later command made the work obsolete (for example a resume during a
   suspend).
-- The framework stores the hold in its own column family, `[valueType | completionKey] →
+- The framework stores the deferral in its own column family, `[valueType | completionKey] →
   distributionKey`. The domain persists nothing and never handles distribution keys.
 - The completion key is opaque and chosen by the domain: the process definition key for deletion
   and suspension, the batch operation key for batch operations. The value type namespaces it, so
   features cannot collide.
-- At most one hold exists per (value type, completion key) on a partition:
-  - holding again for the same distribution is a no-op;
-  - holding for a newer distribution releases the older hold as `CANCELLED`, with the newer
+- At most one deferral exists per (value type, completion key) on a partition:
+  - deferring again for the same distribution is a no-op;
+  - deferring for a newer distribution acknowledges the older deferral as `CANCELLED`, with the newer
     distribution as the reason.
 - The framework does not know about entities, counts or substates. What is involved, and when it is
   done, is up to the domain.
 - The source partition works the same way for its own share. Distribution skips the current
   partition, so its report is written locally instead of being sent.
 
-**D4. Receivers report reliably; the ACK says whether completion is held.**
+**D4. Receivers report reliably; the ACK says whether completion is deferred.**
 
-- The ACK carries `completionHeld`. The framework computes it from its own hold state for that
+- The ACK carries `completionDeferred`. The framework computes it from its own deferral state for that
   distribution key, not from the domain's processing result. A redelivered command therefore gets
   the correct answer, even when the domain rejects the redelivery as a duplicate.
-- `completionHeld = false`: the partition is ACKNOWLEDGED and COMPLETED at once.
-- When the hold is released, the partition sends a `COMPLETE` report to the source. The report goes
+- `completionDeferred = false`: the partition is ACKNOWLEDGED and COMPLETED at once.
+- When the domain acknowledges completion, the partition sends a `COMPLETE` report to the source. The report goes
   out as a normal unordered distribution to the source partition, so it reuses the existing retries
   and ACK.
 - The source handles reports idempotently. A `COMPLETE` that arrives before the ACK counts as both.
 - A rejected command is not a failure. It is ACKNOWLEDGED with the rejection recorded (D5), and
-  COMPLETED unless completion is held.
+  COMPLETED unless completion is deferred.
 
 **D5. Every partition's outcome is recorded and exported.**
 
 - The ACK and `COMPLETE` records carry everything needed to trace a partition:
   - the rejection type and reason, if the command was rejected there;
-  - whether completion was held, and the completion key;
-  - the outcome and reason from `releaseCompletion`;
+  - whether completion was deferred, and the completion key;
+  - the outcome and reason from `ackCompletion`;
   - timestamps.
 - The source ends every distribution with one summary event, `COMPLETED`. It carries the overall
   outcome (`CANCELLED` if any partition cancelled) and the per-partition outcomes. If any partition
@@ -116,21 +116,21 @@ are observable.**
     (`ACKNOWLEDGED`, `PARTITION_COMPLETED`, `COMPLETED`). One distribution is one ordered stream
     under one key, and a status read model needs no join across partitions. The drawback is that a
     partition's state is known only once its report arrives.
-  - **Source and receivers.** In addition, each receiver exports its local events (holding and
-    releasing completion, with the distribution key and completion key). This shows more detail,
-    such as why a partition still holds its completion, but a read model must correlate records
+  - **Source and receivers.** In addition, each receiver exports its local events (deferring and
+    acknowledging completion, with the distribution key and completion key). This shows more detail,
+    such as why a partition still defers its completion, but a read model must correlate records
     from several partitions.
 
 **D6. Protocol and compatibility.**
 
 - New intents on `CommandDistribution`: `COMPLETE` (command) and `PARTITION_COMPLETED` and
   `COMPLETED` (events).
-- New properties on `CommandDistributionRecord`: `completionHeld`, `completionKey`, the rejection
+- New properties on `CommandDistributionRecord`: `completionDeferred`, `completionKey`, the rejection
   fields, the outcome and reason, and the hook commands.
-- Partition-local column families: holds on each partition (D3), and partitions still pending
+- Partition-local column families: deferrals on each partition (D3), and partitions still pending
   completion on the source.
 - Exporter templates and golden files change. This needs approval from the protocol owners.
-- In a mixed-version cluster, an old receiver ACKs without `completionHeld`, so its share counts as
+- In a mixed-version cluster, an old receiver ACKs without `completionDeferred`, so its share counts as
   COMPLETED at once. That is today's behavior.
 - A feature that relies on `onAllCompleted` (for example deletion moving off its hand-rolled path)
   must keep its old path until every broker is upgraded.
@@ -142,9 +142,9 @@ are observable.**
   event.
 - **Track work per entity, with counts, inside the framework.** Rejected. The domain often does not
   know up front how many things are involved, and the distribution does not need to know. One
-  opaque completion key per hold is enough.
-- **The domain keeps the hold in its own state.** Rejected. Every adopter would need its own state,
-  appliers and migration for it, and open holds would be scattered across features instead of
+  opaque completion key per deferral is enough.
+- **The domain keeps the deferral in its own state.** Rejected. Every adopter would need its own state,
+  appliers and migration for it, and open deferrals would be scattered across features instead of
   visible in one place.
 - **The domain reports "done" on the ACK.** Rejected. The ACK is not retried. If the domain decides,
   a redelivery that the domain rejects as a duplicate would report the wrong state. D4 avoids this
@@ -158,11 +158,11 @@ are observable.**
 - Deletion, batch operations and suspension keep their substates (`DRAINING`, chunk states,
   `SUSPENDING`). They drop their own report commands, pending-partition column families and
   last-one-wins checks, and adopt with two calls.
-- Every distribution writes one extra event (`COMPLETED`). A distribution with held completion
+- Every distribution writes one extra event (`COMPLETED`). A distribution with deferred completion
   writes about three extra records per partition: the report, its distribution, and
   `PARTITION_COMPLETED`.
-- Source state for a distribution with held completion lives until every partition reports. Drains
-  can last years, so a gauge for open holds and their age is needed.
+- Source state for a distribution with deferred completion lives until every partition reports. Drains
+  can last years, so a gauge for open deferrals and their age is needed.
 - Issue #23156 can build a user-facing status from the exported milestones. How that status is
   presented is decided separately.
 
@@ -173,8 +173,7 @@ are observable.**
 - Retention of finished distributions for status queries: in the engine with a TTL, or only in
   secondary storage.
 - Whether any feature needs a FAILED outcome in addition to CANCELLED.
-- Naming: `holdCompletion`/`releaseCompletion` versus alternatives such as
-  `deferCompletion`/`complete`.
+- Naming: `deferCompletion`/`ackCompletion`, or `completeDistribution` instead of `ackCompletion`.
 - Export of per-partition state: by the source only, or by the source and the receivers (D5).
 
 ## Source
