@@ -28,7 +28,9 @@ describe('<PanelTitle />', () => {
 	it('should not render an icon by default', async () => {
 		const screen = await render(<PanelTitle>Instances</PanelTitle>);
 
-		expect(screen.getByRole('heading').element().querySelector('svg')).not.toBeInTheDocument();
+		const heading = screen.getByRole('heading', {name: 'Instances'});
+		await expect.element(heading).toBeVisible();
+		await expect.element(heading.getByRole('img', {includeHidden: true})).not.toBeInTheDocument();
 	});
 
 	it('should render the icon before the title when icon is set', async () => {

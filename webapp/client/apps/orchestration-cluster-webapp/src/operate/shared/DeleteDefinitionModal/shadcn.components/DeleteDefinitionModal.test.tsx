@@ -105,9 +105,7 @@ describe('<DeleteDefinitionModal />', () => {
 		const onClose = vi.fn();
 		const screen = await render(<ControlledDeleteDefinitionModal onClose={onClose} />);
 
-		await userEvent.click(document.querySelector<HTMLElement>('[data-slot="dialog-overlay"]')!, {
-			position: {x: 5, y: 5},
-		});
+		await userEvent.click(screen.baseElement, {position: {x: 5, y: 5}});
 
 		await expect.element(screen.getByRole('dialog')).toBeVisible();
 		expect(onClose).not.toHaveBeenCalled();
