@@ -10,7 +10,17 @@ package io.camunda.authentication.session;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jose.util.JSONObjectUtils;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import jakarta.servlet.http.Cookie;
@@ -23,8 +33,12 @@ import java.io.ObjectInputFilter.Status;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,15 +57,20 @@ import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthenticationMethod;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
@@ -124,6 +143,142 @@ class FilteringSessionAttributeDeserializerTest {
 
     // then
     assertThat(restored.claims()).containsAllEntriesOf(claims);
+  }
+
+  @Test
+  void shouldRoundTripSessionOfLoginWithEveryJsonClaimType() throws Exception {
+    // given — a login whose claims Spring decodes from a signed token and a UserInfo response. The
+    // hand-built session above assumes Instant for every timestamp, and so missed that the
+    // decoder leaves nbf, which Microsoft Entra sets, as a java.util.Date. A library upgrade that
+    // changes a claim's class fails here too.
+    final var key = new RSAKeyGenerator(2048).keyID("test-key").generate();
+    final var claims = claimsOfEveryJsonType();
+    final var jwks = new JWKSet(key.toPublicJWK()).toString().getBytes(StandardCharsets.UTF_8);
+    final var userInfoClaims = new LinkedHashMap<>(claims);
+    userInfoClaims.put("sub", "dave");
+    final var userInfo =
+        JSONObjectUtils.toJSONString(userInfoClaims).getBytes(StandardCharsets.UTF_8);
+    final var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext("/jwks", exchange -> respondWithJson(exchange, jwks));
+    server.createContext("/userinfo", exchange -> respondWithJson(exchange, userInfo));
+    server.start();
+
+    try {
+      final var baseUri = "http://127.0.0.1:" + server.getAddress().getPort();
+      final var registration =
+          ClientRegistration.withRegistrationId("claims")
+              .clientId("client")
+              .clientSecret("secret")
+              .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+              .redirectUri("https://camunda.example.com/sso-callback")
+              .scope("openid", "profile")
+              .authorizationUri(baseUri + "/authorize")
+              .tokenUri(baseUri + "/token")
+              .jwkSetUri(baseUri + "/jwks")
+              .userInfoUri(baseUri + "/userinfo")
+              .userNameAttributeName("sub")
+              .issuerUri("https://idp.example.com")
+              .build();
+      final var now = System.currentTimeMillis();
+      final var tokenClaims =
+          new JWTClaimsSet.Builder()
+              .issuer("https://idp.example.com")
+              .audience("client")
+              .subject("dave")
+              .issueTime(new Date(now))
+              .notBeforeTime(new Date(now))
+              .expirationTime(new Date(now + 3_600_000));
+      claims.forEach(tokenClaims::claim);
+      final var signedToken =
+          new SignedJWT(
+              new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("test-key").build(),
+              tokenClaims.build());
+      signedToken.sign(new RSASSASigner(key));
+      final var decoderFactory = new OidcIdTokenDecoderFactory();
+      decoderFactory.setJwtValidatorFactory(
+          clientRegistration -> jwt -> OAuth2TokenValidatorResult.success());
+      final var jwt = decoderFactory.createDecoder(registration).decode(signedToken.serialize());
+      final var idToken =
+          new OidcIdToken(
+              jwt.getTokenValue(), jwt.getIssuedAt(), jwt.getExpiresAt(), jwt.getClaims());
+      final var accessToken =
+          new OAuth2AccessToken(
+              OAuth2AccessToken.TokenType.BEARER,
+              "access-token",
+              Instant.now(),
+              Instant.now().plusSeconds(60),
+              Set.of("openid", "profile"));
+      final var user =
+          new OidcUserService().loadUser(new OidcUserRequest(registration, accessToken, idToken));
+      final var token =
+          new OAuth2AuthenticationToken(
+              user, List.of(new SimpleGrantedAuthority("ROLE_USER")), "claims");
+      final var context = new SecurityContextImpl(token);
+      final var authorizedClients =
+          new HashMap<>(
+              Map.of(
+                  "claims",
+                  new OAuth2AuthorizedClient(
+                      registration,
+                      "dave",
+                      accessToken,
+                      new OAuth2RefreshToken("refresh", Instant.now()))));
+
+      // when
+      final var restoredContext = (SecurityContextImpl) roundTrip(context);
+      roundTrip(authorizedClients);
+
+      // then — the login principal comes back with the claims the decoder produced
+      final var restoredUser = (OidcUser) restoredContext.getAuthentication().getPrincipal();
+      assertThat(restoredUser.getClaims()).containsAllEntriesOf(user.getClaims());
+      assertThat(restoredUser.getIdToken().getClaims())
+          .containsAllEntriesOf(idToken.getClaims())
+          .containsKey("nbf");
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  /** Every value type JSON has, as custom claims, and the standard claims Spring converts. */
+  private static Map<String, Object> claimsOfEveryJsonType() {
+    final var claims = new LinkedHashMap<String, Object>();
+    claims.put("x_string", "text");
+    claims.put("x_unicode", "ä€😀");
+    claims.put("x_int", 5);
+    claims.put("x_long", 5_000_000_000L);
+    claims.put("x_double", 1.5d);
+    claims.put("x_big_integer", new BigInteger("123456789012345678901234567890"));
+    claims.put("x_boolean", true);
+    claims.put("x_empty_list", List.of());
+    claims.put("x_empty_object", Map.of());
+    claims.put("x_mixed_list", List.of("a", 1, 2.5d, true, List.of("n"), Map.of("k", "v")));
+    claims.put("x_nested", Map.of("a", Map.of("b", Map.of("c", List.of(Map.of("d", 1))))));
+    claims.put("email", "dave@example.com");
+    claims.put("email_verified", true);
+    claims.put("phone_number_verified", false);
+    claims.put("updated_at", 1_700_000_000L);
+    claims.put("auth_time", 1_700_000_000L);
+    claims.put("amr", List.of("pwd", "mfa"));
+    claims.put("acr", "1");
+    claims.put("azp", "client");
+    claims.put("at_hash", "hash");
+    claims.put("c_hash", "hash");
+    claims.put("nonce", "nonce");
+    claims.put("address", Map.of("country", "DE", "locality", "Berlin"));
+    claims.put("locale", "en-US");
+    claims.put("picture", "https://example.com/picture.png");
+    claims.put("website", "https://example.com");
+    claims.put("name", "Dave");
+    claims.put("preferred_username", "dave");
+    return claims;
+  }
+
+  private static void respondWithJson(final HttpExchange exchange, final byte[] body)
+      throws IOException {
+    exchange.getResponseHeaders().add("Content-Type", "application/json");
+    exchange.sendResponseHeaders(200, body.length);
+    exchange.getResponseBody().write(body);
+    exchange.close();
   }
 
   @Test
@@ -211,7 +366,9 @@ class FilteringSessionAttributeDeserializerTest {
   @Test
   void shouldRoundTripOidcLoginSession() throws Exception {
     // given — the claims as Spring's converters and the identity provider produce them: Instant for
-    // the timestamps, URL for the issuer, booleans, lists and nested maps
+    // the timestamps, URL for the issuer, booleans, lists and nested maps. nbf is the exception:
+    // Spring's ID token decoder leaves it as a java.util.Date. Microsoft Entra ID tokens carry it,
+    // and a session that cannot be restored sends the user back to the login page with no error.
     final var issuer = URI.create("https://idp.example.com/realms/camunda").toURL();
     final var idToken =
         new OidcIdToken(
@@ -219,13 +376,22 @@ class FilteringSessionAttributeDeserializerTest {
             Instant.now(),
             Instant.now().plusSeconds(60),
             Map.of(
-                "iss", issuer,
-                "sub", "dave",
-                "aud", List.of("camunda"),
-                "iat", Instant.now(),
-                "exp", Instant.now().plusSeconds(60),
-                "auth_time", Instant.now(),
-                "email_verified", true));
+                "iss",
+                issuer,
+                "sub",
+                "dave",
+                "aud",
+                List.of("camunda"),
+                "iat",
+                Instant.now(),
+                "exp",
+                Instant.now().plusSeconds(60),
+                "nbf",
+                new java.util.Date(),
+                "auth_time",
+                Instant.now(),
+                "email_verified",
+                true));
     final var userInfo =
         new OidcUserInfo(
             Map.of(
