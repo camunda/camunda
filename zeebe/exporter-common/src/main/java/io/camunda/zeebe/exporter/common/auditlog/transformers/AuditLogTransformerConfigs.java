@@ -139,8 +139,7 @@ public class AuditLogTransformerConfigs {
       TransformerConfig.with(ValueType.PROCESS_DEFINITION_SUSPENSION)
           .withRejections(
               ProcessDefinitionSuspensionIntent.SUSPEND, ProcessDefinitionSuspensionIntent.RESUME)
-          .withRejectionTypes(
-              RejectionType.INVALID_ARGUMENT, RejectionType.INVALID_STATE, RejectionType.NOT_FOUND);
+          .withRejectionTypes(RejectionType.INVALID_STATE);
 
   public static final TransformerConfig PROCESS_INSTANCE_CANCEL_CONFIG =
       TransformerConfig.with(ValueType.PROCESS_INSTANCE)

@@ -358,7 +358,7 @@ public class AuditLogsIT {
         TestParameter.record(
                 ImmutableRecord.builder()
                     .withRecordType(RecordType.COMMAND_REJECTION)
-                    .withRejectionType(RejectionType.NOT_FOUND)
+                    .withRejectionType(RejectionType.INVALID_STATE)
                     .withValueType(ValueType.PROCESS_DEFINITION_SUSPENSION)
                     .withIntent(ProcessDefinitionSuspensionIntent.RESUME)
                     .withValue(
@@ -376,7 +376,7 @@ public class AuditLogsIT {
                     Map.entry("id", "1-811"),
                     Map.entry("actorType", "UNKNOWN"),
                     Map.entry("category", "DEPLOYED_RESOURCES"),
-                    Map.entry("entityDescription", "NOT_FOUND (version 3)"),
+                    Map.entry("entityDescription", "INVALID_STATE (version 3)"),
                     Map.entry("entityKey", "my-resume-by-id-process"),
                     Map.entry(
                         "entityOperationIntent",

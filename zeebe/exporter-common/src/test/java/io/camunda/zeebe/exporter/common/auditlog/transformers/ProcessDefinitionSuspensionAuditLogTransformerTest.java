@@ -25,7 +25,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionResolvedVersionValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -91,7 +90,7 @@ class ProcessDefinitionSuspensionAuditLogTransformerTest {
     final var record =
         suspensionRejection(
             ProcessDefinitionSuspensionIntent.RESUME,
-            RejectionType.NOT_FOUND,
+            RejectionType.INVALID_STATE,
             suspensionValue(-1L, "process-id", List.of()));
 
     // when
@@ -104,7 +103,7 @@ class ProcessDefinitionSuspensionAuditLogTransformerTest {
     assertThat(entity.getProcessDefinitionId()).isEqualTo("process-id");
     assertThat(entity.getProcessDefinitionKey()).isNull();
     assertThat(entity.getEntityKey()).isEqualTo("process-id");
-    assertThat(entity.getEntityDescription()).isEqualTo(RejectionType.NOT_FOUND.name());
+    assertThat(entity.getEntityDescription()).isEqualTo(RejectionType.INVALID_STATE.name());
     assertThat(entity.getTenant().orElseThrow().tenantId()).isEqualTo("tenant-1");
   }
 
@@ -118,14 +117,14 @@ class ProcessDefinitionSuspensionAuditLogTransformerTest {
             .build();
     final var record =
         suspensionRejection(
-            ProcessDefinitionSuspensionIntent.SUSPEND, RejectionType.NOT_FOUND, value);
+            ProcessDefinitionSuspensionIntent.SUSPEND, RejectionType.INVALID_STATE, value);
 
     // when
     final var entity = transformer.create(record);
 
     // then
     assertThat(entity.getResult()).isEqualTo(AuditLogOperationResult.FAIL);
-    assertThat(entity.getEntityDescription()).isEqualTo("NOT_FOUND (version 3)");
+    assertThat(entity.getEntityDescription()).isEqualTo("INVALID_STATE (version 3)");
   }
 
   @ParameterizedTest
@@ -140,12 +139,7 @@ class ProcessDefinitionSuspensionAuditLogTransformerTest {
 
     // when / then
     assertThat(transformer.supports(record))
-        .isEqualTo(
-            Set.of(
-                    RejectionType.INVALID_ARGUMENT,
-                    RejectionType.INVALID_STATE,
-                    RejectionType.NOT_FOUND)
-                .contains(rejectionType));
+        .isEqualTo(rejectionType == RejectionType.INVALID_STATE);
   }
 
   private Record<ProcessDefinitionSuspensionRecordValue> suspensionRejection(
