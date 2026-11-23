@@ -62,7 +62,7 @@ public final class ProcessInstanceStateTransitionGuard {
       case ACTIVATE_ELEMENT ->
           canActivateDefinition(context)
               .flatMap(ok -> hasActiveFlowScopeInstance(context))
-              .flatMap(ok -> hasActiveProcessInstance(context))
+              .flatMap(flowScopeInstance -> hasActiveProcessInstance(context, flowScopeInstance))
               .flatMap(ok -> canActivateParallelGateway(context, element))
               .flatMap(ok -> canActivateInclusiveGateway(context, element));
       case COMPLETE_ELEMENT ->
@@ -73,7 +73,7 @@ public final class ProcessInstanceStateTransitionGuard {
                   ProcessInstanceIntent.ELEMENT_ACTIVATED,
                   ProcessInstanceIntent.ELEMENT_COMPLETING)
               .flatMap(ok -> hasActiveProcessInstance(context))
-              .flatMap(ok -> hasActiveFlowScopeInstance(context));
+              .flatMap(processInstance -> hasActiveFlowScopeInstance(context, processInstance));
       case TERMINATE_ELEMENT ->
           hasElementInstanceWithState(
               context,
@@ -93,21 +93,21 @@ public final class ProcessInstanceStateTransitionGuard {
     };
   }
 
-  private Either<String, ElementInstance> getElementInstance(final BpmnElementContext context) {
-    final var elementInstance = stateBehavior.getElementInstance(context);
-    if (elementInstance != null) {
-      return Either.right(elementInstance);
-
-    } else {
-      return Either.left(
-          String.format(
-              "Expected element instance with key '%d' to be present in state but not found.",
-              context.getElementInstanceKey()));
-    }
+  /**
+   * Returns {@code alreadyRead} if it is the instance with the given key, otherwise reads it. The
+   * guard writes nothing, so an instance read earlier in the same check is still current.
+   *
+   * @param alreadyRead an instance read earlier in this check, may be {@code null}
+   */
+  private ElementInstance readOrReuse(final ElementInstance alreadyRead, final long key) {
+    return alreadyRead != null && alreadyRead.getKey() == key
+        ? alreadyRead
+        : stateBehavior.getElementInstance(key);
   }
 
-  private Either<String, ElementInstance> getFlowScopeInstance(final BpmnElementContext context) {
-    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+  private Either<String, ElementInstance> getFlowScopeInstance(
+      final BpmnElementContext context, final ElementInstance alreadyRead) {
+    final var flowScopeInstance = readOrReuse(alreadyRead, context.getFlowScopeKey());
     if (flowScopeInstance != null) {
       return Either.right(flowScopeInstance);
 
@@ -137,14 +137,21 @@ public final class ProcessInstanceStateTransitionGuard {
       final ElementInstance elementInstance,
       final ProcessInstanceIntent expectedState,
       final ProcessInstanceIntent... otherExpected) {
-    final var currentState = elementInstance.getState();
+    return hasElementInstanceInState(elementInstance.getState(), expectedState, otherExpected)
+        .map(state -> elementInstance);
+  }
+
+  private Either<String, ProcessInstanceIntent> hasElementInstanceInState(
+      final ProcessInstanceIntent currentState,
+      final ProcessInstanceIntent expectedState,
+      final ProcessInstanceIntent... otherExpected) {
     if (expectedState != currentState && !Arrays.asList(otherExpected).contains(currentState)) {
       return Either.left(
           String.format(
               "Expected element instance to be in state '%s' or one of '%s' but was '%s'.",
               expectedState, Arrays.toString(otherExpected), currentState));
     } else {
-      return Either.right(elementInstance);
+      return Either.right(currentState);
     }
   }
 
@@ -152,11 +159,19 @@ public final class ProcessInstanceStateTransitionGuard {
       final BpmnElementContext context,
       final ProcessInstanceIntent expectedState,
       final ProcessInstanceIntent... otherExpected) {
-    // a shortcut to improve readability
-    return getElementInstance(context)
-        .flatMap(
-            elementInstance ->
-                hasElementInstanceInState(elementInstance, expectedState, otherExpected));
+    final var currentState = stateBehavior.getElementInstanceState(context.getElementInstanceKey());
+    if (currentState == null) {
+      return Either.left(
+          String.format(
+              "Expected element instance with key '%d' to be present in state but not found.",
+              context.getElementInstanceKey()));
+    }
+    return hasElementInstanceInState(currentState, expectedState, otherExpected);
+  }
+
+  private boolean isElementActivating(final BpmnElementContext context) {
+    return stateBehavior.getElementInstanceState(context.getElementInstanceKey())
+        == ProcessInstanceIntent.ELEMENT_ACTIVATING;
   }
 
   private Either<String, ElementInstance> hasFlowScopeInstanceInState(
@@ -188,9 +203,22 @@ public final class ProcessInstanceStateTransitionGuard {
     }
   }
 
-  private Either<String, ?> hasActiveFlowScopeInstance(final BpmnElementContext context) {
+  private Either<String, ElementInstance> hasActiveFlowScopeInstance(
+      final BpmnElementContext context) {
+    return hasActiveFlowScopeInstance(context, null);
+  }
+
+  /**
+   * Checks that the flow scope is active and not interrupted. A child process has its call activity
+   * as flow scope.
+   *
+   * @param alreadyRead an instance read earlier in this check, reused if it is the flow scope
+   * @return the checked instance, or {@code null} for a root process, which has no flow scope
+   */
+  private Either<String, ElementInstance> hasActiveFlowScopeInstance(
+      final BpmnElementContext context, final ElementInstance alreadyRead) {
     if (context.getBpmnElementType() != BpmnElementType.PROCESS) {
-      return getFlowScopeInstance(context)
+      return getFlowScopeInstance(context, alreadyRead)
           .flatMap(
               flowScopeInstance ->
                   hasFlowScopeInstanceInState(
@@ -213,11 +241,23 @@ public final class ProcessInstanceStateTransitionGuard {
     }
   }
 
-  private Either<String, ?> hasActiveProcessInstance(final BpmnElementContext context) {
+  private Either<String, ElementInstance> hasActiveProcessInstance(
+      final BpmnElementContext context) {
+    return hasActiveProcessInstance(context, null);
+  }
+
+  /**
+   * Checks that the process instance is not interrupted by a runtime instruction.
+   *
+   * @param alreadyRead an instance read earlier in this check, reused if it is the process instance
+   * @return the process instance, or {@code null} if it was not looked up or does not exist
+   */
+  private Either<String, ElementInstance> hasActiveProcessInstance(
+      final BpmnElementContext context, final ElementInstance alreadyRead) {
     if (context.getBpmnElementType() == BpmnElementType.PROCESS) {
       return Either.right(null);
     }
-    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    final var processInstance = readOrReuse(alreadyRead, context.getProcessInstanceKey());
     if (processInstance == null) {
       return Either.right(null);
     }
@@ -227,7 +267,7 @@ public final class ProcessInstanceStateTransitionGuard {
               "Expected process instance to be active but was interrupted by an event with id '%s'.",
               BufferUtil.bufferAsString(processInstance.getInterruptingElementId())));
     } else {
-      return Either.right(context);
+      return Either.right(processInstance);
     }
   }
 
@@ -241,9 +281,7 @@ public final class ProcessInstanceStateTransitionGuard {
    * new instance's key, and the caller of a creation with result waits until its request times out.
    */
   private Either<String, ?> canActivateDefinition(final BpmnElementContext context) {
-    if (context.getBpmnElementType() != BpmnElementType.PROCESS
-        || hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATING)
-            .isRight()) {
+    if (context.getBpmnElementType() != BpmnElementType.PROCESS || isElementActivating(context)) {
       return Either.right(null);
     }
     final long processDefinitionKey = context.getProcessDefinitionKey();
@@ -264,7 +302,7 @@ public final class ProcessInstanceStateTransitionGuard {
     }
 
     // Accept after incident resolved
-    if (hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATING).isRight()) {
+    if (isElementActivating(context)) {
       return Either.right(null);
     }
 
@@ -293,7 +331,7 @@ public final class ProcessInstanceStateTransitionGuard {
         stateBehavior.getNumberOfTakenSequenceFlows(context.getFlowScopeKey(), element.getId());
 
     // Accept after incident resolved
-    if (hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATING).isRight()) {
+    if (isElementActivating(context)) {
       return Either.right(null);
     }
 
