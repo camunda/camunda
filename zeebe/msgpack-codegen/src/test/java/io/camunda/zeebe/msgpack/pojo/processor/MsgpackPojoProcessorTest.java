@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.IntArrayList;
@@ -42,6 +43,8 @@ import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /** Compiles small classes in memory with the processor and checks what it accepts and rejects. */
@@ -754,6 +757,53 @@ final class MsgpackPojoProcessorTest {
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("items")
         .hasMessageContaining("must start empty");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("listsWithADefault")
+  @SuppressWarnings("unchecked")
+  void shouldRestoreTheDefaultOfAListThatWasChanged(
+      final String field, final List<Object> expected, final Object added) throws Exception {
+    // given an instance whose list was changed after a reset, which must not change the default
+    final var codec = codecOf(field);
+    final var changed = codec.newInstance();
+    changed.reset();
+    final var items = (List<Object>) get(changed, "items");
+    items.clear();
+    items.add(added);
+
+    // when
+    changed.reset();
+    final var other = codec.newInstance();
+    other.reset();
+
+    // then
+    assertThat((List<Object>) get(changed, "items")).containsExactlyElementsOf(expected);
+    assertThat((List<Object>) get(other, "items")).containsExactlyElementsOf(expected);
+  }
+
+  static Stream<Arguments> listsWithADefault() {
+    return Stream.of(
+        Arguments.of(
+            "final List<Long> items = new ArrayList<>(List.of(1L, 2L));", List.of(1L, 2L), 9L),
+        Arguments.of(
+            "final List<Integer> items = new ArrayList<>(List.of(1, 2));", List.of(1, 2), 9),
+        Arguments.of(
+            "final List<DirectBuffer> items = new ArrayList<>(List.of(new UnsafeBuffer(new byte[] {97})));",
+            List.of(utf8("a")),
+            utf8("z")),
+        Arguments.of(
+            "final IntArrayList items = new IntArrayList(new int[] {1, 2}, 2, Integer.MIN_VALUE);",
+            List.of(1, 2),
+            9),
+        Arguments.of(
+            "final LongArrayList items = new LongArrayList(new long[] {1L, 2L}, 2, Long.MIN_VALUE);",
+            List.of(1L, 2L),
+            9L),
+        Arguments.of(
+            "final List<List<Long>> items = new ArrayList<>();",
+            List.of(),
+            new ArrayList<>(List.of(9L))));
   }
 
   @Test
