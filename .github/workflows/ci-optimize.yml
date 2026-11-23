@@ -202,7 +202,8 @@ jobs:
 
   optimize-it-opensearch:
     name: "Integration / OpenSearch ITs"
-    if: inputs.runBeTests
+    # prototype: ES only, the agentic Phase 2 OpenSearch twins are stubs
+    if: inputs.runBeTests && github.head_ref != 'sherrin/agentic-phase2-proto'
     runs-on: gcp-core-32-longrunning
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job

@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.configuration;
 
+import static io.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_AGENT_MODEL;
 import static io.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_ASSIGNEE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_CANDIDATE_GROUP;
 import static io.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_END_DATE;
@@ -28,7 +29,8 @@ public enum DistributedByType {
   VARIABLE(DISTRIBUTED_BY_VARIABLE),
   START_DATE(DISTRIBUTED_BY_START_DATE),
   END_DATE(DISTRIBUTED_BY_END_DATE),
-  PROCESS(DISTRIBUTED_BY_PROCESS);
+  PROCESS(DISTRIBUTED_BY_PROCESS),
+  AGENT_MODEL(DISTRIBUTED_BY_AGENT_MODEL);
 
   private final String id;
 

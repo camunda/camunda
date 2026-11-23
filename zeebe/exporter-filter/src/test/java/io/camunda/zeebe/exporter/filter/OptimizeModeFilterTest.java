@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -170,6 +171,19 @@ final class OptimizeModeFilterTest {
     assertThat(filter.accept(createCommand))
         .as("AGENT_INSTANCE.CREATE is not in the allowed set and should be rejected")
         .isFalse();
+  }
+
+  // ---------------------------------------------------------------------------
+  // AGENT_DEFINITION
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldAcceptOnlyCreatedAgentDefinitions() {
+    final var created = record(ValueType.AGENT_DEFINITION, AgentDefinitionIntent.CREATED);
+    final var deleted = record(ValueType.AGENT_DEFINITION, AgentDefinitionIntent.DELETED);
+
+    assertThat(filter.accept(created)).as("AGENT_DEFINITION.CREATED should be accepted").isTrue();
+    assertThat(filter.accept(deleted)).as("AGENT_DEFINITION.DELETED should be rejected").isFalse();
   }
 
   // ---------------------------------------------------------------------------

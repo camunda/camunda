@@ -25,6 +25,7 @@
     <module>client</module>
     <module>util</module>
     <module>backend</module>
+    <module>optimize-data-generator</module>
     <module>../optimize-distro</module>
     <module>upgrade</module>
   </modules>

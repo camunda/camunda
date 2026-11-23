@@ -38,6 +38,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisua
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
@@ -45,6 +46,7 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.service.db.reader.AgentElementReader;
 import io.camunda.optimize.service.exceptions.OptimizeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -69,6 +71,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -86,6 +89,7 @@ public abstract class ReportEvaluationHandler {
   private final ProcessVariableService processVariableService;
   private final DefinitionService definitionService;
   private final CollapsedSubprocessNodesService collapsedSubprocessNodesService;
+  private AgentElementReader agentElementReader;
 
   public ReportEvaluationHandler(
       final ReportService reportService,
@@ -100,6 +104,12 @@ public abstract class ReportEvaluationHandler {
     this.processVariableService = processVariableService;
     this.definitionService = definitionService;
     this.collapsedSubprocessNodesService = collapsedSubprocessNodesService;
+  }
+
+  // Optional, so the handler can be built without it (unit tests, OpenSearch).
+  @Autowired(required = false)
+  public void setAgentElementReader(final AgentElementReader agentElementReader) {
+    this.agentElementReader = agentElementReader;
   }
 
   public AuthorizedReportEvaluationResult evaluateReport(
@@ -208,6 +218,9 @@ public abstract class ReportEvaluationHandler {
           // L0: no process selected — fetch all fully-imported definitions
           processReportData.setDefinitions(
               allFullyImportedProcessDefinitions(reportEvaluationInfo.getUserId()));
+        }
+        if (processReportData.isAgenticControlReport() && agentElementReader != null) {
+          ExecutedAgentElementFilter.addTo(processReportData, agentElementReader);
         }
       } else if (processReportData.isManagementReport()) {
         processReportData.setDefinitions(
@@ -523,6 +536,11 @@ public abstract class ReportEvaluationHandler {
     }
     if (definitionDto.getData().getGroupBy() instanceof final EndDateGroupByDto endDateGroupBy
         && endDateGroupBy.getValue() instanceof final DateGroupByValueDto dateValue) {
+      dateValue.setUnit(additionalFilters.getGroupByDateUnit());
+    }
+    // Agent run tiles group by run start date.
+    if (definitionDto.getData().getGroupBy() instanceof final StartDateGroupByDto startDateGroupBy
+        && startDateGroupBy.getValue() instanceof final DateGroupByValueDto dateValue) {
       dateValue.setUnit(additionalFilters.getGroupByDateUnit());
     }
   }

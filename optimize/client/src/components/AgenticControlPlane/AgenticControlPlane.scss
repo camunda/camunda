@@ -34,6 +34,27 @@
     color: var(--cds-text-primary);
   }
 
+  .section-subtitle {
+    margin-left: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--cds-text-secondary);
+  }
+
+  .section-description {
+    font-size: 0.875rem;
+    color: var(--cds-text-secondary);
+    margin: 0 0 0.5rem;
+  }
+
+  .cds--tabs {
+    margin-bottom: 1rem;
+  }
+
+  .ProcessFailures {
+    margin-top: 1rem;
+  }
+
   .section-divider {
     border: none;
     border-top: 1px solid var(--cds-border-subtle-01, var(--silver-darken-80));
@@ -68,5 +89,22 @@
   .Number,
   .Number .container {
     overflow: visible;
+  }
+}
+
+.AgenticControlPlane .DrillBreadcrumb {
+  margin: 0.5rem 0 1rem;
+
+  .crumb {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: var(--cds-link-primary);
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }

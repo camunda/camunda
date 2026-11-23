@@ -1,0 +1,67 @@
+---
+# prototype: agentic dashboard Phase 2 only, must not land on main.
+#
+# A fresh preview has no agent runs, so the agentic dashboard would be empty.
+# This PostSync hook bulk-loads Zeebe records produced by the Optimize data
+# generator (optimize/docs/proto/preview-seed/) into Elasticsearch, once per
+# preview. Each record type goes into its own `zeebe-record_<type>_seed` index
+# behind the `zeebe-record-<type>` alias that Optimize imports from, next to
+# the exporter's own indices. The records are on partition 2, which the
+# single-partition cluster never writes to, so Optimize tracks a separate import
+# position for them and still imports the cluster's real records on partition 1.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agentic-seed
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations:
+    {{- include "commonAnnotations" $ | nindent 4 }}
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+      - key: previews
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: seed
+        image: curlimages/curl:8.10.1
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+        env:
+        - name: ES
+          value: http://elasticsearch-es-http:9200
+        - name: SEED_URL
+          value: https://raw.githubusercontent.com/camunda/camunda/{{ .Values.global.preview.git.branch }}/optimize/docs/proto/preview-seed/agentic-seed.ndjson.gz
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          set -eu
+          TYPES="process agent-definition process-instance variable user-task incident agent-instance"
+          until curl -sf "$ES/_cluster/health?wait_for_status=yellow&timeout=10s" >/dev/null; do sleep 5; done
+          if curl -sf -o /dev/null "$ES/agentic-seed-done"; then echo "already seeded"; exit 0; fi
+          cd /tmp
+          curl -sfL "$SEED_URL" -o seed.gz
+          for t in $TYPES; do
+            curl -s -o /dev/null -XDELETE "$ES/zeebe-record_${t}_seed"
+            curl -sf -o /dev/null -XPUT "$ES/zeebe-record_${t}_seed" -H 'Content-Type: application/json' \
+              -d "{\"settings\":{\"number_of_replicas\":0},\"aliases\":{\"zeebe-record-${t}\":{}}}"
+          done
+          gunzip -c seed.gz | split -l 20000 - chunk_
+          for c in chunk_*; do
+            curl -sf -XPOST "$ES/_bulk" -H 'Content-Type: application/x-ndjson' --data-binary "@$c" \
+              | grep -q '"errors":false' || { echo "bulk errors in $c"; exit 1; }
+          done
+          curl -sf -o /dev/null -XPUT "$ES/agentic-seed-done" -H 'Content-Type: application/json' \
+            -d '{"settings":{"number_of_replicas":0}}'
+          echo "seeded"

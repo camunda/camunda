@@ -14,13 +14,16 @@ import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
+import io.camunda.optimize.service.importing.engine.service.zeebe.AgentRunEnrichmentService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeIncidentImportService;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeIncidentFetcher;
+import io.camunda.optimize.service.importing.zeebe.handler.ZeebeAgentRunImportIndexHandler;
 import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeIncidentImportMediator;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +32,7 @@ public class ZeebeIncidentImportMediatorFactory extends AbstractZeebeImportMedia
 
   private final ProcessInstanceWriter zeebeProcessInstanceWriter;
   private final ProcessDefinitionReader processDefinitionReader;
+  private final AgentRunEnrichmentService agentRunEnrichmentService;
 
   public ZeebeIncidentImportMediatorFactory(
       final BeanFactory beanFactory,
@@ -36,6 +40,7 @@ public class ZeebeIncidentImportMediatorFactory extends AbstractZeebeImportMedia
       final ConfigurationService configurationService,
       final ProcessInstanceWriter zeebeProcessInstanceWriter,
       final ProcessDefinitionReader processDefinitionReader,
+      final AgentRunEnrichmentService agentRunEnrichmentService,
       final ObjectMapper objectMapper,
       final DatabaseClient databaseClient) {
     super(
@@ -46,6 +51,7 @@ public class ZeebeIncidentImportMediatorFactory extends AbstractZeebeImportMedia
         databaseClient);
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.processDefinitionReader = processDefinitionReader;
+    this.agentRunEnrichmentService = agentRunEnrichmentService;
   }
 
   @Override
@@ -65,7 +71,14 @@ public class ZeebeIncidentImportMediatorFactory extends AbstractZeebeImportMedia
                 zeebeProcessInstanceWriter,
                 zeebeDataSourceDto.getPartitionId(),
                 processDefinitionReader,
-                databaseClient),
+                databaseClient,
+                agentRunEnrichmentService,
+                () ->
+                    Optional.ofNullable(
+                            importIndexHandlerRegistry.getZeebeAgentRunImportIndexHandler(
+                                zeebeDataSourceDto.getPartitionId()))
+                        .map(ZeebeAgentRunImportIndexHandler::getPendingPositionOfLastEntity)
+                        .orElse(Long.MIN_VALUE)),
             configurationService,
             new BackoffCalculator(configurationService)));
   }
