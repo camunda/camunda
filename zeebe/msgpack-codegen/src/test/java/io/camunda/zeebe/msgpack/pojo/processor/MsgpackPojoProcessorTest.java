@@ -361,6 +361,26 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
+  void shouldSkipAnUnknownPropertyThatEndsAtTheEndOfTheMessage() throws Exception {
+    // given the unknown key "u" with the value 1, which is the last byte of the message
+    final var codec =
+        codecOf(
+            source(
+                "Sample",
+                pojoClass("Sample", "long key = 1L;")
+                    .replace("@MsgpackPojo", "@MsgpackPojo(unknownProperties = false)")));
+    final var message = HexFormat.of().parseHex("81a175cc01");
+    final var read = codec.newInstance();
+    read.reset();
+
+    // when
+    codec.read(read, message);
+
+    // then
+    assertThat(read).extracting("key").isEqualTo(1L);
+  }
+
+  @Test
   void shouldWrapAFinalUnsafeBufferInPlace() throws Exception {
     // given
     final var codec = codecOf("final UnsafeBuffer name = new UnsafeBuffer(0, 0);");
