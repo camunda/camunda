@@ -40,6 +40,8 @@ faces-config.NavData
 .gradle
 gradle/build-logic/**/.kotlin/
 .worktree
+# CI npm download cache, see .github/actions/setup-npm-cache
+/.npm-cache/
 work/
 tngp-data
 *.sst
