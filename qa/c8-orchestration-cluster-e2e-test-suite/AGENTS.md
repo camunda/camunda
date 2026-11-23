@@ -292,6 +292,20 @@ test: add operate batch cancel assertion for RDBMS
 fix: retry flaky identity role assignment check
 ```
 
+## Code Comments
+
+Every agent below follows these rules for any comment it adds or keeps in a diff.
+
+- Comment only what a reader can't get from the code: a timing or race constraint, a product bug
+  or workaround with its issue link, or a non-obvious reason. Keep it to 1–2 lines.
+- No comments that restate the next line or the function name. No `Step N:` narration. No emphasis
+  banners (⚠️, CAPS).
+- No history in code: earlier attempts, run IDs and the old UI or markup go in the PR body.
+- Don't repeat an explanation that already exists elsewhere. Put it once on the shared helper or
+  constant, or leave it out.
+- Keep the suite's existing markers: `// given` / `// when` / `// then`,
+  `// Skipped due to bug #<number>: <url>`, and eslint-disable lines with their reason.
+
 ## Product-Bug Escalation
 
 Read this whenever you suspect a failure is a **product regression**, not a test defect. A
@@ -1174,6 +1188,7 @@ What this asks of you:
 - **Never edit `json-body-assertions/_generated/responses.json` by hand.** This file is auto-generated. If an API response changes, regenerate it with `npm run responses:regenerate` and commit the result. Manual edits will be overwritten and produce misleading diffs.
 - **Never fix a responsive-layout failure by pinning or widening the viewport.** `test.use({viewport: ...})` and `page.setViewportSize(...)` are not fixes for a UI that reflows, collapses a toolbar into a menu, or hides a column at the suite's default width — they force the test to stop exercising the layout most users actually see, and a per-file `test.use` silently changes every other test in that file too. Interact with whatever the narrow-width UI actually offers (open the menu, click the item by its accessible name, scroll to reveal on-screen content) or, when the same information is genuinely rendered nowhere at that width, verify it through a different always-visible surface (a different tab, filter, or list column) instead. Confirm which case you're in by reading the component source — is the element conditionally never rendered (e.g. a JSX branch that returns `null` / omits the column) or only `display:none`-hidden by CSS? Only the former genuinely has no on-screen alternative. If a live/local environment is available to you in the session (it is not part of the automated dispatch's tool set — see Forbidden tools above), confirm by inspecting the rendered app instead of guessing from source alone. If no non-viewport fix exists at all, say so explicitly in the PR body rather than defaulting to a silent viewport pin.
 - **Minimal diff:** no refactoring, no dependency bumps, no unrelated edits, no formatting sweeps on untouched files.
+- **Code comments:** follow `## Code Comments` — no narration, history, or emphasis banners; the reasoning goes in the PR body.
 - **PR title type must be `test:`** — commitlint rejects `fix:` for test-only changes (see Commit / PR Conventions above).
 - **Never target a `release-*` branch** — your PR goes to `main` or `stable/<version>`; the release-branch backport is labelled for you (see "Backport to a frozen release branch" above).
 - **One PR per version** — a single PR may fix multiple tests on the same `stable/<version>` branch, including a mix of API and E2E failures, but never crosses branch boundaries.
@@ -1373,7 +1388,9 @@ earlier round left open — is theirs, stays out of your prompt, and must not be
 
 Judge each comment on its merits. A fair share of Copilot comments are wrong, already handled
 elsewhere, or out of scope for this PR. Read the surrounding code before deciding — never apply a
-suggestion because it was made, and never dismiss one unread.
+suggestion because it was made, and never dismiss one unread. One exception: a thread that calls
+a code comment noise is **Accepted** — remove or trim the comment per `## Code Comments`; don't
+defend it.
 
 |                                 Verdict                                  |                                                                                                                                                                    What to do                                                                                                                                                                     |        Resolve?        |
 |--------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
@@ -1402,8 +1419,8 @@ verification that did not happen. Do not re-assert it in a thread reply or the P
 
 Everything the fix agent was held to still applies to any change you make here: never mask a
 failure, no `continue-on-error`, no `test.skip()` / `test.fixme()` / `.only` (outside an
-already-gated product bug), no refactors, no dependency bumps, no unrelated edits, and the lint gate
-before every commit. **A suggestion that would breach one of these is a reject, with that as the
+already-gated product bug), no refactors, no dependency bumps, no unrelated edits, the
+`## Code Comments` rules, and the lint gate before every commit. **A suggestion that would breach one of these is a reject, with that as the
 stated reason** — Copilot does not know this suite's rules, and "the reviewer asked for it" does not
 override them.
 
@@ -1605,6 +1622,8 @@ You are working **on the unskip PR's own branch**, already checked out.
   regenerate it with `npm run responses:regenerate`.
 - **Minimal diff:** only the files carrying un-skipped tests or the page objects and
   helpers they depend on. No refactoring, no dependency bumps, no formatting sweeps.
+- **Code comments:** follow `## Code Comments` — no narration, history, or emphasis
+  banners; the reasoning goes in the PR comment.
 
 ### Result manifest
 
@@ -1741,6 +1760,7 @@ Realistically that is limited to: the runner host itself died (out of memory or 
 - **No skipping** — same absolute no-skip / no-fixme rule as the Nightly Fix Agent.
 - **`.github/workflows/` is always in scope** — the repo "Ask first" constraint applies to application libraries (`webapps-common/`, `webapp/client/`, `security/`), not to CI workflow files.
 - **Minimal diff** — fix only what is broken; no refactoring, no dependency bumps, no unrelated edits.
+- **Code comments** — follow `## Code Comments`; no narration, history, or emphasis banners. The reasoning goes in the PR body.
 - **Allowed tools**: `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `date` (needed for the Time Budget checkpoint comparisons above), `mv` (needed for atomic checkpoint writes above)
 - **Forbidden**: `make`, `helm`, `kubectl`, `npm run build`, `go test`, any deploy command
 
