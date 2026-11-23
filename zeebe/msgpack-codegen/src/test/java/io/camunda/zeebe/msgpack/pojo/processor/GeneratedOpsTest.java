@@ -247,6 +247,47 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
   }
 
   @Test
+  void shouldNotBeEqualToAnInstanceWithALongerOrShorterList() throws Exception {
+    for (final var field : List.of("ids", "versions", "items")) {
+      // given
+      final var shorter = instance();
+      final var longer = instance();
+      addTo(shorter, field);
+      addTo(longer, field);
+      addTo(longer, field);
+
+      // then
+      assertThat(shorter).as(field).isNotEqualTo(longer);
+      assertThat(longer).as(field).isNotEqualTo(shorter);
+    }
+    final var shortInts = instance();
+    final var longInts = instance();
+    ((IntArrayList) get(longInts, "counts")).addInt(0);
+    final var shortKeys = instance();
+    final var longKeys = instance();
+    ((LongArrayList) get(longKeys, "keys")).addLong(0L);
+    assertThat(shortInts).isNotEqualTo(longInts);
+    assertThat(longInts).isNotEqualTo(shortInts);
+    assertThat(shortKeys).isNotEqualTo(longKeys);
+    assertThat(longKeys).isNotEqualTo(shortKeys);
+  }
+
+  @Test
+  void shouldHashTheSizeOfAListWhoseElementsHashToZero() throws Exception {
+    // given lists of elements that hash to 0 (the long 0), so only the size tells them apart
+    final var none = instance();
+    final var one = instance();
+    final var two = instance();
+    ((List<Long>) get(one, "versions")).add(0L);
+    ((List<Long>) get(two, "versions")).add(0L);
+    ((List<Long>) get(two, "versions")).add(0L);
+
+    // then
+    assertThat(one.hashCode()).isNotEqualTo(none.hashCode()).isNotEqualTo(two.hashCode());
+    assertThat(two.hashCode()).isNotEqualTo(none.hashCode());
+  }
+
+  @Test
   void shouldIgnoreStateThatIsNotStoredWhenComparing() throws Exception {
     // given
     final var a = read(message(0));
@@ -588,6 +629,18 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
   private static void entry(final MsgPackWriter w, final String key, final Runnable value) {
     w.writeString(utf8(key));
     value.run();
+  }
+
+  /** Adds an element to a list that is not an agrona list; items are created new. */
+  @SuppressWarnings("unchecked")
+  private static void addTo(final Object sample, final String field)
+      throws ReflectiveOperationException {
+    final var list = (List<Object>) get(sample, field);
+    switch (field) {
+      case "ids" -> list.add(utf8("x"));
+      case "versions" -> list.add(1L);
+      default -> list.add(compiled.load("sample.Inner").getConstructor().newInstance());
+    }
   }
 
   private static Object instance() throws ReflectiveOperationException {
