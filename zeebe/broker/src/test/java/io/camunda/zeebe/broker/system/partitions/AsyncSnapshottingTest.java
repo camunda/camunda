@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -156,6 +158,30 @@ public final class AsyncSnapshottingTest {
     // then
     assertThat(snapshot.join()).isNotNull();
     assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(snapshot.join());
+  }
+
+  @Test
+  public void shouldReportUnhealthyWhenLogIsCorruptedAtSnapshotPosition() {
+    // given - the lookup of the snapshot index finds a committed entry it cannot read back
+    final var corruption = new CorruptedJournalException("no entry at committed index");
+    doReturn(CompletableActorFuture.completedExceptionally(corruption))
+        .when(snapshotController)
+        .takeTransientSnapshot(anyLong(), anyBoolean());
+    createSnapshotDirector(StreamProcessorMode.PROCESSING);
+
+    // when
+    final var snapshot = asyncSnapshotDirector.forceSnapshot();
+    setCommitPosition(100L);
+
+    // then - no other reader may come across these entries, so the failed snapshot has to tell
+    assertThat(snapshot).failsWithin(Duration.ofSeconds(10));
+    Awaitility.await("snapshot director reports the corrupted log")
+        .untilAsserted(
+            () -> {
+              final var healthReport = asyncSnapshotDirector.getHealthReport();
+              assertThat(healthReport.isUnhealthy()).isTrue();
+              assertThat(healthReport.getIssue().throwable()).isSameAs(corruption);
+            });
   }
 
   @Test
