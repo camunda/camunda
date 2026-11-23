@@ -76,7 +76,7 @@ steps:
     with:
       url: ${{ inputs.vault-address }}
       method: jwt
-      path: ${{ inputs.vault-jwt-path }}
+      path: ${{ inputs.vault-jwt-role != '' && inputs.vault-jwt-path || '' }}
       role: ${{ inputs.vault-jwt-role }}
       jwtGithubAudience: ${{ inputs.vault-jwt-audience }}
       secrets: |
