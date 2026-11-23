@@ -267,7 +267,7 @@ runs:
   # success -- so a mirror outage cannot fail an otherwise-ready runner.
   - name: Install tzdata
     if: inputs.time-zone != '' && runner.os == 'Linux'
-    uses: ./.github/actions/apt-install
+    uses: camunda/infra-global-github-actions/apt-install@35bad6aafa9872fbbe53725eab8e5365f2691897 # apt-install-1.0.0
     with:
       packages: tzdata
       no-install-recommends: "false"
