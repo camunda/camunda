@@ -15,6 +15,7 @@
  */
 package io.atomix.raft.storage.log;
 
+import io.atomix.raft.metrics.RaftLogMetrics;
 import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
 import io.camunda.zeebe.journal.Journal;
@@ -28,9 +29,11 @@ import java.io.File;
 public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
 
   private final SegmentedJournalBuilder journalBuilder;
+  private final MeterRegistry meterRegistry;
   private RaftLogFlusher flusher = Factory.DIRECT;
 
   protected RaftLogBuilder(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
     journalBuilder = SegmentedJournal.builder(meterRegistry);
   }
 
@@ -153,6 +156,6 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
   @Override
   public RaftLog build() {
     final Journal journal = journalBuilder.build();
-    return new RaftLog(journal, flusher);
+    return new RaftLog(journal, flusher, new RaftLogMetrics(meterRegistry));
   }
 }

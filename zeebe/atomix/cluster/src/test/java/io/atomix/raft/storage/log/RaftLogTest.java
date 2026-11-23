@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
+import io.atomix.raft.metrics.RaftLogMetrics;
 import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher.NoopFlusher;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
@@ -257,7 +258,7 @@ class RaftLogTest {
       // given
       final var journal = mock(Journal.class);
       final var flusher = mock(RaftLogFlusher.class);
-      final var log = new RaftLog(journal, flusher);
+      final var log = new RaftLog(journal, flusher, new RaftLogMetrics(meterRegistry));
 
       // when
       log.flush();
@@ -270,7 +271,7 @@ class RaftLogTest {
     void shouldForceFlush() {
       final var journal = mock(Journal.class);
       final var flusher = mock(RaftLogFlusher.class);
-      final var log = new RaftLog(journal, flusher);
+      final var log = new RaftLog(journal, flusher, new RaftLogMetrics(meterRegistry));
       when(journal.getLastIndex()).thenReturn(3L);
 
       // when
@@ -284,7 +285,7 @@ class RaftLogTest {
     void shouldFlushDirectly() {
       // given
       final var journal = mock(Journal.class);
-      final var log = new RaftLog(journal, new DirectFlusher());
+      final var log = new RaftLog(journal, new DirectFlusher(), new RaftLogMetrics(meterRegistry));
       when(journal.getLastIndex()).thenReturn(3L);
 
       // when
@@ -299,7 +300,7 @@ class RaftLogTest {
       // given
       final var journal = mock(Journal.class);
       final var flusher = spy(new NoopFlusher());
-      final var log = new RaftLog(journal, flusher);
+      final var log = new RaftLog(journal, flusher, new RaftLogMetrics(meterRegistry));
 
       // when
       log.flush();
