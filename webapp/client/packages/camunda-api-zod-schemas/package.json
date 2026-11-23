@@ -825,7 +825,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"packageManager": "npm@12.2.2",
+	"packageManager": "npm@12.2.3",
 	"devDependencies": {
 		"@kubb/adapter-oas": "5.21.0",
 		"@kubb/cli": "5.21.0",
@@ -840,7 +840,7 @@
 		"vite": "8.3.8",
 		"vite-plugin-circular-dependency": "0.6.0",
 		"vite-plugin-dts": "5.1.2",
-		"vitest": "5.1.0",
+		"vitest": "5.1.1",
 		"yaml": "2.9.1",
 		"zod": "^4.6.7"
 	},
