@@ -13,7 +13,7 @@ import java.util.Optional;
 /**
  * The base of every cluster metadata store error. Unchecked, so {@link ClusterMetadataStore#watch}
  * can throw it without a throws clause. A backing mechanism can add errors of its own that extend
- * it.Met
+ * it.
  */
 public abstract class ClusterMetadataStoreException extends RuntimeException {
 
