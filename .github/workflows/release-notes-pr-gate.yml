@@ -18,6 +18,12 @@
 #   * Enforcing (enforce=true): a failing check fails the job. The merge button
 #     is blocked where `PR-issue link` is a required status check in the branch
 #     rulesets.
+#   * Merge queue: main and stable/** merge through a queue, and a required
+#     check must also report on the queue's `merge_group` run, or the queue
+#     waits until it times out and ejects the PR. There is no PR body to judge
+#     there and the verdict was already given on the PR, so on `merge_group`
+#     the whole job is skipped, which a required check counts as passing. No
+#     checkout or Vault login runs in the queue, so neither can eject a PR.
 #
 # The gate is deliberately NOT part of Unified CI: ci.yml does not listen to
 # `edited`, and a PR body edit is the primary way an author fixes a gate
@@ -37,10 +43,12 @@ on:
     # failure, and it is also how a passing PR could silently lose its issue
     # link. Without it the gate's verdict can go stale against the current body.
     types: [opened, edited, synchronize, reopened]
+  merge_group: {}
 
-# One run per PR; a newer event supersedes an in-flight one.
+# One run per PR (or per merge-queue group); a newer event supersedes an
+# in-flight one.
 concurrency:
-  group: release-notes-pr-gate-${{ github.event.pull_request.number }}
+  group: release-notes-pr-gate-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions: {}
@@ -52,6 +60,8 @@ env:
 jobs:
   pr-issue-link:
     name: PR-issue link
+    # Skipped (= passing) on merge_group; see the header.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

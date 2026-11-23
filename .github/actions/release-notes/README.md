@@ -212,6 +212,10 @@ The gate is one workflow, `release-notes-pr-gate.yml`, on plain **`pull_request`
 
 - **Metadata-only.** The action reads the PR through the API and never checks out
   or executes PR code.
+- **Merge queue.** On `merge_group` the whole job is skipped, which a required
+  check counts as passing: a required check must report there, and the verdict
+  was already given on the PR. Nothing runs in the queue, so no checkout or
+  Vault failure can eject a PR.
 - **No privileged token.** `GITHUB_TOKEN` only, with `pull-requests: write` (the
   comment and label) and `issues: write` (recreating a deleted `no-issue` label).
   No App token, and the gate itself reads no Vault secret. (The workflow's
