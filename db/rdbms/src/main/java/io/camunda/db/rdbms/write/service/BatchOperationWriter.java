@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationActivateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationFinalizeEndDateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemCompletionDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemStatusUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsCompletionDto;
@@ -37,6 +38,9 @@ import org.slf4j.LoggerFactory;
 public class BatchOperationWriter implements RdbmsWriter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationWriter.class);
+
+  /** Above the default order of all other batch operation updates, see {@link #finalizeEndDate}. */
+  private static final int FINALIZE_END_DATE_ORDER = 1;
 
   private final ExecutionQueue executionQueue;
   private final VendorDatabaseProperties vendorDatabaseProperties;
@@ -112,6 +116,7 @@ public class BatchOperationWriter implements RdbmsWriter {
               item.batchOperationKey(),
               "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementFailedOperationsCount",
               item.batchOperationKey()));
+      finalizeEndDate(item.batchOperationKey(), item.processedDate());
     } else if (item.state() == BatchOperationItemState.COMPLETED
         || item.state() == BatchOperationItemState.SKIPPED) {
       executionQueue.executeInQueue(
@@ -121,6 +126,7 @@ public class BatchOperationWriter implements RdbmsWriter {
               item.batchOperationKey(),
               "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementCompletedOperationsCount",
               item.batchOperationKey()));
+      finalizeEndDate(item.batchOperationKey(), item.processedDate());
     }
   }
 
@@ -148,18 +154,30 @@ public class BatchOperationWriter implements RdbmsWriter {
             Collectors.groupingBy(
                 BatchOperationItemCompletionDto::batchOperationKey, Collectors.counting()))
         .forEach(
-            (batchOperationKey, completedCount) ->
-                mapper.bulkIncrementCompletedOperationsCount(
-                    new BatchOperationUpdateTotalCountDto(
-                        batchOperationKey, completedCount.intValue())));
+            (batchOperationKey, completedCount) -> {
+              mapper.bulkIncrementCompletedOperationsCount(
+                  new BatchOperationUpdateTotalCountDto(
+                      batchOperationKey, completedCount.intValue()));
+              mapper.finalizeEndDate(
+                  new BatchOperationFinalizeEndDateDto(batchOperationKey, processedDate));
+            });
   }
 
+  /**
+   * Marks the batch operation as {@code COMPLETED}. Its end date is only set once all of its items
+   * have settled, see {@link #finalizeEndDate}.
+   */
   public void finish(final String batchOperationKey, final OffsetDateTime endDate) {
     updateCompleted(
         batchOperationKey,
-        new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.COMPLETED, endDate));
+        new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.COMPLETED, null));
+    finalizeEndDate(batchOperationKey, endDate);
   }
 
+  /**
+   * Marks the batch operation with the given terminal state. Its end date is only set once all of
+   * its items have settled, see {@link #finalizeEndDate}.
+   */
   public void finishWithErrors(
       final String batchOperationKey,
       final OffsetDateTime endDate,
@@ -169,7 +187,8 @@ public class BatchOperationWriter implements RdbmsWriter {
 
     updateCompleted(
         batchOperationKey,
-        new BatchOperationUpdateDto(batchOperationKey, batchOperationState, endDate));
+        new BatchOperationUpdateDto(batchOperationKey, batchOperationState, null));
+    finalizeEndDate(batchOperationKey, endDate);
   }
 
   public void cancel(final String batchOperationKey, final OffsetDateTime endDate) {
@@ -194,6 +213,29 @@ public class BatchOperationWriter implements RdbmsWriter {
     updateCompleted(
         batchOperationKey,
         new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.ACTIVE, null));
+  }
+
+  /**
+   * Sets the end date once the batch operation has finished and all of its items are completed or
+   * failed, and does nothing before that. The check runs in the database, so it does not depend on
+   * whether the lifecycle record or the last item is exported first. It has to be queued after
+   * every write that can make the condition true.
+   *
+   * <p>The end date is the latest of the timestamps passed in for the flush that settles the batch
+   * operation: the {@code COMPLETED} record or the last item to settle, whichever is later.
+   *
+   * <p>The queue sorts the updates of a flush by statement ID, so it is queued with a higher {@code
+   * order} to run after the state and count updates it reads.
+   */
+  private void finalizeEndDate(final String batchOperationKey, final OffsetDateTime endDate) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.UPDATE,
+            batchOperationKey,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.finalizeEndDate",
+            new BatchOperationFinalizeEndDateDto(batchOperationKey, endDate),
+            FINALIZE_END_DATE_ORDER));
   }
 
   private void updateCompleted(final String batchOperationKey, final BatchOperationUpdateDto dto) {

@@ -776,6 +776,9 @@ class DefaultExecutionQueueTest {
     "io.camunda.db.rdbms.sql.SequenceFlowMapper.updateHistoryCleanupDate,true",
     "io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists,true",
     "io.camunda.db.rdbms.sql.BatchOperationMapper.activate,true",
+    // conditional: affects no rows until the batch operation has finished and all of its items
+    // have settled, which is the normal outcome for every item but the last one
+    "io.camunda.db.rdbms.sql.BatchOperationMapper.finalizeEndDate,true",
     // set-if-null: affects no rows whenever the name is already resolved, which is the normal
     // outcome of a second ad-hoc entry activation on the same inner instance
     "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateNameIfNull,true",
