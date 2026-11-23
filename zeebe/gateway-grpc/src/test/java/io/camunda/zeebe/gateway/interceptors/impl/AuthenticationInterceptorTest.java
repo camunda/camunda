@@ -21,6 +21,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
@@ -195,7 +196,10 @@ public class AuthenticationInterceptorTest {
     oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -226,7 +230,10 @@ public class AuthenticationInterceptorTest {
     oidcAuthenticationConfiguration.setClientIdClaim("client_id");
 
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -263,7 +270,10 @@ public class AuthenticationInterceptorTest {
     oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -299,7 +309,10 @@ public class AuthenticationInterceptorTest {
     oidcAuthenticationConfiguration.setClientIdClaim("client_id");
 
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -344,7 +357,10 @@ public class AuthenticationInterceptorTest {
 
     // when
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -379,7 +395,10 @@ public class AuthenticationInterceptorTest {
 
     // when
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -413,7 +432,10 @@ public class AuthenticationInterceptorTest {
 
     // when
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -450,7 +472,10 @@ public class AuthenticationInterceptorTest {
 
     // when
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -486,7 +511,10 @@ public class AuthenticationInterceptorTest {
 
     // when
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -523,7 +551,10 @@ public class AuthenticationInterceptorTest {
 
     // when
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -561,7 +592,10 @@ public class AuthenticationInterceptorTest {
 
     // when
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -594,7 +628,10 @@ public class AuthenticationInterceptorTest {
     oidcAuthenticationConfiguration.setGroupsClaim("$.groups[*]");
 
     new AuthenticationInterceptor(
-            new Oidc(jwtDecoder, new NoopOidcClaimsProvider(), oidcAuthenticationConfiguration))
+            new Oidc(
+                jwtDecoder,
+                new NoopOidcClaimsProvider(),
+                authenticationOf(oidcAuthenticationConfiguration)))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -833,5 +870,12 @@ public class AuthenticationInterceptorTest {
     public MethodDescriptor<Object, Object> getMethodDescriptor() {
       return mock(MethodDescriptor.class);
     }
+  }
+
+  private static AuthenticationConfiguration authenticationOf(
+      final OidcAuthenticationConfiguration oidc) {
+    final var authentication = new AuthenticationConfiguration();
+    authentication.setOidc(oidc);
+    return authentication;
   }
 }

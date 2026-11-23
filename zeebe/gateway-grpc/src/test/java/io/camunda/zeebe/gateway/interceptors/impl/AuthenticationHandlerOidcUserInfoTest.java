@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
@@ -39,7 +40,7 @@ class AuthenticationHandlerOidcUserInfoTest {
     when(claimsProvider.claimsFor(any(), eq("token-abc")))
         .thenReturn(Map.of("sub", "alice", "groups", List.of("engineering")));
 
-    final var handler = new Oidc(jwtDecoder, claimsProvider, oidc);
+    final var handler = new Oidc(jwtDecoder, claimsProvider, authenticationOf(oidc));
     final var result = handler.authenticate("Bearer token-abc");
 
     assertThat(result.isRight()).isTrue();
@@ -62,7 +63,7 @@ class AuthenticationHandlerOidcUserInfoTest {
     when(claimsProvider.claimsFor(any(), eq("token-abc")))
         .thenThrow(new RuntimeException("userinfo down"));
 
-    final var handler = new Oidc(jwtDecoder, claimsProvider, oidc);
+    final var handler = new Oidc(jwtDecoder, claimsProvider, authenticationOf(oidc));
     final var result = handler.authenticate("Bearer token-abc");
 
     assertThat(result.isLeft()).isTrue();
@@ -88,7 +89,7 @@ class AuthenticationHandlerOidcUserInfoTest {
             new RuntimeException(
                 "UserInfo request to https://internal.idp.example/userinfo returned 502"));
 
-    final var handler = new Oidc(jwtDecoder, claimsProvider, oidc);
+    final var handler = new Oidc(jwtDecoder, claimsProvider, authenticationOf(oidc));
     final var claimsFail = handler.authenticate("Bearer token-abc");
 
     assertThat(claimsFail.isLeft()).isTrue();
@@ -109,5 +110,12 @@ class AuthenticationHandlerOidcUserInfoTest {
     final String decodeDescription = decodeFail.getLeft().getDescription();
     assertThat(decodeDescription).doesNotContain("wrong.example").doesNotContain("2024-01-01");
     assertThat(decodeFail.getLeft().getCause()).isNull();
+  }
+
+  private static AuthenticationConfiguration authenticationOf(
+      final OidcAuthenticationConfiguration oidc) {
+    final var authentication = new AuthenticationConfiguration();
+    authentication.setOidc(oidc);
+    return authentication;
   }
 }
