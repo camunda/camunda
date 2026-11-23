@@ -26,6 +26,8 @@ dependencies {
   testImplementation(libs.junit.junit)
   testImplementation(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(project(":zeebe-test-util"))
+  testImplementation(libs.org.apache.logging.log4j.log4j.api)
+  testImplementation(libs.org.apache.logging.log4j.log4j.core)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.awaitility.awaitility)
   testImplementation(libs.org.junit.platform.junit.platform.commons)

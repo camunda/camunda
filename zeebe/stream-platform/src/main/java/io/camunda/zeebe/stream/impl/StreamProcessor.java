@@ -222,7 +222,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         replayCompletedFuture.onComplete(
             (v, error) -> {
               if (error != null) {
-                LOG.error("The replay of events failed.", error);
                 onFailure(error);
               }
             });
@@ -231,7 +230,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         replayCompletedFuture.onComplete(
             (lastProcessingPositions, error) -> {
               if (error != null) {
-                LOG.error("The replay of events failed.", error);
                 onFailure(error);
               } else {
                 onRecovered(lastProcessingPositions);
