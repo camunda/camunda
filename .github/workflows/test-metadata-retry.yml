@@ -1,0 +1,135 @@
+---
+# TEST ONLY (scratch branch for PR #70649). Not to be merged.
+name: Test metadata-with-retry
+
+on:
+  push:
+    branches: ['scratch/test-metadata-retry-70649']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    name: parity (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: single-line
+            tags: 8.10.0-SNAPSHOT
+          - name: multi-line
+            tags: |
+              8.10.0-SNAPSHOT
+              8.10.0-alpha1
+          - name: comma-separated
+            tags: 8.10.0,SNAPSHOT
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Raw docker/metadata-action
+        id: raw
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: camunda/camunda
+          tags: ${{ matrix.tags }}
+      - name: Real action
+        id: real
+        uses: ./.github/actions/metadata-with-retry
+        with:
+          images: camunda/camunda
+          tags: ${{ matrix.tags }}
+      - name: Scratch action, fail-attempts=0
+        id: fi0
+        uses: ./.github/actions/metadata-with-retry-fi
+        with:
+          images: camunda/camunda
+          tags: ${{ matrix.tags }}
+          fail-attempts: '0'
+      - name: Assert byte-identical
+        env:
+          RAW: ${{ steps.raw.outputs.tags }}
+          REAL: ${{ steps.real.outputs.tags }}
+          FI0: ${{ steps.fi0.outputs.tags }}
+        run: |
+          echo "--- RAW"; printf '%s' "$RAW" | od -c | head -20
+          echo "--- REAL"; printf '%s' "$REAL" | od -c | head -20
+          [ -n "$RAW" ] || { echo "::error::raw output empty"; exit 1; }
+          [ "$RAW" = "$REAL" ] || { echo "::error::REAL != RAW"; exit 1; }
+          [ "$RAW" = "$FI0" ] || { echo "::error::FI0 != RAW"; exit 1; }
+          echo "lines in output: $(printf '%s\n' "$RAW" | wc -l)"
+          echo "PARITY OK"
+
+  recovery:
+    name: recovery (fail-attempts=${{ matrix.fail }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        fail: ['1', '2']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Reference (raw, happy path, multi-line tags)
+        id: raw
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: camunda/camunda
+          tags: |
+            8.10.0-SNAPSHOT
+            8.10.0-alpha1
+      - name: Scratch action with injected failures
+        id: fi
+        uses: ./.github/actions/metadata-with-retry-fi
+        with:
+          images: camunda/camunda
+          tags: |
+            8.10.0-SNAPSHOT
+            8.10.0-alpha1
+          fail-attempts: ${{ matrix.fail }}
+      - name: Assert recovered output equals happy path
+        env:
+          RAW: ${{ steps.raw.outputs.tags }}
+          FI: ${{ steps.fi.outputs.tags }}
+          FI_OUTCOME: ${{ steps.fi.outcome }}
+        run: |
+          echo "fi outcome: $FI_OUTCOME"
+          printf '%s' "$FI" | od -c | head -20
+          [ "$FI_OUTCOME" = success ] || exit 1
+          [ -n "$RAW" ] && [ "$RAW" = "$FI" ] || { echo "::error::recovered output != happy path"; exit 1; }
+          echo "RECOVERY OK"
+
+  exhaustion:
+    name: exhaustion (${{ matrix.kind }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [scratch-fail-attempts-3, real-action-bogus-tags]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Scratch action, all attempts fail
+        id: fi
+        if: matrix.kind == 'scratch-fail-attempts-3'
+        continue-on-error: true
+        uses: ./.github/actions/metadata-with-retry-fi
+        with:
+          images: camunda/camunda
+          tags: 8.10.0-SNAPSHOT
+          fail-attempts: '3'
+      - name: Real action, bogus tags
+        id: real
+        if: matrix.kind == 'real-action-bogus-tags'
+        continue-on-error: true
+        uses: ./.github/actions/metadata-with-retry
+        with:
+          images: camunda/camunda
+          tags: type=bogus
+      - name: Assert step failed
+        env:
+          OUTCOME: ${{ steps.fi.outcome || steps.real.outcome }}
+          OUT: ${{ steps.fi.outputs.tags || steps.real.outputs.tags }}
+        run: |
+          echo "outcome=$OUTCOME output='$OUT'"
+          [ "$OUTCOME" = failure ] || { echo "::error::expected failure, got $OUTCOME"; exit 1; }
+          echo "EXHAUSTION OK"
