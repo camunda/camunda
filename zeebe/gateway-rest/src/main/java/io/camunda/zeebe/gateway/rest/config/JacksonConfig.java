@@ -53,6 +53,9 @@ import io.camunda.gateway.protocol.model.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.SecretStatusFilterProperty;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.UserTaskStateFilterProperty;
+import io.camunda.gateway.protocol.model.VariableHistoryItemActorTypeFilterProperty;
+import io.camunda.gateway.protocol.model.VariableHistoryItemOperationTypeFilterProperty;
+import io.camunda.gateway.protocol.model.VariableHistoryItemVariableOperationTypeFilterProperty;
 import io.camunda.gateway.protocol.model.WaitStateElementTypeFilterProperty;
 import io.camunda.gateway.protocol.model.WaitStateTypeFilterProperty;
 import io.camunda.zeebe.gateway.rest.deserializer.AgentDefinitionTypeFilterPropertyDeserializer;
@@ -92,6 +95,9 @@ import io.camunda.zeebe.gateway.rest.deserializer.SearchQueryPageRequestDeserial
 import io.camunda.zeebe.gateway.rest.deserializer.SecretStatusFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.UserTaskStateFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.VariableHistoryItemActorTypeFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.VariableHistoryItemOperationTypeFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.VariableHistoryItemVariableOperationTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.WaitStateElementTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.WaitStateTypeFilterPropertyDeserializer;
 import java.util.function.Consumer;
@@ -195,6 +201,15 @@ public class JacksonConfig {
         new WaitStateElementTypeFilterPropertyDeserializer());
     module.addDeserializer(
         WaitStateTypeFilterProperty.class, new WaitStateTypeFilterPropertyDeserializer());
+    module.addDeserializer(
+        VariableHistoryItemOperationTypeFilterProperty.class,
+        new VariableHistoryItemOperationTypeFilterPropertyDeserializer());
+    module.addDeserializer(
+        VariableHistoryItemVariableOperationTypeFilterProperty.class,
+        new VariableHistoryItemVariableOperationTypeFilterPropertyDeserializer());
+    module.addDeserializer(
+        VariableHistoryItemActorTypeFilterProperty.class,
+        new VariableHistoryItemActorTypeFilterPropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 

@@ -55,6 +55,7 @@ import io.camunda.service.TopologyServices;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.VariableHistoryServices;
 import io.camunda.service.VariableServices;
 
 /**
@@ -147,6 +148,8 @@ public interface ServiceRegistry {
   UserTaskServices userTaskServices(String physicalTenantId);
 
   VariableServices variableServices(String physicalTenantId);
+
+  VariableHistoryServices variableHistoryServices(String physicalTenantId);
 
   // -- cluster-wide --
 

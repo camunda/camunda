@@ -73,6 +73,15 @@ components:
         - $ref: '#/components/schemas/ProcessInstanceKey'
         - $ref: '#/components/schemas/ElementInstanceKey'
 
+    VariableHistoryItemKey:
+      description: System-generated key for a variable history item.
+      format: VariableHistoryItemKey
+      x-semantic-type: VariableHistoryItemKey
+      example: "2251799813683999"
+      type: string
+      allOf:
+        - $ref: '#/components/schemas/LongKey'
+
     IncidentKey:
       description: System-generated key for a incident.
       format: IncidentKey
@@ -472,6 +481,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ScopeKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     VariableKeyFilterProperty:
       description: VariableKey property with full advanced search capabilities.
@@ -509,6 +529,54 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/VariableKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
+
+    VariableHistoryItemKeyFilterProperty:
+      description: VariableHistoryItemKey property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/VariableHistoryItemKey"
+        - $ref: '#/components/schemas/AdvancedVariableHistoryItemKeyFilter'
+
+    AdvancedVariableHistoryItemKeyFilter:
+      title: Advanced filter
+      description: Advanced VariableHistoryItemKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/VariableHistoryItemKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/VariableHistoryItemKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/VariableHistoryItemKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/VariableHistoryItemKey"
 
     DecisionEvaluationInstanceKeyFilterProperty:
       description: DecisionEvaluationInstanceKey property with full advanced search capabilities.

@@ -178,6 +178,11 @@ import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.gateway.protocol.model.UserTaskWaitStateDetails;
+import io.camunda.gateway.protocol.model.VariableHistoryItemActorTypeEnum;
+import io.camunda.gateway.protocol.model.VariableHistoryItemOperationTypeEnum;
+import io.camunda.gateway.protocol.model.VariableHistoryItemSearchQueryResult;
+import io.camunda.gateway.protocol.model.VariableHistoryItemSearchResult;
+import io.camunda.gateway.protocol.model.VariableHistoryItemVariableOperationTypeEnum;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
@@ -242,6 +247,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUSta
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.VariableHistoryItemEntity;
 import io.camunda.search.entities.WaitStateConditionDetails;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
@@ -1841,6 +1847,48 @@ public final class SearchQueryResponseMapper {
 
   private static List<AuditLogResult> toAuditLogs(final List<AuditLogEntity> auditLogs) {
     return auditLogs.stream().map(SearchQueryResponseMapper::toAuditLog).toList();
+  }
+
+  public static VariableHistoryItemSearchQueryResult toVariableHistoryItemSearchQueryResponse(
+      final SearchQueryResult<VariableHistoryItemEntity> result, final boolean truncateValues) {
+    return VariableHistoryItemSearchQueryResult.Builder.create()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            result.items().stream()
+                .map(item -> toVariableHistoryItem(item, truncateValues))
+                .toList())
+        .build();
+  }
+
+  private static VariableHistoryItemSearchResult toVariableHistoryItem(
+      final VariableHistoryItemEntity item, final boolean truncateValues) {
+    // A cut entry (for example a growing output collection) can reach the search without a full
+    // value, so unlike the variables search this returns the preview instead of failing.
+    final var fullValue = item.fullValue();
+    final boolean returnFull = !truncateValues && item.isPreview() && fullValue != null;
+    return VariableHistoryItemSearchResult.Builder.create()
+        .variableHistoryItemKey(keyToString(item.variableHistoryItemKey()))
+        .variableKey(keyToString(item.variableKey()))
+        .name(item.name())
+        .scopeKey(keyToString(item.scopeKey()))
+        .elementInstanceKey(keyToStringOrNull(item.elementInstanceKey()))
+        .elementId(item.elementId())
+        .processInstanceKey(keyToString(item.processInstanceKey()))
+        .rootProcessInstanceKey(keyToStringOrNull(item.rootProcessInstanceKey()))
+        .processDefinitionKey(keyToString(item.processDefinitionKey()))
+        .processDefinitionId(item.processDefinitionId())
+        .tenantId(item.tenantId())
+        .timestamp(formatDate(item.timestamp()))
+        .operationType(VariableHistoryItemOperationTypeEnum.fromValue(item.operationType().name()))
+        .variableOperationType(
+            VariableHistoryItemVariableOperationTypeEnum.fromValue(
+                item.variableOperationType().name()))
+        .actorType(VariableHistoryItemActorTypeEnum.fromValue(item.actorType().name()))
+        .actorId(item.actorId())
+        .agentElementId(item.agentElementId())
+        .value(returnFull ? fullValue : item.value())
+        .isTruncated(item.isPreview() && !returnFull)
+        .build();
   }
 
   public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
