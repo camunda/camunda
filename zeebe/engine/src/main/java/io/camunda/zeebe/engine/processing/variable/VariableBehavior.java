@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * A behavior which allows processors to mutate the variable state. Use this anywhere where you
@@ -36,6 +37,7 @@ import org.agrona.DirectBuffer;
  * <p>Note that for {@link io.camunda.zeebe.engine.state.EventApplier}, you should just use the
  * mutable state directly.
  */
+@NullMarked
 public final class VariableBehavior {
 
   private final VariableState variableState;
@@ -105,6 +107,36 @@ public final class VariableBehavior {
       final String tenantId,
       final DirectBuffer document)
       throws VariableValidationException {
+    mergeLocalDocument(
+        scopeKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        document,
+        variableSourceRecord);
+  }
+
+  /**
+   * Merges the given document as in {@link #mergeLocalDocument(long, long, long, long, int,
+   * DirectBuffer, String, DirectBuffer)}, but records the given source instead of the source of
+   * this behavior.
+   *
+   * @param source the source of the written variables, read before this method returns
+   */
+  public void mergeLocalDocument(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document,
+      final VariableSourceRecord source)
+      throws VariableValidationException {
     validateBuffer(scopeKey, document);
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
@@ -118,7 +150,7 @@ public final class VariableBehavior {
         .setStorageOrdinal(storageOrdinal)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
-        .setSource(variableSourceRecord);
+        .setSource(source);
     final List<VariableEvent> variableEvents = new ArrayList<>();
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
@@ -173,6 +205,37 @@ public final class VariableBehavior {
         bpmnProcessId,
         tenantId,
         document,
+        variableSourceRecord);
+  }
+
+  /**
+   * Merges the given document as in {@link #mergeDocument(long, long, long, long, int,
+   * DirectBuffer, String, DirectBuffer)}, but records the given source instead of the source of
+   * this behavior.
+   *
+   * @param source the source of the written variables, read before this method returns
+   */
+  public void mergeDocument(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document,
+      final VariableSourceRecord source)
+      throws VariableValidationException {
+    mergeDocument(
+        scopeKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        document,
+        source,
         false);
   }
 
@@ -197,6 +260,36 @@ public final class VariableBehavior {
       final String tenantId,
       final DirectBuffer document)
       throws VariableValidationException {
+    mergeDocumentWithPropagationOfUnmodifiedVariable(
+        scopeKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        document,
+        variableSourceRecord);
+  }
+
+  /**
+   * Merges the given document as in {@link #mergeDocumentWithPropagationOfUnmodifiedVariable(long,
+   * long, long, long, int, DirectBuffer, String, DirectBuffer)}, but records the given source
+   * instead of the source of this behavior.
+   *
+   * @param source the source of the written variables, read before this method returns
+   */
+  public void mergeDocumentWithPropagationOfUnmodifiedVariable(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document,
+      final VariableSourceRecord source)
+      throws VariableValidationException {
     mergeDocument(
         scopeKey,
         processDefinitionKey,
@@ -206,6 +299,7 @@ public final class VariableBehavior {
         bpmnProcessId,
         tenantId,
         document,
+        source,
         true);
   }
 
@@ -218,6 +312,7 @@ public final class VariableBehavior {
       final DirectBuffer bpmnProcessId,
       final String tenantId,
       final DirectBuffer document,
+      final VariableSourceRecord source,
       final boolean propagateUnmodifiedVariableInScope)
       throws VariableValidationException {
     validateBuffer(scopeKey, document);
@@ -236,7 +331,7 @@ public final class VariableBehavior {
         .setStorageOrdinal(storageOrdinal)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
-        .setSource(variableSourceRecord);
+        .setSource(source);
     while ((parentScope = variableState.getParentScopeKey(currentScope)) > 0) {
       final Iterator<DocumentEntry> entryIterator = indexedDocument.iterator();
 
@@ -326,6 +421,7 @@ public final class VariableBehavior {
         .setStorageOrdinal(storageOrdinal)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
+        .setSource(variableSourceRecord)
         .setName(name)
         .setValue(value, valueOffset, valueLength);
 

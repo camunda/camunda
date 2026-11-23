@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.util.RecordingTypedEventWriter.RecordedEvent;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValueAssert;
 import io.camunda.zeebe.test.util.MsgPackUtil;
@@ -862,6 +863,224 @@ final class VariableBehaviorTest {
         .hasBpmnProcessId("process")
         .hasTenantId(tenantId)
         .hasSource(variableSource);
+  }
+
+  @Test
+  void shouldMergeLocalDocumentWithSourcePerWrite() throws VariableValidationException {
+    // given
+    final long processDefinitionKey = 1;
+    final long parentScopeKey = 1;
+    final long childScopeKey = 2;
+    final long rootKey = 3;
+    final int storageOrdinal = 4;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    state.createScope(parentScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, parentScopeKey);
+    final var source = jobCompletionSource();
+
+    // when
+    behavior.mergeLocalDocument(
+        childScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        rootKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(Map.of("foo", "bar")),
+        source);
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events).hasSize(1);
+    VariableRecordValueAssert.assertThat(events.getFirst().value)
+        .hasName("foo")
+        .hasScopeKey(childScopeKey)
+        .hasSource(source);
+  }
+
+  @Test
+  void shouldMergeDocumentWithSourcePerWrite() throws VariableValidationException {
+    // given
+    final long processDefinitionKey = 1;
+    final long rootScopeKey = 1;
+    final long childScopeKey = 2;
+    final long childFooKey = 3;
+    final int storageOrdinal = 4;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    state.createScope(rootScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, rootScopeKey);
+    setVariable(childFooKey, childScopeKey, processDefinitionKey, "foo", "old");
+    final var source = jobCompletionSource();
+
+    // when
+    behavior.mergeDocument(
+        childScopeKey,
+        processDefinitionKey,
+        rootScopeKey,
+        rootScopeKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(Map.of("foo", "new", "baz", "buz")),
+        source);
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events)
+        .satisfiesExactlyInAnyOrder(
+            event -> {
+              assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
+              VariableRecordValueAssert.assertThat(event.value)
+                  .hasName("foo")
+                  .hasScopeKey(childScopeKey)
+                  .hasSource(source);
+            },
+            event -> {
+              assertThat(event.intent).isEqualTo(VariableIntent.CREATED);
+              VariableRecordValueAssert.assertThat(event.value)
+                  .hasName("baz")
+                  .hasScopeKey(rootScopeKey)
+                  .hasSource(source);
+            });
+  }
+
+  @Test
+  void shouldMergeDocumentWithPropagationOfUnmodifiedVariableWithSourcePerWrite()
+      throws VariableValidationException {
+    // given
+    final long processDefinitionKey = 1;
+    final long rootScopeKey = 1;
+    final long childScopeKey = 2;
+    final long childFooKey = 3;
+    final int storageOrdinal = 4;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    state.createScope(rootScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, rootScopeKey);
+    setVariable(childFooKey, childScopeKey, processDefinitionKey, "foo", "bar");
+    final var source = jobCompletionSource();
+
+    // when
+    behavior.mergeDocumentWithPropagationOfUnmodifiedVariable(
+        childScopeKey,
+        processDefinitionKey,
+        rootScopeKey,
+        rootScopeKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(Map.of("foo", "bar")),
+        source);
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events).hasSize(1);
+    assertThat(events.getFirst().intent).isEqualTo(VariableIntent.CREATED);
+    VariableRecordValueAssert.assertThat(events.getFirst().value)
+        .hasName("foo")
+        .hasScopeKey(rootScopeKey)
+        .hasSource(source);
+  }
+
+  @Test
+  void shouldKeepOwnSourceAfterWriteWithOtherSource() throws VariableValidationException {
+    // given
+    final long processDefinitionKey = 1;
+    final long parentScopeKey = 1;
+    final long childScopeKey = 2;
+    final long rootKey = 3;
+    final int storageOrdinal = 4;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    state.createScope(parentScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, parentScopeKey);
+    final var ownSource = VariableSourceRecord.api();
+    final var ownSourceBehavior = behavior.withVariableSource(ownSource);
+    ownSourceBehavior.mergeLocalDocument(
+        childScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        rootKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(Map.of("foo", "bar")),
+        jobCompletionSource());
+
+    // when
+    ownSourceBehavior.mergeLocalDocument(
+        childScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        rootKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(Map.of("baz", "buz")));
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events).hasSize(2);
+    VariableRecordValueAssert.assertThat(events.get(0).value)
+        .hasName("foo")
+        .hasSource(jobCompletionSource());
+    VariableRecordValueAssert.assertThat(events.get(1).value).hasName("baz").hasSource(ownSource);
+  }
+
+  @Test
+  void shouldNotKeepSourceOfPreviousWriteOnSetLocalVariable() throws VariableValidationException {
+    // given
+    final long processDefinitionKey = 1;
+    final long parentScopeKey = 1;
+    final long childScopeKey = 2;
+    final long rootKey = 3;
+    final int storageOrdinal = 4;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    final DirectBuffer variableValue = packString("buz");
+    state.createScope(parentScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, parentScopeKey);
+    behavior.mergeLocalDocument(
+        childScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        rootKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(Map.of("foo", "bar")),
+        jobCompletionSource());
+
+    // when
+    behavior.setLocalVariable(
+        childScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        rootKey,
+        storageOrdinal,
+        bpmnProcessId,
+        tenantId,
+        BufferUtil.wrapString("baz"),
+        variableValue,
+        0,
+        variableValue.capacity());
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events).hasSize(2);
+    VariableRecordValueAssert.assertThat(events.get(1).value)
+        .hasName("baz")
+        .hasSource(VariableSourceRecord.none());
+  }
+
+  private static VariableSourceRecord jobCompletionSource() {
+    return new VariableSourceRecord()
+        .setType(VariableOperationType.JOB_COMPLETION)
+        .setElementInstanceKey(7)
+        .setElementId("task");
   }
 
   @SuppressWarnings("unchecked")
