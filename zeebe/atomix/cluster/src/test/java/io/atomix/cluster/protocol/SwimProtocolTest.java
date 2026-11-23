@@ -54,6 +54,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -105,6 +106,12 @@ public class SwimProtocolTest extends ConcurrentTestCase {
    */
   private final Deque<Runnable> resources = new ConcurrentLinkedDeque<>();
 
+  /**
+   * The executors of every protocol a test started. The test owns them so that it can stop their
+   * threads even when {@link SwimMembershipProtocol#leave} does not, e.g. under mutation testing.
+   */
+  private final List<ExecutorService> executors = new CopyOnWriteArrayList<>();
+
   private SwimMember member(
       final String id,
       final Long nodeVersion,
@@ -145,11 +152,28 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   }
 
   @AfterEach
-  public void cleanup() {
+  public void cleanup() throws InterruptedException {
+    final var failure = new AssertionError("Failed to stop the resources of the test");
     for (var stop = resources.pollLast(); stop != null; stop = resources.pollLast()) {
-      stop.run();
+      try {
+        stop.run();
+      } catch (final RuntimeException | Error e) {
+        failure.addSuppressed(e);
+      }
     }
     protocols.clear();
+
+    executors.forEach(ExecutorService::shutdownNow);
+    for (final var executor : executors) {
+      if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+        failure.addSuppressed(new AssertionError("Executor did not terminate: " + executor));
+      }
+    }
+    executors.clear();
+
+    if (failure.getSuppressed().length > 0) {
+      throw failure;
+    }
   }
 
   @ParameterizedTest
@@ -686,9 +710,11 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     final var swimScheduler =
         Executors.newSingleThreadScheduledExecutor(
             namedThreads("atomix-cluster-heartbeat-sender", LOGGER, actorSchedulerName));
+    executors.add(swimScheduler);
     final var eventExecutor =
         Executors.newSingleThreadExecutor(
             namedThreads("atomix-cluster-events", LOGGER, actorSchedulerName));
+    executors.add(eventExecutor);
     final SwimMembershipProtocol protocol =
         new SwimMembershipProtocol(config, meterRegistry, instanceId, swimScheduler, eventExecutor);
     resources.add(() -> protocol.leave(member).join());
