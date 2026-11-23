@@ -27,6 +27,9 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
     unifiedConfig.getCluster().getNetwork().getInternalApi().setPort(reservePort());
     withAdditionalProfile(Profile.GATEWAY);
 
+    // detect a stopped broker quickly instead of waiting for the 10s production failure timeout
+    TestMembership.configureFastMembership(unifiedConfig.getCluster().getMembership());
+
     unifiedConfig.getSecurity().getAuthentication().setUnprotectedApi(true);
     unifiedConfig.getSecurity().getAuthorizations().setEnabled(false);
 
