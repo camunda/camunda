@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Probes: a request from a client to a worker, answered in the same HTTP request, without a process | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-69320/adr/probes/probe-primitive/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Probes: a request from a client to a worker, answered in the same HTTP request, without a process | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Mathias Vandaele"><meta data-rh="true" property="og:description" content="DRI: Mathias Vandaele"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-69320/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-69320/adr/probes/probe-primitive/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-69320/adr/probes/probe-primitive/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-69320/adr/probes/probe-primitive/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-69320/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-69320/assets/js/runtime~main.6268d403.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-69320/assets/js/main.32eca859.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-69320/assets/js/runtime~main.865f619b.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-69320/assets/js/main.db72238d.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -102,8 +102,9 @@ the Java client can keep the values out of <code>toString()</code> and its <code
 <code>400 SECRET_RESOLUTION_ERROR</code> instead of raising an incident, since there is no process (D13).</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="records-export-and-audit">Records, export and audit<a href="#records-export-and-audit" class="hash-link" aria-label="Direct link to Records, export and audit" title="Direct link to Records, export and audit" translate="no">​</a></h3>
 <p>Two value types, <code>PROBE</code> and <code>PROBE_BATCH</code>, as <code>JOB</code> and <code>JOB_BATCH</code> (D32, specification
-section 7). <code>ANSWERED</code> never carries <code>data</code>: the client&#x27;s response is written from the <code>ANSWER</code>
-command, which exporters skip, so a metadata answer never reaches exported records (D42). The
+section 7). <code>ANSWERED</code> never carries <code>data</code>: the client&#x27;s response is written by the internal
+<code>RESPOND</code> command that <code>ANSWER</code> appends, and exporters skip both, so a metadata answer never
+reaches exported records (D42, D74). The
 Elasticsearch and OpenSearch templates are off by default (D56); the Camunda and RDBMS exporters
 write audit log entries only (D16), with the mapping in D70.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="authorization">Authorization<a href="#authorization" class="hash-link" aria-label="Direct link to Authorization" title="Direct link to Authorization" translate="no">​</a></h3>

@@ -258,7 +258,7 @@
     },
     {
       "title": "Code freeze of 8.11.0-alpha3",
-      "start": "2026-12-17",
+      "start": "2026-12-18",
       "end": "2027-01-05",
       "branch": "release-8.11.0-alpha3",
       "note": "Only bug fixes found during QA should be backported to this branch.",
