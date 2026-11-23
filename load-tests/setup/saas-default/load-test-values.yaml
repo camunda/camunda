@@ -1,3 +1,11 @@
 global:
   commonLabels:
     camunda.io/purpose: load-test
+  # CUSTOMIZATION: JSON logs, so that Cloud Logging parses severity and labels.
+  extraEnvVars:
+    - name: LOAD_TESTER_LOG_APPENDER
+      value: Stackdriver
+    - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
