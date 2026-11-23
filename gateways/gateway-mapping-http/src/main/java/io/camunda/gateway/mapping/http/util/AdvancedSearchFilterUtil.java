@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
@@ -127,12 +128,9 @@ public class AdvancedSearchFilterUtil {
     final var fClass = filter.getClass();
     final var operations = new ArrayList<Operation<T>>();
     for (final Operator operator : Operator.values()) {
-      final Method method;
-      try {
-        final var methodName = "get$%s".formatted(StringUtils.capitalize(operator.getValue()));
-        method = fClass.getMethod(methodName);
-      } catch (final NoSuchMethodException e) {
-        // ignore exception, filter doesn't contain this method
+      final Method method = findOperatorGetter(fClass, operator);
+      if (method == null) {
+        // filter doesn't contain this method
         continue;
       }
       method.setAccessible(true);
@@ -147,6 +145,27 @@ public class AdvancedSearchFilterUtil {
       }
     }
     return operations;
+  }
+
+  /**
+   * True for an advanced filter object, one with operator getters such as {@code get$In}, that
+   * yields no operations, for example {@code {"$in": []}}. Any other value is not empty.
+   */
+  public static boolean isEmptyAdvancedFilter(final Object value) {
+    final boolean isAdvancedFilter =
+        Arrays.stream(Operator.values())
+            .anyMatch(operator -> findOperatorGetter(value.getClass(), operator) != null);
+    return isAdvancedFilter && mapToUntypedOperations().apply(value).isEmpty();
+  }
+
+  private static @Nullable Method findOperatorGetter(
+      final Class<?> filterClass, final Operator operator) {
+    try {
+      final var methodName = "get$%s".formatted(StringUtils.capitalize(operator.getValue()));
+      return filterClass.getMethod(methodName);
+    } catch (final NoSuchMethodException e) {
+      return null;
+    }
   }
 
   private static <T> void addTypedOperation(
