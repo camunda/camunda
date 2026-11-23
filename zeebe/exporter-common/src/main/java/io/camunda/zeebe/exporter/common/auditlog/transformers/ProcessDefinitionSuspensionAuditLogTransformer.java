@@ -43,7 +43,7 @@ public class ProcessDefinitionSuspensionAuditLogTransformer
     }
 
     // The shared rejection handling would replace the description with the bare rejection type,
-    // which loses the version. A rejected request for one version differs from one for all.
+    // which loses the version.
     if (record.getRecordType() == RecordType.COMMAND_REJECTION && value.getVersion() > 0) {
       log.setResult(AuditLogOperationResult.FAIL)
           .setEntityDescription(

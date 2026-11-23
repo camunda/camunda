@@ -134,11 +134,7 @@ public class AuditLogTransformerConfigs {
               ProcessIntent.SUSPENDED,
               ProcessIntent.RESUMED);
 
-  // Only refusals: each changed version is audited by its own Process SUSPENDED or RESUMED event
-  // (PROCESS_CONFIG), so auditing the summary event too would log every change twice. All three
-  // refusals a user can cause are kept: NOT_FOUND (unknown id, key or version), INVALID_ARGUMENT
-  // (malformed target) and INVALID_STATE. FORBIDDEN is left out like in the sibling configs, as
-  // authorization failures are not audited.
+  // Only rejections: successful changes are audited per version by PROCESS_CONFIG.
   public static final TransformerConfig PROCESS_DEFINITION_SUSPENSION_CONFIG =
       TransformerConfig.with(ValueType.PROCESS_DEFINITION_SUSPENSION)
           .withRejections(

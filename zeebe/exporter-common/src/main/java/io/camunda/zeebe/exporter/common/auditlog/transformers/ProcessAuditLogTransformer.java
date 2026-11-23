@@ -35,8 +35,6 @@ public class ProcessAuditLogTransformer implements AuditLogTransformer<Process> 
         .setEntityDescription(describe(record.getIntent(), value));
   }
 
-  // AuditLogEntry has no field for the definition version, so suspend and resume entries, which
-  // concern a single version, carry it in the description.
   private static String describe(final Intent intent, final Process value) {
     if (intent == ProcessIntent.SUSPENDED || intent == ProcessIntent.RESUMED) {
       return value.getResourceName() + " (version " + value.getVersion() + ")";
