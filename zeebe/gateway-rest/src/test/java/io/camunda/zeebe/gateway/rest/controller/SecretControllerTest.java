@@ -41,6 +41,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -470,6 +471,26 @@ public class SecretControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest();
+    verifyNoInteractions(secretServices);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"$in", "$notIn"})
+  void shouldRejectNullEntryInAdvancedStatusFilter(final String operator) {
+    // when / then the 400 names the offending list, and the service is never asked
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            "{ \"filter\": { \"status\": { \"%s\": [\"ACTIVE\", null] } } }".formatted(operator))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("The filter.status.%s list must not contain null entries.".formatted(operator));
     verifyNoInteractions(secretServices);
   }
 
