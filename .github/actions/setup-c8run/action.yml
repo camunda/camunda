@@ -128,6 +128,7 @@ runs:
       with:
         path: ${{ steps.go-mod-cache.outputs.path }}
         key: c8run-go-mod-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('c8run/go.sum') }}
+        restore-keys: c8run-go-mod-${{ runner.os }}-${{ runner.arch }}-
 
     - name: Restore Go modules
       if: ${{ !startsWith(github.ref_name, 'stable/') && github.ref_name != 'main' && steps.is-cache-enabled.outputs.is-cache-enabled == 'true' }}
@@ -137,6 +138,7 @@ runs:
       with:
         path: ${{ steps.go-mod-cache.outputs.path }}
         key: c8run-go-mod-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('c8run/go.sum') }}
+        restore-keys: c8run-go-mod-${{ runner.os }}-${{ runner.arch }}-
 
     - uses: ./.github/actions/setup-build
       if: ${{ inputs.source-build == 'true' }}
