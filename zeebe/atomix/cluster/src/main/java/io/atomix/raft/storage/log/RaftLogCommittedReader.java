@@ -76,6 +76,10 @@ public class RaftLogCommittedReader implements RaftLogReader {
    * compacted. The log can also be compacted or reset between the calls here, which is why the
    * first index is read last: it is then already past the index. It is read without the journal
    * lock, and is 0 while a reset has removed the segments but not yet added the new first one.
+   *
+   * <p>A reset may also start the log at the commit index, as a follower does before it appends the
+   * entries from there on. The log is then empty at an index that is committed, which only the last
+   * index tells apart from an entry that was appended and cannot be read back.
    */
   private boolean isMissingFromLog(final long index) {
     try (final var probe = log.openUncommittedReader()) {
@@ -83,7 +87,7 @@ public class RaftLogCommittedReader implements RaftLogReader {
         return false;
       }
       final long firstIndex = log.getFirstIndex();
-      return firstIndex > 0 && firstIndex <= index;
+      return firstIndex > 0 && firstIndex <= index && index <= log.getLastIndex();
     }
   }
 
