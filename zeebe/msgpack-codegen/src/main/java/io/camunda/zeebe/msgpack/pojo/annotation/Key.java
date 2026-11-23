@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
  * Sets the map key of a stored field. Without this annotation, the key is the field name. The key
  * is part of the stored format. Keys must not be empty and must be unique in the class.
  */
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface Key {
   /** The map key. */

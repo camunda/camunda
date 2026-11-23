@@ -21,6 +21,6 @@ import java.lang.annotation.Target;
  * {@code UnpackedObject}, which only masks its own properties at the top level, the value is also
  * masked when its POJO is nested in another one.
  */
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface Sanitized {}

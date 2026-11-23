@@ -16,6 +16,6 @@ import java.lang.annotation.Target;
  * The codec stores the {@code DirectBuffer} field as a msgpack binary, not as a string. The codec
  * reads it as a view on the source buffer and does not copy it.
  */
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface Binary {}

@@ -18,6 +18,6 @@ import java.lang.annotation.Target;
  * the empty map, and rejects any other value that is not a map, see {@code Decoding#document}. Do
  * not use it together with {@link Raw} or {@link Binary}.
  */
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface Document {}

@@ -16,6 +16,6 @@ import java.lang.annotation.Target;
  * The {@code DirectBuffer} field holds a complete encoded msgpack value. The codec embeds this
  * value as it is, like a {@code PackedProperty}.
  */
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface Raw {}
