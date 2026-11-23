@@ -565,10 +565,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .setCompressionAlgorithm(io.camunda.configuration.Cluster.CompressionAlgorithm.NONE);
 
     // Set membership defaults for fast test execution
-    final var membership = unifiedConfig.getCluster().getMembership();
-    membership.setFailureTimeout(Duration.ofSeconds(5));
-    membership.setProbeInterval(Duration.ofMillis(100));
-    membership.setSyncInterval(Duration.ofMillis(500));
+    TestMembership.configureFastMembership(unifiedConfig.getCluster().getMembership());
 
     final var metadata = unifiedConfig.getCluster().getMetadata();
     metadata.setSyncInitializerDelay(Duration.ofMillis(500));
