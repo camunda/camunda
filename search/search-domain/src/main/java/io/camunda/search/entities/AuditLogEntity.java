@@ -326,7 +326,12 @@ public record AuditLogEntity(
     USER,
     CLIENT,
     ANONYMOUS,
-    UNKNOWN
+    UNKNOWN,
+    /**
+     * The engine itself, for a change whose value it computes, such as a mapping result. Only the
+     * audit log check uses it. Exporters must not store it.
+     */
+    ENGINE
   }
 
   public enum AuditLogTenantScope {

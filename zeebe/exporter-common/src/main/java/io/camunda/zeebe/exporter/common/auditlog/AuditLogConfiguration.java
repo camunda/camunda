@@ -110,6 +110,7 @@ public final class AuditLogConfiguration implements AuditLogCheck {
           case CLIENT -> getClient();
           case ANONYMOUS -> AuditLogCheck.DISABLED;
           case UNKNOWN -> getUnknown();
+          case ENGINE -> getEngine();
         };
 
     return isEnabled() && check.isEnabled(auditLog);
