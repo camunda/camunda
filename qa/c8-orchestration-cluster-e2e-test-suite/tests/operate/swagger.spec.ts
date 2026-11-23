@@ -85,7 +85,6 @@ test.describe('Swagger UI Tests', () => {
     expect(externalFileRefs).toEqual([]);
   });
 
-  // Skipped due to bug #67555: https://github.com/camunda/camunda/issues/67555
   test('CSRF token is filled in and Swagger UI is accessible with CSRF token', async ({
     loginPage,
     operateHomePage,
@@ -120,7 +119,6 @@ test.describe('Swagger UI Tests', () => {
     expect(curlCommandText).toMatch(/x-csrf-token\s*:\s*(?!null\b)\S+/i);
   });
 
-  // Skipped due to bug #67555: https://github.com/camunda/camunda/issues/67555
   test('CSRF token is NOT filled in and Swagger UI is accessible', async ({
     swaggerPage,
   }) => {
