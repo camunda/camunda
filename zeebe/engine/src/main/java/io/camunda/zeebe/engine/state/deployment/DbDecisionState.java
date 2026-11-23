@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -307,6 +308,27 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
+  public Optional<PersistedDecisionRequirements>
+      findLatestPersistedDecisionRequirementsByTenantAndId(
+          final String tenantId, final DirectBuffer decisionRequirementsId) {
+    tenantIdKey.wrapString(tenantId);
+    dbDecisionRequirementsId.wrapBuffer(decisionRequirementsId);
+
+    return Optional.ofNullable(
+            latestDecisionRequirementsKeysById.get(tenantAwareDecisionRequirementsId))
+        .map((requirementsKey) -> requirementsKey.inner().wrappedKey().getValue())
+        .flatMap(
+            decisionRequirementsKey ->
+                findPersistedDecisionRequirementsByTenantAndKey(tenantId, decisionRequirementsKey));
+  }
+
+  @Override
+  public Optional<PersistedDecisionRequirements> findPersistedDecisionRequirementsByTenantAndKey(
+      final String tenantId, final long decisionRequirementsKey) {
+    return Optional.ofNullable(findPersistedDrg(decisionRequirementsKey, tenantId));
+  }
+
+  @Override
   public List<PersistedDecision> findDecisionsByTenantAndDecisionRequirementsKey(
       final String tenantId, final long decisionRequirementsKey) {
     final List<PersistedDecision> decisions = new ArrayList<>();
@@ -350,14 +372,29 @@ public final class DbDecisionState implements MutableDecisionState {
     drgCache.invalidateAll();
   }
 
-  private DeployedDrg findAndParseDecisionRequirementsByKeyFromDb(
-      final long decisionRequirementsKey, final String tenantId) throws DrgNotFoundException {
+  @VisibleForTesting
+  boolean isDrgCached(final String tenantId, final long drgKey) {
+    return drgCache.asMap().containsKey(new TenantIdAndDrgKey(tenantId, drgKey));
+  }
+
+  /**
+   * Reads the stored DRG metadata. Uses the supplier form so that the result is a fresh instance,
+   * not the shared buffer that {@code storeDecisionRequirements} overwrites.
+   *
+   * @return the stored DRG, or null if no DRG is stored with the given key
+   */
+  private PersistedDecisionRequirements findPersistedDrg(
+      final long decisionRequirementsKey, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
     dbDecisionRequirementsKey.wrapLong(decisionRequirementsKey);
+    return decisionRequirementsByKey.get(
+        tenantAwareDecisionRequirementsKey, PersistedDecisionRequirements::new);
+  }
 
+  private DeployedDrg findAndParseDecisionRequirementsByKeyFromDb(
+      final long decisionRequirementsKey, final String tenantId) throws DrgNotFoundException {
     final PersistedDecisionRequirements persistedDrg =
-        decisionRequirementsByKey.get(
-            tenantAwareDecisionRequirementsKey, PersistedDecisionRequirements::new);
+        findPersistedDrg(decisionRequirementsKey, tenantId);
     if (persistedDrg == null) {
       throw new DrgNotFoundException();
     }
@@ -538,9 +575,9 @@ public final class DbDecisionState implements MutableDecisionState {
   public void deleteDecisionRequirements(final DecisionRequirementsRecord record) {
     tenantIdKey.wrapString(record.getTenantId());
 
-    findLatestDecisionRequirementsByTenantAndId(
+    findLatestPersistedDecisionRequirementsByTenantAndId(
             record.getTenantId(), record.getDecisionRequirementsIdBuffer())
-        .map(DeployedDrg::getDecisionRequirementsVersion)
+        .map(PersistedDecisionRequirements::getDecisionRequirementsVersion)
         .ifPresent(
             latestVersion -> {
               if (latestVersion == record.getDecisionRequirementsVersion()) {
@@ -628,7 +665,7 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   private void updateLatestDecisionRequirementsVersion(final DecisionRequirementsRecord record) {
-    findLatestDecisionRequirementsByTenantAndId(
+    findLatestPersistedDecisionRequirementsByTenantAndId(
             record.getTenantId(), record.getDecisionRequirementsIdBuffer())
         .ifPresentOrElse(
             previousVersion -> {

@@ -83,6 +83,29 @@ public interface DecisionState {
       final String tenantId, long decisionRequirementsKey);
 
   /**
+   * Query the stored metadata of the latest version of the DRG with the given id. Reads the stored
+   * metadata only. Doesn't parse the graph or put it in the cache.
+   *
+   * @param tenantId the tenant the DRG belongs to
+   * @param decisionRequirementsId the id of the DRG
+   * @return the latest version of the DRG, or {@link Optional#empty()} if no DRG is deployed with
+   *     the given id
+   */
+  Optional<PersistedDecisionRequirements> findLatestPersistedDecisionRequirementsByTenantAndId(
+      final String tenantId, DirectBuffer decisionRequirementsId);
+
+  /**
+   * Query the stored metadata of the DRG with the given key. Reads the stored metadata only.
+   * Doesn't parse the graph or put it in the cache.
+   *
+   * @param tenantId the tenant the DRG belongs to
+   * @param decisionRequirementsKey the key of the DRG
+   * @return the DRG, or {@link Optional#empty()} if no DRG is deployed with the given key
+   */
+  Optional<PersistedDecisionRequirements> findPersistedDecisionRequirementsByTenantAndKey(
+      final String tenantId, long decisionRequirementsKey);
+
+  /**
    * Query decisions by the given decision requirements (DRG) key.
    *
    * @param tenantId the tenant the DRG belongs to
