@@ -563,6 +563,10 @@ public final class SearchQueryBuilders {
           case NOT_EQUALS -> queries.add(mustNot(term(field, formatDate(op.value()))));
           case EXISTS -> queries.add(exists(field));
           case NOT_EXISTS -> queries.add(mustNot(exists(field)));
+          case IN ->
+              queries.add(
+                  stringTerms(
+                      field, op.values().stream().map(SearchQueryBuilders::formatDate).toList()));
           case GREATER_THAN ->
               rangeQueryBuilder =
                   buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(formatDate(op.value())));

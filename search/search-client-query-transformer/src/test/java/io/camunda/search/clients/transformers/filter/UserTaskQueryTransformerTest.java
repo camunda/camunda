@@ -17,6 +17,7 @@ import io.camunda.search.clients.query.SearchHasParentQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
+import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.query.SearchWildcardQuery;
@@ -36,6 +37,7 @@ import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -267,6 +269,68 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
             SearchBoolQuery.class,
             (t) -> {
               assertSearchTermQuery(t.must().get(0).queryOption(), "assignee", "assignee1");
+            });
+  }
+
+  @Test
+  public void shouldQueryByCreationDateIn() {
+    // given
+    final var first = OffsetDateTime.parse("2024-01-01T10:15:30.123Z");
+    final var second = OffsetDateTime.parse("2024-01-02T08:00:00+02:00");
+    final var filter =
+        FilterBuilders.userTask(f -> f.creationDateOperations(Operation.in(first, second)));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then each value is formatted the way EQUALS formats it
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery ->
+                assertSearchTermsQuery(
+                    boolQuery.must().getFirst().queryOption(),
+                    TaskTemplate.CREATION_TIME,
+                    "2024-01-01T10:15:30.123+0000",
+                    "2024-01-02T08:00:00.000+0200"));
+  }
+
+  @Test
+  public void shouldQueryByDueDateInTogetherWithRange() {
+    // given
+    final var first = OffsetDateTime.parse("2024-03-01T00:00:00Z");
+    final var second = OffsetDateTime.parse("2024-03-02T00:00:00Z");
+    final var filter =
+        FilterBuilders.userTask(
+            f ->
+                f.dueDateOperations(
+                    Operation.in(first, second),
+                    Operation.gte(OffsetDateTime.parse("2024-01-01T00:00:00Z"))));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then the IN clause and the range clause are both kept
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              final var clauses = boolQuery.must().stream().map(SearchQuery::queryOption).toList();
+              assertThat(clauses)
+                  .anySatisfy(
+                      clause ->
+                          assertSearchTermsQuery(
+                              clause,
+                              TaskTemplate.DUE_DATE,
+                              "2024-03-01T00:00:00.000+0000",
+                              "2024-03-02T00:00:00.000+0000"))
+                  .anySatisfy(
+                      clause ->
+                          assertThat(clause)
+                              .isInstanceOfSatisfying(
+                                  SearchRangeQuery.class,
+                                  range ->
+                                      assertThat(range.field()).isEqualTo(TaskTemplate.DUE_DATE)));
             });
   }
 
