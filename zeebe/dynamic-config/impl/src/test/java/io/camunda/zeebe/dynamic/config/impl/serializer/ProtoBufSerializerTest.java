@@ -41,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.impl.protocol.Topology.ExporterStateEnum;
 import io.camunda.zeebe.dynamic.config.impl.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.impl.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.impl.protocol.Topology.RoutingState;
+import io.camunda.zeebe.dynamic.config.serializer.DecodingFailed;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
@@ -600,17 +601,7 @@ final class ProtoBufSerializerTest {
                 .addMember(MemberId.from("9"), MemberState.initializeAsActive(Map.of())));
     final var topologyChangeResponse =
         new ClusterConfigurationChangeResponse(
-            2,
-            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                Map.of(
-                    MemberId.from("1"),
-                    MemberState.initializeAsActive(Map.of()),
-                    MemberId.from("2"),
-                    MemberState.initializeAsActive(Map.of())),
-                Map.of(MemberId.from("2"), MemberState.initializeAsActive(Map.of())),
-                plannedChanges),
-            new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
-                currentMultiConfiguration, expectedMultiConfiguration, phases));
+            2, currentMultiConfiguration, expectedMultiConfiguration, phases);
 
     // when
     final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);
@@ -622,30 +613,9 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
-  void shouldEncodeAndDecodeTopologyChangeResponseWithoutMultiConfiguration() {
-    // given — a response with no new multi-partition-group data (e.g. produced by a caller that
-    // doesn't populate it) round-trips with a null response.
-    final var topologyChangeResponse =
-        new ClusterConfigurationChangeResponse(
-            2,
-            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                Map.of(), Map.of(), List.of()),
-            null);
-
-    // when
-    final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);
-
-    // then
-    final var decodedResponse =
-        protoBufSerializer.decodeTopologyChangeResponse(encodedResponse).get();
-    assertThat(decodedResponse).isEqualTo(topologyChangeResponse);
-  }
-
-  @Test
-  void shouldDecodeNullResponseWhenMultiConfigurationIsOnlyPartiallyPresent() {
-    // given — a wire message where only the current multi-configuration field is set, not the
-    // expected one (e.g. from a peer running a mismatched version). This must not decode into a
-    // response with a real current configuration and a default/empty expected configuration.
+  void shouldRejectTopologyChangeResponseWithoutExpectedConfiguration() {
+    // given — a wire message where only the current configuration is set, not the expected one.
+    // This must not decode into a response with a default/empty expected configuration.
     final var partial =
         Requests.TopologyChangeResponse.newBuilder()
             .setChangeId(3)
@@ -654,11 +624,9 @@ final class ProtoBufSerializerTest {
     final var encoded =
         Requests.Response.newBuilder().setTopologyChangeResponse(partial).build().toByteArray();
 
-    // when
-    final var decoded = protoBufSerializer.decodeTopologyChangeResponse(encoded).get();
-
-    // then — the whole multi-config payload is treated as absent, not partially decoded
-    assertThat(decoded.response()).isNull();
+    // when - then
+    assertThatThrownBy(() -> protoBufSerializer.decodeTopologyChangeResponse(encoded))
+        .isInstanceOf(DecodingFailed.class);
   }
 
   @Test

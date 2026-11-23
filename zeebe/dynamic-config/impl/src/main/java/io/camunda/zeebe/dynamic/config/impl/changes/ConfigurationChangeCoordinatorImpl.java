@@ -17,7 +17,6 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopCluster
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor.NoopRestoreChangeExecutor;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
@@ -218,11 +217,8 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       final List<Phase> phases,
       final ActorFuture<ConfigurationChangeResult> future) {
     if (phases.isEmpty()) {
-      final var legacyView = currentConfiguration.toLegacyDefault();
       future.complete(
           new ConfigurationChangeResult(
-              legacyView,
-              legacyView,
               currentConfiguration,
               currentConfiguration,
               currentConfiguration
@@ -230,7 +226,6 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                   .lastChange()
                   .map(CompletedPhasedChange::id)
                   .orElse(0L),
-              List.of(),
               List.of()));
       return;
     }
@@ -249,17 +244,10 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
             return;
           }
 
-          final var operations = flattenPhases(phases);
           if (dryRun) {
             future.complete(
                 new ConfigurationChangeResult(
-                    currentConfiguration.toLegacyDefault(),
-                    simulatedFinalConfiguration.toLegacyDefault(),
-                    currentConfiguration,
-                    simulatedFinalConfiguration,
-                    changeId,
-                    operations,
-                    phases));
+                    currentConfiguration, simulatedFinalConfiguration, changeId, phases));
             return;
           }
 
@@ -284,12 +272,9 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                     }
                     future.complete(
                         new ConfigurationChangeResult(
-                            currentConfiguration.toLegacyDefault(),
-                            simulatedFinalConfiguration.toLegacyDefault(),
                             currentConfiguration,
                             simulatedFinalConfiguration,
                             appliedChangeId.get(),
-                            operations,
                             phases));
                   },
                   executor);
@@ -608,24 +593,6 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
             ? config.activateNextPhase(planId)
             : config.completePlan(planId, PhasedChangePlanStatus.COMPLETED);
     simulateNewModelChange(next, planId, globalSimulator, groupSimulator, simulationCompleted);
-  }
-
-  /**
-   * Flattens a phase list back into the flat operation list the management API answers a request
-   * with, preserving phase order. Within a {@link PartitionGroupPhase} the operations of each group
-   * are concatenated; the order between groups is unspecified (they apply concurrently), but is
-   * irrelevant while only the default group is used.
-   */
-  private static List<ClusterConfigurationChangeOperation> flattenPhases(final List<Phase> phases) {
-    final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
-    for (final var phase : phases) {
-      switch (phase) {
-        case final GlobalPhase globalPhase -> operations.addAll(globalPhase.operations());
-        case final PartitionGroupPhase groupPhase ->
-            groupPhase.groupOperations().values().forEach(operations::addAll);
-      }
-    }
-    return operations;
   }
 
   private boolean isCoordinator(final CurrentClusterConfiguration currentConfiguration) {

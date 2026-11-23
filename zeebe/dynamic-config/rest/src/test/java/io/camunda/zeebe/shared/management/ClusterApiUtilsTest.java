@@ -14,8 +14,6 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
@@ -267,10 +265,7 @@ final class ClusterApiUtilsTest {
                     "tenant-b", List.of(tenantBOperation))));
     final var response =
         new ClusterConfigurationChangeResponse(
-            1,
-            new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
-            new CurrentConfigurationChangeResponse(
-                CurrentClusterConfiguration.init(), CurrentClusterConfiguration.init(), phases));
+            1, CurrentClusterConfiguration.init(), CurrentClusterConfiguration.init(), phases);
 
     // when
     final var result = ClusterApiUtils.mapOperationResponse(Either.right(response));
@@ -291,26 +286,6 @@ final class ClusterApiUtilsTest {
         .filteredOn(op -> "tenant-b".equals(op.getPhysicalTenant()))
         .extracting(op -> op.getOperation())
         .containsExactly(OperationEnum.DELETE_HISTORY);
-  }
-
-  @Test
-  void shouldFallBackToLegacyPlannedChangesWhenMultiConfigurationResponseIsAbsent() {
-    // given — a peer that hasn't populated the new multi-partition-group response, e.g. one still
-    // running old code (see ClusterConfigurationChangeResponse.response()).
-    final var operation = new MemberLeaveOperation(member(1));
-    final var response =
-        new ClusterConfigurationChangeResponse(
-            1, new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of(operation)), null);
-
-    // when
-    final var result = ClusterApiUtils.mapOperationResponse(Either.right(response));
-
-    // then
-    final var body = (PlannedOperationsResponse) result.getBody();
-    assertThat(body).isNotNull();
-    assertThat(body.getPlannedChanges())
-        .extracting(op -> op.getOperation(), op -> op.getPhysicalTenant())
-        .containsExactly(tuple(BROKER_REMOVE, null));
   }
 
   @Test
@@ -370,10 +345,7 @@ final class ClusterApiUtilsTest {
             Map.of("tenant-a", tenantA, "tenant-b", tenantB),
             PhasedChangeState.empty());
     final var response =
-        new ClusterConfigurationChangeResponse(
-            1,
-            new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
-            new CurrentConfigurationChangeResponse(multiConfig, multiConfig, List.of()));
+        new ClusterConfigurationChangeResponse(1, multiConfig, multiConfig, List.of());
 
     // when
     final var result = ClusterApiUtils.mapOperationResponse(Either.right(response));

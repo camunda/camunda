@@ -397,12 +397,9 @@ final class DynamicConfigExportingStateControllerTest {
         Either.right(
             new ClusterConfigurationChangeResponse(
                 0,
-                new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                    Map.of(), Map.of(), List.of()),
-                new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
-                    CurrentClusterConfiguration.init(),
-                    CurrentClusterConfiguration.init(),
-                    List.of()))));
+                CurrentClusterConfiguration.init(),
+                CurrentClusterConfiguration.init(),
+                List.of())));
   }
 
   private CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> pendingPlan(
@@ -411,12 +408,9 @@ final class DynamicConfigExportingStateControllerTest {
         Either.right(
             new ClusterConfigurationChangeResponse(
                 changeId,
-                new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                    Map.of(), Map.of(), List.of()),
-                new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
-                    CurrentClusterConfiguration.init(),
-                    CurrentClusterConfiguration.init(),
-                    List.of(new GlobalPhase(List.of()))))));
+                CurrentClusterConfiguration.init(),
+                CurrentClusterConfiguration.init(),
+                List.of(new GlobalPhase(List.of())))));
   }
 
   private CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> topologyWithChange(

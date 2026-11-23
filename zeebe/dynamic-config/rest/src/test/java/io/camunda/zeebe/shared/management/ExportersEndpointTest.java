@@ -16,7 +16,6 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
@@ -266,6 +265,9 @@ final class ExportersEndpointTest {
     return CompletableFuture.completedFuture(
         Either.right(
             new ClusterConfigurationChangeResponse(
-                1L, new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()), null)));
+                1L,
+                CurrentClusterConfiguration.init(),
+                CurrentClusterConfiguration.init(),
+                List.of())));
   }
 }

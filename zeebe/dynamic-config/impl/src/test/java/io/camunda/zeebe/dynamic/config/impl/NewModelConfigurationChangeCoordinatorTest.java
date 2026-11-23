@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.impl.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.impl.changes.PartitionGroupConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.impl.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.impl.transformers.TestChangePlan;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState.State;
@@ -180,7 +181,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final var result = coordinator.applyOperations(request).join();
 
     // then — the generated operations are returned, the plan drains phase by phase and completes
-    assertThat(result.legacyOperations())
+    assertThat(TestChangePlan.flatten(result.phases()))
         .containsExactly(
             new PreScalingOperation(MEMBER_0, Set.of(MEMBER_0, MEMBER_1)),
             new PartitionLeaveOperation(MEMBER_0, 1, 1));
@@ -216,10 +217,9 @@ final class NewModelConfigurationChangeCoordinatorTest {
 
     // then — the coordinator's own result carries the full multi-group configuration, both
     // before and after the change, rather than silently projecting the non-default group away
-    assertThat(result.currentMultiConfiguration().partitionGroup("tenanta"))
+    assertThat(result.currentConfiguration().partitionGroup("tenanta"))
         .isEqualTo(tenantAGroupBefore);
-    assertThat(result.finalMultiConfiguration().partitionGroup("tenanta"))
-        .isEqualTo(tenantAGroupBefore);
+    assertThat(result.finalConfiguration().partitionGroup("tenanta")).isEqualTo(tenantAGroupBefore);
 
     // and — the real post-apply configuration reflects the same: default group changed as
     // expected, tenanta is untouched
@@ -259,7 +259,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final var result = coordinator.simulateOperations(request).join();
 
     // then — the operations are returned but no plan is started
-    assertThat(result.legacyOperations())
+    assertThat(TestChangePlan.flatten(result.phases()))
         .containsExactly(new PartitionLeaveOperation(MEMBER_0, 1, 1));
     assertThat(configuration().phasedChangeState().pending()).isEmpty();
     final var defaultGroup =
@@ -302,7 +302,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final var result = coordinator.applyOperations(request).join();
 
     // then
-    assertThat(result.legacyOperations()).isEmpty();
+    assertThat(TestChangePlan.flatten(result.phases())).isEmpty();
     assertThat(configuration().phasedChangeState().pending()).isEmpty();
   }
 

@@ -170,32 +170,6 @@ final class ClusterConfigurationChangeAwaiterTest {
   }
 
   @Test
-  void shouldFallbackToLegacyResponseWhenCurrentConfigurationResponseIsMissing() {
-    // given
-    when(sender.getTopology())
-        .thenReturn(
-            topology(nextId(), pending(), history(completed(7, PhasedChangePlanStatus.COMPLETED))));
-    final var submission =
-        CompletableFuture.completedFuture(
-            Either.<ErrorResponse, ClusterConfigurationChangeResponse>right(
-                new ClusterConfigurationChangeResponse(
-                    7,
-                    new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                        Map.of(),
-                        Map.of(),
-                        List.of(
-                            new ExportingStateChangeOperation(
-                                MemberId.from("0"), ExportingState.PAUSED))),
-                    null)));
-
-    // when
-    final var result = awaiter.awaitCompletion(submission);
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(1));
-  }
-
-  @Test
   void shouldFailWhenChangeNeverCompletes() {
     // given
     final var timingOutAwaiter =
@@ -218,12 +192,9 @@ final class ClusterConfigurationChangeAwaiterTest {
         Either.right(
             new ClusterConfigurationChangeResponse(
                 0,
-                new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                    Map.of(), Map.of(), List.of()),
-                new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
-                    CurrentClusterConfiguration.init(),
-                    CurrentClusterConfiguration.init(),
-                    List.of()))));
+                CurrentClusterConfiguration.init(),
+                CurrentClusterConfiguration.init(),
+                List.of())));
   }
 
   private CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> plan(
@@ -232,21 +203,14 @@ final class ClusterConfigurationChangeAwaiterTest {
         Either.right(
             new ClusterConfigurationChangeResponse(
                 changeId,
-                new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                    Map.of(),
-                    Map.of(),
-                    List.of(
-                        new ExportingStateChangeOperation(
-                            MemberId.from("0"), ExportingState.PAUSED))),
-                new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
-                    CurrentClusterConfiguration.init(),
-                    CurrentClusterConfiguration.init(),
-                    List.of(
-                        PartitionGroupPhase.sequential(
-                            "default",
-                            List.of(
-                                new ExportingStateChangeOperation(
-                                    MemberId.from("0"), ExportingState.PAUSED))))))));
+                CurrentClusterConfiguration.init(),
+                CurrentClusterConfiguration.init(),
+                List.of(
+                    PartitionGroupPhase.sequential(
+                        "default",
+                        List.of(
+                            new ExportingStateChangeOperation(
+                                MemberId.from("0"), ExportingState.PAUSED)))))));
   }
 
   private CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> topology(

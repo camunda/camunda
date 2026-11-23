@@ -244,9 +244,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
       return sender;
     }
   }
@@ -275,9 +275,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
 
       // when
       final var response =
@@ -302,9 +302,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
 
       // when - dryRun flag is forwarded
       final var response =
@@ -562,9 +562,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
       return sender;
     }
   }
@@ -597,9 +597,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
       return sender;
     }
   }
@@ -723,9 +723,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
       return sender;
     }
   }

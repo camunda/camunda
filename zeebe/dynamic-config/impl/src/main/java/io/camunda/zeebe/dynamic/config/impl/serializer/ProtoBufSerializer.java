@@ -1823,51 +1823,34 @@ public class ProtoBufSerializer
 
   public Builder encodeTopologyChangeResponse(
       final ClusterConfigurationChangeResponse clusterConfigurationChangeResponse) {
-    final var builder = Requests.TopologyChangeResponse.newBuilder();
-    final var legacyResponse = clusterConfigurationChangeResponse.legacyResponse();
-
-    builder
-        .setChangeId(clusterConfigurationChangeResponse.changeId())
-        .addAllPlannedChanges(
-            legacyResponse.plannedChanges().stream().map(this::encodeOperation).toList())
-        .putAllCurrentTopology(encodeMemberStateMap(legacyResponse.currentConfiguration()))
-        .putAllExpectedTopology(encodeMemberStateMap(legacyResponse.expectedConfiguration()));
-
-    final var response = clusterConfigurationChangeResponse.response();
-    if (response != null) {
-      builder
-          .setCurrentConfiguration(
-              encodeCurrentClusterConfigurationProto(response.currentConfiguration()))
-          .setExpectedConfiguration(
-              encodeCurrentClusterConfigurationProto(response.expectedConfiguration()));
-      response.phases().forEach(phase -> builder.addPhases(encodePhase(phase)));
-    }
-
+    final var builder =
+        Requests.TopologyChangeResponse.newBuilder()
+            .setChangeId(clusterConfigurationChangeResponse.changeId())
+            .setCurrentConfiguration(
+                encodeCurrentClusterConfigurationProto(
+                    clusterConfigurationChangeResponse.currentConfiguration()))
+            .setExpectedConfiguration(
+                encodeCurrentClusterConfigurationProto(
+                    clusterConfigurationChangeResponse.expectedConfiguration()));
+    clusterConfigurationChangeResponse
+        .phases()
+        .forEach(phase -> builder.addPhases(encodePhase(phase)));
     return builder;
   }
 
   public ClusterConfigurationChangeResponse decodeTopologyChangeResponse(
       final Requests.TopologyChangeResponse topologyChangeResponse) {
-    final var legacyResponse =
-        new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-            decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
-            decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
-            topologyChangeResponse.getPlannedChangesList().stream()
-                .map(this::decodeOperation)
-                .toList());
-
-    final var response =
-        topologyChangeResponse.hasCurrentConfiguration()
-                && topologyChangeResponse.hasExpectedConfiguration()
-            ? new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
-                decodeCurrentClusterConfiguration(topologyChangeResponse.getCurrentConfiguration()),
-                decodeCurrentClusterConfiguration(
-                    topologyChangeResponse.getExpectedConfiguration()),
-                topologyChangeResponse.getPhasesList().stream().map(this::decodePhase).toList())
-            : null;
+    if (!topologyChangeResponse.hasCurrentConfiguration()
+        || !topologyChangeResponse.hasExpectedConfiguration()) {
+      throw new DecodingFailed(
+          "Topology change response does not have a current and an expected configuration");
+    }
 
     return new ClusterConfigurationChangeResponse(
-        topologyChangeResponse.getChangeId(), legacyResponse, response);
+        topologyChangeResponse.getChangeId(),
+        decodeCurrentClusterConfiguration(topologyChangeResponse.getCurrentConfiguration()),
+        decodeCurrentClusterConfiguration(topologyChangeResponse.getExpectedConfiguration()),
+        topologyChangeResponse.getPhasesList().stream().map(this::decodePhase).toList());
   }
 
   private ErrorCode encodeErrorCode(final ErrorResponse.ErrorCode status) {
