@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2;
@@ -27,7 +28,10 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc;
 import io.camunda.zeebe.util.PayloadReader;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +43,8 @@ class WorkerTest {
   private static final String CORRELATION_KEY_VALUE = "abc";
   private static final String MESSAGE_NAME = "messageName";
   private static final Duration COMPLETION_DELAY = Duration.ofMillis(250);
+
+  private final MeterRegistry registry = new SimpleMeterRegistry();
 
   @Test
   void shouldApplyCompletionDelayWhenPublishMessageFails() throws Exception {
@@ -84,6 +90,37 @@ class WorkerTest {
     verify(completeStep).send();
   }
 
+  @Test
+  void shouldCountFailedMessagePublication() throws Exception {
+    // given — a publish that fails with an HTTP 503
+    final var client = mock(CamundaClient.class);
+    mockFailingPublish(client, new ClientHttpException(503, "Service Unavailable"));
+    final var worker = newWorker(client, sendMessageProperties());
+
+    // when
+    worker.handleJob(mock(JobClient.class), mockJob());
+
+    // then
+    assertThat(publications("failure", "http_503")).isEqualTo(1.0);
+    assertThat(publications("success", "none")).isZero();
+  }
+
+  @Test
+  void shouldCountSuccessfulMessagePublication() throws Exception {
+    // given
+    final var jobClient = mock(JobClient.class);
+    final var client = mock(CamundaClient.class);
+    mockSuccessfulPublish(client);
+    mockCompleteJob(jobClient);
+    final var worker = newWorker(client, sendMessageProperties());
+
+    // when
+    worker.handleJob(jobClient, mockJob());
+
+    // then
+    assertThat(publications("success", "none")).isEqualTo(1.0);
+  }
+
   private static long timeHandleJob(
       final Worker worker, final JobClient jobClient, final ActivatedJob job) {
     final long start = System.currentTimeMillis();
@@ -107,17 +144,33 @@ class WorkerTest {
     return props;
   }
 
-  private static Worker newWorker(final CamundaClient client, final WorkerProperties workerProps) {
+  private Worker newWorker(final CamundaClient client, final WorkerProperties workerProps) {
     final var properties = new LoadTesterProperties();
     properties.setWorker(workerProps);
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(anyString())).thenReturn("{}");
     final var connectionMonitor = mock(ConnectionMonitor.class);
-    return new Worker(client, properties, payloadReader, connectionMonitor);
+    return new Worker(client, properties, payloadReader, connectionMonitor, registry);
+  }
+
+  private double publications(final String outcome, final String error) {
+    final var counter =
+        registry
+            .find(WorkerMetricsDoc.MESSAGE_PUBLICATIONS.getName())
+            .tag("outcome", outcome)
+            .tag("error", error)
+            .counter();
+    return counter == null ? 0.0 : counter.count();
   }
 
   @SuppressWarnings("unchecked")
   private static void mockFailingPublish(final CamundaClient client) throws Exception {
+    mockFailingPublish(client, new RuntimeException());
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void mockFailingPublish(final CamundaClient client, final Throwable cause)
+      throws Exception {
     final var step1 = mock(PublishMessageCommandStep1.class);
     final var step2 = mock(PublishMessageCommandStep2.class);
     final var step3 = mock(PublishMessageCommandStep3.class);
@@ -127,7 +180,7 @@ class WorkerTest {
     when(step2.correlationKey(CORRELATION_KEY_VALUE)).thenReturn(step3);
     when(step3.send()).thenReturn(future);
     when(future.get(anyLong(), org.mockito.ArgumentMatchers.any(TimeUnit.class)))
-        .thenThrow(new ExecutionException("simulated publish failure", new RuntimeException()));
+        .thenThrow(new ExecutionException("simulated publish failure", cause));
   }
 
   @SuppressWarnings("unchecked")
