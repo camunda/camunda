@@ -13,6 +13,8 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
@@ -20,7 +22,10 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -157,6 +162,31 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
               snapshotId.getExportedPosition(),
               lastFollowupEventPosition);
       writeMetadataAndUpdateChecksum(metadata);
+      // a snapshot older than the current one won't be committed, so it is left in its temporary
+      // directory to be deleted when it is aborted
+      if (!snapshotStore.hasNewerSnapshotThan(snapshotId)) {
+        final var targetDirectory =
+            directory.getParent().resolve(snapshotId.getSnapshotIdAsString());
+        try {
+          FileUtil.moveDurably(directory, targetDirectory, StandardCopyOption.ATOMIC_MOVE);
+        } catch (final Exception e) {
+          // Due to atomic move, we only get a generic `FileSystemException` if the target already
+          // exists. Let's double-check that this is the case and throw a more specific exception
+          // in that case, this helps with logging.
+          if (e instanceof final FileSystemException ignored && Files.exists(targetDirectory)) {
+            future.completeExceptionally(
+                new SnapshotAlreadyExistsException(
+                    "Snapshot %s already exists".formatted(snapshotId)));
+          } else {
+            future.completeExceptionally(
+                new SnapshotException(
+                    "Unable to move snapshot %s to target directory %s"
+                        .formatted(snapshotId, targetDirectory),
+                    e));
+          }
+          return;
+        }
+      }
       snapshot = snapshotStore.persistNewSnapshot(snapshotId, checksum, metadata);
       future.complete(snapshot);
     } catch (final Exception e) {

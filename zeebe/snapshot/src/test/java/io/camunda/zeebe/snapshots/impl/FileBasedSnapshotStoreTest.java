@@ -98,6 +98,19 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
+  public void shouldDeleteTransientSnapshotOnRestartWithoutPersistedSnapshot() {
+    // given
+    snapshotStore.newTransientSnapshot(1L, 1L, 1L, 0L).get().take(this::createSnapshotDir).join();
+
+    // when
+    snapshotStore.close();
+    snapshotStore = createStore(rootDirectory);
+
+    // then
+    assertThat(snapshotsDir).isEmptyDirectory();
+  }
+
+  @Test
   public void shouldLoadExistingSnapshotWithMetadata() throws IOException {
     // given
     final var persistedSnapshot =
