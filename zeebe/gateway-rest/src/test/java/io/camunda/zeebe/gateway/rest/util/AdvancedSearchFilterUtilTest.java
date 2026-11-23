@@ -15,6 +15,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AdvancedDateTimeFilter;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedIntegerFilter;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedStringFilter;
 import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilter;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -154,5 +155,60 @@ class AdvancedSearchFilterUtilTest {
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, OffsetDateTime.class))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Failed to parse date-time: [2023-11-11T10:10:10.1010+0100]");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideEmptyFilters")
+  void shouldTreatFilterWithoutUsableValueAsEmpty(final String name, final Object filter) {
+    // when / then
+    assertThat(AdvancedSearchFilterUtil.isEmptyAdvancedFilter(filter)).isTrue();
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideNonEmptyValues")
+  void shouldNotTreatFilterWithUsableValueOrPlainValueAsEmpty(
+      final String name, final Object value) {
+    // when / then
+    assertThat(AdvancedSearchFilterUtil.isEmptyAdvancedFilter(value)).isFalse();
+  }
+
+  private static Stream<Arguments> provideEmptyFilters() {
+    final var onlyEmptyIn = new BasicStringFilter();
+    onlyEmptyIn.set$In(List.of());
+
+    final var emptyInAndNotIn = new BasicStringFilter();
+    emptyInAndNotIn.set$In(List.of());
+    emptyInAndNotIn.set$NotIn(List.of());
+
+    return Stream.of(
+        Arguments.of("{\"$in\": []}", onlyEmptyIn),
+        Arguments.of("{\"$in\": [], \"$notIn\": []}", emptyInAndNotIn),
+        Arguments.of("{}", new BasicStringFilter()));
+  }
+
+  private static Stream<Arguments> provideNonEmptyValues() {
+    final var eq = new BasicStringFilter();
+    eq.set$Eq("123");
+
+    final var nonEmptyIn = new BasicStringFilter();
+    nonEmptyIn.set$In(List.of("1", "2"));
+
+    final var existsFalse = new BasicStringFilter();
+    existsFalse.set$Exists(false);
+
+    // the empty $in is dropped but $neq remains, so it cannot be told from {"$neq": "1"}
+    final var neqWithEmptyIn = new BasicStringFilter();
+    neqWithEmptyIn.set$Neq("1");
+    neqWithEmptyIn.set$In(List.of());
+
+    return Stream.of(
+        Arguments.of("{\"$eq\": \"123\"}", eq),
+        Arguments.of("{\"$in\": [\"1\", \"2\"]}", nonEmptyIn),
+        Arguments.of("{\"$exists\": false}", existsFalse),
+        Arguments.of("{\"$neq\": \"1\", \"$in\": []}", neqWithEmptyIn),
+        Arguments.of("plain string", "ACTIVE"),
+        Arguments.of("plain boolean", true),
+        Arguments.of("plain list", List.of()),
+        Arguments.of("enum", DecisionDefinitionTypeEnum.DECISION_TABLE));
   }
 }
