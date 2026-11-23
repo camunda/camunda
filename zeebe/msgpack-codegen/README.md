@@ -27,6 +27,10 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   assignments, no reflection), `copy`, `equals`, `hashCode` and `toString`. The operations are static methods, so generated
   code calls them directly where the type is known; `NameOps.INSTANCE` implements `MsgpackOps<Name>`
   for code that is generic in the type. It is separate from the codec.
+- A nested value is the exception: `reset` calls its own `reset()`, so its default is the default
+  of its type, and a field initializer that changes it, like `new StringValue("label")` or a
+  nested POJO set up with other values, is lost on the first reset. A nested `ObjectProperty` behaves
+  the same: it resets its value to the defaults of its type.
 - Resetting belongs to the class: it must be `Recyclable`, and `reset()` is called before every
   read, so properties missing in the input keep their default. `MsgpackBufferValue` implements it by
   calling the generated ops. `MsgpackCodec<T extends Recyclable>` and the processor make a class
