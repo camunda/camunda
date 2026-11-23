@@ -62,6 +62,44 @@ public class AdvancedSearchFilterUtil {
         "Could not convert request value [%s] to [%s]".formatted(value, tClass.getName()));
   }
 
+  /**
+   * True for an advanced filter object, one with operator getters such as {@code get$In}, that has
+   * no usable value, for example {@code {"$in": []}}. Any other value is not empty.
+   */
+  public static boolean isEmptyAdvancedFilter(final Object value) {
+    boolean isAdvancedFilter = false;
+    for (final Operator operator : Operator.values()) {
+      final Method getter = findOperatorGetter(value.getClass(), operator);
+      if (getter == null) {
+        continue;
+      }
+      isAdvancedFilter = true;
+      if (hasUsableValue(getter, value)) {
+        return false;
+      }
+    }
+    return isAdvancedFilter;
+  }
+
+  private static boolean hasUsableValue(final Method getter, final Object filter) {
+    try {
+      final var operand = getter.invoke(filter);
+      return operand != null && !(operand instanceof final List<?> list && list.isEmpty());
+    } catch (final InvocationTargetException | IllegalAccessException e) {
+      LOG.error(e.getMessage(), e);
+      return false;
+    }
+  }
+
+  private static Method findOperatorGetter(final Class<?> filterClass, final Operator operator) {
+    try {
+      final var methodName = "get$%s".formatted(StringUtils.capitalize(operator.getValue()));
+      return filterClass.getMethod(methodName);
+    } catch (final NoSuchMethodException e) {
+      return null;
+    }
+  }
+
   protected static <T> List<Operation<T>> mapToOperations(
       final Object filter, final Class<T> tClass) {
     return mapToOperations(filter, tClass, null);
@@ -72,12 +110,9 @@ public class AdvancedSearchFilterUtil {
     final var fClass = filter.getClass();
     final var operations = new ArrayList<Operation<T>>();
     for (final Operator operator : Operator.values()) {
-      final Method method;
-      try {
-        final var methodName = "get$%s".formatted(StringUtils.capitalize(operator.getValue()));
-        method = fClass.getMethod(methodName);
-      } catch (final NoSuchMethodException e) {
-        // ignore exception, filter doesn't contain this method
+      final Method method = findOperatorGetter(fClass, operator);
+      if (method == null) {
+        // filter doesn't contain this method
         continue;
       }
       method.setAccessible(true);
