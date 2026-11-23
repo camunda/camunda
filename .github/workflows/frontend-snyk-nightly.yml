@@ -264,7 +264,8 @@ jobs:
     name: "Orchestration Cluster Webapp / Front End - Snyk (${{ inputs.branch }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: Tool
       TEST_OWNER: "@camunda/orchestration-cluster-webapps"
@@ -285,9 +286,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
       - name: Scan frontend dependencies
@@ -315,6 +317,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
