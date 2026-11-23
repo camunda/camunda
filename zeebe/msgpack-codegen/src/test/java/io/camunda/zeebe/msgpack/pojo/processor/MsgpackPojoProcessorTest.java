@@ -738,9 +738,10 @@ final class MsgpackPojoProcessorTest {
   @ValueSource(
       strings = {
         "final List<Inner> items = new ArrayList<>(List.of(new Inner()));",
-        "final List<List<Inner>> items = new ArrayList<>(List.of(List.of()));"
+        "final List<List<Inner>> items = new ArrayList<>(List.of(List.of()));",
+        "final List<List<Long>> items = new ArrayList<>(List.of(new ArrayList<>(List.of(1L))));"
       })
-  void shouldFailToResetAListOfNestedObjectsThatDoesNotStartEmpty(final String field)
+  void shouldFailToResetAListOfNestedObjectsOrListsThatDoesNotStartEmpty(final String field)
       throws Exception {
     // given
     final var sample = codecOf(field, inner()).newInstance();

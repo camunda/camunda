@@ -49,11 +49,14 @@ final class OpsRenderer {
             $equals\
             $hashCode\
             $toString\
-              /** Items are owned by one list, so a default with items would be shared by every reset. */
+              /**
+               * Items and inner lists are mutable and are copied by reference, so a default with
+               * elements would be shared by every reset.
+               */
               private static void requireEmpty(final java.util.List<?> value, final String field) {
                 if (!value.isEmpty()) {
                   throw new IllegalStateException(
-                      "List " + field + " of $pojo must start empty: its items are created while reading");
+                      "List " + field + " of $pojo must start empty: its elements are created while reading");
                 }
               }
 
@@ -122,7 +125,7 @@ final class OpsRenderer {
       // checked on every reset: an exception in the static initializer is not reliably
       // propagated, as the class is initialized while Codecs resolves these ops
       case LIST ->
-          p.listElement().items()
+          p.listElement().items() || p.listElement().kind() == ListElement.Kind.LIST
               ? """
                     requireEmpty(DEFAULTS.$field, "$field");
                     target.$field.clear();
