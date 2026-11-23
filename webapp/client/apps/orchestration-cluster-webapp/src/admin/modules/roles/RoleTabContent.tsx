@@ -33,7 +33,7 @@ const COLUMN_FIELDS = {
 
 const RoleTabContent: React.FC<Props> = ({roleId, kind, isOidc, isCamundaGroupsEnabled, search, onSearchChange}) => {
 	const {t} = useTranslation();
-	const {data} = useSuspenseQuery(getMembersQuery(kind, roleId, getRoleMembersRequestBody(search)));
+	const {data} = useSuspenseQuery(getMembersQuery(kind, roleId, getRoleMembersRequestBody(search, kind)));
 	const ids = useMemo(() => data.items.map((item) => toMemberRow(kind, item).id), [data, kind]);
 
 	const enrichesUsers = kind === 'users' && !isOidc;

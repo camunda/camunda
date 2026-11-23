@@ -42,7 +42,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/$roleId')({
 						canManageMappingRules: canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured),
 					});
 					const kind = getActiveMemberKind(visibleKinds, search.tab);
-					return queryClient.query(getMembersQuery(kind, roleId, getRoleMembersRequestBody(search)));
+					return queryClient.query(getMembersQuery(kind, roleId, getRoleMembersRequestBody(search, kind)));
 				}),
 			]);
 		} catch (error) {
