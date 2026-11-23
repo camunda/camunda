@@ -22,7 +22,8 @@ plugins { id("buildlogic.java-conventions") }
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val springBootVersion = versionCatalog.requiredVersion("spring-boot")
-val micrometerVersion = versionCatalog.requiredVersion("micrometer")
+val springVersion = versionCatalog.requiredVersion("spring")
+val micrometerVersion =versionCatalog.requiredVersion("micrometer")
 
 // Module coordinates pinned by the parent POM, mapped to the catalog entry holding their version.
 val forcedModules =
@@ -139,6 +140,14 @@ configurations.configureEach {
   resolutionStrategy.eachDependency {
     if (requested.group == "org.springframework.boot") {
       useVersion(springBootVersion)
+    }
+    // Maven pins the Spring Framework modules through the spring-framework-bom imported with
+    // version.spring, which overrides the newer version that Spring Security requests
+    // transitively. A Gradle platform() only adds constraints, so the higher transitive version
+    // would win; pin every Spring Framework module to version.spring instead.
+    if (requested.group == "org.springframework" && requested.name.startsWith("spring-")) {
+      useVersion(springVersion)
+      because("Maven pins Spring Framework to version.spring")
     }
     // context-propagation has independent versioning; only pin the BOM-managed artifacts.
     if (
