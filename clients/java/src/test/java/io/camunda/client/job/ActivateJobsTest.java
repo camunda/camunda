@@ -336,23 +336,6 @@ public final class ActivateJobsTest extends ClientTest {
   }
 
   @Test
-  public void shouldRejectCalledProcessIdOverGrpc() {
-    // when / then — gRPC carries no called process id, so it would drain every stub
-    assertThatThrownBy(
-            () ->
-                client
-                    .newActivateJobsCommand()
-                    .useGrpc()
-                    .calledProcessId("ship-order")
-                    .maxJobsToActivate(3)
-                    .reservationToken("ts-1")
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("calledProcessId");
-  }
-
-  @Test
   public void shouldRaiseExceptionOnError() {
     // given
     gatewayService.errorOnRequest(

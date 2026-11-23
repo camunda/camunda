@@ -33,8 +33,8 @@ final class JobWorkerDispatchTest {
     final JobRecord job = job();
 
     // when / then
-    assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, null, null)).isNull();
-    assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, TOKEN, null)).isNull();
+    assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, null)).isNull();
+    assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, TOKEN)).isNull();
   }
 
   @Test
@@ -43,7 +43,7 @@ final class JobWorkerDispatchTest {
     final JobRecord job = job().setReservationToken(TOKEN);
 
     // when / then
-    assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, null, null))
+    assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, null))
         .isEqualTo(JobAction.SKIPPED_RESERVED);
   }
 
@@ -53,7 +53,7 @@ final class JobWorkerDispatchTest {
     final JobRecord job = job().setReservationToken(TOKEN);
 
     // when / then
-    assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, "ts-other", null))
+    assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, "ts-other"))
         .isEqualTo(JobAction.SKIPPED_RESERVED);
   }
 
@@ -63,40 +63,21 @@ final class JobWorkerDispatchTest {
     final JobRecord job = job().setReservationToken(TOKEN);
 
     // when / then
-    assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, TOKEN, null)).isNull();
+    assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, TOKEN)).isNull();
   }
 
   @Test
-  void shouldServeCallActivityStubToAnActivationNamingItsCalledProcess() {
-    // given
+  void shouldServeCallActivityStubToAnyActivationOfItsType() {
+    // given a stub carries no reservation token; its type names the called process it stands in for
     final JobRecord stub = stub(CALLED_PROCESS_ID);
 
-    // when / then
-    assertThat(JobWorkerDispatch.withheldFromWorkersReason(stub, null, CALLED_PROCESS_ID))
-        .describedAs("no reservation token is needed")
+    // when / then it is withheld from no worker: isolation comes from its job type, not a filter
+    assertThat(JobWorkerDispatch.withheldFromWorkersReason(stub, null))
+        .describedAs("a stub without a reservation token is served, no token needed")
         .isNull();
-  }
-
-  @Test
-  void shouldWithholdCallActivityStubFromAnActivationNamingNoCalledProcess() {
-    // given
-    final JobRecord stub = stub(CALLED_PROCESS_ID);
-
-    // when / then
-    assertThat(JobWorkerDispatch.withheldFromWorkersReason(stub, null, null))
-        .isEqualTo(JobAction.SKIPPED_CALL_ACTIVITY_STUB);
-    assertThat(JobWorkerDispatch.withheldFromWorkersReason(stub, TOKEN, ""))
-        .isEqualTo(JobAction.SKIPPED_CALL_ACTIVITY_STUB);
-  }
-
-  @Test
-  void shouldWithholdCallActivityStubFromAnActivationNamingAnotherCalledProcess() {
-    // given
-    final JobRecord stub = stub(CALLED_PROCESS_ID);
-
-    // when / then
-    assertThat(JobWorkerDispatch.withheldFromWorkersReason(stub, null, "other-process"))
-        .isEqualTo(JobAction.SKIPPED_CALL_ACTIVITY_STUB);
+    assertThat(JobWorkerDispatch.withheldFromWorkersReason(stub, TOKEN))
+        .describedAs("presenting a token does not withhold the stub either")
+        .isNull();
   }
 
   private static JobRecord stub(final String calledProcessId) {

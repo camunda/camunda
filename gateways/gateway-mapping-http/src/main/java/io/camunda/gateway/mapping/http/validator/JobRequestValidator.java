@@ -32,15 +32,8 @@ public final class JobRequestValidator {
       final JobActivationRequest activationRequest) {
     return validate(
         violations -> {
-          final boolean hasType =
-              activationRequest.getType() != null && !activationRequest.getType().isBlank();
-          final boolean hasCalledProcessId =
-              activationRequest.getCalledProcessId() != null
-                  && !activationRequest.getCalledProcessId().isBlank();
-          if (hasType && hasCalledProcessId) {
-            violations.add("Only one of [type, calledProcessId] is allowed");
-          } else if (!hasType && !hasCalledProcessId) {
-            violations.add("At least one of [type, calledProcessId] is required");
+          if (activationRequest.getType() == null || activationRequest.getType().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("type"));
           }
           if (activationRequest.getTimeout() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("timeout"));

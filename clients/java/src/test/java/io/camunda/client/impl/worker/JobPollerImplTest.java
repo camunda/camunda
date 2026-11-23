@@ -341,7 +341,6 @@ public final class JobPollerImplTest extends ClientTest {
         TenantFilter.PROVIDED,
         10,
         false,
-        null,
         null);
   }
 
@@ -358,7 +357,6 @@ public final class JobPollerImplTest extends ClientTest {
         tenantFilter,
         10,
         false,
-        null,
         null);
   }
 
@@ -374,7 +372,6 @@ public final class JobPollerImplTest extends ClientTest {
         TenantFilter.PROVIDED,
         10,
         withLease,
-        null,
         null);
   }
 

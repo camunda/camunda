@@ -69,10 +69,13 @@ public final class Protocol {
   public static final String USER_TASK_JOB_TYPE = "io.camunda.zeebe:userTask";
 
   /**
-   * Job type used for the job a stubbed call activity waits on instead of starting the process it
-   * calls. Such a job is served to no job worker.
+   * Prefix of the job type used for the job a stubbed call activity waits on instead of starting
+   * the process it calls. The called process id is appended to this prefix (see {@link
+   * #callActivityStubJobType(String)}), so the job type names the stubbed child and only a worker
+   * subscribing to that type is served the job. No ordinary worker subscribes to it.
    */
-  public static final String CALL_ACTIVITY_STUB_JOB_TYPE = "io.camunda.zeebe:callActivityStub";
+  public static final String CALL_ACTIVITY_STUB_JOB_TYPE_PREFIX =
+      "io.camunda.zeebe:callActivityStub";
 
   /** Prefix for key of reserved task headers */
   public static final String RESERVED_HEADER_NAME_PREFIX = "io.camunda.zeebe:";
@@ -134,6 +137,15 @@ public final class Protocol {
 
   /** Linked resources header used in service task */
   public static final String LINKED_RESOURCES_HEADER_NAME = "linkedResources";
+
+  /**
+   * The job type a stubbed call activity's job carries: the {@link
+   * #CALL_ACTIVITY_STUB_JOB_TYPE_PREFIX} followed by the called process id. A worker drains the
+   * stubs of one called process by activating this exact type.
+   */
+  public static String callActivityStubJobType(final String calledProcessId) {
+    return CALL_ACTIVITY_STUB_JOB_TYPE_PREFIX + ":" + calledProcessId;
+  }
 
   public static long encodePartitionId(final int partitionId, final long key) {
     if (key < 0) {

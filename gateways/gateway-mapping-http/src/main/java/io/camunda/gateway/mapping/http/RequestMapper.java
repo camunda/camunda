@@ -84,7 +84,6 @@ import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
@@ -816,14 +815,8 @@ public class RequestMapper {
       final List<String> tenantIds,
       final TenantFilter tenantFilter) {
 
-    final String calledProcessId =
-        getStringOrEmpty(activationRequest, JobActivationRequest::getCalledProcessId);
-    final String type =
-        calledProcessId.isBlank()
-            ? activationRequest.getType()
-            : Protocol.CALL_ACTIVITY_STUB_JOB_TYPE;
     return new ActivateJobsRequest(
-        type,
+        activationRequest.getType(),
         activationRequest.getMaxJobsToActivate(),
         tenantIds,
         tenantFilter,
@@ -832,8 +825,7 @@ public class RequestMapper {
         getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
         getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout),
         getBooleanOrDefault(activationRequest, JobActivationRequest::getWithLease, false),
-        getStringOrEmpty(activationRequest, JobActivationRequest::getReservationToken),
-        calledProcessId);
+        getStringOrEmpty(activationRequest, JobActivationRequest::getReservationToken));
   }
 
   public static <R> Map<String, Object> getMapOrEmpty(

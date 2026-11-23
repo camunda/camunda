@@ -277,22 +277,17 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   }
 
   @Test
-  void shouldActivateByCalledProcessId() {
-    // given
+  void shouldActivateStubsByCompositeJobType() {
+    // given a call-activity-stub composite job type names the called process it stands in for
+    final String stubType = "io.camunda.zeebe:callActivityStub:ship-order";
     gatewayService.onActivateJobsRequest(new JobActivationResult());
 
     // when
-    client
-        .newActivateJobsCommand()
-        .calledProcessId("ship-order")
-        .maxJobsToActivate(3)
-        .send()
-        .join();
+    client.newActivateJobsCommand().jobType(stubType).maxJobsToActivate(3).send().join();
 
-    // then
+    // then the composite type is sent through as an ordinary job type
     final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
-    assertThat(request.getCalledProcessId()).isEqualTo("ship-order");
-    assertThat(request.getType()).isNull();
+    assertThat(request.getType()).isEqualTo(stubType);
     assertThat(request.getReservationToken()).isNull();
   }
 

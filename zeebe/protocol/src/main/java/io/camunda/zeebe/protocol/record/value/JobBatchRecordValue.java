@@ -85,16 +85,6 @@ public interface JobBatchRecordValue extends RecordValue {
   String getReservationToken();
 
   /**
-   * Narrows a stub activation to the stand-in jobs of one called process. When set, the activation
-   * serves only {@code CALL_ACTIVITY_STUB} jobs whose resolved called-process id equals this value,
-   * so one mock worker drains the stubs of exactly one stubbed process. Empty when the activation
-   * does not filter by called process.
-   *
-   * @return the called-process id to filter stub jobs by, or empty when none
-   */
-  String getCalledProcessId();
-
-  /**
    * Since a job batch contains many jobs, it is possible that the jobs belong to different tenants.
    *
    * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated

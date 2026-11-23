@@ -59,7 +59,6 @@ public final class ActivateJobsCommandImpl
   private final JobActivationRequest httpRequestObject;
   private Duration requestTimeout;
   private boolean useRest;
-  private boolean hasCalledProcessId;
 
   private final Set<String> defaultTenantIds;
   private final Set<String> customTenantIds;
@@ -105,13 +104,6 @@ public final class ActivateJobsCommandImpl
   public ActivateJobsCommandStep2 jobType(final String jobType) {
     grpcRequestObjectBuilder.setType(jobType);
     httpRequestObject.setType(jobType);
-    return this;
-  }
-
-  @Override
-  public ActivateJobsCommandStep2 calledProcessId(final String calledProcessId) {
-    httpRequestObject.setCalledProcessId(calledProcessId);
-    hasCalledProcessId = true;
     return this;
   }
 
@@ -199,12 +191,6 @@ public final class ActivateJobsCommandImpl
     if (useRest) {
       return sendRestRequest();
     } else {
-      if (hasCalledProcessId) {
-        throw new IllegalStateException(
-            "Activating jobs by calledProcessId is only supported over REST, but this command uses"
-                + " gRPC. The gRPC activation request carries no called process id, so it would"
-                + " drain every stub of the run. Use the REST transport instead.");
-      }
       return sendGrpcRequest();
     }
   }

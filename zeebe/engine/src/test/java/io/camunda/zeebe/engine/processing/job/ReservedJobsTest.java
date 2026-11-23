@@ -515,7 +515,7 @@ public final class ReservedJobsTest {
             .processInstance()
             .ofBpmnProcessId(callerProcessId)
             .withStubbedCallActivities(calledProcessId)
-            .withReservedJobTypes(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
+            .withReservedJobTypes(Protocol.callActivityStubJobType(calledProcessId))
             .withReservationToken(RESERVATION_TOKEN)
             .create();
 
@@ -523,7 +523,7 @@ public final class ReservedJobsTest {
     final var stubJob =
         jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
-            .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
+            .withType(Protocol.callActivityStubJobType(calledProcessId))
             .getFirst();
     assertThat(stubJob.getValue().getReservationToken()).isEmpty();
     Assertions.assertThat(ENGINE.job().withKey(stubJob.getKey()).complete())

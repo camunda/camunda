@@ -147,50 +147,57 @@ public final class StubbedCallActivityTest {
   }
 
   @Test
-  public void shouldNotActivateStubJob() {
-    // given
+  public void shouldNotActivateStubJobForAnotherCalledProcess() {
+    // given a created stub job for this child
     deployParentAndChild(c -> {});
-    createStubbedInstance();
+    final long processInstanceKey = createStubbedInstance();
+    stubJob(processInstanceKey);
 
-    // when
-    final var batch = ENGINE.jobs().withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE).activate();
+    // when a worker polls another called process' composite type
+    final var otherBatch =
+        ENGINE
+            .jobs()
+            .withType(Protocol.callActivityStubJobType(Strings.newRandomValidBpmnId()))
+            .activate();
 
-    // then
-    assertThat(batch.getValue().getJobs())
-        .describedAs("a poll must not be served a call activity stub job")
+    // then it is served no stub, because the stub's type names only its own called process
+    assertThat(otherBatch.getValue().getJobs())
+        .describedAs("a poll for another called process' type is not served this child's stub")
         .isEmpty();
-  }
 
-  @Test
-  public void shouldNotActivateStubJobWithLease() {
-    // given
-    deployParentAndChild(c -> {});
-    createStubbedInstance();
-
-    // when a lease-aware worker polls, the way an agent worker does
+    // when the worker polls this child's composite type
     final var batch =
-        ENGINE.jobs().withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE).withLease().activate();
+        ENGINE.jobs().withType(Protocol.callActivityStubJobType(childProcessId)).activate();
 
-    // then
+    // then it is served the stub
     assertThat(batch.getValue().getJobs())
-        .describedAs("opting into leases does not unlock a call activity stub job")
-        .isEmpty();
+        .describedAs("a poll for this child's composite type is served its stub")
+        .singleElement()
+        .extracting(j -> j.getCustomHeaders().get(Protocol.CALLED_PROCESS_ID_HEADER_NAME))
+        .isEqualTo(childProcessId);
   }
 
   @Test
-  public void shouldNotPushStubJobToStream() {
-    // given a stream is waiting for the stub job type before the instance exists
+  public void shouldPushStubJobOnlyToAStreamOfItsCalledProcessType() {
+    // given streams for another called process' type and for this child's type, both waiting
+    // before the instance exists
     deployParentAndChild(c -> {});
-    final RecordingJobStream jobStream = registerStream();
+    final RecordingJobStream otherStream =
+        registerStream(Protocol.callActivityStubJobType(Strings.newRandomValidBpmnId()));
+    final RecordingJobStream childStream =
+        registerStream(Protocol.callActivityStubJobType(childProcessId));
 
     // when
     final long processInstanceKey = createStubbedInstance();
     stubJob(processInstanceKey);
 
-    // then
-    assertThat(jobStream.getActivatedJobs())
-        .describedAs("a call activity stub job is never pushed to a stream")
+    // then only the stream subscribed to this child's composite type receives the stub
+    assertThat(otherStream.getActivatedJobs())
+        .describedAs("a stream for another called process' type receives no stub")
         .isEmpty();
+    assertThat(childStream.getActivatedJobs())
+        .describedAs("a stream for this child's composite type receives the stub")
+        .hasSize(1);
   }
 
   @Test
@@ -434,7 +441,9 @@ public final class StubbedCallActivityTest {
     // the
     // root key here.
     final Record<JobRecordValue> stubJob =
-        jobRecords(JobIntent.CREATED).withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE).getFirst();
+        jobRecords(JobIntent.CREATED)
+            .withType(Protocol.callActivityStubJobType(grandchildProcessId))
+            .getFirst();
     assertThat(stubJob.getValue().getElementId())
         .describedAs("the unlisted child runs real; only its nested grandchild call activity stubs")
         .isEqualTo("child-call");
@@ -511,7 +520,7 @@ public final class StubbedCallActivityTest {
             .create();
 
     // then the listed call activity waits on a stub job
-    final Record<JobRecordValue> stubJob = stubJob(processInstanceKey);
+    final Record<JobRecordValue> stubJob = stubJob(processInstanceKey, stubbedChildId);
     assertThat(stubJob.getValue().getElementId())
         .describedAs("only the listed call activity is stubbed")
         .isEqualTo("callStubbed");
@@ -550,20 +559,24 @@ public final class StubbedCallActivityTest {
   }
 
   private Record<JobRecordValue> stubJob(final long processInstanceKey) {
+    return stubJob(processInstanceKey, childProcessId);
+  }
+
+  private Record<JobRecordValue> stubJob(
+      final long processInstanceKey, final String calledProcessId) {
     return jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
+        .withType(Protocol.callActivityStubJobType(calledProcessId))
         .getFirst();
   }
 
-  private RecordingJobStream registerStream() {
+  private RecordingJobStream registerStream(final String jobType) {
     final var worker = BufferUtil.wrapString("test");
     final var properties =
         new JobActivationPropertiesImpl()
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(TIMEOUT_MS)
             .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
-    return JOB_STREAMER.addJobStream(
-        BufferUtil.wrapString(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE), properties);
+    return JOB_STREAMER.addJobStream(BufferUtil.wrapString(jobType), properties);
   }
 }

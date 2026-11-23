@@ -218,14 +218,13 @@ public interface CreateProcessInstanceCommandStep1
      * Activates the process instance's call activities that call one of the given BPMN process ids
      * without starting the processes they call (alpha).
      *
-     * <p>A stubbed call activity activates and waits on a job of type {@code
-     * io.camunda.zeebe:callActivityStub} instead of starting a child process instance, so the
-     * called process need not even be deployed. The stub job is offered to no ordinary worker; the
-     * caller completes it to stand in for the called process, or a worker opened with {@link
-     * io.camunda.client.api.worker.JobWorkerBuilderStep1#calledProcessId(String) calledProcessId}
-     * drains the stubs of one called process — a multi-instance call activity included. Stub jobs
-     * are never reserved, even when {@link #reserveJobs(String, String...) reserveJobs} is also
-     * given.
+     * <p>A stubbed call activity activates and waits on a job whose type names the called process
+     * ({@code io.camunda.zeebe:callActivityStub:<calledProcessId>}) instead of starting a child
+     * process instance, so the called process need not even be deployed. No ordinary worker
+     * subscribes to that type; the caller completes the job to stand in for the called process, or
+     * a worker opened for that job type drains the stubs of one called process — a multi-instance
+     * call activity included. Stub jobs are never reserved, even when {@link #reserveJobs(String,
+     * String...) reserveJobs} is also given.
      *
      * <p>A call activity is stubbed when the process id it resolves to is one of {@code
      * processIds}; call activities calling any other process run their real child. Stubbing is

@@ -148,9 +148,9 @@ class RequestMapperTest {
           JobActivationRequest.Builder.create()
               .maxJobsToActivate(10)
               .timeout(5000L)
+              .type("test-job")
               .tenantIds(List.of("tenant-a", "tenant-b"))
               .reservationToken("test-reservation")
-              .calledProcessId("called-process")
               .build();
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
@@ -158,37 +158,35 @@ class RequestMapperTest {
       // then
       assertThat(result.isRight()).isTrue();
       final var activateJobsRequest = result.get();
-      assertThat(activateJobsRequest.type())
-          .isEqualTo(io.camunda.zeebe.protocol.Protocol.CALL_ACTIVITY_STUB_JOB_TYPE);
+      assertThat(activateJobsRequest.type()).isEqualTo("test-job");
       assertThat(activateJobsRequest.maxJobsToActivate()).isEqualTo(10);
       assertThat(activateJobsRequest.timeout()).isEqualTo(5000L);
       assertThat(activateJobsRequest.tenantIds()).containsExactly("tenant-a", "tenant-b");
       assertThat(activateJobsRequest.tenantFilter()).isEqualTo(TenantFilter.PROVIDED);
       assertThat(activateJobsRequest.reservationToken()).isEqualTo("test-reservation");
-      assertThat(activateJobsRequest.calledProcessId()).isEqualTo("called-process");
     }
 
     @Test
-    void shouldMapJobActivationByCalledProcessIdWithoutReservationToken() {
-      // given
+    void shouldMapCallActivityStubJobTypeThrough() {
+      // given a request whose type is a call-activity-stub composite type
+      final var stubType =
+          io.camunda.zeebe.protocol.Protocol.callActivityStubJobType("called-process");
       final var request =
           JobActivationRequest.Builder.create()
               .maxJobsToActivate(10)
               .timeout(5000L)
+              .type(stubType)
               .tenantIds(List.of("tenant-a"))
-              .calledProcessId("called-process")
               .build();
 
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
 
-      // then
+      // then the mapper passes the type through unchanged and requires no reservation token
       assertThat(result.isRight())
           .describedAs("stub jobs are never reserved, so no token is required")
           .isTrue();
-      assertThat(result.get().type())
-          .isEqualTo(io.camunda.zeebe.protocol.Protocol.CALL_ACTIVITY_STUB_JOB_TYPE);
-      assertThat(result.get().calledProcessId()).isEqualTo("called-process");
+      assertThat(result.get().type()).isEqualTo(stubType);
       assertThat(result.get().reservationToken()).isEmpty();
     }
 
@@ -230,7 +228,6 @@ class RequestMapperTest {
       assertThat(result.isRight()).isTrue();
       assertThat(result.get().withLease()).isFalse();
       assertThat(result.get().reservationToken()).isEmpty();
-      assertThat(result.get().calledProcessId()).isEmpty();
     }
 
     @Test

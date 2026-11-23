@@ -448,7 +448,10 @@ public final class BpmnJobBehavior {
 
     writeJobCreatedEvent(
         context,
-        new JobProperties().type(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE).retries(1L).priority(0),
+        new JobProperties()
+            .type(Protocol.callActivityStubJobType(calledProcessId))
+            .retries(1L)
+            .priority(0),
         JobKind.CALL_ACTIVITY_STUB,
         JobListenerEventType.UNSPECIFIED,
         headers,

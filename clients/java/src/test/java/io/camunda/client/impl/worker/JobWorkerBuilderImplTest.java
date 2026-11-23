@@ -118,38 +118,6 @@ class JobWorkerBuilderImplTest {
   }
 
   @Test
-  void shouldOpenCalledProcessIdWorkerWithoutJobType() {
-    // given / when / then — neither a jobType nor a reservation token is required
-    jobWorkerBuilder.calledProcessId("ship-order").handler(mock()).open();
-  }
-
-  @Test
-  void shouldThrowErrorIfBothJobTypeAndCalledProcessIdAreSet() {
-    // the fluent API exposes jobType and calledProcessId as alternative first steps, so both are
-    // set
-    // here directly on the builder to exercise the open() guard
-    jobWorkerBuilder.jobType("some-type");
-    jobWorkerBuilder.calledProcessId("ship-order");
-    jobWorkerBuilder.handler(mock());
-    assertThatThrownBy(jobWorkerBuilder::open)
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("not both");
-  }
-
-  @Test
-  void shouldThrowErrorIfCalledProcessIdWorkerStreams() {
-    assertThatThrownBy(
-            () ->
-                jobWorkerBuilder
-                    .calledProcessId("ship-order")
-                    .handler(mock())
-                    .streamEnabled(true)
-                    .open())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("cannot stream");
-  }
-
-  @Test
   void shouldThrowErrorIfTimeoutIsNegative() {
     // given
     // when

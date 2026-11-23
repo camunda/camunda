@@ -36,9 +36,9 @@ import org.junit.Test;
  */
 public final class CalledProcessStubActivationTest {
 
-  private static final String TOKEN = "ts-stub";
-
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  private static final String TOKEN = "ts-stub";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -58,7 +58,7 @@ public final class CalledProcessStubActivationTest {
     // given
     deploy(parentCalling(childProcessId));
     final long processInstanceKey = createStubbedInstance(childProcessId);
-    awaitStubJob(processInstanceKey);
+    awaitStubJob(processInstanceKey, childProcessId);
 
     // when
     final var batch = activateStubsOf(childProcessId);
@@ -75,7 +75,7 @@ public final class CalledProcessStubActivationTest {
     // given
     deploy(parentCalling(childProcessId));
     final long processInstanceKey = createStubbedInstance(childProcessId);
-    final long jobKey = awaitStubJob(processInstanceKey);
+    final long jobKey = awaitStubJob(processInstanceKey, childProcessId);
 
     // when
     ENGINE.job().withKey(jobKey).complete();
@@ -105,14 +105,33 @@ public final class CalledProcessStubActivationTest {
             .endEvent()
             .done());
     final long processInstanceKey = createStubbedInstance(childProcessId, otherChildId);
-    awaitStubJobs(processInstanceKey, 2);
+    awaitStubJob(processInstanceKey, childProcessId);
+    awaitStubJob(processInstanceKey, otherChildId);
 
-    // when draining only the first called process
+    // when draining the other called process' composite type
+    final var otherBatch = activateStubsOf(otherChildId);
+
+    // then only that child's stub is served, never this child's
+    assertThat(otherBatch.getValue().getJobs())
+        .describedAs("the other child's composite type serves only the other child's stub")
+        .singleElement()
+        .extracting(j -> j.getCustomHeaders().get(Protocol.CALLED_PROCESS_ID_HEADER_NAME))
+        .isEqualTo(otherChildId);
+
+    // when activating an ordinary user job type
+    final var userBatch = ENGINE.jobs().withType(Strings.newRandomValidBpmnId()).activate();
+
+    // then no stub is served
+    assertThat(userBatch.getValue().getJobs())
+        .describedAs("an ordinary user job type is not served any stub")
+        .isEmpty();
+
+    // when draining this child's composite type, untouched by the activations above
     final var batch = activateStubsOf(childProcessId);
 
-    // then
+    // then its stub is still served
     assertThat(batch.getValue().getJobs())
-        .describedAs("the activation drains only the stubs of the requested called process")
+        .describedAs("the requested child's composite type still serves its own stub")
         .singleElement()
         .extracting(j -> j.getCustomHeaders().get(Protocol.CALLED_PROCESS_ID_HEADER_NAME))
         .isEqualTo(childProcessId);
@@ -140,7 +159,7 @@ public final class CalledProcessStubActivationTest {
             .withVariable("items", List.of(1, 2, 3))
             .withStubbedCallActivities(childProcessId)
             .create();
-    awaitStubJobs(processInstanceKey, 3);
+    awaitStubJobs(processInstanceKey, childProcessId, 3);
 
     // when
     final var batch = activateStubsOf(childProcessId);
@@ -164,15 +183,14 @@ public final class CalledProcessStubActivationTest {
             .withReservedJobTypes(reservedJobType)
             .withReservationToken(TOKEN)
             .create();
-    final long jobKey = awaitStubJob(processInstanceKey);
+    final long jobKey = awaitStubJob(processInstanceKey, childProcessId);
 
     // when the run's mock worker, which presents the run's token, drains the stub
     final var batch =
         ENGINE
             .jobs()
-            .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
+            .withType(Protocol.callActivityStubJobType(childProcessId))
             .withReservationToken(TOKEN)
-            .withCalledProcessId(childProcessId)
             .activate();
 
     // then
@@ -204,7 +222,7 @@ public final class CalledProcessStubActivationTest {
             .endEvent()
             .done());
     final long processInstanceKey = createStubbedInstance(childProcessId);
-    final long jobKey = awaitStubJob(processInstanceKey);
+    final long jobKey = awaitStubJob(processInstanceKey, childProcessId);
 
     // when the mock worker throws from the stub
     ENGINE.job().withKey(jobKey).withErrorCode(errorCode).throwError();
@@ -228,21 +246,18 @@ public final class CalledProcessStubActivationTest {
   }
 
   private Record<JobBatchRecordValue> activateStubsOf(final String calledProcessId) {
-    return ENGINE
-        .jobs()
-        .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
-        .withCalledProcessId(calledProcessId)
-        .activate();
+    return ENGINE.jobs().withType(Protocol.callActivityStubJobType(calledProcessId)).activate();
   }
 
-  private long awaitStubJob(final long processInstanceKey) {
-    return awaitStubJobs(processInstanceKey, 1);
+  private long awaitStubJob(final long processInstanceKey, final String calledProcessId) {
+    return awaitStubJobs(processInstanceKey, calledProcessId, 1);
   }
 
-  private long awaitStubJobs(final long processInstanceKey, final int count) {
+  private long awaitStubJobs(
+      final long processInstanceKey, final String calledProcessId, final int count) {
     return jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
+        .withType(Protocol.callActivityStubJobType(calledProcessId))
         .limit(count)
         .toList()
         .getLast()

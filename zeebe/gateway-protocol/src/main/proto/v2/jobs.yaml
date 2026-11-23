@@ -353,19 +353,8 @@ components:
         type:
           description: >
             The job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition type="payment-service" />).
-            Exactly one of `type` or `calledProcessId` must be set; sending both is rejected.
           type: string
           example: create-new-user-record
-        calledProcessId:
-          description: >
-            Activates the stand-in jobs of stubbed call activities that call this BPMN process id,
-            instead of jobs of a given `type` (see the STUB_CALL_ACTIVITIES runtime instruction). It
-            implies the internal stub job type, so `type` must be omitted. No `reservationToken` is
-            needed, since stub jobs are never reserved. This lets one mock worker drain every stub of
-            a stubbed process, a multi-instance call activity included. Exactly one of `type` or
-            `calledProcessId` must be set.
-          allOf:
-            - $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
         worker:
           description: The name of the worker activating the jobs, mostly used for logging purposes.
           type: string
@@ -442,8 +431,6 @@ components:
         - propertyName: withLease
           addedInVersion: "8.10"
         - propertyName: reservationToken
-          addedInVersion: "8.11"
-        - propertyName: calledProcessId
           addedInVersion: "8.11"
 
     JobActivationResult:

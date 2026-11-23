@@ -29,6 +29,12 @@ import org.slf4j.LoggerFactory;
 
 public class JobWorkerMockImpl implements JobWorkerMock {
 
+  /**
+   * Prefix of the engine-internal job type a stubbed call activity's job carries; the called
+   * process id is appended. Kept in sync with {@code io.camunda.zeebe.protocol.Protocol}.
+   */
+  static final String CALL_ACTIVITY_STUB_JOB_TYPE_PREFIX = "io.camunda.zeebe:callActivityStub";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(JobWorkerMockImpl.class);
 
   private final List<ActivatedJob> activatedJobs = new ArrayList<>();
@@ -79,14 +85,14 @@ public class JobWorkerMockImpl implements JobWorkerMock {
           }
         };
 
+    final String subscriptionJobType =
+        calledProcessId != null ? callActivityStubJobType(calledProcessId) : jobType;
     final JobWorkerBuilderStep2 subscription =
-        calledProcessId != null
-            ? camundaClient.newWorker().calledProcessId(calledProcessId)
-            : camundaClient.newWorker().jobType(jobType);
+        camundaClient.newWorker().jobType(subscriptionJobType);
     final JobWorkerBuilderStep3 workerBuilder = subscription.handler(safeLoggingJobHandler);
     if (calledProcessId != null) {
-      // a stub job is served only over the poll path, and open() rejects a streaming
-      // called-process worker, so disable streaming even when the client enables it by default
+      // a stub job is drained over the poll path, so disable streaming even when the client enables
+      // it by default
       workerBuilder.streamEnabled(false);
     }
     if (reservationToken != null) {
@@ -106,5 +112,9 @@ public class JobWorkerMockImpl implements JobWorkerMock {
   @Override
   public List<ActivatedJob> getActivatedJobs() {
     return activatedJobs;
+  }
+
+  static String callActivityStubJobType(final String calledProcessId) {
+    return CALL_ACTIVITY_STUB_JOB_TYPE_PREFIX + ":" + calledProcessId;
   }
 }

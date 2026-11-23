@@ -294,11 +294,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                     job.getElementId());
 
             LOGGER.debug("{} with example data {}", logPrefix, exampleDataVariables);
-            completeCommand(client, job.getJobKey()).variables(exampleDataVariables).send().join();
+            completeCommand(client, job).variables(exampleDataVariables).send().join();
           } catch (final BpmnExampleDataReaderException e) {
 
             LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
-            completeCommand(client, job.getJobKey()).send().join();
+            completeCommand(client, job).send().join();
           }
         });
   }
@@ -382,7 +382,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                   .errorCode(errorCode)
                   .variables(variables);
 
-          if (reservationToken != null) {
+          if (reservationToken != null && job.getKind() != JobKind.CALL_ACTIVITY_STUB) {
             command.withReservationToken(reservationToken);
           }
 
@@ -603,7 +603,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               job.getJobKey(),
               variables);
 
-          completeCommand(client, job.getJobKey())
+          completeCommand(client, job)
               .variables(variables)
               .withResult(
                   result -> {
@@ -700,7 +700,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               jobSelector.describe(),
               job.getJobKey());
 
-          completeCommand(client, job.getJobKey())
+          completeCommand(client, job)
               .withResult(
                   result -> {
                     final CompleteUserTaskJobResultStep1 userTaskResult = result.forUserTask();
@@ -717,10 +717,14 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     return conditionalBehaviorEngine.when(condition);
   }
 
-  /** Builds a completion that carries this test's reservation token, if it has one. */
-  private CompleteJobCommandStep1 completeCommand(final CamundaClient client, final long jobKey) {
-    final CompleteJobCommandStep1 command = client.newCompleteCommand(jobKey);
-    if (reservationToken != null) {
+  /**
+   * Builds a completion that carries this test's reservation token, if it has one. Call-activity
+   * stub jobs are never reserved, so no token is attached to them even when the test case names
+   * one.
+   */
+  private CompleteJobCommandStep1 completeCommand(final CamundaClient client, final Job job) {
+    final CompleteJobCommandStep1 command = client.newCompleteCommand(job.getJobKey());
+    if (reservationToken != null && job.getKind() != JobKind.CALL_ACTIVITY_STUB) {
       command.withReservationToken(reservationToken);
     }
     return command;
@@ -740,7 +744,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               jobSelector.describe(),
               job.getJobKey(),
               outputVariables);
-          completeCommand(client, job.getJobKey()).variables(outputVariables).send().join();
+          completeCommand(client, job).variables(outputVariables).send().join();
         });
   }
 

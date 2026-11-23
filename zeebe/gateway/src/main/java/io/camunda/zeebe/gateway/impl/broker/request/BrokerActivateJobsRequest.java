@@ -71,11 +71,6 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
     return this;
   }
 
-  public BrokerActivateJobsRequest setCalledProcessId(final String calledProcessId) {
-    requestDto.setCalledProcessId(calledProcessId);
-    return this;
-  }
-
   @Override
   public JobBatchRecord getRequestWriter() {
     return requestDto;

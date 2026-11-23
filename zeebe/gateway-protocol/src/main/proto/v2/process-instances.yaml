@@ -1528,11 +1528,12 @@ components:
         A call activity whose process id is a FEEL expression is only stubbed when its resolved value
         is listed.
 
-        The stub jobs are served to no ordinary worker by poll or push: only a job activation that
-        names the called process id with `calledProcessId` is served them, which lets a single mock
-        worker drain every stub of a stubbed process, a multi-instance call activity included.
-        Otherwise whoever created the process instance completes them. Stub jobs are never reserved,
-        even when a `ProcessInstanceCreationReserveJobsInstruction` is also given.
+        Each stub job carries a dedicated `type` that names the called process it stands in for
+        (`io.camunda.zeebe:callActivityStub:<calledProcessId>`), which no ordinary worker subscribes
+        to: only a job activation for that type is served them, which lets a single mock worker drain
+        every stub of a stubbed process, a multi-instance call activity included. Otherwise whoever
+        created the process instance completes them. Stub jobs are never reserved, even when a
+        `ProcessInstanceCreationReserveJobsInstruction` is also given.
 
         This instruction is an alpha feature and may be subject to change in future releases. At most
         one may be given per process instance.

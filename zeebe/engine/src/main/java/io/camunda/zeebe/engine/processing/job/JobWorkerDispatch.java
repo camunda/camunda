@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -25,10 +24,11 @@ public final class JobWorkerDispatch {
    * wakes a stream — asks this, so a job withheld from workers is withheld from all of them.
    *
    * <p>A call-activity-stub job stands in for the process a stubbed call activity calls, so no
-   * ordinary worker runs it. It is never reserved; it is served only to an activation that names
-   * the called process it stands in for in {@code requesterCalledProcessId} (for example CPT's mock
-   * worker for that process), and to no other worker or stream. Otherwise whoever created the
-   * process instance completes it directly.
+   * ordinary worker runs it. Its job type names the called process it stands in for (see {@link
+   * io.camunda.zeebe.protocol.Protocol#callActivityStubJobType(String)}), and no ordinary worker
+   * subscribes to that type: only an activation for that type — for example CPT's mock worker for
+   * that process — is served it. It is never reserved. Otherwise whoever created the process
+   * instance completes it directly.
    *
    * <p>A job carrying a reservation token belongs to an instance whose creator claimed it: that
    * creator drives it, but a worker that presents the matching {@code requesterReservationToken} is
@@ -42,22 +42,9 @@ public final class JobWorkerDispatch {
    * @param job the activatable job being considered
    * @param requesterReservationToken the reservation token the activation presents, or {@code null}
    *     / empty when it presents none
-   * @param requesterCalledProcessId the called process id the activation is narrowed to, or {@code
-   *     null} / empty when it names none
    */
   public static @Nullable JobAction withheldFromWorkersReason(
-      final JobRecord job,
-      final @Nullable String requesterReservationToken,
-      final @Nullable String requesterCalledProcessId) {
-    if (job.isCallActivityStub()) {
-      final String calledProcessId =
-          job.getCustomHeaders().get(Protocol.CALLED_PROCESS_ID_HEADER_NAME);
-      return requesterCalledProcessId != null
-              && !requesterCalledProcessId.isEmpty()
-              && requesterCalledProcessId.equals(calledProcessId)
-          ? null
-          : JobAction.SKIPPED_CALL_ACTIVITY_STUB;
-    }
+      final JobRecord job, final @Nullable String requesterReservationToken) {
     if (job.hasReservationToken()) {
       if (requesterReservationToken != null
           && job.getReservationToken().equals(requesterReservationToken)) {

@@ -40,13 +40,20 @@ to the parent under the same output-mapping condition as a real child's completi
 drift. `THROW_ERROR` and `FAIL` work on a stub job, so a recording can drive the call activity's error
 boundary event.
 
-**D4. A stub is never reserved, and is served only to an activation naming its called process.** A job
-activation can carry a `calledProcessId` instead of a `type` (setting both is a `400`); it implies the
-internal stub job type and is served exactly the stubs whose called-process header matches, a
-multi-instance call activity's iterations included. Every other activation and every job stream is
-served no stub. A stub carries no [reservation token](0017-811-reserved-jobs.md), even in an instance
-that reserves other job types, and needs none: no other worker serves the stub job type, and parallel
-test runs are out of scope. The `calledProcessId` field is REST-only.
+**D4. A stub's job type names its called process, so an ordinary activation drains it.** A stubbed call
+activity's job carries the type `io.camunda.zeebe:callActivityStub:<calledProcessId>` (see
+`Protocol.callActivityStubJobType`). A mock worker drains one process's stubs by activating that exact
+`type` — no new activation field, no mutual-exclusion rule, and the job-type index already serves only
+that process's stubs, a multi-instance call activity's iterations included. No ordinary worker
+subscribes to that type, so none is served a stub. A stub carries no
+[reservation token](0017-811-reserved-jobs.md), even in an instance that reserves other job types, and
+needs none: the dedicated type isolates it, and parallel test runs are out of scope. Nothing special
+withholds a stub from a job stream; no stream subscribes to the type, so none receives one.
+
+An earlier revision added a `calledProcessId` activation field (mutually exclusive with `type`, `400`
+if both) translated to one shared stub type and post-filtered by a called-process header. It was
+dropped after review (it added mock-specific surface to the job API) in favour of the dedicated type,
+which keeps the activation API unchanged.
 
 **D5. CPT stands in for a called process with a mock worker per called-process id.**
 `mockCallActivity(calledProcessId)` (`MOCK_JOB_WORKER_*` with `calledProcessId` in a test case) opens a
@@ -68,12 +75,18 @@ commands. A single stub can still be completed directly with `COMPLETE_JOB` /
 - **Reserve the stubs with a `reservationToken` on the switch.** An earlier revision. Rejected: it tied
   the stub switch to the instance's one reservation token (forcing `RESERVE_JOBS` and
   `STUB_CALL_ACTIVITIES` to agree on it) and required the token on every stub command, for no
-  exclusivity the called-process filter does not already give.
+  exclusivity the dedicated stub job type does not already give.
+- **A `calledProcessId` activation field over one shared stub type.** An earlier revision. Rejected on
+  review: it added a mock-specific property to the job activation API (and a `type`/`calledProcessId`
+  mutual-exclusion `400`) where baking the called process into the job type needs no API change (D4).
 - **Select stubs only through job search by element id.** Cannot drive a multi-instance call activity,
   whose stub count is known only at runtime, and keeps stubs off the worker path recorders already use.
-- **Reuse `BPMN_ELEMENT` with a per-called-process job type.** Multiplies job-type cardinality in
-  metrics and still leaves the stub indistinguishable from real work; a dedicated kind plus the
-  called-process filter gives a clean discriminator.
+- **Reuse `BPMN_ELEMENT` as the job kind.** The per-called-process job type (D4) is kept, but the
+  dedicated `JobKind.CALL_ACTIVITY_STUB` is retained alongside it: completion needs to tell a stub from
+  real work regardless of type, and reusing `BPMN_ELEMENT` would blur that. The per-process type does
+  raise job-type cardinality in metrics, but stubs exist only in tests and the distinct types are
+  bounded by the deployed called-process ids, and `JobMetricsCfg.maxJobTypeLength` caps the label
+  length.
 
 ## Consequences
 

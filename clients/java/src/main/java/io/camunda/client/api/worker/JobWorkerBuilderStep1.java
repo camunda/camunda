@@ -30,20 +30,6 @@ public interface JobWorkerBuilderStep1 {
    */
   JobWorkerBuilderStep2 jobType(String type);
 
-  /**
-   * Set the called process id whose stubbed call activities this worker drains, instead of a job
-   * type (see the {@code STUB_CALL_ACTIVITIES} runtime instruction). It implies the internal stub
-   * job type, so {@link #jobType(String)} must not also be set. Stub jobs are never reserved, so no
-   * reservation token is needed. This lets one mock worker drain every stub of a stubbed process, a
-   * multi-instance call activity included.
-   *
-   * <p>Only supported over the polling REST path; a called-process worker cannot stream.
-   *
-   * @param calledProcessId the BPMN process id whose stubbed call activities to drain
-   * @return the builder for this worker
-   */
-  JobWorkerBuilderStep2 calledProcessId(String calledProcessId);
-
   interface JobWorkerBuilderStep2 {
     /**
      * Set the handler to process the jobs. At the end of the processing, the handler should
