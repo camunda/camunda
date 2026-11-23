@@ -19,7 +19,8 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login in observe-build-status
 
     steps:
       - name: Checkout
@@ -32,7 +33,8 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 ```
 

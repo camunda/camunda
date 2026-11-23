@@ -204,7 +204,8 @@ To include a workflow [fitting the criteria](#workflow-inclusion-criteria) into 
        needs: [detect-changes]
        runs-on: ubuntu-latest  # or other
        timeout-minutes: 30  # or less
-       permissions: {}  # unless GITHUB_TOKEN is needed
+       permissions:
+         id-token: write  # Vault JWT login; add GITHUB_TOKEN scopes only if needed
        steps:
          - uses: actions/checkout@v4
          #
@@ -217,8 +218,9 @@ To include a workflow [fitting the criteria](#workflow-inclusion-criteria) into 
            with:
              build_status: ${{ job.status }}
              secret_vault_address: ${{ secrets.VAULT_ADDR }}
-             secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-             secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+             secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+             secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+             secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
      ```
    * It is important to depend on the `detect-changes` job and use the newly defined output as a condition.
    * If the new job has many steps, you need to refactor them into a reusable workflow or composite action to keep `ci.yml` lean.
@@ -365,11 +367,13 @@ This topic is work-in-progress as part of [#18210](https://github.com/camunda/ca
 
 ### Metrics Collection
 
-Any job in any GitHub Actions workflow can be instrumented to collect information about the build status by adding one step at the end, like the following snippet shows:
+Any job in any GitHub Actions workflow can be instrumented to collect information about the build status by adding one step at the end, like the following snippet shows. The step logs in to Vault with JWT, so the job needs `id-token: write`:
 
 ```yaml
 jobs:
   my-solo-job-name:
+    permissions:
+      id-token: write
     steps:
       # initial checkout is required!
       - uses: actions/checkout@v4
@@ -381,8 +385,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 ```
 
 Special handling has to be done [for `matrix` jobs](https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs) since the job name is not unique among the different matrix builds, see below:
@@ -390,6 +395,8 @@ Special handling has to be done [for `matrix` jobs](https://docs.github.com/en/a
 ```yaml
 jobs:
   my-matrix-job-name:
+    permissions:
+      id-token: write
     strategy:
       matrix:
         identifier: [configurationA, configurationB]
@@ -405,8 +412,9 @@ jobs:
           job_name: "${{ env.GITHUB_JOB }}/${{ matrix.identifier }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 ```
 
 To attribute CI Analytics rows to an owning team, set a canonical handle as a workflow-level env var. This is read by `observe-build-status` as the default for its `user_description` input, so no inline argument is needed at the call site:
@@ -455,9 +463,35 @@ Historically, [different paths](https://github.com/search?q=repo%3Acamunda%2Fcam
 
 Secrets for the [C8 monorepo CI](https://github.com/camunda/camunda/actions) should be stored in Vault under the path `products/camunda/ci/*`. Manually managed secrets should go into `products/camunda/ci/github-actions`.
 
+### Vault authentication
+
+Workflows log in to Vault with JWT/OIDC. AppRole (`VAULT_ROLE_ID` / `VAULT_SECRET_ID`) is deprecated, gets deactivated once the migration in [camunda/team-infrastructure#1076](https://github.com/camunda/team-infrastructure/issues/1076) is done, and must not be used in new or changed steps.
+
+* Every job that logs in to Vault, directly or through a shared action, needs `permissions: id-token: write`. A job calling a reusable workflow that logs in needs it as well.
+* A direct login uses the Hashicorp Vault action with `method: jwt`:
+
+  ```yaml
+  - name: Import Secrets
+    id: secrets
+    uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+    with:
+      url: ${{ secrets.VAULT_ADDR }}
+      method: jwt
+      role: ${{ secrets.VAULT_JWT_ROLE }}
+      path: ${{ secrets.VAULT_JWT_PATH }}
+      jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+      exportEnv: false
+      secrets: |
+        secret/data/products/camunda/ci/github-actions MY_SECRET;
+  ```
+
+* The shared actions (`setup-build`, `observe-build-status`, `gcs-build-cache-auth`, …) take the JWT inputs `vault-jwt-role` / `vault-jwt-path` / `vault-jwt-audience` (or `secret_vault_jwtRole` / `secret_vault_jwtPath` / `secret_vault_jwtAudience`), on `main` and all `stable/*` branches.
+* A job that runs an AI agent never holds `id-token: write`. A separate job logs in and hands the agent its secrets through [`vault-wrapped-secrets`](https://docs.int.camunda.com/docs/vault/vault-secrets-in-agentic-workflows).
+
 Related resources:
 
-* [Vault for GitHub Actions (internal)](https://confluence.camunda.com/display/HAN/CI+Secrets+Self-Service#CISecretsSelfService-GitHubActions)
+* [Using Vault secrets in GitHub Actions](https://docs.int.camunda.com/docs/vault/using-vault-secrets-in-github-actions#-how)
+* [Vault secrets in agentic workflows](https://docs.int.camunda.com/docs/vault/vault-secrets-in-agentic-workflows)
 
 ## CI Self-Hosted Runners
 
@@ -718,17 +752,20 @@ Webhook URL secrets can be retrieved from [Vault](https://vault.int.camunda.com/
 
 ```yaml
 job-with-notification:
+  permissions:
+    id-token: write
   steps:
     - uses: actions/checkout@v4
 
     - name: Import Secrets
       id: secrets
-      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         exportEnv: false # we rely on step outputs, no need for environment variables
         secrets: |
           secret/data/products/camunda/ci/github-actions SLACK_MYCHANNELNAME_WEBHOOK_URL;
