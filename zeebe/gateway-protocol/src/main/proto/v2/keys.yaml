@@ -481,6 +481,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ScopeKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     VariableKeyFilterProperty:
       description: VariableKey property with full advanced search capabilities.
@@ -518,6 +529,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/VariableKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     VariableHistoryItemKeyFilterProperty:
       description: VariableHistoryItemKey property with full advanced search capabilities.
