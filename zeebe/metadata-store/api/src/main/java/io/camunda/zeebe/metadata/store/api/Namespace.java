@@ -7,19 +7,32 @@
  */
 package io.camunda.zeebe.metadata.store.api;
 
+import io.camunda.zeebe.metadata.store.api.ClusterMetadataStoreException.InvalidArgumentException;
 import io.camunda.zeebe.metadata.store.api.NamespaceApi.NamespaceScope;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * An isolated key space, identified by its scope and its name, written {@code SCOPE/NAME}. The name
  * is the physical tenant id in {@link NamespaceScope#PHYSICAL_TENANT} scope and a fixed name in
- * {@link NamespaceScope#CLUSTER} scope.
+ * {@link NamespaceScope#CLUSTER} scope. A name holds only Latin letters, digits, {@code -} and
+ * {@code _}.
  */
 public record Namespace(NamespaceScope scope, String name) {
 
+  private static final Pattern NAMESPACE_REGEX = Pattern.compile("[A-Za-z0-9_-]+");
+
+  /**
+   * @throws InvalidArgumentException if the name is empty or holds a character that is not allowed
+   */
   public Namespace {
     Objects.requireNonNull(scope, "scope");
     Objects.requireNonNull(name, "name");
+    if (!NAMESPACE_REGEX.matcher(name).matches()) {
+      throw new InvalidArgumentException(
+          "Expected a namespace name of Latin letters, digits, '-' and '_', but got '%s'"
+              .formatted(name));
+    }
   }
 
   /** Returns the namespace {@code CLUSTER/name}. */

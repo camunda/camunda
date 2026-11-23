@@ -7,6 +7,8 @@ plugins {
 dependencies {
   api(project(":zeebe-scheduler"))
   implementation(libs.org.jspecify.jspecify)
+
+  testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
 }
 
 description = "Zeebe Cluster Metadata Store API"
