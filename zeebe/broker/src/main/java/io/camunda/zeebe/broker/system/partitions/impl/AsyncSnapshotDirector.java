@@ -11,6 +11,7 @@ import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -354,6 +355,9 @@ public final class AsyncSnapshotDirector extends Actor
             (snapshot, error) -> {
               if (error != null) {
                 logSnapshotTakenError(error);
+                if (error instanceof CorruptedJournalException) {
+                  onLogCorrupted(error);
+                }
                 return CompletableActorFuture.completedExceptionally(error);
               } else {
                 inProgressSnapshot.pendingSnapshot = snapshot;
@@ -376,6 +380,16 @@ public final class AsyncSnapshotDirector extends Actor
     } else {
       LOG.error("Failed to take a snapshot for {}", processorName, snapshotTakenError);
     }
+  }
+
+  /**
+   * The index of a snapshot is looked up in entries that replay and the exporters already read, so
+   * this may be the only reader that comes across entries lost there. Unlike other failures to take
+   * a snapshot, this one does not go away with the next attempt.
+   */
+  private void onLogCorrupted(final Throwable corruption) {
+    healthReport = HealthReport.unhealthy(this).withIssue(corruption, Instant.now());
+    notifyAllListeners();
   }
 
   private void onRecovered() {
