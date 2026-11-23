@@ -28,7 +28,7 @@ export const roleQueries = {
   search: (params?: QueryRolesRequestBody | Record<string, unknown>) =>
     queryOptions({
       queryKey: queryKeys.roles.search(params),
-      placeholderData: keepPreviousData,
+      placeholderData: params?.page ? keepPreviousData : undefined,
       queryFn: () =>
         unwrap(searchRoles(params as QueryRolesRequestBody)(getApiBaseUrl())),
     }),
