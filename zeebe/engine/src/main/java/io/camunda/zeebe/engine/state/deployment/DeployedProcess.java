@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import org.agrona.DirectBuffer;
 
 public final class DeployedProcess {
@@ -81,6 +82,18 @@ public final class DeployedProcess {
 
   public PersistedProcess getPersistedProcess() {
     return persistedProcess;
+  }
+
+  /** The definition's metadata as a {@link ProcessRecord}, without the BPMN resource. */
+  public ProcessRecord toProcessRecord() {
+    return new ProcessRecord()
+        .setBpmnProcessId(getBpmnProcessId())
+        .setVersion(getVersion())
+        .setVersionTag(getVersionTag())
+        .setKey(getKey())
+        .setResourceName(getResourceName())
+        .setTenantId(getTenantId())
+        .setDeploymentKey(getDeploymentKey());
   }
 
   @Override

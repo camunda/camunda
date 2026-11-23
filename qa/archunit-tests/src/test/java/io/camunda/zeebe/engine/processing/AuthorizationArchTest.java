@@ -26,6 +26,7 @@ import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
+import io.camunda.zeebe.engine.processing.processdefinition.ProcessDefinitionSuspensionBehavior;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck;
@@ -52,9 +53,9 @@ public class AuthorizationArchTest {
 
   /**
    * We need to verify these classes explicitly as they are not a TypedRecordProcessor. These
-   * classes take care of authorization checks for job and user task processors. By making sure we
-   * call the isAuthorized method on these classes, in combination with the other rule we can ensure
-   * authorization checks are performed.
+   * classes take care of authorization checks for job, user task and process definition suspension
+   * processors. By making sure we call the isAuthorized method on these classes, in combination
+   * with the other rule we can ensure authorization checks are performed.
    */
   @ArchTest()
   public static final ArchRule DELEGATED_CLASSES_CHECK_AUTHORIZATION =
@@ -132,6 +133,9 @@ public class AuthorizationArchTest {
                     "isAuthorized",
                     TypedRecord.class,
                     DeployedProcess.class))
+            .or(
+                ArchConditions.callMethod(
+                    ProcessDefinitionSuspensionBehavior.class, "findVersions", TypedRecord.class))
             .or(
                 ArchConditions.callMethod(
                     AuthorizationCheckPort.class,
@@ -230,6 +234,7 @@ public class AuthorizationArchTest {
         return Predicates.assignableFrom(JobUpdateBehaviour.class)
             .or(Predicates.assignableFrom(PermissionsBehavior.class))
             .or(Predicates.assignableFrom(UserTaskAuthorizationCheck.class))
+            .or(Predicates.assignableFrom(ProcessDefinitionSuspensionBehavior.class))
             .test(javaClass);
       }
     };
