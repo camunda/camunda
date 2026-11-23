@@ -51,7 +51,9 @@ public final class ClusterPurgeCleanupStrategy implements CleanupStrategy {
     final Instant startTime = Instant.now();
 
     managementClient.purgeCluster();
-    waitUntilCommandApiAcceptsCommands(clientSupplier.get());
+    try (final CamundaClient client = clientSupplier.get()) {
+      waitUntilCommandApiAcceptsCommands(client);
+    }
 
     final Duration duration = Duration.between(startTime, Instant.now());
     LOG.debug("Cluster runtime data purged in {}", duration);
