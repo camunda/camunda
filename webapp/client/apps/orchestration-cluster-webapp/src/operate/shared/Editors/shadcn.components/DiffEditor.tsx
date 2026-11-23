@@ -31,7 +31,7 @@ const DiffEditor = (props: ComponentProps<typeof LazyMonacoDiffEditor>) => {
 				</div>
 			}
 		>
-			<LazyMonacoDiffEditor {...props} />
+			<LazyMonacoDiffEditor theme="ds" {...props} />
 		</Suspense>
 	);
 };
