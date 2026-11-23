@@ -301,7 +301,11 @@ data:
     # Disable the importers
     camunda.tasklist.importerEnabled: "false"
     camunda.operate.importerEnabled: "false"
-    camunda.operate.elasticsearch.numberOfShards: 3
+    # 3 primary shards for the Operate/Tasklist indices. 8.8 ignores the legacy key
+    # camunda.operate.elasticsearch.numberOfShards for this schema; these keys are read by the
+    # exporter schema manager and by the standalone schema initializer.
+    zeebe.broker.exporters.camundaexporter.args.index.numberOfShards: 3
+    camunda.database.index.numberOfShards: 3
     # Schema management has been moved out of exporter - to be bootstrap at start; once
     camunda.database.retention.enabled: "true"
     camunda.database.retention.policyName: "camunda-retention-policy"
