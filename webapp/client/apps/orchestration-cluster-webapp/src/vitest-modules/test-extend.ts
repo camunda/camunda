@@ -10,6 +10,7 @@ import {inject, it as itBase} from 'vitest';
 import {http, HttpResponse, isCommonAssetRequest} from 'msw';
 import {setupWorker} from 'msw/browser';
 import {HttpNetworkFrame} from 'msw/experimental';
+import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 
 const worker = setupWorker();
@@ -50,6 +51,8 @@ const it = itBase.extend<{
 			// tests overlaps with the next start while the service worker still waits for the previous test's pending
 			// requests, which leaves later requests unanswered.
 			if (worker.readyState === 0) {
+				// Syncs the provider's frame list so the first click does not hit the previous file's iframe (vitest#11876)
+				await userEvent.hover(document.body);
 				await startWorker();
 			}
 			// A worker that stopped answering lets every request of the remaining tests in the file fall through to the dev
