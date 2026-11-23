@@ -381,6 +381,56 @@ public final class ProcessInstanceCommandRejectionTest {
   }
 
   @Test
+  public void shouldRejectCompleteIfProcessInstanceIsInterruptedByRuntimeInstruction() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway("fork")
+                .serviceTask("a", t -> t.zeebeJobType("a"))
+                .endEvent()
+                .moveToNode("fork")
+                .serviceTask("b", t -> t.zeebeJobType("b"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withRuntimeTerminateInstruction("a")
+            .create();
+
+    final var jobA =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("a")
+            .getFirst();
+    final var jobB =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("b")
+            .getFirst();
+
+    // when - both completions are in the log before the first one interrupts the instance
+    engine.writeRecords(jobCompleteCommand(jobA), jobCompleteCommand(jobB));
+
+    // then
+    final var rejectedCommand =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId("b")
+            .getFirst();
+
+    assertThatCommandIsRejected(
+        rejectedCommand,
+        "Expected process instance to be active but was interrupted by an event with id 'a'.");
+  }
+
+  @Test
   public void shouldRejectCompleteIfElementIsActivating() {
     // given (synthetic situation - is not expected in regular processing)
     final var processInstanceKey =
