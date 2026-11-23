@@ -608,7 +608,7 @@ jobs:
           OPTIMIZE_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/optimize' || 'team-zeebe/optimize' }}
           METRICS_EXPORTER_BUILT: ${{ needs.build-metrics-exporter-image.result == 'success' }}
         run: |-
-          .github/scripts/load-test-install-camunda-platform.sh \
+          .github/scripts/load-test-deploy.sh \
             "${NAMESPACE}" \
             "${INSTALL_TARGET}" \
             "${CALCULATED_IMAGE_TAG}" \

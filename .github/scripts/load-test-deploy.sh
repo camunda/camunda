@@ -8,7 +8,7 @@
 # component, read benchmarks, Optimize metrics, user-supplied Helm values, whether the
 # metrics-exporter image was built this run).
 #
-# Usage: load-test-install-camunda-platform.sh <namespace> <install-target> <image-tag> \
+# Usage: load-test-deploy.sh <namespace> <install-target> <image-tag> \
 #          <image-repository> <image-registry> <camunda-repo> <optimize-repo> \
 #          <perform-read-benchmarks> <enable-optimize> <enable-optimize-metrics> \
 #          <metrics-exporter-built> <enable-chaos> <physical-tenant-count> [OPTIONS]
