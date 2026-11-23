@@ -168,6 +168,7 @@ jobs:
         with:
           dockerhub-readonly: true
           maven-cache-key-modifier: "it-database-${{ inputs.database-type }}"
+          test-run-order-key-modifier: "${{ inputs.test-type }}-${{ inputs.shard }}-${{ inputs.maven-profiles }}"
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
           vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
