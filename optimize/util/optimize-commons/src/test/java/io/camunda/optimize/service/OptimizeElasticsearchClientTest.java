@@ -9,8 +9,10 @@ package io.camunda.optimize.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -82,8 +84,14 @@ public class OptimizeElasticsearchClientTest {
     deleteIndexTask.execute(() -> underTest.deleteIndexByRawIndexNames("index1"));
 
     // and hit the client which failed
-    verify(elasticsearchClient.indices(), timeout(100).atLeastOnce())
-        .delete(any(DeleteIndexRequest.class));
+    // wait for the first delete attempt instead of racing a fixed Mockito timeout against the
+    // executor thread, so the verification cannot miss the call under CI load
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                verify(elasticsearchClient.indices(), atLeastOnce())
+                    .delete(any(DeleteIndexRequest.class)));
     // then the delete operation is not completed
     assertThat(deleteIndexTask.isTerminated()).isFalse();
 
