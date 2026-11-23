@@ -528,7 +528,6 @@ public final class EventPayloadVariableSourceTest {
         .withVariables(Map.of("m", 1))
         .publish();
     final long startKey = elementInstanceKey(processInstanceKey, "start");
-    ENGINE.job().ofInstance(processInstanceKey).withType(jobType).complete();
 
     // then
     assertThat(variableRecords(processInstanceKey, "m"))
