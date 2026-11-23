@@ -11,6 +11,7 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -20,7 +21,11 @@ import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Time;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
+import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.ClearScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
@@ -88,6 +93,59 @@ public class OpensearchRepository implements AutoCloseable {
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }
+  }
+
+  protected static <T> Query toQuery(final FilterByKeysQuery<T> filterByKeys) {
+    final Map<String, List<T>> keysByField = filterByKeys.keysByField();
+    final Map<String, String> inclusionFilters = filterByKeys.inclusionFilters();
+    final Map<String, String> exclusionFilters = filterByKeys.exclusionFilters();
+    final var boolBuilder = QueryBuilders.bool();
+
+    // Match any keys
+    if (!keysByField.isEmpty()) {
+      final var keysBoolBuilder = QueryBuilders.bool();
+      for (final var entry : keysByField.entrySet()) {
+        keysBoolBuilder.should(buildIdTermsQuery(entry.getKey(), entry.getValue()).toQuery());
+      }
+      keysBoolBuilder.minimumShouldMatch("1");
+      boolBuilder.filter(keysBoolBuilder.build().toQuery());
+    }
+
+    // Match all additional inclusion filters
+    for (final var filter : inclusionFilters.entrySet()) {
+      boolBuilder.filter(
+          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
+    }
+
+    // Exclude all docs matching exclusion filters
+    for (final var filter : exclusionFilters.entrySet()) {
+      boolBuilder.mustNot(
+          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
+    }
+
+    return boolBuilder.build().toQuery();
+  }
+
+  private static <T> TermsQuery buildIdTermsQuery(
+      final String idFieldName, final List<T> idValues) {
+    return QueryBuilders.terms()
+        .field(idFieldName)
+        .terms(
+            terms -> terms.value(idValues.stream().map(OpensearchRepository::fieldValue).toList()))
+        .build();
+  }
+
+  private static FieldValue fieldValue(final Object value) {
+    // OS client does not have a generic FieldValue.of(Object)
+    // so we'll do some basic translation here
+    if (value instanceof final String s) {
+      return FieldValue.of(s);
+    } else if (value instanceof final Long l) {
+      return FieldValue.of(l);
+    } else if (value instanceof final Integer i) {
+      return FieldValue.of(i);
+    }
+    throw new IllegalArgumentException("Unsupported type: " + value.getClass() + " " + value);
   }
 
   private <T> CompletionStage<T> clearScrollOnComplete(
