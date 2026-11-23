@@ -1,0 +1,31 @@
+# Fixture for the built-in operation-operationId rule.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — operation-operationId
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid: operation has an operationId ──────────────────────
+  /valid/thing:
+    post:
+      operationId: createThing
+      summary: Create a thing
+      description: Creates a new thing.
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was created.
+
+  # ── Invalid: operation has no operationId ────────────────────
+  /invalid/thing:
+    post:
+      summary: Create a thing without an operation ID
+      description: Creates a new thing.
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was created.

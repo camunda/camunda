@@ -26,6 +26,9 @@ rules:
   # Tag validation
   operation-tag-defined: error
 
+  # SDK method names come from operationId; adding one later renames the method.
+  operation-operationId: error
+
   # Schema example validation — @camunda8/spectral-cli supports unicodeRegExp,
   # so false-positive pattern failures are resolved.
   # oas3-valid-schema-example remains at warn because ScopeKey uses oneOf with
