@@ -268,9 +268,17 @@ public final class ProcessDefinitionSuspensionBehavior {
     if (value.getVersion() >= 0) {
       final @Nullable DeployedProcess process =
           processState.getProcessByProcessIdAndVersion(bpmnProcessId, value.getVersion(), tenantId);
-      return process == null
-          ? Either.left(notFoundById(value))
-          : rejectIfDraining(process).map(found -> List.of(found).iterator());
+      if (process == null) {
+        return Either.left(notFoundById(value));
+      }
+      // the rejection carries the key, so the audit log can name the version
+      return rejectIfDraining(process)
+          .mapLeft(
+              rejection -> {
+                value.setProcessDefinitionKey(process.getKey());
+                return rejection;
+              })
+          .map(found -> List.of(found).iterator());
     }
 
     final Iterator<DeployedProcess> versions =

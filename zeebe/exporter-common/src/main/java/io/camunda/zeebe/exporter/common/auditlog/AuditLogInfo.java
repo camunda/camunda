@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -111,6 +112,8 @@ public record AuditLogInfo(
           // the deleter's command; DELETED is deferred until the definition finishes draining and
           // would otherwise be attributed to whoever finished the last instance.
           Map.entry(ProcessIntent.DRAINING, AuditLogOperationType.DELETE),
+          Map.entry(ProcessIntent.SUSPENDED, AuditLogOperationType.SUSPEND),
+          Map.entry(ProcessIntent.RESUMED, AuditLogOperationType.RESUME),
 
           // ProcessInstanceCreation
           Map.entry(ProcessInstanceCreationIntent.CREATED, AuditLogOperationType.CREATE),
@@ -122,6 +125,10 @@ public record AuditLogInfo(
           Map.entry(ProcessInstanceIntent.SUSPEND, AuditLogOperationType.SUSPEND),
           Map.entry(ProcessInstanceIntent.RESUMED, AuditLogOperationType.RESUME),
           Map.entry(ProcessInstanceIntent.RESUME, AuditLogOperationType.RESUME),
+
+          // ProcessDefinitionSuspension
+          Map.entry(ProcessDefinitionSuspensionIntent.SUSPEND, AuditLogOperationType.SUSPEND),
+          Map.entry(ProcessDefinitionSuspensionIntent.RESUME, AuditLogOperationType.RESUME),
 
           // ProcessInstanceMigration
           Map.entry(ProcessInstanceMigrationIntent.MIGRATED, AuditLogOperationType.MIGRATE),
@@ -180,6 +187,9 @@ public record AuditLogInfo(
           Map.entry(ValueType.INCIDENT, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.JOB, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(
+              ValueType.PROCESS_DEFINITION_SUSPENSION,
+              AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(
               ValueType.PROCESS_INSTANCE_CREATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(
               ValueType.PROCESS_INSTANCE_MIGRATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
@@ -221,6 +231,7 @@ public record AuditLogInfo(
           Map.entry(ValueType.FORM, AuditLogEntityType.RESOURCE),
           Map.entry(ValueType.HISTORY_DELETION, AuditLogEntityType.RESOURCE),
           Map.entry(ValueType.PROCESS, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.PROCESS_DEFINITION_SUSPENSION, AuditLogEntityType.RESOURCE),
           Map.entry(ValueType.RESOURCE, AuditLogEntityType.RESOURCE),
           Map.entry(ValueType.USER_TASK, AuditLogEntityType.USER_TASK));
 

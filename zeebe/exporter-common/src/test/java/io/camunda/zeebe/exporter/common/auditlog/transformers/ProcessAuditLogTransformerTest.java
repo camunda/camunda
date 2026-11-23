@@ -9,15 +9,19 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ProcessAuditLogTransformerTest {
 
@@ -76,5 +80,40 @@ class ProcessAuditLogTransformerTest {
     // then
     assertThat(entity.getEntityKey()).isEqualTo("456");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.DELETE);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"SUSPENDED, SUSPEND", "RESUMED, RESUME"})
+  void shouldAuditSuspensionStateChangeOfOneVersion(
+      final ProcessIntent intent, final AuditLogOperationType operationType) {
+    // given
+    final Process recordValue =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(Process.class))
+            .withResourceName("processResource")
+            .withDeploymentKey(123L)
+            .withProcessDefinitionKey(456L)
+            .withBpmnProcessId("process-id")
+            .withTenantId("tenant-1")
+            .withVersion(3)
+            .build();
+
+    final Record<Process> record =
+        factory.generateRecord(
+            ValueType.PROCESS,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(intent).withValue(recordValue));
+
+    // when
+    final var entity = transformer.create(record);
+
+    // then
+    assertThat(transformer.supports(record)).isTrue();
+    assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getResult()).isEqualTo(AuditLogOperationResult.SUCCESS);
+    assertThat(entity.getEntityKey()).isEqualTo("456");
+    assertThat(entity.getProcessDefinitionKey()).isEqualTo(456L);
+    assertThat(entity.getProcessDefinitionId()).isEqualTo("process-id");
+    assertThat(entity.getEntityDescription()).isEqualTo("processResource");
+    assertThat(entity.getTenant().orElseThrow().tenantId()).isEqualTo("tenant-1");
   }
 }

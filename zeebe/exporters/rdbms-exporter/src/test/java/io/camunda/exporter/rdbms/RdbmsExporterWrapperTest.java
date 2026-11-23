@@ -41,6 +41,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolution
 import io.camunda.zeebe.exporter.common.auditlog.transformers.JobAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessDefinitionSuspensionAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
@@ -255,6 +256,9 @@ class RdbmsExporterWrapperTest {
             Map.entry(
                 ProcessInstanceSuspendResumeAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
             Map.entry(ProcessAuditLogTransformer.class, ValueType.PROCESS),
+            Map.entry(
+                ProcessDefinitionSuspensionAuditLogTransformer.class,
+                ValueType.PROCESS_DEFINITION_SUSPENSION),
             Map.entry(ResourceAuditLogTransformer.class, ValueType.RESOURCE),
             Map.entry(RoleAuditLogTransformer.class, ValueType.ROLE),
             Map.entry(RoleEntityAuditLogTransformer.class, ValueType.ROLE),
@@ -310,9 +314,10 @@ class RdbmsExporterWrapperTest {
     assertThat(registeredHandlers)
         .as("Should register PROCESS handler on partition 1")
         .containsKey(ValueType.PROCESS);
-    assertThat(registeredHandlers)
-        .as("Should not register PROCESS_DEFINITION_SUSPENSION handler on partition 1")
-        .doesNotContainKey(ValueType.PROCESS_DEFINITION_SUSPENSION);
+    assertThat(registeredHandlers.getOrDefault(ValueType.PROCESS_DEFINITION_SUSPENSION, List.of()))
+        .as("Should register the audit PROCESS_DEFINITION_SUSPENSION handler only on partition 1")
+        .isNotEmpty()
+        .allMatch(AuditLogExportHandler.class::isInstance);
     assertThat(registeredHandlers)
         .as("Should register MAPPING_RULE handler on partition 1")
         .containsKey(ValueType.MAPPING_RULE);
@@ -386,6 +391,9 @@ class RdbmsExporterWrapperTest {
     assertThat(registeredHandlers)
         .as("Should register PROCESS handler on partition 2 to fill the process cache")
         .containsKey(ValueType.PROCESS);
+    assertThat(registeredHandlers)
+        .as("Should not register PROCESS_DEFINITION_SUSPENSION handler on partition 2")
+        .doesNotContainKey(ValueType.PROCESS_DEFINITION_SUSPENSION);
     assertThat(registeredHandlers)
         .as("Should not register MAPPING_RULE handler on partition 2")
         .doesNotContainKey(ValueType.MAPPING_RULE);
