@@ -20,6 +20,7 @@ import static io.atomix.cluster.protocol.GroupMembershipEvent.Type.MEMBER_ADDED;
 import static io.atomix.cluster.protocol.GroupMembershipEvent.Type.MEMBER_REMOVED;
 import static io.atomix.cluster.protocol.GroupMembershipEvent.Type.METADATA_CHANGED;
 import static io.atomix.cluster.protocol.GroupMembershipEvent.Type.REACHABILITY_CHANGED;
+import static io.atomix.utils.concurrent.Threads.namedThreads;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.HashMultiset;
@@ -53,6 +54,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
@@ -65,9 +67,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** SWIM membership protocol test. */
 public class SwimProtocolTest extends ConcurrentTestCase {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(SwimProtocolTest.class);
 
   private static final Duration GOSSIP_INTERVAL = Duration.ofMillis(25);
   private static final Duration PROBE_INTERVAL = Duration.ofMillis(100);
@@ -677,9 +683,14 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     resources.add(() -> discovery.stop().join());
     discovery.start().join();
 
+    final var swimScheduler =
+        Executors.newSingleThreadScheduledExecutor(
+            namedThreads("atomix-cluster-heartbeat-sender", LOGGER, actorSchedulerName));
+    final var eventExecutor =
+        Executors.newSingleThreadExecutor(
+            namedThreads("atomix-cluster-events", LOGGER, actorSchedulerName));
     final SwimMembershipProtocol protocol =
-        new SwimMembershipProtocol(config, actorSchedulerName, meterRegistry, instanceId);
-    // registered before joining: the protocol starts its threads on construction
+        new SwimMembershipProtocol(config, meterRegistry, instanceId, swimScheduler, eventExecutor);
     resources.add(() -> protocol.leave(member).join());
     final TestGroupMembershipEventListener listener = new TestGroupMembershipEventListener();
     listeners.put(member.id(), listener);

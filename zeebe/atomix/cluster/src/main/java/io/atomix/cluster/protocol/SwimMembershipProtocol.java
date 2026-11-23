@@ -145,19 +145,28 @@ public class SwimMembershipProtocol
       final SwimMembershipProtocolConfig config,
       final String actorSchedulerName,
       final MeterRegistry registry) {
-    this(config, actorSchedulerName, registry, null);
+    this(
+        config,
+        registry,
+        null,
+        Executors.newSingleThreadScheduledExecutor(
+            namedThreads("atomix-cluster-heartbeat-sender", LOGGER, actorSchedulerName)),
+        Executors.newSingleThreadExecutor(
+            namedThreads("atomix-cluster-events", LOGGER, actorSchedulerName)));
   }
 
   /**
-   * Only for tests, which need to pretend to be a member that reports no instance ID at all, i.e.
-   * one running a version predating the field.
+   * Only for tests. They pass a null instance ID to get a generated one, or {@link
+   * #UNKNOWN_INSTANCE_ID} to pretend to be a member running a version that predates the field. They
+   * own the executors so they can stop them even when {@link #leave(Member)} does not.
    */
   @VisibleForTesting
   SwimMembershipProtocol(
       final SwimMembershipProtocolConfig config,
-      final String actorSchedulerName,
       final MeterRegistry registry,
-      @Nullable final Long localInstanceId) {
+      @Nullable final Long localInstanceId,
+      final ScheduledExecutorService swimScheduler,
+      final ExecutorService eventExecutor) {
     this.config = config;
     // the low bit is set so a generated instance ID can never collide with UNKNOWN_INSTANCE_ID
     this.localInstanceId =
@@ -166,12 +175,8 @@ public class SwimMembershipProtocol
 
     LOGGER.debug("Starting SwimMembership protocol with instanceId {}", this.localInstanceId);
 
-    swimScheduler =
-        Executors.newSingleThreadScheduledExecutor(
-            namedThreads("atomix-cluster-heartbeat-sender", LOGGER, actorSchedulerName));
-    eventExecutor =
-        Executors.newSingleThreadExecutor(
-            namedThreads("atomix-cluster-events", LOGGER, actorSchedulerName));
+    this.swimScheduler = swimScheduler;
+    this.eventExecutor = eventExecutor;
   }
 
   private boolean reactOnStatusChange(
