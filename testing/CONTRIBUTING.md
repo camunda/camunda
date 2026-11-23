@@ -355,7 +355,11 @@ it depends on the Camunda release. Nobody needs to edit it at release time:
   the placeholder before the release, the `Pin Connectors Version for Process Test` step of
   `.github/workflows/camunda-platform-release.yml` pins the latest published Connectors `X.Y.*` image
   from Docker Hub and commits it before the release is prepared. The merge-back validator in
-  `.github/workflows/auto-merge-back-to-stable.yml` allows this property change.
+  `.github/workflows/auto-merge-back-to-stable.yml` allows this property change. If no `X.Y.*`
+  image is published yet (e.g. an urgent `X.Y.1` right after `X.Y.0`), the step doesn't block the
+  release: it prints a warning and pins `X.Y.0`, which Connectors publishes soon. The step
+  `Restore Connectors Version Placeholder for Process Test` then puts the placeholder back on the
+  branch after the release, so CI and the merge-back PR don't depend on the missing image.
 
 ### Add a compatibility-test entry
 
