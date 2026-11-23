@@ -127,8 +127,8 @@ jobs:
           tags: type=bogus
       - name: Assert step failed
         env:
-          OUTCOME: ${{ steps.fi.outcome || steps.real.outcome }}
-          OUT: ${{ steps.fi.outputs.tags || steps.real.outputs.tags }}
+          OUTCOME: ${{ matrix.kind == 'real-action-bogus-tags' && steps.real.outcome || steps.fi.outcome }}
+          OUT: ${{ matrix.kind == 'real-action-bogus-tags' && steps.real.outputs.tags || steps.fi.outputs.tags }}
         run: |
           echo "outcome=$OUTCOME output='$OUT'"
           [ "$OUTCOME" = failure ] || { echo "::error::expected failure, got $OUTCOME"; exit 1; }
