@@ -103,6 +103,18 @@ it('should call the callback when adding a report', async () => {
   });
 });
 
+it('should not crash when the report selection is cleared', async () => {
+  const node = shallow(<CreateTileModal {...props} />);
+
+  runAllEffects();
+  await flushPromises();
+
+  const itemToString = node.find(ComboBox).prop('itemToString') as (item: unknown) => string;
+
+  expect(itemToString(null)).toBe('');
+  expect(itemToString({id: 'a', name: 'Report A'})).toBe('Report A');
+});
+
 it('should show a loading skeleton while loading available reports', () => {
   const node = shallow(<CreateTileModal {...props} />);
 
