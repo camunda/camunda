@@ -25,8 +25,10 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -77,7 +79,7 @@ public class GatewayModuleConfiguration {
     // doing it async as potentially slow (messagingService → unicastService →
     // membershipService → communicationService → eventService).
     final CompletableFuture<Void> atomixClusterStartFuture = atomixCluster.start();
-    jobStreamClient.start().join();
+    awaitStartup(() -> jobStreamClient.start().get());
 
     // before we can add the job stream client as a topology listener, we need to wait for the
     // topology to be set up, otherwise the callback may be lost
@@ -106,11 +108,32 @@ public class GatewayModuleConfiguration {
         gateway,
         () -> {
           atomixClusterStartFuture.join();
-          gateway.start().join(30, TimeUnit.SECONDS);
+          awaitStartup(() -> gateway.start().get(30, TimeUnit.SECONDS));
         });
     LOGGER.info("Standalone gateway is started!");
 
     return gateway;
+  }
+
+  /**
+   * Spring interrupts the startup thread when the application is closed (e.g. on SIGTERM) while
+   * still starting up. Surface this as an explicit, descriptive failure instead of a bare {@link
+   * InterruptedException}, and preserve the thread's interrupt flag. Any other failure is rethrown
+   * as is, like {@code ActorFuture#join} would.
+   */
+  private static void awaitStartup(final Callable<?> startupStep) {
+    try {
+      startupStep.call();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOGGER.info("Standalone gateway startup was interrupted, likely due to shutdown");
+      throw new IllegalStateException(
+          "Standalone gateway startup was interrupted, likely because the application is"
+              + " shutting down",
+          e);
+    } catch (final Exception e) {
+      LangUtil.rethrowUnchecked(e);
+    }
   }
 
   /**
