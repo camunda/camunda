@@ -24,6 +24,8 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -283,6 +285,48 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
                 "detail":"No filter provided.",
                 "instance":"/v2/decision-instances/deletion"
              }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/decision-instances/deletion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"decisionDefinitionKey", "decisionEvaluationInstanceKey", "state"})
+  void shouldRejectDeleteDecisionInstanceBatchOperationWhenAFilterPropertyHasNoUsableValue(
+      final String property) {
+    // given - the mapping drops an empty list, which would widen the batch
+    final var request =
+        """
+        {
+          "filter": {
+            "rootDecisionDefinitionKey": { "$eq": "1" },
+            "%s": { "$in": [] }
+          }
+        }"""
+            .formatted(property);
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The filter property '%s' must contain at least one value.",
+                "instance":"/v2/decision-instances/deletion"
+             }"""
+            .formatted(property);
 
     // when / then
     webClient

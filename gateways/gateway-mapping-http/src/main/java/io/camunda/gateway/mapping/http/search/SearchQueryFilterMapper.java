@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.search;
 
+import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.isEmptyAdvancedFilter;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToIntegerOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToKeyOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOffsetDateTimeOperations;
@@ -14,6 +15,7 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_FILTER_PROPERTY;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
@@ -79,8 +81,12 @@ import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -602,6 +608,10 @@ public class SearchQueryFilterMapper {
     if (filter.equals(SearchQueryRequestMapper.EMPTY_PROCESS_INSTANCE_FILTER)) {
       return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
     }
+    final var emptyPropertyViolations = emptyProcessInstanceFilterViolations(filter);
+    if (!emptyPropertyViolations.isEmpty()) {
+      return Either.left(emptyPropertyViolations);
+    }
     return toProcessInstanceFilter(filter);
   }
 
@@ -613,7 +623,64 @@ public class SearchQueryFilterMapper {
     if (filter.equals(SearchQueryRequestMapper.EMPTY_DECISION_INSTANCE_FILTER)) {
       return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
     }
+    final var emptyPropertyViolations = emptyFilterPropertyViolations(filter);
+    if (!emptyPropertyViolations.isEmpty()) {
+      return Either.left(emptyPropertyViolations);
+    }
     return toDecisionInstanceFilter(filter);
+  }
+
+  /** Like {@link #emptyFilterPropertyViolations}, also covering the {@code $or} branches. */
+  private static List<String> emptyProcessInstanceFilterViolations(
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter filter) {
+    final var violations = new ArrayList<>(emptyFilterPropertyViolations(filter));
+    if (filter.get$Or() != null) {
+      for (final var or : filter.get$Or()) {
+        if (or != null) {
+          violations.addAll(emptyFilterPropertyViolations(or));
+        }
+      }
+    }
+    return violations.stream().distinct().toList();
+  }
+
+  /**
+   * One violation per property of the filter that is an empty filter object, such as {@code {"$in":
+   * []}}. The mapping drops these, which would widen a batch operation to everything the remaining
+   * criteria match. The model cannot tell an explicit empty {@code $in} from an absent one, so the
+   * empty object is what we reject.
+   */
+  private static List<String> emptyFilterPropertyViolations(final Object filter) {
+    return Arrays.stream(propertyDescriptors(filter.getClass()))
+        .filter(property -> isEmptyFilterProperty(property, filter))
+        .map(property -> ERROR_MESSAGE_EMPTY_FILTER_PROPERTY.formatted(property.getName()))
+        .toList();
+  }
+
+  private static boolean isEmptyFilterProperty(
+      final PropertyDescriptor property, final Object filter) {
+    final var value = readProperty(property, filter);
+    return value != null && isEmptyAdvancedFilter(value);
+  }
+
+  private static PropertyDescriptor[] propertyDescriptors(final Class<?> type) {
+    try {
+      return Introspector.getBeanInfo(type, Object.class).getPropertyDescriptors();
+    } catch (final IntrospectionException e) {
+      throw new IllegalStateException("Failed to introspect " + type.getName(), e);
+    }
+  }
+
+  private static Object readProperty(final PropertyDescriptor property, final Object filter) {
+    final var getter = property.getReadMethod();
+    if (getter == null) {
+      return null;
+    }
+    try {
+      return getter.invoke(filter);
+    } catch (final ReflectiveOperationException e) {
+      throw new IllegalStateException("Failed to read filter property " + property.getName(), e);
+    }
   }
 
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
