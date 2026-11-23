@@ -16,8 +16,11 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -194,6 +197,9 @@ public interface ClusterConfigurationInitializer {
   class GossipInitializer
       implements ClusterConfigurationInitializer, ClusterConfigurationUpdateListener {
 
+    static final Duration DEFAULT_WAIT_LOG_INTERVAL = Duration.ofSeconds(10);
+    static final int ERROR_LOG_THRESHOLD = 10;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(GossipInitializer.class);
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final PersistedClusterConfiguration persistedClusterConfiguration;
@@ -201,12 +207,31 @@ public interface ClusterConfigurationInitializer {
     private final ActorFuture<ClusterConfiguration> initialized;
 
     private final ConcurrencyControl executor;
+    private final Duration waitLogInterval;
+    private ScheduledTimer waitLogTimer;
+    private int waitLogCount;
 
     public GossipInitializer(
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
         final PersistedClusterConfiguration persistedClusterConfiguration,
         final Consumer<ClusterConfiguration> configurationGossiper,
         final ConcurrencyControl executor) {
+      this(
+          clusterConfigurationUpdateNotifier,
+          persistedClusterConfiguration,
+          configurationGossiper,
+          executor,
+          DEFAULT_WAIT_LOG_INTERVAL);
+    }
+
+    @VisibleForTesting
+    GossipInitializer(
+        final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
+        final PersistedClusterConfiguration persistedClusterConfiguration,
+        final Consumer<ClusterConfiguration> configurationGossiper,
+        final ConcurrencyControl executor,
+        final Duration waitLogInterval) {
+      this.waitLogInterval = waitLogInterval;
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
       this.persistedClusterConfiguration = persistedClusterConfiguration;
       this.configurationGossiper = configurationGossiper;
@@ -226,7 +251,35 @@ public interface ClusterConfigurationInitializer {
         // received gossip
         configurationGossiper.accept(persistedClusterConfiguration.getConfiguration());
       }
+      // Without this, a coordinator that never comes up leaves this member silently waiting.
+      // runAtFixedRate must be called from the actor, which initialize() does not guarantee when
+      // chained after another initializer.
+      executor.run(
+          () -> {
+            if (!initialized.isDone()) {
+              final var waitStarted = Instant.now();
+              waitLogTimer =
+                  executor.runAtFixedRate(waitLogInterval, () -> logStillWaiting(waitStarted));
+            }
+          });
       return initialized;
+    }
+
+    private void logStillWaiting(final Instant waitStarted) {
+      if (initialized.isDone()) {
+        return;
+      }
+      waitLogCount++;
+      final var waited =
+          Duration.between(waitStarted, Instant.now()).truncatedTo(ChronoUnit.SECONDS);
+      final var message =
+          "Still waiting for the coordinator to provide the initial cluster configuration via"
+              + " gossip after {}. Check that the coordinator is up and healthy.";
+      if (waitLogCount >= ERROR_LOG_THRESHOLD) {
+        LOGGER.error(message, waited);
+      } else {
+        LOGGER.warn(message, waited);
+      }
     }
 
     @Override
@@ -240,6 +293,9 @@ public interface ClusterConfigurationInitializer {
               LOGGER.debug("Received cluster configuration {} via gossip.", clusterConfiguration);
               initialized.complete(clusterConfiguration);
               clusterConfigurationUpdateNotifier.removeUpdateListener(this);
+              if (waitLogTimer != null) {
+                waitLogTimer.cancel();
+              }
             }
           });
     }
