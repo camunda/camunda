@@ -64,32 +64,14 @@ runs:
         # Pin to bash so a forward-slash `directory` works consistently on
         # Linux, container images, and Windows runners (git-bash).
         shell: bash
-        # Without these, a single stalled registry request rides along until
-        # the timeout kills the whole process with no error logged (see
-        # #62796). These bound npm's own retry of that request so it fails
-        # fast and lets `nick-fields/retry` try again cleanly.
+        # Bound npm's own fetch retries so a stalled request fails fast
+        # instead of being killed silently (#62796). Worst case is 4m35s,
+        # which must stay under the inner timeout of the smallest
+        # `timeout_minutes` any caller passes (currently 6, so 5m30s).
         #
-        # The budget must stay under the inner timeout of the smallest
-        # `timeout_minutes` any caller passes (currently 6, so 5m30s), or
-        # npm is killed mid-retry and we are back to the silent kill this is
-        # meant to remove. Worst case for one stalled request: 4 request
-        # windows of 60s, plus backoff of 5s + 15s + 15s at npm's default
-        # `fetch-retry-factor` of 10, so 4m35s. Re-check this if a caller
-        # lowers its timeout or these numbers grow.
-        #
-        # `timeout` signals npm's whole process group (SIGKILL after 30s, exit
-        # 137) but only waits for npm itself, so a descendant that ignores
-        # SIGTERM can outlive it and keep writing while the rm -rf below runs.
-        # `set -m` is what makes timeout a process-group leader: without it a
-        # background job stays in this script's group, `$!` is a plain PID, and
-        # the `kill -0 -- -$pgid` guard below never matches. With it, PID and
-        # PGID coincide, so the leftovers can be killed by group ID. Don't add
-        # `--foreground`, it would signal npm only.
-        #
-        # GNU `timeout` is missing on macOS runners (Homebrew coreutils would
-        # name it `gtimeout`) and Windows has an unrelated timeout.exe, so it
-        # is probed, not assumed. Without one, only the retry backstop limits
-        # an attempt, as before INC-9201.
+        # `set -m` makes `timeout` a process-group leader, so PID == PGID and
+        # leftovers can be killed by group below. No `--foreground`.
+        # GNU `timeout` is probed (missing on macOS, unrelated on Windows).
         command: |
           cd "$NPM_CI_DIRECTORY" || exit 1
           timeout_cmd=()
