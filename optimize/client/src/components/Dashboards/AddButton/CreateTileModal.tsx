@@ -102,7 +102,7 @@ export default function CreateTileModal({close, confirm}: CreateTileModalProps) 
                   items={reportsListItems}
                   placeholder={t('dashboard.addButton.selectReportPlaceholder').toString()}
                   onChange={({selectedItem}) => setSelectedReportId(selectedItem?.id || '')}
-                  itemToString={(item) => (item as ReportListItem).name}
+                  itemToString={(item) => (item as ReportListItem | null)?.name ?? ''}
                 />
               )}
             </Tabs.Tab>
