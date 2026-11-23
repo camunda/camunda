@@ -39,10 +39,12 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProces
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
+import io.camunda.optimize.rest.AgenticPhase2Guard;
 import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.exceptions.OptimizeException;
@@ -86,6 +88,7 @@ public abstract class ReportEvaluationHandler {
   private final ProcessVariableService processVariableService;
   private final DefinitionService definitionService;
   private final CollapsedSubprocessNodesService collapsedSubprocessNodesService;
+  private final AgenticPhase2Guard agenticPhase2Guard;
 
   public ReportEvaluationHandler(
       final ReportService reportService,
@@ -93,13 +96,15 @@ public abstract class ReportEvaluationHandler {
       final CombinedReportEvaluator combinedReportEvaluator,
       final ProcessVariableService processVariableService,
       final DefinitionService definitionService,
-      final CollapsedSubprocessNodesService collapsedSubprocessNodesService) {
+      final CollapsedSubprocessNodesService collapsedSubprocessNodesService,
+      final AgenticPhase2Guard agenticPhase2Guard) {
     this.reportService = reportService;
     this.singleReportEvaluator = singleReportEvaluator;
     this.combinedReportEvaluator = combinedReportEvaluator;
     this.processVariableService = processVariableService;
     this.definitionService = definitionService;
     this.collapsedSubprocessNodesService = collapsedSubprocessNodesService;
+    this.agenticPhase2Guard = agenticPhase2Guard;
   }
 
   public AuthorizedReportEvaluationResult evaluateReport(
@@ -107,6 +112,7 @@ public abstract class ReportEvaluationHandler {
     final long startNanos = System.nanoTime();
     try {
       evaluationInfo.postFetchSavedReport(reportService);
+      validateAgentInsightsReport(evaluationInfo.getReport());
       updateAndSetLatestReportDefinitionXml(evaluationInfo);
       setDataSourcesForSystemGeneratedReports(evaluationInfo);
       final RoleType currentUserRole =
@@ -163,6 +169,26 @@ public abstract class ReportEvaluationHandler {
         .ifPresent(reportEvaluationInfo::updateReportDefinitionXml);
   }
 
+  /**
+   * Agent insights reports and agent run views belong to agentic Phase 2: while it is switched off
+   * they do not exist (404). Agent run views are only evaluated in the seeded, non-editable agent
+   * insights reports, which get the user's definitions filled in below.
+   */
+  private void validateAgentInsightsReport(final ReportDefinitionDto<?> report) {
+    if (report == null || !(report.getData() instanceof final ProcessReportDataDto data)) {
+      return;
+    }
+    final boolean agentRunView =
+        data.getView() != null && data.getView().getEntity() == ProcessViewEntity.AGENT_RUN;
+    if (data.isAgentInsightsReport() || agentRunView) {
+      agenticPhase2Guard.requireEnabled();
+    }
+    if (agentRunView && !data.isAgentInsightsReport()) {
+      throw new OptimizeValidationException(
+          "The agentRun view is only supported in agent insights reports.");
+    }
+  }
+
   private void setDataSourcesForSystemGeneratedReports(
       final ReportEvaluationInfo reportEvaluationInfo) {
     // Overwrite tenant selection for management and instant reports to ensure reports are always
@@ -170,7 +196,9 @@ public abstract class ReportEvaluationHandler {
     // from all tenants the given definition currently exists on
     if (reportEvaluationInfo.getReport().getData()
         instanceof final ProcessReportDataDto processReportData) {
-      if (processReportData.isAgenticControlReport() || processReportData.isBusinessValueReport()) {
+      if (processReportData.isAgenticControlReport()
+          || processReportData.isBusinessValueReport()
+          || processReportData.isAgentInsightsReport()) {
         final List<ReportDataDefinitionDto> scopedDefinitions =
             Optional.ofNullable(reportEvaluationInfo.getAdditionalFilters())
                 .map(AdditionalProcessReportEvaluationFilterDto::getDefinitions)

@@ -20,6 +20,7 @@ public final class ReportConstants {
   public static final String VIEW_VARIABLE_ENTITY = "variable";
   public static final String VIEW_INCIDENT_ENTITY = "incident";
   public static final String VIEW_AGENT_INSTANCE_ENTITY = "agentInstance";
+  public static final String VIEW_AGENT_RUN_ENTITY = "agentRun";
 
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
   public static final String VIEW_DURATION_PROPERTY = "duration";
@@ -30,6 +31,9 @@ public final class ReportConstants {
   public static final String VIEW_OUTPUT_TOKENS_PROPERTY = "outputTokens";
   public static final String VIEW_TOOL_CALLS_PROPERTY = "toolCalls";
   public static final String VIEW_TOTAL_TOKENS_PROPERTY = "totalTokens";
+  public static final String VIEW_CACHE_READ_TOKENS_PROPERTY = "cacheReadTokens";
+  public static final String VIEW_CACHE_WRITE_TOKENS_PROPERTY = "cacheWriteTokens";
+  public static final String VIEW_REASONING_TOKENS_PROPERTY = "reasoningTokens";
 
   public static final String GROUP_BY_FLOW_NODES_TYPE = "flowNodes";
   public static final String GROUP_BY_USER_TASKS_TYPE = "userTasks";

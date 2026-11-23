@@ -44,6 +44,13 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_INCIDENT_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_INPUT_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_OUTPUT_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_CACHE_READ_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_CACHE_WRITE_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_FREQUENCY;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_INPUT_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_OUTPUT_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_TOOL_CALLS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_TOTAL_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_FLOW_NODE_DURATION;
@@ -707,7 +714,40 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
       PROCESS_VIEW_FLOW_NODE_TOOL_CALLS,
       PROCESS_GROUP_BY_AGENT_FLOW_NODE,
       PROCESS_DISTRIBUTED_BY_NONE,
-      MAP);
+      MAP),
+
+  AGENT_RUN_FREQUENCY_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_RUN_FREQUENCY, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER),
+  AGENT_RUN_TOTAL_TOKENS_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS,
+      PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_INPUT_TOKENS_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_RUN_INPUT_TOKENS,
+      PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_OUTPUT_TOKENS_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_RUN_OUTPUT_TOKENS,
+      PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_CACHE_READ_TOKENS_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_RUN_CACHE_READ_TOKENS,
+      PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_CACHE_WRITE_TOKENS_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_RUN_CACHE_WRITE_TOKENS,
+      PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER),
+  AGENT_RUN_REASONING_TOKENS_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS,
+      PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      NUMBER);
 
   private final ProcessView view;
   private final ProcessGroupBy groupBy;

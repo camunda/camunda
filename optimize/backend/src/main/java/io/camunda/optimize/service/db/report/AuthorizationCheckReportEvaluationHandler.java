@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.report;
 
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import io.camunda.optimize.rest.AgenticPhase2Guard;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.identity.CollapsedSubprocessNodesService;
 import io.camunda.optimize.service.report.ReportService;
@@ -29,14 +30,16 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
       final ReportAuthorizationService authorizationService,
       final ProcessVariableService processVariableService,
       final DefinitionService definitionService,
-      final CollapsedSubprocessNodesService collapsedSubprocessNodesService) {
+      final CollapsedSubprocessNodesService collapsedSubprocessNodesService,
+      final AgenticPhase2Guard agenticPhase2Guard) {
     super(
         reportService,
         singleReportEvaluator,
         combinedReportEvaluator,
         processVariableService,
         definitionService,
-        collapsedSubprocessNodesService);
+        collapsedSubprocessNodesService,
+        agenticPhase2Guard);
     this.authorizationService = authorizationService;
   }
 
