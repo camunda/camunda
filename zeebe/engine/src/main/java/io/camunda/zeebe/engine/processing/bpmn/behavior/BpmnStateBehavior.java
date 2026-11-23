@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.RuntimeInstructionValue;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.Either;
@@ -59,6 +60,14 @@ public final class BpmnStateBehavior {
 
   public ElementInstance getElementInstance(final long elementInstanceKey) {
     return elementInstanceState.getInstance(elementInstanceKey);
+  }
+
+  /**
+   * Returns only the state of the element instance, or {@code null} if it does not exist. Cheaper
+   * than {@link #getElementInstance(long)} when the state is all that is needed.
+   */
+  public ProcessInstanceIntent getElementInstanceState(final long elementInstanceKey) {
+    return elementInstanceState.getInstanceState(elementInstanceKey);
   }
 
   public ElementTreePathProperties getElementTreePath(

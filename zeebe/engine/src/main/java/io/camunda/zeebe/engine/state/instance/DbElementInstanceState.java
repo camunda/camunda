@@ -450,6 +450,22 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     return elementInstanceColumnFamily.get(elementInstanceKey, ElementInstance::new);
   }
 
+  /**
+   * Reads through the column family's shared value, so only the enum leaves this class. Must not be
+   * called from an {@code updateInstance(key, modifier)} lambda: that lambda holds the same shared
+   * value, and this read would overwrite it.
+   */
+  @Override
+  public ProcessInstanceIntent getInstanceState(final long key) {
+    if (key < 0) {
+      // -1 marks "no instance" so we skip the lookup
+      return null;
+    }
+    elementInstanceKey.wrapLong(key);
+    final var instance = elementInstanceColumnFamily.get(elementInstanceKey);
+    return instance == null ? null : instance.getState();
+  }
+
   @Override
   public List<ElementInstance> getChildren(final long parentKey) {
     final List<ElementInstance> children = new ArrayList<>();
