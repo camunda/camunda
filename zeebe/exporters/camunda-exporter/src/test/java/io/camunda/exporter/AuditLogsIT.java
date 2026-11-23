@@ -357,6 +357,41 @@ public class AuditLogsIT {
             .build(),
         TestParameter.record(
                 ImmutableRecord.builder()
+                    .withRecordType(RecordType.EVENT)
+                    .withValueType(ValueType.PROCESS)
+                    .withIntent(ProcessIntent.RESUMED)
+                    .withValue(
+                        ImmutableProcess.builder()
+                            .withProcessDefinitionKey(5602L)
+                            .withBpmnProcessId("my-resumed-process")
+                            .withResourceName("resumed.bpmn")
+                            .withVersion(2)
+                            .build())
+                    .withKey(5602L)
+                    .withPosition(808L)
+                    .withPartitionId(1)
+                    .withTimestamp(Instant.parse("2026-07-15T14:08:00Z").toEpochMilli())
+                    .build())
+            .expectedAuditLog(
+                Map.ofEntries(
+                    Map.entry("id", "1-808"),
+                    Map.entry("actorType", "UNKNOWN"),
+                    Map.entry("category", "DEPLOYED_RESOURCES"),
+                    Map.entry("entityDescription", "resumed.bpmn"),
+                    Map.entry("entityKey", "5602"),
+                    Map.entry("entityOperationIntent", (int) ProcessIntent.RESUMED.value()),
+                    Map.entry("entityType", "RESOURCE"),
+                    Map.entry("entityValueType", (int) ValueType.PROCESS.value()),
+                    Map.entry("entityVersion", 0),
+                    Map.entry("operationType", "RESUME"),
+                    Map.entry("processDefinitionId", "my-resumed-process"),
+                    Map.entry("processDefinitionKey", 5602),
+                    Map.entry("result", "SUCCESS"),
+                    Map.entry("tenantScope", "TENANT"),
+                    Map.entry("timestamp", "2026-07-15T14:08:00.000+0000")))
+            .build(),
+        TestParameter.record(
+                ImmutableRecord.builder()
                     .withRecordType(RecordType.COMMAND_REJECTION)
                     .withRejectionType(RejectionType.INVALID_STATE)
                     .withValueType(ValueType.PROCESS_DEFINITION_SUSPENSION)
