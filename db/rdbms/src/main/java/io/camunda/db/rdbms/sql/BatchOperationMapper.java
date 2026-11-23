@@ -32,6 +32,8 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
 
   void updateCompleted(BatchOperationUpdateDto dto);
 
+  void finalizeEndDate(BatchOperationFinalizeEndDateDto dto);
+
   void updateItemsWithState(BatchOperationItemStatusUpdateDto dto);
 
   void completeBatchOperationItems(BatchOperationItemsCompletionDto dto);
@@ -64,6 +66,8 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
 
   record BatchOperationUpdateDto(
       String batchOperationKey, BatchOperationState state, OffsetDateTime endDate) {}
+
+  record BatchOperationFinalizeEndDateDto(String batchOperationKey, OffsetDateTime endDate) {}
 
   record BatchOperationUpdateTotalCountDto(String batchOperationKey, int operationsTotalCount) {}
 
