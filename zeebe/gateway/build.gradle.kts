@@ -13,6 +13,7 @@ dependencies {
   implementation(project(":zeebe-gateway-protocol-impl"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-micrometer"))
+  implementation(libs.com.github.ben.manes.caffeine.caffeine)
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-protocol"))

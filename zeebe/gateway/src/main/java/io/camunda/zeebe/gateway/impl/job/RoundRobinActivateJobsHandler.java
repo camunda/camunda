@@ -7,14 +7,16 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.PartitionIdIterator;
-import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
@@ -23,18 +25,29 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.Either;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Iterates in round-robin fashion over partitions to activate jobs. Uses a map from job type to
  * partition-IDs to determine the next partition to use.
+ *
+ * <p>The map is bounded to the {@link #MAX_TRACKED_JOB_TYPES} most frequently used job types
+ * (W-TinyLFU), as job types are user input and thus unbounded. Entries idle for {@link
+ * #IDLE_CURSOR_EXPIRATION} are dropped, as their position is stale by then and dropping it frees
+ * the slot for active types. Job types that are dropped lose their round-robin cursor and restart
+ * at a random partition when seen again, so their first request does not concentrate on one
+ * partition even when the tracked set churns.
  */
 public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandler<T> {
+
+  static final int MAX_TRACKED_JOB_TYPES = 1024;
+  static final Duration IDLE_CURSOR_EXPIRATION = Duration.ofSeconds(30);
 
   private static final String ACTIVATE_JOB_NOT_SENT_MSG = "Failed to send activated jobs to client";
   private static final String ACTIVATE_JOB_NOT_SENT_MSG_WITH_REASON =
@@ -42,8 +55,9 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
   private static final String MAX_MESSAGE_SIZE_EXCEEDED_MSG =
       "the response is bigger than the maximum allowed message size %d";
 
-  private final Map<String, RoundRobinDispatchStrategy> jobTypeToNextPartitionId =
-      new ConcurrentHashMap<>();
+  // Bounded because job types are user input, so their domain is unbounded and tracking every
+  // type seen over the gateway's lifetime would leak memory.
+  private final Cache<String, RequestDispatchStrategy> jobTypeToNextPartitionId;
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
   private final long maxMessageSize;
@@ -51,17 +65,55 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
 
   private ActorControl actor;
   private final Function<String, Throwable> requestCanceledExceptionProvider;
+  private final Supplier<RequestDispatchStrategy> strategyFactory;
 
   public RoundRobinActivateJobsHandler(
       final BrokerClient brokerClient,
       final long maxMessageSize,
       final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
       final Function<String, Throwable> requestCanceledExceptionProvider) {
+    this(
+        brokerClient,
+        maxMessageSize,
+        activationResultMapper,
+        requestCanceledExceptionProvider,
+        RequestDispatchStrategy::roundRobin,
+        newJobTypeCache());
+  }
+
+  /**
+   * Both collaborators are injectable for tests: the strategy factory so they can predict the start
+   * partition (production must keep the random start, which keeps untracked types from
+   * concentrating on one partition), and the cache so they can force pending maintenance with
+   * {@link Cache#cleanUp()} instead of relying on how the production cache schedules evictions.
+   */
+  RoundRobinActivateJobsHandler(
+      final BrokerClient brokerClient,
+      final long maxMessageSize,
+      final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
+      final Function<String, Throwable> requestCanceledExceptionProvider,
+      final Supplier<RequestDispatchStrategy> strategyFactory,
+      final Cache<String, RequestDispatchStrategy> jobTypeToNextPartitionId) {
+    this.jobTypeToNextPartitionId = jobTypeToNextPartitionId;
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
     this.maxMessageSize = maxMessageSize;
     this.activationResultMapper = activationResultMapper;
     this.requestCanceledExceptionProvider = requestCanceledExceptionProvider;
+    this.strategyFactory = strategyFactory;
+  }
+
+  static Cache<String, RequestDispatchStrategy> newJobTypeCache() {
+    return Caffeine.newBuilder()
+        .maximumSize(MAX_TRACKED_JOB_TYPES)
+        // A type idle this long has a stale cursor; dropping it frees the slot for active
+        // types, and the lost cursor only randomizes the type's next first request.
+        .expireAfterAccess(IDLE_CURSOR_EXPIRATION)
+        // Keeps cache maintenance off the JVM-wide common pool, which other components share
+        // and could starve; with at most 1024 tiny entries, evicting inline adds negligible
+        // latency.
+        .executor(Runnable::run)
+        .build();
   }
 
   @Override
@@ -327,7 +379,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
   private PartitionIdIterator partitionIdIteratorForType(
       final String jobType, final int partitionsCount, final String partitionGroup) {
     final var nextPartitionSupplier =
-        jobTypeToNextPartitionId.computeIfAbsent(jobType, t -> new RoundRobinDispatchStrategy());
+        jobTypeToNextPartitionId.get(jobType, t -> strategyFactory.get());
     return new PartitionIdIterator(
         nextPartitionSupplier.determinePartition(topologyManager, partitionGroup),
         partitionsCount,
