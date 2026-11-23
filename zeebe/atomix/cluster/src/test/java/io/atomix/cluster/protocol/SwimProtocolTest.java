@@ -33,7 +33,6 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.TestBootstrapService;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
-import io.atomix.cluster.discovery.NodeDiscoveryService;
 import io.atomix.cluster.impl.DefaultNodeDiscoveryService;
 import io.atomix.cluster.messaging.impl.TestMessagingServiceFactory;
 import io.atomix.cluster.messaging.impl.TestUnicastServiceFactory;
@@ -46,10 +45,12 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -90,6 +91,13 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   private Collection<Node> nodes;
   private Map<MemberId, TestGroupMembershipEventListener> listeners = Maps.newConcurrentMap();
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
+  /**
+   * Stops everything a test started, last started first, including protocols that were replaced by
+   * a restart or never tracked in {@link #protocols}, so no protocol keeps its threads running into
+   * the next test.
+   */
+  private final Deque<Runnable> resources = new ConcurrentLinkedDeque<>();
 
   private SwimMember member(
       final String id,
@@ -132,7 +140,10 @@ public class SwimProtocolTest extends ConcurrentTestCase {
 
   @AfterEach
   public void cleanup() {
-    members.forEach(this::stopProtocol);
+    for (var stop = resources.pollLast(); stop != null; stop = resources.pollLast()) {
+      stop.run();
+    }
+    protocols.clear();
   }
 
   @ParameterizedTest
@@ -653,28 +664,28 @@ public class SwimProtocolTest extends ConcurrentTestCase {
                 .setProbeTimeout(PROBE_TIMEOUT)
                 .setFailureTimeout(FAILURE_INTERVAL)
                 .setSyncInterval(SYNC_INTERVAL));
+    final var messagingService = messagingServiceFactory.newMessagingService(member.address());
+    resources.add(() -> messagingService.stop().join());
+    messagingService.start().join();
+    final var unicastService = unicastServiceFactory.newUnicastService(member.address());
+    resources.add(() -> unicastService.stop().join());
+    unicastService.start().join();
+    final BootstrapService bootstrap = new TestBootstrapService(messagingService, unicastService);
+    final NodeDiscoveryProvider provider = new BootstrapDiscoveryProvider(nodes);
+    provider.join(bootstrap, member).join();
+    final var discovery = new DefaultNodeDiscoveryService(bootstrap, member, provider);
+    resources.add(() -> discovery.stop().join());
+    discovery.start().join();
+
     final SwimMembershipProtocol protocol =
         new SwimMembershipProtocol(config, actorSchedulerName, meterRegistry, instanceId);
+    // registered before joining: the protocol starts its threads on construction
+    resources.add(() -> protocol.leave(member).join());
     final TestGroupMembershipEventListener listener = new TestGroupMembershipEventListener();
     listeners.put(member.id(), listener);
     protocol.addListener(listener);
-    final BootstrapService bootstrap =
-        new TestBootstrapService(
-            messagingServiceFactory.newMessagingService(member.address()).start().join(),
-            unicastServiceFactory.newUnicastService(member.address()).start().join());
-    final NodeDiscoveryProvider provider = new BootstrapDiscoveryProvider(nodes);
-    provider.join(bootstrap, member).join();
-    final NodeDiscoveryService discovery =
-        new DefaultNodeDiscoveryService(bootstrap, member, provider).start().join();
     protocol.join(bootstrap, discovery, member).join();
     return protocol;
-  }
-
-  private void stopProtocol(final Member member) {
-    final SwimMembershipProtocol protocol = protocols.remove(member.id());
-    if (protocol != null) {
-      protocol.leave(member).join();
-    }
   }
 
   private void partition(final Member member) {
