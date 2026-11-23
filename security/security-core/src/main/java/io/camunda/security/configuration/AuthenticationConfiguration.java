@@ -8,6 +8,8 @@
 package io.camunda.security.configuration;
 
 import io.camunda.security.entity.AuthenticationMethod;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AuthenticationConfiguration {
   public static final AuthenticationMethod DEFAULT_METHOD = AuthenticationMethod.BASIC;
@@ -92,5 +94,51 @@ public class AuthenticationConfiguration {
 
   private static String withoutTrailingSlash(final String uri) {
     return uri.endsWith("/") ? uri.substring(0, uri.length() - 1) : uri;
+  }
+
+  /**
+   * @return whether at least one OIDC provider gives the groups of its users in a groups claim.
+   *     Such groups exist only in the identity provider, so Camunda can't require them to exist.
+   */
+  public boolean isExternalGroupsEnabled() {
+    return method == AuthenticationMethod.OIDC && isAnyProviderGroupsClaimConfigured();
+  }
+
+  /**
+   * @return whether Camunda manages the groups of the users of at least one OIDC provider, which is
+   *     when that provider has no groups claim. Without OIDC, Camunda manages all groups.
+   */
+  public boolean isCamundaGroupsEnabled() {
+    return !(method == AuthenticationMethod.OIDC && isEveryProviderGroupsClaimConfigured());
+  }
+
+  /** Whether at least one OIDC provider has a groups claim, whatever the authentication method. */
+  public boolean isAnyProviderGroupsClaimConfigured() {
+    return oidcProviders().stream()
+        .anyMatch(OidcAuthenticationConfiguration::isGroupsClaimConfigured);
+  }
+
+  /** Whether every OIDC provider has a groups claim, whatever the authentication method. */
+  public boolean isEveryProviderGroupsClaimConfigured() {
+    return oidcProviders().stream()
+        .allMatch(OidcAuthenticationConfiguration::isGroupsClaimConfigured);
+  }
+
+  /**
+   * The default provider counts when it is configured, or when it is the only one, which is the
+   * case when no additional provider is.
+   */
+  private List<OidcAuthenticationConfiguration> oidcProviders() {
+    final var providerList = new ArrayList<OidcAuthenticationConfiguration>();
+    final var named =
+        providers != null && providers.getOidc() != null
+            ? providers.getOidc().values()
+            : List.<OidcAuthenticationConfiguration>of();
+    final var defaultClientId = oidcAuthenticationConfiguration.getClientId();
+    if ((defaultClientId != null && !defaultClientId.isBlank()) || named.isEmpty()) {
+      providerList.add(oidcAuthenticationConfiguration);
+    }
+    providerList.addAll(named);
+    return providerList;
   }
 }

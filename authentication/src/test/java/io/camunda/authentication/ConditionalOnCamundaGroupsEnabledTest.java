@@ -42,6 +42,29 @@ class ConditionalOnCamundaGroupsEnabledTest {
         .run(context -> assertThat(context).doesNotHaveBean(GroupsEnabledBean.class));
   }
 
+  @Test
+  void shouldEnableGroupsBeanWhenANamedProviderHasNoGroupsClaim() {
+    // given one provider that reads groups from a claim and one that does not
+    contextRunner
+        .withPropertyValues(
+            "camunda.security.authentication.method=oidc",
+            "camunda.security.authentication.providers.oidc.keycloak.groups-claim=groups",
+            "camunda.security.authentication.providers.oidc.partner.client-id=partner")
+        .withUserConfiguration(TestConfig.class)
+        // then the partner's users need Camunda's group management
+        .run(context -> assertThat(context).hasSingleBean(GroupsEnabledBean.class));
+  }
+
+  @Test
+  void shouldDisableGroupsBeanWhenTheOnlyNamedProviderHasAGroupsClaim() {
+    contextRunner
+        .withPropertyValues(
+            "camunda.security.authentication.method=oidc",
+            "camunda.security.authentication.providers.oidc.keycloak.groups-claim=groups")
+        .withUserConfiguration(TestConfig.class)
+        .run(context -> assertThat(context).doesNotHaveBean(GroupsEnabledBean.class));
+  }
+
   @Configuration
   static class TestConfig {
     @Bean

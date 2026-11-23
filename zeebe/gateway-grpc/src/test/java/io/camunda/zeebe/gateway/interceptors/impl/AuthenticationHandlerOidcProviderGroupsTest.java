@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.ProvidersConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
 import io.grpc.Context;
@@ -47,6 +48,7 @@ class AuthenticationHandlerOidcProviderGroupsTest {
     final var providers = new ProvidersConfiguration();
     providers.setOidc(Map.of("partner", partnerOidc));
     final var authentication = new AuthenticationConfiguration();
+    authentication.setMethod(AuthenticationMethod.OIDC);
     authentication.setOidc(defaultOidc);
     authentication.setProviders(providers);
     handler = new Oidc(jwtDecoder, claimsProvider, authentication);
@@ -74,25 +76,23 @@ class AuthenticationHandlerOidcProviderGroupsTest {
   }
 
   @Test
-  void shouldLetCamundaManageTheGroupsOfAProviderWithoutAGroupsClaim() throws Exception {
+  void shouldNotReadGroupsOfAProviderWithoutAGroupsClaim() throws Exception {
     // given
     final var context =
         authenticate(Map.of("sub", "alice", "iss", DEFAULT_ISSUER, "groups", List.of("g1")));
 
     // then
-    assertThat(context.call(() -> AuthenticationHandler.IS_CAMUNDA_GROUPS_ENABLED.get())).isTrue();
     assertThat(context.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get())).isNull();
   }
 
   @Test
-  void shouldLetCamundaManageTheGroupsOfAnUnknownIssuer() throws Exception {
+  void shouldNotReadGroupsOfAnUnknownIssuer() throws Exception {
     // given
     final var context =
         authenticate(
             Map.of("sub", "alice", "iss", "https://unknown.example.com", "groups", List.of("g1")));
 
     // then
-    assertThat(context.call(() -> AuthenticationHandler.IS_CAMUNDA_GROUPS_ENABLED.get())).isTrue();
     assertThat(context.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get())).isNull();
   }
 
@@ -104,5 +104,14 @@ class AuthenticationHandlerOidcProviderGroupsTest {
     final var result = handler.authenticate("Bearer token");
     assertThat(result.isRight()).isTrue();
     return result.get();
+  }
+
+  @Test
+  void shouldNotRequireGroupsToExistWhenOneProviderHasAGroupsClaim() throws Exception {
+    // given a token of the provider without a groups claim
+    final var context = authenticate(Map.of("sub", "alice", "iss", DEFAULT_ISSUER));
+
+    // then a group of the other provider's claim can't be required to exist in Camunda
+    assertThat(context.call(() -> AuthenticationHandler.IS_CAMUNDA_GROUPS_ENABLED.get())).isFalse();
   }
 }

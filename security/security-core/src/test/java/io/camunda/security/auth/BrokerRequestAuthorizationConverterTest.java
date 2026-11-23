@@ -237,7 +237,7 @@ public class BrokerRequestAuthorizationConverterTest {
   }
 
   @Test
-  void shouldLetCamundaManageTheGroupsOfAProviderWithoutAGroupsClaimInAMixedSetup() {
+  void shouldNotReadGroupsOfAProviderWithoutAGroupsClaimInAMixedSetup() {
     // given
     final var authentication =
         CamundaAuthentication.of(
@@ -248,9 +248,43 @@ public class BrokerRequestAuthorizationConverterTest {
     // when
     final var brokerRequestAuth = converter.convert(authentication);
 
-    // then
+    // then: Camunda manages the groups of this provider's users, so the engine reads them itself
     assertThat(brokerRequestAuth).doesNotContainKey(USER_GROUPS_CLAIMS);
-    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true);
+    // but a group of the other provider's claim can't be required to exist in Camunda
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, false);
+  }
+
+  @Test
+  void shouldContainEmptyGroupsIfClaimConfiguredAndTheTokenHasNoGroups() {
+    // given
+    final var oidcConfiguration = new OidcAuthenticationConfiguration();
+    oidcConfiguration.setGroupsClaim("groups");
+    final var securityConfiguration = new SecurityConfiguration();
+    securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
+    securityConfiguration.getAuthentication().setMethod(OIDC);
+    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+
+    // when
+    final var brokerRequestAuth =
+        converter.convert(CamundaAuthentication.of(b -> b.groupIds(List.of())));
+
+    // then: absent, the engine would give the user the stored memberships of its principal ID
+    assertThat(brokerRequestAuth).containsEntry(USER_GROUPS_CLAIMS, List.of());
+  }
+
+  @Test
+  void shouldContainEmptyGroupsOfATokenOfAProviderWithAGroupsClaimInAMixedSetup() {
+    // given
+    final var authentication =
+        CamundaAuthentication.of(
+            b -> b.groupIds(List.of()).claims(Map.of("iss", "https://partner.example.com")));
+    final var converter = new BrokerRequestAuthorizationConverter(mixedProvidersConfiguration());
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(brokerRequestAuth).containsEntry(USER_GROUPS_CLAIMS, List.of());
   }
 
   private static SecurityConfiguration mixedProvidersConfiguration() {

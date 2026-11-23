@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.security.entity.AuthenticationMethod.OIDC;
-
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -65,8 +63,7 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
     // In groups-claim mode, a group ID can be assigned to roles and tenants without a Camunda
     // group, so those memberships are valid and must be kept.
     final var authentication = securityConfig.getAuthentication();
-    camundaGroupsEnabled =
-        !(authentication.getMethod() == OIDC && authentication.getOidc().isGroupsClaimConfigured());
+    camundaGroupsEnabled = authentication.isCamundaGroupsEnabled();
   }
 
   @Override

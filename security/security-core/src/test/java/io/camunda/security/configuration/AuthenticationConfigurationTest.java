@@ -9,6 +9,7 @@ package io.camunda.security.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,5 +92,64 @@ class AuthenticationConfigurationTest {
     final var configuration = new OidcAuthenticationConfiguration();
     configuration.setIssuerUri(issuerUri);
     return configuration;
+  }
+
+  @Test
+  void shouldNeedNoGroupToExistWhenOneProviderHasAGroupsClaim() {
+    // given a registered default provider without a groups claim
+    authentication.setMethod(AuthenticationMethod.OIDC);
+    defaultOidc.setClientId("client");
+    partnerOidc.setGroupsClaim("groups");
+
+    // then
+    assertThat(authentication.isExternalGroupsEnabled()).isTrue();
+    assertThat(authentication.isCamundaGroupsEnabled()).isTrue();
+  }
+
+  @Test
+  void shouldManageNoGroupsInCamundaWhenEveryProviderHasAGroupsClaim() {
+    // given
+    authentication.setMethod(AuthenticationMethod.OIDC);
+    defaultOidc.setClientId("client");
+    defaultOidc.setGroupsClaim("groups");
+    partnerOidc.setGroupsClaim("groups");
+
+    // then
+    assertThat(authentication.isExternalGroupsEnabled()).isTrue();
+    assertThat(authentication.isCamundaGroupsEnabled()).isFalse();
+  }
+
+  @Test
+  void shouldIgnoreAnUnregisteredDefaultProviderWhenAdditionalProvidersExist() {
+    // given: the default provider has no groups claim, but no client ID either, so it is not
+    // registered and does not count
+    authentication.setMethod(AuthenticationMethod.OIDC);
+    partnerOidc.setGroupsClaim("groups");
+
+    // then
+    assertThat(authentication.isCamundaGroupsEnabled()).isFalse();
+  }
+
+  @Test
+  void shouldUseTheDefaultProviderWhenItIsTheOnlyOne() {
+    // given
+    authentication.setMethod(AuthenticationMethod.OIDC);
+    authentication.setProviders(null);
+    defaultOidc.setGroupsClaim("groups");
+
+    // then
+    assertThat(authentication.isExternalGroupsEnabled()).isTrue();
+    assertThat(authentication.isCamundaGroupsEnabled()).isFalse();
+  }
+
+  @Test
+  void shouldManageAllGroupsInCamundaWithoutOidc() {
+    // given
+    authentication.setMethod(AuthenticationMethod.BASIC);
+    defaultOidc.setGroupsClaim("groups");
+
+    // then
+    assertThat(authentication.isExternalGroupsEnabled()).isFalse();
+    assertThat(authentication.isCamundaGroupsEnabled()).isTrue();
   }
 }

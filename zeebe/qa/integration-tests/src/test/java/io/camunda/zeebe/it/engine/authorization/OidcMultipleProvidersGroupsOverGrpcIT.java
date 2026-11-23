@@ -131,13 +131,12 @@ public class OidcMultipleProvidersGroupsOverGrpcIT {
   @Test
   void shouldResolveGroupsFromTheClaimOfTheProviderThatIssuedTheToken(@TempDir final Path tempDir) {
     // given a group, with the permission to deploy, whose ID is the client ID of both partner
-    // clients
+    // clients. The group exists only in the IdP, so Camunda must not require it to exist.
     try (final var admin = createClient(DEFAULT_REALM, ADMIN_CLIENT_ID, tempDir.resolve("admin"));
         final var partnerOfPartnerRealm =
             createClient(PARTNER_REALM, PARTNER_CLIENT_ID, tempDir.resolve("partner"));
         final var partnerOfDefaultRealm =
             createClient(DEFAULT_REALM, PARTNER_CLIENT_ID, tempDir.resolve("default"))) {
-      admin.newCreateGroupCommand().groupId(PARTNER_CLIENT_ID).name("partner").send().join();
       admin
           .newCreateAuthorizationCommand()
           .ownerId(PARTNER_CLIENT_ID)

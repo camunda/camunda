@@ -139,7 +139,7 @@ class MultipleOidcProviderGroupsIT {
         .containsEntry(IS_CAMUNDA_GROUPS_ENABLED, false)
         .containsEntry(USER_GROUPS_CLAIMS, java.util.List.of(REALM_FOO_CLIENT_ID));
     assertThat(barClaims)
-        .containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true)
+        .containsEntry(IS_CAMUNDA_GROUPS_ENABLED, false)
         .doesNotContainKey(USER_GROUPS_CLAIMS);
   }
 

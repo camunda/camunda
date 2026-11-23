@@ -24,22 +24,26 @@ import java.util.Map;
 public class BrokerRequestAuthorizationConverter {
 
   private final AuthenticationConfiguration authenticationConfiguration;
+  private final boolean camundaGroupsEnabled;
   private final boolean camundaUsersEnabled;
 
   public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
     authenticationConfiguration = securityConfiguration.getAuthentication();
+    // As soon as one provider has a groups claim, Camunda can't require the groups of that claim to
+    // exist, whichever provider issued the token.
+    camundaGroupsEnabled = !authenticationConfiguration.isExternalGroupsEnabled();
     camundaUsersEnabled = isCamundaUsersEnabled(securityConfiguration);
   }
 
   /**
-   * Whether Camunda manages the groups of the user. With several OIDC providers, only some may have
-   * a groups claim, so this depends on the provider that issued the user's token.
+   * Whether the user's groups are in the groups claim of the provider that issued their token. With
+   * several OIDC providers, only some may have a groups claim.
    */
-  protected boolean isCamundaGroupsEnabled(final Map<String, Object> tokenClaims) {
-    return !(authenticationConfiguration.getMethod() == OIDC
+  private boolean readsGroupsFromClaim(final Map<String, Object> tokenClaims) {
+    return authenticationConfiguration.getMethod() == OIDC
         && authenticationConfiguration
             .oidcForIssuer(TokenIssuer.of(tokenClaims))
-            .isGroupsClaimConfigured());
+            .isGroupsClaimConfigured();
   }
 
   protected boolean isCamundaUsersEnabled(final SecurityConfiguration securityConfiguration) {
@@ -49,7 +53,6 @@ public class BrokerRequestAuthorizationConverter {
 
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
 
-    final var camundaGroupsEnabled = isCamundaGroupsEnabled(authentication.claims());
     final var authorization = new HashMap<String, Object>();
     authorization.put(IS_CAMUNDA_GROUPS_ENABLED, camundaGroupsEnabled);
     authorization.put(IS_CAMUNDA_USERS_ENABLED, camundaUsersEnabled);
@@ -70,7 +73,7 @@ public class BrokerRequestAuthorizationConverter {
       authorization.put(AUTHORIZED_CLIENT_ID, clientId);
     }
 
-    if (!camundaGroupsEnabled) {
+    if (readsGroupsFromClaim(claims)) {
       // authenticatedGroupIds() is lazy on the CamundaAuthentication record; resolve it only on
       // the OIDC token-claim path where the engine consumes group membership. On the
       // camundaGroupsEnabled path the engine resolves groups itself, so reading the field here
