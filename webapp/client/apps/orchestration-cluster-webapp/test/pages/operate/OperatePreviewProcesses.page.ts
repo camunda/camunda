@@ -29,7 +29,7 @@ class OperatePreviewProcessesPage extends BasePage {
 	}
 
 	get diagramPanel() {
-		return this.page.getByRole('region', {name: 'Diagram Panel'});
+		return this.page.getByRole('region', {name: 'Diagram panel'});
 	}
 
 	get instancesTable() {

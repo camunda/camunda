@@ -115,7 +115,7 @@ test('should match the instances table snapshot when no instances match', async 
 	);
 	await page.goto(`${operatePreviewProcessesPage.processesUrl}?active=true`);
 
-	await expect(operatePreviewProcessesPage.instancesTable.getByText(/no Instances matching/)).toBeVisible();
+	await expect(operatePreviewProcessesPage.instancesTable.getByText(/No instances match these filters/)).toBeVisible();
 	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
 });
 
@@ -146,7 +146,7 @@ test('should match the instances table snapshot with a selected instance and the
 		.getByRole('checkbox', {name: 'Select instance 2251799813700002'})
 		.click({force: true});
 
-	await expect(operatePreviewProcessesPage.instancesTable.getByText('1 item selected')).toBeVisible();
+	await expect(operatePreviewProcessesPage.instancesTable.getByText('1 instance selected')).toBeVisible();
 	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
 });
 

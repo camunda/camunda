@@ -133,26 +133,26 @@ const DiagramPanel: React.FC<Props> = ({
 		switch (processDefinitionSelection.kind) {
 			case 'all-versions':
 				return {
-					message: t('operate.processes.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
-					additionalInfo: t('operate.processes.diagramPanel.selectSingleVersion'),
+					message: t('operate.processes.ds.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
+					additionalInfo: t('operate.processes.ds.diagramPanel.selectSingleVersion'),
 				};
 			case 'multiple-tenants':
 				return {
-					message: t('operate.processes.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
-					additionalInfo: t('operate.processes.diagramPanel.selectSingleTenant'),
+					message: t('operate.processes.ds.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
+					additionalInfo: t('operate.processes.ds.diagramPanel.selectSingleTenant'),
 				};
 			case 'single-version':
 				return {message: t('operate.processInstance.diagram.noDiagram')};
 			default:
 				return {
-					message: t('operate.processes.diagramPanel.noProcessSelected'),
-					additionalInfo: t('operate.processes.diagramPanel.selectProcessInFilters'),
+					message: t('operate.processes.ds.diagramPanel.noProcessSelected'),
+					additionalInfo: t('operate.processes.ds.diagramPanel.selectProcessInFilters'),
 				};
 		}
 	};
 
 	return (
-		<section aria-label={t('operate.processes.diagramPanel.ariaLabel')} className="flex h-full flex-col">
+		<section aria-label={t('operate.processes.ds.diagramPanel.ariaLabel')} className="flex h-full flex-col">
 			<DiagramHeader processDefinitionSelection={processDefinitionSelection} />
 			<DiagramShell status={getStatus()} emptyMessage={getEmptyMessage()}>
 				{diagramData?.xml && (

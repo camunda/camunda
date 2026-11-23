@@ -228,7 +228,7 @@ const InstancesTable: React.FC<Props> = ({
 				? [
 						{
 							key: 'instanceOperationState',
-							label: t('operate.processes.instancesTable.operationState'),
+							label: t('operate.processes.ds.instancesTable.operationState'),
 							render: (row: ProcessInstance) =>
 								areOperationItemsLoading ? (
 									<Skeleton className="h-4 w-24" />
@@ -243,7 +243,7 @@ const InstancesTable: React.FC<Props> = ({
 			{
 				key: 'processInstanceKey',
 				sortKey: 'processInstanceKey',
-				label: t('operate.processes.instancesTable.processInstanceKey'),
+				label: t('operate.processes.ds.instancesTable.processInstanceKey'),
 				render: (row: ProcessInstance) => (
 					<InstanceLink
 						to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
@@ -265,7 +265,7 @@ const InstancesTable: React.FC<Props> = ({
 				? [
 						{
 							key: 'versionTag',
-							label: t('operate.processes.instancesTable.versionTag'),
+							label: t('operate.processes.ds.instancesTable.versionTag'),
 							render: (row: ProcessInstance) => row.processDefinitionVersionTag ?? '--',
 						},
 					]
@@ -295,19 +295,19 @@ const InstancesTable: React.FC<Props> = ({
 				sortKey: 'startDate',
 				isDefault: true,
 				defaultOrder: 'DESC' as const,
-				label: t('operate.processes.instancesTable.startDate'),
+				label: t('operate.processes.ds.instancesTable.startDate'),
 				render: (row: ProcessInstance) => formatTimestamp(row.startDate),
 			},
 			{
 				key: 'endDate',
 				...(listHasFinishedInstances ? {sortKey: 'endDate'} : {}),
-				label: t('operate.processes.instancesTable.endDate'),
+				label: t('operate.processes.ds.instancesTable.endDate'),
 				render: (row: ProcessInstance) => formatTimestamp(row.endDate),
 			},
 			{
 				key: 'parentInstanceId',
 				sortKey: 'parentProcessInstanceKey',
-				label: t('operate.processes.instancesTable.parentProcessInstanceKey'),
+				label: t('operate.processes.ds.instancesTable.parentProcessInstanceKey'),
 				render: (row: ProcessInstance) =>
 					row.parentProcessInstanceKey ? (
 						<InstanceLink
@@ -368,20 +368,20 @@ const InstancesTable: React.FC<Props> = ({
 		)
 	) : (
 		<>
-			<p>{t('operate.processes.instancesTable.emptyMessage')}</p>
-			{!hasStateFilter && <p>{t('operate.processes.instancesTable.emptyAdditionalInfo')}</p>}
+			<p>{t('operate.processes.ds.instancesTable.emptyMessage')}</p>
+			{!hasStateFilter && <p>{t('operate.processes.ds.instancesTable.emptyAdditionalInfo')}</p>}
 		</>
 	);
 
 	return (
-		<section className="flex h-full flex-col" aria-label={t('operate.processes.instancesTable.panelLabel')}>
+		<section className="flex h-full flex-col" aria-label={t('operate.processes.ds.instancesTable.panelLabel')}>
 			{areOperationItemsLoading && (
 				<span className="sr-only" role="status" aria-live="polite">
-					{t('operate.processes.instancesTable.operationStateLoading')}
+					{t('operate.processes.ds.instancesTable.operationStateLoading')}
 				</span>
 			)}
 			<PanelHeader
-				title={t('operate.processes.instancesTable.title')}
+				title={t('operate.processes.ds.instancesTable.title')}
 				count={totalCount}
 				hasMoreTotalItems={hasMoreTotalItems}
 			/>
@@ -393,7 +393,7 @@ const InstancesTable: React.FC<Props> = ({
 				isFetching={isRefreshing}
 				emptyState={emptyState}
 				selectionType="checkbox"
-				selectAllLabel={t('operate.processes.toolbar.selectAll')}
+				selectAllLabel={t('operate.processes.ds.toolbar.selectAll')}
 				selectRowLabel={(key) => t('operate.processes.toolbar.selectRow', {key})}
 				checkIsAllSelected={() => selection.isAllSelected}
 				checkIsIndeterminate={() => !selection.isAllSelected && selection.selectedCount > 0}

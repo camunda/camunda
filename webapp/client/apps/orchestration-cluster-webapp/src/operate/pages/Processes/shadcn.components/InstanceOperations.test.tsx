@@ -48,16 +48,16 @@ describe('<InstanceOperations /> (design system)', () => {
 		);
 
 		await expect
-			.element(screen.getByRole('button', {name: `Suspend Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Suspend instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 		await expect
-			.element(screen.getByRole('button', {name: `Cancel Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Cancel instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 		await expect
-			.element(screen.getByRole('button', {name: `Retry Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Retry instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.not.toBeInTheDocument();
 		await expect
-			.element(screen.getByRole('button', {name: `Resume Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Resume instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.not.toBeInTheDocument();
 	});
 
@@ -67,7 +67,7 @@ describe('<InstanceOperations /> (design system)', () => {
 		);
 
 		await expect
-			.element(screen.getByRole('button', {name: `Retry Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Retry instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 	});
 
@@ -77,13 +77,13 @@ describe('<InstanceOperations /> (design system)', () => {
 		);
 
 		await expect
-			.element(screen.getByRole('button', {name: `Resume Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Resume instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 		await expect
-			.element(screen.getByRole('button', {name: `Cancel Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Cancel instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 		await expect
-			.element(screen.getByRole('button', {name: `Suspend Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Suspend instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.not.toBeInTheDocument();
 	});
 
@@ -93,13 +93,13 @@ describe('<InstanceOperations /> (design system)', () => {
 		);
 
 		await expect
-			.element(screen.getByRole('button', {name: `Delete Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Delete instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 		await expect
-			.element(screen.getByRole('button', {name: `Cancel Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Cancel instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.not.toBeInTheDocument();
 		await expect
-			.element(screen.getByRole('button', {name: `Suspend Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Suspend instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.not.toBeInTheDocument();
 	});
 
@@ -110,7 +110,7 @@ describe('<InstanceOperations /> (design system)', () => {
 		);
 
 		await expect
-			.element(screen.getByRole('button', {name: `Suspend Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Suspend instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeDisabled();
 	});
 
@@ -132,7 +132,7 @@ describe('<InstanceOperations /> (design system)', () => {
 		);
 
 		screen
-			.getByRole('button', {name: `Suspend Instance ${PROCESS_INSTANCE_KEY}`, exact: true})
+			.getByRole('button', {name: `Suspend instance ${PROCESS_INSTANCE_KEY}`, exact: true})
 			.element()
 			.focus();
 		await userEvent.keyboard('{Enter}');

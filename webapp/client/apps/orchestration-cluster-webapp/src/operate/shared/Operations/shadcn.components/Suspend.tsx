@@ -23,7 +23,7 @@ const Suspend: React.FC<Props> = ({processInstanceKey, onExecute, disabled = fal
 		<OperationItem
 			type="SUSPEND_PROCESS_INSTANCE"
 			onClick={onExecute}
-			title={t('operate.shared.operations.suspendTitle', {processInstanceKey})}
+			title={t('operate.shared.ds.operations.suspendTitle', {processInstanceKey})}
 			disabled={disabled}
 			size="sm"
 		/>

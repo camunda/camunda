@@ -98,7 +98,7 @@ describe('<DiagramPanel /> (design system)', () => {
 			processDefinitionSelection: {kind: 'no-match'},
 		});
 
-		await expect.element(screen.getByText('There is no Process selected')).toBeVisible();
+		await expect.element(screen.getByText('There is no process selected')).toBeVisible();
 	});
 
 	it('shows an empty message when multiple versions are selected', async () => {
@@ -110,7 +110,7 @@ describe('<DiagramPanel /> (design system)', () => {
 		});
 
 		await expect
-			.element(screen.getByText('There is more than one Version selected for Process "Order Process"'))
+			.element(screen.getByText('There is more than one version selected for process "Order Process"'))
 			.toBeVisible();
 	});
 
@@ -122,7 +122,7 @@ describe('<DiagramPanel /> (design system)', () => {
 			},
 		});
 
-		await expect.element(screen.getByText('Process "Order Process" exists in more than one Tenant')).toBeVisible();
+		await expect.element(screen.getByText('Process "Order Process" exists in more than one tenant')).toBeVisible();
 	});
 
 	it('renders the diagram and a statistics overlay for a single selected version', async ({worker}) => {

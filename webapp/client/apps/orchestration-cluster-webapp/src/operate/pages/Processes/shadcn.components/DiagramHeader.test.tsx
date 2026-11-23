@@ -63,7 +63,7 @@ describe('<DiagramHeader /> (design system)', () => {
 			.toHaveAttribute('title', 'Process name: Order Process');
 		await expect
 			.element(screen.getByRole('button', {name: /order-process/}))
-			.toHaveAttribute('title', 'Copy Process ID: order-process');
+			.toHaveAttribute('title', 'Copy process ID: order-process');
 		await expect
 			.element(screen.getByRole('button', {name: 'Delete Process Definition "Order Process - Version 2"'}))
 			.toBeVisible();

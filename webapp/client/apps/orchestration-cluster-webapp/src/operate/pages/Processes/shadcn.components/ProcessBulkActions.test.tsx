@@ -104,7 +104,7 @@ describe('Processes DS bulk actions', () => {
 
 		await select(screen, '1');
 
-		await expect.element(screen.getByText('1 item selected', {exact: false})).toBeVisible();
+		await expect.element(screen.getByText('1 instance selected', {exact: false})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeEnabled();
 		await expect.element(screen.getByRole('button', {name: 'Suspend', exact: true})).toBeEnabled();
 		await expect.element(screen.getByRole('button', {name: 'Delete', exact: true})).toBeDisabled();
@@ -117,7 +117,7 @@ describe('Processes DS bulk actions', () => {
 
 		await select(screen, '1');
 
-		const count = screen.getByText('1 item selected', {exact: false});
+		const count = screen.getByText('1 instance selected', {exact: false});
 		await expect
 			.element(count)
 			.toHaveAttribute('title', expect.stringContaining('No finished process instances selected'));
