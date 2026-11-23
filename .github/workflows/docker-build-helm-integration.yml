@@ -987,11 +987,32 @@ jobs:
                   }
                 }'
 
+      # The dispatch token above is a GitHub App installation token, which
+      # GitHub caps at a 1h lifetime and cannot extend. The wait below can run
+      # up to 65min (see WAIT_DEADLINE), so it re-mints the token mid-wait from
+      # these App credentials; without that the poll dies with
+      # `Bad credentials (HTTP 401)` the moment the dispatch token expires,
+      # failing an otherwise-green downstream run.
+      - name: Import GitHub App credentials for token refresh
+        id: saas-app-creds
+        if: steps.check-downstream.outputs.enabled == 'true'
+        uses: ./.github/actions/vault-action-with-retry
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci GITHUB_APP_ID | saas-app-id;
+            secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci GITHUB_APP_SECRET | saas-app-private-key
+
       - name: Wait for downstream workflow to finish
         id: wait-downstream
         if: steps.check-downstream.outputs.enabled == 'true'
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          GH_APP_ID: ${{ fromJSON(steps.saas-app-creds.outputs.secrets).saas-app-id }}
+          GH_APP_PRIVATE_KEY: ${{ fromJSON(steps.saas-app-creds.outputs.secrets).saas-app-private-key }}
           CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
         run: |
           set -euo pipefail
@@ -1021,7 +1042,9 @@ jobs:
           # 50min, 9 of the 381 (2.4%) were still running and still green when
           # the deadline fired, and the gate reported each as a failure. At
           # 65min that is 2 (0.5%). Raise it if the downstream suite grows,
-          # and keep the job-level `timeout-minutes` 10min above it.
+          # and keep the job-level `timeout-minutes` 10min above it. A budget
+          # past ~60min is only reachable because maybe_refresh_token (below)
+          # re-mints the poll token before its 1h lifetime ends.
           #
           # Anchored to the job's start, not this step's, so the 10min of
           # headroom below the job timeout cannot be eaten by a slow checkout
@@ -1043,6 +1066,70 @@ jobs:
               remaining="$want"
             fi
             sleep "$remaining"
+          }
+
+          # The poll token is a GitHub App installation token, which GitHub
+          # expires 1h after minting and cannot extend. This wait runs up to
+          # WAIT_DEADLINE (65min from job start), so a single token would age
+          # out mid-wait and the next poll would fail with
+          # `Bad credentials (HTTP 401)` -- which gh_api_with_retry correctly
+          # treats as permanent, aborting a still-green downstream run. Re-mint
+          # the token before it expires. TOKEN_MINTED_AT tracks the active
+          # token; the dispatch token was minted seconds after JOB_STARTED_AT,
+          # so seeding it there refreshes marginally early, never late.
+          TOKEN_MINTED_AT=${JOB_STARTED_AT:-$(date +%s)}
+          # 45min leaves ample margin inside the 1h life, and one re-mint then
+          # covers the whole 65min budget (good to ~105min).
+          TOKEN_REFRESH_AFTER=$(( 45 * 60 ))
+
+          b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+
+          # Mint a fresh installation token from the App credentials via the
+          # App-JWT flow. Prints the token on success; any failure returns
+          # non-zero and prints nothing, so the caller keeps the current token
+          # -- a refresh fault degrades to the prior expiry behaviour, never worse.
+          mint_installation_token() {
+            local now header payload unsigned sig jwt inst_id token keyfile
+            [[ -n "${GH_APP_ID:-}" && -n "${GH_APP_PRIVATE_KEY:-}" ]] || return 1
+            now=$(date +%s)
+            header=$(printf '{"alg":"RS256","typ":"JWT"}' | b64url)
+            # iat backdated 60s for clock skew; exp 9min, under GitHub's 10min cap.
+            payload=$(printf '{"iat":%s,"exp":%s,"iss":"%s"}' "$((now - 60))" "$((now + 540))" "$GH_APP_ID" | b64url)
+            unsigned="${header}.${payload}"
+            keyfile=$(mktemp)
+            # Tolerate a key stored with literal `\n` escapes; a real PEM has no
+            # backslashes, so this is a no-op when the newlines are already real.
+            printf '%s' "$GH_APP_PRIVATE_KEY" | sed 's/\\n/\n/g' > "$keyfile"
+            sig=$(printf '%s' "$unsigned" | openssl dgst -sha256 -sign "$keyfile" -binary | b64url) || { rm -f "$keyfile"; return 1; }
+            rm -f "$keyfile"
+            jwt="${unsigned}.${sig}"
+            inst_id=$(curl -fsS -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$TARGET_REPO/installation" | jq -r '.id // empty') || return 1
+            [[ -n "$inst_id" ]] || return 1
+            token=$(curl -fsS -X POST -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/app/installations/$inst_id/access_tokens" \
+              -d '{"repositories":["camunda","c8-cross-component-e2e-tests"]}' | jq -r '.token // empty') || return 1
+            [[ -n "$token" ]] || return 1
+            printf '%s' "$token"
+          }
+
+          # Re-mint and adopt a token once the active one nears expiry. A fresh
+          # installation token is not auto-masked the way the action's output
+          # is, so mask it before it can reach a log, and adopt it only after a
+          # live call proves it works -- a bad token must never replace a good one.
+          maybe_refresh_token() {
+            local new
+            (( $(date +%s) - TOKEN_MINTED_AT >= TOKEN_REFRESH_AFTER )) || return 0
+            new=$(mint_installation_token) || { echo "Token refresh failed; keeping current token." >&2; return 0; }
+            [[ -n "$new" ]] || { echo "Token refresh produced an empty token; keeping current token." >&2; return 0; }
+            echo "::add-mask::$new"
+            if GH_TOKEN="$new" gh api "/repos/$TARGET_REPO" >/dev/null 2>&1; then
+              GH_TOKEN="$new"; export GH_TOKEN
+              TOKEN_MINTED_AT=$(date +%s)
+              echo "Refreshed the downstream-poll token before expiry."
+            else
+              echo "Refreshed token failed validation; keeping current token." >&2
+            fi
           }
 
           gh_api_with_retry() {
@@ -1102,6 +1189,7 @@ jobs:
           RUN_ID=""
 
           while (( $(date +%s) < WAIT_DEADLINE )); do
+            maybe_refresh_token
             if [[ -z "$RUN_ID" ]]; then
               # A retry-exhausted poll must not end the wait: this loop is the
               # timeout mechanism, so fall through to the next tick. Only a
