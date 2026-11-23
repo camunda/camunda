@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { queryOptions } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import type {
   ClusterVariable,
   QueryClusterVariablesRequestBody,
@@ -24,6 +24,7 @@ export const clusterVariableQueries = {
   search: (params?: SearchClusterVariablesParams | Record<string, unknown>) =>
     queryOptions({
       queryKey: queryKeys.clusterVariables.search(params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           searchClusterVariables(params as SearchClusterVariablesParams)(

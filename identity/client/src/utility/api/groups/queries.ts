@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { queryOptions, skipToken } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  queryOptions,
+  skipToken,
+} from "@tanstack/react-query";
 import type {
   QueryClientsByGroupRequestBody,
   QueryGroupsRequestBody,
@@ -30,6 +34,7 @@ export const groupQueries = {
   search: (params?: SearchGroupsParams | Record<string, unknown>) =>
     queryOptions({
       queryKey: queryKeys.groups.search(params),
+      placeholderData: params?.page ? keepPreviousData : undefined,
       queryFn: () =>
         unwrap(searchGroups(params as SearchGroupsParams)(getApiBaseUrl())),
     }),
@@ -50,6 +55,7 @@ export const groupQueries = {
   ) =>
     queryOptions({
       queryKey: queryKeys.groups.roles(groupId, params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           searchRolesByGroupId({
@@ -65,6 +71,7 @@ export const groupQueries = {
   ) =>
     queryOptions({
       queryKey: queryKeys.groups.mappingRules(groupId, params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           getMappingRulesByGroupId({
@@ -80,6 +87,7 @@ export const groupQueries = {
   ) =>
     queryOptions({
       queryKey: queryKeys.groups.clients(groupId, params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           getClientsByGroupId({
