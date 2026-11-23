@@ -1,4 +1,5 @@
-# Fixture for the built-in operation-operationId rule.
+# Entry point for operation-operationId rule tests.
+# Mirrors the real spec structure: paths $ref to domain files.
 openapi: "3.0.3"
 info:
   title: Test Fixture — operation-operationId
@@ -7,25 +8,13 @@ tags:
   - name: Test
 
 paths:
-  # ── Valid: operation has an operationId ──────────────────────
+  # ── Valid cases ──────────────────────────────────────────────
   /valid/thing:
-    post:
-      operationId: createThing
-      summary: Create a thing
-      description: Creates a new thing.
-      tags:
-        - Test
-      responses:
-        '200':
-          description: The thing was created.
+    $ref: 'things.yaml#/paths/~1valid~1thing'
 
-  # ── Invalid: operation has no operationId ────────────────────
-  /invalid/thing:
-    post:
-      summary: Create a thing without an operation ID
-      description: Creates a new thing.
-      tags:
-        - Test
-      responses:
-        '200':
-          description: The thing was created.
+  # ── Invalid cases ───────────────────────────────────────────
+  /missing/thing:
+    $ref: 'things.yaml#/paths/~1missing~1thing'
+
+  /empty/thing:
+    $ref: 'things.yaml#/paths/~1empty~1thing'
