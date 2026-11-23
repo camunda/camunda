@@ -60,7 +60,7 @@ public final class ProcessInstanceStateTransitionGuard {
 
     return switch (context.getIntent()) {
       case ACTIVATE_ELEMENT ->
-          canActivateDrainingDefinition(context)
+          canActivateDefinition(context)
               .flatMap(ok -> hasActiveFlowScopeInstance(context))
               .flatMap(ok -> hasActiveProcessInstance(context))
               .flatMap(ok -> canActivateParallelGateway(context, element))
@@ -231,21 +231,29 @@ public final class ProcessInstanceStateTransitionGuard {
     }
   }
 
-  private Either<String, ?> canActivateDrainingDefinition(final BpmnElementContext context) {
-    if (context.getBpmnElementType() != BpmnElementType.PROCESS) {
+  /**
+   * A delete or suspend can be processed between an accepted creation and the activation of its
+   * process, so the creation check alone doesn't keep new instances off such a version. Resolving
+   * an incident raised while the process was activating retries the activation of an existing
+   * instance, which must still be possible.
+   *
+   * <p>Rejecting the activation sends no response: the caller of a plain creation already got the
+   * new instance's key, and the caller of a creation with result waits until its request times out.
+   */
+  private Either<String, ?> canActivateDefinition(final BpmnElementContext context) {
+    if (context.getBpmnElementType() != BpmnElementType.PROCESS
+        || hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .isRight()) {
       return Either.right(null);
     }
+    final long processDefinitionKey = context.getProcessDefinitionKey();
     return stateBehavior
-        .getProcess(context.getProcessDefinitionKey(), context.getTenantId())
-        .filter(DeployedProcess::isDraining)
-        .<Either<String, ?>>map(
+        .getProcess(processDefinitionKey, context.getTenantId())
+        .flatMap(
             process ->
-                Either.left(
-                    String.format(
-                        ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING,
-                        BufferUtil.bufferAsString(process.getBpmnProcessId()),
-                        process.getVersion(),
-                        process.getKey())))
+                ProcessInstanceCreationHelper.cannotCreateNewInstancesReason(
+                    process, stateBehavior.isSuspended(processDefinitionKey)))
+        .<Either<String, ?>>map(Either::left)
         .orElseGet(() -> Either.right(null));
   }
 

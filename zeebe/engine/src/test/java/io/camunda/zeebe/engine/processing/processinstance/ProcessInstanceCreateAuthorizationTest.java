@@ -14,7 +14,9 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -203,6 +205,113 @@ public class ProcessInstanceCreateAuthorizationTest {
   }
 
   @Test
+  public void shouldBeUnauthorizedToCreateInstanceOnDrainingVersionIfNoPermissions() {
+    // given - callers without access must not learn that the version is being deleted; a running
+    // instance keeps the deleted version draining
+    final var processId = "drainingProcess";
+    makeDraining(processId);
+    final var user = createUser();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withVersion(1)
+        .expectRejection()
+        .create(user.getUsername());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                .formatted(processId));
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToCreateInstanceWithResultOnDrainingVersionIfNoPermissions() {
+    // given - creation with result runs through its own processor, which must keep the same check
+    // order as plain creation
+    final var processId = "drainingProcessWithResult";
+    makeDraining(processId);
+    final var user = createUser();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withVersion(1)
+        .withResult()
+        .asyncCreate(user.getUsername());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                .formatted(processId));
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToCreateInstanceOnSuspendedVersionIfNoPermissions() {
+    // given - callers without access must not learn that the version is suspended
+    engine
+        .processDefinitionSuspension()
+        .withBpmnProcessId(PROCESS_ID)
+        .withVersion(1)
+        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .suspend(DEFAULT_USER.getUsername());
+    final var user = createUser();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVersion(1)
+        .expectRejection()
+        .create(user.getUsername());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToCreateInstanceWithResultOnSuspendedVersionIfNoPermissions() {
+    // given - creation with result runs through its own processor, which must keep the same check
+    // order as plain creation
+    engine
+        .processDefinitionSuspension()
+        .withBpmnProcessId(PROCESS_ID)
+        .withVersion(1)
+        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .suspend(DEFAULT_USER.getUsername());
+    final var user = createUser();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVersion(1)
+        .withResult()
+        .asyncCreate(user.getUsername());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                .formatted(PROCESS_ID));
+  }
+
+  @Test
   public void shouldRejectCreationWhenAssignedTenantsExcludeProcessTenant() {
     // given - process deployed under CUSTOM_TENANT, caller has a global (non-tenant-restricted)
     // CREATE_PROCESS_INSTANCE permission but is only assigned to OTHER_TENANT
@@ -260,6 +369,37 @@ public class ProcessInstanceCreateAuthorizationTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .isTrue();
+  }
+
+  private void makeDraining(final String processId) {
+    final long processDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(
+                "draining.bpmn",
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("task", t -> t.zeebeJobType("task"))
+                    .endEvent()
+                    .done())
+            .deploy(DEFAULT_USER.getUsername())
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(processId).create(DEFAULT_USER.getUsername());
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    engine
+        .resourceDeletion()
+        .withResourceKey(processDefinitionKey)
+        .delete(DEFAULT_USER.getUsername());
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
   }
 
   private void deployProcessToTenant(final String tenantId) {
