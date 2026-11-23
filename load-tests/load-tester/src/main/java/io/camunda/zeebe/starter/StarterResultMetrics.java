@@ -8,8 +8,8 @@
 package io.camunda.zeebe.starter;
 
 import io.camunda.zeebe.metrics.ErrorType;
+import io.camunda.zeebe.metrics.ResultMetricKeyNames;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
-import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 
@@ -42,8 +42,8 @@ final class StarterResultMetrics {
   private Counter counter(final String outcome, final String error) {
     return Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName())
         .description(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getDescription())
-        .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
-        .tag(StarterMetricKeyNames.ERROR.asString(), error)
+        .tag(ResultMetricKeyNames.OUTCOME.asString(), outcome)
+        .tag(ResultMetricKeyNames.ERROR.asString(), error)
         .register(registry);
   }
 }
