@@ -346,8 +346,10 @@ public final class ProcessingStateMachine implements CloseableSilently {
           processingMetrics.startProcessingDurationTimer(
               metadata.getValueType(), metadata.getIntent());
 
-      final var value =
-          requireNonNull(recordValues.readRecordValue(loggedEvent, metadata.getValueType()));
+      final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
+      if (value == null) {
+        throw NoSuchProcessorException.forUnknownValueType(metadata);
+      }
       typedCommand.wrap(loggedEvent, metadata, value);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();

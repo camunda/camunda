@@ -147,6 +147,20 @@ public final class RecordToWrite implements LogAppendEntry {
   }
 
   /**
+   * Simulates a record whose value type is unknown to the current version: the SBE codec decodes
+   * such a value type as {@link ValueType#SBE_UNKNOWN}, which round-trips to {@link
+   * ValueType#NULL_VAL}. A concrete value is attached only so the record can be serialized; on read
+   * its value is {@code null}.
+   */
+  public RecordToWrite unknownValueType() {
+    recordMetadata
+        .valueType(ValueType.SBE_UNKNOWN)
+        .intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    unifiedRecordValue = new ProcessInstanceRecord();
+    return this;
+  }
+
+  /**
    * Used to refer to the record that caused this record to be written. For example, when you want
    * to write a Job Created event that was the result of the processing of a Service Task
    * Activate_Element command. When using this with {@link

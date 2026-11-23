@@ -238,7 +238,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSile
             || currentEvent.getSourceEventPosition()
                 < 0)) { // some events might not have a source pointer
       readMetadata(currentEvent);
-      final var currentTypedEvent = requireNonNull(readRecordValue(currentEvent));
+      final var currentTypedEvent = readRecordValue(currentEvent);
       LOG.trace("Replaying event {}: {}", currentTypedEvent.getPosition(), currentTypedEvent);
       currentStateDescription.set(
           "replaying event",
@@ -345,7 +345,10 @@ public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSile
 
   private TypedRecord<?> readRecordValue(final LoggedEvent currentEvent) {
     final UnifiedRecordValue value =
-        requireNonNull(recordValues.readRecordValue(currentEvent, metadata.getValueType()));
+        recordValues.readRecordValue(currentEvent, metadata.getValueType());
+    if (value == null) {
+      throw NoSuchProcessorException.forUnknownValueType(metadata);
+    }
     typedEvent.wrap(currentEvent, metadata, value);
     return typedEvent;
   }
