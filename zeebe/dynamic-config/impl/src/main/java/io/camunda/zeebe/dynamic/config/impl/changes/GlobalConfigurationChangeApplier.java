@@ -13,10 +13,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
-/**
- * New-model counterpart of {@code ConfigurationChangeAppliers.ClusterOperationApplier}, scoped to
- * {@link GlobalConfiguration}. Applies a {@code GlobalChangeOperation}.
- */
+/** Applies a {@code GlobalChangeOperation}, scoped to {@link GlobalConfiguration}. */
 public interface GlobalConfigurationChangeApplier {
 
   /**

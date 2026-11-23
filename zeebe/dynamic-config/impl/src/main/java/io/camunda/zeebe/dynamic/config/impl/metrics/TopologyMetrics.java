@@ -54,10 +54,9 @@ public final class TopologyMetrics {
   }
 
   /**
-   * Reports the same values the legacy single-group projection carried: the topology version and
-   * the state of the change plan currently active in the global configuration or, failing that, the
-   * default partition group — a cluster applies at most one plan that touches either at a time, so
-   * that one plan is the cluster's change.
+   * Reports the topology version and the state of the change plan currently active in the global
+   * configuration or, failing that, the default partition group — a cluster applies at most one
+   * plan that touches either at a time, so that one plan is the cluster's change.
    */
   public void updateFromTopology(final CurrentClusterConfiguration topology) {
     topologyVersion.set(topology.versionOf(CurrentClusterConfiguration.DEFAULT_GROUP));

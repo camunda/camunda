@@ -18,10 +18,9 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code GlobalChangeOperation.PreScalingOperation}, operating on {@link
- * GlobalConfiguration}. Mirrors the legacy {@code PreScalingApplier} in {@code changes/}, which
- * this does not replace or modify. Prepares a member for scaling by invoking the pre-scaling
- * callback on the {@link ClusterChangeExecutor}.
+ * Applier for {@code GlobalChangeOperation.PreScalingOperation}, operating on {@link
+ * GlobalConfiguration}. Prepares a member for scaling by invoking the pre-scaling callback on the
+ * {@link ClusterChangeExecutor}.
  */
 public final class PreScalingApplier implements GlobalConfigurationChangeApplier {
 

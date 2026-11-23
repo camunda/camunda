@@ -20,14 +20,11 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code PartitionGroupOperation.ModeChangeOperation} targeting {@link
- * Mode#RECOVERING}, operating on a single named {@link PartitionGroupConfiguration}. Mirrors the
- * legacy {@code EnterRecoveryApplier} in {@code changes/}, which this does not replace or modify.
+ * Applier for {@code PartitionGroupOperation.ModeChangeOperation} targeting {@link
+ * Mode#RECOVERING}, operating on a single named {@link PartitionGroupConfiguration}.
  *
- * <p>The legacy applier reads recovery mode off the same flat {@code MemberState.State} that also
- * tracks cluster lifecycle (JOINING/ACTIVE/LEAVING/LEFT/RECOVERING). In the new model, cluster
- * lifecycle lives in {@link GlobalConfiguration} and per-group recovery mode lives in {@code
- * BrokerPartitionState.mode()} — this applier checks both.
+ * <p>Cluster lifecycle (JOINING/ACTIVE/LEAVING/LEFT) lives in {@link GlobalConfiguration}, while
+ * per-group recovery mode lives in {@code BrokerPartitionState.mode()} — this applier checks both.
  */
 public final class EnterRecoveryApplier implements PartitionGroupConfigurationChangeApplier {
 

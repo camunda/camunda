@@ -130,12 +130,12 @@ public record PhasedChangeState(
    * issued by the counter ({@code id < nextId}) and is not currently in {@link #pending}.
    *
    * <p>Deliberately excludes {@link PhasedChangePlan#RESTORED_PLAN_ID}: that sentinel bypasses the
-   * counter entirely (it is assigned directly during legacy migration, not via {@link #initPlan}),
-   * so {@code nextId} advancing past it proves nothing about its history — every state's {@code
-   * nextId} is at least {@link PhasedChangePlan#INITIAL_PLAN_ID}, so this signal would otherwise
-   * unconditionally (and wrongly) call it resolved even for a state that has never witnessed it.
-   * {@link #merge} falls back to the (bounded, but adequate for a once-per-cluster-lifetime event)
-   * {@link #history}-based check for that one id.
+   * counter entirely (it is assigned directly by {@link PhasedChangePlan#initForRestore}, not via
+   * {@link #initPlan}), so {@code nextId} advancing past it proves nothing about its history —
+   * every state's {@code nextId} is at least {@link PhasedChangePlan#INITIAL_PLAN_ID}, so this
+   * signal would otherwise unconditionally (and wrongly) call it resolved even for a state that has
+   * never witnessed it. {@link #merge} falls back to the (bounded, but adequate for a
+   * once-per-cluster-lifetime event) {@link #history}-based check for that one id.
    *
    * <p>For every other id, this is a permanent signal, unlike {@link #history}: a single writer
    * (the coordinator) only ever removes a counter-issued id from {@link #pending} by explicitly
@@ -148,8 +148,7 @@ public record PhasedChangeState(
 
   /**
    * Returns the single pending plan, assuming exactly one is pending. Convenience for call sites
-   * (tests, and legacy single-plan flows such as {@link CurrentClusterConfiguration#fromLegacy})
-   * that know only one plan can be in flight.
+   * (e.g. tests) that know only one plan can be in flight.
    *
    * @throws IllegalStateException if zero or more than one plan is pending
    */

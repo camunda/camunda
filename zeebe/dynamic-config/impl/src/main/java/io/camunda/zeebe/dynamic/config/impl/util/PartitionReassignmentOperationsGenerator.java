@@ -31,12 +31,11 @@ import java.util.stream.Collectors;
 /**
  * Generates the {@link PartitionGroupOperation}s needed to move a group's current partition
  * distribution to a target distribution — typically one computed by a {@link PartitionReassigner}.
- * This is the per-group-model, reusable counterpart of what {@code
- * PartitionReassignRequestTransformer} does inline for the legacy single-group model: it does not
- * itself decide *what* the target distribution should be (that's the reassigner's job) or *how* the
- * resulting operations get applied (that's up to the caller — e.g. wrapping the result in a {@link
- * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase} and starting a
- * pending change, whether from a bootstrap-time initializer or a runtime management-API request).
+ * It does not itself decide *what* the target distribution should be (that's the reassigner's job)
+ * or *how* the resulting operations get applied (that's up to the caller — e.g. wrapping the result
+ * in a {@link io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase} and
+ * starting a pending change, whether from a bootstrap-time initializer or a runtime management-API
+ * request).
  *
  * <p>{@code targetDistribution} may span several groups; the current distribution for each group it
  * touches is read from {@code currentConfiguration}. A group with no entry in {@code

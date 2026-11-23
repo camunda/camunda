@@ -787,8 +787,8 @@ final class BrokerTopologyManagerTest {
     final var tenant1Info = createBrokerWithGroup(brokerId, "tenant1");
     notifyEvent(createMemberAddedEvent(tenant1Info));
 
-    // when -- the new-model cluster configuration carries distinct partition groups for
-    // "default" and "tenant1", each with a different partition assignment
+    // when -- the cluster configuration carries distinct partition groups for "default" and
+    // "tenant1", each with a different partition assignment
     final var defaultGroup =
         new PartitionGroupConfiguration(
             PartitionGroupConfiguration.INITIAL_VERSION,
@@ -974,7 +974,7 @@ final class BrokerTopologyManagerTest {
     assertThat(topologyManager.getTopology("tenant1").getLeaderForPartition(1)).isEqualTo(brokerId);
 
     // when -- a cluster configuration update arrives whose partition groups do not contain
-    // "tenant1" at all (e.g. the group is not part of the new model config)
+    // "tenant1" at all
     final var configurationWithoutTenant1 =
         new CurrentClusterConfiguration(
             CurrentClusterConfiguration.INITIAL_VERSION,

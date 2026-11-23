@@ -20,15 +20,12 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code GlobalChangeOperation.MemberJoinOperation}, operating on {@link
- * GlobalConfiguration} instead of the legacy {@code ClusterConfiguration}. Mirrors the legacy
- * {@code MemberJoinApplier} in {@code changes/}, which this does not replace or modify.
+ * Applier for {@code GlobalChangeOperation.MemberJoinOperation}, operating on {@link
+ * GlobalConfiguration}.
  *
- * <p>Unlike the legacy {@code ClusterConfiguration#updateMember}, which upserts (adds if absent,
- * updates if present) via a single method, {@link GlobalConfiguration#addMember} and {@link
- * GlobalConfiguration#updateMember} are split and each fail on the wrong precondition. This applier
- * is therefore responsible for choosing between them, rather than that choice being hidden inside a
- * shared update method as in the legacy model.
+ * <p>{@link GlobalConfiguration#addMember} and {@link GlobalConfiguration#updateMember} each fail
+ * on the wrong precondition, so this applier is responsible for choosing between them: {@link
+ * #init} adds the member, and {@link #apply()} updates it.
  */
 public final class MemberJoinApplier implements GlobalConfigurationChangeApplier {
 

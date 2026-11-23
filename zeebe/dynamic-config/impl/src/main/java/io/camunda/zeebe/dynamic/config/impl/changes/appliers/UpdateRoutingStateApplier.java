@@ -19,9 +19,8 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code PartitionGroupOperation.UpdateRoutingState}, operating on a single
- * named {@link PartitionGroupConfiguration} as a whole. Mirrors the legacy {@code
- * UpdateRoutingStateApplier} in {@code changes/}, which this does not replace or modify.
+ * Applier for {@code PartitionGroupOperation.UpdateRoutingState}, operating on a single named
+ * {@link PartitionGroupConfiguration} as a whole.
  */
 public final class UpdateRoutingStateApplier implements PartitionGroupConfigurationChangeApplier {
 

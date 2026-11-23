@@ -223,8 +223,8 @@ class PhasedChangePlanTest {
 
     @Test
     void shouldAllowRestoredPlanIdOfZero() {
-      // given / when — RESTORED_PLAN_ID (0) must be constructible: it is the sentinel a migrated
-      // legacy restore plan is assigned (see CurrentClusterConfiguration#toPhasedChangePlan)
+      // given / when — RESTORED_PLAN_ID (0) must be constructible: it is the sentinel a restore
+      // plan is assigned (see PhasedChangePlan#initForRestore)
       final var plan =
           PhasedChangePlan.init(
               PhasedChangePlan.RESTORED_PLAN_ID, List.of(globalPhase0), Instant.EPOCH);

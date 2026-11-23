@@ -17,10 +17,8 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code
- * PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation}. Mirrors the
- * legacy {@code PartitionPreRestoreApplier} in {@code changes/}, which this does not replace or
- * modify.
+ * Applier for {@code
+ * PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation}.
  *
  * <p>Writes nothing to the {@link PartitionGroupConfiguration}: wiping a partition's data touches
  * only that broker's local disk, so both {@link #init} and {@link #apply()} return {@link

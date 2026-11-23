@@ -398,8 +398,8 @@ class PhasedChangeStateTest {
 
     @Test
     void shouldFallBackToHistoryToResolveAStaleRestoredPlanId() {
-      // given — RESTORED_PLAN_ID (0) bypasses the nextId counter entirely (assigned directly
-      // during legacy migration), so nextId alone can never prove it resolved: every state's
+      // given — RESTORED_PLAN_ID (0) bypasses the nextId counter entirely (assigned directly by
+      // initForRestore), so nextId alone can never prove it resolved: every state's
       // nextId is already >= INITIAL_PLAN_ID (1), i.e. trivially "past" id 0, even for a state
       // that has never witnessed it. The bounded history is the only signal available for this
       // one id, which is acceptable since a restore happens at most once per cluster lifetime.

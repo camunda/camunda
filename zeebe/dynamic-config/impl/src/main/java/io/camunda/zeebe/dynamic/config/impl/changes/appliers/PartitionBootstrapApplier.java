@@ -27,15 +27,12 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code
- * PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation}, operating on a
- * single named {@link PartitionGroupConfiguration}. Mirrors the legacy {@code
- * PartitionBootstrapApplier} in {@code changes/}, which this does not replace or modify.
+ * Applier for {@code PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation},
+ * operating on a single named {@link PartitionGroupConfiguration}.
  *
  * <p>Partition existence and id-contiguity are evaluated against this group only, since each
- * partition group has its own partition numbering (unlike the legacy flat model where they were
- * evaluated across the whole cluster). Like {@link PartitionJoinApplier}, this applier must branch
- * between {@link PartitionGroupConfiguration#addMember} and {@link
+ * partition group has its own partition numbering. Like {@link PartitionJoinApplier}, this applier
+ * must branch between {@link PartitionGroupConfiguration#addMember} and {@link
  * PartitionGroupConfiguration#updateMember}, since bootstrapping can be the local broker's first
  * partition in this group.
  */

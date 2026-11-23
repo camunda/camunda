@@ -16,7 +16,6 @@ import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.ChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
@@ -301,8 +300,8 @@ final class ClusterApiUtils {
    * whichever sub-config (global or physical tenant) the currently active phase targets: phases
    * before {@code currentPhaseIndex} are fully done, phases after it are entirely untouched, but
    * the active phase's own operations may be partially done already — activating a phase copies its
-   * operations into the target sub-config's {@link ClusterChangePlan}, which independently tracks
-   * which of those operations have completed so far, and when.
+   * operations into the target sub-config's {@link DependencyChangePlan}, which independently
+   * tracks which of those operations have completed so far, and when.
    */
   private static ChangeProgress progressOf(
       final CurrentClusterConfiguration configuration, final PhasedChangePlan plan) {
@@ -359,9 +358,9 @@ final class ClusterApiUtils {
   /**
    * Splits one sub-config's share of the active phase's operations between {@code completed} and
    * {@code pending}. {@code subConfigPlan} is absent when the phase hasn't actually been activated
-   * into the sub-config yet (e.g. a plan reconstructed via {@link
-   * CurrentClusterConfiguration#fromLegacy}, which builds the pending plan at phase 0 without
-   * activating it) — in that case nothing has completed yet, so the whole phase is still pending.
+   * into the sub-config yet (e.g. a restored plan before {@link
+   * CurrentClusterConfiguration#activatePendingPhase()}) — in that case nothing has completed yet,
+   * so the whole phase is still pending.
    */
   private static void splitSubConfigOperations(
       final @Nullable String physicalTenantId,
@@ -572,12 +571,12 @@ final class ClusterApiUtils {
   }
 
   /**
-   * Flattens the new multi-partition-group model into the flat {@code BrokerState} list expected by
-   * the REST response: every broker in {@code brokers} is included (broker lifecycle has no tenant
-   * dimension, so this is always the global configuration's full membership), and each broker's
-   * partitions from every physical tenant group in {@code groupsInView} it participates in are
-   * merged onto that one broker entry, tagged with their owning tenant. A broker replicating
-   * nothing in {@code groupsInView} gets an empty partition list.
+   * Flattens the multi-partition-group configuration into the flat {@code BrokerState} list
+   * expected by the REST response: every broker in {@code brokers} is included (broker lifecycle
+   * has no tenant dimension, so this is always the global configuration's full membership), and
+   * each broker's partitions from every physical tenant group in {@code groupsInView} it
+   * participates in are merged onto that one broker entry, tagged with their owning tenant. A
+   * broker replicating nothing in {@code groupsInView} gets an empty partition list.
    *
    * <p>{@code groupsInView} is deliberately a parameter rather than derived from the configuration
    * the {@code brokers} came from: it is the subset of partition groups the request is scoped to,

@@ -14,8 +14,8 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model counterpart of {@code ConfigurationChangeAppliers.ClusterOperationApplier}, scoped to a
- * single named {@link PartitionGroupConfiguration}. Applies a {@code PartitionGroupOperation}.
+ * Applies a {@code PartitionGroupOperation}, scoped to a single named {@link
+ * PartitionGroupConfiguration}.
  *
  * <p>The applier is group-agnostic: it operates on whichever {@link PartitionGroupConfiguration} it
  * is given. Selecting the target group (by group id) and writing the result back via {@code

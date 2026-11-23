@@ -240,8 +240,8 @@ final class ClusterConfigurationManagerImplTest {
   @Test
   void shouldApplyEveryOperationInASingleGroupPhaseSequentially() {
     // given — member 1 replicates partitions 1 and 2; a phase joins the local member (0) to both,
-    // the ordinary scale-up shape (toPhases folds a run of same-kind ops into one phase, so a
-    // multi-partition scale-up is one phase with several operations, not several phases)
+    // the ordinary scale-up shape: a multi-partition scale-up is one phase with several
+    // operations, not several phases
     final var manager = newManager(MEMBER_0);
     final var group =
         new PartitionGroupConfiguration(
@@ -1931,10 +1931,7 @@ final class ClusterConfigurationManagerImplTest {
         PhasedChangeState.empty());
   }
 
-  /**
-   * A fresh cluster with no configured cluster id must still come up with one, and it must be
-   * visible through the legacy projection.
-   */
+  /** A fresh cluster with no configured cluster id must still come up with one. */
   @Test
   void shouldStartFromStaticInitializerWithGeneratedClusterId() {
     // given — a fresh manager bootstrapping without a configured cluster id

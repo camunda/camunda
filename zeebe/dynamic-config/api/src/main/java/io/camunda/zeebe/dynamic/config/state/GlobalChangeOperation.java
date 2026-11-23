@@ -16,21 +16,21 @@ import java.util.SortedSet;
 public sealed interface GlobalChangeOperation extends ClusterConfigurationChangeOperation {
 
   /**
-   * Operation to add a member to the ClusterConfiguration.
+   * Operation to add a member to the cluster configuration.
    *
    * @param memberId the member id of the member that joined the cluster
    */
   record MemberJoinOperation(MemberId memberId) implements GlobalChangeOperation {}
 
   /**
-   * Operation to remove a member from the ClusterConfiguration.
+   * Operation to remove a member from the cluster configuration.
    *
    * @param memberId the member id of the member that is leaving the cluster
    */
   record MemberLeaveOperation(MemberId memberId) implements GlobalChangeOperation {}
 
   /**
-   * Operation to remove a member from the ClusterConfiguration. This operation is used to force
+   * Operation to remove a member from the cluster configuration. This operation is used to force
    * remove a (unreachable) member.
    *
    * @param memberId the id of the member that applies this operations

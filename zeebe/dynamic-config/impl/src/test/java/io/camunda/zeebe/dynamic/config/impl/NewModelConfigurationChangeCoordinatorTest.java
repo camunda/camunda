@@ -307,8 +307,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
   void shouldRejectInvalidOperationUsingRealAppliers() {
     // given — a request whose second operation is invalid: member 0 leaves partition 1 twice,
     // but after the first leave it no longer hosts the partition. Validation must catch this via
-    // the real PartitionGroupConfigurationChangeAppliersImpl dispatch table, not a legacy
-    // simulator.
+    // the real PartitionGroupConfigurationChangeAppliersImpl dispatch table.
     wire(MEMBER_0, twoMemberCluster());
     final ConfigurationChangeRequest request =
         current ->

@@ -182,13 +182,6 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                                     localMemberId)));
                         return;
                       }
-                      // Request transformers are unchanged: they still read a legacy
-                      // ClusterConfiguration (the default-group projection) to generate the
-                      // phases to run. Everything past this point — validation, simulation, and
-                      // application — uses the new multi-group model directly, so supporting
-                      // non-default groups in the future only requires changing what phases()
-                      // returns, not this coordinator.
-                      //
                       // Requests that don't opt into targeting disabled physical tenants only see
                       // active partition groups here, so phases() can never generate a phase that
                       // targets a disabled tenant. Validation and application below still use the
@@ -336,7 +329,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   }
 
   /**
-   * Validates a phased plan by simulating it against the new model: not initialized / a change
+   * Validates a phased plan by simulating it against the configuration: not initialized / a change
    * already in progress fail immediately; otherwise the plan is started via {@link
    * CurrentClusterConfiguration#initPlan(List)} and simulated phase by phase using the same
    * dispatch tables the manager uses to actually apply changes ({@link

@@ -47,7 +47,7 @@ public interface ConfigurationChangeCoordinator {
   /**
    * Cancels a configuration change. This is an unsafe operation and should be called only when the
    * operation is stuck and cannot make progress on its own. When a change is cancelled, already
-   * applied operations are not reverted. So the ClusterConfiguration will be in an intermediate
+   * applied operations are not reverted. So the cluster configuration will be in an intermediate
    * state with partially applied operations.
    *
    * @param changeId the id of the change to cancel

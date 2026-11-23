@@ -391,8 +391,8 @@ final class ClusterApiUtilsTest {
     // appear, and the response must keep the top-level field set of the pre-physical-tenant shape.
     // The broker's two version counters are set apart deliberately: BrokerState.version counts
     // lifecycle transitions only and BrokerPartitionState.version counts partition and mode
-    // changes, so brokers[].version must report the higher of the two the way the legacy
-    // MemberState projection did, or a partition join would stop bumping it.
+    // changes, so brokers[].version must report the higher of the two, or a partition join would
+    // stop bumping it.
     final var member1 = member(1);
     final var globalConfiguration =
         new GlobalConfiguration(

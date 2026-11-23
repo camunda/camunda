@@ -11,9 +11,7 @@ message GossipState {
   CurrentClusterConfiguration currentClusterConfiguration = 2;
 }
 
-// ---- New multi-partition-group configuration model (8.10) ----
-
-// Top-level wrapper for the new configuration model. version is always
+// Top-level wrapper for the cluster configuration. version is always
 // an initial version (0) and reserved for a future root-level fast path.
 message CurrentClusterConfiguration {
   int64 version = 1;
@@ -97,9 +95,8 @@ message BrokerState {
 }
 
 // A broker's partition assignment within a single group. No lifecycle State.
-// mode is the per-broker, per-group operating mode (PROCESSING or RECOVERING,
-// the structural equivalent of the legacy State.RECOVERING), scoped to this
-// group only.
+// mode is the per-broker, per-group operating mode (PROCESSING or RECOVERING),
+// scoped to this group only.
 message BrokerPartitionState {
   int64 version = 1;
   google.protobuf.Timestamp lastUpdated = 2;

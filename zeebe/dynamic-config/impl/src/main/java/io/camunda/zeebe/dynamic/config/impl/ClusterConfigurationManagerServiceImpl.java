@@ -232,7 +232,7 @@ public final class ClusterConfigurationManagerServiceImpl
             .toList();
   }
 
-  /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
+  /** Starts ClusterConfigurationManager which initializes the cluster configuration */
   @Override
   public ActorFuture<Void> start(
       final ActorSchedulingService actorSchedulingService,

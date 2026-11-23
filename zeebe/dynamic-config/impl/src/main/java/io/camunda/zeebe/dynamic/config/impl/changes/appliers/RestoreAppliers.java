@@ -15,7 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
-/** Shared validation and completion logic for the new-model restore step appliers. */
+/** Shared validation and completion logic for the restore step appliers. */
 final class RestoreAppliers {
 
   private RestoreAppliers() {}

@@ -26,17 +26,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The GatewayClusterConfigurationService contains minimal functionality required for the Gateway.
- * The Gateway only listens to ClusterConfiguration changes. It cannot make changes to the
+ * The Gateway only listens to cluster configuration changes. It cannot make changes to the
  * configuration. So the service does not run ClusterConfigurationManager, but only contains the
  * ClusterConfigurationGossiper.
  *
- * <p>This service tracks and gossips the multi-partition-group {@link CurrentClusterConfiguration}
- * instead of the legacy single-group {@code ClusterConfiguration}, mirroring what {@link
- * ClusterConfigurationManagerImpl} does for brokers. This matters beyond the gateway's own view:
- * before this, the gateway only ever gossiped the legacy field, so any real broker that fell back
- * to {@code CurrentClusterConfiguration#fromLegacy} for a message relayed by the gateway could
- * construct a lossy reconstruction of an in-progress plan that conflicted with its own,
- * natively-tracked one.
+ * <p>This service tracks and gossips the same {@link CurrentClusterConfiguration} that {@link
+ * ClusterConfigurationManagerImpl} maintains on brokers.
  */
 @NullMarked
 public class GatewayClusterConfigurationServiceImpl extends Actor

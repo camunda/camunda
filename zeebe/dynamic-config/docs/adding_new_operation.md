@@ -5,7 +5,7 @@
 3. **Serializer**: add encode/decode in `ClusterConfigurationRequestsSerializer` interface + `ProtoBufSerializer`.
 4. **Request type**: add record to `ClusterConfigurationManagementRequest`.
 5. **Topic**: add entry to `ClusterConfigurationRequestTopics`.
-6. **Transformer**: new `ConfigurationChangeRequest` impl in `impl/transformers/` — `operations(ClusterConfiguration)` returns `Either<Exception, List<Op>>`.
+6. **Transformer**: new `ConfigurationChangeRequest` impl in `impl/transformers/` — `phases(CurrentClusterConfiguration)` returns `Either<Exception, List<Phase>>`.
 7. **Handler**: implement in `ClusterConfigurationManagementRequestsHandler`, delegate to `handleRequest(dryRun, transformer)`.
 8. **Sender**: add method in `ClusterConfigurationManagementRequestSender`.
 9. **Server**: register `replyTo` handler in `ClusterConfigurationRequestServer.start()`.

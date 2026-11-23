@@ -386,7 +386,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
         completeAsUninitialized("no known members to sync");
       } else {
         LOGGER.debug(
-            "Querying members {} before initializing ClusterConfiguration",
+            "Querying members {} before initializing cluster configuration",
             knownMembersToSync.get());
         clusterConfigurationUpdateNotifier.addUpdateListener(this);
         refreshAndSync();

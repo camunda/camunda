@@ -284,10 +284,9 @@ public final class ClusterRestore {
    * worth keeping and nothing else on disk still describes it. A partial run does not write this
    * file at all — see the call site for why.
    *
-   * <p>The plan's phase is activated here rather than left pending. A pending phase is only
-   * activated on read when a legacy (version 1) file is migrated; this is written in the current
-   * format, so nothing would activate it later and the {@link UpdateRoutingState}s would never run,
-   * leaving every group without a routing state.
+   * <p>The plan's phase is activated here rather than left pending: nothing activates a pending
+   * phase when the file is read, so the {@link UpdateRoutingState}s would never run, leaving every
+   * group without a routing state.
    *
    * <p>All groups go in one phase, which is what makes the result recognizable as {@link
    * CurrentClusterConfiguration#isAfterRestore()} — the signal {@code
