@@ -403,9 +403,7 @@ describe('<Operations />', () => {
 		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
 		await expect.element(screen.getByTestId('passive-cancellation-modal')).toBeVisible();
 
-		await userEvent.click(document.querySelector<HTMLElement>('[data-slot="dialog-overlay"]')!, {
-			position: {x: 5, y: 5},
-		});
+		await userEvent.click(screen.baseElement, {position: {x: 5, y: 5}});
 
 		await expect.element(screen.getByTestId('passive-cancellation-modal')).toBeVisible();
 	});

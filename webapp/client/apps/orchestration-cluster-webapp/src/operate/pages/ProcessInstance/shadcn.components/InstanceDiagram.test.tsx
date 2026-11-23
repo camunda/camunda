@@ -55,9 +55,6 @@ const STATISTICS = [
 	createProcessDefinitionStatistic({elementId: 'end_1', completed: 1}),
 ];
 
-const getDiagramElement = (elementId: string) =>
-	document.querySelector<SVGElement>(`[data-element-id="${elementId}"]`)!;
-
 const singleResult = <T,>(item: T) => ({
 	items: [item],
 	page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
@@ -236,7 +233,7 @@ describe('<InstanceDiagram /> (DS)', () => {
 
 		const screen = await renderLoadedPage('?elementId=task_1&elementInstanceKey=instance-2');
 
-		await userEvent.click(getDiagramElement('task_1'));
+		await userEvent.click(screen.getByRole('button', {name: 'Review (user task)'}));
 		await expect
 			.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementInstanceKey)
 			.toBeUndefined();
@@ -278,7 +275,7 @@ describe('<InstanceDiagram /> (DS)', () => {
 
 		const screen = await renderLoadedPage('?elementId=task_1');
 
-		await userEvent.dblClick(getDiagramElement('call_1'));
+		await userEvent.dblClick(screen.getByRole('button', {name: 'call activity'}));
 
 		await expect.poll(() => screen.router.state.location.pathname).toMatch(/\/processes\/child-1\/details$/);
 		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBeUndefined();
@@ -296,7 +293,7 @@ describe('<InstanceDiagram /> (DS)', () => {
 		);
 
 		const screen = await renderLoadedPage();
-		await userEvent.dblClick(getDiagramElement('rule_1'));
+		await userEvent.dblClick(screen.getByRole('button', {name: 'business rule task'}));
 
 		await expect.poll(() => screen.router.state.location.pathname).toMatch(/\/decisions\/decision-1$/);
 	});
@@ -310,7 +307,7 @@ describe('<InstanceDiagram /> (DS)', () => {
 		);
 
 		const screen = await renderLoadedPage();
-		await userEvent.dblClick(getDiagramElement('call_1'));
+		await userEvent.dblClick(screen.getByRole('button', {name: 'call activity'}));
 
 		await expect.element(screen.getByText('Failed to resolve called instances')).toBeVisible();
 	});
@@ -324,11 +321,12 @@ describe('<InstanceDiagram /> (DS)', () => {
 			}),
 		);
 
-		await renderLoadedPage();
-		await userEvent.dblClick(getDiagramElement('call_1'));
-		await expect.poll(() => getDiagramElement('call_1').classList.contains('op-drilldown-loading')).toBe(true);
-		await userEvent.click(getDiagramElement('task_1'));
+		const screen = await renderLoadedPage();
+		const callActivity = screen.getByRole('button', {name: 'call activity'});
+		await userEvent.dblClick(callActivity);
+		await expect.element(callActivity).toHaveAttribute('aria-busy', 'true');
+		await userEvent.click(screen.getByRole('button', {name: 'Review (user task)'}));
 
-		await expect.poll(() => getDiagramElement('call_1').classList.contains('op-drilldown-loading')).toBe(false);
+		await expect.element(callActivity).not.toHaveAttribute('aria-busy');
 	});
 });

@@ -221,16 +221,16 @@ describe('<Processes /> (design system)', () => {
 			initialEntry: `${PATH}?process=order&version=2&active=true`,
 		});
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		const getNode = () => document.querySelector<SVGElement>('[data-element-id="start"]')!;
+		const startNode = screen.getByRole('button', {name: 'Start (start event)'});
 
-		await userEvent.click(getNode());
+		await userEvent.click(startNode);
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({elementId: 'start'});
 		await expect
 			.poll(() => requestBodies.some((body) => JSON.stringify(body).includes('"elementId":{"$eq":"start"}')))
 			.toBe(true);
 
-		await userEvent.click(getNode());
+		await userEvent.click(startNode);
 
 		await expect.poll(() => screen.router.state.location.search).not.toHaveProperty('elementId');
 

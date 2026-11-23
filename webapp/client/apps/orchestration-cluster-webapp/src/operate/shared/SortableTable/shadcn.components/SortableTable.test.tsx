@@ -181,7 +181,9 @@ describe('<SortableTable />', () => {
 
 		// then
 		await expect.element(screen.getByTestId('table-loading-overlay')).not.toBeInTheDocument();
-		expect(document.querySelectorAll('[data-slot="data-table-skeleton-row"]').length).toBeGreaterThan(0);
+		await expect
+			.poll(() => document.querySelectorAll('[data-slot="data-table-skeleton-row"]').length)
+			.toBeGreaterThan(0);
 	});
 
 	it('should mark the default column as sorted ascending with no sort param in the URL', async () => {
@@ -639,6 +641,8 @@ describe('<SortableTable />', () => {
 
 			// then
 			await expect.poll(() => document.querySelectorAll('[data-slot="data-table-skeleton-row"]').length).toBe(1);
+			await expect.element(screen.getByText('Order process')).toBeVisible();
+			await expect.element(screen.getByText('Shipping process')).toBeVisible();
 			expect(screen.getByTestId('table-loading-overlay').elements()).toHaveLength(0);
 		});
 	});

@@ -150,8 +150,7 @@ describe('<Diagram />', () => {
 
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
 
-		const element = document.querySelector<SVGElement>('[data-element-id="startEvent_1"]');
-		await userEvent.click(element!);
+		await userEvent.click(screen.getByRole('button', {name: 'start event'}));
 
 		expect(onElementSelection).toHaveBeenCalledWith('startEvent_1', false);
 	});
@@ -309,7 +308,7 @@ describe('<Diagram />', () => {
 			</div>,
 		);
 
-		await expect.poll(() => document.querySelector('[data-element-id="endEvent_1"] .djs-outline')).not.toBeNull();
+		await expect.element(screen.getByRole('button', {name: 'end event'})).toHaveAttribute('aria-pressed', 'true');
 		await expect.element(screen.getByRole('button', {name: 'Hide minimap'})).toBeVisible();
 	});
 
@@ -329,7 +328,7 @@ describe('<Diagram />', () => {
 			/>,
 		);
 
-		await expect.poll(() => document.querySelector('[data-element-id="endEvent_1"] .djs-outline')).not.toBeNull();
+		await expect.element(screen.getByRole('button', {name: 'end event'})).toHaveAttribute('aria-pressed', 'true');
 		expect(document.activeElement).toBe(zoomIn.element());
 	});
 
@@ -351,9 +350,9 @@ describe('<Diagram />', () => {
 			);
 		}
 
-		await render(<SelectsOnMount />);
+		const screen = await render(<SelectsOnMount />);
 
-		await expect.poll(() => document.querySelector('[data-element-id="endEvent_1"] .djs-outline')).not.toBeNull();
+		await expect.element(screen.getByRole('button', {name: 'end event'})).toHaveAttribute('aria-pressed', 'true');
 	});
 
 	it('should report a failed import once and not mark the diagram ready when props change while it is pending', async () => {
@@ -392,7 +391,7 @@ describe('<Diagram />', () => {
 			/>,
 		);
 		await expect.element(screen.getByRole('button', {name: 'Zoom in diagram'})).toBeVisible();
-		await userEvent.click(document.querySelector<SVGElement>('[data-element-id="startEvent_1"]')!);
+		await userEvent.click(screen.getByRole('button', {name: 'start event'}));
 
 		expect(onElementSelection).toHaveBeenCalledWith('startEvent_1', false);
 	});

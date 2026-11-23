@@ -76,7 +76,9 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 
 		// then
 		await expect.element(screen.getByTestId('table')).toBeVisible();
-		expect(document.querySelectorAll('[data-slot="data-table-skeleton-row"]').length).toBeGreaterThan(0);
+		await expect
+			.poll(() => document.querySelectorAll('[data-slot="data-table-skeleton-row"]').length)
+			.toBeGreaterThan(0);
 	});
 
 	it('should show the fetch-error empty state on error', async () => {
@@ -623,15 +625,16 @@ describe('<ExpandableList /> composed variant', () => {
 
 	it('should hide the toggle button via CSS for a row with nothing to expand', async () => {
 		// given / when
-		await renderList({
+		const screen = await renderList({
 			variant: 'composed',
 			rows: [buildRow({id: 'process-1', name: 'Order process'})],
 		});
 
 		// then
-		const toggles = document.querySelectorAll('[data-slot="data-table-expand-toggle"]');
-		expect(toggles).toHaveLength(1);
-		expect(getComputedStyle(toggles[0]!).display).toBe('none');
+		await expect.element(screen.getByText('Order process')).toBeVisible();
+		const toggle = screen.getByRole('button', {name: 'Expand row', includeHidden: true});
+		await expect.element(toggle).toBeInTheDocument();
+		await expect.element(toggle).not.toBeVisible();
 	});
 });
 
@@ -645,7 +648,7 @@ describe('<ExpandableList /> nativeExpansion variant', () => {
 
 		// then
 		await expect.element(screen.getByText('Order process')).toBeVisible();
-		expect(document.querySelectorAll('button')).toHaveLength(0);
+		await expect.element(screen.getByRole('button', {includeHidden: true})).not.toBeInTheDocument();
 	});
 
 	it('should insert the expanded content as a sibling row instead of a nested one', async () => {
@@ -661,12 +664,14 @@ describe('<ExpandableList /> nativeExpansion variant', () => {
 
 		// then
 		await expect.element(screen.getByRole('button', {name: 'Collapse row'})).toBeVisible();
-		const tableBody = document.querySelector('[data-slot="table-body"]');
-		const bodyRows = tableBody?.querySelectorAll(':scope > tr') ?? [];
-		expect(bodyRows).toHaveLength(2);
-		expect(bodyRows[0]!.textContent).not.toContain('Version details for order process');
-		expect(bodyRows[0]!.querySelector('tr')).toBeNull();
-		expect(bodyRows[1]!.textContent).toContain('Version details for order process');
+		const bodyRows = screen.getByRole('rowgroup').filter({hasText: 'Order process'}).getByRole('row');
+		const processRow = bodyRows.nth(0);
+		const detailRow = bodyRows.nth(1);
+		await expect.element(processRow).toMatchTextContent('Order process');
+		await expect.element(processRow).not.toMatchTextContent('Version details for order process');
+		await expect.element(processRow.getByRole('row')).not.toBeInTheDocument();
+		await expect.element(detailRow).toMatchTextContent('Version details for order process');
+		await expect.element(bodyRows.nth(2)).not.toBeInTheDocument();
 	});
 
 	it("should bleed the expanded detail row's background to the cell's edges instead of leaving its own padding visible", async () => {

@@ -65,12 +65,9 @@ describe('<StructuredList />', () => {
 		);
 
 		// then: both the caller-rendered dynamic row and the auto-rendered static row are flush
-		const dynamicCell = screen.getByText('Dynamic content').element().closest('td')!;
-		const staticCell = screen.getByText('Static').element().closest('td')!;
-		const headerCell = screen.getByText('Name').element().closest('th')!;
-		expect(getComputedStyle(dynamicCell).paddingLeft).toBe('0px');
-		expect(getComputedStyle(staticCell).paddingLeft).toBe('0px');
-		expect(getComputedStyle(headerCell).paddingLeft).toBe('0px');
+		await expect.element(screen.getByRole('cell', {name: 'Dynamic content'})).toHaveStyle({paddingLeft: '0px'});
+		await expect.element(screen.getByRole('cell', {name: 'Static'})).toHaveStyle({paddingLeft: '0px'});
+		await expect.element(screen.getByRole('cell', {name: 'Name'})).toHaveStyle({paddingLeft: '0px'});
 	});
 
 	it('should render multiple rows and columns, preserving row order', async () => {
@@ -136,10 +133,7 @@ describe('<StructuredList />', () => {
 			);
 			const container = screen.getByTestId('structured-list').element() as HTMLElement;
 			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
-			const firstRow = container.querySelector('tbody tr:first-child');
-			if (firstRow === null) {
-				throw new Error('Expected at least one row to be rendered');
-			}
+			const firstRow = screen.getByRole('row', {name: 'First'}).element();
 
 			// when
 			const observer = getObserver();
@@ -172,10 +166,7 @@ describe('<StructuredList />', () => {
 			);
 			const container = screen.getByTestId('structured-list').element() as HTMLElement;
 			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
-			const lastRow = container.querySelector('tbody tr:last-child');
-			if (lastRow === null) {
-				throw new Error('Expected at least one row to be rendered');
-			}
+			const lastRow = screen.getByRole('row', {name: 'Second'}).element();
 
 			// when
 			const observer = getObserver();
