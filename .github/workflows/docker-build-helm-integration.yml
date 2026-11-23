@@ -993,9 +993,18 @@ jobs:
       # these App credentials; without that the poll dies with
       # `Bad credentials (HTTP 401)` the moment the dispatch token expires,
       # failing an otherwise-green downstream run.
+      #
+      # Best-effort on purpose: the refresh is only needed once a run passes
+      # ~45min, and mint_installation_token already degrades to the current
+      # token when these creds are absent. The dispatch token at step
+      # `github-token` already proved Vault was reachable, so a transient blip
+      # here must not fail a run that would finish before that token expires --
+      # hence continue-on-error, with the wait step's env tolerating the
+      # resulting missing outputs.
       - name: Import GitHub App credentials for token refresh
         id: saas-app-creds
         if: steps.check-downstream.outputs.enabled == 'true'
+        continue-on-error: true
         uses: ./.github/actions/vault-action-with-retry
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -1011,8 +1020,8 @@ jobs:
         if: steps.check-downstream.outputs.enabled == 'true'
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
-          GH_APP_ID: ${{ fromJSON(steps.saas-app-creds.outputs.secrets).saas-app-id }}
-          GH_APP_PRIVATE_KEY: ${{ fromJSON(steps.saas-app-creds.outputs.secrets).saas-app-private-key }}
+          GH_APP_ID: ${{ steps.saas-app-creds.outputs.secrets && fromJSON(steps.saas-app-creds.outputs.secrets).saas-app-id || '' }}
+          GH_APP_PRIVATE_KEY: ${{ steps.saas-app-creds.outputs.secrets && fromJSON(steps.saas-app-creds.outputs.secrets).saas-app-private-key || '' }}
           CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
         run: |
           set -euo pipefail
@@ -1088,6 +1097,10 @@ jobs:
           # App-JWT flow. Prints the token on success; any failure returns
           # non-zero and prints nothing, so the caller keeps the current token
           # -- a refresh fault degrades to the prior expiry behaviour, never worse.
+          # Each network call is bounded (--connect-timeout/--max-time), so a
+          # stalled refresh cannot hang the poll past WAIT_DEADLINE and defeat
+          # the timeout report: a timed-out curl just returns non-zero like any
+          # other mint failure.
           mint_installation_token() {
             local now header payload unsigned sig jwt inst_id token keyfile
             [[ -n "${GH_APP_ID:-}" && -n "${GH_APP_PRIVATE_KEY:-}" ]] || return 1
@@ -1103,10 +1116,10 @@ jobs:
             sig=$(printf '%s' "$unsigned" | openssl dgst -sha256 -sign "$keyfile" -binary | b64url) || { rm -f "$keyfile"; return 1; }
             rm -f "$keyfile"
             jwt="${unsigned}.${sig}"
-            inst_id=$(curl -fsS -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" \
+            inst_id=$(curl -fsS --connect-timeout 10 --max-time 30 -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" \
               "https://api.github.com/repos/$TARGET_REPO/installation" | jq -r '.id // empty') || return 1
             [[ -n "$inst_id" ]] || return 1
-            token=$(curl -fsS -X POST -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" \
+            token=$(curl -fsS --connect-timeout 10 --max-time 30 -X POST -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" \
               "https://api.github.com/app/installations/$inst_id/access_tokens" \
               -d '{"repositories":["camunda","c8-cross-component-e2e-tests"]}' | jq -r '.token // empty') || return 1
             [[ -n "$token" ]] || return 1
@@ -1123,9 +1136,16 @@ jobs:
             new=$(mint_installation_token) || { echo "Token refresh failed; keeping current token." >&2; return 0; }
             [[ -n "$new" ]] || { echo "Token refresh produced an empty token; keeping current token." >&2; return 0; }
             echo "::add-mask::$new"
-            if GH_TOKEN="$new" gh api "/repos/$TARGET_REPO" >/dev/null 2>&1; then
+            if GH_TOKEN="$new" timeout 30 gh api "/repos/$TARGET_REPO" >/dev/null 2>&1; then
               GH_TOKEN="$new"; export GH_TOKEN
               TOKEN_MINTED_AT=$(date +%s)
+              # Persist the refreshed token (already masked above) for the steps
+              # that run after this wait -- the category resolver and the failure
+              # feedback. They otherwise keep the dispatch token, which on the
+              # >1h runs a refresh exists to support is already expired, so their
+              # own `gh api` calls would 401. They fall back to the dispatch
+              # token when no refresh has happened.
+              echo "refreshed_token=$new" >> "$GITHUB_OUTPUT"
               echo "Refreshed the downstream-poll token before expiry."
             else
               echo "Refreshed token failed validation; keeping current token." >&2
@@ -1190,6 +1210,15 @@ jobs:
 
           while (( $(date +%s) < WAIT_DEADLINE )); do
             maybe_refresh_token
+            # The while condition was checked before the refresh, and a refresh
+            # issues network calls that can return past the deadline. Re-check
+            # here so a run-list or run-status poll is never started on a spent
+            # budget -- starting an unbounded call then is what hands the kill to
+            # the runner and loses the timeout report below.
+            if (( $(date +%s) >= WAIT_DEADLINE )); then
+              echo "Deadline reached during token refresh; reporting the timeout instead of starting another poll." >&2
+              break
+            fi
             if [[ -z "$RUN_ID" ]]; then
               # A retry-exhausted poll must not end the wait: this loop is the
               # timeout mechanism, so fall through to the next tick. Only a
@@ -1333,7 +1362,12 @@ jobs:
         id: downstream-category
         if: always() && steps.wait-downstream.outputs.downstream_run_url != ''
         env:
-          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          # Prefer the refreshed poll token: on a >1h run the dispatch token is
+          # already expired by the time this step runs, which would 401 the
+          # conclusion lookup and the report download below and misclassify the
+          # run as `unknown`. Fall back to the dispatch token when no refresh
+          # happened (short run, or refresh creds were unavailable).
+          GH_TOKEN: ${{ steps.wait-downstream.outputs.refreshed_token || steps.github-token.outputs.token }}
         run: |
           set -euo pipefail
           DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
@@ -1540,8 +1574,10 @@ jobs:
           slack_channel: "C0AK0AVKRL0"
           slack_bot_token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           # Same app token the dispatch uses; its installation covers camunda, so
-          # no second token step is needed for the PR comment.
-          github_token: ${{ steps.github-token.outputs.token }}
+          # no second token step is needed for the PR comment. Prefer the
+          # refreshed poll token when the wait re-minted one -- the dispatch
+          # token is already expired on the >1h runs that trigger a refresh.
+          github_token: ${{ steps.wait-downstream.outputs.refreshed_token || steps.github-token.outputs.token }}
       - name: Observe build status
         if: always()
         continue-on-error: true
