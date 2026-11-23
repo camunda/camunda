@@ -107,26 +107,6 @@ class ProcessDefinitionSuspensionAuditLogTransformerTest {
     assertThat(entity.getTenant().orElseThrow().tenantId()).isEqualTo("tenant-1");
   }
 
-  @Test
-  void shouldKeepVersionOfRejectedCommandInDescription() {
-    // given
-    final var value =
-        ImmutableProcessDefinitionSuspensionRecordValue.builder()
-            .from(suspensionValue(-1L, "process-id", List.of()))
-            .withVersion(3)
-            .build();
-    final var record =
-        suspensionRejection(
-            ProcessDefinitionSuspensionIntent.SUSPEND, RejectionType.INVALID_STATE, value);
-
-    // when
-    final var entity = transformer.create(record);
-
-    // then
-    assertThat(entity.getResult()).isEqualTo(AuditLogOperationResult.FAIL);
-    assertThat(entity.getEntityDescription()).isEqualTo("INVALID_STATE (version 3)");
-  }
-
   @ParameterizedTest
   @EnumSource(RejectionType.class)
   void shouldAuditOnlyRejectionsTheUserCanCause(final RejectionType rejectionType) {

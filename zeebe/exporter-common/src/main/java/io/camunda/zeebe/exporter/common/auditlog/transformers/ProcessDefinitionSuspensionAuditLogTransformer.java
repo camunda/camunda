@@ -7,10 +7,8 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
-import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
 
 public class ProcessDefinitionSuspensionAuditLogTransformer
@@ -40,14 +38,6 @@ public class ProcessDefinitionSuspensionAuditLogTransformer
           .setEntityKey(String.valueOf(value.getProcessDefinitionKey()));
     } else {
       log.setEntityKey(value.getBpmnProcessId());
-    }
-
-    // The shared rejection handling would replace the description with the bare rejection type,
-    // which loses the version.
-    if (record.getRecordType() == RecordType.COMMAND_REJECTION && value.getVersion() > 0) {
-      log.setResult(AuditLogOperationResult.FAIL)
-          .setEntityDescription(
-              record.getRejectionType().name() + " (version " + value.getVersion() + ")");
     }
   }
 }

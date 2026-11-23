@@ -348,6 +348,8 @@ public class ProcessDefinitionSuspensionTest {
         .hasRejectionReason(
             "Expected to resume process definition with BPMN process ID '%s' and version 1 (key %d), but it is being deleted"
                 .formatted(processId, v1.getProcessDefinitionKey()));
+    assertThat(rejection.getValue().getProcessDefinitionKey())
+        .isEqualTo(v1.getProcessDefinitionKey());
   }
 
   @Test

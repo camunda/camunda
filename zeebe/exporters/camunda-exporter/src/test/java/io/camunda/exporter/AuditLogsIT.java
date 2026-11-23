@@ -398,6 +398,7 @@ public class AuditLogsIT {
                     .withIntent(ProcessDefinitionSuspensionIntent.RESUME)
                     .withValue(
                         ImmutableProcessDefinitionSuspensionRecordValue.builder()
+                            .withProcessDefinitionKey(5603L)
                             .withBpmnProcessId("my-resume-by-id-process")
                             .withVersion(3)
                             .build())
@@ -411,8 +412,8 @@ public class AuditLogsIT {
                     Map.entry("id", "1-811"),
                     Map.entry("actorType", "UNKNOWN"),
                     Map.entry("category", "DEPLOYED_RESOURCES"),
-                    Map.entry("entityDescription", "INVALID_STATE (version 3)"),
-                    Map.entry("entityKey", "my-resume-by-id-process"),
+                    Map.entry("entityDescription", "INVALID_STATE"),
+                    Map.entry("entityKey", "5603"),
                     Map.entry(
                         "entityOperationIntent",
                         (int) ProcessDefinitionSuspensionIntent.RESUME.value()),
@@ -422,6 +423,7 @@ public class AuditLogsIT {
                     Map.entry("entityVersion", 0),
                     Map.entry("operationType", "RESUME"),
                     Map.entry("processDefinitionId", "my-resume-by-id-process"),
+                    Map.entry("processDefinitionKey", 5603),
                     Map.entry("result", "FAIL"),
                     Map.entry("tenantScope", "TENANT"),
                     Map.entry("timestamp", "2026-07-15T14:11:00.000+0000")))
