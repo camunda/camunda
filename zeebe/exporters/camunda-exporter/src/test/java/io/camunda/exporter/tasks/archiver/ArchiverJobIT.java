@@ -18,7 +18,6 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -43,13 +42,6 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> extends Background
   protected void updateConfig(final ExporterConfiguration config) {
     config.getHistory().getRetention().setEnabled(true);
     config.getHistory().getRetention().setPolicyName(testPrefix + "-camunda-retention-policy");
-  }
-
-  protected <E extends ExporterEntity<E>> E create(final Supplier<E> constructor) {
-    final long id = ID_GENERATOR.incrementAndGet();
-    final var entity = constructor.get();
-    entity.setId(String.valueOf(id));
-    return entity;
   }
 
   protected void verifyMoved(

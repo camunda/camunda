@@ -290,6 +290,7 @@ public class CamundaExporter implements Exporter {
                 context.getConfiguration().getId().toLowerCase(),
                 configuration,
                 provider,
+                indexLocator,
                 metrics,
                 context.getLogger(),
                 metadata,

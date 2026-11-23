@@ -240,6 +240,88 @@ public class ConfigValidatorTest {
   }
 
   @Test
+  void shouldAcceptDefaultDeleterConfiguration() {
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config)).doesNotThrowAnyException();
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, 10_001})
+  void shouldForbidDeleterDocumentBatchSizeOutOfRange(final int documentBatchSize) {
+    // given
+    config.getHistory().getRetention().getDeleter().setDocumentBatchSize(documentBatchSize);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining("CamundaExporter retention.deleter.documentBatchSize must be")
+        .hasMessageContaining("Current value: " + documentBatchSize);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, 10_001})
+  void shouldForbidDeleterEntityBatchSizeOutOfRange(final int entityBatchSize) {
+    // given
+    config.getHistory().getRetention().getDeleter().setEntityBatchSize(entityBatchSize);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining("CamundaExporter retention.deleter.entityBatchSize must be")
+        .hasMessageContaining("Current value: " + entityBatchSize);
+  }
+
+  @Test
+  void shouldForbidNegativeDeleterMaxRetryAttempts() {
+    // given
+    config.getHistory().getRetention().getDeleter().setMaxRetryAttempts(-1);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter retention.deleter.maxRetryAttempts must be >= 0. Current value: -1");
+  }
+
+  @Test
+  void shouldForbidNegativeDeleterRetryDelay() {
+    // given
+    config.getHistory().getRetention().getDeleter().setRetryDelayMs(-1);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter retention.deleter.retryDelayMs must be >= 0. Current value: -1");
+  }
+
+  @Test
+  void shouldForbidDeleterDelayBetweenRunsToBeLessThanOne() {
+    // given
+    config.getHistory().getRetention().getDeleter().setDelayBetweenRuns(0);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter retention.deleter.delayBetweenRuns must be >= 1. Current value: 0");
+  }
+
+  @Test
+  void shouldForbidDeleterMaxDelayBetweenRunsBelowDelayBetweenRuns() {
+    // given
+    final var deleter = config.getHistory().getRetention().getDeleter();
+    deleter.setDelayBetweenRuns(5000);
+    deleter.setMaxDelayBetweenRuns(4999);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter retention.deleter.maxDelayBetweenRuns must be >= retention.deleter.delayBetweenRuns (5000). Current value: 4999");
+  }
+
+  @Test
   void shouldAssureRolloverIntervalToBeValid() {
     // given
     // Rollover interval must match pattern '%d{timeunit}', where timeunit is one of 'd', 'h',

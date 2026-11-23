@@ -16,6 +16,7 @@ import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
@@ -37,6 +38,10 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.OpensearchBatchOperationUpdateRepository;
+import io.camunda.exporter.tasks.deletion.DeletionRepository;
+import io.camunda.exporter.tasks.deletion.ElasticsearchDeletionRepository;
+import io.camunda.exporter.tasks.deletion.OpensearchDeletionRepository;
+import io.camunda.exporter.tasks.deletion.ProcessInstanceDeleterJob;
 import io.camunda.exporter.tasks.historydeletion.ElasticsearchHistoryDeletionRepository;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionJob;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository;
@@ -73,6 +78,7 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import org.jspecify.annotations.NonNull;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
@@ -85,6 +91,7 @@ public final class CamundaBackgroundTaskManagerFactory {
   private final String exporterId;
   private final ExporterConfiguration config;
   private final ExporterResourceProvider resourceProvider;
+  private final TargetIndexLocator targetIndexLocator;
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
   private final ExporterMetadata metadata;
@@ -92,6 +99,7 @@ public final class CamundaBackgroundTaskManagerFactory {
 
   private ScheduledThreadPoolExecutor executor;
   private ArchiverRepository archiverRepository;
+  private DeletionRepository deletionRepository;
   private IncidentUpdateRepository incidentRepository;
   private BatchOperationUpdateRepository batchOperationUpdateRepository;
   private HistoryDeletionRepository historyDeletionRepository;
@@ -104,6 +112,7 @@ public final class CamundaBackgroundTaskManagerFactory {
       final String exporterId,
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
+      final TargetIndexLocator targetIndexLocator,
       final CamundaExporterMetrics metrics,
       final Logger logger,
       final ExporterMetadata metadata,
@@ -114,6 +123,7 @@ public final class CamundaBackgroundTaskManagerFactory {
     this.exporterId = exporterId;
     this.config = config;
     this.resourceProvider = resourceProvider;
+    this.targetIndexLocator = targetIndexLocator;
     this.metrics = metrics;
     this.logger = logger;
     this.metadata = metadata;
@@ -133,6 +143,7 @@ public final class CamundaBackgroundTaskManagerFactory {
           new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
 
       archiverRepository = createArchiverRepository(asyncClient, genericClient);
+      deletionRepository = createDeletionRepository(asyncClient);
       incidentRepository = createIncidentUpdateRepository(asyncClient);
       batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
       historyDeletionRepository = createHistoryDeletionRepository(asyncClient);
@@ -142,6 +153,7 @@ public final class CamundaBackgroundTaskManagerFactory {
       final ElasticsearchAsyncClient asyncClient = connector.createAsyncClient();
 
       archiverRepository = createArchiverRepository(asyncClient);
+      deletionRepository = createDeletionRepository(asyncClient);
       incidentRepository = createIncidentUpdateRepository(asyncClient);
       batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
       historyDeletionRepository = createHistoryDeletionRepository(asyncClient);
@@ -153,6 +165,7 @@ public final class CamundaBackgroundTaskManagerFactory {
     return new CamundaBackgroundTaskManager(
         partitionId,
         archiverRepository,
+        deletionRepository,
         auditLogArchiverRepository,
         incidentRepository,
         batchOperationUpdateRepository,
@@ -217,6 +230,12 @@ public final class CamundaBackgroundTaskManagerFactory {
         logger);
   }
 
+  private OpensearchDeletionRepository createDeletionRepository(
+      final OpenSearchAsyncClient asyncClient) {
+    return new OpensearchDeletionRepository(
+        partitionId, config.getHistory(), resourceProvider, asyncClient, executor, metrics, logger);
+  }
+
   private ElasticsearchBatchOperationUpdateRepository createBatchOperationRepository(
       final ElasticsearchAsyncClient asyncClient) {
     final var operationTemplate =
@@ -264,16 +283,26 @@ public final class CamundaBackgroundTaskManagerFactory {
         partitionId, config.getHistory(), resourceProvider, asyncClient, executor, metrics, logger);
   }
 
+  private ElasticsearchDeletionRepository createDeletionRepository(
+      final ElasticsearchAsyncClient asyncClient) {
+    return new ElasticsearchDeletionRepository(
+        partitionId, config.getHistory(), resourceProvider, asyncClient, executor, metrics, logger);
+  }
+
   private List<RunnableTask> buildTasks() {
     final List<RunnableTask> tasks = new ArrayList<>();
 
     tasks.add(buildIncidentMarkerTask());
     tasks.add(buildPendingIncidentCountTask());
-    if (config.getHistory().isProcessInstanceEnabled()) {
+    final var history = config.getHistory();
+    if (history.isProcessInstanceEnabled()) {
       tasks.add(buildProcessInstanceArchiverJob());
-      if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
+      if (history.isTrackArchivalMetricsForProcessInstance()) {
         tasks.add(buildProcessInstanceToBeArchivedCountJob());
       }
+    }
+    if (history.getRetention().isEnabled()) {
+      tasks.add(buildProcessInstanceDeleterJob());
     }
     tasks.add(buildUsageMetricsArchiverJob());
     tasks.add(buildUsageMetricsTUArchiverJob());
@@ -282,7 +311,7 @@ public final class CamundaBackgroundTaskManagerFactory {
     if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationArchiverJob());
       tasks.add(buildBatchOperationUpdateTask());
-      if (config.getHistory().getRetention().isEnabled()) {
+      if (history.getRetention().isEnabled()) {
         tasks.add(buildRolloverPeriodJob());
       }
     }
@@ -421,12 +450,40 @@ public final class CamundaBackgroundTaskManagerFactory {
         logger);
   }
 
-  private ReschedulingTask buildProcessInstanceArchiverJob() {
+  private ReschedulingTask buildProcessInstanceDeleterJob() {
+    final var deleter = config.getHistory().getRetention().getDeleter();
+    final var dependantTemplates = findProcessInstanceDependantTemplates();
+
+    final var task =
+        new ProcessInstanceDeleterJob(
+            targetIndexLocator,
+            deletionRepository,
+            resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
+            dependantTemplates,
+            metrics,
+            logger,
+            executor);
+
+    return new ReschedulingTask(
+        task,
+        deleter.getEntityBatchSize(),
+        deleter.getDelayBetweenRuns(),
+        deleter.getMaxDelayBetweenRuns(),
+        executor,
+        logger);
+  }
+
+  private @NonNull ArrayList<ProcessInstanceDependant> findProcessInstanceDependantTemplates() {
     final var dependantTemplates = new ArrayList<ProcessInstanceDependant>();
     resourceProvider.getIndexTemplateDescriptors().stream()
         .filter(ProcessInstanceDependant.class::isInstance)
         .map(ProcessInstanceDependant.class::cast)
         .forEach(dependantTemplates::add);
+    return dependantTemplates;
+  }
+
+  private ReschedulingTask buildProcessInstanceArchiverJob() {
+    final var dependantTemplates = findProcessInstanceDependantTemplates();
 
     final HistoryConfiguration history = config.getHistory();
     if (history.getRolloverBatchSize() < DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE) {
@@ -524,11 +581,7 @@ public final class CamundaBackgroundTaskManagerFactory {
   }
 
   private ReschedulingTask buildHistoryDeletionJob() {
-    final var dependantTemplates = new ArrayList<ProcessInstanceDependant>();
-    resourceProvider.getIndexTemplateDescriptors().stream()
-        .filter(ProcessInstanceDependant.class::isInstance)
-        .map(ProcessInstanceDependant.class::cast)
-        .forEach(dependantTemplates::add);
+    final var dependantTemplates = findProcessInstanceDependantTemplates();
 
     return buildHistoryDeletionTask(
         new HistoryDeletionJob(

@@ -10,7 +10,10 @@ package io.camunda.exporter.tasks.deletion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -100,6 +104,41 @@ class DeleteByIdPipelineTest {
     inOrder.verify(support).searchDocumentsToDelete("test-index", filter, null, secondBatchSize);
     inOrder.verify(support).deleteDocBatch(batch);
     verifyNoMoreInteractions(support);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"test-index,test-index", "operate-list-view-8.3.0_ord00002,operate-list-view-8.3.0_"})
+  void shouldMeasureIndexDurationUsingMainIndexName(
+      final String indexName, final String expectedSource) {
+    // given
+    final var filter = FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("1")));
+    when(support.searchDocumentsToDelete(any(), any(), any(), anyInt()))
+        .thenReturn(CompletableFuture.completedFuture(batch));
+    when(support.deleteDocBatch(any())).thenReturn(CompletableFuture.completedFuture(1));
+
+    // when
+    final var result = pipeline.deleteDocumentsById(indexName, filter, Runnable::run);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+    verify(metrics).measureDeletionIndexDuration(eq(expectedSource), any(), eq(1L));
+  }
+
+  @Test
+  void shouldNotMeasureIndexDurationWhenDeletingFails() {
+    // given
+    final var filter = FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("1")));
+    when(support.searchDocumentsToDelete(any(), any(), any(), anyInt()))
+        .thenReturn(CompletableFuture.completedFuture(batch));
+    when(support.deleteDocBatch(any()))
+        .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("expected")));
+
+    // when
+    final var result = pipeline.deleteDocumentsById("test-index", filter, Runnable::run);
+
+    // then
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    verify(metrics, never()).measureDeletionIndexDuration(any(), any(), any());
   }
 
   @Test
