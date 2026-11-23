@@ -11,7 +11,13 @@ import {HttpResponse} from 'msw';
 import {cleanup, renderHook} from 'vitest-browser-react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
-import {mockDeleteTenantEndpoint, mockQueryTenantsEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockCreateTenantEndpoint,
+	mockDeleteTenantEndpoint,
+	mockGetTenantEndpoint,
+	mockQueryTenantsEndpoint,
+} from '#/shared-test-modules/mock-handlers';
+import {queries} from '#/shared/http/queries';
 import {createTenant} from '#/shared-test-modules/api-mocks/tenants';
 import {useTenantMutations} from './useTenantMutations';
 
@@ -76,5 +82,28 @@ describe('useTenantMutations', () => {
 		// then
 		expect(queryClient.getQueryData(['getTenant', TENANT_ID])).toBeDefined();
 		unsubscribe();
+	});
+
+	it('should serve the created tenant from the cache until the search index has caught up', async ({worker}) => {
+		const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+		const tenant = createTenant({tenantId: TENANT_ID});
+		worker.use(
+			mockCreateTenantEndpoint({successResponse: HttpResponse.json(tenant)}),
+			mockGetTenantEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+			mockQueryTenantsEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
+		);
+		const {result} = await renderHook(() => useTenantMutations(), {
+			wrapper: ({children}) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
+		});
+
+		await result.current.create.mutateAsync({tenantId: TENANT_ID, name: tenant.name});
+
+		await expect(queryClient.fetchQuery(queries.getTenant(TENANT_ID))).resolves.toEqual(tenant);
+
+		worker.use(
+			mockQueryTenantsEndpoint({successResponse: HttpResponse.json({items: [tenant], page: {totalItems: 1}})}),
+		);
+
+		await vi.waitFor(() => expect(queryClient.fetchQuery(queries.getTenant(TENANT_ID))).rejects.toBeDefined());
 	});
 });

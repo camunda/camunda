@@ -109,7 +109,7 @@ test.describe('Admin tenants list', () => {
 		await expect(adminTenantsPage.row('my-tenant')).toBeVisible();
 	});
 
-	test('should create a tenant', async ({adminTenantsPage, network}) => {
+	test('should create a tenant', async ({adminTenantsPage, page, network}) => {
 		network.use(mockQueryTenantsEndpoint({successResponse: HttpResponse.json(createQueryTenantsResponse())}));
 
 		await adminTenantsPage.goto();
@@ -146,8 +146,64 @@ test.describe('Admin tenants list', () => {
 		await adminTenantsPage.createModal.descriptionInput.fill('A tenant for tests');
 		await adminTenantsPage.createModal.createButton.click();
 
-		await expect(adminTenantsPage.createModal.dialog).not.toBeVisible();
+		await expect(page.getByRole('heading', {name: 'Tenant created'})).toBeVisible();
+		await page.getByRole('button', {name: 'Got it'}).click();
+
+		await expect(page.getByRole('heading', {name: 'Tenant created'})).not.toBeVisible();
 		await expect(adminTenantsPage.row('my-tenant')).toBeVisible();
+	});
+
+	test('should open the groups tab of a new tenant from the next step', async ({
+		adminTenantsPage,
+		adminTenantDetailPage,
+		page,
+		network,
+	}) => {
+		const tenant = createTenant({tenantId: 'my-tenant', name: 'My tenant'});
+		network.use(mockQueryTenantsEndpoint({successResponse: HttpResponse.json(createQueryTenantsResponse())}));
+		await adminTenantsPage.goto();
+		await adminTenantsPage.createButton.click();
+
+		network.use(
+			mockCreateTenantEndpoint({successResponse: HttpResponse.json(tenant)}),
+			mockGetTenantEndpoint({successResponse: HttpResponse.json(tenant)}),
+			mockQueryGroupsByTenantEndpoint({
+				successResponse: HttpResponse.json(createQueryGroupsByTenantResponse(['engineering'])),
+			}),
+		);
+		await adminTenantsPage.createModal.tenantIdInput.fill('my-tenant');
+		await adminTenantsPage.createModal.nameInput.fill('My tenant');
+		await adminTenantsPage.createModal.createButton.click();
+		await page.getByRole('button', {name: 'Assign group'}).click();
+
+		await expect(page).toHaveURL(/\/admin\/tenants\/my-tenant\?tab=groups/);
+		await expect(adminTenantDetailPage.row('engineering')).toBeVisible();
+	});
+
+	test('should open the detail page of a new tenant before the index knows it', async ({
+		adminTenantsPage,
+		adminTenantDetailPage,
+		page,
+		network,
+	}) => {
+		const tenant = createTenant({tenantId: 'my-tenant', name: 'My tenant'});
+		network.use(mockQueryTenantsEndpoint({successResponse: HttpResponse.json(createQueryTenantsResponse())}));
+		await adminTenantsPage.goto();
+		await adminTenantsPage.createButton.click();
+
+		network.use(
+			mockCreateTenantEndpoint({successResponse: HttpResponse.json(tenant)}),
+			mockGetTenantEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+			mockQueryGroupsByTenantEndpoint({
+				successResponse: HttpResponse.json(createQueryGroupsByTenantResponse(['engineering'])),
+			}),
+		);
+		await adminTenantsPage.createModal.tenantIdInput.fill('my-tenant');
+		await adminTenantsPage.createModal.nameInput.fill('My tenant');
+		await adminTenantsPage.createModal.createButton.click();
+		await page.getByRole('button', {name: 'Assign group'}).click();
+
+		await expect(adminTenantDetailPage.row('engineering')).toBeVisible();
 	});
 
 	test('should edit a tenant with its fields prefilled', async ({adminTenantsPage, network}) => {
