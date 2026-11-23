@@ -32,6 +32,15 @@ import type {OperateHomePage} from '@pages/OperateHomePage';
 // (Operate restores the deep-linked processes URL, filters included, after
 // login) so the retry runs against the authenticated app again; when the
 // session is still valid this is just the reload it replaces.
+//
+// Operate's auth guard can render the shell (banner visible) while auth state is
+// still `initial`, then bounce to the login screen on a delayed 401. A one-time
+// isVisible() check of the login form races that late redirect: it can read
+// false, skip login, and return with a session that is about to expire, burning
+// an outer retry attempt against the login screen. Mirror the beforeEach guard
+// and keep (re-)establishing the session — reloading on each miss — until the
+// authenticated banner is actually present, so we only return once the app is
+// ready for the retried assertion.
 async function recoverOperateSession(
   page: Page,
   operateHomePage: OperateHomePage,
@@ -39,13 +48,20 @@ async function recoverOperateSession(
   loginUser: {username: string; password: string},
 ): Promise<void> {
   await page.reload();
-  await expect(
-    operateHomePage.operateBanner.or(loginPage.usernameInput),
-  ).toBeVisible({timeout: 90000});
-  if (await loginPage.usernameInput.isVisible()) {
-    await loginPage.login(loginUser.username, loginUser.password);
-    await expect(operateHomePage.operateBanner).toBeVisible({timeout: 30000});
-  }
+  await waitForAssertion({
+    assertion: async () => {
+      await expect(
+        operateHomePage.operateBanner.or(loginPage.usernameInput),
+      ).toBeVisible({timeout: 90000});
+      if (await loginPage.usernameInput.isVisible()) {
+        await loginPage.login(loginUser.username, loginUser.password);
+      }
+      await expect(operateHomePage.operateBanner).toBeVisible({timeout: 30000});
+    },
+    onFailure: async () => {
+      await page.reload();
+    },
+  });
 }
 
 type ProcessInstance = {
