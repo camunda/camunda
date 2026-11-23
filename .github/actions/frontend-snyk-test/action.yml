@@ -27,6 +27,25 @@ inputs:
     description: Minimum vulnerability severity that fails the job
     required: false
     default: "high"
+  all-projects:
+    description: >-
+      Scan every project below the directory with `--all-projects` instead of only the lockfile's
+      root package. Required for npm/yarn/pnpm workspaces ("true" or "false")
+    required: false
+    default: "false"
+  exclude:
+    description: >-
+      Comma-separated file or directory names (no paths) to skip with `--exclude` when
+      `all-projects` is "true", e.g. non-JavaScript manifests like pom.xml
+    required: false
+    default: ""
+
+outputs:
+  scan-mode:
+    description: >-
+      "all-projects" or "lockfile". Lets callers detect an older copy of this action that ignored
+      the `all-projects` input
+    value: ${{ steps.validate.outputs.scan-mode }}
 
 runs:
   using: composite
@@ -39,6 +58,8 @@ runs:
         LOCKFILE: ${{ inputs.lockfile }}
         PROJECT_NAME: ${{ inputs.project-name }}
         ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        ALL_PROJECTS: ${{ inputs.all-projects }}
+        EXCLUDE: ${{ inputs.exclude }}
       run: |
         set -euo pipefail
         for var in DIRECTORY LOCKFILE PROJECT_NAME ARTIFACT_NAME; do
@@ -47,6 +68,18 @@ runs:
             exit 1
           fi
         done
+        case "${ALL_PROJECTS}" in
+          true) scan_mode=all-projects ;;
+          false) scan_mode=lockfile ;;
+          *)
+            echo "::error::Input all-projects must be \"true\" or \"false\", got \"${ALL_PROJECTS}\""
+            exit 1
+            ;;
+        esac
+        if [ -n "${EXCLUDE}" ] && [ "${scan_mode}" != "all-projects" ]; then
+          echo "::error::Input exclude is only supported with all-projects: \"true\""
+          exit 1
+        fi
         if [ -z "${SNYK_TOKEN:-}" ]; then
           echo "::error::SNYK_TOKEN environment variable is not set"
           exit 1
@@ -55,9 +88,12 @@ runs:
           echo "::error::Lockfile ${DIRECTORY}/${LOCKFILE} not found"
           exit 1
         fi
-        printf 'Scanning %s: %s/%s\n' "${PROJECT_NAME}" "${DIRECTORY}" "${LOCKFILE}"
-        echo "report-file=${RUNNER_TEMP}/snyk-report.json" >> "$GITHUB_OUTPUT"
-        echo "artifact-name=${ARTIFACT_NAME//\//-}" >> "$GITHUB_OUTPUT"
+        printf 'Scanning %s (%s): %s/%s\n' "${PROJECT_NAME}" "${scan_mode}" "${DIRECTORY}" "${LOCKFILE}"
+        {
+          echo "scan-mode=${scan_mode}"
+          echo "report-file=${RUNNER_TEMP}/snyk-report.json"
+          echo "artifact-name=${ARTIFACT_NAME//\//-}"
+        } >> "$GITHUB_OUTPUT"
 
     - name: Install Snyk CLI
       uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
@@ -72,6 +108,8 @@ runs:
         SNYK_ORG: ${{ inputs.snyk-org }}
         SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
         REPORT_FILE: ${{ steps.validate.outputs.report-file }}
+        SCAN_MODE: ${{ steps.validate.outputs.scan-mode }}
+        EXCLUDE: ${{ inputs.exclude }}
       run: |
         # Bounds the `snyk` call so a single stuck/slow call to the Snyk API cannot consume the
         # whole job's timeout (see INC-6630 for the same class of issue with unbounded external
@@ -106,11 +144,28 @@ runs:
 
         args=(
           test
-          --file="${LOCKFILE}"
           --org="${SNYK_ORG}"
           --severity-threshold="${SEVERITY_THRESHOLD}"
           --json-file-output="${REPORT_FILE}"
         )
+
+        if [ "${SCAN_MODE}" = "all-projects" ]; then
+          # `--file` only resolves the root package.json, which in a workspaces monorepo usually has
+          # no production dependencies. `--all-projects` resolves every workspace against the root
+          # lockfile. Without `--fail-fast`, a project Snyk cannot resolve is silently left out of
+          # the result instead of failing the scan.
+          args+=(--all-projects --fail-fast)
+          if [ -n "${EXCLUDE}" ]; then
+            args+=(--exclude="${EXCLUDE}")
+          fi
+          # Each detected project otherwise only reads a `.snyk` next to its own manifest, so pass
+          # this directory's policy explicitly to apply it to all of them.
+          if [ -f .snyk ]; then
+            args+=(--policy-path=.snyk)
+          fi
+        else
+          args+=(--file="${LOCKFILE}")
+        fi
 
         runSnykWithRetry "${args[@]}"
 
