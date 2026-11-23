@@ -26,10 +26,12 @@ import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Result;
 import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Source;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -328,6 +330,31 @@ final class MsgpackPojoProcessorTest {
                   w.writeInteger(2);
                 }));
     assertThat(codec.codec().getLength(read)).isEqualTo(written.length);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"cc", "cd00", "d90561", "c40501"})
+  void shouldRejectATruncatedUnknownProperty(final String truncatedValue) throws Exception {
+    // given a class that does not keep unknown properties, and a map with the unknown key "u"
+    // whose value is cut off after its header
+    final var codec =
+        codecOf(
+            source(
+                "Sample",
+                pojoClass("Sample", "long key = 1L;")
+                    .replace("@MsgpackPojo", "@MsgpackPojo(unknownProperties = false)")));
+    final var message = HexFormat.of().parseHex("81a175" + truncatedValue);
+    final var read = codec.newInstance();
+    read.reset();
+
+    // when
+    final ThrowingCallable readMessage = () -> codec.read(read, message);
+
+    // then
+    assertThatThrownBy(readMessage)
+        .hasMessageContaining("'u'")
+        .rootCause()
+        .isInstanceOf(MsgpackReaderException.class);
   }
 
   @Test

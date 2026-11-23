@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackCodes;
 import io.camunda.zeebe.msgpack.spec.MsgPackFormat;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackType;
+import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -83,6 +84,19 @@ public final class Decoding {
           "Expected an int value, but got %d, which is out of range".formatted(value));
     }
     return (int) value;
+  }
+
+  /**
+   * Skips a value, rejecting one that is truncated. {@link MsgPackReader#skipValue()} moves past
+   * the payload without reading it, so it does not fail if the payload is missing.
+   */
+  public static void skipValue(final MsgPackReader reader) {
+    reader.skipValue();
+    if (reader.getOffset() > reader.getBuffer().capacity()) {
+      throw new MsgpackReaderException(
+          "Expected a value that ends at offset %d, but the input has only %d bytes"
+              .formatted(reader.getOffset(), reader.getBuffer().capacity()));
+    }
   }
 
   /**

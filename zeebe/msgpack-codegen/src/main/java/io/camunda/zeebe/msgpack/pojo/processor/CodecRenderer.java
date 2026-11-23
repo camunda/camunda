@@ -165,7 +165,7 @@ final class CodecRenderer {
                 """,
                 "$field",
                 unknown)
-            : "        default -> r.skipValue();\n");
+            : "        default -> Decoding.skipValue(r);\n");
 
     return HEADER
         + fill(
