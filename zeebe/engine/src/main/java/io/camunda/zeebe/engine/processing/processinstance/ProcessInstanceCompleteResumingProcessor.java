@@ -11,9 +11,9 @@ import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -50,7 +50,7 @@ public final class ProcessInstanceCompleteResumingProcessor
       "Expected to finish resuming process instance '%d', but it is %s — resume is superseded "
           + "by the ending lifecycle.";
 
-  private final StateWriter stateWriter;
+  private final ProcessInstanceResumedWriter resumedWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final SuspensionState suspensionState;
@@ -59,9 +59,10 @@ public final class ProcessInstanceCompleteResumingProcessor
   public ProcessInstanceCompleteResumingProcessor(
       final ElementInstanceState elementInstanceState,
       final SuspensionState suspensionState,
+      final AsyncRequestState asyncRequestState,
       final Writers writers,
       final SuspensionMetrics suspensionMetrics) {
-    stateWriter = writers.state();
+    resumedWriter = new ProcessInstanceResumedWriter(writers.state(), asyncRequestState);
     rejectionWriter = writers.rejection();
     this.elementInstanceState = elementInstanceState;
     this.suspensionState = suspensionState;
@@ -89,8 +90,7 @@ public final class ProcessInstanceCompleteResumingProcessor
       return;
     }
 
-    stateWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceIntent.RESUMED, elementInstance.getValue());
+    resumedWriter.writeResumed(processInstanceKey, elementInstance.getValue());
 
     suspensionMetrics.stopResumeDuration(processInstanceKey);
     suspensionMetrics.instanceResumed();
