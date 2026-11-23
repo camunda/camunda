@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -813,10 +814,11 @@ public class LongPollingActivateJobsRestTest {
                 .timeout(PROBE_TIMEOUT)
                 .maxJobsToActivate(1));
 
+    // notification fires on the first visited partition, which is random
+    final var partitionVisits = new AtomicInteger();
     registerCustomHandlerWithNotification(
         (r) -> {
-          final var partitionId = r.getPartitionId();
-          if (partitionId == 1) {
+          if (partitionVisits.incrementAndGet() == 1) {
             brokerClient.notifyJobsAvailable(TYPE);
           }
         });
@@ -834,13 +836,9 @@ public class LongPollingActivateJobsRestTest {
     // given
     final var request = getLongPollingJobActivationRequest();
 
-    registerCustomHandlerWithNotification(
-        (r) -> {
-          final var partitionId = r.getPartitionId();
-          if (partitionId == 1) {
-            brokerClient.notifyJobsAvailable(TYPE);
-          }
-        });
+    // notification fires on every visited partition, as the start partition is random; the request
+    // must still time out while the notifications keep repeating the retry loop
+    registerCustomHandlerWithNotification((r) -> brokerClient.notifyJobsAvailable(TYPE));
 
     // when
     handler.internalActivateJobsRetry(request);
@@ -951,12 +949,14 @@ public class LongPollingActivateJobsRestTest {
                     .requestTimeout(500L)
                     .timeout(1000L)));
 
+    // visit-order based, as the start partition is random and the request may reach the
+    // partitions in any order
+    final var partitionVisits = new AtomicInteger();
     registerCustomHandlerWithNotification(
         (r) -> {
-          final var partitionId = r.getPartitionId();
-          if (partitionId == 1) {
+          if (partitionVisits.incrementAndGet() == 1) {
             activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
-          } else if (partitionId == 2) {
+          } else {
             activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
             doReturn(responseNotSent).when(request).tryToSendActivatedJobs(any());
           }
@@ -989,12 +989,14 @@ public class LongPollingActivateJobsRestTest {
     final var responseObserver = request.getResponseObserver();
     final var sendResponseException = new RuntimeException("foo");
 
+    // visit-order based, as the start partition is random and the request may reach the
+    // partitions in any order
+    final var partitionVisits = new AtomicInteger();
     registerCustomHandlerWithNotification(
         (r) -> {
-          final var partitionId = r.getPartitionId();
-          if (partitionId == 1) {
+          if (partitionVisits.incrementAndGet() == 1) {
             activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
-          } else if (partitionId == 2) {
+          } else {
             activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
             doThrow(sendResponseException).when(responseObserver).onNext(any());
           }
