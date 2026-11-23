@@ -789,6 +789,34 @@ public record CurrentClusterConfiguration(
   }
 
   /**
+   * The version of the configuration as seen from one partition group: the higher of the global
+   * configuration's version and the group's, since a change to either changes what that group runs.
+   * A group that does not exist counts as the global configuration alone.
+   */
+  public long versionOf(final String groupId) {
+    final var group = partitionGroups.get(groupId);
+    return group == null
+        ? globalConfiguration.version()
+        : Math.max(globalConfiguration.version(), group.version());
+  }
+
+  /**
+   * The change plan running on the global configuration if there is one, otherwise the one running
+   * on the given partition group.
+   */
+  public Optional<DependencyChangePlan> pendingChangesOf(final String groupId) {
+    final var group = partitionGroups.get(groupId);
+    return globalConfiguration
+        .pendingChanges()
+        .filter(DependencyChangePlan::hasPendingChanges)
+        .or(
+            () ->
+                group == null
+                    ? Optional.empty()
+                    : group.pendingChanges().filter(DependencyChangePlan::hasPendingChanges));
+  }
+
+  /**
    * The subset of {@link #partitionGroups()} that are not disabled, keyed by physical tenant id. A
    * disabled group (removed from local static configuration after being provisioned, see {@code
    * PhysicalTenantAvailabilityInitializer}) is retained in {@link #partitionGroups()} — its data

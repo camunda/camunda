@@ -24,7 +24,6 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -121,10 +120,14 @@ final class ClusterApiUtilsTest {
   @MethodSource("provideClusterConfigurationWithExporters")
   void shouldAggregateExporterState(final ExporterConfigParam param) {
     // when
-    final var result = ClusterApiUtils.aggregateExporterState(param.configuration());
+    final var result =
+        ClusterApiUtils.aggregateExporterState(
+            param.configuration(), CurrentClusterConfiguration.DEFAULT_GROUP);
 
     // then
-    assertThat(result).containsExactlyInAnyOrderElementsOf(param.expectedResult());
+    assertThat(result)
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("physicalTenant")
+        .containsExactlyInAnyOrderElementsOf(param.expectedResult());
   }
 
   @Test
@@ -1057,10 +1060,10 @@ final class ClusterApiUtilsTest {
         Named.of(
             "Unknown State",
             new ExporterConfigParam(
-                getConfigWithTwoPartitions(State.ENABLED)
-                    .updateMember(
-                        member(1),
-                        m -> updateExporterState(m, e -> e.disableExporter("exporter-1"))),
+                updateExporterState(
+                    getConfigWithTwoPartitions(State.ENABLED),
+                    member(1),
+                    e -> e.disableExporter("exporter-1")),
                 List.of(
                     new ExporterStatus().exporterId("exporter-1").status(StatusEnum.UNKNOWN),
                     new ExporterStatus().exporterId("exporter-2").status(StatusEnum.ENABLED)))));
@@ -1071,12 +1074,12 @@ final class ClusterApiUtilsTest {
         Named.of(
             "Disabling Exporters",
             new ExporterConfigParam(
-                withPendingChange(
+                updateExporterState(
+                    withPendingChange(
                         getConfigWithTwoPartitions(State.ENABLED),
-                        new PartitionDisableExporterOperation(member(1), 1, "exporter-1"))
-                    .updateMember(
-                        member(2),
-                        m -> updateExporterState(m, e -> e.disableExporter("exporter-1"))),
+                        new PartitionDisableExporterOperation(member(1), 1, "exporter-1")),
+                    member(2),
+                    e -> e.disableExporter("exporter-1")),
                 List.of(
                     new ExporterStatus().exporterId("exporter-1").status(StatusEnum.DISABLING),
                     new ExporterStatus().exporterId("exporter-2").status(StatusEnum.ENABLED)))));
@@ -1087,13 +1090,13 @@ final class ClusterApiUtilsTest {
         Named.of(
             "Enabling Exporters",
             new ExporterConfigParam(
-                withPendingChange(
+                updateExporterState(
+                    withPendingChange(
                         getConfigWithTwoPartitions(State.DISABLED),
                         new PartitionEnableExporterOperation(
-                            member(1), 1, "exporter-1", Optional.empty()))
-                    .updateMember(
-                        member(2),
-                        m -> updateExporterState(m, e -> e.enableExporter("exporter-1", 2))),
+                            member(1), 1, "exporter-1", Optional.empty())),
+                    member(2),
+                    e -> e.enableExporter("exporter-1", 2)),
                 List.of(
                     new ExporterStatus().exporterId("exporter-1").status(StatusEnum.ENABLING),
                     new ExporterStatus().exporterId("exporter-2").status(StatusEnum.DISABLED)))));
@@ -1121,7 +1124,7 @@ final class ClusterApiUtilsTest {
                     new ExporterStatus().exporterId("exporter-2").status(StatusEnum.DISABLED)))));
   }
 
-  private static ClusterConfiguration getConfigWithTwoPartitions(final State exporterState) {
+  private static CurrentClusterConfiguration getConfigWithTwoPartitions(final State exporterState) {
     final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
             new ExportingConfig(
@@ -1131,28 +1134,53 @@ final class ClusterApiUtilsTest {
                     new ExporterState(0, exporterState, Optional.empty()),
                     "exporter-2",
                     new ExporterState(0, exporterState, Optional.empty()))));
-    return ClusterConfiguration.init()
-        .addMember(
-            member(1),
-            MemberState.initializeAsActive(
-                Map.of(
-                    1,
-                    PartitionState.active(1, partitionConfig),
-                    2,
-                    PartitionState.active(2, partitionConfig))))
-        .addMember(
-            member(2),
-            MemberState.initializeAsActive(
-                Map.of(
-                    1,
-                    PartitionState.active(2, partitionConfig),
-                    2,
-                    PartitionState.active(2, partitionConfig))));
+    final var globalConfiguration =
+        GlobalConfiguration.init()
+            .addMember(
+                member(1), io.camunda.zeebe.dynamic.config.state.BrokerState.initializeAsActive())
+            .addMember(
+                member(2), io.camunda.zeebe.dynamic.config.state.BrokerState.initializeAsActive());
+    final var defaultGroup =
+        new PartitionGroupConfiguration(
+            PartitionGroupConfiguration.INITIAL_VERSION,
+            PartitionGroupConfiguration.INITIAL_INCARNATION_NUMBER,
+            Map.of(
+                member(1),
+                BrokerPartitionState.initialize(
+                    Map.of(
+                        1,
+                        PartitionState.active(1, partitionConfig),
+                        2,
+                        PartitionState.active(2, partitionConfig))),
+                member(2),
+                BrokerPartitionState.initialize(
+                    Map.of(
+                        1,
+                        PartitionState.active(2, partitionConfig),
+                        2,
+                        PartitionState.active(2, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        globalConfiguration,
+        Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, defaultGroup),
+        PhasedChangeState.empty());
   }
 
-  private static MemberState updateExporterState(
-      final MemberState m, final UnaryOperator<ExportingConfig> exporterUpdater) {
-    return m.updatePartition(1, p -> p.updateConfig(c -> c.updateExporting(exporterUpdater)));
+  private static CurrentClusterConfiguration updateExporterState(
+      final CurrentClusterConfiguration configuration,
+      final MemberId memberId,
+      final UnaryOperator<ExportingConfig> exporterUpdater) {
+    return configuration.updatePartitionGroupConfig(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        group ->
+            group.updateMember(
+                memberId,
+                m ->
+                    m.updatePartition(
+                        1, p -> p.updateConfig(c -> c.updateExporting(exporterUpdater)))));
   }
 
   private static MemberId member(final int id) {
@@ -1618,21 +1646,14 @@ final class ClusterApiUtilsTest {
     assertThat(body.getMessage()).contains("999");
   }
 
-  /**
-   * A legacy configuration carrying a pending change, as a projection of a live sub-configuration
-   * would. Built here rather than started on the configuration: nothing executes a change through
-   * the legacy single-group type, so it has no method that would start one.
-   */
-  private static ClusterConfiguration withPendingChange(
-      final ClusterConfiguration config, final ClusterConfigurationChangeOperation... operations) {
-    return ClusterConfiguration.builder()
-        .from(config)
-        .version(config.version() + 1)
-        .pendingChanges(
-            Optional.of(DependencyChangePlan.sequential(config.version() + 1, List.of(operations))))
-        .build();
+  private static CurrentClusterConfiguration withPendingChange(
+      final CurrentClusterConfiguration config, final PartitionGroupOperation... operations) {
+    return config.updatePartitionGroupConfig(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        group ->
+            group.startGraphConfigurationChange(OperationGraph.sequential(List.of(operations))));
   }
 
   private record ExporterConfigParam(
-      ClusterConfiguration configuration, List<ExporterStatus> expectedResult) {}
+      CurrentClusterConfiguration configuration, List<ExporterStatus> expectedResult) {}
 }
