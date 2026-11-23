@@ -158,7 +158,8 @@ public class SwimMembershipProtocol
   /**
    * Only for tests. They pass a null instance ID to get a generated one, or {@link
    * #UNKNOWN_INSTANCE_ID} to pretend to be a member running a version that predates the field. They
-   * own the executors so they can stop them even when {@link #leave(Member)} does not.
+   * own the executors so they can stop them even when {@link #leave(Member)} does not, and check
+   * that it does.
    */
   @VisibleForTesting
   SwimMembershipProtocol(

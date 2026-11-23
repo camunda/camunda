@@ -163,6 +163,8 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     }
     protocols.clear();
 
+    // a member which left must not keep gossiping, probing or notifying listeners
+    final var leftRunning = executors.stream().filter(executor -> !executor.isShutdown()).count();
     executors.forEach(ExecutorService::shutdownNow);
     for (final var executor : executors) {
       if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -174,6 +176,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     if (failure.getSuppressed().length > 0) {
       throw failure;
     }
+    assertThat(leftRunning).describedAs("Executors left running after leaving").isZero();
   }
 
   @ParameterizedTest
