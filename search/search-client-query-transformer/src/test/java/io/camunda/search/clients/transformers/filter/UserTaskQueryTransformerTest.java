@@ -202,8 +202,6 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-<<<<<<< HEAD
-=======
   public void shouldQueryByCreationDateIn() {
     // given
     final var first = OffsetDateTime.parse("2024-01-01T10:15:30.123Z");
@@ -266,61 +264,6 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  public void shouldQueryBySuspendedUserTasks() {
-    // given
-    final var filter = FilterBuilders.userTask((f) -> f.isSuspended(true));
-
-    // when
-    final var searchRequest = transformQuery(filter);
-
-    // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchBoolQuery.class,
-            (t) -> {
-              assertSearchTermQuery(t.must().get(0).queryOption(), "isSuspended", true);
-            });
-  }
-
-  @Test
-  public void shouldQueryByNotSuspendedUserTasksIncludingMissingField() {
-    // given
-    final var filter = FilterBuilders.userTask((f) -> f.isSuspended(false));
-
-    // when
-    final var searchRequest = transformQuery(filter);
-
-    // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchBoolQuery.class,
-            (t) -> {
-              // user tasks indexed before the field existed have no value and read as not suspended
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchBoolQuery.class,
-                      (orQuery) -> {
-                        assertThat(orQuery.should()).hasSize(2);
-                        assertSearchTermQuery(
-                            orQuery.should().get(0).queryOption(), "isSuspended", false);
-                        assertThat(orQuery.should().get(1).queryOption())
-                            .isInstanceOfSatisfying(
-                                SearchBoolQuery.class,
-                                (notQuery) ->
-                                    assertThat(notQuery.mustNot())
-                                        .singleElement()
-                                        .extracting(SearchQuery::queryOption)
-                                        .satisfies(
-                                            (mustNotQuery) ->
-                                                assertExistsQuery(mustNotQuery, "isSuspended")));
-                      });
-            });
-  }
-
-  @Test
->>>>>>> f9824d93 (fix: support $in on date-time filters in Elasticsearch/OpenSearch search queries)
   public void shouldQueryByTenantId() {
     // given
     final var filter = FilterBuilders.userTask((f) -> f.tenantIds("tenant1"));
