@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -41,13 +42,14 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Lookups, validation and rejections shared by {@link ProcessDefinitionSuspensionSuspendProcessor}
- * and {@link ProcessDefinitionSuspensionResumeProcessor}. Each processor gives its own instance the
- * verb ("suspend", "resume") that names the action in rejection reasons, like the job processors
- * do.
+ * Finds the process definition versions a suspension command names, checks that the caller may
+ * suspend and resume them, and builds the rejections, for {@link
+ * ProcessDefinitionSuspensionSuspendProcessor} and {@link
+ * ProcessDefinitionSuspensionResumeProcessor}. Each processor gives its own instance the verb
+ * ("suspend", "resume") that names the action in rejection reasons, like the job processors do.
  */
 @NullMarked
-final class ProcessDefinitionSuspensionBehavior {
+public final class ProcessDefinitionSuspensionBehavior {
 
   static final PermissionType PERMISSION = PermissionType.SUSPEND_PROCESS_DEFINITION;
 
@@ -79,18 +81,21 @@ final class ProcessDefinitionSuspensionBehavior {
   private final TenantState tenantState;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final CslAuthorizationCheck cslCheck;
   private final CslTenantCheck tenantCheck;
   private final String verb;
 
   ProcessDefinitionSuspensionBehavior(
       final ProcessingState processingState,
       final Writers writers,
+      final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final String verb) {
     processState = processingState.getProcessState();
     tenantState = processingState.getTenantState();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
     this.verb = verb;
   }
@@ -100,7 +105,7 @@ final class ProcessDefinitionSuspensionBehavior {
    * ID, version or tenant, or gives a version below 1, like the REST API does. The REST mapping
    * sends version {@code -1} and no tenant for requests by key.
    */
-  Either<Rejection, ProcessDefinitionSuspensionRecord> validateIdentifiers(
+  private Either<Rejection, ProcessDefinitionSuspensionRecord> validateIdentifiers(
       final ProcessDefinitionSuspensionRecord value) {
     final long key = value.getProcessDefinitionKey();
     final String bpmnProcessId = value.getBpmnProcessId();
@@ -124,7 +129,17 @@ final class ProcessDefinitionSuspensionBehavior {
     return Either.right(value);
   }
 
-  static boolean isByKey(final ProcessDefinitionSuspensionRecord value) {
+  /**
+   * Finds the versions the command names and checks that the caller may suspend and resume them:
+   * one version by key or by BPMN process ID and version, or all versions by BPMN process ID only.
+   */
+  public Either<Rejection, Iterator<DeployedProcess>> findVersions(
+      final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
+    return validateIdentifiers(command.getValue())
+        .flatMap(value -> isByKey(value) ? findByKey(command) : findById(command));
+  }
+
+  private static boolean isByKey(final ProcessDefinitionSuspensionRecord value) {
     return value.getProcessDefinitionKey() > 0;
   }
 
@@ -132,13 +147,13 @@ final class ProcessDefinitionSuspensionBehavior {
    * A caller without access to a definition looked up by key gets this same rejection, so they
    * can't tell an unauthorized key from an unknown one.
    */
-  Rejection notFoundByKey(final ProcessDefinitionSuspensionRecord value) {
+  private Rejection notFoundByKey(final ProcessDefinitionSuspensionRecord value) {
     return new Rejection(
         RejectionType.NOT_FOUND,
         NOT_FOUND_BY_KEY_MESSAGE.formatted(verb, value.getProcessDefinitionKey()));
   }
 
-  Rejection notFoundById(final ProcessDefinitionSuspensionRecord value) {
+  private Rejection notFoundById(final ProcessDefinitionSuspensionRecord value) {
     return value.getVersion() >= 0
         ? new Rejection(
             RejectionType.NOT_FOUND,
@@ -149,12 +164,12 @@ final class ProcessDefinitionSuspensionBehavior {
             NOT_FOUND_BY_ID_MESSAGE.formatted(verb, value.getBpmnProcessId()));
   }
 
-  static Rejection forbidden() {
+  private static Rejection forbidden() {
     return AuthorizationRejectionMapper.forbidden(
         PERMISSION, AuthorizationResourceType.PROCESS_DEFINITION);
   }
 
-  static RequiredAuthorization<?> requiredAuthorization(final String bpmnProcessId) {
+  private static RequiredAuthorization<?> requiredAuthorization(final String bpmnProcessId) {
     return RequiredAuthorization.of(
         b ->
             b.resourceType(
@@ -167,21 +182,35 @@ final class ProcessDefinitionSuspensionBehavior {
    * Requests by key carry no tenant, so the key is looked up in the tenants the caller is
    * authorized for, like resource deletion does. The definition's tenant then goes on the record,
    * so the events and the response carry it.
+   *
+   * <p>The BPMN process ID to authorize against is only known after the lookup, so every failure is
+   * a {@code NOT_FOUND}.
    */
-  Either<Rejection, DeployedProcess> findByKey(
+  private Either<Rejection, Iterator<DeployedProcess>> findByKey(
       final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
     final var value = command.getValue();
     final long key = value.getProcessDefinitionKey();
+    final var notFound = notFoundByKey(value);
     final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
     final @Nullable DeployedProcess process =
         authorizedTenants.wildcard()
             ? findByKeyInAnyTenant(key)
             : findByKeyInTenants(key, authorizedTenants.tenantIds());
     if (process == null) {
-      return Either.left(notFoundByKey(value));
+      return Either.left(notFound);
     }
     value.setTenantId(process.getTenantId());
-    return Either.right(process);
+    return cslCheck
+        .checkAuthorizationAndTenant(
+            command,
+            requiredAuthorization(bufferAsString(process.getBpmnProcessId())),
+            process,
+            notFound,
+            rejection -> notFound,
+            process.getTenantId(),
+            notFound)
+        .flatMap(authorized -> rejectIfDraining(authorized))
+        .map(found -> List.of(found).iterator());
   }
 
   private @Nullable DeployedProcess findByKeyInAnyTenant(final long key) {
@@ -211,14 +240,28 @@ final class ProcessDefinitionSuspensionBehavior {
     return null;
   }
 
+  /** The permission is checked before the lookup, so a caller without it learns nothing. */
+  private Either<Rejection, Iterator<DeployedProcess>> findById(
+      final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
+    final var value = command.getValue();
+    return cslCheck
+        .checkAuthorizationAndTenant(
+            command,
+            requiredAuthorization(value.getBpmnProcessId()),
+            value,
+            forbidden(),
+            value.getTenantId(),
+            notFoundById(value))
+        .flatMap(authorized -> findVersionsById(authorized));
+  }
+
   /**
-   * One version by BPMN process ID and version, or all versions by BPMN process ID only. Doesn't
-   * check authorization; the caller does that before the lookup.
+   * One version by BPMN process ID and version, or all versions by BPMN process ID only.
    *
    * <p>All versions are looked up one at a time as the caller iterates, so the full models of
    * earlier versions can be released while later ones are processed.
    */
-  Either<Rejection, Iterator<DeployedProcess>> findById(
+  private Either<Rejection, Iterator<DeployedProcess>> findVersionsById(
       final ProcessDefinitionSuspensionRecord value) {
     final var bpmnProcessId = wrapString(value.getBpmnProcessId());
     final String tenantId = value.getTenantId();
@@ -245,7 +288,7 @@ final class ProcessDefinitionSuspensionBehavior {
    * A draining version targeted directly is rejected, like process instance creation and migration
    * do. When resolving all versions, it gets the {@code DRAINING} outcome instead.
    */
-  Either<Rejection, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
+  private Either<Rejection, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
     if (process.isDraining()) {
       return Either.left(
           new Rejection(

@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.processdefinition;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
-
-import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -24,9 +21,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.Either;
-import java.util.Iterator;
-import java.util.List;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -44,7 +38,6 @@ public final class ProcessDefinitionSuspensionSuspendProcessor
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
-  private final CslAuthorizationCheck cslCheck;
 
   public ProcessDefinitionSuspensionSuspendProcessor(
       final ProcessingState processingState,
@@ -53,16 +46,16 @@ public final class ProcessDefinitionSuspensionSuspendProcessor
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck) {
     behavior =
-        new ProcessDefinitionSuspensionBehavior(processingState, writers, tenantCheck, "suspend");
+        new ProcessDefinitionSuspensionBehavior(
+            processingState, writers, cslCheck, tenantCheck, "suspend");
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     responseWriter = writers.response();
-    this.cslCheck = cslCheck;
   }
 
   @Override
   public void processRecord(final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
-    final var resolved = resolveVersions(command);
+    final var resolved = behavior.findVersions(command);
     if (resolved.isLeft()) {
       behavior.reject(command, resolved.getLeft());
       return;
@@ -91,57 +84,6 @@ public final class ProcessDefinitionSuspensionSuspendProcessor
   public ProcessingError tryHandleError(
       final TypedRecord<ProcessDefinitionSuspensionRecord> command, final Throwable error) {
     return behavior.rejectIfTooLarge(command, error);
-  }
-
-  private Either<Rejection, Iterator<DeployedProcess>> resolveVersions(
-      final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
-    return behavior
-        .validateIdentifiers(command.getValue())
-        .flatMap(
-            value ->
-                ProcessDefinitionSuspensionBehavior.isByKey(value)
-                    ? resolveByKey(command)
-                    : resolveById(command));
-  }
-
-  /**
-   * The BPMN process ID to authorize against is only known after the lookup, so every failure is a
-   * {@code NOT_FOUND}.
-   */
-  private Either<Rejection, Iterator<DeployedProcess>> resolveByKey(
-      final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
-    final var value = command.getValue();
-    final var notFound = behavior.notFoundByKey(value);
-    return behavior
-        .findByKey(command)
-        .flatMap(
-            process ->
-                cslCheck.checkAuthorizationAndTenant(
-                    command,
-                    ProcessDefinitionSuspensionBehavior.requiredAuthorization(
-                        bufferAsString(process.getBpmnProcessId())),
-                    process,
-                    notFound,
-                    rejection -> notFound,
-                    process.getTenantId(),
-                    notFound))
-        .flatMap(process -> behavior.rejectIfDraining(process))
-        .map(process -> List.of(process).iterator());
-  }
-
-  /** The permission is checked before the lookup, so a caller without it learns nothing. */
-  private Either<Rejection, Iterator<DeployedProcess>> resolveById(
-      final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
-    final var value = command.getValue();
-    return cslCheck
-        .checkAuthorizationAndTenant(
-            command,
-            ProcessDefinitionSuspensionBehavior.requiredAuthorization(value.getBpmnProcessId()),
-            value,
-            ProcessDefinitionSuspensionBehavior.forbidden(),
-            value.getTenantId(),
-            behavior.notFoundById(value))
-        .flatMap(authorized -> behavior.findById(value));
   }
 
   private ProcessDefinitionSuspensionOutcome outcomeOf(final DeployedProcess process) {
