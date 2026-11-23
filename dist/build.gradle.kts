@@ -458,8 +458,12 @@ dependencies {
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.io.opentelemetry.opentelemetry.api)
   implementation(libs.io.opentelemetry.opentelemetry.context)
+  implementation(libs.io.opentelemetry.opentelemetry.sdk.common)
+  implementation("io.opentelemetry:opentelemetry-sdk-trace")
   implementation(libs.io.micrometer.micrometer.observation)
+  implementation(libs.org.springframework.boot.spring.boot)
   implementation(libs.org.springframework.boot.spring.boot.micrometer.observation)
+  implementation("org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry")
   implementation(libs.org.springframework.boot.spring.boot.starter.web) {
     exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
   }
