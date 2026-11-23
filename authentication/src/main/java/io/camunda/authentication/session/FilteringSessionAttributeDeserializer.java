@@ -77,6 +77,7 @@ final class FilteringSessionAttributeDeserializer implements Deserializer<Object
           "java.util.TreeMap",
           "java.util.TreeSet",
           "java.util.CollSer",
+          "java.util.Date",
           // the JDK picks the nested class by size (List12, ListN, ...); the trailing * is a prefix
           // match, "$**" would match nothing
           "java.util.ImmutableCollections$*",
