@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
@@ -161,6 +162,55 @@ class StreamProcessorTransitionStepTest {
 
     // then
     assertThat(engineCfg.getMaxResponseMessageSize()).isEqualTo(7 * 1024 * 1024);
+  }
+
+  @Test
+  void shouldStepDownWhenStillLeaderInTheStreamProcessorsTerm() {
+    // given
+    final var raftPartition = mock(RaftPartition.class);
+    when(raftPartition.getRole()).thenReturn(Role.LEADER);
+    when(raftPartition.term()).thenReturn(5L);
+    transitionContext.setRaftPartition(raftPartition);
+
+    // when
+    StreamProcessorTransitionStep.stepDownIfLeaderInTerm(transitionContext, 5L);
+
+    // then
+    verify(raftPartition).stepDown();
+  }
+
+  @Test
+  void shouldNotStepDownWhenTermHasMovedOn() {
+    // given
+    final var raftPartition = mock(RaftPartition.class);
+    when(raftPartition.getRole()).thenReturn(Role.LEADER);
+    when(raftPartition.term()).thenReturn(6L);
+    transitionContext.setRaftPartition(raftPartition);
+
+    // when
+    StreamProcessorTransitionStep.stepDownIfLeaderInTerm(transitionContext, 5L);
+
+    // then
+    verify(raftPartition, never()).stepDown();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = Role.class,
+      names = {"LEADER"},
+      mode = EnumSource.Mode.EXCLUDE)
+  void shouldNotStepDownWhenNoLongerLeader(final Role role) {
+    // given
+    final var raftPartition = mock(RaftPartition.class);
+    when(raftPartition.getRole()).thenReturn(role);
+    when(raftPartition.term()).thenReturn(5L);
+    transitionContext.setRaftPartition(raftPartition);
+
+    // when
+    StreamProcessorTransitionStep.stepDownIfLeaderInTerm(transitionContext, 5L);
+
+    // then
+    verify(raftPartition, never()).stepDown();
   }
 
   private void transitionTo(final Role role) {

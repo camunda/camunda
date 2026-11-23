@@ -475,7 +475,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         streamProcessorContext.getProcessorMode() == StreamProcessorMode.REPLAY;
     if (record.isFromNewerVersion()) {
       logRecordFromNewerVersion(record);
-      failActor(error, inReplayMode);
+      if (inReplayMode) {
+        failActor(error, true);
+      } else {
+        // Reporting a leader as dead stops the partition on this broker. A record from a newer
+        // version only means this broker cannot lead until it is upgraded, so hand leadership to
+        // a broker that can.
+        failActor(error, true, streamProcessorContext.getStepDownHook());
+      }
     } else {
       onFailure(error, inReplayMode);
     }
@@ -521,6 +528,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
    *     as dead, which stops the partition on this broker
    */
   private void failActor(final Throwable throwable, final boolean reportUnhealthy) {
+    failActor(throwable, reportUnhealthy, () -> {});
+  }
+
+  private void failActor(
+      final Throwable throwable, final boolean reportUnhealthy, final Runnable afterReported) {
     // The context does not exist yet if we fail while recovering from the snapshot; there are no
     // async actors to close then, but we must still fail the actor and notify everyone waiting.
     final ActorFuture<Void> actorsClosed =
@@ -552,6 +564,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             final var report = HealthReport.dead(this).withIssue(throwable, instant);
             failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
           }
+          afterReported.run();
         });
   }
 

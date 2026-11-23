@@ -89,6 +89,18 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
+  /**
+   * Invoked when a processor in {@link StreamProcessorMode#PROCESSING} mode stops because it met a
+   * record written by a newer broker version. Instead of reporting the processor as dead, which
+   * stops the whole partition, it is reported unhealthy and the owner is expected to step down from
+   * leadership. Defaults to doing nothing. Runs on the stream processor's actor, so it must not
+   * block.
+   */
+  public StreamProcessorBuilder stepDownHook(final Runnable stepDownHook) {
+    streamProcessorContext.stepDownHook(stepDownHook);
+    return this;
+  }
+
   public StreamProcessorContext getProcessingContext() {
     return streamProcessorContext;
   }

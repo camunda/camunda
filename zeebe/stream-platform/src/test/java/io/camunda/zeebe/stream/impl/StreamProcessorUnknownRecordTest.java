@@ -11,7 +11,9 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -242,8 +244,82 @@ final class StreamProcessorUnknownRecordTest {
 
     // then
     Awaitility.await("processing fails").until(() -> !reports.isEmpty());
-    assertThat(reports).allMatch(HealthReport::isDead);
+    assertThat(reports).allMatch(HealthReport::isUnhealthy);
     assertOnlyRollingUpgradeWarning();
+  }
+
+  @Test
+  void shouldReportUnhealthyAndStepDownWhenLeaderProcessesCommandFromNewerVersion() {
+    // given
+    final var stepDown = mock(Runnable.class);
+    final var streamProcessor =
+        streamPlatform.buildStreamProcessor(
+            streamPlatform.getLogStream(), true, cfg -> cfg.stepDownHook(stepDown));
+    final var reports = captureReports(streamProcessor);
+
+    // when
+    streamPlatform.writeBatch(RecordToWrite.command().fromNewerBrokerVersion());
+
+    // then
+    Awaitility.await("processing fails").until(() -> !reports.isEmpty());
+    assertThat(reports).allMatch(HealthReport::isUnhealthy);
+    verify(stepDown, timeout(5_000).times(1)).run();
+  }
+
+  @Test
+  void shouldStepDownWhenLeaderReplaysEventFromNewerVersion() {
+    // given
+    final var stepDown = mock(Runnable.class);
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event().fromNewerBrokerVersion().causedBy(0));
+
+    // when
+    streamPlatform.buildStreamProcessor(
+        streamPlatform.getLogStream(), false, cfg -> cfg.stepDownHook(stepDown));
+
+    // then
+    verify(stepDown, timeout(5_000).times(1)).run();
+  }
+
+  @Test
+  void shouldReportDeadWithoutSteppingDownWhenLeaderMeetsUnknownRecordNotFromNewerVersion() {
+    // given
+    final var stepDown = mock(Runnable.class);
+    final var streamProcessor =
+        streamPlatform.buildStreamProcessor(
+            streamPlatform.getLogStream(), true, cfg -> cfg.stepDownHook(stepDown));
+    final var reports = captureReports(streamProcessor);
+
+    // when
+    streamPlatform.writeBatch(RecordToWrite.command().unknownValueType());
+
+    // then
+    Awaitility.await("processing fails").until(() -> !reports.isEmpty());
+    assertThat(reports).allMatch(HealthReport::isDead);
+    verify(stepDown, never()).run();
+  }
+
+  @Test
+  void shouldReportUnhealthyWithoutSteppingDownWhenFollowerReplaysEventFromNewerVersion() {
+    // given
+    final var stepDown = mock(Runnable.class);
+    final var streamProcessor =
+        streamPlatform.buildStreamProcessor(
+            streamPlatform.getLogStream(),
+            false,
+            cfg -> cfg.streamProcessorMode(StreamProcessorMode.REPLAY).stepDownHook(stepDown));
+    final var reports = captureReports(streamProcessor);
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event().fromNewerBrokerVersion().causedBy(0));
+
+    // then
+    Awaitility.await("replay fails").until(() -> !reports.isEmpty());
+    assertThat(reports).allMatch(HealthReport::isUnhealthy);
+    verify(stepDown, never()).run();
   }
 
   private void assertOnlyRollingUpgradeWarning() {
