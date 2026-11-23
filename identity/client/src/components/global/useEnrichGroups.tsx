@@ -7,7 +7,11 @@
  */
 
 import { useMemo } from "react";
-import { useQuery, type QueryObserverBaseResult } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQuery,
+  type QueryObserverBaseResult,
+} from "@tanstack/react-query";
 import { ApiDefinition, unwrap } from "src/utility/api/request";
 import { searchGroups } from "src/utility/api/groups";
 import { usePagination } from "src/utility/api";
@@ -61,6 +65,7 @@ export function useEnrichedGroups<P>(
 
   const membersQuery = useQuery({
     queryKey: ["enrichedGroups", parentType, mergedParams],
+    placeholderData: keepPreviousData,
     queryFn: () => unwrap(apiDefinition(mergedParams)(getApiBaseUrl())),
   });
 

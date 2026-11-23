@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { queryOptions } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import type {
   QueryClientsByTenantRequestBody,
   QueryGroupsByTenantRequestBody,
@@ -31,6 +31,7 @@ export const tenantQueries = {
   search: (params: QueryTenantsRequestBody | Record<string, unknown>) =>
     queryOptions({
       queryKey: queryKeys.tenants.search(params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           searchTenant(params as QueryTenantsRequestBody)(getApiBaseUrl()),
@@ -63,6 +64,7 @@ export const tenantQueries = {
   ) =>
     queryOptions({
       queryKey: queryKeys.tenants.roles(tenantId, params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           getRolesByTenantId({
@@ -78,6 +80,7 @@ export const tenantQueries = {
   ) =>
     queryOptions({
       queryKey: queryKeys.tenants.mappingRules(tenantId, params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           getMappingRulesByTenantId({
@@ -93,6 +96,7 @@ export const tenantQueries = {
   ) =>
     queryOptions({
       queryKey: queryKeys.tenants.clients(tenantId, params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           getClientsByTenantId({
