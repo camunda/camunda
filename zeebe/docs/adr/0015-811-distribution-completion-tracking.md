@@ -101,19 +101,25 @@ are observable.**
 - A rejected command is not a failure. It is ACKNOWLEDGED with the rejection recorded (D5), and
   COMPLETED unless completion is held.
 
-**D5. Every partition's outcome is exported.**
+**D5. Every partition's outcome is recorded and exported.**
 
 - The ACK and `COMPLETE` records carry everything needed to trace a partition:
   - the rejection type and reason, if the command was rejected there;
   - whether completion was held, and the completion key;
   - the outcome and reason from `releaseCompletion`;
   - timestamps.
-- Together with today's `STARTED`, `ENQUEUED`, `DISTRIBUTING`, `ACKNOWLEDGED` and `FINISHED`,
-  secondary storage can show, per partition, whether a command is queued, sent, acknowledged,
-  rejected, held, completed or cancelled, and when.
 - The source ends every distribution with one summary event, `COMPLETED`. It carries the overall
   outcome (`CANCELLED` if any partition cancelled) and the per-partition outcomes. If any partition
   cancelled, `onAllCompleted` is not written.
+- Where the per-partition state is exported is open. There are two options:
+  - **Source only.** The source copies the fields of every ACK and report into its own events
+    (`ACKNOWLEDGED`, `PARTITION_COMPLETED`, `COMPLETED`). One distribution is one ordered stream
+    under one key, and a status read model needs no join across partitions. The drawback is that a
+    partition's state is known only once its report arrives.
+  - **Source and receivers.** In addition, each receiver exports its local events (holding and
+    releasing completion, with the distribution key and completion key). This shows more detail,
+    such as why a partition still holds its completion, but a read model must correlate records
+    from several partitions.
 
 **D6. Protocol and compatibility.**
 
@@ -169,6 +175,7 @@ are observable.**
 - Whether any feature needs a FAILED outcome in addition to CANCELLED.
 - Naming: `holdCompletion`/`releaseCompletion` versus alternatives such as
   `deferCompletion`/`complete`.
+- Export of per-partition state: by the source only, or by the source and the receivers (D5).
 
 ## Source
 
