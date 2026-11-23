@@ -1,12 +1,14 @@
 # description: Smoke-tests the load-test setup on every push that touches load-test infra.
 #              Runs two independent chains in parallel, each in its own namespace:
-#              - install (deploys the PR ref from scratch to check the installation)
-#              - upgrade (deploys the base-ref first, then updates to the PR ref to check upgrading from an older setup-code version).
+#              - install (deploys the PR merge commit from scratch to check the installation)
+#              - upgrade (deploys main with the workflow of main first, then updates to the PR merge commit
+#                to check upgrading from the setup-code version of main).
 #              Both chains wait for pod readiness and gateway connectivity after each deploy,
 #              and check the k6 TestRuns, then delete their namespace.
 #              In the upgrade chain, the k6 operator does not restart a TestRun when it is updated, so
-#              the TestRun status left by the base-ref deployment satisfies the check after the update.
+#              the TestRun status left by the main deployment satisfies the check after the update.
 # calls: camunda-load-test.yml (scenario: realistic),
+#        camunda-load-test.yml@main (base deployment of the upgrade chain),
 #        camunda-verify-load-test.yml (verify connectivity),
 #        camunda-delete-load-test.yml (delete namespace)
 # type: CI
@@ -26,14 +28,9 @@ on:
         default: "SNAPSHOT"
         required: false
       ref:
-        description: 'Git ref to checkout (branch or SHA). Defaults to PR head.'
+        description: 'Git ref to checkout (branch or SHA). Defaults to the commit of the triggering event.'
         type: string
         default: ""
-        required: false
-      base-ref:
-        description: 'Git ref used as the "old" version for the upgrade chain. Defaults to main.'
-        type: string
-        default: "main"
         required: false
   workflow_dispatch:
     inputs:
@@ -51,11 +48,6 @@ on:
         description: 'Git ref to checkout for the smoke test (branch or SHA)'
         type: string
         default: ""
-        required: false
-      base-ref:
-        description: 'Git ref used as the "old" version for the upgrade chain. Defaults to main.'
-        type: string
-        default: "main"
         required: false
 
 concurrency:
@@ -131,7 +123,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
-      ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
+      ref: ${{ inputs.ref || github.sha }}
       scenario: realistic
       secondary-storage-type: elasticsearch
       # Short TTL acts as a safety net; verify-and-cleanup deletes the namespace explicitly.
@@ -166,10 +158,9 @@ jobs:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-install
 
   # ---------------------------------------------------------------------------
-  # Upgrade chain: deploys base-ref's setup code (the version already on main
-  # before this PR), then updates it to the PR ref. This exercises upgrading
-  # from an older setup-code version, which the install chain above cannot
-  # catch since it only ever deploys the PR's own code.
+  # Upgrade chain: deploys main, then updates it to the PR merge commit. This
+  # exercises upgrading from the setup-code version of main, which the install
+  # chain above cannot catch since it only ever deploys the PR's own code.
   # ---------------------------------------------------------------------------
 
   smoke-upgrade-install:
@@ -178,11 +169,14 @@ jobs:
     permissions:
       contents: read
       id-token: write # Teleport auth in called workflow
-    uses: ./.github/workflows/camunda-load-test.yml
+    # `uses` accepts no expression, so the workflow is pinned to main like the
+    # scripts (`ref: main` below). If this chain is backported to a stable
+    # branch, replace both `main` references with that branch.
+    uses: camunda/camunda/.github/workflows/camunda-load-test.yml@main
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
-      ref: ${{ inputs.base-ref || 'main' }}
+      ref: main
       scenario: realistic
       secondary-storage-type: elasticsearch
       ttl: 1
@@ -210,7 +204,10 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}-upgrade
-      ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
+      # On `pull_request`, `github.sha` is the PR merge commit, the same commit
+      # that the local `uses: ./` resolves to: workflow YAML and scripts match,
+      # and the update includes the changes of main made after the PR branched.
+      ref: ${{ inputs.ref || github.sha }}
       scenario: realistic
       secondary-storage-type: elasticsearch
       ttl: 1

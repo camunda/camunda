@@ -57,5 +57,6 @@ jobs:
     with:
       target-version: ${{ matrix.version }}
       orchestration-tag: ${{ matrix.orchestration-tag }}
-      ref: ${{ github.event.pull_request.head.ref }}
-      base-ref: ${{ github.event.pull_request.base.sha }}
+      # On `pull_request`, `github.sha` is the PR merge commit, the same commit
+      # that the local `uses: ./` resolves to: workflow YAML and scripts match.
+      ref: ${{ github.sha }}
