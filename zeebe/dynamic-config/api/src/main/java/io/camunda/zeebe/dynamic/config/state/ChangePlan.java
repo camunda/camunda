@@ -19,9 +19,8 @@ import java.util.List;
  * <p>Two models coexist:
  *
  * <ul>
- *   <li>{@link ClusterChangePlan} — a queue, one broker at a time. What the global configuration
- *       runs, and the shape the legacy single-group {@link ClusterConfiguration} is encoded as on
- *       the wire a broker without the graph model reads.
+ *   <li>{@link ClusterChangePlan} — a queue, one operation at a time. No longer created; see its
+ *       documentation.
  *   <li>{@link DependencyChangePlan} — operations with declared dependencies, executed concurrently
  *       wherever no edge orders them. What every partition group runs.
  * </ul>
@@ -29,9 +28,7 @@ import java.util.List;
  * <p>Deliberately read-only. Starting, advancing and merging a change is model-specific and stays
  * on the concrete types, so the sub-configuration switches on which one it holds rather than
  * pretending the two are interchangeable. Reporting — the REST change view, restore status, metrics
- * — does not care, and reads through here. So does the legacy {@link ClusterConfiguration}, which
- * carries whichever model the sub-configuration it projects is running and only flattens to a queue
- * where the wire demands one (see {@link ClusterChangePlan#flatten(ChangePlan)}).
+ * — does not care, and reads through here.
  *
  * <p>{@link ClusterChangePlan} implements this without any other change: it already had every
  * method below. That is the whole cost of coexistence on the retiring path.

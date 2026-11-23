@@ -44,9 +44,7 @@ import io.camunda.zeebe.dynamic.config.impl.protocol.Topology.RoutingState;
 import io.camunda.zeebe.dynamic.config.serializer.DecodingFailed;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
@@ -54,7 +52,6 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
@@ -74,6 +71,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhas
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -596,9 +594,7 @@ final class ProtoBufSerializerTest {
                                 new TreeSet<>(List.of(1L, 2L)), OptionalLong.of(150L)))))));
     final var currentMultiConfiguration = CurrentClusterConfiguration.init();
     final var expectedMultiConfiguration =
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(MemberId.from("9"), MemberState.initializeAsActive(Map.of())));
+        DefaultTenantConfiguration.init().addMember(MemberId.from("9")).configuration();
     final var topologyChangeResponse =
         new ClusterConfigurationChangeResponse(
             2, currentMultiConfiguration, expectedMultiConfiguration, phases);
@@ -860,48 +856,6 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
-  void shouldEncodeAGraphChangeOnTheLegacyConfigurationAsAQueue() {
-    // given — a legacy configuration carrying a dependency-graph change, which is what projecting a
-    // partition group produces, with one operation already completed
-    final var startedAt = Instant.ofEpochSecond(1_700_000_000);
-    final var builder = OperationGraph.builder();
-    final var first = builder.add(new PartitionJoinOperation(MemberId.from("1"), 1, 1, true));
-    builder.add(new PartitionJoinOperation(MemberId.from("2"), 1, 1, true));
-    final var graph =
-        new DependencyChangePlan(
-            7,
-            Status.IN_PROGRESS,
-            startedAt,
-            builder.build(),
-            new TreeMap<>(Map.of(first, startedAt.plusSeconds(5))));
-    final var configuration =
-        ClusterConfiguration.builder()
-            .version(3)
-            .members(Map.of(MemberId.from("1"), MemberState.initializeAsActive(Map.of())))
-            .pendingChanges(Optional.of(graph))
-            .build();
-
-    // when
-    final var encoded = protoBufSerializer.encode(configuration);
-    final var decoded = protoBufSerializer.decodeClusterTopology(encoded, 0, encoded.length);
-
-    // then — the legacy message can only carry a queue, so the graph is flattened into one on the
-    // way out. A broker without the graph model reads this field, and would execute the queue one
-    // operation at a time.
-    assertThat(decoded.pendingChanges()).contains(ClusterChangePlan.flatten(graph));
-    assertThat(decoded.pendingChanges().orElseThrow())
-        .isInstanceOf(ClusterChangePlan.class)
-        .satisfies(
-            plan -> {
-              assertThat(plan.pendingOperations()).isEqualTo(graph.pendingOperations());
-              assertThat(plan.completedOperations()).isEqualTo(graph.completedOperations());
-              assertThat(plan.id()).isEqualTo(7);
-              // the queue's version is what an old broker merges by: one per completed operation
-              assertThat(plan.version()).isEqualTo(2);
-            });
-  }
-
-  @Test
   void shouldRoundTripAGraphWhoseNodesNameDifferentPartitionGroups() {
     // given — a graph spanning two groups, which is what collapsing phase boundaries into the graph
     // needs and what the per-node group id exists for. Nothing produces one yet; this pins that the
@@ -1061,12 +1015,11 @@ final class ProtoBufSerializerTest {
     // given
     final var partitionConfig = DynamicPartitionConfig.init();
     final var clusterConfiguration =
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(
-                    MemberId.from("1"),
-                    MemberState.initializeAsActive(
-                        Map.of(1, PartitionState.active(1, partitionConfig).toRecovering()))));
+        DefaultTenantConfiguration.init()
+            .addMember(
+                MemberId.from("1"),
+                Map.of(1, PartitionState.active(1, partitionConfig).toRecovering()))
+            .configuration();
     final var gossipState = new ClusterConfigurationGossipState();
     gossipState.setCurrentClusterConfiguration(clusterConfiguration);
 

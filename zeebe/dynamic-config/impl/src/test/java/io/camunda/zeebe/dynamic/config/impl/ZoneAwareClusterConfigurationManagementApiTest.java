@@ -14,13 +14,11 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
 import io.camunda.zeebe.dynamic.config.impl.transformers.TestChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDemoteOperation;
@@ -29,9 +27,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ZoneFixtures;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -61,11 +59,11 @@ final class ZoneAwareClusterConfigurationManagementApiTest
   void shouldForceRemoveZone() {
     // given
     final var currentTopology =
-        ClusterConfiguration.init()
-            .addMember(ZONE_A_0, MemberState.initializeAsActive(Map.of()))
-            .addMember(ZONE_A_1, MemberState.initializeAsActive(Map.of()))
-            .addMember(ZONE_B_0, MemberState.initializeAsActive(Map.of()))
-            .addMember(ZONE_B_1, MemberState.initializeAsActive(Map.of()))
+        DefaultTenantConfiguration.init()
+            .addMember(ZONE_A_0)
+            .addMember(ZONE_A_1)
+            .addMember(ZONE_B_0)
+            .addMember(ZONE_B_1)
             .updateMember(
                 ZONE_B_0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .updateMember(
@@ -97,9 +95,9 @@ final class ZoneAwareClusterConfigurationManagementApiTest
   void shouldAddZone() {
     // given
     final var currentTopology =
-        ClusterConfiguration.init()
-            .addMember(ZONE_A_0, MemberState.initializeAsActive(Map.of()))
-            .addMember(ZONE_A_1, MemberState.initializeAsActive(Map.of()))
+        DefaultTenantConfiguration.init()
+            .addMember(ZONE_A_0)
+            .addMember(ZONE_A_1)
             .updateMember(
                 ZONE_A_0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .updateMember(

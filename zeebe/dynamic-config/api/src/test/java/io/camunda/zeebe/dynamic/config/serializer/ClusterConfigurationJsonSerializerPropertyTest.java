@@ -10,10 +10,10 @@ package io.camunda.zeebe.dynamic.config.serializer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.util.ClusterTopologyDomain;
 import java.util.Map;
@@ -59,13 +59,19 @@ final class ClusterConfigurationJsonSerializerPropertyTest {
     // timestamps, so this is the one corner they never reach, and it is the corner most likely to
     // be dumped: it is not a valid RFC3339 or protobuf timestamp, and formats have refused it
     // before (see ClusterApiUtils#mapInstantToDateTime and camunda/camunda#16256).
+    final var member = MemberId.from("0");
     final var configuration =
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(
-                    MemberId.from("0"),
-                    MemberState.initializeAsActive(
-                        Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))));
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                global -> global.addMember(member, BrokerState.initializeAsActive()))
+            .initPartitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+            .updatePartitionGroupConfig(
+                CurrentClusterConfiguration.DEFAULT_GROUP,
+                group ->
+                    group.addMember(
+                        member,
+                        BrokerPartitionState.initialize(
+                            Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))));
 
     // when
     final var json = ClusterConfigurationJsonSerializer.toJson(configuration);

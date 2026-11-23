@@ -14,9 +14,8 @@ import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.Timestamps;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.Header;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration.Header;
 import io.camunda.zeebe.dynamic.config.impl.protocol.Topology;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -95,13 +94,6 @@ public class TopologyMetaCommand extends CommonOptions implements Callable<Integ
     }
   }
 
-  public static Topology.ClusterTopology parseTopology(final String json)
-      throws InvalidProtocolBufferException {
-    final var builder = Topology.ClusterTopology.newBuilder();
-    JsonFormat.parser().merge(json, builder);
-    return builder.build();
-  }
-
   public static Topology.CurrentClusterConfiguration parseCurrentClusterConfiguration(
       final String json) throws InvalidProtocolBufferException {
     final var builder = Topology.CurrentClusterConfiguration.newBuilder();
@@ -109,59 +101,26 @@ public class TopologyMetaCommand extends CommonOptions implements Callable<Integ
     return builder.build();
   }
 
-  /**
-   * Saves the input JSON under the header version the file already has, so that an edit hands the
-   * broker back the same format it wrote and a print/edit/save round-trip stays lossless.
-   */
   private void saveFile(final Path file) throws IOException {
     final var json = source == null ? readInputFromStdin() : readInputFromFile();
-    final var version = versionOf(file);
+    if (Files.exists(file)) {
+      Header.read(Files.readAllBytes(file), file);
+    }
 
-    final Message protobuf =
-        switch (version) {
-          case PersistedClusterConfiguration.VERSION -> parseTopology(json);
-          case PersistedCurrentClusterConfiguration.VERSION ->
-              parseCurrentClusterConfiguration(json);
-          default -> throw unsupportedVersion(file, version);
-        };
-
-    PersistedClusterConfiguration.writeToFile(protobuf.toByteArray(), file, version);
+    PersistedCurrentClusterConfiguration.writeToFile(
+        parseCurrentClusterConfiguration(json).toByteArray(), file);
   }
 
   private void printFile(final Path path) throws IOException {
     final var content = Files.readAllBytes(path);
-    final var header = Header.parseAnyVersion(content, path);
+    final var header = Header.read(content, path);
     spec.commandLine().getErr().println("Header: " + header);
-    final var buffer =
-        ByteBuffer.wrap(content, Header.HEADER_LENGTH, content.length - Header.HEADER_LENGTH);
+    final var buffer = ByteBuffer.wrap(content, Header.LENGTH, content.length - Header.LENGTH);
 
-    final Message protobuf =
-        switch (header.version()) {
-          case PersistedClusterConfiguration.VERSION -> Topology.ClusterTopology.parseFrom(buffer);
-          case PersistedCurrentClusterConfiguration.VERSION ->
-              Topology.CurrentClusterConfiguration.parseFrom(buffer);
-          default -> throw unsupportedVersion(path, header.version());
-        };
+    final Message protobuf = Topology.CurrentClusterConfiguration.parseFrom(buffer);
 
     final var json = convertToJson(protobuf);
     spec.commandLine().getOut().println(json);
-  }
-
-  private byte versionOf(final Path path) throws IOException {
-    if (!Files.exists(path)) {
-      return PersistedCurrentClusterConfiguration.VERSION;
-    }
-    return Header.parseAnyVersion(Files.readAllBytes(path), path).version();
-  }
-
-  private static IllegalArgumentException unsupportedVersion(final Path path, final byte version) {
-    return new IllegalArgumentException(
-        "Topology file %s has header version '%s', but only versions '%s' and '%s' are supported"
-            .formatted(
-                path,
-                version,
-                PersistedClusterConfiguration.VERSION,
-                PersistedCurrentClusterConfiguration.VERSION));
   }
 
   public String convertToJson(final Message message) throws InvalidProtocolBufferException {

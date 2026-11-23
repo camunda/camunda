@@ -32,10 +32,8 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig
 import io.camunda.zeebe.dynamic.config.impl.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.Actor;
@@ -107,9 +105,11 @@ final class ClusterConfigurationGossiperTest {
     node2.start();
     node3.start();
 
-    final var legacySeed =
-        ClusterConfiguration.init().addMember(node1.id(), MemberState.initializeAsActive(Map.of()));
-    final var node1Configuration = CurrentClusterConfiguration.fromLegacy(legacySeed);
+    final var node1Configuration =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                global -> global.addMember(node1.id(), BrokerState.initializeAsActive()))
+            .initPartitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
 
     // when — node 1 gossips the configuration, with no persisted-file sharing between
     // nodes (each TestGossiper only exchanges state over the real network)
@@ -212,9 +212,10 @@ final class ClusterConfigurationGossiperTest {
     final var fixture = new SyncFixture();
     final var peer = fixture.addPeer("peer");
     final var peerConfiguration =
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(MemberId.from("peer"), MemberState.initializeAsActive(Map.of())));
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                global -> global.addMember(MemberId.from("peer"), BrokerState.initializeAsActive()))
+            .initPartitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
     final var response = new ClusterConfigurationGossipState();
     response.setCurrentClusterConfiguration(peerConfiguration);
     fixture.respondWith(CompletableFuture.completedFuture(response));

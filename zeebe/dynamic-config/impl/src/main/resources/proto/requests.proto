@@ -201,10 +201,11 @@ message TopologyChangeResponse {
 }
 
 message Response {
+  reserved 3;
+  reserved "clusterTopology";
   oneof response {
     ErrorResponse error = 1;
     TopologyChangeResponse topologyChangeResponse = 2;
-    topology_protocol.ClusterTopology clusterTopology = 3;
     topology_protocol.CurrentClusterConfiguration currentClusterConfiguration = 4;
   }
 }

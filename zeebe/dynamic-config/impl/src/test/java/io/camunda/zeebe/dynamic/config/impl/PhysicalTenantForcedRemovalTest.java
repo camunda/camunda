@@ -33,13 +33,12 @@ import io.camunda.zeebe.dynamic.config.impl.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.impl.transformers.ForceRemoveBrokersRequestTransformer;
 import io.camunda.zeebe.dynamic.config.impl.transformers.RemoveZoneTransformer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -210,10 +209,11 @@ final class PhysicalTenantForcedRemovalTest {
   }
 
   /** A cluster of {@code members} in which {@code replicas} replicate partition 1. */
-  private ClusterConfiguration cluster(final Set<MemberId> members, final Set<MemberId> replicas) {
-    var topology = ClusterConfiguration.init();
+  private DefaultTenantConfiguration cluster(
+      final Set<MemberId> members, final Set<MemberId> replicas) {
+    var topology = DefaultTenantConfiguration.init();
     for (final var member : members) {
-      topology = topology.addMember(member, MemberState.initializeAsActive(Map.of()));
+      topology = topology.addMember(member);
     }
     var priority = replicas.size();
     for (final var replica : replicas) {
@@ -229,8 +229,9 @@ final class PhysicalTenantForcedRemovalTest {
    * tenant.
    */
   private CurrentClusterConfiguration twoTenants(
-      final ClusterConfiguration defaultTenant, final ClusterConfiguration otherTenant) {
-    final var base = CurrentClusterConfiguration.fromLegacy(defaultTenant);
+      final DefaultTenantConfiguration defaultTenant,
+      final DefaultTenantConfiguration otherTenant) {
+    final var base = defaultTenant.configuration();
     return new CurrentClusterConfiguration(
         base.version(),
         base.globalConfiguration(),
@@ -238,7 +239,7 @@ final class PhysicalTenantForcedRemovalTest {
             DEFAULT_GROUP,
             base.partitionGroup(DEFAULT_GROUP),
             TENANT_A,
-            CurrentClusterConfiguration.fromLegacy(otherTenant).partitionGroup(DEFAULT_GROUP)),
+            otherTenant.configuration().partitionGroup(DEFAULT_GROUP)),
         base.phasedChangeState());
   }
 
