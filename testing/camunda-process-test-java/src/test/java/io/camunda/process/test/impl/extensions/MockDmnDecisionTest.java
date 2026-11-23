@@ -32,7 +32,9 @@ import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -168,6 +170,36 @@ public class MockDmnDecisionTest {
               assertThat(decision.getId()).isEqualTo(decisionId);
               assertThat(zeebeVersionTag(decision)).contains("1.3.0");
             });
+  }
+
+  @Test
+  void shouldDeployNonAsciiDecisionOutputAsUtf8() throws Exception {
+    // given
+    final String decisionId = "mock-dmn-decision-non-ascii";
+    when(camundaClient.getConfiguration().getJsonMapper().toJson("Müller"))
+        .thenReturn("\"Müller\"");
+
+    // when
+    processTestContext.mockDmnDecision(decisionId, "Müller");
+
+    // then
+    verify(camundaClient.newDeployResourceCommand())
+        .addResourceStream(dmnStreamCaptor.capture(), eq(decisionId + ".dmn"));
+
+    // the XML declares UTF-8, so the bytes must be UTF-8 whatever the JVM's default charset is
+    final byte[] deployed = dmnStreamCaptor.getValue().readAllBytes();
+    assertThat(new String(deployed, StandardCharsets.UTF_8))
+        .contains("encoding=\"UTF-8\"")
+        .contains("\"Müller\"");
+
+    final DmnModelInstance deployedModel =
+        Dmn.readModelFromStream(new ByteArrayInputStream(deployed));
+    assertThat(deployedModel.getModelElementsByType(LiteralExpression.class))
+        .hasSize(1)
+        .first()
+        .satisfies(
+            expression ->
+                assertThat(expression.getText().getTextContent()).isEqualTo("\"Müller\""));
   }
 
   @Test
