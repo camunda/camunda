@@ -34,7 +34,7 @@ export const groupQueries = {
   search: (params?: SearchGroupsParams | Record<string, unknown>) =>
     queryOptions({
       queryKey: queryKeys.groups.search(params),
-      placeholderData: keepPreviousData,
+      placeholderData: params?.page ? keepPreviousData : undefined,
       queryFn: () =>
         unwrap(searchGroups(params as SearchGroupsParams)(getApiBaseUrl())),
     }),

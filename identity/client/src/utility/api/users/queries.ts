@@ -19,7 +19,7 @@ export const userQueries = {
   search: (params?: SearchUsersParams | Record<string, unknown>) =>
     queryOptions({
       queryKey: queryKeys.users.search(params),
-      placeholderData: keepPreviousData,
+      placeholderData: params?.page ? keepPreviousData : undefined,
       queryFn: () =>
         unwrap(searchUser(params as SearchUsersParams)(getApiBaseUrl())),
     }),

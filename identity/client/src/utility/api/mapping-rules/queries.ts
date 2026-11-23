@@ -17,7 +17,7 @@ export const mappingRuleQueries = {
   search: (params?: QueryMappingRulesRequestBody | Record<string, unknown>) =>
     queryOptions({
       queryKey: queryKeys.mappingRules.search(params),
-      placeholderData: keepPreviousData,
+      placeholderData: params?.page ? keepPreviousData : undefined,
       queryFn: () =>
         unwrap(
           searchMappingRule(params as QueryMappingRulesRequestBody)(
