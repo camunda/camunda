@@ -36,8 +36,9 @@ Add only required scopes.
 
 Vault is mandatory. GitHub Secrets are only for Vault bootstrap values:
 - `VAULT_ADDR`
-- `VAULT_ROLE_ID`
-- `VAULT_SECRET_ID`
+- `VAULT_JWT_ROLE`, `VAULT_JWT_PATH`, `VAULT_JWT_AUDIENCE`
+
+Log in with JWT (`method: jwt`) and grant `id-token: write` to the job that logs in. AppRole (`VAULT_ROLE_ID` / `VAULT_SECRET_ID`) is deprecated: never add it to new or changed steps. A job that runs an AI agent never gets `id-token: write`; a separate job wraps its secrets with `vault-wrapped-secrets`. See the [CI Secret Management](../../../docs/monorepo-docs/ci.md#vault-authentication) section.
 
 ## Boundaries
 
