@@ -86,6 +86,33 @@ class ClusterPurgeCleanupStrategyTest {
         .isInstanceOf(ProblemException.class);
   }
 
+  @Test
+  void shouldCloseProbeClientAfterCleanup() {
+    // given
+    when(camundaClient.newCompleteCommand(anyLong()).useRest().send().join())
+        .thenThrow(problem(404));
+
+    // when
+    strategy.cleanup(managementClient, () -> camundaClient, Instant.now());
+
+    // then
+    verify(camundaClient).close();
+  }
+
+  @Test
+  void shouldCloseProbeClientWhenProbeFails() {
+    // given
+    when(camundaClient.newCompleteCommand(anyLong()).useRest().send().join())
+        .thenThrow(problem(400));
+
+    // when
+    assertThatThrownBy(() -> strategy.cleanup(managementClient, () -> camundaClient, Instant.now()))
+        .isInstanceOf(ProblemException.class);
+
+    // then
+    verify(camundaClient).close();
+  }
+
   private static ProblemException problem(final int code) {
     return new ProblemException(code, "reason", new ProblemDetail());
   }
