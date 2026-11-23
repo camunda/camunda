@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -223,17 +224,23 @@ final class PhysicalTenantHandlerFactoryTest {
   }
 
   @Test
-  void shouldNotReadTokenGroupsWhenTenantUsesCamundaGroups() throws Exception {
-    // given the tenant uses Camunda groups (empty groups claim), and the named provider sets one
+  void shouldReadTokenGroupsOnlyForTheProviderWithAGroupsClaim() throws Exception {
+    // given the default slot uses Camunda groups (empty groups claim), and the named provider
+    // sets one
     final var handler = handlerWithGroupsClaims("", "groups");
 
     // when
     final var oktaContext = handler.authenticate("Bearer okta-token").get();
+    final var keycloakContext = handler.authenticate("Bearer keycloak-token").get();
 
-    // then the tenant's groups mode wins and no token groups are sent
+    // then the named provider's tokens carry their groups, and the default slot's tokens none
     assertThat(oktaContext.call(() -> AuthenticationHandler.IS_CAMUNDA_GROUPS_ENABLED.get()))
+        .isFalse();
+    assertThat(oktaContext.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get()))
+        .containsExactly("okta-team");
+    assertThat(keycloakContext.call(() -> AuthenticationHandler.IS_CAMUNDA_GROUPS_ENABLED.get()))
         .isTrue();
-    assertThat(oktaContext.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get())).isNull();
+    assertThat(keycloakContext.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get())).isNull();
   }
 
   private AuthenticationHandler handlerWithGroupsClaims(
@@ -254,6 +261,16 @@ final class PhysicalTenantHandlerFactoryTest {
 
     final var decoder = mock(JwtDecoder.class);
     when(decoder.decode("okta-token")).thenReturn(tokenWithAllClaims("https://okta.example.com"));
+    // the default slot maps its principal from the default "sub" claim
+    lenient()
+        .when(decoder.decode("keycloak-token"))
+        .thenReturn(
+            Jwt.withTokenValue("token")
+                .header("alg", "RS256")
+                .claim("iss", "https://keycloak.example.com")
+                .claim("sub", "alice")
+                .claim("groups", List.of("okta-team"))
+                .build());
     return PhysicalTenantHandlerFactory.build(
             Map.of("tenanta", config),
             true,

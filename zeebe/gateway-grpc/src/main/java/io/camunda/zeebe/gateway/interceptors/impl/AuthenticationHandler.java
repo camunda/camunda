@@ -130,8 +130,9 @@ public sealed interface AuthenticationHandler {
             Status.UNAUTHENTICATED.augmentDescription("Failed to resolve OIDC claims"));
       }
 
-      // the groups mode is the tenant's, so it matches what the broker and the Groups API use
-      final boolean groupsClaimConfigured = defaultClaimSettings.config().isGroupsClaimConfigured();
+      // the groups mode is the one of the token's provider, as on the REST membership path
+      final boolean groupsClaimConfigured =
+          claimSettings.groupsExtractor().getGroupsClaim() != null;
       var context = Context.current();
       context = context.withValue(IS_CAMUNDA_USERS_ENABLED, false);
       context = context.withValue(IS_CAMUNDA_GROUPS_ENABLED, !groupsClaimConfigured);
