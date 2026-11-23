@@ -117,12 +117,18 @@ jobs:
           # opened one (partial-failure re-run); otherwise create it.
           url=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "${BRANCH}" --state open --json url --jq '.[0].url // ""')
           if [[ -z "${url}" ]]; then
+            body=$(printf '%s\n' \
+              "After the \`${RELEASE_VERSION}\` minor release, \`backwards.compat.version\` on \`main\` should point to \`${RELEASE_VERSION}\` so that CI validates future development against the newly shipped minor." \
+              "" \
+              "## Related issues" \
+              "" \
+              "- [x] This PR does not need a linked issue")
             url=$(gh pr create \
               --repo "$GITHUB_REPOSITORY" \
               --base main \
               --head "${BRANCH}" \
               --title "build: update backwards.compat.version to ${RELEASE_VERSION} after minor release" \
-              --body "After the \`${RELEASE_VERSION}\` minor release, \`backwards.compat.version\` on \`main\` should point to \`${RELEASE_VERSION}\` so that CI validates future development against the newly shipped minor.")
+              --body "${body}")
           fi
           echo "url=${url}" >> "$GITHUB_OUTPUT"
           number=$(gh pr view "$url" --repo "$GITHUB_REPOSITORY" --json number --jq '.number')
