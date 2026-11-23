@@ -87,6 +87,7 @@ public final class AuditLogTransformerRegistry {
         GroupEntityAuditLogTransformer::new,
         MappingRuleAuditLogTransformer::new,
         ProcessAuditLogTransformer::new,
+        ProcessDefinitionSuspensionAuditLogTransformer::new,
         ResourceAuditLogTransformer::new,
         RoleAuditLogTransformer::new,
         RoleEntityAuditLogTransformer::new,
@@ -111,7 +112,6 @@ public final class AuditLogTransformerRegistry {
         ProcessInstanceCreationAuditLogTransformer::new,
         ProcessInstanceMigrationAuditLogTransformer::new,
         ProcessInstanceModificationAuditLogTransformer::new,
-        ProcessDefinitionSuspensionAuditLogTransformer::new,
         ProcessInstanceSuspendResumeAuditLogTransformer::new,
         UserTaskAuditLogTransformer::new,
         VariableAddUpdateAuditLogTransformer::new);
