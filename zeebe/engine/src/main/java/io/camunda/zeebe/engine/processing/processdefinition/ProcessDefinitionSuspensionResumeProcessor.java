@@ -40,8 +40,6 @@ import org.jspecify.annotations.NullMarked;
 public final class ProcessDefinitionSuspensionResumeProcessor
     implements TypedRecordProcessor<ProcessDefinitionSuspensionRecord> {
 
-  private static final String VERB = "resume";
-
   private final ProcessDefinitionSuspensionBehavior behavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -54,7 +52,8 @@ public final class ProcessDefinitionSuspensionResumeProcessor
       final Writers writers,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck) {
-    behavior = new ProcessDefinitionSuspensionBehavior(processingState, writers, tenantCheck);
+    behavior =
+        new ProcessDefinitionSuspensionBehavior(processingState, writers, tenantCheck, "resume");
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -91,13 +90,13 @@ public final class ProcessDefinitionSuspensionResumeProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<ProcessDefinitionSuspensionRecord> command, final Throwable error) {
-    return behavior.rejectIfTooLarge(command, error, VERB);
+    return behavior.rejectIfTooLarge(command, error);
   }
 
   private Either<Rejection, Iterator<DeployedProcess>> resolveVersions(
       final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
     return behavior
-        .validateIdentifiers(command.getValue(), VERB)
+        .validateIdentifiers(command.getValue())
         .flatMap(
             value ->
                 ProcessDefinitionSuspensionBehavior.isByKey(value)
@@ -112,9 +111,9 @@ public final class ProcessDefinitionSuspensionResumeProcessor
   private Either<Rejection, Iterator<DeployedProcess>> resolveByKey(
       final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
     final var value = command.getValue();
-    final var notFound = ProcessDefinitionSuspensionBehavior.notFoundByKey(value, VERB);
+    final var notFound = behavior.notFoundByKey(value);
     return behavior
-        .findByKey(command, VERB)
+        .findByKey(command)
         .flatMap(
             process ->
                 cslCheck.checkAuthorizationAndTenant(
@@ -126,7 +125,7 @@ public final class ProcessDefinitionSuspensionResumeProcessor
                     rejection -> notFound,
                     process.getTenantId(),
                     notFound))
-        .flatMap(process -> behavior.rejectIfDraining(process, VERB))
+        .flatMap(process -> behavior.rejectIfDraining(process))
         .map(process -> List.of(process).iterator());
   }
 
@@ -141,8 +140,8 @@ public final class ProcessDefinitionSuspensionResumeProcessor
             value,
             ProcessDefinitionSuspensionBehavior.forbidden(),
             value.getTenantId(),
-            ProcessDefinitionSuspensionBehavior.notFoundById(value, VERB))
-        .flatMap(authorized -> behavior.findById(value, VERB));
+            behavior.notFoundById(value))
+        .flatMap(authorized -> behavior.findById(value));
   }
 
   private ProcessDefinitionSuspensionOutcome outcomeOf(final DeployedProcess process) {

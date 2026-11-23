@@ -540,6 +540,73 @@ public class ProcessDefinitionSuspensionTest {
   }
 
   @Test
+  public void shouldRejectVersionZero() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    deploy(processModel(processId, "v1"));
+
+    // when
+    final var rejection =
+        engine
+            .processDefinitionSuspension()
+            .withBpmnProcessId(processId)
+            .withVersion(0)
+            .expectRejection()
+            .suspend();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to suspend a process definition with a version of at least 1, or without a version for all versions, but version '0' was given");
+  }
+
+  @Test
+  public void shouldRejectNegativeVersionOtherThanAllVersions() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    deploy(processModel(processId, "v1"));
+
+    // when
+    final var rejection =
+        engine
+            .processDefinitionSuspension()
+            .withBpmnProcessId(processId)
+            .withVersion(-2)
+            .expectRejection()
+            .resume();
+
+    // then - only -1, the unset version, means all versions
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to resume a process definition with a version of at least 1, or without a version for all versions, but version '-2' was given");
+  }
+
+  @Test
+  public void shouldRejectKeyWithTenant() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var v1 = deploy(processModel(processId, "v1"));
+
+    // when
+    final var rejection =
+        engine
+            .processDefinitionSuspension()
+            .withProcessDefinitionKey(v1.getProcessDefinitionKey())
+            .withTenantId("other-tenant")
+            .expectRejection()
+            .suspend();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to suspend a process definition by key or by BPMN process ID and tenant, but key '%d' was given with tenant 'other-tenant'"
+                .formatted(v1.getProcessDefinitionKey()));
+  }
+
+  @Test
   public void shouldRejectWithoutIdentifier() {
     // when
     final var rejection = engine.processDefinitionSuspension().expectRejection().suspend();

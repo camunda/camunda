@@ -42,20 +42,28 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Lookups, validation and rejections shared by {@link ProcessDefinitionSuspensionSuspendProcessor}
- * and {@link ProcessDefinitionSuspensionResumeProcessor}. The {@code verb} parameters ("suspend",
- * "resume") only go into rejection reasons.
+ * and {@link ProcessDefinitionSuspensionResumeProcessor}. Each processor gives its own instance the
+ * verb ("suspend", "resume") that names the action in rejection reasons, like the job processors
+ * do.
  */
 @NullMarked
 final class ProcessDefinitionSuspensionBehavior {
 
   static final PermissionType PERMISSION = PermissionType.SUSPEND_PROCESS_DEFINITION;
 
+  /** The record's version when none is set: all versions of the BPMN process ID. */
+  private static final int ALL_VERSIONS = -1;
+
+  private static final String INVALID_VERSION_MESSAGE =
+      "Expected to %s a process definition with a version of at least 1, or without a version for all versions, but version '%d' was given";
   private static final String NO_IDENTIFIER_MESSAGE =
       "Expected to %s a process definition by key or by BPMN process ID, but none given";
   private static final String BOTH_IDENTIFIERS_MESSAGE =
       "Expected to %s a process definition by key or by BPMN process ID, but both were given: key '%d', BPMN process ID '%s'";
   private static final String KEY_AND_VERSION_MESSAGE =
       "Expected to %s a process definition by key or by BPMN process ID and version, but key '%d' was given with version '%d'";
+  private static final String KEY_AND_TENANT_MESSAGE =
+      "Expected to %s a process definition by key or by BPMN process ID and tenant, but key '%d' was given with tenant '%s'";
   private static final String NOT_FOUND_BY_KEY_MESSAGE =
       "Expected to %s process definition with key '%d', but no such process definition was found";
   private static final String NOT_FOUND_BY_ID_MESSAGE =
@@ -72,31 +80,43 @@ final class ProcessDefinitionSuspensionBehavior {
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CslTenantCheck tenantCheck;
+  private final String verb;
 
   ProcessDefinitionSuspensionBehavior(
       final ProcessingState processingState,
       final Writers writers,
-      final CslTenantCheck tenantCheck) {
+      final CslTenantCheck tenantCheck,
+      final String verb) {
     processState = processingState.getProcessState();
     tenantState = processingState.getTenantState();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.tenantCheck = tenantCheck;
+    this.verb = verb;
   }
 
   /**
-   * Rejects a command that names no process definition, or names it both by key and by BPMN process
-   * ID or version. The REST mapping sends version {@code -1} for requests by key.
+   * Rejects a command that names no process definition, names it both by key and by BPMN process
+   * ID, version or tenant, or gives a version below 1, like the REST API does. The REST mapping
+   * sends version {@code -1} and no tenant for requests by key.
    */
   Either<Rejection, ProcessDefinitionSuspensionRecord> validateIdentifiers(
-      final ProcessDefinitionSuspensionRecord value, final String verb) {
+      final ProcessDefinitionSuspensionRecord value) {
     final long key = value.getProcessDefinitionKey();
     final String bpmnProcessId = value.getBpmnProcessId();
+    final int version = value.getVersion();
+    if (version != ALL_VERSIONS && version < 1) {
+      return invalidArgument(INVALID_VERSION_MESSAGE.formatted(verb, version));
+    }
     if (key > 0 && !bpmnProcessId.isEmpty()) {
       return invalidArgument(BOTH_IDENTIFIERS_MESSAGE.formatted(verb, key, bpmnProcessId));
     }
     if (key > 0 && value.getVersion() >= 0) {
       return invalidArgument(KEY_AND_VERSION_MESSAGE.formatted(verb, key, value.getVersion()));
+    }
+    // an unset tenant reads as the default tenant, so only another tenant can be told apart
+    if (key > 0 && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(value.getTenantId())) {
+      return invalidArgument(KEY_AND_TENANT_MESSAGE.formatted(verb, key, value.getTenantId()));
     }
     if (key <= 0 && bpmnProcessId.isEmpty()) {
       return invalidArgument(NO_IDENTIFIER_MESSAGE.formatted(verb));
@@ -112,13 +132,13 @@ final class ProcessDefinitionSuspensionBehavior {
    * A caller without access to a definition looked up by key gets this same rejection, so they
    * can't tell an unauthorized key from an unknown one.
    */
-  static Rejection notFoundByKey(final ProcessDefinitionSuspensionRecord value, final String verb) {
+  Rejection notFoundByKey(final ProcessDefinitionSuspensionRecord value) {
     return new Rejection(
         RejectionType.NOT_FOUND,
         NOT_FOUND_BY_KEY_MESSAGE.formatted(verb, value.getProcessDefinitionKey()));
   }
 
-  static Rejection notFoundById(final ProcessDefinitionSuspensionRecord value, final String verb) {
+  Rejection notFoundById(final ProcessDefinitionSuspensionRecord value) {
     return value.getVersion() >= 0
         ? new Rejection(
             RejectionType.NOT_FOUND,
@@ -149,7 +169,7 @@ final class ProcessDefinitionSuspensionBehavior {
    * so the events and the response carry it.
    */
   Either<Rejection, DeployedProcess> findByKey(
-      final TypedRecord<ProcessDefinitionSuspensionRecord> command, final String verb) {
+      final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
     final var value = command.getValue();
     final long key = value.getProcessDefinitionKey();
     final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
@@ -158,7 +178,7 @@ final class ProcessDefinitionSuspensionBehavior {
             ? findByKeyInAnyTenant(key)
             : findByKeyInTenants(key, authorizedTenants.tenantIds());
     if (process == null) {
-      return Either.left(notFoundByKey(value, verb));
+      return Either.left(notFoundByKey(value));
     }
     value.setTenantId(process.getTenantId());
     return Either.right(process);
@@ -199,15 +219,15 @@ final class ProcessDefinitionSuspensionBehavior {
    * earlier versions can be released while later ones are processed.
    */
   Either<Rejection, Iterator<DeployedProcess>> findById(
-      final ProcessDefinitionSuspensionRecord value, final String verb) {
+      final ProcessDefinitionSuspensionRecord value) {
     final var bpmnProcessId = wrapString(value.getBpmnProcessId());
     final String tenantId = value.getTenantId();
     if (value.getVersion() >= 0) {
       final @Nullable DeployedProcess process =
           processState.getProcessByProcessIdAndVersion(bpmnProcessId, value.getVersion(), tenantId);
       return process == null
-          ? Either.left(notFoundById(value, verb))
-          : rejectIfDraining(process, verb).map(found -> List.of(found).iterator());
+          ? Either.left(notFoundById(value))
+          : rejectIfDraining(process).map(found -> List.of(found).iterator());
     }
 
     final Iterator<DeployedProcess> versions =
@@ -218,15 +238,14 @@ final class ProcessDefinitionSuspensionBehavior {
                         bpmnProcessId, version.intValue(), tenantId))
             .filter(Objects::nonNull)
             .iterator();
-    return versions.hasNext() ? Either.right(versions) : Either.left(notFoundById(value, verb));
+    return versions.hasNext() ? Either.right(versions) : Either.left(notFoundById(value));
   }
 
   /**
    * A draining version targeted directly is rejected, like process instance creation and migration
    * do. When resolving all versions, it gets the {@code DRAINING} outcome instead.
    */
-  Either<Rejection, DeployedProcess> rejectIfDraining(
-      final DeployedProcess process, final String verb) {
+  Either<Rejection, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
     if (process.isDraining()) {
       return Either.left(
           new Rejection(
@@ -264,9 +283,7 @@ final class ProcessDefinitionSuspensionBehavior {
    * records and state changes of this command, so nothing was suspended or resumed.
    */
   ProcessingError rejectIfTooLarge(
-      final TypedRecord<ProcessDefinitionSuspensionRecord> command,
-      final Throwable error,
-      final String verb) {
+      final TypedRecord<ProcessDefinitionSuspensionRecord> command, final Throwable error) {
     if (!(error instanceof ExceededBatchRecordSizeException)) {
       return ProcessingError.UNEXPECTED_ERROR;
     }
