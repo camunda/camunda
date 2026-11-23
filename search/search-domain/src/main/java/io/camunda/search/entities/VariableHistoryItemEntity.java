@@ -13,6 +13,15 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * One change of a variable.
+ *
+ * @param fullValue the whole value after the change, or {@code null} when the entry does not carry
+ *     it. Readers must leave it {@code null} for an entry that records only the item added to the
+ *     output collection of a multi-instance element or an ad-hoc sub-process: the REST mapping
+ *     returns {@code fullValue} when {@code truncateValues} is false, so a non-null value would
+ *     return the single item instead of the list.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record VariableHistoryItemEntity(
     Long variableHistoryItemKey,
