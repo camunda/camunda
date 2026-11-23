@@ -27,6 +27,7 @@ dependencies {
   implementation(libs.io.opentelemetry.opentelemetry.context)
   testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-test-util"))
+  testImplementation(projectArtifact(":zeebe-cluster-config-api", ArtifactKind.TESTS))
   testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-protocol-test-util"))
   testImplementation(libs.org.awaitility.awaitility)

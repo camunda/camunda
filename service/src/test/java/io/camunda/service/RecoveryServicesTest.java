@@ -39,7 +39,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.Either;
@@ -404,7 +403,7 @@ public class RecoveryServicesTest {
   }
 
   private CurrentClusterConfiguration stubTopologySuccess() {
-    final var configuration = CurrentClusterConfiguration.fromLegacy(ClusterConfiguration.init());
+    final var configuration = CurrentClusterConfiguration.init();
     when(clusterConfigurationRequestSender.getTopology())
         .thenReturn(CompletableFuture.completedFuture(Either.right(configuration)));
     return configuration;
