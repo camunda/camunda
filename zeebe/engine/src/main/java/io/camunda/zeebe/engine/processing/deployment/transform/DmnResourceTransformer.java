@@ -47,6 +47,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   private static final long UNKNOWN_DECISION_REQUIREMENTS_KEY = -1L;
 
   private static final Either<Failure, Object> NO_DUPLICATES = Either.right(null);
+  private static final String MISSING_ATTRIBUTE_MESSAGE =
+      "Expected the %s to have %s, but it has none in resource '%s'";
 
   private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
@@ -76,8 +78,9 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     final var parsedDrg = decisionEngine.parse(dmnResource);
 
     if (parsedDrg.isValid()) {
-      return checkDrgId(resource, parsedDrg)
+      return checkDrg(resource, parsedDrg)
           .flatMap(valid -> checkForDuplicateIds(resource, parsedDrg, deployment))
+          .flatMap(valid -> checkDecisions(resource, parsedDrg))
           .map(
               noDuplicates -> {
                 appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
@@ -160,17 +163,53 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
             });
   }
 
-  private Either<Failure, ?> checkDrgId(
+  private Either<Failure, ?> checkDrg(
       final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
     final var decisionRequirementsId = parsedDrg.getId();
-    if (decisionRequirementsId == null || decisionRequirementsId.isEmpty()) {
-      return Either.left(
-          new Failure(
-              String.format(
-                  "Expected the DRG to have an ID, but it has none in resource '%s'",
-                  resource.getResourceName())));
+    if (isMissing(decisionRequirementsId)) {
+      return missing("DRG", "an ID", resource);
+    }
+    if (isMissing(parsedDrg.getName())) {
+      return missing(String.format("DRG '%s'", decisionRequirementsId), "a name", resource);
+    }
+    if (isMissing(parsedDrg.getNamespace())) {
+      return missing(String.format("DRG '%s'", decisionRequirementsId), "a namespace", resource);
     }
     return NO_DUPLICATES;
+  }
+
+  private Either<Failure, ?> checkDecisions(
+      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
+    for (final var decision : parsedDrg.getDecisions()) {
+      final var validation = checkDecision(resource, decision);
+      if (validation.isLeft()) {
+        return validation;
+      }
+    }
+    return NO_DUPLICATES;
+  }
+
+  private Either<Failure, ?> checkDecision(
+      final DeploymentResource resource, final ParsedDecision decision) {
+    if (isMissing(decision.getId())) {
+      return missing(String.format("decision '%s'", decision.getName()), "an ID", resource);
+    }
+    if (isMissing(decision.getName())) {
+      return missing(String.format("decision '%s'", decision.getId()), "a name", resource);
+    }
+    return NO_DUPLICATES;
+  }
+
+  private static boolean isMissing(final String value) {
+    return value == null || value.isEmpty();
+  }
+
+  private static Either<Failure, ?> missing(
+      final String subject, final String attribute, final DeploymentResource resource) {
+    return Either.left(
+        new Failure(
+            String.format(
+                MISSING_ATTRIBUTE_MESSAGE, subject, attribute, resource.getResourceName())));
   }
 
   private Either<Failure, ?> checkForDuplicateIds(
