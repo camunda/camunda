@@ -48,6 +48,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   private static final long UNKNOWN_DECISION_REQUIREMENTS_KEY = -1L;
 
   private static final Either<Failure, Object> NO_VALIDATION_ERROR = Either.right(null);
+  private static final String MISSING_ATTRIBUTE_MESSAGE =
+      "Expected the %s to have %s, but it has none in resource '%s'";
 
   private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
@@ -84,7 +86,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     final var parsedDrg = decisionEngine.parse(dmnResource);
 
     if (parsedDrg.isValid()) {
-      return checkDrdIdNameLength(resource, parsedDrg)
+      return checkDrg(resource, parsedDrg)
           .flatMap(valid -> checkDecisions(resource, parsedDrg))
           .map(
               valid -> {
@@ -166,10 +168,22 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
             });
   }
 
-  private Either<Failure, ?> checkDrdIdNameLength(
+  private Either<Failure, ?> checkDrg(
       final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
     final var decisionRequirementsId = parsedDrg.getId();
     final var decisionRequirementsName = parsedDrg.getName();
+
+    if (Strings.isNullOrEmpty(decisionRequirementsId)) {
+      return missing("DRG", "an ID", resource);
+    }
+
+    if (Strings.isNullOrEmpty(decisionRequirementsName)) {
+      return missing(String.format("DRG '%s'", decisionRequirementsId), "a name", resource);
+    }
+
+    if (Strings.isNullOrEmpty(parsedDrg.getNamespace())) {
+      return missing(String.format("DRG '%s'", decisionRequirementsId), "a namespace", resource);
+    }
 
     return checkFieldLength(
             Stream.of(decisionRequirementsId),
@@ -188,11 +202,10 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   private Either<Failure, ?> checkDecision(
       final DeploymentResource resource, final ParsedDecision decision) {
     if (Strings.isNullOrEmpty(decision.getId())) {
-      return Either.left(
-          new Failure(
-              String.format(
-                  "Expected the decision '%s' to have an ID, but it has none in resource '%s'",
-                  decision.getName(), resource.getResourceName())));
+      return missing(String.format("decision '%s'", decision.getName()), "an ID", resource);
+    }
+    if (Strings.isNullOrEmpty(decision.getName())) {
+      return missing(String.format("decision '%s'", decision.getId()), "a name", resource);
     }
     return checkFieldLength(
             decision.getId(),
@@ -207,6 +220,14 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                     "The name of a decision must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
                     resource))
         .flatMap(valid -> checkDecisionTable(resource, decision));
+  }
+
+  private static Either<Failure, ?> missing(
+      final String subject, final String attribute, final DeploymentResource resource) {
+    return Either.left(
+        new Failure(
+            String.format(
+                MISSING_ATTRIBUTE_MESSAGE, subject, attribute, resource.getResourceName())));
   }
 
   private Either<Failure, ?> checkDecisionTable(
