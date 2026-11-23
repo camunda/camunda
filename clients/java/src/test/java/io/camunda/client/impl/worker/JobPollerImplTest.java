@@ -116,6 +116,22 @@ public final class JobPollerImplTest extends ClientTest {
   }
 
   @Test
+  public void shouldCallbackWhenPollFailedWhileWorkerIsClosed() {
+    gatewayService.onActivateJobsRequest(new StatusRuntimeException(Status.UNAVAILABLE));
+
+    getJobPoller().poll(123, jobConsumer, doneCallback, errorCallback, () -> false);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              verify(jobConsumer, never()).accept(any(ActivatedJob.class));
+              verify(doneCallback, never()).accept(any(Integer.class));
+              verify(errorCallback).accept(any(StatusRuntimeException.class));
+            });
+  }
+
+  @Test
   public void shouldCallbackWhenPollFailedWithResourceExhausted() {
     shouldCallbackWhenPollFailedWithStatus(Status.RESOURCE_EXHAUSTED);
   }

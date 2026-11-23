@@ -860,6 +860,34 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldBecomeClosedWhenInFlightActivationFailsAfterClose() {
+    gateway.holdActivations();
+
+    final JobWorker worker =
+        client
+            .newWorker()
+            .jobType("test")
+            .handler(NOOP_JOB_HANDLER)
+            .maxJobsActive(MAX_JOBS_ACTIVE)
+            .pollInterval(Duration.ofMillis(POLL_INTERVAL_IN_MS))
+            .open();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(2))
+        .until(() -> gateway.heldActivationCount() >= 1);
+
+    worker.close();
+    assertThat(worker.isOpen()).isFalse();
+    assertThat(worker.isClosed()).isFalse();
+
+    gateway.failHeldActivation(new StatusRuntimeException(Status.UNAVAILABLE));
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(2))
+        .until(worker::isClosed, Matchers.equalTo(true));
+  }
+
+  @Test
   void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -2276,8 +2304,10 @@ final class JobWorkerImplTest {
         new HashMap<>();
     private final Object responsesLock = new Object();
     private boolean isInErrorMode = false;
+    private boolean holdActivations = false;
     private ActivateJobsResponse pollSuccessResponse = ActivateJobsResponse.newBuilder().build();
     private final Queue<ActivateJobsResponse> oneOffPollResponses = new ArrayDeque<>();
+    private final Queue<StreamObserver<ActivateJobsResponse>> heldActivations = new ArrayDeque<>();
     private StatusRuntimeException pollErrorResponse = new StatusRuntimeException(Status.UNKNOWN);
 
     private final Object requestedJobCountsLock = new Object();
@@ -2310,6 +2340,10 @@ final class JobWorkerImplTest {
         }
       }
       synchronized (responsesLock) {
+        if (holdActivations) {
+          heldActivations.add(responseObserver);
+          return;
+        }
         if (isInErrorMode) {
           responseObserver.onError(pollErrorResponse);
         } else {
@@ -2318,6 +2352,29 @@ final class JobWorkerImplTest {
           responseObserver.onCompleted();
         }
       }
+    }
+
+    public void holdActivations() {
+      synchronized (responsesLock) {
+        holdActivations = true;
+      }
+    }
+
+    public int heldActivationCount() {
+      synchronized (responsesLock) {
+        return heldActivations.size();
+      }
+    }
+
+    public void failHeldActivation(final StatusRuntimeException error) {
+      final StreamObserver<ActivateJobsResponse> observer;
+      synchronized (responsesLock) {
+        observer = heldActivations.poll();
+      }
+      if (observer == null) {
+        throw new IllegalStateException("Expected a held activation to fail");
+      }
+      observer.onError(error);
     }
 
     @Override
