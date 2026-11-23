@@ -16,16 +16,18 @@ paths:
       summary: Search variable history
       description: |-
         Search for variable history items, which record the changes made to a variable's
-        value over time. The history includes engine-originated changes only when the engine
-        section of the history configuration is on.
+        value over time. The audit log configuration decides which changes are recorded;
+        by default, only changes made by users are.
 
         Results are sorted by `variableHistoryItemKey` ascending by default, which lists the
-        changes of one variable from oldest to newest.
+        changes of one variable from oldest to newest. Across partitions, the key says nothing
+        about time: a search that spans partitions, for example by process definition, lists the
+        changes of one partition after the other.
 
-        By default, the endpoint truncates long variable values in the response. An entry that
-        records only the item added to the output collection of a multi-instance element or an
-        ad-hoc sub-process is always truncated, regardless of the `truncateValues` parameter.
-        The truncation size limit is configurable.
+        By default, the endpoint truncates long variable values in the response. For the output
+        collection of a multi-instance element or an ad-hoc sub-process, the endpoint cuts the
+        value at the size limit regardless of the `truncateValues` parameter. The truncation
+        size limit is configurable.
       parameters:
         - name: truncateValues
           in: query
