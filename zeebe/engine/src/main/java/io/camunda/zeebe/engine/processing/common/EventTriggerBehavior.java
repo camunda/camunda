@@ -296,9 +296,9 @@ public class EventTriggerBehavior {
 
   /**
    * Returns the source of an event payload that the given element caught, with that element as the
-   * causing element. A job worker element gives {@code JOB_COMPLETION}, any other element gives
-   * {@code UNKNOWN}. The returned record is reused by the next call, so write the variables before
-   * you derive another source.
+   * causing element. A job worker element with a job type gives {@code JOB_COMPLETION}, any other
+   * element gives {@code UNKNOWN}. The returned record is reused by the next call, so write the
+   * variables before you derive another source.
    */
   public VariableSourceRecord eventPayloadSource(
       final ExecutableFlowElement catchingElement, final long catchingElementInstanceKey) {

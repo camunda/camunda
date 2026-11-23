@@ -137,12 +137,24 @@ public final class BpmnVariableMappingBehavior {
     return applyOutputMappings(context, element, payloadSource, payloadSource, unknownSource);
   }
 
+  /**
+   * Applies the output mappings of a native user task. It keeps the sources that were written
+   * before event payloads got their own, until camunda/pdp-3517-variable-trace#107 sets the types
+   * of the user task.
+   */
   public Either<Failure, Void> applyUserTaskOutputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
     return applyOutputMappings(
         context, element, unknownSource, userTaskCompletionSource, userTaskCompletionSource);
   }
 
+  /**
+   * @param localPayloadSource source of the event payload that is set as local variables of the
+   *     element
+   * @param propagatedPayloadSource source of the event payload that is merged or propagated into
+   *     the flow scope
+   * @param mappingResultSource source of the variables that the output mappings produce
+   */
   private Either<Failure, Void> applyOutputMappings(
       final BpmnElementContext context,
       final ExecutableFlowNode element,
