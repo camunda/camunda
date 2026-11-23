@@ -113,7 +113,7 @@ class ProcessAuditLogTransformerTest {
     assertThat(entity.getEntityKey()).isEqualTo("456");
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(456L);
     assertThat(entity.getProcessDefinitionId()).isEqualTo("process-id");
-    assertThat(entity.getEntityDescription()).isEqualTo("processResource (version 3)");
+    assertThat(entity.getEntityDescription()).isEqualTo("processResource");
     assertThat(entity.getTenant().orElseThrow().tenantId()).isEqualTo("tenant-1");
   }
 }

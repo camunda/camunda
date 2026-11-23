@@ -9,8 +9,6 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 
 public class ProcessAuditLogTransformer implements AuditLogTransformer<Process> {
@@ -32,13 +30,6 @@ public class ProcessAuditLogTransformer implements AuditLogTransformer<Process> 
         .setDeploymentKey(value.getDeploymentKey())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessDefinitionId(value.getBpmnProcessId())
-        .setEntityDescription(describe(record.getIntent(), value));
-  }
-
-  private static String describe(final Intent intent, final Process value) {
-    if (intent == ProcessIntent.SUSPENDED || intent == ProcessIntent.RESUMED) {
-      return value.getResourceName() + " (version " + value.getVersion() + ")";
-    }
-    return value.getResourceName();
+        .setEntityDescription(value.getResourceName());
   }
 }

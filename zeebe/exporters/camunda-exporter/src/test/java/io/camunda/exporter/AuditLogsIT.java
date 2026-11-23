@@ -342,7 +342,7 @@ public class AuditLogsIT {
                     Map.entry("id", "1-807"),
                     Map.entry("actorType", "UNKNOWN"),
                     Map.entry("category", "DEPLOYED_RESOURCES"),
-                    Map.entry("entityDescription", "suspended.bpmn (version 2)"),
+                    Map.entry("entityDescription", "suspended.bpmn"),
                     Map.entry("entityKey", "5601"),
                     Map.entry("entityOperationIntent", (int) ProcessIntent.SUSPENDED.value()),
                     Map.entry("entityType", "RESOURCE"),
