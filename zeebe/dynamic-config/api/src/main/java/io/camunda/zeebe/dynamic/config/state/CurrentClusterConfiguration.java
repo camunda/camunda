@@ -10,7 +10,6 @@ package io.camunda.zeebe.dynamic.config.state;
 import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -49,8 +48,7 @@ public record CurrentClusterConfiguration(
     long version,
     GlobalConfiguration globalConfiguration,
     Map<String, PartitionGroupConfiguration> partitionGroups,
-    PhasedChangeState phasedChangeState)
-    implements InitializableClusterConfiguration {
+    PhasedChangeState phasedChangeState) {
 
   public static final long INITIAL_VERSION = 0;
   public static final String DEFAULT_GROUP = "default";
@@ -67,12 +65,10 @@ public record CurrentClusterConfiguration(
         INITIAL_VERSION, GlobalConfiguration.uninitialized(), Map.of(), PhasedChangeState.empty());
   }
 
-  @Override
   public boolean isUninitialized() {
     return globalConfiguration.isUninitialized();
   }
 
-  @Override
   public Set<MemberId> getMembers() {
     return globalConfiguration.members().keySet();
   }

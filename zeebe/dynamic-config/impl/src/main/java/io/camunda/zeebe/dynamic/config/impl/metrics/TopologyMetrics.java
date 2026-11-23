@@ -9,11 +9,10 @@ package io.camunda.zeebe.dynamic.config.impl.metrics;
 
 import static io.camunda.zeebe.dynamic.config.impl.metrics.TopologyMetricsDoc.*;
 
-import io.camunda.zeebe.dynamic.config.state.ChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.Status;
 import io.camunda.zeebe.util.micrometer.EnumMeter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -36,7 +35,7 @@ public final class TopologyMetrics {
     changeId = makeGauge(CHANGE_ID);
     changeStatus =
         EnumMeter.register(
-            ClusterChangePlan.Status.class,
+            DependencyChangePlan.Status.class,
             CHANGE_STATUS,
             TopologyMetricsKeyName.CLUSTER_CHANGE_STATUS,
             registry);
@@ -64,19 +63,19 @@ public final class TopologyMetrics {
     final var pendingChanges = topology.pendingChangesOf(CurrentClusterConfiguration.DEFAULT_GROUP);
     changeStatus.state(
         pendingChanges
-            .map(ChangePlan::status)
-            .or(() -> topology.phasedChangeState().lastChange().map(TopologyMetrics::legacyStatus))
+            .map(DependencyChangePlan::status)
+            .or(() -> topology.phasedChangeState().lastChange().map(TopologyMetrics::toGaugeStatus))
             .orElse(Status.COMPLETED));
-    changeId.set(pendingChanges.map(ChangePlan::id).orElse(0L));
-    changeVersion.set(pendingChanges.map(ChangePlan::version).orElse(0));
+    changeId.set(pendingChanges.map(DependencyChangePlan::id).orElse(0L));
+    changeVersion.set(pendingChanges.map(DependencyChangePlan::version).orElse(0));
     pendingOperations.set(
-        pendingChanges.map(ChangePlan::pendingOperations).map(List::size).orElse(0));
+        pendingChanges.map(DependencyChangePlan::pendingOperations).map(List::size).orElse(0));
     completedOperations.set(
-        pendingChanges.map(ChangePlan::completedOperations).map(List::size).orElse(0));
+        pendingChanges.map(DependencyChangePlan::completedOperations).map(List::size).orElse(0));
   }
 
-  /** The terminal status as the gauge's {@link ClusterChangePlan.Status} labels it. */
-  private static Status legacyStatus(final CompletedPhasedChange change) {
+  /** The terminal status as the gauge's {@link DependencyChangePlan.Status} labels it. */
+  private static Status toGaugeStatus(final CompletedPhasedChange change) {
     return switch (change.status()) {
       case COMPLETED -> Status.COMPLETED;
       case FAILED -> Status.FAILED;

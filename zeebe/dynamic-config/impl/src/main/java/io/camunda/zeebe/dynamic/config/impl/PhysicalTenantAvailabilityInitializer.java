@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * toggling a flag cannot fail that way).
  */
 public class PhysicalTenantAvailabilityInitializer
-    extends ClusterConfigurationModifier.CoordinatorOnly<CurrentClusterConfiguration> {
+    extends ClusterConfigurationModifier.CoordinatorOnly {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(PhysicalTenantAvailabilityInitializer.class);

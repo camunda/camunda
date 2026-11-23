@@ -42,8 +42,7 @@ import org.jspecify.annotations.NullMarked;
  * against the statically configured exporters.
  */
 @NullMarked
-public class PartitionGroupExportingStateInitializer
-    implements ClusterConfigurationModifier<CurrentClusterConfiguration> {
+public class PartitionGroupExportingStateInitializer implements ClusterConfigurationModifier {
 
   private final Map<PartitionId, ExportingState> legacyExportingStates;
   private final MemberId localMemberId;

@@ -10,7 +10,6 @@ package io.camunda.zeebe.dynamic.config.impl;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
-import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.impl.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
@@ -59,7 +58,7 @@ import org.slf4j.LoggerFactory;
  *     exporters.
  */
 @NullMarked
-public interface ClusterConfigurationInitializer<T extends InitializableClusterConfiguration> {
+public interface ClusterConfigurationInitializer {
   Logger LOG = LoggerFactory.getLogger(ClusterConfigurationInitializer.class);
 
   /**
@@ -67,7 +66,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
    *
    * @return a future that completes with a configuration which can be initialized or uninitialized
    */
-  ActorFuture<T> initialize();
+  ActorFuture<CurrentClusterConfiguration> initialize();
 
   /**
    * Chain initializers in oder. If this initializer returns an uninitialized configuration, the
@@ -79,11 +78,11 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
    *     succeed with an initialized configuration.
    * @return a chained ClusterConfigurationInitializer
    */
-  default ClusterConfigurationInitializer<T> orThen(
-      final ClusterConfigurationInitializer<T> after) {
-    final ClusterConfigurationInitializer<T> actual = this;
+  default ClusterConfigurationInitializer orThen(final ClusterConfigurationInitializer after) {
+    final ClusterConfigurationInitializer actual = this;
     return () -> {
-      final ActorFuture<T> chainedInitialize = new CompletableActorFuture<>();
+      final ActorFuture<CurrentClusterConfiguration> chainedInitialize =
+          new CompletableActorFuture<>();
       actual
           .initialize()
           .onComplete(
@@ -107,11 +106,11 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
    * @param modifier a modifier that updates the configuration
    * @return the chained initializer
    */
-  default ClusterConfigurationInitializer<T> andThen(
-      final ClusterConfigurationModifier<T> modifier) {
-    final ClusterConfigurationInitializer<T> actual = this;
+  default ClusterConfigurationInitializer andThen(final ClusterConfigurationModifier modifier) {
+    final ClusterConfigurationInitializer actual = this;
     return () -> {
-      final ActorFuture<T> chainedInitialize = new CompletableActorFuture<T>();
+      final ActorFuture<CurrentClusterConfiguration> chainedInitialize =
+          new CompletableActorFuture<CurrentClusterConfiguration>();
       actual
           .initialize()
           .onComplete(
@@ -146,12 +145,13 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
    * @return a {@link ClusterConfigurationInitializer} that can be used for further chaining with
    *     {@link #orThen(ClusterConfigurationInitializer)}.
    */
-  default ClusterConfigurationInitializer<T> recover(
+  default ClusterConfigurationInitializer recover(
       final Class<? extends InitializerError> exception,
-      final ClusterConfigurationInitializer<T> recovery) {
-    final ClusterConfigurationInitializer<T> actual = this;
+      final ClusterConfigurationInitializer recovery) {
+    final ClusterConfigurationInitializer actual = this;
     return () -> {
-      final ActorFuture<T> chainedInitialize = new CompletableActorFuture<>();
+      final ActorFuture<CurrentClusterConfiguration> chainedInitialize =
+          new CompletableActorFuture<>();
       actual
           .initialize()
           .onComplete(
@@ -170,33 +170,32 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
   }
 
   /** Initialized configuration from the locally persisted configuration */
-  class FileInitializer<T extends InitializableClusterConfiguration>
-      implements ClusterConfigurationInitializer<T> {
+  class FileInitializer implements ClusterConfigurationInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileInitializer.class);
 
     private final Path configurationFile;
     private final ClusterConfigurationSerializer serializer;
-    private final ConfigurationReader<T> reader;
+    private final ConfigurationReader reader;
 
     public FileInitializer(
         final Path configurationFile,
         final ClusterConfigurationSerializer serializer,
-        final ConfigurationReader<T> reader) {
+        final ConfigurationReader reader) {
       this.configurationFile = configurationFile;
       this.serializer = serializer;
       this.reader = reader;
     }
 
-    public static FileInitializer<CurrentClusterConfiguration> fromPersistedConfiguration(
+    public static FileInitializer fromPersistedConfiguration(
         final Path configurationFile, final ClusterConfigurationSerializer serializer) {
-      return new FileInitializer<CurrentClusterConfiguration>(
+      return new FileInitializer(
           configurationFile,
           serializer,
           (f, s) -> PersistedCurrentClusterConfiguration.ofFile(f, s).getConfiguration());
     }
 
     @Override
-    public ActorFuture<T> initialize() {
+    public ActorFuture<CurrentClusterConfiguration> initialize() {
       try {
         final var persistedTopology = reader.read(configurationFile, serializer);
 
@@ -214,8 +213,9 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     }
 
     @FunctionalInterface
-    public interface ConfigurationReader<T extends InitializableClusterConfiguration> {
-      T read(Path configurationFile, ClusterConfigurationSerializer serializer) throws Exception;
+    public interface ConfigurationReader {
+      CurrentClusterConfiguration read(
+          Path configurationFile, ClusterConfigurationSerializer serializer) throws Exception;
     }
   }
 
@@ -226,8 +226,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
    * received.
    */
   class GossipInitializer
-      implements ClusterConfigurationInitializer<CurrentClusterConfiguration>,
-          ClusterConfigurationUpdateListener {
+      implements ClusterConfigurationInitializer, ClusterConfigurationUpdateListener {
 
     static final Duration DEFAULT_WAIT_LOG_INTERVAL = Duration.ofSeconds(10);
     static final int ERROR_LOG_THRESHOLD = 10;
@@ -345,8 +344,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
    * configuration, letting the caller's initializer chain decide how to proceed.
    */
   class SyncInitializer
-      implements ClusterConfigurationInitializer<CurrentClusterConfiguration>,
-          ClusterConfigurationUpdateListener {
+      implements ClusterConfigurationInitializer, ClusterConfigurationUpdateListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyncInitializer.class);
     private final Duration syncDelay;
@@ -519,18 +517,17 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
   }
 
   /** Initialized configuration from the given static partition distribution */
-  class StaticInitializer<T extends InitializableClusterConfiguration>
-      implements ClusterConfigurationInitializer<T> {
+  class StaticInitializer implements ClusterConfigurationInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StaticInitializer.class);
-    private final Supplier<T> configurationSupplier;
+    private final Supplier<CurrentClusterConfiguration> configurationSupplier;
 
-    public StaticInitializer(final Supplier<T> configurationSupplier) {
+    public StaticInitializer(final Supplier<CurrentClusterConfiguration> configurationSupplier) {
       this.configurationSupplier = configurationSupplier;
     }
 
     @Override
-    public ActorFuture<T> initialize() {
+    public ActorFuture<CurrentClusterConfiguration> initialize() {
       try {
         final var configuration = configurationSupplier.get();
         LOGGER.debug(

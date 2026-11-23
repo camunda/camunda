@@ -145,10 +145,9 @@ public final class ClusterConfigurationManagerServiceImpl
    * staticConfiguration} assumes — see {@link ClusterConfigurationModifier.CoordinatorOnly}'s
    * self-filtering.
    */
-  private ClusterConfigurationInitializer<CurrentClusterConfiguration>
-      getCurrentClusterConfigurationNonCoordinatorInitializer(
-          final StaticConfiguration staticConfiguration,
-          final Map<PartitionId, ExportingState> legacyExportingStates) {
+  private ClusterConfigurationInitializer getCurrentClusterConfigurationNonCoordinatorInitializer(
+      final StaticConfiguration staticConfiguration,
+      final Map<PartitionId, ExportingState> legacyExportingStates) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.fromPersistedConfiguration(configurationFile, new ProtoBufSerializer())
         .recover(
@@ -168,9 +167,7 @@ public final class ClusterConfigurationManagerServiceImpl
                 clusterConfigurationGossiper::updateCurrentClusterConfiguration,
                 managerActor))
         .andThen(exporterStateModifier(staticConfiguration, false))
-        .andThen(
-            PartitionDistributorInitializer
-                .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration))
+        .andThen(new PartitionDistributorInitializer(staticConfiguration))
         .andThen(
             new PartitionGroupExportingStateInitializer(
                 legacyExportingStates, staticConfiguration.localMemberId()))
@@ -183,10 +180,9 @@ public final class ClusterConfigurationManagerServiceImpl
    * other members, and — unlike the non-coordinator chain — self-generate from static configuration
    * as a last resort if sync times out uninitialized.
    */
-  private ClusterConfigurationInitializer<CurrentClusterConfiguration>
-      getCurrentClusterConfigurationCoordinatorInitializer(
-          final StaticConfiguration staticConfiguration,
-          final Map<PartitionId, ExportingState> legacyExportingStates) {
+  private ClusterConfigurationInitializer getCurrentClusterConfigurationCoordinatorInitializer(
+      final StaticConfiguration staticConfiguration,
+      final Map<PartitionId, ExportingState> legacyExportingStates) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.fromPersistedConfiguration(configurationFile, new ProtoBufSerializer())
         .orThen(
@@ -198,11 +194,9 @@ public final class ClusterConfigurationManagerServiceImpl
                 clusterConfigurationGossiper::queryCurrentClusterConfiguration,
                 gossiperConfig.bootstrapTimeout(),
                 CurrentClusterConfiguration.uninitialized()))
-        .orThen(new StaticInitializer<>(staticConfiguration::generateCurrentClusterConfiguration))
+        .orThen(new StaticInitializer(staticConfiguration::generateCurrentClusterConfiguration))
         .andThen(exporterStateModifier(staticConfiguration, true))
-        .andThen(
-            PartitionDistributorInitializer
-                .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration))
+        .andThen(new PartitionDistributorInitializer(staticConfiguration))
         .andThen(
             new PartitionGroupExportingStateInitializer(
                 legacyExportingStates, staticConfiguration.localMemberId()))
@@ -280,13 +274,12 @@ public final class ClusterConfigurationManagerServiceImpl
                           staticConfiguration.clusterMembers())
                       .getDefaultCoordinator();
               final var isCoordinator = coordinatorMemberId.equals(localMemberId);
-              final ClusterConfigurationInitializer<CurrentClusterConfiguration>
-                  currentClusterConfigurationInitializer =
-                      isCoordinator
-                          ? getCurrentClusterConfigurationCoordinatorInitializer(
-                              staticConfiguration, legacyExportingStates)
-                          : getCurrentClusterConfigurationNonCoordinatorInitializer(
-                              staticConfiguration, legacyExportingStates);
+              final ClusterConfigurationInitializer currentClusterConfigurationInitializer =
+                  isCoordinator
+                      ? getCurrentClusterConfigurationCoordinatorInitializer(
+                          staticConfiguration, legacyExportingStates)
+                      : getCurrentClusterConfigurationNonCoordinatorInitializer(
+                          staticConfiguration, legacyExportingStates);
               clusterConfigurationManager
                   .start(currentClusterConfigurationInitializer)
                   .onComplete(result);

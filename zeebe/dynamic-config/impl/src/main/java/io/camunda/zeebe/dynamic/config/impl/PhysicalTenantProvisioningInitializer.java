@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
  * tenant alone is skipped while the rest are still provisioned.
  */
 public class PhysicalTenantProvisioningInitializer
-    extends ClusterConfigurationModifier.CoordinatorOnly<CurrentClusterConfiguration> {
+    extends ClusterConfigurationModifier.CoordinatorOnly {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(PhysicalTenantProvisioningInitializer.class);

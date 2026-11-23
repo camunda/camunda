@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.dynamic.config.impl;
 
-import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.StaticConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -16,9 +15,6 @@ import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,49 +24,31 @@ import org.slf4j.LoggerFactory;
  * not already been set. Once the cluster has agreed on a distributor config via gossip, subsequent
  * restarts read it from the persisted state instead of falling back to static configuration.
  *
- * <p>Works with {@link CurrentClusterConfiguration} (where the distributor config lives on the
- * cluster-wide {@code GlobalConfiguration}, since the partition distributor is not scoped to any
- * single partition group) via the injected accessor functions. See {@link
- * #currentClusterConfigurationPartitionDistributorInitializer(StaticConfiguration)}.
+ * <p>The distributor config lives on the cluster-wide {@code GlobalConfiguration}, since the
+ * partition distributor is not scoped to any single partition group.
  */
 @NullMarked
-public class PartitionDistributorInitializer<T extends InitializableClusterConfiguration>
-    extends ClusterConfigurationModifier.CoordinatorOnly<T> {
+public class PartitionDistributorInitializer extends ClusterConfigurationModifier.CoordinatorOnly {
 
   private static final Logger LOG = LoggerFactory.getLogger(PartitionDistributorInitializer.class);
 
   private final StaticConfiguration staticConfiguration;
-  private final Function<T, Optional<PartitionDistributorConfig>> configGetter;
-  private final BiFunction<T, PartitionDistributorConfig, T> configSetter;
 
-  public PartitionDistributorInitializer(
-      final StaticConfiguration staticConfiguration,
-      final Function<T, Optional<PartitionDistributorConfig>> configGetter,
-      final BiFunction<T, PartitionDistributorConfig, T> configSetter) {
+  public PartitionDistributorInitializer(final StaticConfiguration staticConfiguration) {
     super(staticConfiguration.localMemberId());
     this.staticConfiguration = staticConfiguration;
-    this.configGetter = configGetter;
-    this.configSetter = configSetter;
-  }
-
-  public static PartitionDistributorInitializer<CurrentClusterConfiguration>
-      currentClusterConfigurationPartitionDistributorInitializer(
-          final StaticConfiguration staticConfiguration) {
-    return new PartitionDistributorInitializer<>(
-        staticConfiguration,
-        configuration -> configuration.globalConfiguration().partitionDistributorConfig(),
-        (configuration, config) ->
-            configuration.updateGlobalConfiguration(
-                global -> global.setPartitionDistributorConfig(config)));
   }
 
   @Override
-  public ActorFuture<T> modify(final T configuration) {
-    if (configGetter.apply(configuration).isPresent()) {
+  public ActorFuture<CurrentClusterConfiguration> modify(
+      final CurrentClusterConfiguration configuration) {
+    if (configuration.globalConfiguration().partitionDistributorConfig().isPresent()) {
       return CompletableActorFuture.completed(configuration);
     }
     final var config = toConfig(staticConfiguration.partitionDistributor());
-    return CompletableActorFuture.completed(configSetter.apply(configuration, config));
+    return CompletableActorFuture.completed(
+        configuration.updateGlobalConfiguration(
+            global -> global.setPartitionDistributorConfig(config)));
   }
 
   private static PartitionDistributorConfig toConfig(final PartitionDistributor distributor) {

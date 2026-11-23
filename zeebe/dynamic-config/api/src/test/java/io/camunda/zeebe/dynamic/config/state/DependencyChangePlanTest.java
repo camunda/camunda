@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.CompletedOperation;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph.PlannedOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;

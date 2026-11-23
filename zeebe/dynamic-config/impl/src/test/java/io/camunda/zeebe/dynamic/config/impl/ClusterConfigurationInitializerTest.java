@@ -569,9 +569,9 @@ final class ClusterConfigurationInitializerTest {
     assertThat(initializeFuture.join().isUninitialized()).isTrue();
   }
 
-  private ClusterConfigurationInitializer<CurrentClusterConfiguration> getStaticInitializer() {
+  private ClusterConfigurationInitializer getStaticInitializer() {
     final var member = MemberId.from("10");
-    return new StaticInitializer<>(
+    return new StaticInitializer(
         getStaticConfiguration(member, Set.of(member))::generateCurrentClusterConfiguration);
   }
 
@@ -781,11 +781,8 @@ final class ClusterConfigurationInitializerTest {
           // member 0 was removed, member 1 last remaining in the cluster
           getStaticConfiguration(MemberId.from("1"), Set.of(MemberId.from("1")));
       final var initializer =
-          new StaticInitializer<>(updatedConfiguration::generateCurrentClusterConfiguration)
-              .andThen(
-                  PartitionDistributorInitializer
-                      .currentClusterConfigurationPartitionDistributorInitializer(
-                          staticConfiguration));
+          new StaticInitializer(updatedConfiguration::generateCurrentClusterConfiguration)
+              .andThen(new PartitionDistributorInitializer(staticConfiguration));
 
       // when
       final var initializeFuture = initializer.initialize();
@@ -804,11 +801,8 @@ final class ClusterConfigurationInitializerTest {
           getStaticConfiguration(
               MemberId.from("1"), Set.of(MemberId.from("0"), MemberId.from("1")));
       final var initializer =
-          new StaticInitializer<>(staticConfiguration::generateCurrentClusterConfiguration)
-              .andThen(
-                  PartitionDistributorInitializer
-                      .currentClusterConfigurationPartitionDistributorInitializer(
-                          staticConfiguration));
+          new StaticInitializer(staticConfiguration::generateCurrentClusterConfiguration)
+              .andThen(new PartitionDistributorInitializer(staticConfiguration));
 
       // when
       final var initializeFuture = initializer.initialize();
@@ -826,9 +820,9 @@ final class ClusterConfigurationInitializerTest {
     @Test
     void shouldRecoverFromExpectedException() throws IOException {
       // given
-      final ClusterConfigurationInitializer<CurrentClusterConfiguration> recovery =
+      final ClusterConfigurationInitializer recovery =
           () -> CompletableActorFuture.completed(initialClusterConfiguration);
-      final ClusterConfigurationInitializer<CurrentClusterConfiguration> failingInitializer =
+      final ClusterConfigurationInitializer failingInitializer =
           () ->
               CompletableActorFuture.completedExceptionally(
                   new PersistedConfigurationIsBroken(topologyFile, null));
@@ -846,7 +840,7 @@ final class ClusterConfigurationInitializerTest {
     @Test
     void shouldIgnoreRecoveryOnSuccess() throws IOException {
       // given
-      final ClusterConfigurationInitializer<CurrentClusterConfiguration> recovery =
+      final ClusterConfigurationInitializer recovery =
           Mockito.mock(ClusterConfigurationInitializer.class);
       final var fileInitializer =
           FileInitializer.fromPersistedConfiguration(topologyFile, new ProtoBufSerializer());
@@ -864,13 +858,13 @@ final class ClusterConfigurationInitializerTest {
     @Test
     void shouldUseChainedInitializerAfterSkippingRecovery() {
       // given
-      final ClusterConfigurationInitializer<CurrentClusterConfiguration> unsuccessfulInitializer =
+      final ClusterConfigurationInitializer unsuccessfulInitializer =
           () -> CompletableActorFuture.completed(CurrentClusterConfiguration.uninitialized());
 
-      final ClusterConfigurationInitializer<CurrentClusterConfiguration> successfulInitializer =
+      final ClusterConfigurationInitializer successfulInitializer =
           () -> CompletableActorFuture.completed(initialClusterConfiguration);
 
-      final ClusterConfigurationInitializer<CurrentClusterConfiguration> recoveryInitializer =
+      final ClusterConfigurationInitializer recoveryInitializer =
           () ->
               CompletableActorFuture.completedExceptionally(
                   new RuntimeException("shouldn't happen"));
@@ -888,15 +882,15 @@ final class ClusterConfigurationInitializerTest {
     @Test
     void shouldUseChainedInitializerAfterUnsuccessfulRecovery() {
       // given
-      final ClusterConfigurationInitializer<CurrentClusterConfiguration> failingInitializer =
+      final ClusterConfigurationInitializer failingInitializer =
           () ->
               CompletableActorFuture.completedExceptionally(
                   new PersistedConfigurationIsBroken(topologyFile, null));
 
-      final ClusterConfigurationInitializer<CurrentClusterConfiguration> unsuccessfulRecovery =
+      final ClusterConfigurationInitializer unsuccessfulRecovery =
           () -> CompletableActorFuture.completed(CurrentClusterConfiguration.uninitialized());
 
-      final ClusterConfigurationInitializer<CurrentClusterConfiguration> finalInitializer =
+      final ClusterConfigurationInitializer finalInitializer =
           () -> CompletableActorFuture.completed(initialClusterConfiguration);
 
       // when

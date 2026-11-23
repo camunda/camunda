@@ -195,10 +195,16 @@ class PartitionGroupConfigurationTest {
       // completeGraphChangeIfDrained can produce, since neither is gated by a coordinator
       final var earlier =
           new CompletedChange(
-              7, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH.plusSeconds(1));
+              7,
+              DependencyChangePlan.Status.COMPLETED,
+              Instant.EPOCH,
+              Instant.EPOCH.plusSeconds(1));
       final var later =
           new CompletedChange(
-              7, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH.plusSeconds(5));
+              7,
+              DependencyChangePlan.Status.COMPLETED,
+              Instant.EPOCH,
+              Instant.EPOCH.plusSeconds(5));
       final var left =
           new PartitionGroupConfiguration(
               3, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.of(earlier));
@@ -222,10 +228,16 @@ class PartitionGroupConfigurationTest {
       // same instant the two rules are indistinguishable.
       final var older =
           new CompletedChange(
-              3, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH.plusSeconds(9));
+              3,
+              DependencyChangePlan.Status.COMPLETED,
+              Instant.EPOCH,
+              Instant.EPOCH.plusSeconds(9));
       final var newer =
           new CompletedChange(
-              4, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH.plusSeconds(2));
+              4,
+              DependencyChangePlan.Status.COMPLETED,
+              Instant.EPOCH,
+              Instant.EPOCH.plusSeconds(2));
       final var left =
           new PartitionGroupConfiguration(
               3, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.of(older));
