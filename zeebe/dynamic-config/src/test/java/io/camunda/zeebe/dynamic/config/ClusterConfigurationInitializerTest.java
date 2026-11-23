@@ -28,11 +28,17 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -41,20 +47,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.Level;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 @Timeout(120)
 final class ClusterConfigurationInitializerTest {
+  // Far above the milliseconds these waits take, so slow CI machines do not make the tests flaky.
+  // It only bounds them, so that a broken initializer fails the test instead of hanging it.
+  private static final Duration FAIL_FAST_TIMEOUT = Duration.ofSeconds(10);
+
+  @RegisterExtension final ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension();
+
   @TempDir Path rootDir;
   private final ClusterConfiguration initialClusterConfiguration =
       ClusterConfiguration.init()
@@ -139,7 +154,7 @@ final class ClusterConfigurationInitializerTest {
             topologyNotifier,
             persistedClusterConfiguration::getConfiguration,
             ignore -> {},
-            new TestConcurrencyControl(),
+            new TestConcurrencyControl(true),
             ClusterConfiguration.uninitialized());
 
     // when
@@ -150,7 +165,119 @@ final class ClusterConfigurationInitializerTest {
     topologyNotifier.updateTopology(initialClusterConfiguration);
 
     // then
-    assertThatClusterTopology(initializeFuture.join()).isInitialized();
+    assertThat(initializeFuture)
+        .succeedsWithin(FAIL_FAST_TIMEOUT)
+        .satisfies(configuration -> assertThat(configuration.isUninitialized()).isFalse());
+  }
+
+  @Test
+  void shouldLogWarningsThenErrorWhileWaitingForGossip() {
+    // given
+    final var initializer = newGossipInitializerOnActor(new TestClusterConfigurationNotifier());
+
+    try (final var logCapturer = LogCapturer.capturing(GossipInitializer.class, Level.WARN)) {
+      // when - initialize() is called from the test thread, not from the actor
+      initializer.initialize();
+
+      // then
+      Awaitility.await("until the wait is escalated to an error")
+          .atMost(FAIL_FAST_TIMEOUT)
+          .untilAsserted(() -> assertThat(logCapturer.messagesAt(Level.ERROR)).isNotEmpty());
+      assertThat(logCapturer.messagesAt(Level.WARN))
+          .hasSize(GossipInitializer.ERROR_LOG_THRESHOLD - 1)
+          .allMatch(m -> m.contains("Still waiting for the coordinator"));
+      assertThat(logCapturer.messagesAt(Level.ERROR))
+          .allMatch(m -> m.contains("Still waiting for the coordinator"));
+    }
+  }
+
+  @Test
+  void shouldCleanUpOnceGossipIsReceived() {
+    // given
+    final var notifier = new TestClusterConfigurationNotifier();
+    final var timerCancelled = new AtomicBoolean();
+    final var initializer = newGossipInitializerOnActor(notifier, timerCancelled);
+
+    try (final var logCapturer = LogCapturer.capturing(GossipInitializer.class, Level.WARN)) {
+      final var initializeFuture = initializer.initialize();
+      Awaitility.await("until the first warning")
+          .atMost(FAIL_FAST_TIMEOUT)
+          .untilAsserted(() -> assertThat(logCapturer.messagesAt(Level.WARN)).isNotEmpty());
+      assertThat(notifier.hasListener()).isTrue();
+      assertThat(timerCancelled).isFalse();
+
+      // when
+      notifier.updateTopology(initialClusterConfiguration);
+      assertThat(initializeFuture).succeedsWithin(FAIL_FAST_TIMEOUT);
+
+      // then - the cleanup runs on the actor right after the future completes
+      Awaitility.await("until the listener is removed and the timer is cancelled")
+          .atMost(FAIL_FAST_TIMEOUT)
+          .untilAsserted(
+              () -> {
+                assertThat(notifier.hasListener()).isFalse();
+                assertThat(timerCancelled).isTrue();
+              });
+
+      // and nothing is logged anymore, over several intervals
+      final var loggedBeforeStop = logCapturer.messages().size();
+      Awaitility.await("until no more logs are written")
+          .during(Duration.ofMillis(250))
+          .atMost(FAIL_FAST_TIMEOUT)
+          .untilAsserted(() -> assertThat(logCapturer.messages()).hasSize(loggedBeforeStop));
+    }
+  }
+
+  /**
+   * Creates the initializer on a real actor. {@code ActorControl#runAtFixedRate} throws when called
+   * from outside the actor, which {@link TestConcurrencyControl} does not enforce. Tests call
+   * {@code initialize()} from the test thread, so they fail if scheduling the timer is not handed
+   * over to the actor.
+   */
+  private GossipInitializer<ClusterConfiguration> newGossipInitializerOnActor(
+      final TestClusterConfigurationNotifier notifier) {
+    return newGossipInitializerOnActor(notifier, new AtomicBoolean());
+  }
+
+  /**
+   * Same as above, and sets {@code timerCancelled} once the fixed-rate timer registered by the
+   * initializer is cancelled.
+   */
+  private GossipInitializer<ClusterConfiguration> newGossipInitializerOnActor(
+      final TestClusterConfigurationNotifier notifier, final AtomicBoolean timerCancelled) {
+    final var actor = Actor.newActor().name("gossip-initializer-test").build();
+    actorScheduler.submitActor(actor).join();
+    return new GossipInitializer<>(
+        notifier,
+        persistedClusterConfiguration::getConfiguration,
+        ignore -> {},
+        recordingTimerCancellation(actor, timerCancelled),
+        ClusterConfiguration.uninitialized(),
+        Duration.ofMillis(25));
+  }
+
+  /** Delegates everything to the actor, but reports the cancellation of fixed-rate timers. */
+  private static ConcurrencyControl recordingTimerCancellation(
+      final ConcurrencyControl delegate, final AtomicBoolean timerCancelled) {
+    return Mockito.mock(
+        ConcurrencyControl.class,
+        invocation -> {
+          final Object result;
+          try {
+            result = invocation.getMethod().invoke(delegate, invocation.getArguments());
+          } catch (final InvocationTargetException e) {
+            throw e.getCause();
+          }
+          if (result instanceof final ScheduledTimer timer
+              && invocation.getMethod().getName().equals("runAtFixedRate")) {
+            return (ScheduledTimer)
+                () -> {
+                  timerCancelled.set(true);
+                  timer.cancel();
+                };
+          }
+          return result;
+        });
   }
 
   @Test
@@ -478,7 +605,12 @@ final class ClusterConfigurationInitializerTest {
   private static final class TestClusterConfigurationNotifier
       implements ClusterConfigurationUpdateNotifier {
 
-    private ClusterConfigurationUpdateListener listener;
+    // written on the actor thread and read by the test thread
+    private volatile ClusterConfigurationUpdateListener listener;
+
+    boolean hasListener() {
+      return listener != null;
+    }
 
     @Override
     public void addUpdateListener(final ClusterConfigurationUpdateListener listener) {
@@ -511,7 +643,7 @@ final class ClusterConfigurationInitializerTest {
                       new TestClusterConfigurationNotifier(),
                       persistedClusterConfiguration::getConfiguration,
                       ignore -> {},
-                      new TestConcurrencyControl(),
+                      new TestConcurrencyControl(true),
                       ClusterConfiguration.uninitialized()));
       // write initial topology to the file
       persistedClusterConfiguration.update(initialClusterConfiguration);
@@ -535,7 +667,7 @@ final class ClusterConfigurationInitializerTest {
                       topologyUpdateNotifier,
                       persistedClusterConfiguration::getConfiguration,
                       gossipedTopology::set,
-                      new TestConcurrencyControl(),
+                      new TestConcurrencyControl(true),
                       ClusterConfiguration.uninitialized()));
 
       // when
@@ -549,7 +681,9 @@ final class ClusterConfigurationInitializerTest {
       topologyUpdateNotifier.updateTopology(initialClusterConfiguration);
 
       // then
-      assertThatClusterTopology(initializeFuture.join()).isInitialized();
+      assertThat(initializeFuture)
+          .succeedsWithin(FAIL_FAST_TIMEOUT)
+          .satisfies(configuration -> assertThat(configuration.isUninitialized()).isFalse());
     }
 
     @Test
@@ -565,7 +699,7 @@ final class ClusterConfigurationInitializerTest {
                       topologyUpdateNotifier,
                       persistedClusterConfiguration::getConfiguration,
                       gossipedTopology::set,
-                      new TestConcurrencyControl(),
+                      new TestConcurrencyControl(true),
                       ClusterConfiguration.uninitialized()));
       // Corrupt file
       Files.write(
@@ -663,7 +797,7 @@ final class ClusterConfigurationInitializerTest {
               topologyNotifier,
               persistedCurrentClusterConfiguration::getConfiguration,
               ignore -> {},
-              new TestConcurrencyControl(),
+              new TestConcurrencyControl(true),
               CurrentClusterConfiguration.uninitialized());
 
       // when
@@ -688,7 +822,7 @@ final class ClusterConfigurationInitializerTest {
               topologyNotifier,
               persistedCurrentClusterConfiguration::getConfiguration,
               ignore -> {},
-              new TestConcurrencyControl(),
+              new TestConcurrencyControl(true),
               CurrentClusterConfiguration.uninitialized());
 
       // when
