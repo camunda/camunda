@@ -1079,6 +1079,48 @@ public final class DecisionStateTest {
     assertThat(foundDecision.getDecisionKey()).isEqualTo(decision.getDecisionKey());
   }
 
+  @Test
+  void shouldNotCachePreviousVersionWhenStoringNewVersion() {
+    // given
+    final var drgV1 = sampleDecisionRequirementsRecord();
+    decisionState.storeDecisionRequirements(drgV1);
+    decisionState.clearCache();
+
+    // when
+    decisionState.storeDecisionRequirements(
+        sampleDecisionRequirementsRecord()
+            .setDecisionRequirementsKey(2L)
+            .setDecisionRequirementsVersion(2));
+
+    // then
+    assertThat(
+            ((DbDecisionState) decisionState)
+                .isDrgCached(TENANT_ID, drgV1.getDecisionRequirementsKey()))
+        .isFalse();
+  }
+
+  @Test
+  void shouldNotCacheLatestVersionWhenDeletingOlderVersion() {
+    // given
+    final var drgV1 = sampleDecisionRequirementsRecord();
+    final var drgV2 =
+        sampleDecisionRequirementsRecord()
+            .setDecisionRequirementsKey(2L)
+            .setDecisionRequirementsVersion(2);
+    decisionState.storeDecisionRequirements(drgV1);
+    decisionState.storeDecisionRequirements(drgV2);
+    decisionState.clearCache();
+
+    // when
+    decisionState.deleteDecisionRequirements(drgV1);
+
+    // then
+    assertThat(
+            ((DbDecisionState) decisionState)
+                .isDrgCached(TENANT_ID, drgV2.getDecisionRequirementsKey()))
+        .isFalse();
+  }
+
   private DecisionRecord sampleDecisionRecord() {
     return new DecisionRecord()
         .setDecisionId("decision-id")
