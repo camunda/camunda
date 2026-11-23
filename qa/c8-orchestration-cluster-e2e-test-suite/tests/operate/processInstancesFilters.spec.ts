@@ -720,11 +720,10 @@ test.describe('Process Instances Filters', () => {
       // rows" checkbox renders.
       await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
 
-      await operateProcessesPage.selectAllProcessInstances();
-
-      await operateProcessesPage.clickCancelBatchOperationButton();
-
-      await operateProcessesPage.clickCancelProcessInstanceDialogButton();
+      // Drive selection, toolbar and confirmation as one retried unit: an
+      // instances refetch between a separate select-all and the toolbar click
+      // drops the row selection and unmounts the batch toolbar.
+      await operateProcessesPage.cancelAllProcessInstancesInBatch();
 
       await operateProcessesPage.clickGoToOperationDetailsButton();
 
