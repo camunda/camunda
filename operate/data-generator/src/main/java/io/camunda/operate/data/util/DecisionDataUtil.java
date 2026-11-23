@@ -206,7 +206,7 @@ public class DecisionDataUtil {
       final long processDefinitionKey,
       final long processInstanceKey) {
     return createDecisionInstance(
-        String.valueOf(random.nextInt(1000)) + "-1",
+        random.nextLong(Long.MAX_VALUE) + "-1",
         state,
         decisionName,
         evaluationDate,
