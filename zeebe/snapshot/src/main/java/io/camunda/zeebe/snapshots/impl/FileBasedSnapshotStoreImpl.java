@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
@@ -60,6 +61,7 @@ public final class FileBasedSnapshotStoreImpl implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotStoreImpl.class);
   private static final String CHECKSUM_SUFFIX = ".checksum";
   private static final String TMP_CHECKSUM_SUFFIX = ".tmp";
+  private static final String TRANSIENT_DIRECTORY_PREFIX = "transient-";
   private final int brokerId;
   // the root snapshotsDirectory where all snapshots should be stored
   private final Path snapshotsDirectory;
@@ -111,6 +113,22 @@ public final class FileBasedSnapshotStoreImpl implements AutoCloseable {
       availableSnapshots.add(latestSnapshot);
     }
     purgePendingSnapshotsDirectory();
+    purgeTransientSnapshotDirectories();
+  }
+
+  private void purgeTransientSnapshotDirectories() {
+    try (final var directories =
+        Files.newDirectoryStream(
+            snapshotsDirectory,
+            p ->
+                Files.isDirectory(p)
+                    && p.getFileName().toString().startsWith(TRANSIENT_DIRECTORY_PREFIX))) {
+      directories.forEach(this::purgePendingSnapshot);
+    } catch (final IOException e) {
+      LOGGER.error(
+          "Failed to purge transient snapshots, which may result in unnecessary disk usage and should be monitored",
+          e);
+    }
   }
 
   @Override
@@ -432,9 +450,15 @@ public final class FileBasedSnapshotStoreImpl implements AutoCloseable {
               processedPosition, exportedPosition);
       return Either.left(new SnapshotAlreadyExistsException(error));
     }
-    // transient snapshots are directly written to our snapshot dir
-    // with the sfv checksum file they are marked as valid
-    final var directory = buildSnapshotDirectory(newSnapshotId);
+    // transient snapshots are first written to a temporary directory and then later moved to the
+    // final location once persisted.
+    Path directory;
+    do {
+      directory =
+          snapshotsDirectory.resolve(
+              TRANSIENT_DIRECTORY_PREFIX
+                  + Long.toHexString(ThreadLocalRandom.current().nextLong()));
+    } while (Files.exists(directory));
     final var newPendingSnapshot =
         new FileBasedTransientSnapshot(newSnapshotId, directory, this, actor, checksumProvider);
     addPendingSnapshot(newPendingSnapshot);
@@ -512,6 +536,11 @@ public final class FileBasedSnapshotStoreImpl implements AutoCloseable {
     final var persistedSnapshot = currentPersistedSnapshotRef.get();
     return (persistedSnapshot != null
         && persistedSnapshot.getSnapshotId().compareTo(snapshotId) >= 0);
+  }
+
+  boolean hasNewerSnapshotThan(final FileBasedSnapshotId snapshotId) {
+    final var persistedSnapshot = currentPersistedSnapshotRef.get();
+    return persistedSnapshot != null && persistedSnapshot.getSnapshotId().compareTo(snapshotId) > 0;
   }
 
   FileBasedSnapshot persistNewSnapshot(

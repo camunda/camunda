@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
@@ -23,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -67,13 +69,17 @@ public class FileBasedTransientSnapshotTest {
 
   @Test
   public void shouldEncodeSnapshotIdInPath() {
+    // given
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
+    transientSnapshot.take(this::writeSnapshot).join();
 
     // when
-    final var pathId = FileBasedSnapshotId.ofPath(transientSnapshot.getPath()).orElseThrow();
+    final var persistedSnapshot = transientSnapshot.persist().join();
 
     // then
-    assertThat(pathId).isEqualTo(transientSnapshot.snapshotId());
+    assertThat(persistedSnapshot.getPath()).isNotEmptyDirectory();
+    assertThat(FileBasedSnapshotId.ofPath(persistedSnapshot.getPath()))
+        .hasValue((FileBasedSnapshotId) transientSnapshot.snapshotId());
   }
 
   @Test
@@ -142,6 +148,38 @@ public class FileBasedTransientSnapshotTest {
   }
 
   @Test
+  public void shouldNotDeletePersistedSnapshotWhenPurgingPendingSnapshotWithSameId() {
+    // given
+    final var stuckSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
+    stuckSnapshot.take(this::writeSnapshot).join();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
+    transientSnapshot.take(this::writeSnapshot).join();
+    final var persistedSnapshot = transientSnapshot.persist().join();
+
+    // when
+    snapshotStore.purgePendingSnapshots().join();
+
+    // then
+    assertThat(persistedSnapshot.getPath()).isNotEmptyDirectory();
+  }
+
+  @Test
+  public void shouldNotPersistTransientSnapshotWhenSnapshotWithSameIdIsAlreadyPersisted() {
+    // given
+    final var stuckSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
+    stuckSnapshot.take(this::writeSnapshot).join();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
+    transientSnapshot.take(this::writeSnapshot).join();
+    transientSnapshot.persist().join();
+
+    // when
+    final var persisted = stuckSnapshot.persist();
+
+    // then
+    assertThatThrownBy(persisted::join).hasCauseInstanceOf(SnapshotAlreadyExistsException.class);
+  }
+
+  @Test
   public void shouldPersistSnapshot() {
     // given
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
@@ -207,7 +245,7 @@ public class FileBasedTransientSnapshotTest {
     // given
     final var transientSnapshot = snapshotStore.newTransientSnapshot(10L, 10L, 10L, 10L).get();
     transientSnapshot.take(this::writeSnapshot);
-    transientSnapshot.persist().join();
+    final var persistedSnapshot = (FileBasedSnapshot) transientSnapshot.persist().join();
 
     // when
     final var oldSnapshot = snapshotStore.newTransientSnapshot(1L, 1L, 1L, 1L).get();
@@ -215,9 +253,13 @@ public class FileBasedTransientSnapshotTest {
     oldSnapshot.persist().join();
 
     // then
-    assertThat(pendingDir)
-        .as("transient and outdated snapshot has been deleted")
-        .isEmptyDirectory();
+    Awaitility.await("transient and outdated snapshot has been deleted")
+        .untilAsserted(
+            () ->
+                assertThat(snapshotsDir)
+                    .asInstanceOf(DirectoryAssert.factory())
+                    .isDirectoryContainingExactly(
+                        persistedSnapshot.getPath(), persistedSnapshot.getChecksumPath()));
   }
 
   @Test
