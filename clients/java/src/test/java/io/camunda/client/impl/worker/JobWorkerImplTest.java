@@ -876,6 +876,8 @@ final class JobWorkerImplTest {
         .atMost(Duration.ofSeconds(2))
         .until(() -> gateway.heldActivationCount() >= 1);
 
+    final int activationRequestsWhenClosed = gateway.getRequestedJobCounts().size();
+
     worker.close();
     assertThat(worker.isOpen()).isFalse();
     assertThat(worker.isClosed()).isFalse();
@@ -885,6 +887,9 @@ final class JobWorkerImplTest {
     Awaitility.await()
         .atMost(Duration.ofSeconds(2))
         .until(worker::isClosed, Matchers.equalTo(true));
+
+    // Closing must release the stuck poller without scheduling another activation.
+    assertThat(gateway.getRequestedJobCounts()).hasSize(activationRequestsWhenClosed);
   }
 
   @Test
