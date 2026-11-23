@@ -92,10 +92,13 @@ public final class ActivateJobsTest {
 
       assertThat(response.getJobsCount()).isEqualTo(maxJobsToActivate);
 
+      // the first partition is random, so the jobs are asserted against the partition that was
+      // actually probed
+      final BrokerActivateJobsRequest brokerRequest = brokerClient.getSingleBrokerRequest();
       for (int i = 0; i < maxJobsToActivate; i++) {
         final ActivatedJob job = response.getJobs(i);
         assertThat(job.getKey())
-            .isEqualTo(Protocol.encodePartitionId(Protocol.START_PARTITION_ID, i));
+            .isEqualTo(Protocol.encodePartitionId(brokerRequest.getPartitionId(), i));
         assertThat(job.getType()).isEqualTo(jobType);
         assertThat(job.getWorker()).isEqualTo(worker);
         assertThat(job.getRetries()).isEqualTo(stub.getRetries());
@@ -111,7 +114,6 @@ public final class ActivateJobsTest {
         JsonUtil.assertEquality(job.getVariables(), stub.getVariables());
       }
 
-      final BrokerActivateJobsRequest brokerRequest = brokerClient.getSingleBrokerRequest();
       final JobBatchRecord brokerRequestValue = brokerRequest.getRequestWriter();
       assertThat(brokerRequestValue.getMaxJobsToActivate()).isEqualTo(maxJobsToActivate);
       assertThat(brokerRequestValue.getTypeBuffer()).isEqualTo(wrapString(jobType));
@@ -138,7 +140,10 @@ public final class ActivateJobsTest {
               .setMaxJobsToActivate(maxJobsToActivate)
               .build();
 
-      for (int partitionOffset = 0; partitionOffset < 3; partitionOffset++) {
+      // the first partition is random, so the round robin is asserted relative to the first
+      // response
+      int previousPartition = -1;
+      for (int i = 0; i < 3; i++) {
         stub.addAvailableJobs(type, maxJobsToActivate);
         // when
         final Iterator<ActivateJobsResponse> responses = client.activateJobs(request);
@@ -147,10 +152,17 @@ public final class ActivateJobsTest {
         assertThat(responses.hasNext()).isTrue();
         final ActivateJobsResponse response = responses.next();
 
+        final int currentPartition = Protocol.decodePartitionId(response.getJobs(0).getKey());
         for (final ActivatedJob activatedJob : response.getJobsList()) {
-          assertThat(Protocol.decodePartitionId(activatedJob.getKey()))
-              .isEqualTo(Protocol.START_PARTITION_ID + partitionOffset);
+          assertThat(Protocol.decodePartitionId(activatedJob.getKey())).isEqualTo(currentPartition);
         }
+        if (i > 0) {
+          // consecutive requests land on consecutive partitions, wrapping around
+          final int partitionsCount =
+              brokerClient.getTopologyManager().getTopology().getPartitionsCount();
+          assertThat(currentPartition).isEqualTo(previousPartition % partitionsCount + 1);
+        }
+        previousPartition = currentPartition;
       }
     }
 
