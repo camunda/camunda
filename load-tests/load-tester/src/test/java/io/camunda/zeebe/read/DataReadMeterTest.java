@@ -16,9 +16,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.metrics.ResultMetricKeyNames;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
-import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.read.DataReadMeter.ReadQuery;
 import io.camunda.zeebe.read.DataReadMeter.ReadQueryContext;
 import io.micrometer.core.instrument.Timer;
@@ -387,8 +387,8 @@ final class DataReadMeterTest {
     return meterRegistry
         .get(StarterLatencyMetricsDoc.READ_BENCHMARK.getName())
         .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), queryName)
-        .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
-        .tag(StarterMetricKeyNames.ERROR.asString(), error)
+        .tag(ResultMetricKeyNames.OUTCOME.asString(), outcome)
+        .tag(ResultMetricKeyNames.ERROR.asString(), error)
         .timer();
   }
 

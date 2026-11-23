@@ -30,10 +30,13 @@ public class ResponseChecker extends Thread {
       new ThrottledLogger(LoggerFactory.getLogger(Worker.class), Duration.ofSeconds(5));
 
   private final BlockingQueue<Future<?>> futures;
+  private final WorkerResultMetrics resultMetrics;
   private volatile boolean shuttingDown = false;
 
-  public ResponseChecker(final BlockingQueue<Future<?>> futures) {
+  public ResponseChecker(
+      final BlockingQueue<Future<?>> futures, final WorkerResultMetrics resultMetrics) {
     this.futures = futures;
+    this.resultMetrics = resultMetrics;
   }
 
   @Override
@@ -41,9 +44,11 @@ public class ResponseChecker extends Thread {
     while (!shuttingDown) {
       try {
         futures.take().get();
+        resultMetrics.recordJobCompletion();
       } catch (final InterruptedException e) {
         // ignore and retry
       } catch (final ExecutionException e) {
+        resultMetrics.recordJobCompletion(e);
         final Throwable cause = e.getCause();
         if (cause instanceof StatusRuntimeException) {
           final StatusRuntimeException statusRuntimeException = (StatusRuntimeException) cause;
