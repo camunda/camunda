@@ -157,11 +157,11 @@ final class MsgpackPojoProcessorRejectionTest {
             "First -> Second -> First"),
         // properties without a default
         fields("@Nullable long key;", "key", "@Nullable"),
-        fields("Long key;", "key", "@Nullable"),
-        fields("Integer count;", "count", "@Nullable"),
+        fields("Long key;", "key", "@Nullable", "Use long for a default"),
+        fields("Integer count;", "count", "@Nullable", "Use int for a default"),
         fields("@Nullable final RequiredLong key = new RequiredLong();", "key", "@Nullable"),
         fields("RequiredLong key = new RequiredLong();", "key", "final"),
-        fields("Boolean accepting;", "accepting", "@Nullable"),
+        fields("Boolean accepting;", "accepting", "@Nullable", "Use boolean for a default"),
         fields(
             "@Nullable final UnsafeBuffer name = new UnsafeBuffer(new byte[0]);",
             "name",
