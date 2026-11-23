@@ -34,6 +34,9 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import org.agrona.CloseHelper;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +66,7 @@ final class SegmentsManager implements AutoCloseable {
   private final String name;
   private final JournalMetaStore metaStore;
   private final Executor deletionExecutor;
+  private @Nullable ExecutorService bgIoExecutor;
 
   private volatile @Nullable Segment currentSegment;
 
@@ -117,6 +121,14 @@ final class SegmentsManager implements AutoCloseable {
       nextSegment = null;
     }
 
+    CloseHelper.close(
+        e ->
+            LOG.warn(
+                "Failed to close the background I/O executor of journal {}; its thread may leak",
+                name,
+                e),
+        bgIoExecutor);
+    bgIoExecutor = null;
     currentSegment = null;
   }
 
@@ -380,6 +392,12 @@ final class SegmentsManager implements AutoCloseable {
     // node was stopped. It is safe to delete it now since there are no readers opened for these
     // segments.
     deleteDeferredFiles();
+
+    // created last, so that nothing above can fail while holding an executor that no one would
+    // close; the executor is only needed once open() has returned, to prepare the next segment
+    bgIoExecutor =
+        Executors.newSingleThreadExecutor(
+            task -> Thread.ofPlatform().name("journal-bg-io-" + name).daemon(true).unstarted(task));
   }
 
   private void prepareNextSegment() {
@@ -389,7 +407,8 @@ final class SegmentsManager implements AutoCloseable {
             .withIndex(INITIAL_INDEX)
             .withMaxSegmentSize(maxSegmentSize)
             .build();
-    nextSegment = CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor));
+    nextSegment =
+        CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor), bgIoExecutor);
   }
 
   SortedMap<Long, Segment> getTailSegments(final long index) {
