@@ -109,7 +109,7 @@ class ProcessDefinitionSuspensionAuditLogTransformerTest {
 
   @ParameterizedTest
   @EnumSource(RejectionType.class)
-  void shouldAuditOnlyRejectionsTheUserCanCause(final RejectionType rejectionType) {
+  void shouldAuditOnlyInvalidStateRejections(final RejectionType rejectionType) {
     // given
     final var record =
         suspensionRejection(
