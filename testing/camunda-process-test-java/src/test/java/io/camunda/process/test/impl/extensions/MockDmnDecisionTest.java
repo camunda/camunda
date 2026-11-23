@@ -33,6 +33,8 @@ import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -187,7 +189,7 @@ public class MockDmnDecisionTest {
         .addResourceStream(dmnStreamCaptor.capture(), eq(decisionId + ".dmn"));
 
     // the XML declares UTF-8, so the bytes must be UTF-8 whatever the JVM's default charset is
-    final byte[] deployed = dmnStreamCaptor.getValue().readAllBytes();
+    final byte[] deployed = readAll(dmnStreamCaptor.getValue());
     assertThat(new String(deployed, StandardCharsets.UTF_8))
         .contains("encoding=\"UTF-8\"")
         .contains("\"Müller\"");
@@ -217,6 +219,16 @@ public class MockDmnDecisionTest {
             () -> processTestContext.mockDmnDecision().withDecisionId("  ").thenReturn("approved"))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("withDecisionId");
+  }
+
+  private static byte[] readAll(final InputStream stream) throws IOException {
+    final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    final byte[] buffer = new byte[4096];
+    int read;
+    while ((read = stream.read(buffer)) != -1) {
+      bytes.write(buffer, 0, read);
+    }
+    return bytes.toByteArray();
   }
 
   private static Optional<String> zeebeVersionTag(final Decision decision) {
