@@ -83,6 +83,11 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -96,6 +101,15 @@
             <dep>com.azure:azure-security-keyvault-secrets</dep>
             <dep>com.azure:azure-identity</dep>
           </ignoredUnusedDeclaredDependencies>
+          <ignoredUsedUndeclaredDependencies>
+            <!-- The SDK's own HTTP client, which the mocked-Azure ITs build with a test trust
+                 store. Already on the compile classpath through the Key Vault client; declaring
+                 them with test scope would drop them from the runtime classpath. -->
+            <dep>com.azure:azure-core-http-netty</dep>
+            <dep>io.projectreactor.netty:reactor-netty-http</dep>
+            <dep>io.projectreactor.netty:reactor-netty-core</dep>
+            <dep>io.netty:netty-handler</dep>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
     </plugins>
