@@ -29,4 +29,5 @@ process-execution data path). These are module-scoped decisions; see the
 |                           ADR                           |                                                 Decision                                                 |
 |---------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
 | [0014](0014-811-hub-managed-identity-policy-updates.md) | Hub policy updates applied as versioned identity state on partition 1, committed by a distributed switch |
+| [0015](0015-811-distribution-completion-tracking.md)    | Every distribution tracks RECEIVED and COMPLETED per partition, with command hooks on both milestones    |
 
