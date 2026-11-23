@@ -16,10 +16,13 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public interface ElementInstanceState {
 
-  ElementInstance getInstance(long key);
+  @Nullable ElementInstance getInstance(long key);
 
   List<ElementInstance> getChildren(long parentKey);
 
@@ -71,7 +74,8 @@ public interface ElementInstanceState {
       BiFunction<Long, ElementInstance, Boolean> visitor,
       Predicate<ElementInstance> filter);
 
-  AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(long processInstanceKey);
+  @Nullable AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(
+      long processInstanceKey);
 
   /**
    * Returns the number of the taken sequence flows that are connected to the given (joining)
