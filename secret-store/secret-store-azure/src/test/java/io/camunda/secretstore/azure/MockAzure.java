@@ -14,6 +14,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
@@ -21,9 +22,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.http.Request;
+import com.github.tomakehurst.wiremock.matching.MatchResult;
+import com.github.tomakehurst.wiremock.matching.ValueMatcher;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
@@ -39,6 +43,7 @@ final class MockAzure implements AutoCloseable {
 
   private static final String ORIGINAL_HOST = RoutedHttpClient.ORIGINAL_HOST;
   private static final String IMDS_TOKEN_PATH = "/metadata/identity/oauth2/token";
+  private static final String RESPONSE_TEMPLATE = "response-template";
 
   private final WireMockServer server;
   private final TestCertificate certificate;
@@ -77,10 +82,11 @@ final class MockAzure implements AutoCloseable {
             .withRequestBody(containing("client_id=" + clientId))
             .willReturn(
                 okJson(
-                    """
+                        """
                     {"token_type":"Bearer","expires_in":%1$d,"ext_expires_in":%1$d,"access_token":"%2$s"}
                     """
-                        .formatted(expiresIn, token))));
+                            .formatted(expiresIn, token))
+                    .withTransformers(RESPONSE_TEMPLATE)));
   }
 
   /**
@@ -88,7 +94,29 @@ final class MockAzure implements AutoCloseable {
    * to the system-assigned identity.
    */
   void imdsIssues(final @Nullable String clientId, final String token, final long expiresIn) {
-    final var expiresOn = Instant.now().getEpochSecond() + expiresIn;
+    stubImds(clientId, token, expiresIn);
+  }
+
+  /**
+   * Entra ID issues {@code clientId} of {@code tenantId} a new token on every request, valid for
+   * {@code lifetimeSeconds}: {@code <tokenPrefix>.<expiry in epoch millis>}, which {@link
+   * #vaultHoldsForUnexpiredTokens} checks.
+   */
+  void entraIssuesShortLivedTokens(
+      final String tenantId,
+      final String clientId,
+      final String tokenPrefix,
+      final long lifetimeSeconds) {
+    entraIssues(tenantId, clientId, shortLivedToken(tokenPrefix, lifetimeSeconds), lifetimeSeconds);
+  }
+
+  /** As {@link #entraIssuesShortLivedTokens}, from IMDS to the user-assigned {@code clientId}. */
+  void imdsIssuesShortLivedTokens(
+      final String clientId, final String tokenPrefix, final long lifetimeSeconds) {
+    stubImds(clientId, shortLivedToken(tokenPrefix, lifetimeSeconds), lifetimeSeconds);
+  }
+
+  private void stubImds(final @Nullable String clientId, final String token, final long expiresIn) {
     server.stubFor(
         get(urlPathEqualTo(IMDS_TOKEN_PATH))
             .withHeader(ORIGINAL_HOST, equalTo(RoutedHttpClient.IMDS_HOST))
@@ -96,11 +124,18 @@ final class MockAzure implements AutoCloseable {
             .withQueryParam("client_id", clientId == null ? absent() : equalTo(clientId))
             .willReturn(
                 okJson(
-                    """
-                    {"access_token":"%s","expires_in":"%d","expires_on":"%d",
-                     "resource":"%s","token_type":"Bearer"}
-                    """
-                        .formatted(token, expiresIn, expiresOn, VAULT_RESOURCE))));
+                        // expires_on is rendered per response, so a token is never issued expired
+                        """
+                        {"access_token":"%1$s","expires_in":"%2$d",
+                         "expires_on":"{{now offset='%2$d seconds' format='unix'}}",
+                         "resource":"%3$s","token_type":"Bearer"}
+                        """
+                            .formatted(token, expiresIn, VAULT_RESOURCE))
+                    .withTransformers(RESPONSE_TEMPLATE)));
+  }
+
+  private static String shortLivedToken(final String tokenPrefix, final long lifetimeSeconds) {
+    return tokenPrefix + ".{{now offset='" + lifetimeSeconds + " seconds' format='epoch'}}";
   }
 
   /** IMDS answers as on a machine without a managed identity. */
@@ -151,6 +186,71 @@ final class MockAzure implements AutoCloseable {
   }
 
   /**
+   * Like {@link #vaultHolds}, but accepts only unexpired tokens issued by {@link
+   * #entraIssuesShortLivedTokens} or {@link #imdsIssuesShortLivedTokens}. An expired token gets 401
+   * with a new challenge, as from Key Vault.
+   */
+  void vaultHoldsForUnexpiredTokens(
+      final String vaultHost,
+      final String tenantId,
+      final String tokenPrefix,
+      final String secretName,
+      final String value) {
+    vaultChallenges(vaultHost, tenantId);
+    final var bearerPrefix = "Bearer " + tokenPrefix + ".";
+    final ValueMatcher<Request> unexpired =
+        request -> {
+          final var authorization = request.getHeader("Authorization");
+          final var expiresAt = Long.parseLong(authorization.substring(bearerPrefix.length()));
+          return MatchResult.of(System.currentTimeMillis() < expiresAt);
+        };
+    server.stubFor(
+        get(urlPathMatching("/secrets/" + Pattern.quote(secretName) + "/?"))
+            .atPriority(1)
+            .withHeader(ORIGINAL_HOST, equalTo(vaultHost))
+            .withHeader("Authorization", matching(Pattern.quote(bearerPrefix) + "\\d+"))
+            .andMatching(unexpired)
+            .willReturn(
+                okJson(
+                    """
+                    {"value":"%s","id":"https://%s/secrets/%s/1","attributes":{"enabled":true}}
+                    """
+                        .formatted(value, vaultHost, secretName))));
+    server.stubFor(
+        get(urlPathEqualTo("/secrets"))
+            .atPriority(1)
+            .withHeader(ORIGINAL_HOST, equalTo(vaultHost))
+            .withHeader("Authorization", matching(Pattern.quote(bearerPrefix) + "\\d+"))
+            .andMatching(unexpired)
+            .willReturn(
+                okJson(
+                    """
+                {"value":[],"nextLink":null}
+                """)));
+    server.stubFor(
+        get(anyUrl())
+            .atPriority(5)
+            .withHeader(ORIGINAL_HOST, equalTo(vaultHost))
+            .withHeader("Authorization", containing(bearerPrefix))
+            .willReturn(
+                challenge(tenantId)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(
+                        """
+                        {"error":{"code":"Unauthorized","message":"AKV10022: Invalid audience or expired token."}}
+                        """)));
+  }
+
+  /** The bearer tokens the vault {@code vaultHost} answered with 200, in order. */
+  List<String> acceptedTokens(final String vaultHost) {
+    return server.getAllServeEvents().reversed().stream()
+        .filter(event -> vaultHost.equals(event.getRequest().getHeader(ORIGINAL_HOST)))
+        .filter(event -> event.getResponse().getStatus() == 200)
+        .map(event -> event.getRequest().getHeader("Authorization").substring("Bearer ".length()))
+        .toList();
+  }
+
+  /**
    * The vault {@code vaultHost} challenges unauthenticated calls for a token of {@code tenantId}
    * and refuses {@code token} with 403, as for an identity without a role on the vault.
    */
@@ -175,14 +275,16 @@ final class MockAzure implements AutoCloseable {
         get(anyUrl())
             .withHeader(ORIGINAL_HOST, equalTo(vaultHost))
             .withHeader("Authorization", absent())
-            .willReturn(
-                aResponse()
-                    .withStatus(401)
-                    .withHeader(
-                        "WWW-Authenticate",
-                        "Bearer authorization=\"https://%s/%s\", resource=\"%s\""
-                            .formatted(
-                                RoutedHttpClient.AUTHORITY_HOST, tenantId, VAULT_RESOURCE))));
+            .willReturn(challenge(tenantId)));
+  }
+
+  private static ResponseDefinitionBuilder challenge(final String tenantId) {
+    return aResponse()
+        .withStatus(401)
+        .withHeader(
+            "WWW-Authenticate",
+            "Bearer authorization=\"https://%s/%s\", resource=\"%s\""
+                .formatted(RoutedHttpClient.AUTHORITY_HOST, tenantId, VAULT_RESOURCE));
   }
 
   /** Every request that reached the mock for {@code host}, in order. */

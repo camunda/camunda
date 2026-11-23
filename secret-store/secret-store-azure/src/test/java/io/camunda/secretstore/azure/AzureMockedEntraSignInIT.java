@@ -194,7 +194,9 @@ final class AzureMockedEntraSignInIT {
     azure.imdsHasNoIdentity();
     azure.vaultHolds(vaultHost, tenantId, token, secretName, secretValue);
 
-    try (final var store = store(config(null), environment)) {
+    // a user-assigned identity of its own, so no managed identity token another test left in
+    // MSAL's process-wide cache can sign this store in
+    try (final var store = store(config(UUID.randomUUID().toString()), environment)) {
       // when / then
       assertThatThrownBy(() -> store.resolve(Set.of(secretName)))
           .isInstanceOf(SecretStoreUnavailableException.class);
@@ -260,8 +262,8 @@ final class AzureMockedEntraSignInIT {
             "AZURE_TENANT_ID", tenantId,
             "AZURE_CLIENT_ID", clientId,
             "AZURE_FEDERATED_TOKEN_FILE", tokenFile.toString());
-    azure.entraIssues(tenantId, clientId, token, 2);
-    azure.vaultHolds(vaultHost, tenantId, token, secretName, secretValue);
+    azure.entraIssuesShortLivedTokens(tenantId, clientId, token, 2);
+    azure.vaultHoldsForUnexpiredTokens(vaultHost, tenantId, token, secretName, secretValue);
 
     try (final var store = store(config(null), environment)) {
       // when / then
@@ -272,8 +274,8 @@ final class AzureMockedEntraSignInIT {
   @Test
   void shouldKeepResolvingWithManagedIdentityPastTheTokenLifetime() {
     // given — IMDS issues tokens that expire after 2 seconds
-    azure.imdsIssues(clientId, token, 2);
-    azure.vaultHolds(vaultHost, tenantId, token, secretName, secretValue);
+    azure.imdsIssuesShortLivedTokens(clientId, token, 2);
+    azure.vaultHoldsForUnexpiredTokens(vaultHost, tenantId, token, secretName, secretValue);
 
     try (final var store = store(config(clientId), Map.of())) {
       // when / then
@@ -281,18 +283,25 @@ final class AzureMockedEntraSignInIT {
     }
   }
 
-  /** Resolves continuously for longer than two token lifetimes: no resolution may fail. */
+  /**
+   * Resolves continuously for longer than two token lifetimes. The first failed resolution fails
+   * the test, and the vault must have accepted more than one token, each unexpired when used.
+   */
   private void assertKeepsResolvingPastTheTokenLifetime(final AzureKeyVaultSecretStore store) {
-    final int signInsAtStartup = azure.tokenRequests().size();
     Awaitility.await()
         .during(Duration.ofSeconds(5))
         .atMost(Duration.ofSeconds(20))
         .pollInterval(Duration.ofMillis(200))
-        .untilAsserted(
-            () ->
-                assertThat(store.resolve(Set.of(secretName)))
-                    .containsEntry(secretName, new Resolved(secretValue)));
-    assertThat(azure.tokenRequests()).hasSizeGreaterThanOrEqualTo(signInsAtStartup + 2);
+        .until(
+            () -> {
+              // thrown rather than retried, so no failed resolution goes unnoticed
+              assertThat(store.resolve(Set.of(secretName)))
+                  .containsEntry(secretName, new Resolved(secretValue));
+              return true;
+            });
+    assertThat(azure.acceptedTokens(vaultHost).stream().distinct())
+        .as("tokens the vault accepted")
+        .hasSizeGreaterThanOrEqualTo(2);
   }
 
   private void assertVaultChallengedThenAccepted() {
