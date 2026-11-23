@@ -27,8 +27,11 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
+@NullMarked
 public class BatchOperationUpdateTask implements BackgroundTask {
 
   /**
@@ -189,7 +192,7 @@ public class BatchOperationUpdateTask implements BackgroundTask {
    */
   private final class Cycle {
     private final int pageSize;
-    private volatile String afterId;
+    private volatile @Nullable String afterId;
     private volatile boolean complete;
     private volatile int updatesCount;
 
