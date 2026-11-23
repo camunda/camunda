@@ -214,7 +214,7 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
         .source(
             """
             def storedTotal = ctx._source.operationsTotalCount;
-            if (ctx._source.state == 'COMPLETED'
+            if (['COMPLETED', 'PARTIALLY_COMPLETED', 'FAILED'].contains(ctx._source.state)
                 && storedTotal != null
                 && storedTotal <= params.operationsFinishedCount) {
               ctx._source.endDate = params.endDate;

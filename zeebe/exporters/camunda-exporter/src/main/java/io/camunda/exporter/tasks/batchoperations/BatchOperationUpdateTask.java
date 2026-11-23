@@ -19,7 +19,9 @@ import io.camunda.zeebe.util.FunctionUtil;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -37,6 +39,18 @@ public class BatchOperationUpdateTask implements BackgroundTask {
   public static final int MAX_BATCH_OPERATIONS_PER_PAGE = 1000;
 
   private static final int NO_UPDATES = 0;
+
+  /**
+   * The states in which the lifecycle handler leaves the endDate for this task to derive. Keep it
+   * in sync with the state check in the update scripts of {@link
+   * ElasticsearchBatchOperationUpdateRepository} and {@link
+   * OpensearchBatchOperationUpdateRepository}.
+   */
+  private static final Set<BatchOperationState> FINALIZABLE_STATES =
+      EnumSet.of(
+          BatchOperationState.COMPLETED,
+          BatchOperationState.PARTIALLY_COMPLETED,
+          BatchOperationState.FAILED);
 
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
 
@@ -165,7 +179,7 @@ public class BatchOperationUpdateTask implements BackgroundTask {
    */
   private static boolean canBeFinalizedWithoutOperations(
       final NotFinishedBatchOperation batchOperation) {
-    return batchOperation.state() == BatchOperationState.COMPLETED
+    return FINALIZABLE_STATES.contains(batchOperation.state())
         && batchOperation.operationsTotalCount() == 0;
   }
 
