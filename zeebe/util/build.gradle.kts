@@ -19,6 +19,7 @@ dependencies {
   implementation(libs.org.slf4j.slf4j.api)
   api(libs.io.github.resilience4j.resilience4j.retry)
   api(libs.io.github.resilience4j.resilience4j.core)
+  compileOnlyApi(libs.net.jcip.jcip.annotations)
   testImplementation(libs.junit.junit)
   testImplementation(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.mockito.mockito.core)
