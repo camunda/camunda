@@ -22,16 +22,16 @@ you edit this action.
 
 ### Inputs
 
-| Input  |                      Description                       | Required | Default |
-|--------|--------------------------------------------------------|----------|---------|
-| images | Image base name(s), e.g. `camunda/camunda`             | true     |         |
-| tags   | Tags to generate, newline- or comma-separated          | true     |         |
+| Input  |                  Description                  | Required | Default |
+|--------|-----------------------------------------------|----------|---------|
+| images | Image base name(s), e.g. `camunda/camunda`    | true     |         |
+| tags   | Tags to generate, newline- or comma-separated | true     |         |
 
 ### Outputs
 
-| Output |                                  Description                                   |
-|--------|--------------------------------------------------------------------------------|
-| tags   | Fully qualified image tags, newline-separated, from the successful attempt     |
+| Output |                                Description                                 |
+|--------|----------------------------------------------------------------------------|
+| tags   | Fully qualified image tags, newline-separated, from the successful attempt |
 
 Only `tags` is forwarded, because it is the only output any caller reads. To forward another
 `docker/metadata-action` output, add it to `outputs:` in `action.yml` with the same three-way chain.
@@ -67,3 +67,4 @@ steps:
   - name: Use the generated tags
     run: echo "${{ steps.meta.outputs.tags }}"
 ```
+
