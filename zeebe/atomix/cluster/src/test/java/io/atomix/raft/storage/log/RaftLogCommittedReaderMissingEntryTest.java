@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
+import io.atomix.raft.metrics.RaftLogMetricsDoc;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.journal.CorruptedJournalException;
@@ -96,6 +97,37 @@ class RaftLogCommittedReaderMissingEntryTest {
     assertThatThrownBy(reader::hasNext)
         .isInstanceOf(CorruptedJournalException.class)
         .hasMessageContaining("committed entry at index 4 (commit index 6)");
+  }
+
+  @Test
+  void shouldCountMissingCommittedEntries() throws IOException {
+    // given
+    appendEntries(3);
+    zeroEntriesAppendedBy(() -> appendEntries(3));
+    raftLog.setCommitIndex(6);
+    reader.seek(4);
+    assertThat(missingCommittedEntries()).isZero();
+
+    // when
+    assertThatThrownBy(reader::hasNext).isInstanceOf(CorruptedJournalException.class);
+
+    // then
+    assertThat(missingCommittedEntries()).isOne();
+  }
+
+  @Test
+  void shouldNotCountEntriesThatAreNotCommittedYet() {
+    // given
+    appendEntries(3);
+    raftLog.setCommitIndex(3);
+
+    // when
+    while (reader.hasNext()) {
+      reader.next();
+    }
+
+    // then
+    assertThat(missingCommittedEntries()).isZero();
   }
 
   @Test
@@ -530,5 +562,12 @@ class RaftLogCommittedReaderMissingEntryTest {
       end--;
     }
     return end;
+  }
+
+  private double missingCommittedEntries() {
+    return meterRegistry
+        .get(RaftLogMetricsDoc.MISSING_COMMITTED_ENTRIES.getName())
+        .counter()
+        .count();
   }
 }

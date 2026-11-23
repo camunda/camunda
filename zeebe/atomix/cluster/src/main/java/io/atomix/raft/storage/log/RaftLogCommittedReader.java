@@ -120,8 +120,9 @@ public class RaftLogCommittedReader implements RaftLogReader {
     }
   }
 
-  private static CorruptedJournalException missingCommittedEntry(
+  private CorruptedJournalException missingCommittedEntry(
       final long index, final long commitIndex) {
+    log.onMissingCommittedEntry();
     return new CorruptedJournalException(
         "Expected to read the committed entry at index %d (commit index %d), but the log has no entry at that index"
             .formatted(index, commitIndex));
