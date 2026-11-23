@@ -1,0 +1,114 @@
+# Domain file for the key-properties-must-be-strings rules test fixture.
+# Covers both operation-key-properties-must-be-strings (path parameters) and
+# schema-key-properties-must-be-strings (schema properties).
+openapi: "3.0.3"
+info:
+  title: Key properties test schemas
+  version: "1.0"
+paths:
+  # ── Valid: string key path parameter ─────────────────────────────
+  /valid/{thingKey}:
+    get:
+      operationId: getValidThing
+      parameters:
+        - name: thingKey
+          in: path
+          required: true
+          description: The key of the thing.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The thing.
+
+  # ── Valid: non-key parameter may be any type ─────────────────────
+  /valid/{thingId}/count:
+    get:
+      operationId: getValidThingCount
+      parameters:
+        - name: thingId
+          in: path
+          required: true
+          description: The numeric id of the thing.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The count.
+
+  # ── Invalid: integer key path parameter ──────────────────────────
+  /invalid/{otherKey}:
+    get:
+      operationId: getInvalidThing
+      parameters:
+        - name: otherKey
+          in: path
+          required: true
+          description: The key of the thing.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The thing.
+
+components:
+  schemas:
+
+    BasicStringFilterProperty:
+      type: string
+      description: A string filter.
+
+    # ── Valid cases ───────────────────────────────────────────────────
+
+    ValidStringKey:
+      type: object
+      properties:
+        thingKey:
+          type: string
+          description: The key of the thing.
+
+    ValidFilterKey:
+      type: object
+      properties:
+        thingKey:
+          description: Filter by the key of the thing.
+          allOf:
+            - $ref: '#/components/schemas/BasicStringFilterProperty'
+
+    ValidNonKeyInteger:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: The number of things.
+
+    # Known gap: any allOf passes, even one that composes an integer.
+    AllOfIntegerKeyPasses:
+      type: object
+      properties:
+        thingKey:
+          description: The key of the thing.
+          allOf:
+            - type: integer
+
+    # ── Invalid cases ─────────────────────────────────────────────────
+
+    InvalidIntegerKey:
+      type: object
+      properties:
+        thingKey:
+          type: integer
+          description: The key of the thing.
+
+    InvalidMultipleKeys:
+      type: object
+      properties:
+        firstKey:
+          type: integer
+          description: The first key.
+        secondKey:
+          type: number
+          description: The second key.
+        name:
+          type: string
+          description: The name.

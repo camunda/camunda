@@ -1640,8 +1640,8 @@ The ruleset lives in `zeebe/gateway-protocol/.spectral.yaml`. Custom functions a
 | `no-period-in-summary`                     | error    | Path summaries must not end with a period                                                                                                         |
 | `no-flow-node-in-*` (5 rules)              | error    | "flow node" terminology is banned; use "element"                                                                                                  |
 | `require-property-descriptions`            | error    | Every schema property must have a `description`                                                                                                   |
-| `operation-key-properties-must-be-strings` | warn     | Path parameters ending in `Key` must be `type: string`                                                                                            |
-| `schema-key-properties-must-be-strings`    | warn     | Schema properties ending in `Key` must be `type: string` (or compose `BasicStringFilterProperty`)                                                 |
+| `operation-key-properties-must-be-strings` | error    | Path parameters ending in `Key` must be `type: string`                                                                                            |
+| `schema-key-properties-must-be-strings`    | error    | Schema properties ending in `Key` must be `type: string` (or compose `BasicStringFilterProperty`)                                                 |
 | `required-properties-must-exist`           | error    | Every entry in `required` must exist in `properties` or `allOf`                                                                                   |
 | `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                                                                   |
 | `no-nullable-request-properties`           | error    | Request body fields must not be `nullable` (see §2.4). Released contracts and approved PATCH "null erases" fields are allowlisted                 |
