@@ -19,12 +19,22 @@ import { getApiBaseUrl } from "src/configuration/urlConfig";
 import { unwrap } from "../request";
 import { queryKeys } from "../queryKeys";
 import {
+  confirmThenInvalidate,
+  insertIntoListCaches,
+  removeFromListCaches,
+  syncSubTable,
+  updateInListCaches,
+} from "../optimisticListUpdates";
+import {
   assignTenantClient,
   assignTenantGroup,
   assignTenantMappingRule,
   assignTenantRole,
   createTenant,
   deleteTenant,
+  getGroupsByTenantId,
+  getRolesByTenantId,
+  searchTenant,
   unassignTenantClient,
   unassignTenantGroup,
   unassignTenantMappingRule,
@@ -32,64 +42,144 @@ import {
   updateTenant,
 } from ".";
 
+const tenantGroups = (tenantId: string) => ({
+  searchKey: ["enrichedGroups", "tenants"] as const,
+  scope: { tenantId },
+  invalidateKeys: [
+    ["enrichedGroups", "tenants"],
+    queryKeys.tenants.groups(tenantId),
+  ],
+  search: () =>
+    unwrap(
+      getGroupsByTenantId({ tenantId, page: { limit: 1 } })(getApiBaseUrl()),
+    ),
+});
+
+const tenantRoles = (tenantId: string) => ({
+  searchKey: queryKeys.tenants.roles(tenantId),
+  search: () =>
+    unwrap(
+      getRolesByTenantId({ tenantId, page: { limit: 1 } })(getApiBaseUrl()),
+    ),
+});
+
+const searchTenantById = (tenantId: string) =>
+  unwrap(
+    searchTenant({ filter: { tenantId }, page: { limit: 1 } })(getApiBaseUrl()),
+  );
+
 export const tenantMutations = {
   create: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (body: CreateTenantRequestBody) =>
         unwrap(createTenant(body)(getApiBaseUrl())),
       meta: { skipErrorNotification: true },
-      onSuccess: () =>
-        qc.invalidateQueries({ queryKey: queryKeys.tenants.all }),
+      onSuccess: async (_data, tenant) => {
+        await insertIntoListCaches(
+          qc,
+          queryKeys.tenants.search(),
+          tenant,
+          (item) => item.tenantId === tenant.tenantId,
+        );
+        void confirmThenInvalidate(
+          qc,
+          queryKeys.tenants.all,
+          () => searchTenantById(tenant.tenantId),
+          (items) => items.some((item) => item.tenantId === tenant.tenantId),
+        );
+      },
     }),
   update: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (body: UpdateTenantRequestBody & Pick<Tenant, "tenantId">) =>
         unwrap(updateTenant(body)(getApiBaseUrl())),
       meta: { skipErrorNotification: true },
-      onSuccess: () =>
-        qc.invalidateQueries({ queryKey: queryKeys.tenants.all }),
+      onSuccess: async (_data, tenant) => {
+        await updateInListCaches<Tenant>(
+          qc,
+          queryKeys.tenants.search(),
+          (item) => item.tenantId === tenant.tenantId,
+          { name: tenant.name, description: tenant.description },
+        );
+        await updateInListCaches<Tenant>(
+          qc,
+          queryKeys.tenants.detail(tenant.tenantId),
+          (item) => item.tenantId === tenant.tenantId,
+          { name: tenant.name, description: tenant.description },
+        );
+        void confirmThenInvalidate(
+          qc,
+          queryKeys.tenants.all,
+          () => searchTenantById(tenant.tenantId),
+          (items) =>
+            items.some(
+              (item) =>
+                item.tenantId === tenant.tenantId &&
+                item.name === tenant.name &&
+                (item.description ?? "") === (tenant.description ?? ""),
+            ),
+        );
+      },
     }),
   delete: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (body: Pick<Tenant, "tenantId">) =>
         unwrap(deleteTenant(body)(getApiBaseUrl())),
-      onSuccess: () =>
-        qc.invalidateQueries({ queryKey: queryKeys.tenants.all }),
+      onSuccess: async (_data, { tenantId }) => {
+        await removeFromListCaches<Tenant>(
+          qc,
+          queryKeys.tenants.search(),
+          (item) => item.tenantId === tenantId,
+        );
+        void confirmThenInvalidate(
+          qc,
+          queryKeys.tenants.all,
+          () => searchTenantById(tenantId),
+          (items) => items.every((item) => item.tenantId !== tenantId),
+        );
+      },
     }),
   assignGroup: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (body: Pick<Tenant, "tenantId"> & Pick<Group, "groupId">) =>
         unwrap(assignTenantGroup(body)(getApiBaseUrl())),
-      onSuccess: (_data, variables) =>
-        qc.invalidateQueries({
-          queryKey: ["tenants", "groups", variables.tenantId],
+      onSuccess: (_data, { tenantId, groupId }) =>
+        syncSubTable(qc, tenantGroups(tenantId), {
+          type: "assign",
+          item: { groupId },
+          matches: (item) => item.groupId === groupId,
         }),
     }),
   unassignGroup: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (body: Pick<Tenant, "tenantId"> & Pick<Group, "groupId">) =>
         unwrap(unassignTenantGroup(body)(getApiBaseUrl())),
-      onSuccess: (_data, variables) =>
-        qc.invalidateQueries({
-          queryKey: ["tenants", "groups", variables.tenantId],
+      onSuccess: (_data, { tenantId, groupId }) =>
+        syncSubTable(qc, tenantGroups(tenantId), {
+          type: "unassign",
+          matches: (item) => item.groupId === groupId,
         }),
     }),
   assignRole: (qc: QueryClient) =>
     mutationOptions({
-      mutationFn: (body: Pick<Tenant, "tenantId"> & Pick<Role, "roleId">) =>
-        unwrap(assignTenantRole(body)(getApiBaseUrl())),
-      onSuccess: (_data, variables) =>
-        qc.invalidateQueries({
-          queryKey: ["tenants", "roles", variables.tenantId],
+      mutationFn: (
+        body: Pick<Tenant, "tenantId"> & Pick<Role, "roleId"> & { role?: Role },
+      ) => unwrap(assignTenantRole(body)(getApiBaseUrl())),
+      onSuccess: (_data, { tenantId, roleId, role }) =>
+        syncSubTable(qc, tenantRoles(tenantId), {
+          type: "assign",
+          item: role,
+          matches: (item) => item.roleId === roleId,
         }),
     }),
   unassignRole: (qc: QueryClient) =>
     mutationOptions({
       mutationFn: (body: Pick<Tenant, "tenantId"> & Pick<Role, "roleId">) =>
         unwrap(unassignTenantRole(body)(getApiBaseUrl())),
-      onSuccess: (_data, variables) =>
-        qc.invalidateQueries({
-          queryKey: ["tenants", "roles", variables.tenantId],
+      onSuccess: (_data, { tenantId, roleId }) =>
+        syncSubTable(qc, tenantRoles(tenantId), {
+          type: "unassign",
+          matches: (item) => item.roleId === roleId,
         }),
     }),
   assignMappingRule: (qc: QueryClient) =>

@@ -21,10 +21,9 @@ const AssignMemberModal: FC<
     { roleId: Role["roleId"] },
     {
       assignedUsers: User[];
-      onItemsAssigned: (count: number) => void;
     }
   >
-> = ({ entity: { roleId }, onSuccess, onItemsAssigned, open, onClose }) => {
+> = ({ entity: { roleId }, onSuccess, open, onClose }) => {
   const { t, Translate } = useTranslate("roles");
   const [username, setUsername] = useState("");
   const qc = useQueryClient();
@@ -40,7 +39,6 @@ const AssignMemberModal: FC<
       { username, roleId },
       {
         onSuccess: () => {
-          onItemsAssigned(1);
           onSuccess();
         },
       },

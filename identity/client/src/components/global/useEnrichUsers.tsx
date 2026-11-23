@@ -7,7 +7,11 @@
  */
 
 import { useMemo } from "react";
-import { useQuery, type QueryObserverBaseResult } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQuery,
+  type QueryObserverBaseResult,
+} from "@tanstack/react-query";
 import type {
   User,
   QueryUsersResponseBody,
@@ -70,6 +74,7 @@ export function useEnrichedUsers<P>(
     queryKey: ["enrichedMembers", "userDetails", usernames],
     queryFn: () => unwrap(searchUser({ usernames })(getApiBaseUrl())),
     enabled: !isOIDC && usernames.length > 0,
+    placeholderData: keepPreviousData,
   });
 
   const users = useMemo<UserWithId[]>(() => {

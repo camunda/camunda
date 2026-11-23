@@ -67,59 +67,53 @@ const List: FC<ListProps> = ({ isOIDC }) => {
     />
   );
 
-  if (shouldShowEmptyState) {
-    return (
-      <Page>
-        {pageHeader}
+  return (
+    <Page>
+      {pageHeader}
+      {shouldShowEmptyState ? (
         <PageEmptyState
           resourceTypeTranslationKey={"tenant"}
           docsLinkPath="/components/admin/tenant/"
           handleClick={addTenant}
         />
-        {addTenantModal}
-      </Page>
-    );
-  }
-
-  return (
-    <Page>
-      {pageHeader}
-      <EntityList
-        data={tenantSearchResults == null ? [] : tenantSearchResults.items}
-        headers={[
-          { header: t("tenantId"), key: "tenantId", isSortable: true },
-          { header: t("name"), key: "name", isSortable: true },
-        ]}
-        onEntityClick={showDetails}
-        addEntityLabel={t("createTenant")}
-        onAddEntity={addTenant}
-        loading={loading}
-        menuItems={[
-          {
-            label: t("edit"),
-            icon: Pencil,
-            onClick: editTenant,
-            disabled: (tenant) => isDefaultTenant(tenant.tenantId),
-          },
-          {
-            label: t("delete"),
-            icon: Trash2,
-            isDangerous: true,
-            disabled: (tenant) => isDefaultTenant(tenant.tenantId),
-            onClick: (tenant) =>
-              deleteTenant({
-                tenantId: tenant.tenantId,
-                name: tenant.name,
-                description: tenant.description,
-              }),
-          },
-        ]}
-        searchPlaceholder={t("searchByTenantId")}
-        searchKey="tenantId"
-        page={{ ...page, ...tenantSearchResults?.page }}
-        {...paginationCallbacks}
-      />
-      {!loading && !success && (
+      ) : (
+        <EntityList
+          data={tenantSearchResults == null ? [] : tenantSearchResults.items}
+          headers={[
+            { header: t("tenantId"), key: "tenantId", isSortable: true },
+            { header: t("name"), key: "name", isSortable: true },
+          ]}
+          onEntityClick={showDetails}
+          addEntityLabel={t("createTenant")}
+          onAddEntity={addTenant}
+          loading={loading}
+          menuItems={[
+            {
+              label: t("edit"),
+              icon: Pencil,
+              onClick: editTenant,
+              disabled: (tenant) => isDefaultTenant(tenant.tenantId),
+            },
+            {
+              label: t("delete"),
+              icon: Trash2,
+              isDangerous: true,
+              disabled: (tenant) => isDefaultTenant(tenant.tenantId),
+              onClick: (tenant) =>
+                deleteTenant({
+                  tenantId: tenant.tenantId,
+                  name: tenant.name,
+                  description: tenant.description,
+                }),
+            },
+          ]}
+          searchPlaceholder={t("searchByTenantId")}
+          searchKey="tenantId"
+          page={{ ...page, ...tenantSearchResults?.page }}
+          {...paginationCallbacks}
+        />
+      )}
+      {!shouldShowEmptyState && !loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("tenantsListCouldNotLoad")}
           actionButton={{

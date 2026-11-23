@@ -38,8 +38,8 @@ const AssignRolesModal: FC<
     setLoadingAssignRole(true);
     try {
       await Promise.all(
-        selectedRoles.map(({ roleId }) =>
-          callAssignRole({ roleId, tenantId: tenant.id }),
+        selectedRoles.map((role) =>
+          callAssignRole({ roleId: role.roleId, role, tenantId: tenant.id }),
         ),
       );
       onSuccess();

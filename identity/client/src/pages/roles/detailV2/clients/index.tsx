@@ -18,7 +18,6 @@ import { ErrorInlineNotification } from "src/components/notificationsV2/InlineNo
 import DeleteModal from "src/pages/roles/detailV2/clients/DeleteModal";
 import AssignClientsModal from "src/pages/roles/detailV2/clients/AssignClientsModal";
 import TabEmptyState from "src/components/layoutV2/TabEmptyState";
-import { useListPollingReload } from "src/utility/hooks/useListPollingReload";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type ClientsProps = {
@@ -44,21 +43,15 @@ const Clients: FC<ClientsProps> = ({ roleId }) => {
 
   const assignedClients =
     clients && Array.isArray(clients.items) ? clients.items : [];
-  const { startPolling } = useListPollingReload(
-    reload,
-    assignedClients,
-    "clientId",
-    clients?.page.totalItems,
-  );
 
   const [assignClient, assignClientModal] = useEntityModal(
     AssignClientsModal,
-    () => startPolling(1),
+    () => {},
   );
   const openAssignModal = () => assignClient(roleId);
   const [unassignClient, unassignClientModal] = useEntityModal(
     DeleteModal,
-    () => startPolling(-1),
+    () => {},
     { roleId },
   );
 

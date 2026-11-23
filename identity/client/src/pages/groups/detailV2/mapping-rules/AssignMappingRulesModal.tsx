@@ -43,9 +43,10 @@ const AssignMappingRulesModal: FC<
     setLoadingAssignMappingRule(true);
     try {
       await Promise.all(
-        selectedMappingRules.map(({ mappingRuleId }) =>
+        selectedMappingRules.map((mappingRule) =>
           callAssignMappingRule({
-            mappingRuleId: mappingRuleId,
+            mappingRuleId: mappingRule.mappingRuleId,
+            mappingRule,
             groupId: group.id,
           }),
         ),
