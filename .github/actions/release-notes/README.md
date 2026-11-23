@@ -6,7 +6,7 @@ package with two entrypoints that import **one** reference parser:
 
 - `lint/` — the **PR-gate** ([#53593](https://github.com/camunda/camunda/issues/53593)):
   validates that a PR links a tracked issue (or opts out) and lints its title;
-  syncs a sticky comment and a `no-issue` label. Live now, **enforcing** (fails the job; not yet a required status check).
+  syncs a sticky comment and a `no-issue` label. Live now, **enforcing** (fails the job).
 - `generate/` — the **release-notes generator**
   ([#57713](https://github.com/camunda/camunda/issues/57713)): builds the changelog
   from the PRs shipped in a release range. Documented in full in
@@ -214,18 +214,18 @@ The gate is one workflow, `release-notes-pr-gate.yml`, on plain **`pull_request`
   or executes PR code.
 - **No privileged token.** `GITHUB_TOKEN` only, with `pull-requests: write` (the
   comment and label) and `issues: write` (recreating a deleted `no-issue` label).
-  No Vault, no App token.
+  No App token, and the gate itself reads no Vault secret. (The workflow's
+  observe-build-status step reads Vault for CI health metrics, like every other
+  job in the repo; it is `continue-on-error` and plays no part in the verdict.)
 - **The check is the job's own conclusion.** GitHub renders it on the PR
   natively, so the gate publishes nothing itself — and it works on fork PRs
   without any token.
 - **Accepted trade-off:** on `pull_request` the workflow and this action resolve
   from the PR head, so a PR can edit the code that judges it. That is the same
   trust model as every other lint in `ci.yml` (actionlint, spotless, commitlint),
-  and it is acceptable while this check is not a **required** status check, so it is
-  not a security boundary. `.github/**` is
-  CODEOWNERS-gated, so a tampering diff still needs review.
-  ⚠ **This must be resolved before the check is made required**, at which point a
-  PR could pass itself by editing the action. See epic #53605.
+  and it is accepted with the check **required** too: engineers are trusted, and
+  a tampering diff still needs one approving review. CODEOWNERS is advisory
+  here — the branch rulesets do not require code-owner review.
 
 ### Fork pull requests
 
