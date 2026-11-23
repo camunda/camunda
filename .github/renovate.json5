@@ -18,7 +18,9 @@
     "/^stable\\/8\\.([6-9]|[1-9][0-9])/",
     "main",
   ],
-  dependencyDashboard: true,
+  dependencyDashboard: {
+    enabled: true,
+  },
   prConcurrentLimit: 50,
   branchConcurrentLimit: 100,
   prHourlyLimit: 10,
