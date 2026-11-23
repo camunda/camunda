@@ -64,6 +64,7 @@ export function useEnrichedUsers<P>(
 
   const membersQuery = useQuery({
     queryKey: ["enrichedMembers", parentType, mergedParams],
+    placeholderData: keepPreviousData,
     queryFn: () => unwrap(apiDefinition(mergedParams)(getApiBaseUrl())),
   });
 

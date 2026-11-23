@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { queryOptions } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import type {
   QueryClientsByRoleRequestBody,
   QueryGroupsByRoleRequestBody,
@@ -28,6 +28,7 @@ export const roleQueries = {
   search: (params?: QueryRolesRequestBody | Record<string, unknown>) =>
     queryOptions({
       queryKey: queryKeys.roles.search(params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(searchRoles(params as QueryRolesRequestBody)(getApiBaseUrl())),
     }),
@@ -44,6 +45,7 @@ export const roleQueries = {
   ) =>
     queryOptions({
       queryKey: queryKeys.roles.mappingRules(roleId, params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           getMappingRulesByRoleId({
@@ -74,6 +76,7 @@ export const roleQueries = {
   ) =>
     queryOptions({
       queryKey: queryKeys.roles.clients(roleId, params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           getClientsByRoleId({
