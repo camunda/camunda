@@ -1,0 +1,89 @@
+---
+# owner: @camunda/engineering-operations
+name: Docker metadata with retry
+
+description: >
+  Runs `docker/metadata-action` with retries: it reads the repository through
+  the GitHub REST API (`GET /repos/{owner}/{repo}`) on every run, and that call
+  answers 5xx ("Server Error") often enough to fail an image build before any
+  image work has started.
+
+inputs:
+  images:
+    description: Image base name(s), e.g. `camunda/camunda`.
+    required: true
+  tags:
+    description: Tags to generate, newline- or comma-separated.
+    required: true
+
+outputs:
+  tags:
+    description: >
+      Fully qualified image tags, newline-separated, as produced by the
+      successful attempt.
+    # Gated on `outcome`, not just truthiness: a failed attempt must never
+    # supply a (partial) value. Only one attempt can succeed.
+    value: >-
+      ${{
+        steps.attempt-1.outcome == 'success' && steps.attempt-1.outputs.tags
+        || steps.attempt-2.outcome == 'success' && steps.attempt-2.outputs.tags
+        || steps.attempt-3.outputs.tags
+      }}
+
+runs:
+  using: composite
+  # GitHub Actions has no retry primitive for a `uses:` step, so each attempt is
+  # a literal copy of the step gated on the previous attempt's outcome. Editing
+  # one attempt means editing all of them -- keep the `with:` blocks identical.
+  #
+  # A skipped step reports `outcome: skipped`, never `failure`, so gating each
+  # attempt on its immediate predecessor is enough: attempt 3 can only run if
+  # attempt 2 ran and failed, which in turn required attempt 1 to fail.
+  #
+  # The last attempt deliberately omits `continue-on-error` so an exhausted
+  # retry fails the job. Nothing here classifies the failure, so a genuine
+  # configuration error (e.g. an invalid `images` value) also costs three
+  # attempts before reporting red. Retrying is safe: the action is a pure
+  # function of its inputs and the workflow context; it writes only outputs.
+  #
+  # Only `tags` is forwarded -- it is the only output any caller reads. To
+  # forward another, add it to `outputs:` with the same three-way chain.
+  steps:
+    - name: Generate image metadata (attempt 1 of 3)
+      id: attempt-1
+      continue-on-error: true
+      uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+      with:
+        images: ${{ inputs.images }}
+        tags: ${{ inputs.tags }}
+
+    - name: Wait before attempt 2
+      if: steps.attempt-1.outcome == 'failure'
+      shell: bash
+      run: |
+        echo "::warning::docker/metadata-action failed (attempt 1 of 3), retrying in 10s"
+        sleep 10
+
+    - name: Generate image metadata (attempt 2 of 3)
+      id: attempt-2
+      if: steps.attempt-1.outcome == 'failure'
+      continue-on-error: true
+      uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+      with:
+        images: ${{ inputs.images }}
+        tags: ${{ inputs.tags }}
+
+    - name: Wait before attempt 3
+      if: steps.attempt-2.outcome == 'failure'
+      shell: bash
+      run: |
+        echo "::warning::docker/metadata-action failed (attempt 2 of 3), retrying in 10s"
+        sleep 10
+
+    - name: Generate image metadata (attempt 3 of 3)
+      id: attempt-3
+      if: steps.attempt-2.outcome == 'failure'
+      uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+      with:
+        images: ${{ inputs.images }}
+        tags: ${{ inputs.tags }}

@@ -103,7 +103,7 @@ runs:
 
     - name: Build image names from params and/or project version
       id: get-image
-      uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+      uses: ./.github/actions/metadata-with-retry
       with:
         images: ${{ inputs.repository }}
         tags: ${{ inputs.version || steps.get-version.outputs.result }}
