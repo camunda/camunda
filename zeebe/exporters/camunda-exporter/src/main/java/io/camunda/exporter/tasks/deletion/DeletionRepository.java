@@ -28,4 +28,13 @@ public interface DeletionRepository extends DeleteByIdSupport {
    */
   CompletableFuture<Void> deleteDocumentsById(
       final String indexName, final FilterByKeysQuery<String> filter, final Executor executor);
+
+  /**
+   * Finds the next batch of finished process instances in the ordinal list-view indices whose end
+   * date is older than the configured retention minimum age. The batch contains at most {@link
+   * io.camunda.search.schema.config.DeleterConfiguration#getEntityBatchSize()} entries.
+   *
+   * @return a future with the next batch, which is empty when nothing is left to delete
+   */
+  CompletableFuture<ProcessInstanceDeletionBatch> getProcessInstancesNextBatch();
 }

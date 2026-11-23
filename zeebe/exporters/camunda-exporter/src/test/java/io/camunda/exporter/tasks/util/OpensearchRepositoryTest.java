@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import java.util.Map;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -28,7 +28,25 @@ class OpensearchRepositoryTest extends AbstractRepositoryTest {
   void shouldConvertFilterToQuery(final FilterByKeysQuery<?> filter, final String expectedJsonQuery)
       throws JsonProcessingException {
     // given/when
-    final var query = OpenSearchArchiverRepository.toQuery(filter);
+    final var query = OpensearchRepository.toQuery(filter);
+
+    // then
+    final String json = toNormalisedJson(query.toJsonString());
+    assertThat(json).isEqualTo(expectedJsonQuery);
+  }
+
+  @ParameterizedTest
+  @MethodSource("completedProcessInstances")
+  void shouldCreateQueryToFindCompletedProcessInstances(
+      final String endDateTimePoint,
+      final int partitionId,
+      final ProcessInstanceRetentionMode retentionMode,
+      final String expectedJsonQuery)
+      throws JsonProcessingException {
+    // given/when
+    final var query =
+        OpensearchRepository.finishedProcessInstancesQuery(
+            endDateTimePoint, partitionId, retentionMode);
 
     // then
     final String json = toNormalisedJson(query.toJsonString());

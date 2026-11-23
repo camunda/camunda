@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.tasks.retention.ProcessInstanceRetentionBatch;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +31,7 @@ public interface ArchiveBatch {
 
   record ProcessInstanceArchiveBatch(
       String finishDate, List<Long> processInstanceKeys, List<Long> rootProcessInstanceKeys)
-      implements ArchiveBatch {
+      implements ArchiveBatch, ProcessInstanceRetentionBatch {
 
     @Override
     public int size() {

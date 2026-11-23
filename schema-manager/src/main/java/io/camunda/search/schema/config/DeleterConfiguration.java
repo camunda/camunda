@@ -10,8 +10,18 @@ package io.camunda.search.schema.config;
 public class DeleterConfiguration {
   // how many individual documents to delete in a single batch
   private int documentBatchSize = 2500;
+  // how many root entities (e.g. process or decision instances) to read for deletion at once
+  private int entityBatchSize = 500;
   private int maxRetryAttempts = 3;
   private int retryDelayMs = 1000;
+
+  public int getEntityBatchSize() {
+    return entityBatchSize;
+  }
+
+  public void setEntityBatchSize(final int entityBatchSize) {
+    this.entityBatchSize = entityBatchSize;
+  }
 
   public int getDocumentBatchSize() {
     return documentBatchSize;
@@ -42,6 +52,8 @@ public class DeleterConfiguration {
     return "DeleterConfiguration{"
         + "documentBatchSize="
         + documentBatchSize
+        + ", entityBatchSize="
+        + entityBatchSize
         + ", maxRetryAttempts="
         + maxRetryAttempts
         + ", retryDelayMs="

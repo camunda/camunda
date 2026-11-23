@@ -22,6 +22,14 @@ public interface IndexTemplateDescriptor extends IndexDescriptor {
 
   String getIndexPattern();
 
+  /**
+   * @return a pattern matching all ordinal indices of this template, but not the main index, e.g.
+   *     {@code <full qualified name>ord*}
+   */
+  default String getOrdinalIndexPattern() {
+    return getFullQualifiedName() + ORDINAL_SUFFIX_START + "*";
+  }
+
   String getTemplateName();
 
   List<String> getComposedOf();
