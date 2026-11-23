@@ -42,79 +42,85 @@ routing (d4e45a7d575d).
 
 **D1. Every distribution has two milestones per partition, RECEIVED and COMPLETED, and both are
 observable.**
+
 - RECEIVED: the partition processed the command (today's ACK).
 - COMPLETED: the partition also finished all follow-up work the command started.
 - A command without follow-up work completes when it is received. This is the common case:
-deployment, clock, identity, cluster variables, global listeners, signals.
+  deployment, clock, identity, cluster variables, global listeners, signals.
 - There is no opt-in. Every distribution is tracked and exported, so a client or user can see when
-every partition has received it, and when all of its work is done.
+  every partition has received it, and when all of its work is done.
 - Ordered queues advance on RECEIVED, as today. Follow-up work can take hours or years (a drain),
-and must never block the queue.
+  and must never block the queue.
 
 **D2. Developers attach command hooks to either milestone.**
+
 - `withKey(k).inQueue(q).onAllReceived(cmd).onAllCompleted(cmd).distribute(command)`. Both hooks are
-optional.
+  optional.
 - The source writes the `onAllReceived` command once every partition has RECEIVED. It writes the
-`onAllCompleted` command once every partition has COMPLETED.
+  `onAllCompleted` command once every partition has COMPLETED.
 - Both are written with a locally minted key, so they are not mistaken for distributed commands
-(d4e45a7d575d).
+  (d4e45a7d575d).
 - A hook re-reads current state when it runs, because a lot may have changed since the distribution
-started.
+  started.
 - `onAllReceived` replaces `afterQueue(...).continueWith(...)` and the `CONTINUATION_*` intents.
-These are deprecated.
+  These are deprecated.
 
 **D3. Follow-up work is an opaque handle the domain opens and closes.**
+
 - While processing the command, a processor that starts follow-up work calls
-`handle = distribution.openFollowUp(command)`. Without that call, the partition is COMPLETED when
-it ACKs.
+  `handle = distribution.openFollowUp(command)`. Without that call, the partition is COMPLETED when
+  it ACKs.
 - The domain keeps the handle in its own state, next to its own substate: for example on the
-`DRAINING` definition, or on the suspension marker.
+  `DRAINING` definition, or on the suspension marker.
 - When the domain decides the work is done, it calls `distribution.closeFollowUp(handle)`. It may
-pass an outcome and a reason (`COMPLETED`, or `CANCELLED` when a later command made the work
-obsolete, for example a resume during a suspend).
+  pass an outcome and a reason (`COMPLETED`, or `CANCELLED` when a later command made the work
+  obsolete, for example a resume during a suspend).
 - The framework does not know about entities, counts or substates. How many things are involved,
-and when "done" is reached, is up to the domain.
+  and when "done" is reached, is up to the domain.
 - Calling `openFollowUp` twice for the same command returns the same handle.
 - The source partition works the same way for its own share. Distribution skips the current
-partition, so its report is written locally instead of being sent.
+  partition, so its report is written locally instead of being sent.
 
 **D4. Receivers report reliably; the ACK says whether follow-up work is still open.**
+
 - The ACK carries `followUpOpen`. The framework computes it from its own state for that distribution
-key, not from the domain's processing result. A redelivered command therefore gets the correct
-answer, even when the domain rejects the redelivery as a duplicate.
+  key, not from the domain's processing result. A redelivered command therefore gets the correct
+  answer, even when the domain rejects the redelivery as a duplicate.
 - `followUpOpen = false`: the partition is RECEIVED and COMPLETED at once.
 - When the domain closes the handle, the partition sends a `COMPLETE` report to the source. The
-report goes out as a normal unordered distribution to the source partition, so it reuses the
-existing retries and ACK.
+  report goes out as a normal unordered distribution to the source partition, so it reuses the
+  existing retries and ACK.
 - The source handles reports idempotently. A `COMPLETE` that arrives before the ACK counts as both.
 - A rejected command is not a failure. It is RECEIVED with the rejection recorded (D5), and
-COMPLETED unless a handle is open.
+  COMPLETED unless a handle is open.
 
 **D5. Every partition's outcome is exported.**
+
 - The ACK and `COMPLETE` records carry everything needed to trace a partition:
-- the rejection type and reason, if the command was rejected there;
-- whether follow-up work was opened;
-- the outcome and reason from `closeFollowUp`;
-- timestamps.
+  - the rejection type and reason, if the command was rejected there;
+  - whether follow-up work was opened;
+  - the outcome and reason from `closeFollowUp`;
+  - timestamps.
 - Together with today's `STARTED`, `ENQUEUED`, `DISTRIBUTING`, `ACKNOWLEDGED` and `FINISHED`,
-secondary storage can show, per partition, whether a command is queued, sent, received, rejected,
-in follow-up, completed or cancelled, and when.
+  secondary storage can show, per partition, whether a command is queued, sent, received, rejected,
+  in follow-up, completed or cancelled, and when.
 - The source ends every distribution with one summary event, `COMPLETED`. It carries the overall
-outcome (`CANCELLED` if any partition cancelled) and the per-partition outcomes. If any partition
-cancelled, `onAllCompleted` is not written.
+  outcome (`CANCELLED` if any partition cancelled) and the per-partition outcomes. If any partition
+  cancelled, `onAllCompleted` is not written.
 
 **D6. Protocol and compatibility.**
+
 - New intents on `CommandDistribution`: `COMPLETE` (command) and `PARTITION_COMPLETED` and
-`COMPLETED` (events).
+  `COMPLETED` (events).
 - New properties on `CommandDistributionRecord`: `followUpOpen`, the rejection fields, the outcome
-and reason, and the hook commands.
+  and reason, and the hook commands.
 - A partition-local column family for open handles on receivers, and one for partitions still
-pending completion on the source.
+  pending completion on the source.
 - Exporter templates and golden files change. This needs approval from the protocol owners.
 - In a mixed-version cluster, an old receiver ACKs without `followUpOpen`, so its share counts as
-COMPLETED at once. That is today's behavior.
+  COMPLETED at once. That is today's behavior.
 - A feature that relies on `onAllCompleted` (for example deletion moving off its hand-rolled path)
-must keep its old path until every broker is upgraded.
+  must keep its old path until every broker is upgraded.
 
 ## Alternatives considered
 
@@ -140,11 +146,8 @@ must keep its old path until every broker is upgraded.
   `PARTITION_COMPLETED`.
 - Source state for a distribution with open follow-up work lives until every partition reports.
   Drains can last years, so a gauge for open distributions and their age is needed.
-- 
-
-# 23156 can build a user-facing status from the exported milestones. How that status is presented
-
-is decided separately.
+- Issue #23156 can build a user-facing status from the exported milestones. How that status is
+  presented is decided separately.
 
 ## Open questions
 
