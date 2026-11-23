@@ -84,7 +84,6 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
   void shouldActivateJobsImmediatelyIfAvailable() {
     // given
     final ActivateJobsStub stub = new ActivateJobsStub();
-    stub.addAvailableJobs("TEST", 2);
     stub.registerWith(stubbedBrokerClient);
 
     // calculate the expected partition ID to build the assertion key for (other test methods can
@@ -94,6 +93,8 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
             getBasePartition(stub),
             1,
             stubbedBrokerClient.getTopologyManager().getTopology().getPartitionsCount());
+    // the calibration activated the same type and consumed its availability
+    stub.addAvailableJobs("TEST", 2);
 
     final var request =
         """
@@ -340,16 +341,17 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
   }
 
   /**
-   * Get the baseline partition since the current one could be any partition. The job activation
-   * handler is created once for all tests, so previous tests can have moved the round-robin index
-   * by any number already.
+   * Get the baseline partition since the current one could be any partition: the start partition is
+   * random and the handler is created once for all tests, so previous tests can have moved the
+   * type's round-robin index by any number already. Calibrates with the asserted type itself, as
+   * the round-robin cursor is per job type.
    */
   private int getBasePartition(final ActivateJobsStub stub) {
-    stub.addAvailableJobs("BASE", 1);
+    stub.addAvailableJobs("TEST", 1);
     final var request =
         """
         {
-          "type": "BASE",
+          "type": "TEST",
           "maxJobsToActivate": 1,
           "requestTimeout": 100,
           "timeout": 100
