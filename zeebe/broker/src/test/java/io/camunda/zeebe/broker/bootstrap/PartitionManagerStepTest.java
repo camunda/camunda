@@ -45,7 +45,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.util.List;
@@ -64,11 +63,6 @@ class PartitionManagerStepTest {
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
   private static final String PHYSICAL_TENANT_ID = "custom";
-
-  static {
-    final var networkCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
-    networkCfg.setHost("localhost");
-  }
 
   private final Logger log = LoggerFactory.getLogger(PartitionManagerStepTest.class);
   private final PartitionManagerStep sut = new PartitionManagerStep(PHYSICAL_TENANT_ID);
@@ -133,10 +127,6 @@ class PartitionManagerStepTest {
 
       when(testBrokerStartupContext.getClusterServices().getMembershipService())
           .thenReturn(mockMembershipService);
-
-      final var port = SocketUtil.getNextAddress().getPort();
-      final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
-      commandApiCfg.setPort(port);
     }
 
     @AfterEach

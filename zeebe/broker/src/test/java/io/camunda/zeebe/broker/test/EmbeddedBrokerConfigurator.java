@@ -30,9 +30,6 @@ public final class EmbeddedBrokerConfigurator {
         cfg.getExporters().put("test-recorder", exporterCfg);
       };
 
-  public static final Consumer<BrokerCfg> DISABLE_EMBEDDED_GATEWAY =
-      cfg -> cfg.getGateway().setEnable(false);
-
   public static Consumer<BrokerCfg> setPartitionCount(final int partitionCount) {
     return cfg -> cfg.getCluster().setPartitionsCount(partitionCount);
   }
@@ -59,14 +56,6 @@ public final class EmbeddedBrokerConfigurator {
 
   public static Consumer<BrokerCfg> setInitialContactPoints(final String... contactPoints) {
     return cfg -> cfg.getCluster().setInitialContactPoints(Arrays.asList(contactPoints));
-  }
-
-  public static Consumer<BrokerCfg> setGatewayApiPort(final int port) {
-    return cfg -> cfg.getGateway().getNetwork().setPort(port);
-  }
-
-  public static Consumer<BrokerCfg> setGatewayClusterPort(final int port) {
-    return cfg -> cfg.getGateway().getCluster().setPort(port);
   }
 
   public static Consumer<BrokerCfg> setCommandApiPort(final int port) {

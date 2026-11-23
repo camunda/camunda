@@ -19,7 +19,6 @@ import io.camunda.application.commons.broker.client.BrokerClientConfiguration;
 import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
 import io.camunda.application.commons.clustering.DynamicClusterServices;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -31,6 +30,7 @@ import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -50,12 +50,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.mock.env.MockEnvironment;
 
 final class StandaloneGatewaySecurityTest {
   private SelfSignedCertificate certificate;
-  private GatewayModuleConfiguration gateway;
+  private Gateway gateway;
   private BrokerClient brokerClient;
   private AtomixCluster atomixCluster;
   private ActorScheduler actorScheduler;
@@ -87,11 +88,7 @@ final class StandaloneGatewaySecurityTest {
       final var cfg = createGatewayCfg(clusterAddress);
 
       // when - then
-      assertThatThrownBy(
-              () -> {
-                gateway = buildGateway(cfg);
-                gateway.gateway();
-              })
+      assertThatThrownBy(() -> gateway = buildGateway(cfg))
           .satisfies(
               throwable -> {
                 final var rootCause = throwable.getCause();
@@ -111,13 +108,51 @@ final class StandaloneGatewaySecurityTest {
   }
 
   @Test
+  void shouldFailToStartWhenGatewayPortIsAlreadyInUse() throws IOException {
+    // given
+    final var cfg = createGatewayCfg();
+    final var gatewayPort = cfg.getNetwork();
+
+    // bind the gateway port after the cluster started, so that only the gateway start fails
+    try (final var serverSocket = new ServerSocket()) {
+      serverSocket.setReuseAddress(true);
+      serverSocket.bind(new InetSocketAddress(gatewayPort.getHost(), gatewayPort.getPort()));
+
+      // when - then
+      assertThatThrownBy(() -> gateway = buildGateway(cfg))
+          .hasStackTraceContaining("Failed to bind to address")
+          .hasStackTraceContaining("Address already in use");
+    }
+  }
+
+  @Test
+  void shouldCloseGatewayWhenItFailsToStart() {
+    // given
+    final var cfg = createGatewayCfg();
+
+    try (final var constructed =
+        Mockito.mockConstruction(
+            Gateway.class,
+            (mock, context) ->
+                Mockito.when(mock.start())
+                    .thenReturn(
+                        CompletableActorFuture.completedExceptionally(
+                            new IllegalStateException("start failed"))))) {
+
+      // when - then
+      assertThatThrownBy(() -> buildGateway(cfg)).hasStackTraceContaining("start failed");
+      assertThat(constructed.constructed()).hasSize(1);
+      Mockito.verify(constructed.constructed().getFirst()).close();
+    }
+  }
+
+  @Test
   void shouldStartWithTlsEnabled() throws Exception {
     // given
     final var cfg = createGatewayCfg();
 
     // when
     gateway = buildGateway(cfg);
-    gateway.gateway();
 
     // then
     final var clusterAddress =
@@ -140,7 +175,6 @@ final class StandaloneGatewaySecurityTest {
 
     // when
     gateway = buildGateway(cfg);
-    gateway.gateway();
 
     // then
     final var clusterAddress =
@@ -247,7 +281,7 @@ final class StandaloneGatewaySecurityTest {
     return config;
   }
 
-  private GatewayModuleConfiguration buildGateway(final GatewayBasedProperties gatewayCfg) {
+  private Gateway buildGateway(final GatewayBasedProperties gatewayCfg) {
     final var gatewayConfig = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
     final var schedulerConfig = gatewayConfig.schedulerConfiguration();
     final var brokerClientConfig = gatewayConfig.brokerClientConfig();
@@ -286,20 +320,20 @@ final class StandaloneGatewaySecurityTest {
     final var camunda = new Camunda();
     camunda.getSecurity().getAuthentication().setUnprotectedApi(true);
 
-    return new GatewayModuleConfiguration(
-        gatewayConfig,
-        PhysicalTenantResolver.of(new MockEnvironment(), camunda),
-        new SpringGatewayBridge(),
-        actorScheduler,
-        atomixCluster,
-        brokerClient,
-        jobStreamClient,
-        null,
-        null,
-        null,
-        null,
-        new SimpleMeterRegistry(),
-        gatewayRestConfiguration,
-        PhysicalTenantIds.DEFAULT);
+    return new GatewayModuleConfiguration()
+        .gateway(
+            gatewayConfig,
+            PhysicalTenantResolver.of(new MockEnvironment(), camunda),
+            new SpringGatewayBridge(),
+            actorScheduler,
+            atomixCluster,
+            brokerClient,
+            jobStreamClient,
+            null,
+            null,
+            null,
+            null,
+            new SimpleMeterRegistry(),
+            gatewayRestConfiguration);
   }
 }

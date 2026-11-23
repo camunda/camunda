@@ -5,8 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.system.configuration;
+package io.camunda.configuration.beans;
 
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 
 public final class EmbeddedGatewayCfg extends GatewayCfg implements ConfigurationEntry {
