@@ -357,13 +357,15 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
 
   /**
    * Lists the references the caller holds {@code SECRET:READ} on, like {@link
-   * #list(CamundaAuthentication)}, narrowed to the secrets whose store reports {@code status}. A
-   * store that cannot report states reports every secret as {@link SecretStatus#ACTIVE}.
+   * #list(CamundaAuthentication)}, narrowed to the secrets whose store reports one of {@code
+   * statuses}. A store that cannot report states reports every secret as {@link
+   * SecretStatus#ACTIVE}.
    *
-   * @param status the state to keep, or {@code null} to list every secret whatever its state
+   * @param statuses the states to keep, or {@code null} to list every secret whatever its state; an
+   *     empty set keeps none
    */
   public CompletableFuture<List<String>> list(
-      final CamundaAuthentication authentication, final @Nullable SecretStatus status) {
+      final CamundaAuthentication authentication, final @Nullable Set<SecretStatus> statuses) {
     try {
       final var authorizedScopes =
           retrieveAuthorizedScopes(authentication, SECRET_READ_AUTHORIZATION);
@@ -371,7 +373,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
         return CompletableFuture.completedFuture(List.of());
       }
       return CompletableFuture.supplyAsync(
-          () -> listFromStores(status).stream().filter(authorizedScopes::authorizes).toList(),
+          () -> listFromStores(statuses).stream().filter(authorizedScopes::authorizes).toList(),
           executorProvider.getExecutor());
     } catch (final Exception ex) {
       return CompletableFuture.failedFuture(ErrorMapper.mapError(ex));
@@ -380,7 +382,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
 
   /**
    * Enumerates the references of every configured store, sorted and without duplicates, keeping
-   * only those in {@code status} when one is given. A store's {@code listEntries()} deliberately
+   * only those in {@code statuses} when given. A store's {@code listEntries()} deliberately
    * bypasses what it has cached: that is the values read so far, which is not the tenant's set of
    * secrets.
    *
@@ -395,7 +397,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * be backtick-escaped there, {@code =camunda.secrets.`db-password`}. The endpoint's description
    * in {@code secrets.yaml} says so, since the caller cannot see this method.
    */
-  private List<String> listFromStores(final @Nullable SecretStatus status) {
+  private List<String> listFromStores(final @Nullable Set<SecretStatus> statuses) {
     final var references = new TreeSet<String>();
     try {
       for (final var store : secretStoreRegistry.getStores().entrySet()) {
@@ -408,7 +410,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
                 store.getKey());
             continue;
           }
-          if (!hasStatus(entry, status)) {
+          if (!hasStatus(entry, statuses)) {
             continue;
           }
           final var name = entry.name();
@@ -436,17 +438,17 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   }
 
   /**
-   * Whether the entry is in the wanted status, where no wanted status keeps every entry. An entry
-   * of a faulty store without a status counts as {@link SecretStatus#ACTIVE}, as a store that
-   * cannot tell does, so it is listed under the same filters in every case.
+   * Whether the entry is in one of the wanted statuses, where no wanted statuses keep every entry.
+   * An entry of a faulty store without a status counts as {@link SecretStatus#ACTIVE}, as a store
+   * that cannot tell does, so it is listed under the same filters in every case.
    */
   private static boolean hasStatus(
-      final SecretListEntry entry, final @Nullable SecretStatus status) {
-    if (status == null) {
+      final SecretListEntry entry, final @Nullable Set<SecretStatus> statuses) {
+    if (statuses == null) {
       return true;
     }
     final SecretStatus reported = entry.status() == null ? SecretStatus.ACTIVE : entry.status();
-    return reported == status;
+    return statuses.contains(reported);
   }
 
   /**
