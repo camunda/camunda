@@ -27,15 +27,20 @@ import io.camunda.service.SecretServices.SecretResolution;
 import io.camunda.service.SecretServices.SecretResolutionError;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -402,7 +407,70 @@ public class SecretControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then the requested status reaches the service
-    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), eq(status));
+    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), eq(Set.of(status)));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("advancedStatusFilters")
+  void shouldListSecretsMatchingAdvancedStatusFilter(
+      final String statusFilter, final Set<SecretStatus> expected) {
+    // given
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": { \"status\": %s } }".formatted(statusFilter))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then the operators resolve to the statuses they match
+    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), eq(expected));
+  }
+
+  static Stream<Arguments> advancedStatusFilters() {
+    final var all = EnumSet.allOf(SecretStatus.class);
+    return Stream.of(
+        Arguments.of("{ \"$eq\": \"EXPIRED\" }", EnumSet.of(SecretStatus.EXPIRED)),
+        Arguments.of(
+            "{ \"$neq\": \"ACTIVE\" }", EnumSet.complementOf(EnumSet.of(SecretStatus.ACTIVE))),
+        Arguments.of(
+            "{ \"$in\": [\"DISABLED\", \"EXPIRED\"] }",
+            EnumSet.of(SecretStatus.DISABLED, SecretStatus.EXPIRED)),
+        Arguments.of(
+            "{ \"$notIn\": [\"ACTIVE\", \"DISABLED\"] }",
+            EnumSet.of(SecretStatus.EXPIRED, SecretStatus.NOT_YET_ACTIVE)),
+        Arguments.of("{ \"$exists\": true }", all),
+        Arguments.of("{ \"$exists\": false }", EnumSet.noneOf(SecretStatus.class)),
+        Arguments.of(
+            "{ \"$like\": \"*ACTIVE\" }",
+            EnumSet.of(SecretStatus.ACTIVE, SecretStatus.NOT_YET_ACTIVE)),
+        Arguments.of("{ \"$like\": \"EXP?RED\" }", EnumSet.of(SecretStatus.EXPIRED)),
+        Arguments.of(
+            "{ \"$in\": [\"ACTIVE\", \"EXPIRED\"], \"$neq\": \"ACTIVE\" }",
+            EnumSet.of(SecretStatus.EXPIRED)),
+        Arguments.of("{ \"$in\": [] }", all),
+        Arguments.of("{}", all));
+  }
+
+  @Test
+  void shouldRejectUnknownStatusInAdvancedFilter() {
+    // when / then
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": { \"status\": { \"$in\": [\"BROKEN\"] } } }")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+    verifyNoInteractions(secretServices);
   }
 
   @Test
@@ -471,7 +539,6 @@ public class SecretControllerTest extends RestControllerTest {
   }
 
   private static String referencesJson(final int count) {
-
     return IntStream.rangeClosed(1, count)
         .mapToObj(i -> "\"camunda.secrets.s" + i + "\"")
         .collect(Collectors.joining(","));
