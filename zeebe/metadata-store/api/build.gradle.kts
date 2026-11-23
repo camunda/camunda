@@ -4,7 +4,10 @@ plugins {
   id("buildlogic.mutation-testing-conventions")
 }
 
-dependencies { implementation(libs.org.jspecify.jspecify) }
+dependencies {
+  api(project(":zeebe-scheduler"))
+  implementation(libs.org.jspecify.jspecify)
+}
 
 description = "Zeebe Cluster Metadata Store API"
 
