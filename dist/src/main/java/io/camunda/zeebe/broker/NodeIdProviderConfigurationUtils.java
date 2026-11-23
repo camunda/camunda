@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.camunda.application.commons.startup.StartupFutures;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.Partitioning.Scheme;
@@ -99,7 +100,8 @@ public class NodeIdProviderConfigurationUtils {
       }
       brokerCount = zone.get().numberOfBrokers();
     }
-    nodeIdProvider.initialize(brokerCount).join();
+    StartupFutures.await(
+        "the node ID provider to initialize", nodeIdProvider.initialize(brokerCount));
     return nodeIdProvider;
   }
 

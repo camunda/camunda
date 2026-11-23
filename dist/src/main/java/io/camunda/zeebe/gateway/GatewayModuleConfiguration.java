@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.application.commons.security.EngineSecurityConfigFactory;
+import io.camunda.application.commons.startup.StartupFutures;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.security.api.context.OidcClaimsProvider;
@@ -29,11 +30,11 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,7 +125,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     // doing it async as potentially slow (messagingService → unicastService →
     // membershipService → communicationService → eventService).
     final CompletableFuture<Void> atomixClusterStartFuture = atomixCluster.start();
-    jobStreamClient.start().join();
+    StartupFutures.await(
+        "the job stream client to start", jobStreamClient.start(), Duration.ofSeconds(10));
 
     // before we can add the job stream client as a topology listener, we need to wait for the
     // topology to be set up, otherwise the callback may be lost
@@ -156,8 +158,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     springGatewayBridge.registerClusterStatesSupplier(this::clusterStatesByPhysicalTenant);
     springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
 
-    atomixClusterStartFuture.join();
-    gateway.start().join(30, TimeUnit.SECONDS);
+    StartupFutures.await("the cluster to start", atomixClusterStartFuture, Duration.ofSeconds(30));
+    StartupFutures.await("the gateway to start", gateway.start(), Duration.ofSeconds(30));
     LOGGER.info("Standalone gateway is started!");
 
     return gateway;

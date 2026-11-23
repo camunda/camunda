@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.application.commons.startup.StartupFutures;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -204,7 +205,9 @@ public class RestoreNodeIdProviderConfiguration {
 
     final DataCfg data = brokerBasedProperties.getData();
     final var directory = Path.of(data.getDirectory());
-    final var configuredDirectory = initializer.initialize(directory).join();
+    final var configuredDirectory =
+        StartupFutures.await(
+            "the data directory to be initialized", initializer.initialize(directory));
     data.setDirectory(configuredDirectory.toString());
 
     return initializer;

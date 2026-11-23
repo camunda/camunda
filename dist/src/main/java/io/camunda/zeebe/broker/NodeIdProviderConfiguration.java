@@ -16,6 +16,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.application.commons.startup.StartupFutures;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
@@ -28,12 +29,10 @@ import io.camunda.zeebe.dynamic.nodeid.fs.VersionedNodeIdBasedDataDirectoryProvi
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,8 +88,7 @@ public class NodeIdProviderConfiguration {
   public ResolvedDataDirectory resolvedDataDirectory(
       final NodeIdProvider nodeIdProvider,
       final NodeIdProviderReadinessAwaiter readinessAwaiter,
-      final BrokerBasedConfiguration brokerBasedConfiguration)
-      throws ExecutionException, InterruptedException, TimeoutException {
+      final BrokerBasedConfiguration brokerBasedConfiguration) {
 
     if (!readinessAwaiter.isReady()) {
       throw new IllegalStateException("NodeIdProvider is not ready");
@@ -104,7 +102,10 @@ public class NodeIdProviderConfiguration {
             final var nodeInstance = nodeIdProvider.currentNodeInstance();
             final Boolean previousNodeGracefullyShutdown;
             previousNodeGracefullyShutdown =
-                nodeIdProvider.previousNodeGracefullyShutdown().get(10, TimeUnit.SECONDS);
+                StartupFutures.await(
+                    "the node ID provider to report whether the previous node shut down gracefully",
+                    nodeIdProvider.previousNodeGracefullyShutdown(),
+                    Duration.ofSeconds(10));
             LOG.info(
                 "Node instance from nodeIdProvider is {}, did previous node instance shutdown gracefully:{}",
                 nodeInstance,
@@ -122,7 +123,9 @@ public class NodeIdProviderConfiguration {
 
     final DataCfg data = brokerBasedConfiguration.config().getData();
     final var directory = Path.of(data.getDirectory());
-    final var configuredDirectory = initializer.initialize(directory).join();
+    final var configuredDirectory =
+        StartupFutures.await(
+            "the data directory to be initialized", initializer.initialize(directory));
     data.setDirectory(configuredDirectory.toString());
 
     return new ResolvedDataDirectory(configuredDirectory.toString());
@@ -147,7 +150,8 @@ public class NodeIdProviderConfiguration {
     // initialize current members
     nodeIdProvider.setMemberVersions(collectMemberVersions(membershipService.getMembers()));
 
-    final var isReady = nodeIdProvider.awaitReadiness().join();
+    final var isReady =
+        StartupFutures.await("the node ID provider to be ready", nodeIdProvider.awaitReadiness());
     return new NodeIdProviderReadinessAwaiter(isReady);
   }
 

@@ -10,6 +10,7 @@ package io.camunda.application.commons.clustering;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.application.commons.startup.StartupFutures;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.rebalance.RebalanceRequestSender;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
@@ -32,6 +34,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DynamicClusterServices {
+
+  // starting these actors involves no I/O, so taking longer means they are stuck
+  private static final Duration ACTOR_START_TIMEOUT = Duration.ofSeconds(10);
 
   private final ActorScheduler scheduler;
   private final ClusterMembershipService clusterMembershipService;
@@ -70,7 +75,10 @@ public class DynamicClusterServices {
     final var service =
         new GatewayClusterConfigurationService(
             clusterCommunicationService, clusterMembershipService, configManagerCfg, meterRegistry);
-    scheduler.submitActor(service).join();
+    StartupFutures.await(
+        "the gateway cluster configuration service to start",
+        scheduler.submitActor(service),
+        ACTOR_START_TIMEOUT);
     return service;
   }
 
@@ -79,7 +87,10 @@ public class DynamicClusterServices {
   public BrokerTopologyManager brokerTopologyManagerForEmbeddedBrokerClient() {
     final var brokerTopologyManager =
         new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
-    scheduler.submitActor(brokerTopologyManager).join();
+    StartupFutures.await(
+        "the broker topology manager to start",
+        scheduler.submitActor(brokerTopologyManager),
+        ACTOR_START_TIMEOUT);
     clusterMembershipService.addListener(brokerTopologyManager);
     // Re-seed after the listener is attached: closes the race where a MEMBER_ADDED
     // event fires between the actor's initial snapshot and listener registration.
@@ -93,7 +104,10 @@ public class DynamicClusterServices {
       final GatewayClusterConfigurationService gatewayClusterConfigurationService) {
     final var brokerTopologyManager =
         new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
-    scheduler.submitActor(brokerTopologyManager).join();
+    StartupFutures.await(
+        "the broker topology manager to start",
+        scheduler.submitActor(brokerTopologyManager),
+        ACTOR_START_TIMEOUT);
     clusterMembershipService.addListener(brokerTopologyManager);
     // Re-seed after the listener is attached: closes the race where a MEMBER_ADDED
     // event fires between the actor's initial snapshot and listener registration.
