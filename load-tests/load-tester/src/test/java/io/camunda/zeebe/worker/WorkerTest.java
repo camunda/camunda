@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
@@ -25,6 +26,9 @@ import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCo
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.PublishMessageResponse;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.spring.properties.CamundaClientJobWorkerProperties;
+import io.camunda.client.spring.properties.CamundaClientProperties;
+import io.camunda.client.spring.properties.PropertyBasedJobWorkerValueCustomizer;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -34,6 +38,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -48,6 +54,32 @@ class WorkerTest {
   private static final Duration COMPLETION_DELAY = Duration.ofMillis(250);
 
   private final MeterRegistry registry = new SimpleMeterRegistry();
+
+  @Test
+  void shouldResolveDefaultJobType() {
+    // given
+    final var customizers = List.of(customizer(Map.of(), "default-task"));
+
+    // when
+    final var jobType = Worker.resolveJobType(customizers);
+
+    // then
+    assertThat(jobType).isEqualTo("default-task");
+  }
+
+  @Test
+  void shouldResolveJobTypeFromWorkerOverride() {
+    // given — an override keyed by the default type changes the type the worker subscribes to
+    final var override = new CamundaClientJobWorkerProperties();
+    override.setType("other-task");
+    final var customizers = List.of(customizer(Map.of("default-task", override), "default-task"));
+
+    // when
+    final var jobType = Worker.resolveJobType(customizers);
+
+    // then
+    assertThat(jobType).isEqualTo("other-task");
+  }
 
   @Test
   void shouldApplyCompletionDelayWhenPublishMessageFails() throws Exception {
@@ -173,7 +205,21 @@ class WorkerTest {
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(anyString())).thenReturn("{}");
     final var connectionMonitor = mock(ConnectionMonitor.class);
-    return new Worker(client, properties, payloadReader, connectionMonitor, registry, JOB_TYPE);
+    return new Worker(
+        client,
+        properties,
+        payloadReader,
+        connectionMonitor,
+        registry,
+        List.of(customizer(Map.of(), JOB_TYPE)));
+  }
+
+  private static JobWorkerValueCustomizer customizer(
+      final Map<String, CamundaClientJobWorkerProperties> overrides, final String defaultType) {
+    final var clientProperties = new CamundaClientProperties();
+    clientProperties.getWorker().getDefaults().setType(defaultType);
+    clientProperties.getWorker().setOverride(overrides);
+    return new PropertyBasedJobWorkerValueCustomizer(clientProperties);
   }
 
   private double publications(final String outcome, final String error) {
