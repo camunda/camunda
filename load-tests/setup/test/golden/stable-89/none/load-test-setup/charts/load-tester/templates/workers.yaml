@@ -142,6 +142,21 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /health/readiness
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health/readiness
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
           volumeMounts:
             - name: heap-dumps
               mountPath: /heap-dumps
