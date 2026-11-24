@@ -16,11 +16,8 @@ interface ImportMetaEnv {
   readonly VITE_DEV_ENV_URL: string;
   readonly VITE_INT_ENV_URL: string;
   readonly VITE_PROD_ENV_URL: string;
-  readonly VITE_MIXPANEL_TOKEN: string;
-  readonly VITE_MIXPANEL_HOST: string;
   readonly VITE_OSANO_INT_ENV_URL: string;
   readonly VITE_OSANO_PROD_ENV_URL: string;
-  readonly VITE_CUES_HOST: string;
 }
 
 interface ImportMeta {

@@ -36,7 +36,7 @@ public class UIConfigurationResponseDto {
   private boolean isCommercial;
   private String expiresAt;
 
-  private MixpanelConfigResponseDto mixpanel = new MixpanelConfigResponseDto();
+  private AnalyticsConfigResponseDto analytics = new AnalyticsConfigResponseDto();
 
   private OnboardingResponseDto onboarding = new OnboardingResponseDto();
 
@@ -58,7 +58,7 @@ public class UIConfigurationResponseDto {
       final DatabaseType optimizeDatabase,
       final boolean validLicense,
       final String licenseType,
-      final MixpanelConfigResponseDto mixpanel,
+      final AnalyticsConfigResponseDto analytics,
       final OnboardingResponseDto onboarding) {
     this.emailEnabled = emailEnabled;
     this.sharingEnabled = sharingEnabled;
@@ -77,7 +77,7 @@ public class UIConfigurationResponseDto {
     this.optimizeDatabase = optimizeDatabase;
     this.validLicense = validLicense;
     this.licenseType = licenseType;
-    this.mixpanel = mixpanel;
+    this.analytics = analytics;
     this.onboarding = onboarding;
   }
 
@@ -255,12 +255,12 @@ public class UIConfigurationResponseDto {
     this.expiresAt = expiresAt;
   }
 
-  public MixpanelConfigResponseDto getMixpanel() {
-    return mixpanel;
+  public AnalyticsConfigResponseDto getAnalytics() {
+    return analytics;
   }
 
-  public void setMixpanel(final MixpanelConfigResponseDto mixpanel) {
-    this.mixpanel = mixpanel;
+  public void setAnalytics(final AnalyticsConfigResponseDto analytics) {
+    this.analytics = analytics;
   }
 
   public OnboardingResponseDto getOnboarding() {
@@ -284,7 +284,6 @@ public class UIConfigurationResponseDto {
         userTaskAssigneeAnalyticsEnabled,
         emailEnabled,
         sharingEnabled,
-        mixpanel,
         onboarding,
         optimizeVersion,
         optimizeProfile,
@@ -313,7 +312,6 @@ public class UIConfigurationResponseDto {
         && sharingEnabled == that.sharingEnabled
         && validLicense == that.validLicense
         && isCommercial == that.isCommercial
-        && Objects.equals(mixpanel, that.mixpanel)
         && Objects.equals(onboarding, that.onboarding)
         && Objects.equals(optimizeVersion, that.optimizeVersion)
         && Objects.equals(optimizeProfile, that.optimizeProfile)
@@ -359,8 +357,6 @@ public class UIConfigurationResponseDto {
         + isValidLicense()
         + ", licenseType="
         + getLicenseType()
-        + ", mixpanel="
-        + getMixpanel()
         + ", onboarding="
         + getOnboarding()
         + ")";

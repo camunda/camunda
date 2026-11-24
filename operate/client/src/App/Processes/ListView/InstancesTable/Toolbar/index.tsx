@@ -22,7 +22,6 @@ import {observer} from 'mobx-react';
 import {useCancelProcessInstancesBatchOperation} from 'modules/mutations/processes/useCancelProcessInstancesBatchOperation';
 import {useResolveProcessInstancesIncidentsBatchOperation} from 'modules/mutations/processes/useResolveProcessInstancesIncidentsBatchOperation';
 import {useDeleteProcessInstancesBatchOperation} from 'modules/mutations/processes/useDeleteProcessInstancesBatchOperation';
-import {tracking} from 'modules/tracking';
 import {handleOperationError} from 'modules/utils/notifications';
 import {
   useBatchOperationMutationRequestBody,
@@ -128,10 +127,6 @@ const Toolbar: React.FC<Props> = observer(
     const cancelMutation = useCancelProcessInstancesBatchOperation({
       onSuccess: ({batchOperationKey, batchOperationType}) => {
         displaySuccessNotification(batchOperationType, batchOperationKey);
-        tracking.track({
-          eventName: 'batch-operation',
-          operationType: 'CANCEL_PROCESS_INSTANCE',
-        });
         processInstancesSelectionStore.resetState();
       },
       onError: (error) => {
@@ -142,10 +137,6 @@ const Toolbar: React.FC<Props> = observer(
     const resolveMutation = useResolveProcessInstancesIncidentsBatchOperation({
       onSuccess: ({batchOperationKey, batchOperationType}) => {
         displaySuccessNotification(batchOperationType, batchOperationKey);
-        tracking.track({
-          eventName: 'batch-operation',
-          operationType: 'RESOLVE_INCIDENT',
-        });
         processInstancesSelectionStore.resetState();
       },
       onError: (error) => {
@@ -156,10 +147,6 @@ const Toolbar: React.FC<Props> = observer(
     const deleteMutation = useDeleteProcessInstancesBatchOperation({
       onSuccess: ({batchOperationKey, batchOperationType}) => {
         displaySuccessNotification(batchOperationType, batchOperationKey);
-        tracking.track({
-          eventName: 'batch-operation',
-          operationType: 'DELETE_PROCESS_INSTANCE',
-        });
         processInstancesSelectionStore.resetState();
       },
       onError: (error) => {
@@ -170,10 +157,6 @@ const Toolbar: React.FC<Props> = observer(
     const suspendMutation = useSuspendProcessInstancesBatchOperation({
       onSuccess: ({batchOperationKey, batchOperationType}) => {
         displaySuccessNotification(batchOperationType, batchOperationKey);
-        tracking.track({
-          eventName: 'batch-operation',
-          operationType: 'SUSPEND_PROCESS_INSTANCE',
-        });
         processInstancesSelectionStore.resetState();
       },
       onError: (error) => {
@@ -184,10 +167,6 @@ const Toolbar: React.FC<Props> = observer(
     const resumeMutation = useResumeProcessInstancesBatchOperation({
       onSuccess: ({batchOperationKey, batchOperationType}) => {
         displaySuccessNotification(batchOperationType, batchOperationKey);
-        tracking.track({
-          eventName: 'batch-operation',
-          operationType: 'RESUME_PROCESS_INSTANCE',
-        });
         processInstancesSelectionStore.resetState();
       },
       onError: (error) => {

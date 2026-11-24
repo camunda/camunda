@@ -20,7 +20,6 @@ import {useDeleteDecisionInstancesBatchOperation} from 'modules/mutations/decisi
 import {useDeleteDecisionInstancesBatchOperationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 import {handleOperationError} from 'modules/utils/notifications';
-import {tracking} from 'modules/tracking';
 import {pluralSuffix} from 'modules/utils/pluralSuffix';
 
 type Props = {
@@ -38,10 +37,6 @@ const Toolbar: React.FC<Props> = observer(
     const deleteMutation = useDeleteDecisionInstancesBatchOperation({
       onSuccess: ({batchOperationKey, batchOperationType}) => {
         displaySuccessNotification(batchOperationType, batchOperationKey);
-        tracking.track({
-          eventName: 'batch-operation',
-          operationType: 'DELETE_DECISION_INSTANCE',
-        });
         decisionInstancesSelectionStore.resetState();
       },
       onError: (error) => {

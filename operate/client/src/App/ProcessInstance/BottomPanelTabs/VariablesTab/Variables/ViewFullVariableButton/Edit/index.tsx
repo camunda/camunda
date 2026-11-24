@@ -9,7 +9,6 @@
 import {useState} from 'react';
 import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
 import {useVariable} from 'modules/queries/variables/useVariable';
-import {tracking} from 'modules/tracking';
 import {useExistingVariableEditor} from 'modules/hooks/useExistingVariableEditor';
 import {useForm} from 'react-final-form';
 import type {ViewFullVariableButtonEditProps} from '../types';
@@ -38,10 +37,6 @@ const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonEditProps> = ({
           }
 
           setIsModalVisible(true);
-          tracking.track({
-            eventName: 'json-editor-opened',
-            variant: 'edit-variable',
-          });
         }}
       />
       {isModalVisible && (
@@ -49,10 +44,6 @@ const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonEditProps> = ({
           value={variableEditor.fieldValue}
           onClose={() => {
             setIsModalVisible(false);
-            tracking.track({
-              eventName: 'json-editor-closed',
-              variant: 'edit-variable',
-            });
           }}
           onApply={(value) => {
             form.change(variableEditor.fieldName, value);
@@ -60,10 +51,6 @@ const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonEditProps> = ({
               form.submit();
             }
             setIsModalVisible(false);
-            tracking.track({
-              eventName: 'json-editor-saved',
-              variant: 'edit-variable',
-            });
 
             variableEditor.createModification({
               scopeId: variableEditor.variableScopeKey,

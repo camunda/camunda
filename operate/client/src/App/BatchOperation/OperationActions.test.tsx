@@ -32,7 +32,6 @@ const BATCH_OPERATION_KEY = 'migrate-operation-123';
 
 const defaultProps = {
   batchOperationKey: BATCH_OPERATION_KEY,
-  batchOperationType: 'MODIFY_PROCESS_INSTANCE' as const,
 };
 
 describe('<OperationActions />', () => {

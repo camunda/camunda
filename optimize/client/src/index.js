@@ -12,6 +12,7 @@ import '@camunda/design-system/styles.css';
 import './style.scss';
 import 'polyfills';
 
+import {loadOsano} from 'osano';
 import {restorePostLoginRedirect} from 'postLoginRedirect';
 
 import App from './App';
@@ -23,6 +24,9 @@ restorePostLoginRedirect();
 
 // On the body rather than the root, because modals render through a portal into the body.
 document.body.classList.add('optimize-nav-v2');
+
+// Waits for the UI configuration, which only loads once the app renders, so it must not block it.
+loadOsano();
 
 const root = createRoot(document.getElementById('root'));
 root.render(<App />);

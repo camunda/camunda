@@ -8,7 +8,6 @@
 
 import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.10';
 import {makeAutoObservable} from 'mobx';
-import {tracking} from 'modules/tracking';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 type State = {
@@ -40,11 +39,6 @@ class InstanceHistorySortOrder {
   toggle = () => {
     const nextOrder: QuerySortOrder =
       this.state.order === 'desc' ? 'asc' : 'desc';
-
-    tracking.track({
-      eventName: 'instance-history-sort-order-toggled',
-      toggledTo: nextOrder,
-    });
 
     this.state.order = nextOrder;
 

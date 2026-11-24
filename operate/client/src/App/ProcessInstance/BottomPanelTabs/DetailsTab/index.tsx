@@ -11,7 +11,6 @@ import {StructuredListSkeleton} from '@carbon/react';
 import isNil from 'lodash/isNil';
 import {Link} from 'modules/components/Link';
 import {Paths, Locations} from 'modules/Routes';
-import {tracking} from 'modules/tracking';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
@@ -255,11 +254,6 @@ const DetailsTab: React.FC = () => {
                       href={taskLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => {
-                        tracking.track({
-                          eventName: 'open-tasklist-link-clicked',
-                        });
-                      }}
                     >
                       Open Tasklist
                     </a>

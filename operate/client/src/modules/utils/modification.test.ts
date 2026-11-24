@@ -8,7 +8,6 @@
 
 import {cancelAllTokens, finishMovingToken} from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
-import {tracking} from 'modules/tracking';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 describe('cancelAllTokens', () => {
@@ -66,16 +65,6 @@ describe('finishMovingToken', () => {
 
   beforeEach(() => {
     modificationsStore.setSourceElementIdForMoveOperation('sourceNode');
-  });
-
-  it('should track the move-token event', () => {
-    const trackSpy = vi.spyOn(tracking, 'track');
-
-    finishMovingToken(5, 3, businessObjects, 'targetNode');
-
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'move-token',
-    });
   });
 
   it('should add a move modification when targetElementId is provided', () => {

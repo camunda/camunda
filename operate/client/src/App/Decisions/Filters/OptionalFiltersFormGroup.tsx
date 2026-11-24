@@ -23,7 +23,6 @@ import {
   validatesDecisionIdsComplete,
 } from 'modules/validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {tracking} from 'modules/tracking';
 import {OptionalFiltersMenu} from 'modules/components/OptionalFilters';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {Field, useForm} from 'react-final-form';
@@ -149,10 +148,6 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
             onVisibleFilterChange(
               Array.from(new Set([...visibleFilters, ...[filter]])),
             );
-            tracking.track({
-              eventName: 'optional-filter-selected',
-              filterName: filter,
-            });
             if (filter === 'evaluationDateRange') {
               setTimeout(() => {
                 setIsDateRangeModalOpen(true);

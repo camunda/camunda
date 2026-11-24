@@ -20,9 +20,6 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
 import {SelectedProcessDefinitionContext} from './selectedProcessDefinitionContext';
 import {useFilters} from 'modules/hooks/useFilters';
-import {variableFilterStore} from 'modules/stores/variableFilter';
-import {reaction} from 'mobx';
-import {tracking} from 'modules/tracking';
 import {useSelectedProcessDefinition} from 'modules/hooks/processDefinitions';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from 'modules/queries/queryKeys';
@@ -57,20 +54,6 @@ const ListView: React.FC = observer(() => {
   useEffect(() => {
     processInstancesSelectionStore.resetState();
   }, [filtersJSON]);
-
-  useEffect(() => {
-    const disposer = reaction(
-      () => variableFilterStore.state.conditions,
-      (conditions) => {
-        tracking.track({
-          eventName: 'process-instances-filtered',
-          filterName: 'variable',
-          multipleValues: conditions.length > 1,
-        });
-      },
-    );
-    return disposer;
-  }, []);
 
   const {data: selectedProcessDefinition} = useSelectedProcessDefinition();
 

@@ -80,7 +80,6 @@ The `modules` directory contains everything that is reused across routes and com
 - **hooks**: Custom reusable React hooks.
 - **services**: Global services for API calls, formatting, and other functionalities.
 - **shared-styles**: Shared styles and SCSS files.
-- **tracking**: Components and services for Mixpanel tracking.
 - **translation**: Components and utilities for handling translations. This is explained in detail below.
 - **request.ts**: Utility for handling requests.
 - **types.ts**: Global TypeScript type definitions.

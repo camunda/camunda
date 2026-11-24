@@ -10,7 +10,6 @@ import {useCallback, useEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
-import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
@@ -166,16 +165,6 @@ const TopPanel: React.FC = observer(() => {
 
     return drilldownClasses;
   }, [businessObjects, isModificationModeEnabled, pendingDrillDownElementId]);
-
-  useEffect(() => {
-    if (!isModificationModeEnabled) {
-      if (selectedElementId) {
-        tracking.track({eventName: 'metadata-popover-opened'});
-      } else {
-        tracking.track({eventName: 'metadata-popover-closed'});
-      }
-    }
-  }, [isModificationModeEnabled, selectedElementId]);
 
   const getStatus = () => {
     if (isXmlFetching) {

@@ -103,7 +103,7 @@ it('should return null when no text is provided', () => {
   expect(node.find('.TextTile')).not.toExist();
 });
 
-it('should open edit modal and sent mixpanel event on edit', () => {
+it('should open edit modal on edit', () => {
   const node = shallow(
     <TextTile
       {...props}

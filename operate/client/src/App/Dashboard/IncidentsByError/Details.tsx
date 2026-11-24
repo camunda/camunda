@@ -12,7 +12,6 @@ import {getAccordionItemLabel} from './utils/getAccordionItemLabel';
 import {truncateErrorMessage} from './utils/truncateErrorMessage';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {tracking} from 'modules/tracking';
 import {Li, LinkWrapper, ErrorText} from '../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
@@ -107,10 +106,6 @@ const Details: React.FC<Props> = ({
               })}
               onClick={() => {
                 panelStatesStore.expandFiltersPanel();
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'dashboard-process-incidents-by-error-message-single-version',
-                });
               }}
               title={getAccordionItemTitle({
                 processName: name,

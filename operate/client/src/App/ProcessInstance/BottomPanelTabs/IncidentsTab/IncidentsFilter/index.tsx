@@ -8,7 +8,6 @@
 
 import {Container, Stack, Layer} from './styled';
 import {observer} from 'mobx-react';
-import {tracking} from 'modules/tracking';
 import {Button, MultiSelect} from '@carbon/react';
 import {
   availableErrorTypes,
@@ -41,9 +40,6 @@ const IncidentsFilter: React.FC = observer(() => {
             kind="ghost"
             onClick={() => {
               incidentsPanelFiltersStore.clearSelection();
-              tracking.track({
-                eventName: 'incident-filters-cleared',
-              });
             }}
             disabled={!incidentsPanelFiltersStore.hasActiveFilters}
             title="Reset Filters"

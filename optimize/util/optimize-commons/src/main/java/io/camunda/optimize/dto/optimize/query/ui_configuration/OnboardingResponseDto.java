@@ -12,19 +12,16 @@ import java.util.Objects;
 public class OnboardingResponseDto {
 
   private boolean enabled;
-  private String appCuesScriptUrl;
   private String orgId;
   private String clusterId;
   private String salesPlanType;
 
   public OnboardingResponseDto(
       final boolean enabled,
-      final String appCuesScriptUrl,
       final String orgId,
       final String clusterId,
       final String salesPlanType) {
     this.enabled = enabled;
-    this.appCuesScriptUrl = appCuesScriptUrl;
     this.orgId = orgId;
     this.clusterId = clusterId;
     this.salesPlanType = salesPlanType;
@@ -38,14 +35,6 @@ public class OnboardingResponseDto {
 
   public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
-  }
-
-  public String getAppCuesScriptUrl() {
-    return appCuesScriptUrl;
-  }
-
-  public void setAppCuesScriptUrl(final String appCuesScriptUrl) {
-    this.appCuesScriptUrl = appCuesScriptUrl;
   }
 
   public String getOrgId() {
@@ -78,7 +67,7 @@ public class OnboardingResponseDto {
 
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, appCuesScriptUrl, orgId, clusterId, salesPlanType);
+    return Objects.hash(enabled, orgId, clusterId, salesPlanType);
   }
 
   @Override
@@ -91,7 +80,6 @@ public class OnboardingResponseDto {
     }
     final OnboardingResponseDto that = (OnboardingResponseDto) o;
     return enabled == that.enabled
-        && Objects.equals(appCuesScriptUrl, that.appCuesScriptUrl)
         && Objects.equals(orgId, that.orgId)
         && Objects.equals(clusterId, that.clusterId)
         && Objects.equals(salesPlanType, that.salesPlanType);
@@ -101,8 +89,6 @@ public class OnboardingResponseDto {
   public String toString() {
     return "OnboardingResponseDto(enabled="
         + isEnabled()
-        + ", appCuesScriptUrl="
-        + getAppCuesScriptUrl()
         + ", orgId="
         + getOrgId()
         + ", clusterId="

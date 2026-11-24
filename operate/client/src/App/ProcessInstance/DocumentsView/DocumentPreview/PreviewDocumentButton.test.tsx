@@ -12,7 +12,6 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockDownloadDocument} from 'modules/mocks/api/v2/documents/downloadDocument';
 import {PreviewDocumentButton} from './PreviewDocumentButton';
 import type {DocumentInfo} from '../documentInfo';
-import {tracking} from 'modules/tracking';
 
 const createWrapper = (): React.FC<{children?: React.ReactNode}> => {
   const client = getMockQueryClient();
@@ -208,22 +207,6 @@ describe('<PreviewDocumentButton />', () => {
     const button = screen.getByLabelText('Preview document for myDoc');
     expect(button).toBeDisabled();
     expect(screen.getByText('Preview unavailable')).toBeInTheDocument();
-  });
-
-  it('should track "document-previewed" events', async () => {
-    const trackSpy = vi.spyOn(tracking, 'track');
-    const {user} = render(
-      <PreviewDocumentButton document={imageDocument} labelSuffix="myImage" />,
-    );
-
-    await user.click(screen.getByLabelText('Preview document for myImage'));
-
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'document-previewed',
-      documentType: 'image',
-      contentType: 'image/png',
-      size: 1024,
-    });
   });
 
   it('should show an error notification when the image fails to load', async () => {

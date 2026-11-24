@@ -9,7 +9,6 @@
 import {render, screen} from 'modules/testing-library';
 import {DownloadDocumentButton} from '.';
 import type {DocumentInfo} from '../documentInfo';
-import {tracking} from 'modules/tracking';
 
 const pdfDocument: DocumentInfo = {
   link: '/v2/documents/pdf',
@@ -68,23 +67,5 @@ describe('<DownloadDocumentButton />', () => {
     expect(button).toBeDisabled();
     expect(button.tagName).not.toBe('A');
     expect(screen.getByText('Document has expired')).toBeInTheDocument();
-  });
-
-  it('should track document-downloaded events', async () => {
-    // Prevents JSDOM from throwing "Error: Not implemented: navigation (except hash changes)".
-    window.addEventListener('click', (e) => e.preventDefault(), {once: true});
-    const trackSpy = vi.spyOn(tracking, 'track');
-    const {user} = render(
-      <DownloadDocumentButton document={pdfDocument} labelSuffix="myPdf" />,
-    );
-
-    await user.click(screen.getByLabelText('Download document for myPdf'));
-
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'document-downloaded',
-      documentType: 'pdf',
-      contentType: 'application/pdf',
-      size: 2048,
-    });
   });
 });

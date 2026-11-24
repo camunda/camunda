@@ -14,7 +14,6 @@ import BranchControlPanel from './BranchControlPanel';
 import {loadFrequencyData} from './service';
 
 import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
-import {track} from 'tracking';
 
 jest.mock('./service', () => {
   return {
@@ -29,8 +28,6 @@ jest.mock('services', () => {
     incompatibleFilters: jest.fn(),
   };
 });
-
-jest.mock('tracking', () => ({track: jest.fn()}));
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
@@ -53,7 +50,6 @@ it('should load the process definition xml when the process definition id is upd
   });
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someKey', 'someVersion', 'a');
-  expect(track).toHaveBeenCalledWith('startBranchAnalysis', {processDefinitionKey: 'someKey'});
 });
 
 it('should load frequency data when the process definition key changes', async () => {

@@ -12,7 +12,6 @@ import {Link} from 'react-router-dom';
 import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import {Locations, Paths} from 'modules/Routes';
-import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
 import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {licenseTagStore} from 'modules/stores/licenseTag';
@@ -28,11 +27,6 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
       key: 'docs',
       label: 'Documentation',
       onClick: () => {
-        tracking.track({
-          eventName: 'info-bar',
-          link: 'documentation',
-        });
-
         window.open('https://docs.camunda.io/', '_blank');
       },
     },
@@ -40,11 +34,6 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
       key: 'academy',
       label: 'Camunda Academy',
       onClick: () => {
-        tracking.track({
-          eventName: 'info-bar',
-          link: 'academy',
-        });
-
         window.open('https://academy.camunda.com/', '_blank');
       },
     },
@@ -53,11 +42,6 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
     key: 'feedbackAndSupport',
     label: 'Feedback and Support',
     onClick: () => {
-      tracking.track({
-        eventName: 'info-bar',
-        link: 'feedback',
-      });
-
       window.open('https://jira.camunda.com/projects/SUPPORT/queues', '_blank');
     },
   } as const;
@@ -65,11 +49,6 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
     key: 'communityForum',
     label: 'Community Forum',
     onClick: () => {
-      tracking.track({
-        eventName: 'info-bar',
-        link: 'forum',
-      });
-
       window.open('https://forum.camunda.io', '_blank');
     },
   };
@@ -106,17 +85,6 @@ const LegacyAppHeader: React.FC = observer(() => {
   }, []);
 
   useEffect(() => {
-    // Newer schemas allow a null username, which only an anonymous caller gets.
-    if (currentUser !== undefined && currentUser.username !== null) {
-      tracking.identifyUser({
-        username: currentUser.username,
-        salesPlanType: currentUser.salesPlanType,
-        roles: currentUser.roles,
-      });
-    }
-  }, [currentUser]);
-
-  useEffect(() => {
     licenseTagStore.fetchLicense();
 
     return licenseTagStore.reset;
@@ -139,12 +107,6 @@ const LegacyAppHeader: React.FC = observer(() => {
       appBar={{
         ariaLabel: 'App panel',
         isOpen: isAppBarOpen,
-        elementClicked: (app: string) => {
-          tracking.track({
-            eventName: 'app-switcher-item-clicked',
-            app,
-          });
-        },
         appTeaserRouteProps: IS_SAAS ? {} : undefined,
         elements: IS_SAAS ? undefined : [],
       }}
@@ -153,12 +115,6 @@ const LegacyAppHeader: React.FC = observer(() => {
         name: 'Operate',
         routeProps: {
           to: Paths.dashboard(),
-          onClick: () => {
-            tracking.track({
-              eventName: 'navigation',
-              link: 'header-logo',
-            });
-          },
         },
       }}
       forwardRef={Link}
@@ -172,13 +128,6 @@ const LegacyAppHeader: React.FC = observer(() => {
                 isCurrentPage: currentPage === 'dashboard',
                 routeProps: {
                   to: Paths.dashboard(),
-                  onClick: () => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'header-dashboard',
-                      currentPage,
-                    });
-                  },
                 },
               },
               {
@@ -190,13 +139,6 @@ const LegacyAppHeader: React.FC = observer(() => {
                 routeProps: {
                   to: Locations.processes(),
                   state: {refreshContent: true, hideOptionalFilters: true},
-                  onClick: () => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'header-processes',
-                      currentPage,
-                    });
-                  },
                 },
               },
               {
@@ -208,13 +150,6 @@ const LegacyAppHeader: React.FC = observer(() => {
                 routeProps: {
                   to: Locations.decisions(),
                   state: {refreshContent: true, hideOptionalFilters: true},
-                  onClick: () => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'header-decisions',
-                      currentPage,
-                    });
-                  },
                 },
               },
               ...(isLargeScreen
@@ -233,11 +168,6 @@ const LegacyAppHeader: React.FC = observer(() => {
                           routeProps: {
                             to: Paths.batchOperations(),
                             onClick: () => {
-                              tracking.track({
-                                eventName: 'navigation',
-                                link: 'header-batch-operations',
-                                currentPage,
-                              });
                               (document.activeElement as HTMLElement)?.blur();
                             },
                           },
@@ -249,11 +179,6 @@ const LegacyAppHeader: React.FC = observer(() => {
                           routeProps: {
                             to: Paths.operationsLog(),
                             onClick: () => {
-                              tracking.track({
-                                eventName: 'navigation',
-                                link: 'header-operations-log',
-                                currentPage,
-                              });
                               (document.activeElement as HTMLElement)?.blur();
                             },
                           },
@@ -268,13 +193,6 @@ const LegacyAppHeader: React.FC = observer(() => {
                       isCurrentPage: currentPage === 'batch-operations',
                       routeProps: {
                         to: Paths.batchOperations(),
-                        onClick: () => {
-                          tracking.track({
-                            eventName: 'navigation',
-                            link: 'header-batch-operations',
-                            currentPage,
-                          });
-                        },
                       },
                     },
                     {
@@ -283,13 +201,6 @@ const LegacyAppHeader: React.FC = observer(() => {
                       isCurrentPage: currentPage === 'operations-log',
                       routeProps: {
                         to: Paths.operationsLog(),
-                        onClick: () => {
-                          tracking.track({
-                            eventName: 'navigation',
-                            link: 'header-operations-log',
-                            currentPage,
-                          });
-                        },
                       },
                     },
                   ]),
@@ -335,11 +246,6 @@ const LegacyAppHeader: React.FC = observer(() => {
                   key: 'cookie',
                   label: 'Cookie preferences',
                   onClick: () => {
-                    tracking.track({
-                      eventName: 'user-side-bar',
-                      link: 'cookies',
-                    });
-
                     window.Osano?.cm?.showDrawer(
                       'osano-cm-dom-info-dialog-open',
                     );
@@ -350,11 +256,6 @@ const LegacyAppHeader: React.FC = observer(() => {
             key: 'terms',
             label: 'Terms of use',
             onClick: () => {
-              tracking.track({
-                eventName: 'user-side-bar',
-                link: 'terms-conditions',
-              });
-
               window.open(
                 'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
                 '_blank',
@@ -365,11 +266,6 @@ const LegacyAppHeader: React.FC = observer(() => {
             key: 'privacy',
             label: 'Privacy policy',
             onClick: () => {
-              tracking.track({
-                eventName: 'user-side-bar',
-                link: 'privacy-policy',
-              });
-
               window.open('https://camunda.com/legal/privacy/', '_blank');
             },
           },
@@ -377,11 +273,6 @@ const LegacyAppHeader: React.FC = observer(() => {
             key: 'imprint',
             label: 'Imprint',
             onClick: () => {
-              tracking.track({
-                eventName: 'user-side-bar',
-                link: 'imprint',
-              });
-
               window.open('https://camunda.com/legal/imprint/', '_blank');
             },
           },

@@ -10,7 +10,6 @@ import {Button, Tooltip} from '@carbon/react';
 import {Download} from '@carbon/react/icons';
 import type {DocumentInfo} from '../documentInfo';
 import {TooltipTrigger} from './styled';
-import {tracking} from 'modules/tracking';
 
 function getDisabledTooltipText(document: DocumentInfo): string {
   return document.isExpired ? 'Document has expired' : 'Download unavailable';
@@ -39,14 +38,6 @@ const DownloadDocumentButton: React.FC<Props> = ({document, labelSuffix}) => {
       tooltipAlignment="end"
       aria-label={`Download document for ${labelSuffix}`}
       disabled={isDisabled}
-      onClick={() => {
-        tracking.track({
-          eventName: 'document-downloaded',
-          documentType: document.type,
-          contentType: document.contentType,
-          size: document.size,
-        });
-      }}
     />
   );
 

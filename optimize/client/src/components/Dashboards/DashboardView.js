@@ -307,7 +307,6 @@ export function DashboardView(props) {
       </div>
       {isInstantDashboard && isTemplateModalOpen && (
         <DashboardTemplateModal
-          trackingEventName="useInstantPreviewDashboardTemplate"
           initialDefinitions={definitions}
           onClose={() => setIsTemplateModalOpen(false)}
           onConfirm={handleInstantPreviewDashboardCopying}

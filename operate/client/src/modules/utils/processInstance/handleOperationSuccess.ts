@@ -9,7 +9,6 @@
 import {useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 import {notificationsStore} from 'modules/stores/notifications';
-import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
 import {queryKeys} from 'modules/queries/queryKeys';
 import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
@@ -36,12 +35,6 @@ function useHandleOperationSuccess() {
         queryKey: queryKeys.processInstances.base(),
       });
     }
-
-    tracking.track({
-      eventName: 'single-operation',
-      operationType,
-      source,
-    });
 
     if (operationType === 'DELETE_PROCESS_INSTANCE') {
       if (source === 'instance-header') {

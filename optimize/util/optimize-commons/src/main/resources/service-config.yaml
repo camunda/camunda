@@ -683,34 +683,15 @@ ui:
   # The URL for Optimize to use to navigate to modeler in the sidebar
   modelerUrl: ${CAMUNDA_OPTIMIZE_CLOUD_MODELER_URL:}
 
-telemetry:
-  # Is telemetry initialized
-  initializeTelemetry: ${CAMUNDA_OPTIMIZE_TELEMETRY_ENABLED:false}
-  # Interval for telemetry reporting, defaults to every 24 hours.
-  reportingIntervalInHours: 24
-
 analytics:
   # Enable/Disable user interaction tracking
   enabled: ${CAMUNDA_OPTIMIZE_ANALYTICS_ENABLED:false}
   osano:
     scriptUrl: ${CAMUNDA_OPTIMIZE_ANALYTICS_OSANO_SCRIPT_URL:}
-  mixpanel:
-    apiHost: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_API_HOST:https://api-eu.mixpanel.com}
-    importPath: '/import'
-    token: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_TOKEN:}
-    projectId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_PROJECT_ID:}
-    serviceAccount:
-      username: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_SERVICE_USERNAME:}
-      secret: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_SERVICE_SECRET:}
-    properties:
-      stage: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_STAGE:dev}
-      organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:dev}
-      clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:dev}
 
 onboarding:
   # This is a UI flag to determine whether the onboarding UI actions should be display
   enabled: ${CAMUNDA_OPTIMIZE_ONBOARDING_ENABLED:false}
-  appCuesScriptUrl: ${CAMUNDA_OPTIMIZE_ONBOARDING_APPCUES_SCRIPT_URL://fast.appcues.com/104513.js}
   # Determines whether this Optimize instance should check for whether or not processes are onboarded. Note: This
   # should be enabled for exactly one Optimize instance within the cluster
   scheduleProcessOnboardingChecks: ${CAMUNDA_OPTIMIZE_ONBOARDING_SCHEDULE_PROCESS_ONBOARDING_CHECKS:true}

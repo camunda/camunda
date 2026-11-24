@@ -16,19 +16,13 @@ type WebappLinks = {
   [key: string]: string;
 };
 
-interface MixpanelConfig {
+interface AnalyticsConfig {
   enabled: boolean;
-  apiHost: string;
-  token: string;
-  organizationId: string;
   osanoScriptUrl: string;
-  stage: string;
-  clusterId: string;
 }
 
 interface Onboarding {
   enabled: boolean;
-  appCuesScriptUrl: string;
   orgId: string;
   clusterId: string;
   salesPlanType: string;
@@ -43,7 +37,7 @@ export type UiConfig = {
   optimizeProfile: 'cloud' | 'ccsm';
   enterpriseMode: boolean;
   webappsLinks: WebappLinks;
-  mixpanel: MixpanelConfig;
+  analytics: AnalyticsConfig;
   logoutHidden: boolean;
   cslEnabled: boolean;
   exportCsvLimit: number;
@@ -115,7 +109,7 @@ export const areTenantsAvailable = createAccessorFunction<boolean>('tenantsAvail
 export const getOptimizeVersion = createAccessorFunction<string>('optimizeVersion');
 export const getDocsVersion = createAccessorFunction<string>('optimizeDocsVersion');
 export const getWebappLinks = createAccessorFunction<WebappLinks>('webappsLinks');
-export const getMixpanelConfig = createAccessorFunction<MixpanelConfig>('mixpanel');
+export const getAnalyticsConfig = createAccessorFunction<AnalyticsConfig>('analytics');
 export const getOptimizeProfile =
   createAccessorFunction<UiConfig['optimizeProfile']>('optimizeProfile');
 export const isLogoutHidden = createAccessorFunction<boolean>('logoutHidden');

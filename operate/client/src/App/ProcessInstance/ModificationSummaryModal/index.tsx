@@ -20,7 +20,6 @@ import {
   EmptyCell,
 } from './styled';
 import {modificationsStore} from 'modules/stores/modifications';
-import {tracking} from 'modules/tracking';
 import {Button} from '@carbon/react';
 import {type StateProps} from 'modules/components/ModalStateManager';
 import {Warning} from './Messages/Warning';
@@ -130,31 +129,9 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
         onRequestClose={() => setOpen(false)}
         preventCloseOnClickOutside
         onRequestSubmit={() => {
-          tracking.track({
-            eventName: 'apply-modifications',
-            addToken: modificationsStore.elementModifications.filter(
-              ({operation}) => operation === 'ADD_TOKEN',
-            ).length,
-            cancelToken: modificationsStore.elementModifications.filter(
-              ({operation}) => operation === 'CANCEL_TOKEN',
-            ).length,
-            moveToken: modificationsStore.elementModifications.filter(
-              ({operation}) => operation === 'MOVE_TOKEN',
-            ).length,
-            addVariable: modificationsStore.variableModifications.filter(
-              ({operation}) => operation === 'ADD_VARIABLE',
-            ).length,
-            editVariable: modificationsStore.variableModifications.filter(
-              ({operation}) => operation === 'EDIT_VARIABLE',
-            ).length,
-            isProcessCanceled: willAllElementsBeCanceled,
-          });
-
           modificationsStore.applyModifications({
             processInstanceId,
             onSuccess: () => {
-              tracking.track({eventName: 'modification-successful'});
-
               queryClient.invalidateQueries({
                 queryKey: queryKeys.elementInstanceInspection.base(),
               });
@@ -166,8 +143,6 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
               });
             },
             onError: (statusCode: number) => {
-              tracking.track({eventName: 'modification-failed'});
-
               notificationsStore.displayNotification({
                 kind: 'error',
                 title: 'Modification failed',

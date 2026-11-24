@@ -30,8 +30,6 @@ type ClientConfig = {
   clusterId?: null | string;
   canLogout?: null | boolean;
   isLoginDelegated?: null | boolean;
-  mixpanelToken?: null | string;
-  mixpanelAPIHost?: null | string;
   tasklistUrl?: null | string;
   resourcePermissionsEnabled?: boolean;
   multiTenancyEnabled?: boolean;
@@ -241,8 +239,6 @@ export class Common {
       organizationId: null,
       clusterId: null,
       stage: null,
-      mixpanelToken: null,
-      mixpanelAPIHost: null,
     };
 
     return context.route('**/client-config.js', (route) =>

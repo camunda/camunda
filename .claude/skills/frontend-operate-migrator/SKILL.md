@@ -277,10 +277,6 @@ Per the verification rule: a script saying "key X missing from de.json" is trust
 
 Validate every search/path param with Zod via `validateSearch` / `parseParams`. Reuse `@camunda/camunda-api-zod-schemas` shapes when they map to an API contract.
 
-## Tracking events
-
-The orchestration cluster webapp does not use Mixpanel tracking. Do not port legacy tracking events, tracking-only state, or tracking tests. If a callback combines tracking with feature behavior, preserve the feature behavior and remove only the tracking code.
-
 ## Feature flags
 
 Gate unfinished features in `src/shared/feature-flags.ts` (`SCREAMING_SNAKE_CASE`, default `false`). Gate at the highest level (route, page, nav item), not deep inside modules. Remove the flag in a dedicated cleanup PR once the feature ships.

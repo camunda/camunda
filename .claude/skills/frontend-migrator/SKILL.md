@@ -167,10 +167,6 @@ Endpoint mocks live in `shared-test-modules/mock-handlers.ts`. If the mock you n
 
 **Target:** The orchestration cluster webapp uses `i18next` + `react-i18next`. When migrating from Operate, wrap user-facing strings in `t('key')` via `useTranslation()` and add translation keys to the appropriate namespace in `src/shared/i18n/`. Check the target's namespace structure before adding keys.
 
-### Tracking
-
-The orchestration cluster webapp does not use Mixpanel tracking. Do not migrate legacy tracking imports, event calls, event types, tracking-only state, configuration, or tests. When tracking shares a callback with feature behavior, remove only the tracking code and preserve the functional behavior.
-
 ## Handling partial migrations
 
 Not every migration is a full page. You might be adding a single component, column, filter, or panel to a page that already exists in the orchestration webapp.

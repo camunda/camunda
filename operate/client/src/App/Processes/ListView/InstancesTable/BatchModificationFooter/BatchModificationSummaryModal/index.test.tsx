@@ -25,15 +25,9 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockModifyProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/mockModifyProcessInstancesBatchOperation';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
-import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
 import {SelectedProcessDefinitionContext} from '../../../selectedProcessDefinitionContext';
 
-vi.mock('modules/tracking', () => ({
-  tracking: {
-    track: vi.fn(),
-  },
-}));
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
@@ -153,10 +147,6 @@ describe('BatchModificationSummaryModal', () => {
       expect(batchModificationStore.state.isEnabled).toBe(false);
     });
 
-    expect(tracking.track).toHaveBeenCalledWith({
-      eventName: 'batch-operation',
-      operationType: 'MODIFY_PROCESS_INSTANCE',
-    });
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'success',

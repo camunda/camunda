@@ -19,7 +19,6 @@ import ReportView from './ReportView';
 
 import './Report.scss';
 import {t} from 'translation';
-import {track} from 'tracking';
 
 export class Report extends React.Component {
   constructor(props) {
@@ -85,7 +84,6 @@ export class Report extends React.Component {
         this.setState({
           report: response,
         });
-        track('viewReport', {entityId: response.id});
       },
       async (serverError) => {
         if (serverError.reportDefinition) {
