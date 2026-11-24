@@ -172,11 +172,22 @@ is deferred.**
   rejection recorded, so the distribution cannot stay open forever (#54132).
 - `redistribute` re-sends only to partitions that acknowledged but have not completed, and never
   re-enqueues.
-- Deferral and completion column families are partition-local. A partition created by scaling
-  starts without deferrals; `ackCompletion` without a deferral is a no-op.
-- Work that never ends (for example an instance stuck in an incident) keeps its distribution open.
-  Operators can see it through the open-deferral gauge, and need a way to cancel it (open
-  question).
+- Scaling up: the participants of a distribution are fixed when it starts.
+  - A distribution that started before the scale-up does not wait for the new partition. The new
+    partition has no instances to drain anyway: it copies global state from partition 1 (for
+    example a `DRAINING` definition, which cannot start new instances) and finishes that state
+    locally.
+  - A distribution that starts during the scale-up includes the new partition. It is delivered
+    once the partition is bootstrapped, as today.
+  - Deferral, completion and highest-processed-key column families are partition-local, so the
+    new partition starts without them. `ackCompletion` without a deferral is a no-op, and a
+    `COMPLETE` from a partition outside the participants is acknowledged and ignored.
+  - A feature whose state must hold on every partition (for example a suspension marker) must keep
+    it in state that scaling copies, or a partition added after the distribution would miss it.
+- Operators cannot change this mechanism: there is no API to cancel, complete or re-send a
+  distribution. Work that never ends (for example an instance stuck in an incident) keeps its
+  distribution open until the domain resolves it; the open-deferral gauge makes it visible. A
+  read API for distributions may follow later.
 
 **D7. Protocol and compatibility.**
 
@@ -248,7 +259,6 @@ is deferred.**
 - Retention of finished distributions for status queries: in the engine with a TTL, or only in
   secondary storage.
 - Whether any feature needs a FAILED outcome in addition to CANCELLED.
-- How operators cancel an open deferral whose work never ends (D6).
 - Naming: `deferCompletion`/`ackCompletion`, or `completeDistribution` instead of `ackCompletion`.
 - Export of per-partition state: by the source only, or by the source and the receivers (D5).
 
