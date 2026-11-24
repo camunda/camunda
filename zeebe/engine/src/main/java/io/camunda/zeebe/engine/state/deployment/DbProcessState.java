@@ -191,7 +191,11 @@ public final class DbProcessState implements MutableProcessState {
 
     versionManager =
         new VersionManager(
-            DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.PROCESS_VERSION, transactionContext);
+            DEFAULT_VERSION_VALUE,
+            zeebeDb,
+            ZbColumnFamilies.PROCESS_VERSION,
+            transactionContext,
+            config.getProcessCacheCapacity());
 
     pendingDeletionPartitionId = new DbInt();
     pendingDeletionKey = new DbCompositeKey<>(processDefinitionKey, pendingDeletionPartitionId);
