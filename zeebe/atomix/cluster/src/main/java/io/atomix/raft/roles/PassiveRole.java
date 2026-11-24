@@ -844,6 +844,12 @@ public class PassiveRole extends InactiveRole {
       return failAppend(lastEntryIndex, future);
     }
 
+    // If the previous entry is before the log, the log cannot confirm it. A reader would seek to
+    // the first entry of the log instead, and compare against the term of a different entry.
+    if (request.prevLogIndex() < raft.getLog().getFirstIndex()) {
+      return checkPreviousEntryBeforeLog(request, future);
+    }
+
     // If the previous log index is less than the last written entry index, look up the entry.
     if (request.prevLogIndex() < lastEntryIndex) {
       try (final RaftLogReader reader = raft.getLog().openUncommittedReader()) {
@@ -876,6 +882,34 @@ public class PassiveRole extends InactiveRole {
           request,
           request.prevLogTerm(),
           lastEntryTerm);
+      return failAppend(request.prevLogIndex() - 1, future);
+    }
+    return true;
+  }
+
+  /**
+   * Checks a previous entry which is before the local log against the snapshot. Entries up to the
+   * snapshot index are committed, so the leader does not need to send any of them again.
+   */
+  private boolean checkPreviousEntryBeforeLog(
+      final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
+    final var snapshot = raft.getCurrentSnapshot();
+    if (snapshot == null || request.prevLogIndex() != snapshot.getIndex()) {
+      log.debug(
+          "Rejected {}: Previous index ({}) is neither in the local log, which starts at {}, nor the snapshot index ({})",
+          request,
+          request.prevLogIndex(),
+          raft.getLog().getFirstIndex(),
+          raft.getCurrentSnapshotIndex());
+      return failAppend(raft.getCurrentSnapshotIndex(), future);
+    }
+
+    if (request.prevLogTerm() != snapshot.getTerm()) {
+      log.debug(
+          "Rejected {}: Previous entry term ({}) does not equal the local snapshot's term ({})",
+          request,
+          request.prevLogTerm(),
+          snapshot.getTerm());
       return failAppend(request.prevLogIndex() - 1, future);
     }
     return true;
