@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.test.MigratedVersionWriter;
+import io.camunda.zeebe.broker.test.TestEngineFactory;
 import io.camunda.zeebe.broker.test.TestZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -37,7 +38,8 @@ final class ZeebePartitionAdminAccessTest {
 
   private final PartitionAdminControl adminControl = mock(PartitionAdminControl.class);
   private final ZeebePartitionAdminAccess sut =
-      new ZeebePartitionAdminAccess(new TestConcurrencyControl(), 1, adminControl);
+      new ZeebePartitionAdminAccess(
+          new TestConcurrencyControl(), 1, adminControl, TestEngineFactory.create());
 
   @Test
   void shouldCompleteResumeProcessingOnlyAfterStreamProcessorResumes() throws IOException {

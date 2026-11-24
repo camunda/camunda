@@ -13,8 +13,8 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.migration.DbMigrationState;
-import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
+import io.camunda.zeebe.engine.api.EngineFactory;
+import io.camunda.zeebe.engine.api.MigrationStatusReader;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -48,6 +48,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   private final ConcurrencyControl concurrencyControl;
   private final int partitionId;
   private final PartitionAdminControl adminControl;
+  private final EngineFactory engineFactory;
 
   // Lazily built the first time the migration status is read, and reused on every later read --
   // each read otherwise opened a fresh transaction context on the live ZeebeDb (see
@@ -55,15 +56,17 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   // Rebuilt only if the underlying ZeebeDb instance itself changes (e.g. a follower installing a
   // new snapshot), never per call.
   private ZeebeDb migrationStatusDb;
-  private DbMigrationState migrationStatusState;
+  private MigrationStatusReader migrationStatusState;
 
   ZeebePartitionAdminAccess(
       final ConcurrencyControl concurrencyControl,
       final int partitionId,
-      final PartitionAdminControl adminControl) {
+      final PartitionAdminControl adminControl,
+      final EngineFactory engineFactory) {
     this.concurrencyControl = requireNonNull(concurrencyControl);
     this.partitionId = partitionId;
     this.adminControl = requireNonNull(adminControl);
+    this.engineFactory = requireNonNull(engineFactory);
   }
 
   @Override
@@ -308,10 +311,10 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
    * a new one per call would leak for as long as the {@code ZeebeDb} stays open. Rebuilt only if
    * the db instance itself changes, e.g. a follower installing a new snapshot.
    */
-  private DbMigrationState migrationState(final ZeebeDb zeebeDb) {
+  private MigrationStatusReader migrationState(final ZeebeDb zeebeDb) {
     if (migrationStatusState == null || migrationStatusDb != zeebeDb) {
       migrationStatusDb = zeebeDb;
-      migrationStatusState = new DbMigrationState(zeebeDb, zeebeDb.createContext());
+      migrationStatusState = engineFactory.createMigrationStatusReader(zeebeDb);
     }
     return migrationStatusState;
   }
@@ -360,11 +363,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   }
 
   private void banInstanceInState(final long processInstanceKey) {
-    final var zeebeDb = adminControl.getZeebeDb();
-    final var context = zeebeDb.createContext();
-    final var dbBannedInstanceState = new DbBannedInstanceState(zeebeDb, context);
-
-    dbBannedInstanceState.banProcessInstance(processInstanceKey);
+    engineFactory.banProcessInstance(adminControl.getZeebeDb(), processInstanceKey);
   }
 
   private static Either<WriteFailure, Long> tryWriteErrorEvent(

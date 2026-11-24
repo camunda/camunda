@@ -96,7 +96,10 @@ public final class ZeebePartition extends Actor
     context = transitionContext.getPartitionContext();
     adminAccess =
         new ZeebePartitionAdminAccess(
-            actor, getPartitionId(), transitionContext.getPartitionAdminControl());
+            actor,
+            getPartitionId(),
+            transitionContext.getPartitionAdminControl(),
+            transitionContext.getEngineFactory());
 
     this.transition = transition;
     startupContext = transitionContext;

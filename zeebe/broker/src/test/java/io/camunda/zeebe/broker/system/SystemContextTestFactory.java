@@ -19,6 +19,7 @@ import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.test.TestEngineFactory;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.FeatureFlags;
@@ -126,7 +127,8 @@ public final class SystemContextTestFactory {
                 featureFlags,
                 brokerCfg,
                 exporterRepository,
-                new SecretStoreRegistry(Map.of()))),
+                new SecretStoreRegistry(Map.of()),
+                TestEngineFactory.create())),
         tenantId -> userServices,
         passwordEncoder,
         authConfig -> jwtDecoder,
@@ -191,7 +193,8 @@ public final class SystemContextTestFactory {
                   featureFlagsFrom(tenantCfg),
                   tenantCfg,
                   exporterRepository,
-                  new SecretStoreRegistry(Map.of())));
+                  new SecretStoreRegistry(Map.of()),
+                  TestEngineFactory.create()));
         });
 
     return new SystemContext(

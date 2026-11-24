@@ -77,7 +77,7 @@ public class CheckpointSchedulerServiceStepTest {
   }
 
   private PhysicalTenantContext physicalTenantContext(final BrokerCfg config) {
-    return new PhysicalTenantContext(null, null, null, config, null, null);
+    return new PhysicalTenantContext(null, null, null, config, null, null, null);
   }
 
   @Test

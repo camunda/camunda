@@ -30,6 +30,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.test.TestEngineFactory;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
@@ -39,7 +40,8 @@ import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.api.EngineDependencies;
+import io.camunda.zeebe.engine.api.EngineFactory;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -67,7 +69,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private Role currentRole;
   private long currentTerm;
   private HealthMonitor healthMonitor;
-  private TypedRecordProcessorFactory typedRecordProcessorFactory;
+  private EngineDependencies engineDependencies;
+  private final EngineFactory engineFactory = TestEngineFactory.create();
   private ExporterDirector exporterDirector;
   private LogStream logStream;
   private StreamProcessor streamProcessor;
@@ -493,8 +496,13 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
-    return typedRecordProcessorFactory;
+  public EngineDependencies getEngineDependencies() {
+    return engineDependencies;
+  }
+
+  @Override
+  public EngineFactory getEngineFactory() {
+    return engineFactory;
   }
 
   @Override
@@ -507,9 +515,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.concurrencyControl = concurrencyControl;
   }
 
-  public void setTypedRecordProcessorFactory(
-      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
-    this.typedRecordProcessorFactory = typedRecordProcessorFactory;
+  public void setEngineDependencies(final EngineDependencies engineDependencies) {
+    this.engineDependencies = engineDependencies;
   }
 
   public void setRaftPartition(final RaftPartition raftPartition) {

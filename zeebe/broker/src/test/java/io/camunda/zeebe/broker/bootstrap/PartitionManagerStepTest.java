@@ -35,6 +35,7 @@ import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
+import io.camunda.zeebe.broker.test.TestEngineFactory;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -262,7 +263,8 @@ class PartitionManagerStepTest {
               flagsA,
               testBrokerStartupContext.getBrokerConfiguration(),
               new ExporterRepository(),
-              new SecretStoreRegistry(Map.of())));
+              new SecretStoreRegistry(Map.of()),
+              TestEngineFactory.create()));
       testBrokerStartupContext.setPhysicalTenantContext(
           secondTenantId,
           new PhysicalTenantContext(
@@ -271,7 +273,8 @@ class PartitionManagerStepTest {
               flagsB,
               testBrokerStartupContext.getBrokerConfiguration(),
               new ExporterRepository(),
-              new SecretStoreRegistry(Map.of())));
+              new SecretStoreRegistry(Map.of()),
+              TestEngineFactory.create()));
 
       final var secondFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
       final var secondStep = new PartitionManagerStep(secondTenantId);
@@ -335,7 +338,8 @@ class PartitionManagerStepTest {
               FeatureFlags.createDefaultForTests(),
               testBrokerStartupContext.getBrokerConfiguration(),
               new ExporterRepository(),
-              new SecretStoreRegistry(Map.of())));
+              new SecretStoreRegistry(Map.of()),
+              TestEngineFactory.create()));
       testBrokerStartupContext.addJobStreamService(PHYSICAL_TENANT_ID, jobStreamService);
 
       // when

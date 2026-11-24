@@ -8,16 +8,24 @@
 package io.camunda.zeebe.broker.test;
 
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.migration.DbMigrationState;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
-/** Records in the state the version that last migrated it, as the engine's migrations do. */
+/**
+ * Records the version that last migrated the state by running the engine's real migrations as if
+ * the broker was running that version.
+ */
 public final class MigratedVersionWriter {
 
   private MigratedVersionWriter() {}
 
   public static void writeMigratedByVersion(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final String version) {
-    new DbMigrationState(zeebeDb, zeebeDb.createContext()).setMigratedByVersion(version);
+    try {
+      TestEngineFactory.create()
+          .runMigrations(1, zeebeDb, new EngineConfiguration(), false, () -> 1, version);
+    } catch (final Exception e) {
+      throw new IllegalStateException(e);
+    }
   }
 }

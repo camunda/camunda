@@ -16,12 +16,7 @@ import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.validation.AuthorizationValidator;
-import io.camunda.security.validation.GroupValidator;
-import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.IdentityInitializationException;
-import io.camunda.security.validation.RoleValidator;
-import io.camunda.security.validation.TenantValidator;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
@@ -50,18 +45,9 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.GlobalListenerConfiguration;
-import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
-import io.camunda.zeebe.engine.processing.identity.initialize.GroupConfigurer;
-import io.camunda.zeebe.engine.processing.identity.initialize.RoleConfigurer;
-import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
-import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperationChunk;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.engine.api.EngineFactory;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
-import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -103,8 +89,8 @@ public final class SystemContext {
           + "'.";
 
   /**
-   * The maximum number of items stored in a single batch operation chunk. This value is limited by
-   * two factors:
+   * The maximum number of items stored in a single batch operation chunk (the engine's {@code
+   * PersistedBatchOperationChunk}). This value is limited by two factors:
    *
    * <ul>
    *   <li>The hard-coded max record size of 4MB in the engine
@@ -119,7 +105,6 @@ public final class SystemContext {
    * </ul>
    *
    * @see ZeebeRocksDbFactory
-   * @see PersistedBatchOperationChunk
    */
   private static final long MAX_CHUNK_SIZE = 3000;
 
@@ -583,63 +568,27 @@ public final class SystemContext {
   private void validateInitializationConfig() {
     physicalTenantContexts.forEach(
         (physicalTenantId, ctx) ->
-            validateInitializationConfigForTenant(physicalTenantId, ctx.securityConfig()));
+            validateInitializationConfigForTenant(
+                physicalTenantId, ctx.securityConfig(), ctx.engineFactory()));
   }
 
   private void validateInitializationConfigForTenant(
-      final String physicalTenantId, final EngineSecurityConfig securityConfig) {
-    final IdentifierValidator identifierValidator =
-        new IdentifierValidator(
-            securityConfig.getIdValidationPattern(), securityConfig.getGroupIdValidationPattern());
-    final AuthorizationConfigurer authorizationConfigurer =
-        new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
-    final TenantConfigurer tenantConfigurer =
-        new TenantConfigurer(new TenantValidator(identifierValidator));
-    final GroupConfigurer groupConfigurer =
-        new GroupConfigurer(new GroupValidator(identifierValidator));
-    final var roleConfigurer = new RoleConfigurer(new RoleValidator(identifierValidator));
-
-    final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
-        authorizationConfigurer.configureEntities(
-            securityConfig.getInitialization().getAuthorizations());
-    final Either<List<String>, List<TenantRecord>> configuredTenants =
-        tenantConfigurer.configureEntities(securityConfig.getInitialization().getTenants());
-    final Either<List<String>, List<GroupRecord>> configuredGroups =
-        groupConfigurer.configureEntities(securityConfig.getInitialization().getGroups());
-    final Either<List<String>, List<RoleRecord>> configuredRoles =
-        roleConfigurer.configureEntities(securityConfig.getInitialization().getRoles());
-
+      final String physicalTenantId,
+      final EngineSecurityConfig securityConfig,
+      final EngineFactory engineFactory) {
     // TODO: after adding more entity types, change this, so it accounts for all violations all
     //   together.
-    configuredAuthorizations.ifLeft(
-        (violations) -> {
-          throw new IdentityInitializationException(
-              "Cannot initialize configured authorizations for tenant '%s': %n- %s"
-                  .formatted(
-                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
-        });
-    configuredTenants.ifLeft(
-        (violations) -> {
-          throw new IdentityInitializationException(
-              "Cannot initialize configured tenants for tenant '%s': %n- %s"
-                  .formatted(
-                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
-        });
-    configuredRoles.ifLeft(
-        (violations) -> {
-          throw new IdentityInitializationException(
-              "Cannot initialize configured roles for tenant '%s': %n- %s"
-                  .formatted(
-                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
-        });
-
-    configuredGroups.ifLeft(
-        (violations) -> {
-          throw new IdentityInitializationException(
-              "Cannot initialize configured groups for tenant '%s': %n- %s"
-                  .formatted(
-                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
-        });
+    engineFactory
+        .validateIdentityInitialization(securityConfig)
+        .forEach(
+            (entityType, violations) -> {
+              throw new IdentityInitializationException(
+                  "Cannot initialize configured %s for tenant '%s': %n- %s"
+                      .formatted(
+                          entityType,
+                          physicalTenantId,
+                          String.join(System.lineSeparator() + "- ", violations)));
+            });
   }
 
   private void validateNetworkSecurityConfig(final SecurityCfg security) {

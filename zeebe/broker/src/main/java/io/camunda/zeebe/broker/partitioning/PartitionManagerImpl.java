@@ -43,6 +43,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.engine.api.EngineFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -116,6 +117,7 @@ public final class PartitionManagerImpl
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final FeatureFlags featureFlags,
       final SecretStoreRegistry secretStoreRegistry,
+      final EngineFactory engineFactory,
       final TopologyManagerImpl topologyManager) {
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
@@ -159,7 +161,8 @@ public final class PartitionManagerImpl
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
             rocksDbResources,
-            secretStoreRegistry);
+            secretStoreRegistry,
+            engineFactory);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

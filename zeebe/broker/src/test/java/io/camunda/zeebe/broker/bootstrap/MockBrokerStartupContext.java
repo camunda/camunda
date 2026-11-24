@@ -35,6 +35,7 @@ import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.test.TestEngineFactory;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -367,7 +368,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
                 featureFlags,
                 brokerConfiguration,
                 exporterRepository,
-                new SecretStoreRegistry(Map.of())));
+                new SecretStoreRegistry(Map.of()),
+                TestEngineFactory.create()));
   }
 
   @Override

@@ -12,6 +12,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.engine.api.EngineFactory;
 import io.camunda.zeebe.util.FeatureFlags;
 
 /**
@@ -26,6 +27,9 @@ import io.camunda.zeebe.util.FeatureFlags;
  *
  * <p>secretStoreRegistry holds the tenant's configured secret stores and their caches, read on job
  * activation to inject resolved secrets.
+ *
+ * <p>engineFactory is the engine implementation the tenant's partitions run, provided by the
+ * application so that the broker never depends on the engine itself.
  */
 public record PhysicalTenantContext(
     EngineSecurityConfig securityConfig,
@@ -33,4 +37,5 @@ public record PhysicalTenantContext(
     FeatureFlags featureFlags,
     BrokerCfg config,
     ExporterRepository exporterRepository,
-    SecretStoreRegistry secretStoreRegistry) {}
+    SecretStoreRegistry secretStoreRegistry,
+    EngineFactory engineFactory) {}
