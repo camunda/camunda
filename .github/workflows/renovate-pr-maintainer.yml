@@ -33,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
+      id-token: write # Vault JWT login
       actions: write
       checks: read
       contents: read
@@ -107,9 +108,10 @@ jobs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         exportEnv: false # we rely on step outputs, no need for environment variables
         secrets: |
           secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
@@ -157,8 +159,9 @@ jobs:
       with:
         build_status: ${{ job.status }}
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   notify:
     name: Send Slack notification
@@ -166,7 +169,8 @@ jobs:
     needs: [maintain]
     if: ${{ always() && needs.maintain.result != 'success' && github.event_name == 'schedule' }}
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -177,9 +181,10 @@ jobs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         exportEnv: false # we rely on step outputs, no need for environment variables
         secrets: |
           secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
@@ -217,5 +222,6 @@ jobs:
       with:
         build_status: ${{ job.status }}
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
