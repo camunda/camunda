@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -66,6 +67,7 @@ final class SegmentsManager implements AutoCloseable {
   private final String name;
   private final JournalMetaStore metaStore;
   private final Executor deletionExecutor;
+  private final Supplier<ExecutorService> preparationExecutors;
   private @Nullable ExecutorService bgIoExecutor;
 
   private volatile @Nullable Segment currentSegment;
@@ -78,7 +80,8 @@ final class SegmentsManager implements AutoCloseable {
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
       final JournalMetaStore metaStore,
-      final Executor deletionExecutor) {
+      final Executor deletionExecutor,
+      final Supplier<ExecutorService> preparationExecutors) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
@@ -87,6 +90,7 @@ final class SegmentsManager implements AutoCloseable {
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
     this.deletionExecutor = deletionExecutor;
+    this.preparationExecutors = preparationExecutors;
   }
 
   @Override
@@ -395,9 +399,17 @@ final class SegmentsManager implements AutoCloseable {
 
     // created last, so that nothing above can fail while holding an executor that no one would
     // close; the executor is only needed once open() has returned, to prepare the next segment
-    bgIoExecutor =
-        Executors.newSingleThreadExecutor(
-            task -> Thread.ofPlatform().name("journal-bg-io-" + name).daemon(true).unstarted(task));
+    bgIoExecutor = preparationExecutors.get();
+  }
+
+  /**
+   * The executor that pre-creates the next segment of a journal: a single daemon thread, named
+   * after the journal so that it can be found in thread dumps.
+   */
+  static ExecutorService newBackgroundIoExecutor(final String journalName) {
+    return Executors.newSingleThreadExecutor(
+        task ->
+            Thread.ofPlatform().name("journal-bg-io-" + journalName).daemon(true).unstarted(task));
   }
 
   private void prepareNextSegment() {

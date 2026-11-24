@@ -144,7 +144,8 @@ final class TestJournalFactory {
         loader,
         metrics,
         metaStore,
-        deletionExecutor);
+        deletionExecutor,
+        () -> SegmentsManager.newBackgroundIoExecutor(name));
   }
 
   SegmentedJournal journal(final SegmentsManager segments) {
