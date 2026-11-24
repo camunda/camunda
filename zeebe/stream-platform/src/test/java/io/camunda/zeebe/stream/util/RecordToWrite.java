@@ -10,6 +10,7 @@ package io.camunda.zeebe.stream.util;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -157,6 +158,19 @@ public final class RecordToWrite implements LogAppendEntry {
         .valueType(ValueType.SBE_UNKNOWN)
         .intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     unifiedRecordValue = new ProcessInstanceRecord();
+    return this;
+  }
+
+  /**
+   * Simulates a record written by a newer broker version: an {@link #unknownValueType()} record
+   * stamped with a broker version newer than the current one.
+   */
+  public RecordToWrite fromNewerBrokerVersion() {
+    unknownValueType();
+    final var current = RecordMetadata.CURRENT_BROKER_VERSION;
+    recordMetadata.brokerVersion(
+        new VersionInfo(
+            current.getMajorVersion() + 1, current.getMinorVersion(), current.getPatchVersion()));
     return this;
   }
 

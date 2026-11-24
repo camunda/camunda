@@ -42,4 +42,20 @@ record UnprocessableRecord(
         record.getValueType(),
         VersionInfo.parse(record.getBrokerVersion()));
   }
+
+  /**
+   * Whether the record was written by a broker version newer than this one. That is expected while
+   * a rolling update is in progress and resolves once this broker is upgraded; any other record
+   * that this broker cannot process is a genuine error.
+   */
+  boolean isFromNewerVersion() {
+    final var current = RecordMetadata.CURRENT_BROKER_VERSION;
+    if (brokerVersion.getMajorVersion() != current.getMajorVersion()) {
+      return brokerVersion.getMajorVersion() > current.getMajorVersion();
+    }
+    if (brokerVersion.getMinorVersion() != current.getMinorVersion()) {
+      return brokerVersion.getMinorVersion() > current.getMinorVersion();
+    }
+    return brokerVersion.getPatchVersion() > current.getPatchVersion();
+  }
 }

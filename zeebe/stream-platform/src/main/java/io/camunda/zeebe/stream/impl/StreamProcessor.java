@@ -16,6 +16,8 @@ import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -463,10 +465,42 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             actor);
   }
 
+  /**
+   * A record read from the log that this broker cannot process is expected while a rolling update
+   * is in progress if it was written by a newer broker version, and a genuine error otherwise.
+   */
+  private void onUnprocessableRecord(
+      final NoSuchProcessorException error, final UnprocessableRecord record) {
+    final var inReplayMode =
+        streamProcessorContext.getProcessorMode() == StreamProcessorMode.REPLAY;
+    if (record.isFromNewerVersion()) {
+      logRecordFromNewerVersion(record);
+      failActor(error, inReplayMode);
+    } else {
+      onFailure(error, inReplayMode);
+    }
+  }
+
+  private void logRecordFromNewerVersion(final UnprocessableRecord record) {
+    final var valueType = record.valueType();
+    final var valueTypeDescription =
+        valueType == ValueType.NULL_VAL || valueType == ValueType.SBE_UNKNOWN
+            ? "unknown"
+            : valueType.name();
+    LOG.warn(
+        "Stopping at record [position: {}, valueType: {}] written by broker version {}, which is "
+            + "newer than this broker's version {}. This is expected during a rolling upgrade. "
+            + "This broker must be upgraded to at least version {} to proceed.",
+        record.position(),
+        valueTypeDescription,
+        record.brokerVersion(),
+        RecordMetadata.CURRENT_BROKER_VERSION,
+        record.brokerVersion());
+  }
+
   private void onFailure(final Throwable throwable) {
-    if (throwable instanceof NoSuchProcessorException) {
-      // it identifies the record itself, and fails the same way in replay as the replay wrapper did
-      onFailure(throwable, streamProcessorContext.getProcessorMode() == StreamProcessorMode.REPLAY);
+    if (throwable instanceof final NoSuchProcessorException noProcessor) {
+      onUnprocessableRecord(noProcessor, noProcessor.unprocessableRecord());
       return;
     }
     onFailure(
@@ -475,15 +509,18 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             && !(throwable instanceof UnrecoverableException));
   }
 
+  private void onFailure(final Throwable throwable, final boolean reportUnhealthy) {
+    LOG.error("Actor {} failed in phase {}.", getName(), actor.getLifecyclePhase(), throwable);
+    failActor(throwable, reportUnhealthy);
+  }
+
   /**
-   * Logs the failure and fails the actor.
+   * Fails the actor and reports the failure.
    *
    * @param reportUnhealthy whether to report this processor as unhealthy, which is not critical, or
    *     as dead, which stops the partition on this broker
    */
-  private void onFailure(final Throwable throwable, final boolean reportUnhealthy) {
-    LOG.error("Actor {} failed in phase {}.", getName(), actor.getLifecyclePhase(), throwable);
-
+  private void failActor(final Throwable throwable, final boolean reportUnhealthy) {
     // The context does not exist yet if we fail while recovering from the snapshot; there are no
     // async actors to close then, but we must still fail the actor and notify everyone waiting.
     final ActorFuture<Void> actorsClosed =

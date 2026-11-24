@@ -36,7 +36,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 /**
  * A record whose value type this broker does not know was written by a newer broker. It cannot be
  * read, so it must stop the stream processor instead of being skipped or handled as if it were the
- * previous record, and the failure must be logged exactly once.
+ * previous record, and the failure must be logged exactly once. When the record comes from a newer
+ * broker version that is expected during a rolling update and is logged as such, otherwise it is a
+ * genuine error.
  */
 @ExtendWith(StreamPlatformExtension.class)
 final class StreamProcessorUnknownRecordTest {
@@ -210,6 +212,55 @@ final class StreamProcessorUnknownRecordTest {
         .untilAsserted(
             () -> assertThat(streamProcessor.getLastProcessedPositionAsync().join()).isEqualTo(1L));
     assertThat(streamProcessor.isFailed()).isFalse();
+  }
+
+  @Test
+  void shouldOnlyWarnWhenReplayReachesRecordFromNewerVersion() {
+    // given
+    final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
+    final var reports = captureReports(streamProcessor);
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event().fromNewerBrokerVersion().causedBy(0));
+
+    // then
+    Awaitility.await("replay fails").until(() -> !reports.isEmpty());
+    assertThat(reports).allMatch(HealthReport::isUnhealthy);
+    assertOnlyRollingUpgradeWarning();
+  }
+
+  @Test
+  void shouldOnlyWarnWhenProcessingCommandFromNewerVersion() {
+    // given
+    final var streamProcessor = streamPlatform.startStreamProcessor();
+    final var reports = captureReports(streamProcessor);
+
+    // when
+    streamPlatform.writeBatch(RecordToWrite.command().fromNewerBrokerVersion());
+
+    // then
+    Awaitility.await("processing fails").until(() -> !reports.isEmpty());
+    assertThat(reports).allMatch(HealthReport::isDead);
+    assertOnlyRollingUpgradeWarning();
+  }
+
+  private void assertOnlyRollingUpgradeWarning() {
+    assertThat(recorder.getAppendedEvents())
+        .as("a single warning explains that this is expected during a rolling upgrade")
+        .filteredOn(e -> e.getMessage().getFormattedMessage().contains("rolling upgrade"))
+        .singleElement()
+        .satisfies(
+            e -> {
+              assertThat(e.getLevel()).isEqualTo(Level.WARN);
+              assertThat(e.getThrown()).as("no stack trace").isNull();
+              assertThat(e.getMessage().getFormattedMessage())
+                  .contains("valueType: unknown")
+                  .contains("newer than this broker's version")
+                  .contains("must be upgraded to at least version");
+            });
+    assertThat(failureErrors()).as("the failure is not also logged as an error").isEmpty();
   }
 
   /**
