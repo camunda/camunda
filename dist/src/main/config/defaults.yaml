@@ -879,6 +879,8 @@ camunda: # Type: io.camunda.configuration.Camunda
           user: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_USER
           # Primary shards for the variable index (variable).
           variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLE
+          # Primary shards for the variable history index (variable-history).
+          variable-history: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLEHISTORY
           # Primary shards for the wait state index (wait-state).
           wait-state: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_WAITSTATE
           # Primary shards for the persistent web session index (web-session).
@@ -1127,6 +1129,8 @@ camunda: # Type: io.camunda.configuration.Camunda
           user: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_USER
           # Primary shards for the variable index (variable).
           variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLE
+          # Primary shards for the variable history index (variable-history).
+          variable-history: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLEHISTORY
           # Primary shards for the wait state index (wait-state).
           wait-state: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_WAITSTATE
           # Primary shards for the persistent web session index (web-session).

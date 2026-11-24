@@ -1,0 +1,80 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "variableHistoryItemKey": {
+        "type": "long"
+      },
+      "variableKey": {
+        "type": "long"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "value": {
+        "type": "keyword",
+        "index": false,
+        "doc_values": false
+      },
+      "fullValue": {
+        "type": "keyword",
+        "index": false,
+        "doc_values": false
+      },
+      "isPreview": {
+        "type": "boolean",
+        "index": false
+      },
+      "scopeKey": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "rootProcessInstanceKey": {
+        "type": "long"
+      },
+      "processDefinitionKey": {
+        "type": "long"
+      },
+      "processDefinitionId": {
+        "type": "keyword"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "timestamp": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "operationType": {
+        "type": "keyword"
+      },
+      "variableOperationType": {
+        "type": "keyword"
+      },
+      "elementInstanceKey": {
+        "type": "long"
+      },
+      "elementId": {
+        "type": "keyword"
+      },
+      "actorType": {
+        "type": "keyword"
+      },
+      "actorId": {
+        "type": "keyword"
+      },
+      "agentElementId": {
+        "type": "keyword"
+      },
+      "itemIndex": {
+        "type": "integer",
+        "index": false
+      }
+    }
+  }
+}
