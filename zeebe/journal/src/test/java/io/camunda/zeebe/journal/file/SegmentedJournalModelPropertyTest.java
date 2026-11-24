@@ -89,9 +89,14 @@ final class SegmentedJournalModelPropertyTest {
     final var root = Files.createTempDirectory("journal-model");
     final var node = new Node(root);
     try {
+      // given - an empty journal
       node.open(new JournalMetaStore.InMemory());
+
       for (final var operation : operations) {
+        // when
         operation.apply(node);
+
+        // then - the journal holds exactly the entries of the model
         node.assertMatchesModel(operation);
       }
     } finally {
