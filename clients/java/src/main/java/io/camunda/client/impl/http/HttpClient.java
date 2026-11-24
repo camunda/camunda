@@ -529,7 +529,7 @@ public final class HttpClient implements AutoCloseable {
               retryAction,
               maxRetries,
               sensitiveResponseBody,
-              new TransportFailureTranslator()));
+              new TransportFailureTranslator(baseAddress)));
     }
 
     result.transportFuture(

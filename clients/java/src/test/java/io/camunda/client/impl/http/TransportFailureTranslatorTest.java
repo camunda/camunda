@@ -17,14 +17,53 @@ package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.command.ClientConnectionException;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientHttpException;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.stream.Stream;
+import org.apache.hc.client5.http.ConnectTimeoutException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 final class TransportFailureTranslatorTest {
 
-  private final TransportFailureTranslator translator = new TransportFailureTranslator();
+  private static final URI GATEWAY_ADDRESS = URI.create("http://gateway:8080");
+
+  private final TransportFailureTranslator translator =
+      new TransportFailureTranslator(GATEWAY_ADDRESS);
+
+  @ParameterizedTest
+  @MethodSource("connectionFailures")
+  void shouldTranslateConnectionFailure(final Throwable failure) {
+    // when
+    final ClientException translated = translator.translate(failure);
+
+    // then
+    assertThat(translated)
+        .isInstanceOf(ClientConnectionException.class)
+        .hasMessageContaining(GATEWAY_ADDRESS.toString())
+        .hasCause(failure);
+    assertThat(((ClientConnectionException) translated).address()).isEqualTo(GATEWAY_ADDRESS);
+  }
+
+  @Test
+  void shouldDetectConnectionFailureNestedInCauseChain() {
+    // given
+    final IOException failure = new IOException("wrapper", new ConnectException("refused"));
+
+    // when
+    final ClientException translated = translator.translate(failure);
+
+    // then
+    assertThat(translated).isInstanceOf(ClientConnectionException.class).hasCause(failure);
+  }
 
   @Test
   void shouldPassThroughClientException() {
@@ -48,5 +87,39 @@ final class TransportFailureTranslatorTest {
 
     // then
     assertThat(translated).isExactlyInstanceOf(ClientException.class).hasCause(failure);
+  }
+
+  @Test
+  void shouldNotTreatReadTimeoutAsConnectionFailure() {
+    // given - the gateway may already have received the request
+    final SocketTimeoutException failure = new SocketTimeoutException("Read timed out");
+
+    // when
+    final ClientException translated = translator.translate(failure);
+
+    // then
+    assertThat(translated).isExactlyInstanceOf(ClientException.class).hasCause(failure);
+  }
+
+  @Test
+  void shouldTerminateOnCyclicCauseChain() {
+    // given
+    final IOException first = new IOException("first");
+    final IOException second = new IOException("second", first);
+    first.initCause(second);
+
+    // when
+    final ClientException translated = translator.translate(first);
+
+    // then
+    assertThat(translated).isExactlyInstanceOf(ClientException.class);
+  }
+
+  private static Stream<Throwable> connectionFailures() {
+    return Stream.of(
+        new ConnectException("Connection refused"),
+        new ConnectTimeoutException("Connect timed out"),
+        new NoRouteToHostException("No route to host"),
+        new UnknownHostException("gateway"));
   }
 }

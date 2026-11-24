@@ -15,7 +15,16 @@
  */
 package io.camunda.client.impl.http;
 
+import io.camunda.client.api.command.ClientConnectionException;
 import io.camunda.client.api.command.ClientException;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
+import org.apache.hc.client5.http.ConnectTimeoutException;
 
 /**
  * Translates failures raised by the HTTP transport into the client's public exception types, so
@@ -23,11 +32,46 @@ import io.camunda.client.api.command.ClientException;
  */
 final class TransportFailureTranslator {
 
+  private final URI gatewayAddress;
+
+  TransportFailureTranslator(final URI gatewayAddress) {
+    this.gatewayAddress = gatewayAddress;
+  }
+
   ClientException translate(final Throwable failure) {
     if (failure instanceof ClientException) {
       return (ClientException) failure;
     }
 
+    if (isConnectionFailure(failure)) {
+      return new ClientConnectionException(gatewayAddress, failure);
+    }
+
     return new ClientException(failure);
+  }
+
+  private static boolean isConnectionFailure(final Throwable failure) {
+    // cause chains can be cyclic; without this guard the loop would never terminate
+    final Set<Throwable> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+    for (Throwable current = failure;
+        current != null && visited.add(current);
+        current = current.getCause()) {
+      if (isConnectionFailureType(current)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Only failures raised before the request was sent qualify. A plain {@link
+   * java.net.SocketTimeoutException} does not, as it may be a read timeout after the gateway
+   * received the request.
+   */
+  private static boolean isConnectionFailureType(final Throwable failure) {
+    return failure instanceof ConnectException
+        || failure instanceof ConnectTimeoutException
+        || failure instanceof NoRouteToHostException
+        || failure instanceof UnknownHostException;
   }
 }

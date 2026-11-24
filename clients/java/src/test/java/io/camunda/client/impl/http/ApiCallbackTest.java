@@ -20,6 +20,7 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,8 +29,10 @@ import org.junit.jupiter.api.Test;
 class ApiCallbackTest {
 
   public static final int DEFAULT_REMAINING_RETRIES = 2;
+  // irrelevant here: these tests never exercise a connection failure
+  private static final URI GATEWAY_ADDRESS = URI.create("http://gateway:8080");
   private static final TransportFailureTranslator FAILURE_TRANSLATOR =
-      new TransportFailureTranslator();
+      new TransportFailureTranslator(GATEWAY_ADDRESS);
   private CompletableFuture<String> response;
   private JsonResponseAndStatusCodeTransformer<String, String> transformer;
   private Predicate<StatusCode> retryPredicate;
