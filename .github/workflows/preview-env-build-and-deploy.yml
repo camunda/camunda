@@ -97,6 +97,7 @@ jobs:
     name: Build Camunda
     needs: [resolve-image-tag]
     permissions:
+      id-token: write # Vault JWT login
       contents: read
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
@@ -113,6 +114,9 @@ jobs:
         dockerhub-readonly: true
         harbor: true
         vault-address: ${{ secrets.VAULT_ADDR }}
+        vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+        vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+        vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
@@ -144,6 +148,7 @@ jobs:
     name: Build Optimize
     needs: [resolve-image-tag]
     permissions:
+      id-token: write # Vault JWT login
       contents: read
     uses: ./.github/workflows/optimize-ci-build-reusable.yml
     secrets: inherit
@@ -230,9 +235,10 @@ jobs:
       uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
 

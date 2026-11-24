@@ -79,6 +79,9 @@ jobs:
 
   e2e-multiregion-failover:
     name: Multi-region failover with data loss
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     uses: ./.github/workflows/zeebe-e2e-testbench.yaml
     with:
       branch: main
@@ -91,6 +94,9 @@ jobs:
 
   e2e-scaling-brokers:
     name: Scaling brokers
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     uses: ./.github/workflows/zeebe-e2e-testbench.yaml
     with:
       branch: main
