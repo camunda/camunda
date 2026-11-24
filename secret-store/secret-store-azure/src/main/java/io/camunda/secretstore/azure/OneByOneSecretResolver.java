@@ -134,19 +134,13 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
     if (properties == null) {
       return null;
     }
-    if (Boolean.FALSE.equals(properties.isEnabled())) {
-      return refused(secretName, "is disabled in Azure Key Vault");
-    }
-    final var now = clock.instant();
-    final var expiresOn = properties.getExpiresOn();
-    if (expiresOn != null && !expiresOn.toInstant().isAfter(now)) {
-      return refused(secretName, "expired on " + expiresOn.toInstant());
-    }
-    final var notBefore = properties.getNotBefore();
-    if (notBefore != null && notBefore.toInstant().isAfter(now)) {
-      return refused(secretName, "is not active until " + notBefore.toInstant());
-    }
-    return null;
+    return switch (SecretStatus.of(properties, clock.instant())) {
+      case ACTIVE -> null;
+      case DISABLED -> refused(secretName, "is disabled in Azure Key Vault");
+      case EXPIRED -> refused(secretName, "expired on " + properties.getExpiresOn().toInstant());
+      case NOT_YET_ACTIVE ->
+          refused(secretName, "is not active until " + properties.getNotBefore().toInstant());
+    };
   }
 
   private static Failed notFound(final String secretName, final Exception cause) {
