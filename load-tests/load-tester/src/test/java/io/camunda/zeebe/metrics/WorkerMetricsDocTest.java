@@ -42,4 +42,31 @@ class WorkerMetricsDocTest {
     assertThat(metric.getKeyNames())
         .containsExactly(ResultMetricKeyNames.OUTCOME, ResultMetricKeyNames.ERROR);
   }
+
+  @Test
+  void shouldDefineJobCompletionTrackingDroppedCounter() {
+    // given
+    final var metric = WorkerMetricsDoc.JOB_COMPLETION_TRACKING_DROPPED;
+
+    // when / then
+    assertThat(metric.getName()).isEqualTo("worker.job.completion.tracking.dropped");
+    assertThat(metric.getType()).isEqualTo(Type.COUNTER);
+    assertThat(metric.getDescription())
+        .isEqualTo(
+            "Total number of job completions dropped from result tracking because the queue was full.");
+    assertThat(metric.getKeyNames()).isEmpty();
+  }
+
+  @Test
+  void shouldDefineJobCompletionsPendingGauge() {
+    // given
+    final var metric = WorkerMetricsDoc.JOB_COMPLETIONS_PENDING;
+
+    // when / then
+    assertThat(metric.getName()).isEqualTo("worker.job.completions.pending");
+    assertThat(metric.getType()).isEqualTo(Type.GAUGE);
+    assertThat(metric.getDescription())
+        .isEqualTo("Number of job completion requests whose answer has not been checked yet.");
+    assertThat(metric.getKeyNames()).isEmpty();
+  }
 }

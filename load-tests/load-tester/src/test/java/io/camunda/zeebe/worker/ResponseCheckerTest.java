@@ -30,7 +30,7 @@ class ResponseCheckerTest {
 
   @BeforeEach
   void setUp() {
-    checker = new ResponseChecker(futures, new WorkerResultMetrics(registry));
+    checker = new ResponseChecker(futures, new WorkerResultMetrics(registry, futures));
     checker.start();
   }
 
