@@ -14,11 +14,12 @@ import java.util.regex.Pattern;
 /**
  * An isolated key space, identified by its scope and its name, written {@code SCOPE/NAME}. The name
  * is the physical tenant id in {@link Scope#PHYSICAL_TENANT} scope and a fixed name in {@link
- * Scope#CLUSTER} scope. A name holds only Latin letters, digits, {@code -} and {@code _}.
+ * Scope#CLUSTER} scope. A name follows the rule of one key segment: lowercase Latin letters, digits
+ * and {@code -}, which every physical tenant id satisfies.
  */
 public record Namespace(Scope scope, String name) {
 
-  private static final Pattern NAMESPACE_REGEX = Pattern.compile("[A-Za-z0-9_-]+");
+  private static final Pattern NAMESPACE_REGEX = Pattern.compile("[a-z0-9-]+");
 
   /**
    * @throws InvalidArgumentException if the name is empty or holds a character that is not allowed
@@ -28,7 +29,7 @@ public record Namespace(Scope scope, String name) {
     Objects.requireNonNull(name, "name");
     if (!NAMESPACE_REGEX.matcher(name).matches()) {
       throw new InvalidArgumentException(
-          "Expected a namespace name of Latin letters, digits, '-' and '_', but got '%s'"
+          "Expected a namespace name of lowercase letters, digits and '-', but got '%s'"
               .formatted(name));
     }
   }

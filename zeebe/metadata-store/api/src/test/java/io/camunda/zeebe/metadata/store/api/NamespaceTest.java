@@ -18,7 +18,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 final class NamespaceTest {
 
   @ParameterizedTest
-  @ValueSource(strings = {"config", "region-failover", "Tenant_A", "tenant-01"})
+  @ValueSource(strings = {"config", "region-failover", "tenant01", "tenant-01"})
   void shouldAcceptValidName(final String name) {
     // when - then
     assertThatCode(() -> Namespace.cluster(name)).doesNotThrowAnyException();
@@ -26,7 +26,7 @@ final class NamespaceTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"", "a.b", "a b", "a/b", "a:b", "ä", "a\u0000b"})
+  @ValueSource(strings = {"", "a.b", "a b", "a/b", "a:b", "ä", "a\u0000b", "Tenant", "tenant_a"})
   void shouldRejectInvalidName(final String name) {
     // when - then
     assertThatThrownBy(() -> Namespace.cluster(name)).isInstanceOf(InvalidArgumentException.class);
