@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -44,6 +45,8 @@ public final class BpmnVariableMappingBehavior {
   private final ElementInstanceState elementInstanceState;
   private final VariableBehavior variableBehavior;
   private final VariableSourceRecord unknownSource = VariableSourceRecord.none();
+  private final VariableSourceRecord outputMappingSource =
+      new VariableSourceRecord().setType(VariableOperationType.OUTPUT_MAPPING);
   private final VariableSourceRecord userTaskCompletionSource =
       VariableSourceRecord.userTaskCompletion();
   private final EventScopeInstanceState eventScopeInstanceState;
@@ -126,6 +129,9 @@ public final class BpmnVariableMappingBehavior {
    *       seeding. This restores the pre-#59087 behavior.
    * </ul>
    *
+   * <p>The variables that the mappings write carry the source {@code OUTPUT_MAPPING} and the
+   * element. A native user task is the exception, see {@link #applyUserTaskOutputMappings}.
+   *
    * @param context The current bpmn element context
    * @param element The current bpmn element
    * @return either void if successful, otherwise a failure
@@ -134,7 +140,12 @@ public final class BpmnVariableMappingBehavior {
       final BpmnElementContext context, final ExecutableFlowNode element) {
     final var payloadSource =
         eventTriggerBehavior.eventPayloadSource(element, context.getElementInstanceKey());
-    return applyOutputMappings(context, element, payloadSource, payloadSource, unknownSource);
+    return applyOutputMappings(
+        context,
+        element,
+        payloadSource,
+        payloadSource,
+        outputMappingSource(element, context.getElementInstanceKey()));
   }
 
   /**
@@ -146,6 +157,14 @@ public final class BpmnVariableMappingBehavior {
       final BpmnElementContext context, final ExecutableFlowNode element) {
     return applyOutputMappings(
         context, element, unknownSource, userTaskCompletionSource, userTaskCompletionSource);
+  }
+
+  /** The returned record is reused by the next call, so write the variables before that. */
+  private VariableSourceRecord outputMappingSource(
+      final ExecutableFlowNode element, final long elementInstanceKey) {
+    return outputMappingSource
+        .setElementInstanceKey(elementInstanceKey)
+        .setElementId(element.getId());
   }
 
   /**
