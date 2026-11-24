@@ -58,6 +58,11 @@ public final class ActorSchedulerConfiguration {
     return scheduler;
   }
 
+  @Bean(destroyMethod = "close")
+  public GatewayActorScheduler gatewayActorScheduler(final ActorScheduler scheduler) {
+    return GatewayActorScheduler.shared(scheduler);
+  }
+
   public record SchedulerConfiguration(
       int cpuThreads,
       int ioThreads,

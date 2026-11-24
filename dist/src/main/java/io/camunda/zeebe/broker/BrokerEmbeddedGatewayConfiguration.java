@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.application.commons.actor.GatewayActorScheduler;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
@@ -19,7 +20,6 @@ import io.camunda.zeebe.gateway.GatewayFactory;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
-import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +52,7 @@ public class BrokerEmbeddedGatewayConfiguration {
       @SuppressWarnings("unused") final Broker broker,
       final BrokerBasedConfiguration configuration,
       final PhysicalTenantResolver physicalTenantResolver,
-      final ActorScheduler actorScheduler,
+      final GatewayActorScheduler gatewayActorScheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       @Autowired(required = false) final ServiceRegistry serviceRegistry,
@@ -66,6 +66,7 @@ public class BrokerEmbeddedGatewayConfiguration {
       return new BrokerEmbeddedGateway(null, null);
     }
 
+    final var actorScheduler = gatewayActorScheduler.scheduler();
     final var jobStreamClient =
         new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService(), meterRegistry);
     final var gateway =

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.application.commons.actor.GatewayActorScheduler;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -20,7 +21,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.HashMap;
@@ -58,7 +58,7 @@ public class GatewayModuleConfiguration {
       final GatewayBasedConfiguration configuration,
       final PhysicalTenantResolver physicalTenantResolver,
       final SpringGatewayBridge springGatewayBridge,
-      final ActorScheduler actorScheduler,
+      final GatewayActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
       final BrokerClient brokerClient,
       final JobStreamClient jobStreamClient,
@@ -89,7 +89,7 @@ public class GatewayModuleConfiguration {
             configuration.config(),
             physicalTenantResolver,
             brokerClient,
-            actorScheduler,
+            actorScheduler.scheduler(),
             jobStreamClient.streamer(),
             passwordEncoder,
             meterRegistry,

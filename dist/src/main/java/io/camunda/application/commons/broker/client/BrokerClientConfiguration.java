@@ -8,6 +8,7 @@
 package io.camunda.application.commons.broker.client;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.application.commons.actor.GatewayActorScheduler;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -33,12 +34,12 @@ public final class BrokerClientConfiguration {
   public BrokerClientConfiguration(
       final BrokerClientCfg config,
       final AtomixCluster cluster,
-      final ActorScheduler scheduler,
+      final GatewayActorScheduler scheduler,
       final BrokerTopologyManager topologyManager,
       final MeterRegistry meterRegistry) {
     this.config = config;
     this.cluster = cluster;
-    this.scheduler = scheduler;
+    this.scheduler = scheduler.scheduler();
     this.topologyManager = topologyManager;
     metrics = new BrokerClientRequestMetrics(meterRegistry);
   }

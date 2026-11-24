@@ -10,6 +10,7 @@ package io.camunda.application.commons.clustering;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.application.commons.actor.GatewayActorScheduler;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -42,10 +43,10 @@ public class DynamicClusterServices {
 
   @Autowired
   public DynamicClusterServices(
-      final ActorScheduler scheduler,
+      final GatewayActorScheduler scheduler,
       final AtomixCluster atomixCluster,
       final MeterRegistry meterRegistry) {
-    this.scheduler = scheduler;
+    this.scheduler = scheduler.scheduler();
     clusterMembershipService = atomixCluster.getMembershipService();
     clusterCommunicationService = atomixCluster.getCommunicationService();
     this.meterRegistry = meterRegistry;

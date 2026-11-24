@@ -15,6 +15,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.actor.ActorClockConfiguration;
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration;
+import io.camunda.application.commons.actor.GatewayActorScheduler;
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration;
 import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
 import io.camunda.application.commons.clustering.DynamicClusterServices;
@@ -299,7 +300,8 @@ final class StandaloneGatewaySecurityTest {
 
     actorScheduler = actorSchedulerConfiguration.scheduler();
     final var topologyServices =
-        new DynamicClusterServices(actorScheduler, atomixCluster, meterRegistry);
+        new DynamicClusterServices(
+            GatewayActorScheduler.shared(actorScheduler), atomixCluster, meterRegistry);
     final var gatewayClusterConfigurationService =
         topologyServices.gatewayClusterTopologyService(
             gatewayCfg.getCluster().getConfigManager().gossip());
@@ -308,10 +310,16 @@ final class StandaloneGatewaySecurityTest {
 
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
-            brokerClientConfig, atomixCluster, actorScheduler, topologyManager, meterRegistry);
+            brokerClientConfig,
+            atomixCluster,
+            GatewayActorScheduler.shared(actorScheduler),
+            topologyManager,
+            meterRegistry);
     brokerClient = brokerClientConfiguration.brokerClient();
     jobStreamClient =
-        new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster, meterRegistry);
+        new JobStreamComponent()
+            .jobStreamClient(
+                GatewayActorScheduler.shared(actorScheduler), atomixCluster, meterRegistry);
     final var gatewayRestConfiguration = new GatewayRestConfiguration();
     gatewayRestConfiguration.setMaxNameFieldLength(32 * 1024);
 
@@ -325,7 +333,7 @@ final class StandaloneGatewaySecurityTest {
             gatewayConfig,
             PhysicalTenantResolver.of(new MockEnvironment(), camunda),
             new SpringGatewayBridge(),
-            actorScheduler,
+            GatewayActorScheduler.shared(actorScheduler),
             atomixCluster,
             brokerClient,
             jobStreamClient,
