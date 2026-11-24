@@ -18,11 +18,11 @@ public interface ActorMetrics {
 
   void observeJobSchedulingLatency(final long waitTimeNs, final SubscriptionType subscriptionType);
 
-  static ActorMetrics ofNullable(final MeterRegistry registry) {
+  static ActorMetrics ofNullable(final MeterRegistry registry, final String schedulerName) {
     if (registry == null) {
       return disabled();
     } else {
-      return new ActorMetricsImpl(registry);
+      return new ActorMetricsImpl(registry, schedulerName);
     }
   }
 

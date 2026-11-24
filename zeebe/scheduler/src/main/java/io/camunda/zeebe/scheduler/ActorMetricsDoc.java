@@ -38,7 +38,7 @@ public enum ActorMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return new KeyName[] {ActorMetricsKeyName.ACTOR_NAME};
+      return new KeyName[] {ActorMetricsKeyName.SCHEDULER_NAME, ActorMetricsKeyName.ACTOR_NAME};
     }
 
     @Override
@@ -68,7 +68,9 @@ public enum ActorMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return new KeyName[] {ActorMetricsKeyName.SUBSCRIPTION_TYPE};
+      return new KeyName[] {
+        ActorMetricsKeyName.SCHEDULER_NAME, ActorMetricsKeyName.SUBSCRIPTION_TYPE
+      };
     }
 
     @Override
@@ -95,7 +97,7 @@ public enum ActorMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return new KeyName[] {ActorMetricsKeyName.ACTOR_NAME};
+      return new KeyName[] {ActorMetricsKeyName.SCHEDULER_NAME, ActorMetricsKeyName.ACTOR_NAME};
     }
   },
   /** The length of the job queue for an actor task */
@@ -117,7 +119,7 @@ public enum ActorMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return new KeyName[] {ActorMetricsKeyName.ACTOR_NAME};
+      return new KeyName[] {ActorMetricsKeyName.SCHEDULER_NAME, ActorMetricsKeyName.ACTOR_NAME};
     }
   };
 
@@ -127,6 +129,13 @@ public enum ActorMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "subscriptionType";
+      }
+    },
+    /** The name of the scheduler that runs the actor. */
+    SCHEDULER_NAME {
+      @Override
+      public String asString() {
+        return "scheduler";
       }
     },
     /** The name of the actor */

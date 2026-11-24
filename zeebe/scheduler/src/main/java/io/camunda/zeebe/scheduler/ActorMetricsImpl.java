@@ -25,9 +25,11 @@ final class ActorMetricsImpl implements ActorMetrics {
   private final Map<SubscriptionType, Timer> schedulingLatency =
       new EnumMap<>(SubscriptionType.class);
   private final MeterRegistry registry;
+  private final String schedulerName;
 
-  public ActorMetricsImpl(final MeterRegistry registry) {
+  public ActorMetricsImpl(final MeterRegistry registry, final String schedulerName) {
     this.registry = Objects.requireNonNull(registry, "registry cannot be null");
+    this.schedulerName = Objects.requireNonNull(schedulerName, "schedulerName cannot be null");
     for (final SubscriptionType type : SubscriptionType.values()) {
       schedulingLatency.put(type, createSchedulingTimer(type));
     }
@@ -36,6 +38,7 @@ final class ActorMetricsImpl implements ActorMetrics {
   private Timer createSchedulingTimer(final SubscriptionType subscriptionType) {
     return Timer.builder(SCHEDULING_LATENCY.getName())
         .description(SCHEDULING_LATENCY.getDescription())
+        .tag(ActorMetricsKeyName.SCHEDULER_NAME.asString(), schedulerName)
         .tag(ActorMetricsKeyName.SUBSCRIPTION_TYPE.asString(), subscriptionType.getName())
         .serviceLevelObjectives(SCHEDULING_LATENCY.getTimerSLOs())
         .register(registry);
@@ -44,6 +47,7 @@ final class ActorMetricsImpl implements ActorMetrics {
   private Timer createExecutionTimer(final String actorName) {
     return Timer.builder(EXECUTION_LATENCY.getName())
         .description(EXECUTION_LATENCY.getDescription())
+        .tag(ActorMetricsKeyName.SCHEDULER_NAME.asString(), schedulerName)
         .tag(ActorMetricsKeyName.ACTOR_NAME.asString(), actorName)
         .serviceLevelObjectives(EXECUTION_LATENCY.getTimerSLOs())
         .register(registry);
@@ -52,6 +56,7 @@ final class ActorMetricsImpl implements ActorMetrics {
   private Counter createExecutionCount(final String actorName) {
     return Counter.builder(EXECUTION_COUNT.getName())
         .description(EXECUTION_COUNT.getDescription())
+        .tag(ActorMetricsKeyName.SCHEDULER_NAME.asString(), schedulerName)
         .tag(ActorMetricsKeyName.ACTOR_NAME.asString(), actorName)
         .register(registry);
   }
@@ -59,6 +64,7 @@ final class ActorMetricsImpl implements ActorMetrics {
   private Gauge createJobQueueLength(final String actorName, final AtomicLong value) {
     return Gauge.builder(JOB_QUEUE_LENGTH.getName(), value::get)
         .description(JOB_QUEUE_LENGTH.getDescription())
+        .tag(ActorMetricsKeyName.SCHEDULER_NAME.asString(), schedulerName)
         .tag(ActorMetricsKeyName.ACTOR_NAME.asString(), actorName)
         .register(registry);
   }
