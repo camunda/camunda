@@ -46,8 +46,8 @@ work should be skipped and the active project graph should remain unchanged.
 ## Java checks
 
 `javaChecks` is the Gradle equivalent of the Maven `Java Checks` CI job. It runs Checkstyle (main
-and test sources), SpotBugs, and compiles main and test classes (Error Prone and NullAway run as
-part of `compileJava`).
+and test sources), the license header check, SpotBugs, and compiles main and test classes (Error
+Prone and NullAway run as part of `compileJava`).
 
 ```bash
 # Whole monorepo
@@ -57,11 +57,18 @@ part of `compileJava`).
 ./gradlew -Pskip.fe.build=true :zeebe-journal:javaChecks
 ```
 
-The checks reuse the Maven configuration: `build-tools/src/main/resources/check/.checkstyle.xml`
-and the SpotBugs filters in `build-tools/src/main/resources/spotbugs`.
+The checks reuse the Maven configuration: `build-tools/src/main/resources/check/.checkstyle.xml`,
+`parent/COPYING-HEADER.txt`, and the SpotBugs filters in `build-tools/src/main/resources/spotbugs`.
 A module's own `spotbugs/spotbugs-exclude.xml` is applied on top of the shared exclude filter, as in
 Maven. The Checkstyle and SpotBugs versions come from `parent/pom.xml`. SpotBugs runs the engine
 that the Maven plugin bundles, which can be older than `version.spotbugs`.
+
+The license header check is Spotless' `licenseHeader` step in a separate `license` format
+(`spotlessLicenseCheck`; `spotlessLicenseApply` adds missing headers). Its settings are read from
+each module's `pom.xml` and its parent POMs, so they need no per-module Gradle configuration:
+`license.header.file` selects the header (the Apache-2 template maps to `gradle/license/APACHE-2.txt`).
+Modules that set `skipExistingHeaders` in Maven (code moved in with its original header) are not
+checked, because Spotless cannot accept arbitrary existing headers.
 
 All of these tasks are cacheable, so with `--build-cache` a repeated run only redoes the modules
 that changed. `-Pquickly` skips them, like Maven's `-Dquickly`.
@@ -69,7 +76,6 @@ that changed. `-Pquickly` skips them, like Maven's `-Dquickly`.
 `javaChecks` does not cover everything the Maven job does:
 
 - Spotless is not part of it. Maven runs it in a separate job, and Gradle has `spotlessCheck`.
-- The license header check (`license-maven-plugin`) is not ported yet.
 - Dependency analysis (`maven-dependency-plugin:analyze-only`) has no Gradle equivalent yet.
 - The Maven Enforcer rules (`requireMavenVersion`, `banDuplicatePomDependencyVersions`,
   `dependencyConvergence`) are not ported. Gradle dependency resolution and the version catalog

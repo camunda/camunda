@@ -144,4 +144,19 @@ class PomResolverTest {
     assertEquals("2.0.0", resolver.projectVersion())
     assertEquals("demo-app", resolver.elementText("artifactId"))
   }
+
+  @Test
+  fun `should resolve the parent relative path like Maven`() {
+    // given
+    val declared = "<project><parent><relativePath>../a/pom.xml</relativePath></parent></project>"
+    val omitted = "<project><parent><version>1</version></parent></project>"
+    val empty = "<project><parent><relativePath/></parent></project>"
+    val noParent = "<project><version>1</version></project>"
+
+    // when / then
+    assertEquals("../a/pom.xml", PomResolver(declared).parentRelativePath())
+    assertEquals("../pom.xml", PomResolver(omitted).parentRelativePath())
+    assertEquals(null, PomResolver(empty).parentRelativePath())
+    assertEquals(null, PomResolver(noParent).parentRelativePath())
+  }
 }

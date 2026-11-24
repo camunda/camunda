@@ -24,6 +24,17 @@ class PomResolver(private val pomXml: String) {
         ?.takeIf { it.isNotBlank() }
   }
 
+  /**
+   * Path of the parent POM relative to this one, as Maven resolves it: the declared
+   * `<relativePath>`, or `../pom.xml` when it is omitted. Null when there is no `<parent>` or when
+   * `<relativePath/>` is empty, which means the parent is not in the source tree.
+   */
+  fun parentRelativePath(): String? {
+    val parent = documentElement.findDirectChild("parent") ?: return null
+    val relativePath = parent.findDirectChild("relativePath") ?: return "../pom.xml"
+    return relativePath.textContent.trim().takeIf { it.isNotBlank() }
+  }
+
   fun elementText(elementName: String): String? {
     val element = documentElement.getElementsByTagName(elementName).item(0) ?: return null
     return element.textContent.trim().takeIf { it.isNotBlank() }
