@@ -290,7 +290,6 @@ data:
     # Disable the importers
     camunda.tasklist.importerEnabled: "false"
     camunda.operate.importerEnabled: "false"
-    camunda.operate.elasticsearch.numberOfShards: 3
     # Schema management has been moved out of exporter - to be bootstrap at start; once
     camunda.database.retention.enabled: "true"
     camunda.database.retention.policyName: "camunda-retention-policy"
