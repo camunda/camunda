@@ -37,7 +37,7 @@ public final class BatchOperationItemFilterTransformer
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(
       final RequiredAuthorization<?> authorization) {
-    return matchAll();
+    return stringTerms(BATCH_OPERATION_ID, authorization.resourceIds());
   }
 
   private List<Operation<String>> mapStateOperations(

@@ -9,12 +9,14 @@ package io.camunda.db.rdbms.read.service;
 
 import static java.util.Optional.ofNullable;
 
+import io.camunda.db.rdbms.read.domain.UsageMetricsTUDbQuery;
 import io.camunda.db.rdbms.read.mapper.UsageMetricTUEntityMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.search.clients.reader.UsageMetricsTUReader;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,14 +31,20 @@ public class UsageMetricTUDbReader implements UsageMetricsTUReader {
 
   @Override
   public UsageMetricTUStatisticsEntity usageMetricTUStatistics(
-      final UsageMetricsTUQuery query, final ResourceAccessChecks access) {
+      final UsageMetricsTUQuery query, final ResourceAccessChecks resourceAccessChecks) {
     LOG.trace("[RDBMS DB] Usage metrics assignees with {}", query);
     final var filter = query.filter();
 
-    final var tuStatistics = usageMetricTUMapper.usageMetricTUStatistics(filter);
+    if (UsageMetricsDbReader.shouldReturnEmptyResult(resourceAccessChecks)) {
+      return new UsageMetricTUStatisticsEntity(0L, Map.of());
+    }
+
+    final var dbQuery =
+        new UsageMetricsTUDbQuery(filter, resourceAccessChecks.getAuthorizedTenantIds());
+    final var tuStatistics = usageMetricTUMapper.usageMetricTUStatistics(dbQuery);
     final var totalTu = ofNullable(tuStatistics.tu()).orElse(0L);
     if (filter.withTenants()) {
-      final var result = usageMetricTUMapper.usageMetricTUTenantsStatistics(filter);
+      final var result = usageMetricTUMapper.usageMetricTUTenantsStatistics(dbQuery);
       return UsageMetricTUEntityMapper.toEntity(result, totalTu);
     } else {
       return new UsageMetricTUStatisticsEntity(totalTu, null);

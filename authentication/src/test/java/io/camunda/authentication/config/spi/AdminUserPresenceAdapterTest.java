@@ -17,7 +17,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.DefaultRole;
-import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.service.RoleServices;
 import io.camunda.service.registry.DefaultServiceRegistry;
@@ -71,10 +70,32 @@ class AdminUserPresenceAdapterTest {
   }
 
   @Test
+  void shouldReturnTrueWhenInitializationConfiguresOnlyAdminGroup() {
+    // given
+    final var defaultRoles = new HashMap<>(initializationConfiguration.getDefaultRoles());
+    defaultRoles.put(ADMIN_ROLE_ID, Map.of("groups", Set.of("admins"), USER_MEMBERS, Set.of()));
+    initializationConfiguration.setDefaultRoles(defaultRoles);
+
+    // when / then
+    assertThat(port.adminUserExists()).isTrue();
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldReturnFalseWhenConfiguredAdminRoleHasNoMembers() {
+    // given
+    final var defaultRoles = new HashMap<>(initializationConfiguration.getDefaultRoles());
+    defaultRoles.put(ADMIN_ROLE_ID, Map.of(USER_MEMBERS, Set.of(), "groups", Set.of()));
+    initializationConfiguration.setDefaultRoles(defaultRoles);
+
+    // when / then
+    assertThat(port.adminUserExists()).isFalse();
+  }
+
+  @Test
   void shouldReturnTrueWhenLiveStoreReportsAdminMember() {
     // given
-    when(roleServices.hasMembersOfType(
-            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class)))
+    when(roleServices.hasMembers(eq(ADMIN_ROLE_ID), any(CamundaAuthentication.class)))
         .thenReturn(true);
 
     // when / then
@@ -84,8 +105,7 @@ class AdminUserPresenceAdapterTest {
   @Test
   void shouldReturnFalseWhenNoConfiguredOrLiveAdminUser() {
     // given
-    when(roleServices.hasMembersOfType(
-            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class)))
+    when(roleServices.hasMembers(eq(ADMIN_ROLE_ID), any(CamundaAuthentication.class)))
         .thenReturn(false);
 
     // when / then
@@ -95,8 +115,7 @@ class AdminUserPresenceAdapterTest {
   @Test
   void shouldReturnTrueWhenLiveStoreThrows() {
     // given — mirror AdminUserCheckFilter: don't block traffic on transient failures
-    when(roleServices.hasMembersOfType(
-            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class)))
+    when(roleServices.hasMembers(eq(ADMIN_ROLE_ID), any(CamundaAuthentication.class)))
         .thenThrow(new RuntimeException("secondary storage down"));
 
     // when / then
@@ -118,8 +137,7 @@ class AdminUserPresenceAdapterTest {
     final var request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, "tenanta");
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-    when(tenantARoleServices.hasMembersOfType(
-            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class)))
+    when(tenantARoleServices.hasMembers(eq(ADMIN_ROLE_ID), any(CamundaAuthentication.class)))
         .thenReturn(true);
 
     // when
@@ -127,8 +145,7 @@ class AdminUserPresenceAdapterTest {
 
     // then — admin presence resolved from the tenanta role services, not the default ones
     assertThat(exists).isTrue();
-    verify(tenantARoleServices)
-        .hasMembersOfType(eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class));
+    verify(tenantARoleServices).hasMembers(eq(ADMIN_ROLE_ID), any(CamundaAuthentication.class));
     verifyNoInteractions(defaultRoleServices);
   }
 }

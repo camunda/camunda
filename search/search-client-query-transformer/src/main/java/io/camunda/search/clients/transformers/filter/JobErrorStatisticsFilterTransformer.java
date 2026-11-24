@@ -9,10 +9,10 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
-import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.CREATION_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.ERROR_CODE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.ERROR_MESSAGE;
@@ -76,6 +76,6 @@ public class JobErrorStatisticsFilterTransformer
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(
       final RequiredAuthorization<?> authorization) {
-    return matchAll();
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 }

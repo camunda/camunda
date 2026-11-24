@@ -11,11 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationCheck;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.security.core.authz.TenantCheck;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -199,7 +202,7 @@ class BatchOperationFilterTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  public void shouldIgnoreAuthorizationCheckEventWhenEnabled() {
+  public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
         RequiredAuthorization.of(a -> a.batchOperation().read().resourceIds(List.of("1", "2")));
@@ -212,7 +215,14 @@ class BatchOperationFilterTransformerTest extends AbstractTransformerTest {
         transformQuery(FilterBuilders.batchOperation(b -> b), resourceAccessChecks);
 
     // then
-    assertThat(searchQuery).isNull();
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchTermsQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo(BatchOperationTemplate.ID);
+              assertThat(t.values().stream().map(TypedValue::stringValue).toList())
+                  .containsExactlyInAnyOrder("1", "2");
+            });
   }
 
   @Test

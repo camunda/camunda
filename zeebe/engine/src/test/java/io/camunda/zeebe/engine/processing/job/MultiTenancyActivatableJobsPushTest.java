@@ -339,6 +339,102 @@ public class MultiTenancyActivatableJobsPushTest {
     assertNoActivatedJobs(anonymousStream);
   }
 
+  @Test
+  public void shouldNotPushProvidedTenantJobsToUserNotAssignedToThatTenant() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final DirectBuffer jobTypeBuffer = BufferUtil.wrapString(jobType);
+    final DirectBuffer worker = BufferUtil.wrapString("test");
+    final Map<String, Object> variables = Map.of("a", "valA");
+    final String username = Strings.newRandomValidIdentityId();
+    final String tenantIdA = Strings.newRandomValidTenantId();
+    final String tenantIdB = Strings.newRandomValidTenantId();
+
+    ENGINE.tenant().newTenant().withTenantId(tenantIdA).create();
+    ENGINE.tenant().newTenant().withTenantId(tenantIdB).create();
+    ENGINE.user().newUser(username).create();
+    // User is assigned to tenantIdA only, but asks for jobs of tenantIdB
+    ENGINE
+        .tenant()
+        .addEntity(tenantIdA)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+    final String authorizedUsername = Strings.newRandomValidIdentityId();
+    ENGINE.user().newUser(authorizedUsername).create();
+    ENGINE
+        .tenant()
+        .addEntity(tenantIdB)
+        .withEntityId(authorizedUsername)
+        .withEntityType(EntityType.USER)
+        .add();
+
+    final var unauthorizedStream =
+        JOB_STREAMER.addJobStream(
+            jobTypeBuffer,
+            new JobActivationPropertiesImpl()
+                .setWorker(worker, 0, worker.capacity())
+                .setTimeout(30000L)
+                .setFetchVariables(Set.of(new StringValue("a")))
+                .setClaims(Map.of(AUTHORIZED_USERNAME, username))
+                .setTenantIds(List.of(tenantIdB)));
+    final var authorizedStream =
+        JOB_STREAMER.addJobStream(
+            jobTypeBuffer,
+            new JobActivationPropertiesImpl()
+                .setWorker(worker, 0, worker.capacity())
+                .setTimeout(30000L)
+                .setFetchVariables(Set.of(new StringValue("a")))
+                .setClaims(Map.of(AUTHORIZED_USERNAME, authorizedUsername))
+                .setTenantIds(List.of(tenantIdB)));
+
+    // when
+    final long jobKey = createJob(jobType, PROCESS_ID, variables, tenantIdB);
+
+    // then — the job is pushed to the authorized stream only
+    jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).getFirst();
+    assertNoActivatedJobs(unauthorizedStream);
+    assertActivatedJob(authorizedStream, jobKey, worker, variables, 1, tenantIdB);
+  }
+
+  @Test
+  public void shouldPushProvidedTenantJobsToUserAssignedToThatTenant() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final DirectBuffer jobTypeBuffer = BufferUtil.wrapString(jobType);
+    final DirectBuffer worker = BufferUtil.wrapString("test");
+    final Map<String, Object> variables = Map.of("a", "valA");
+    final String username = Strings.newRandomValidIdentityId();
+    final String tenantIdA = Strings.newRandomValidTenantId();
+    final String tenantIdB = Strings.newRandomValidTenantId();
+
+    ENGINE.tenant().newTenant().withTenantId(tenantIdA).create();
+    ENGINE.tenant().newTenant().withTenantId(tenantIdB).create();
+    ENGINE.user().newUser(username).create();
+    ENGINE
+        .tenant()
+        .addEntity(tenantIdB)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+
+    final var authorizedStream =
+        JOB_STREAMER.addJobStream(
+            jobTypeBuffer,
+            new JobActivationPropertiesImpl()
+                .setWorker(worker, 0, worker.capacity())
+                .setTimeout(30000L)
+                .setFetchVariables(Set.of(new StringValue("a")))
+                .setClaims(Map.of(AUTHORIZED_USERNAME, username))
+                .setTenantIds(List.of(tenantIdB)));
+
+    // when
+    final long jobKey = createJob(jobType, PROCESS_ID, variables, tenantIdB);
+
+    // then
+    assertActivatedJob(authorizedStream, jobKey, worker, variables, 1, tenantIdB);
+  }
+
   private Long createJob(
       final String jobType,
       final String processId,
