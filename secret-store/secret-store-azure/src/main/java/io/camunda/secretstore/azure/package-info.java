@@ -33,7 +33,10 @@
  * unchanged, and an empty value is reported as not found. A reference that is empty or whose Key
  * Vault name, path prefix included, is not 1 to 127 letters, digits and hyphens is refused without
  * calling the vault; a disabled secret, one at or past its expiry date or one not active yet is
- * refused as not found, naming the reason. Container mode and listing are not implemented yet
+ * refused as not found, naming the reason. The dates are compared with the clock of the node
+ * reading the vault. A value cached before its secret expired or was disabled can still be served
+ * until the next read of the vault drops it, at the latest when its cache entry expires ({@code
+ * camunda.secrets.cache.ttl}). Container mode and listing are not implemented yet
  * (camunda/camunda#67226): every name is reported as not found and no names are listed.
  *
  * <p>See {@link io.camunda.secretstore.azure.AzureKeyVaultStoreConfig} for every setting and its
