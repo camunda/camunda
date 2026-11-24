@@ -444,8 +444,8 @@ public class DeleteProcessInstanceHistoryIT {
   /**
    * Waits until a completed start-to-end process instance and all of its element instances can be
    * found in secondary storage. The history deletion deletes the documents it can find when it
-   * runs, so an element instance that becomes searchable only after that would be left behind.
-   * The end event is the last element instance to be exported.
+   * runs, so an element instance that becomes searchable only after that would be left behind. The
+   * end event is the last element instance to be exported.
    */
   private static void waitForCompletedProcessInstanceData(
       final CamundaClient client, final long processInstanceKey) {
