@@ -51,9 +51,10 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
   /**
    * Total number of answered process instance start requests by their {@code outcome}: {@code
    * success} or {@code failure}. Failures also carry the {@code error} type, e.g. {@code
-   * grpc_resource_exhausted} or {@code http_503}; successes use {@code none}. Counted when the
-   * answer arrives, so requests without an answer are not included, they show up in the in-flight
-   * gauge. Used by the quicker load test to compute throughput at the end of a finite run.
+   * grpc_resource_exhausted} or {@code http_503}; successes have an empty {@code error} tag.
+   * Counted when the answer arrives, so requests without an answer are not included, they show up
+   * in the in-flight gauge. Used by the quicker load test to compute throughput at the end of a
+   * finite run.
    */
   PROCESS_INSTANCES_STARTED {
     private static final KeyName[] KEY_NAMES =

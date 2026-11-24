@@ -18,7 +18,7 @@ import java.util.Collection;
 /** Counts the results of the requests sent by the worker by outcome and error type. */
 final class WorkerResultMetrics {
 
-  private static final String NONE = "none";
+  private static final String NONE = "";
 
   private final MeterRegistry registry;
   private final Counter publicationSuccess;

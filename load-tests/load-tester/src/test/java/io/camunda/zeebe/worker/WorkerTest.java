@@ -102,7 +102,7 @@ class WorkerTest {
 
     // then
     assertThat(publications("failure", "http_503")).isEqualTo(1.0);
-    assertThat(publications("success", "none")).isZero();
+    assertThat(publications("success", "")).isZero();
   }
 
   @Test
@@ -118,7 +118,7 @@ class WorkerTest {
     worker.handleJob(jobClient, mockJob());
 
     // then
-    assertThat(publications("success", "none")).isEqualTo(1.0);
+    assertThat(publications("success", "")).isEqualTo(1.0);
   }
 
   private static long timeHandleJob(

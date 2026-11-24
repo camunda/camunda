@@ -29,7 +29,7 @@ class StarterResultMetricsTest {
     metrics.record(null);
 
     // then
-    assertThat(count("success", "none")).isEqualTo(1.0);
+    assertThat(count("success", "")).isEqualTo(1.0);
   }
 
   @Test
@@ -40,7 +40,7 @@ class StarterResultMetricsTest {
 
     // then
     assertThat(count("failure", "grpc_resource_exhausted")).isEqualTo(1.0);
-    assertThat(count("success", "none")).isZero();
+    assertThat(count("success", "")).isZero();
   }
 
   @Test
@@ -50,7 +50,7 @@ class StarterResultMetricsTest {
 
     // then
     assertThat(count("failure", "http_503")).isEqualTo(1.0);
-    assertThat(count("success", "none")).isZero();
+    assertThat(count("success", "")).isZero();
   }
 
   @Test

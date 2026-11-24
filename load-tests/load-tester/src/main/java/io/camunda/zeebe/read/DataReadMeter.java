@@ -53,7 +53,7 @@ public class DataReadMeter implements AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(DataReadMeter.class);
   private static final String OUTCOME_SUCCESS = "success";
   private static final String OUTCOME_FAILURE = "failure";
-  private static final String NO_ERROR = "none";
+  private static final String NO_ERROR = "";
   private final ScheduledExecutorService executorService;
   private final MeterRegistry registry;
   private final Map<TimerKey, Timer> timers = new ConcurrentHashMap<>();

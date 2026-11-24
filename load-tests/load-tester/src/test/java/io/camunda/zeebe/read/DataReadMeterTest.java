@@ -376,7 +376,7 @@ final class DataReadMeterTest {
   }
 
   private Timer timer(final String queryName) {
-    return timer(queryName, "success", "none");
+    return timer(queryName, "success", "");
   }
 
   private Timer failureTimer(final String queryName, final String error) {
