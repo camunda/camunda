@@ -7,6 +7,11 @@ on:
 
 jobs:
   dispatch-optimize-command:
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
+      issues: write
+      pull-requests: write
     if: ${{ contains(github.event.issue.labels.*.name, 'component/optimize') }}
     name: Dispatch Optimize Command
     runs-on: ubuntu-latest
@@ -27,9 +32,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
           github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
           github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Slash Command Dispatch
@@ -57,6 +63,11 @@ jobs:
   dispatch-pr-command:
     if: ${{ github.event.issue.pull_request }}
     name: Dispatch PR Command
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -75,9 +86,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
           github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
           github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Slash Command Dispatch

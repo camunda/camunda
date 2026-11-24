@@ -59,9 +59,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
           github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Import Secrets
@@ -69,9 +70,10 @@ jobs:
         uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/infra/ci/common CAMUNDA_NEXUS_USR;
             secret/data/products/infra/ci/common CAMUNDA_NEXUS_PSW;
