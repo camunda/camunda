@@ -263,4 +263,39 @@ public class RoleServicesTest {
     assertThat(queryCaptor.getValue().filter().memberType()).isEqualTo(entityType);
     assertThat(result).isFalse();
   }
+
+  @Test
+  public void shouldQueryByRoleIdWithoutMemberTypeAndReturnTrueWhenMembersExist() {
+    // given
+    final var roleId = "test-role";
+    final var roleServicesSpy = spy(services);
+    doReturn(new SearchQueryResult<RoleMemberEntity>(1, false, List.of(), null, null))
+        .when(roleServicesSpy)
+        .searchMembers(any(), eq(authentication));
+    final var queryCaptor = ArgumentCaptor.forClass(RoleMemberQuery.class);
+
+    // when
+    final var result = roleServicesSpy.hasMembers(roleId, authentication);
+
+    // then
+    verify(roleServicesSpy).searchMembers(queryCaptor.capture(), eq(authentication));
+    assertThat(queryCaptor.getValue().filter().roleId()).isEqualTo(roleId);
+    assertThat(queryCaptor.getValue().filter().memberType()).isNull();
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  public void shouldReturnFalseWhenRoleHasNoMembers() {
+    // given
+    final var roleServicesSpy = spy(services);
+    doReturn(new SearchQueryResult<RoleMemberEntity>(0, false, List.of(), null, null))
+        .when(roleServicesSpy)
+        .searchMembers(any(), eq(authentication));
+
+    // when
+    final var result = roleServicesSpy.hasMembers("another-role", authentication);
+
+    // then
+    assertThat(result).isFalse();
+  }
 }

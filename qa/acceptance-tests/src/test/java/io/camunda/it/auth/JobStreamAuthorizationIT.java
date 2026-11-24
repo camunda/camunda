@@ -32,6 +32,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -63,7 +64,9 @@ public class JobStreamAuthorizationIT {
   private static final String PROCESS_ID_4 = "service_tasks_v4";
   private static final String PROCESS_ID_5 = "service_tasks_v5";
   private static final String USER1_USERNAME = "user1";
+  private static final String PROCESS_ID_6 = "service_tasks_v6";
   private static final String USER2_USERNAME = "user2";
+  private static final String USER3_USERNAME = "user3";
 
   private static final Set<Long> STARTED_PROCESS_INSTANCES = new HashSet<>();
 
@@ -86,9 +89,21 @@ public class JobStreamAuthorizationIT {
                   UPDATE_PROCESS_INSTANCE,
                   List.of(PROCESS_ID_2, PROCESS_ID_4, PROCESS_ID_5))));
 
+  // assigned to tenantA only, but permitted to update instances of PROCESS_ID_6 in any tenant
+  @UserDefinition
+  private static final TestUser USER3_USER =
+      new TestUser(
+          USER3_USERNAME,
+          USER3_USERNAME,
+          List.of(
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_ID_6)),
+              new Permissions(PROCESS_DEFINITION, UPDATE_PROCESS_INSTANCE, List.of(PROCESS_ID_6))));
+
   @TenantDefinition
   private static final TestTenant A_TENANT =
-      new TestTenant(TENANT_A).setName(TENANT_A).addUsers("demo", USER1_USERNAME, USER2_USERNAME);
+      new TestTenant(TENANT_A)
+          .setName(TENANT_A)
+          .addUsers("demo", USER1_USERNAME, USER2_USERNAME, USER3_USERNAME);
 
   @TenantDefinition
   private static final TestTenant B_TENANT =
@@ -161,6 +176,41 @@ public class JobStreamAuthorizationIT {
       assertThat(jobCollector).isEmpty();
     } finally {
       // ensure that the stream is closed
+      stream.cancel(true);
+    }
+  }
+
+  @Test
+  public void shouldReceiveNoJobsOfTenantUserIsNotAssignedTo(
+      @Authenticated(USER3_USERNAME) final CamundaClient user3Client) {
+    // given
+    final var jobType = uniqueJobType();
+    deployProcess(PROCESS_ID_6, jobType, TENANT_B);
+    final Set<ActivatedJob> jobCollector = ConcurrentHashMap.newKeySet();
+    // a job stream created by user3, who has the process permissions but is not assigned to
+    // tenantB, explicitly requesting the jobs of tenantB
+    final var stream =
+        user3Client
+            .newStreamJobsCommand()
+            .jobType(jobType)
+            .consumer(job -> jobCollector.add(job))
+            .tenantId(TENANT_B)
+            .send();
+    awaitStreamRegistered(jobType);
+
+    // when
+    try {
+      startProcessInstance(adminClient, PROCESS_ID_6, TENANT_B);
+      // the job exists, so it would have been pushed to the stream by now if the stream were
+      // eligible for it
+      waitForJobsBeingExported(adminClient, 1, JobState.CREATED, jobType);
+
+      // then
+      Awaitility.await("until no job is received")
+          .during(Duration.ofSeconds(2))
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(jobCollector).isEmpty());
+    } finally {
       stream.cancel(true);
     }
   }

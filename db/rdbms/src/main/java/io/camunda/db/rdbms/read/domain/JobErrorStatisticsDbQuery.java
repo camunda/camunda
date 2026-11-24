@@ -18,6 +18,7 @@ import java.util.function.Function;
 
 public record JobErrorStatisticsDbQuery(
     JobErrorStatisticsFilter filter,
+    List<String> authorizedResourceIds,
     List<String> authorizedTenantIds,
     DbQueryPage page,
     DbQuerySorting<JobErrorStatisticsEntity> sort) {
@@ -30,6 +31,7 @@ public record JobErrorStatisticsDbQuery(
 
   public static final class Builder implements ObjectBuilder<JobErrorStatisticsDbQuery> {
     private JobErrorStatisticsFilter filter;
+    private List<String> authorizedResourceIds;
     private List<String> authorizedTenantIds;
     private DbQueryPage page;
     private DbQuerySorting<JobErrorStatisticsEntity> sort;
@@ -43,6 +45,11 @@ public record JobErrorStatisticsDbQuery(
         final Function<JobErrorStatisticsFilter.Builder, ObjectBuilder<JobErrorStatisticsFilter>>
             fn) {
       return filter(FilterBuilders.jobErrorStatistics(fn));
+    }
+
+    public Builder authorizedResourceIds(final List<String> value) {
+      authorizedResourceIds = value;
+      return this;
     }
 
     public Builder authorizedTenantIds(final List<String> value) {
@@ -64,6 +71,7 @@ public record JobErrorStatisticsDbQuery(
     public JobErrorStatisticsDbQuery build() {
       return new JobErrorStatisticsDbQuery(
           Objects.requireNonNull(filter, "filter must not be null"),
+          Objects.requireNonNullElse(authorizedResourceIds, Collections.emptyList()),
           Objects.requireNonNullElse(authorizedTenantIds, Collections.emptyList()),
           page,
           sort);

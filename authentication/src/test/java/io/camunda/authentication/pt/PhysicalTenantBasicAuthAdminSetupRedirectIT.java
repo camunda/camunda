@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.config.spi.AdminUserPresenceAdapter;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.DefaultRole;
-import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
 import io.camunda.security.spring.CamundaSecurityConfiguration;
@@ -64,11 +63,11 @@ class PhysicalTenantBasicAuthAdminSetupRedirectIT {
 
   @BeforeAll
   static void setUpMocks() {
-    when(PT_WITH_ADMIN_ROLE_SERVICES.hasMembersOfType(
-            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class)))
+    when(PT_WITH_ADMIN_ROLE_SERVICES.hasMembers(
+            eq(ADMIN_ROLE_ID), any(CamundaAuthentication.class)))
         .thenReturn(true);
-    when(PT_WITHOUT_ADMIN_ROLE_SERVICES.hasMembersOfType(
-            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class)))
+    when(PT_WITHOUT_ADMIN_ROLE_SERVICES.hasMembers(
+            eq(ADMIN_ROLE_ID), any(CamundaAuthentication.class)))
         .thenReturn(false);
   }
 

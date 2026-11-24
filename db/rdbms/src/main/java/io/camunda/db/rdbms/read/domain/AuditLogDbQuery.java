@@ -19,6 +19,7 @@ public record AuditLogDbQuery(
     AuditLogFilter filter,
     AuditLogAuthorizationFilter authorizationFilter,
     List<String> authorizedTenantIds,
+    boolean tenantCheckEnabled,
     DbQuerySorting<AuditLogEntity> sort,
     DbQueryPage page) {
 
@@ -33,6 +34,7 @@ public record AuditLogDbQuery(
     private AuditLogFilter filter;
     private AuditLogAuthorizationFilter authorizationFilter;
     private List<String> authorizedTenantIds = List.of();
+    private boolean tenantCheckEnabled;
     private DbQuerySorting<AuditLogEntity> sort;
     private DbQueryPage page;
 
@@ -48,6 +50,11 @@ public record AuditLogDbQuery(
 
     public Builder authorizedTenantIds(final List<String> authorizedTenantIds) {
       this.authorizedTenantIds = authorizedTenantIds;
+      return this;
+    }
+
+    public Builder tenantCheckEnabled(final boolean tenantCheckEnabled) {
+      this.tenantCheckEnabled = tenantCheckEnabled;
       return this;
     }
 
@@ -81,7 +88,8 @@ public record AuditLogDbQuery(
       authorizationFilter =
           Objects.requireNonNullElse(authorizationFilter, AuditLogAuthorizationFilter.denyAll());
       authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
-      return new AuditLogDbQuery(filter, authorizationFilter, authorizedTenantIds, sort, page);
+      return new AuditLogDbQuery(
+          filter, authorizationFilter, authorizedTenantIds, tenantCheckEnabled, sort, page);
     }
   }
 }

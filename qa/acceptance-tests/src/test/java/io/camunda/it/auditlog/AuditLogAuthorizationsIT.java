@@ -63,6 +63,7 @@ public class AuditLogAuthorizationsIT {
   private static final String USER_F_USERNAME = "userF";
   private static final String USER_G_USERNAME = "userG";
   private static final String USER_GG_USERNAME = "userGG";
+  private static final String USER_WITHOUT_TENANT_USERNAME = "userWithoutTenant";
   private static final String PASSWORD = "password";
   private static final List<String> WILDCARD = List.of(AuthorizationScope.WILDCARD.getResourceId());
 
@@ -159,6 +160,14 @@ public class AuditLogAuthorizationsIT {
           USER_GG_USERNAME,
           PASSWORD,
           List.of(Permissions.withPropertyName(USER_TASK, READ, "candidateUsers")));
+
+  // With AUDIT_LOG#READ permissions, but deliberately not assigned to any tenant
+  @UserDefinition
+  private static final TestUser USER_WITHOUT_TENANT =
+      new TestUser(
+          USER_WITHOUT_TENANT_USERNAME,
+          PASSWORD,
+          List.of(new Permissions(AUDIT_LOG, READ, WILDCARD)));
 
   // At test execution time, we already have 100+ audit log entries.
   // Custom page limit ensures all entries are retrieved for test assertions.
@@ -271,6 +280,26 @@ public class AuditLogAuthorizationsIT {
                     log -> Objects.isNull(log.getTenantId()) || TENANT_A.equals(log.getTenantId())))
         .isTrue();
     assertGetByKeyAccess(client, logs.items().getFirst());
+  }
+
+  @Test
+  void shouldOnlyReturnGlobalAuditLogsForUserWithoutTenant(
+      @Authenticated(USER_A_USERNAME) final CamundaClient tenantClient,
+      @Authenticated(USER_WITHOUT_TENANT_USERNAME) final CamundaClient client) {
+    // given - tenant-scoped audit logs exist for a user of that tenant
+    final var tenantLogs = tenantClient.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
+    assertThat(tenantLogs.items())
+        .as("Tenant-scoped audit logs should exist in the system")
+        .anyMatch(log -> TENANT_A.equals(log.getTenantId()));
+
+    // when - a user with the same audit log permissions but without any tenant searches
+    final var logs = client.newAuditLogSearchRequest().page(PAGE_CONFIG).execute();
+
+    // then - only global audit logs are returned
+    assertThat(logs.items())
+        .isNotEmpty()
+        .extracting(AuditLogResult::getTenantId)
+        .containsOnlyNulls();
   }
 
   @Test
