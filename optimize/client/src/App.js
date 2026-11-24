@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect} from 'react';
 import {HashRouter as Router, Route, Switch, matchPath} from 'react-router-dom';
 import {Button} from '@carbon/react';
 
@@ -27,13 +28,17 @@ import {ErrorBoundary, ErrorPage} from 'components';
 import {Notifications} from 'notifications';
 import {SaveGuard} from 'saveGuard';
 import {Prompt} from 'prompt';
-import {Tracking} from 'tracking';
+import {loadOsano} from 'osano';
 import {ConfigProvider} from 'config';
 import {Provider as Theme} from 'theme';
 import {UserProvider, DocsProvider} from 'HOC';
 import {TranslationProvider} from 'translation';
 
 export default function App({error}) {
+  useEffect(() => {
+    loadOsano();
+  }, []);
+
   function renderEntity(props) {
     const components = {
       report: Report,
@@ -95,7 +100,6 @@ export default function App({error}) {
                       <PrivateRoute path="*" component={ErrorPage} />
                     </Switch>
                   </DocsProvider>
-                  <Tracking />
                 </UserProvider>
               </ErrorBoundary>
             </div>

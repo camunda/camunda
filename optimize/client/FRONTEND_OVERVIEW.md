@@ -78,9 +78,9 @@ The `modules` directory contains everything that is reused across routes and com
 - **components**: Reusable components.
 - **HOC**: Reusable higher-order components.
 - **hooks**: Custom reusable React hooks.
+- **osano**: Loads the Osano cookie consent script.
 - **services**: Global services for API calls, formatting, and other functionalities.
 - **shared-styles**: Shared styles and SCSS files.
-- **tracking**: Loads the Osano cookie consent script.
 - **translation**: Components and utilities for handling translations. This is explained in detail below.
 - **request.ts**: Utility for handling requests.
 - **types.ts**: Global TypeScript type definitions.
