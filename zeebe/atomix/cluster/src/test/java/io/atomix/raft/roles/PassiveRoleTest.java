@@ -17,6 +17,7 @@ package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -321,9 +322,10 @@ final class PassiveRoleTest {
   }
 
   @Test
-  void shouldRollBackConfigurationWhenAppendRequestResetsTheLog()
-      throws CheckedJournalException {
-    // given - a request that starts the log anew, as its previous term is zero
+  void shouldRollBackConfigurationWhenAppendRequestResetsTheLog() throws CheckedJournalException {
+    // given - a request that starts the leader's log, as its previous term is zero, while the local
+    // log starts later, e.g. because it was compacted
+    when(log.getFirstIndex()).thenReturn(5L);
     final var request =
         VersionedAppendRequest.builder()
             .withTerm(1)
@@ -345,9 +347,41 @@ final class PassiveRoleTest {
   }
 
   @Test
+  void shouldKeepMatchingEntriesWhenAppendRequestStartsTheLog() throws CheckedJournalException {
+    // given - the local log starts at the leader's first entry and already holds it, e.g. because
+    // this member kept the entry after it rejected an append whose flush failed
+    final var lastEntry = mock(IndexedRaftLogEntry.class);
+    when(lastEntry.index()).thenReturn(1L);
+    when(lastEntry.term()).thenReturn(1L);
+    when(log.getFirstIndex()).thenReturn(1L);
+    when(log.getLastIndex()).thenReturn(1L);
+    when(log.getLastEntry()).thenReturn(lastEntry);
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1])))
+            .withCommitIndex(0)
+            .build();
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the entry, which the leader may have committed with this member, is kept
+    verify(log, never()).reset(anyLong());
+    verify(log, never()).deleteAfter(anyLong());
+    assertThat(response.succeeded()).isTrue();
+    assertThat(response.lastLogIndex()).isOne();
+  }
+
+  @Test
   void shouldRollBackConfigurationWhenAnEntryOfAnotherTermReplacesTheLastEntry()
       throws CheckedJournalException {
     // given - the last local entry has another term than the entry the leader sends for its index
+    when(log.getFirstIndex()).thenReturn(1L);
     final var lastEntry = mock(IndexedRaftLogEntry.class);
     when(lastEntry.index()).thenReturn(1L);
     when(lastEntry.term()).thenReturn(2L);
@@ -376,6 +410,7 @@ final class PassiveRoleTest {
   void shouldRollBackConfigurationWhenTruncatingTheLogFailsToFlush()
       throws CheckedJournalException {
     // given - the journal is truncated before the flush that fails, so the entry is gone
+    when(log.getFirstIndex()).thenReturn(1L);
     final var lastEntry = mock(IndexedRaftLogEntry.class);
     when(lastEntry.index()).thenReturn(1L);
     when(lastEntry.term()).thenReturn(2L);
