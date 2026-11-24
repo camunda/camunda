@@ -42,6 +42,7 @@ body:
         - <!-- -8.8 -->
         - <!-- -8.9 -->
         - <!-- -8.10 -->
+        - <!-- -8.11 -->
       default: null
     validations:
       required: true
