@@ -46,7 +46,7 @@ final class StubAzureHttpClient implements HttpClient {
 
   private final List<Request> requests = new CopyOnWriteArrayList<>();
   // keyed by lower-cased name, as Key Vault compares names case-insensitively
-  private final Map<String, String> secrets = new ConcurrentHashMap<>();
+  private final Map<String, StoredSecret> secrets = new ConcurrentHashMap<>();
   private volatile boolean holdingSecrets;
   private final Function<Request, Mono<HttpResponse>> router;
   private final AtomicBoolean rejectingSignIn;
@@ -125,7 +125,26 @@ final class StubAzureHttpClient implements HttpClient {
    * placeholder value for every name.
    */
   StubAzureHttpClient putSecret(final String name, final String value) {
-    secrets.put(name.toLowerCase(Locale.ROOT), value);
+    return putSecret(name, value, null, null);
+  }
+
+  /**
+   * Like {@link #putSecret(String, String)}, with the activation and expiry dates Key Vault stores
+   * as attributes but does not enforce on a read.
+   */
+  StubAzureHttpClient putSecret(
+      final String name,
+      final String value,
+      final @Nullable Instant notBefore,
+      final @Nullable Instant expiresOn) {
+    secrets.put(name.toLowerCase(Locale.ROOT), new StoredSecret(value, notBefore, expiresOn, true));
+    holdingSecrets = true;
+    return this;
+  }
+
+  /** Stores a disabled secret, which Key Vault refuses to read with 403. */
+  StubAzureHttpClient putDisabledSecret(final String name) {
+    secrets.put(name.toLowerCase(Locale.ROOT), new StoredSecret("", null, null, false));
     holdingSecrets = true;
     return this;
   }
@@ -225,8 +244,8 @@ final class StubAzureHttpClient implements HttpClient {
   }
 
   private HttpResponse secret(final Request request, final String name) {
-    final var value = secrets.get(name.toLowerCase(Locale.ROOT));
-    if (value == null) {
+    final var secret = secrets.get(name.toLowerCase(Locale.ROOT));
+    if (secret == null) {
       return json(
           request,
           404,
@@ -235,13 +254,28 @@ final class StubAzureHttpClient implements HttpClient {
           """
               .formatted(name));
     }
+    if (!secret.enabled()) {
+      return json(
+          request,
+          403,
+          """
+          {"error":{"code":"Forbidden","message":"Operation get is not allowed on a disabled secret.","innererror":{"code":"SecretDisabled"}}}
+          """);
+    }
+    final var attributes = new StringBuilder("\"enabled\":true");
+    if (secret.notBefore() != null) {
+      attributes.append(",\"nbf\":").append(secret.notBefore().getEpochSecond());
+    }
+    if (secret.expiresOn() != null) {
+      attributes.append(",\"exp\":").append(secret.expiresOn().getEpochSecond());
+    }
     return json(
         request,
         200,
         """
-        {"value":"%s","id":"https://%s/secrets/%s/1","attributes":{"enabled":true}}
+        {"value":"%s","id":"https://%s/secrets/%s/1","attributes":{%s}}
         """
-            .formatted(jsonEscape(value), request.host(), name));
+            .formatted(jsonEscape(secret.value()), request.host(), name, attributes));
   }
 
   private static String jsonEscape(final String value) {
@@ -285,6 +319,9 @@ final class StubAzureHttpClient implements HttpClient {
         new HttpHeaders().set(HttpHeaderName.CONTENT_TYPE, "application/json"),
         body);
   }
+
+  private record StoredSecret(
+      String value, @Nullable Instant notBefore, @Nullable Instant expiresOn, boolean enabled) {}
 
   record Request(
       HttpRequest original, String method, String url, String body, String authorization) {
