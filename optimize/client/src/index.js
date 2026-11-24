@@ -12,6 +12,9 @@ import './style.scss';
 import 'polyfills';
 
 import App from './App';
+import {loadOsano} from 'osano';
+
+loadOsano();
 
 const root = createRoot(document.getElementById('root'));
 root.render(<App />);

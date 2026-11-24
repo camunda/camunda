@@ -27,7 +27,6 @@ import {ErrorBoundary, ErrorPage} from 'components';
 import {Notifications} from 'notifications';
 import {SaveGuard} from 'saveGuard';
 import {Prompt} from 'prompt';
-import {Tracking} from 'tracking';
 import {ConfigProvider} from 'config';
 import {Provider as Theme} from 'theme';
 import {UserProvider, DocsProvider} from 'HOC';
@@ -95,7 +94,6 @@ export default function App({error}) {
                       <PrivateRoute path="*" component={ErrorPage} />
                     </Switch>
                   </DocsProvider>
-                  <Tracking />
                 </UserProvider>
               </ErrorBoundary>
             </div>
