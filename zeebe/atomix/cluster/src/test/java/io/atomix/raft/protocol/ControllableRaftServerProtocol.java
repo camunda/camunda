@@ -109,21 +109,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     installRequestsHeld = false;
   }
 
-  /** Drops the install requests held back so far, as if the transfer timed out. */
-  public void dropHeldInstallRequests() {
-    final var rcvQueue = messageQueue.get(localMemberId);
-    rcvQueue.removeIf(
-        message -> {
-          if (!(message.getLeft() instanceof InstallDelivery)) {
-            return false;
-          }
-          Optional.ofNullable(message.getRight())
-              .ifPresent(f -> f.completeExceptionally(new TimeoutException()));
-          timeoutQueue.remove(message.getRight());
-          return true;
-        });
-  }
-
   private Tuple<Runnable, CompletableFuture<?>> pollNextDeliverable(
       final Queue<Tuple<Runnable, CompletableFuture<?>>> rcvQueue) {
     final var iterator = rcvQueue.iterator();
@@ -153,6 +138,14 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
                 e.setStackTrace(new StackTraceElement[0]);
                 f.completeExceptionally(e);
               });
+    }
+  }
+
+  // drop all messages from the incoming queue
+  public void dropAllMessages() {
+    final var queue = messageQueue.computeIfAbsent(localMemberId, t -> new LinkedList<>());
+    while (!queue.isEmpty()) {
+      dropNextMessage();
     }
   }
 

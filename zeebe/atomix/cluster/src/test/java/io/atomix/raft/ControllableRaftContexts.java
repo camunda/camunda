@@ -75,7 +75,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -367,31 +366,6 @@ public final class ControllableRaftContexts {
   // Submit the next message from the incoming queue to the scheduler of memberId.
   public void processNextMessage(final MemberId memberId) {
     getServerProtocol(memberId).receiveNextMessage();
-  }
-
-  /**
-   * Steps the alive members while the condition holds, at most maxSteps times. Each step delivers
-   * the pending messages of an alive member, runs its tasks and ticks its heartbeat timeout. The
-   * other members are down: everything sent to them is dropped.
-   */
-  public void runWhile(
-      final Collection<MemberId> alive, final int maxSteps, final BooleanSupplier condition) {
-    final var members = raftServers.keySet().stream().sorted().toList();
-    for (int i = 0; i < maxSteps && condition.getAsBoolean(); i++) {
-      assertAtMostOneLeader();
-      for (final var member : members) {
-        if (alive.contains(member)) {
-          getServerProtocol(member).receiveAll();
-          runUntilDone(member);
-          tickHeartbeatTimeout(member);
-        } else {
-          final var protocol = getServerProtocol(member);
-          for (int d = 0; d < 20; d++) {
-            protocol.dropNextMessage();
-          }
-        }
-      }
-    }
   }
 
   public void tickElectionTimeout(final int memberId) {

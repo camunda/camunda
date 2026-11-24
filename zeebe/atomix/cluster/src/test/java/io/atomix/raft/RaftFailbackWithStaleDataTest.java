@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ import org.junit.jupiter.api.io.TempDir;
  * with its old data directory and is re-added: join as PROMOTABLE, then promote to ACTIVE.
  */
 final class RaftFailbackWithStaleDataTest {
+
+  /** At most one promotion may fail, while the leader has not yet sent the member its config. */
+  private static final int MAX_PROMOTION_ATTEMPTS = 2;
 
   private static final MemberId M0 = MemberId.from("0");
   private static final MemberId M1 = MemberId.from("1");
@@ -96,7 +100,7 @@ final class RaftFailbackWithStaleDataTest {
     final var forced =
         new ReconfigurationHelper(raft.getRaftContext(M0))
             .forceConfigure(Map.of(M0, ACTIVE, M1, ACTIVE));
-    raft.runWhile(zoneA, 50, () -> !forced.isDone());
+    runWhile(zoneA, 50, () -> !forced.isDone());
     assertThat(forced).isCompleted();
   }
 
@@ -110,7 +114,7 @@ final class RaftFailbackWithStaleDataTest {
   /** Snapshots and compacts the log of the members, until it starts after the given index. */
   private void compactPast(final Set<MemberId> members, final long index) {
     takeSnapshots(members);
-    raft.runWhile(
+    runWhile(
         members,
         50,
         () ->
@@ -132,7 +136,7 @@ final class RaftFailbackWithStaleDataTest {
     final var join = raft.join(member, PROMOTABLE, alive);
     final var context = raft.getRaftContext(member);
     raft.getServerProtocol(member).holdInstallRequests();
-    raft.runWhile(alive, 60, () -> context.getCurrentConfigurationIndex() <= 0);
+    runWhile(alive, 60, () -> context.getCurrentConfigurationIndex() <= 0);
     final long configurationIndex = context.getCurrentConfigurationIndex();
     assertThat(configurationIndex)
         .describedAs("member %s received its configuration", member)
@@ -141,14 +145,14 @@ final class RaftFailbackWithStaleDataTest {
 
     appendAndReplicate(alive, 3);
     takeSnapshots(leaderZone);
-    raft.runWhile(alive, 5, () -> true);
+    runWhile(alive, 5, () -> true);
     final long leaderZoneSnapshotIndex = raft.getRaftContext(M0).getCurrentSnapshotIndex();
     assertThat(leaderZoneSnapshotIndex)
         .describedAs("snapshot past the configuration of member %s", member)
         .isGreaterThan(configurationIndex);
 
     raft.getServerProtocol(member).releaseInstallRequests();
-    raft.runWhile(alive, 500, () -> !join.isDone());
+    runWhile(alive, 500, () -> !join.isDone());
     assertThat(join).describedAs("join of member %s", member).isCompleted();
     assertThat(context.getCurrentSnapshotIndex())
         .describedAs("member %s installed the snapshot before promotion", member)
@@ -164,9 +168,31 @@ final class RaftFailbackWithStaleDataTest {
       final MemberId member, final Set<MemberId> alive) {
     for (int attempt = 1; ; attempt++) {
       final var promote = raft.promote(member);
-      raft.runWhile(alive, 100, () -> !promote.isDone());
-      if (!promote.isCompletedExceptionally() || attempt == 5) {
+      runWhile(alive, 100, () -> !promote.isDone());
+      if (!promote.isCompletedExceptionally() || attempt == MAX_PROMOTION_ATTEMPTS) {
         return promote;
+      }
+    }
+  }
+
+  /**
+   * Steps the alive members while the condition holds, at most maxSteps times. Each step delivers
+   * the pending messages of an alive member, runs its tasks and ticks its heartbeat timeout. The
+   * other members are down: everything sent to them is dropped.
+   */
+  private void runWhile(
+      final Set<MemberId> alive, final int maxSteps, final BooleanSupplier condition) {
+    final var members = raft.getRaftServers().keySet().stream().sorted().toList();
+    for (int i = 0; i < maxSteps && condition.getAsBoolean(); i++) {
+      raft.assertAtMostOneLeader();
+      for (final var member : members) {
+        if (alive.contains(member)) {
+          raft.getServerProtocol(member).receiveAll();
+          raft.runUntilDone(member);
+          raft.tickHeartbeatTimeout(member);
+        } else {
+          raft.getServerProtocol(member).dropAllMessages();
+        }
       }
     }
   }
@@ -180,8 +206,8 @@ final class RaftFailbackWithStaleDataTest {
   private void appendAndReplicate(final Set<MemberId> alive, final int entries) {
     for (int i = 0; i < entries; i++) {
       raft.clientAppendOnLeader();
-      raft.runWhile(alive, 5, () -> true);
+      runWhile(alive, 5, () -> true);
     }
-    raft.runWhile(alive, 20, () -> true);
+    runWhile(alive, 20, () -> true);
   }
 }
