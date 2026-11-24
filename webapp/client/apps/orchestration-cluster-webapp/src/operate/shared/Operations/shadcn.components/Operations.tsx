@@ -7,7 +7,7 @@
  */
 
 import {OperationItems} from '#/operate/shared/OperationItems/shadcn.components/OperationItems';
-import {LoaderCircle} from '@camunda/design-system/icons';
+import {Spinner} from '@camunda/design-system';
 import {useTranslation} from 'react-i18next';
 import {OperationRenderer} from './OperationRenderer';
 import type {OperationConfig} from '#/operate/shared/Operations/types';
@@ -26,12 +26,9 @@ const Operations: React.FC<Props> = ({operations, processInstanceKey, isLoading 
 		<div className="flex flex-row items-center gap-2">
 			<div className="flex size-4 items-center justify-center">
 				{isLoading ? (
-					<div role="status" aria-live="polite">
-						<LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-						<span className="sr-only">
-							{loadingMessage || t('operate.shared.operations.loadingMessage', {processInstanceKey})}
-						</span>
-					</div>
+					<Spinner
+						accessibleLabel={loadingMessage || t('operate.shared.operations.loadingMessage', {processInstanceKey})}
+					/>
 				) : null}
 			</div>
 			<OperationItems>

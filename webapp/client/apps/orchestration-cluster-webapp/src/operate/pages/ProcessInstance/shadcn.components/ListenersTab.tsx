@@ -9,9 +9,16 @@
 import {useState} from 'react';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import {Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Spinner} from '@camunda/design-system';
-import {TriangleAlert} from '@camunda/design-system/icons';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
+import {
+	Label,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+	Skeleton,
+	StatusIcon,
+} from '@camunda/design-system';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {CenteredContent} from '#/operate/shared/CenteredContent/shadcn.components/CenteredContent';
 import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
@@ -21,10 +28,12 @@ import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {listenersQuery, type ListenerKind} from '../listeners.queries';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
 import {useProcessInstancePage} from '../useProcessInstancePage';
+import {DataLoadErrorAlert} from './DataLoadErrorAlert';
 
 type FilterOption = 'all' | 'execution' | 'task';
 
 const FILTER_OPTIONS: FilterOption[] = ['all', 'execution', 'task'];
+const SKELETON_ROWS = [0, 1, 2, 3];
 const LISTENER_KIND: Record<Exclude<FilterOption, 'all'>, ListenerKind> = {
 	execution: 'EXECUTION_LISTENER',
 	task: 'TASK_LISTENER',
@@ -40,6 +49,7 @@ const ListenersTab: React.FC = () => {
 		selectedElementInstanceCount,
 		resolvedElementInstance,
 		isFetchingElementError,
+		refetchElement,
 	} = useProcessInstanceElementSelection();
 	const [selectedOption, setSelectedOption] = useState<FilterOption>('all');
 	const hasUserTaskSelected = resolvedElementInstance?.type === 'USER_TASK';
@@ -58,6 +68,7 @@ const ListenersTab: React.FC = () => {
 		hasNextPage,
 		isFetchingNextPage,
 		fetchNextPage,
+		refetch: refetchListeners,
 	} = useInfiniteQuery({
 		...listenersQuery({
 			processInstanceKey: processInstanceId,
@@ -90,11 +101,6 @@ const ListenersTab: React.FC = () => {
 
 	return (
 		<div className="relative flex h-full min-h-0 flex-col">
-			{isPending && (
-				<CenteredContent className="absolute inset-0 z-10 bg-background/60">
-					<Spinner size="default" accessibleLabel={t('operate.processInstance.listeners.loading')} />
-				</CenteredContent>
-			)}
 			{hasUserTaskSelected && (
 				<div className="flex w-52 flex-col gap-1.5 px-4 py-2">
 					<Label htmlFor="listenerTypeFilter" className="sr-only">
@@ -118,8 +124,15 @@ const ListenersTab: React.FC = () => {
 					</Select>
 				</div>
 			)}
-			<div className="flex min-h-0 flex-1 flex-col">
-				{listeners.length > 0 ? (
+			<div className="flex min-h-0 flex-1 flex-col" aria-busy={isPending || undefined}>
+				{isPending ? (
+					<div className="flex flex-col gap-2 p-4">
+						<span className="sr-only">{t('operate.processInstance.listeners.loading')}</span>
+						{SKELETON_ROWS.map((row) => (
+							<Skeleton key={row} aria-hidden="true" className="h-8 w-full" />
+						))}
+					</div>
+				) : listeners.length > 0 ? (
 					<StructuredList
 						label={t('operate.processInstance.listeners.list')}
 						minWidth="48rem"
@@ -146,13 +159,11 @@ const ListenersTab: React.FC = () => {
 									cellContent: (
 										<div className="flex min-w-0 items-center gap-3">
 											<TruncatedText text={spaceAndCapitalize(kind)} />
-											{state === 'FAILED' && (
-												<TriangleAlert size={16} aria-hidden className="text-danger-foreground-subtle" />
-											)}
+											{state === 'FAILED' && <StatusIcon variant="danger" />}
 										</div>
 									),
 								},
-								{cellContent: <TruncatedText text={jobKey} />},
+								{cellContent: jobKey, className: 'break-all'},
 								{cellContent: spaceAndCapitalize(state)},
 								{cellContent: <TruncatedText text={type} />},
 								{cellContent: spaceAndCapitalize(listenerEventType)},
@@ -160,10 +171,12 @@ const ListenersTab: React.FC = () => {
 							],
 						}))}
 					/>
+				) : hasError ? (
+					<DataLoadErrorAlert onRetry={() => void (isFetchingElementError ? refetchElement() : refetchListeners())} />
 				) : (
-					!isPending && (
-						<CenteredContent>{hasError ? <ErrorMessage /> : <EmptyMessage message={emptyMessage} />}</CenteredContent>
-					)
+					<CenteredContent>
+						<EmptyMessage message={emptyMessage} />
+					</CenteredContent>
 				)}
 				{hasNextPageError && listeners.length > 0 && (
 					<p role="alert" className="shrink-0 px-4 py-2 text-sm text-danger-foreground-subtle">

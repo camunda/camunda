@@ -1181,7 +1181,11 @@
 						"operationState": "Estado de la operación",
 						"operationStateLoading": "Cargando estados de las operaciones",
 						"emptyMessage": "Ninguna instancia coincide con estos filtros",
-						"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia"
+						"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
+						"emptyFilteredDescription": "Cambie o borre los filtros para ver más instancias.",
+						"emptyNoStateHeading": "Seleccione un estado de instancia",
+						"emptyDefaultHeading": "Aún no hay instancias en ejecución",
+						"emptyDefaultDescription": "Las instancias aparecen aquí cuando se inicia un proceso. Para ver las instancias finalizadas, selecciónelas en los filtros."
 					},
 					"toolbar": {
 						"selectAll": "Seleccionar todas las instancias",
@@ -1716,6 +1720,23 @@
 				"ds": {
 					"forbidden": {
 						"heading": "No tiene permiso para ver esta información"
+					},
+					"incidents": {
+						"noMatchesHeading": "Ningún incidente coincide con estos tipos de error",
+						"noMatchesDescription": "Borre el filtro de tipo de error para ver todos los incidentes.",
+						"emptyHeading": "Sin incidentes abiertos",
+						"emptyDescription": "Los incidentes aparecen aquí cuando falla un elemento de esta instancia.",
+						"noElementIncidentsHeading": "Sin incidentes en este elemento",
+						"noElementIncidentsDescription": "Seleccione otro elemento o borre la selección para ver todos los incidentes."
+					},
+					"operationsLog": {
+						"multiInstanceHeading": "Seleccione una sola instancia de elemento",
+						"noInstancesHeading": "Este elemento aún no se ha ejecutado",
+						"noInstancesDescription": "Las operaciones aparecen aquí cuando se ejecuta el elemento. Seleccione otro elemento en el historial de la instancia.",
+						"emptyHeading": "Aún no hay operaciones",
+						"emptyDescription": "Las operaciones sobre esta instancia, como reintentos o cambios de variables, aparecen aquí.",
+						"noMatchesHeading": "Ninguna operación coincide con estos filtros",
+						"noMatchesDescription": "Cambie el filtro de tipo de operación o de tipo de entidad para ver más operaciones."
 					}
 				},
 				"history": {
@@ -2272,6 +2293,12 @@
 				},
 				"notifications": {
 					"fetchFailed": "No se pudieron recuperar los registros de auditoría"
+				},
+				"ds": {
+					"emptyState": {
+						"noResultsTitle": "Ninguna operación coincide con estos filtros",
+						"noResultsDescription": "Cambie o borre los filtros para ver más operaciones."
+					}
 				}
 			},
 			"batchOperations": {
@@ -2302,7 +2329,11 @@
 				"pageSelectLabel_one": "Página de {{count}} página",
 				"pageSelectLabel_other": "Página de {{count}} páginas",
 				"pageText": "página {{page}}",
-				"pageOf": "Página {{page}} de {{count}}"
+				"pageOf": "Página {{page}} de {{count}}",
+				"ds": {
+					"emptyHeading": "Aún no hay operaciones por lotes",
+					"emptyDescription": "Seleccione instancias en la página Procesos o Decisiones y aplique una acción para iniciar una operación por lotes."
+				}
 			},
 			"batchOperation": {
 				"title": "Operaciones en lote",
@@ -2346,7 +2377,9 @@
 						"tableLabel": "Elementos de la operación por lotes",
 						"expandFailure": "Mostrar los detalles del fallo",
 						"collapseFailure": "Ocultar los detalles del fallo",
-						"itemStatusPrefix": "Estado del elemento"
+						"itemStatusPrefix": "Estado del elemento",
+						"emptyHeading": "Aún no hay elementos",
+						"emptyDescription": "Los elementos aparecen aquí a medida que la operación por lotes los procesa."
 					}
 				},
 				"actions": {
@@ -2656,7 +2689,8 @@
 						"deleteTitle": "Eliminar instancia {{processInstanceKey}}",
 						"suspendTitle": "Suspender instancia {{processInstanceKey}}",
 						"resumeTitle": "Reanudar instancia {{processInstanceKey}}"
-					}
+					},
+					"clearFilters": "Borrar filtros"
 				}
 			}
 		}

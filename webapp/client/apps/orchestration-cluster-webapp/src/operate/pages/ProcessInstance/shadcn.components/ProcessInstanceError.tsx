@@ -37,6 +37,7 @@ const ProcessInstanceError: React.FC<Props> = ({error, processInstanceId, onRetr
 			kind: 'error',
 			title: t('operate.processInstance.notFoundNotificationTitle', {processInstanceId}),
 			isDismissable: true,
+			autoRemove: false,
 		});
 		void navigate({
 			to: '/operate-preview/processes',

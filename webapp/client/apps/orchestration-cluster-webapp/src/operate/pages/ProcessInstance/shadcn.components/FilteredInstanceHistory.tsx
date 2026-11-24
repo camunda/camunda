@@ -8,13 +8,13 @@
 
 import {useEffect, useLayoutEffect, useMemo, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Button, EmptyState, Skeleton, TreeView, type TreeNodeDef} from '@camunda/design-system';
+import {EmptyState, Skeleton, TreeView, type TreeNodeDef} from '@camunda/design-system';
 import {Search} from '@camunda/design-system/icons';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ForbiddenError} from '#/shared/errors';
 import {cn} from '#/shared/cn';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
+import {DataLoadErrorAlert} from './DataLoadErrorAlert';
 import {historyRowOffset} from './historyRowOffset';
 import {HistoryPagingSentinel} from './HistoryPagingSentinel';
 import {HISTORY_TREE_CLASS_NAME, HistoryRowLabel} from './HistoryRowLabel';
@@ -103,12 +103,11 @@ const FilteredInstanceHistory: React.FC<Props> = ({processInstanceKey, searchTex
 
 	if (query.isError) {
 		return (
-			<div className="flex flex-col items-start gap-2 p-2">
-				<ErrorMessage message={t('operate.processInstance.history.search.error')} />
-				<Button variant="secondary" size="sm" onClick={() => void query.refetch()}>
-					{t('errorGenericErrorPageButtonLabel')}
-				</Button>
-			</div>
+			<DataLoadErrorAlert
+				className="p-2"
+				title={t('operate.processInstance.history.search.error')}
+				onRetry={() => void query.refetch()}
+			/>
 		);
 	}
 

@@ -125,6 +125,7 @@ describe('<InstancesBar />', () => {
 				incidentsCount={0}
 				label={{type: 'process', size: 'medium', text: 'order-process'}}
 				size="medium"
+				className="w-24"
 			/>,
 		);
 

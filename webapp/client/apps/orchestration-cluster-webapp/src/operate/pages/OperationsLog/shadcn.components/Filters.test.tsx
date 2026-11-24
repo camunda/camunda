@@ -118,7 +118,7 @@ describe('Operations Log saved filters', () => {
 	});
 
 	it.for([
-		{query: '?version=2', emptyState: 'No operations log found'},
+		{query: '?version=2', emptyState: 'No operations match these filters'},
 		{query: '?allVersions=true', emptyState: 'No operation log items yet'},
 	])('should show the log unfiltered by process for orphaned $query', async ({query, emptyState}, {worker}) => {
 		worker.use(
@@ -192,7 +192,7 @@ describe('Operations Log saved filters', () => {
 			'?tenantId=%3Ctenant-B%3E&processDefinitionId=invoice&processDefinitionVersion=2&operationType=CREATE,UPDATE&entityType=JOB,VARIABLE',
 		);
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveTextContent('Invoice B');
 		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toMatchTextContent('Tenant B');
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toBeEnabled();
@@ -288,7 +288,7 @@ describe('Operations Log saved filters', () => {
 
 		const screen = await renderPage('?tenantId=%3Ctenant-A%3E&process=invoice&version=1');
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 	});
 
 	it('should require a tenant before offering processes in a multi-tenant deployment', async ({worker}) => {
@@ -465,7 +465,7 @@ describe('Operations Log saved filters', () => {
 
 		const screen = await renderPage('?processDefinitionId=invoice&processDefinitionVersion=all');
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveTextContent('invoice');
 	});
 
@@ -481,7 +481,7 @@ describe('Operations Log saved filters', () => {
 
 		const screen = await renderPage('?processDefinitionId=invoice&processDefinitionVersion=2');
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 	});
 
 	it('should not pick a tenant when the requested version exists in multiple tenants', async ({worker}) => {
@@ -532,7 +532,7 @@ describe('Operations Log saved filters', () => {
 			'?tenantId=%3Ctenant-B%3E&processDefinitionId=invoice&processDefinitionVersion=all',
 		);
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 	});
 
 	it('should retain a tenant-scoped audit query and show an error when the process picker fails', async ({worker}) => {
@@ -552,7 +552,7 @@ describe('Operations Log saved filters', () => {
 			'?tenantId=%3Ctenant-B%3E&processDefinitionId=invoice&processDefinitionVersion=all',
 		);
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 		await expect.element(screen.getByText("Couldn't load process definitions")).toBeVisible();
 	});
 
@@ -577,7 +577,7 @@ describe('Operations Log saved filters', () => {
 
 		const screen = await renderPage('?processDefinitionId=invoice&processDefinitionVersion=all');
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 	});
 
 	it('should display an explicitly saved All versions selection on a single-version process', async ({worker}) => {

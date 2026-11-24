@@ -31,6 +31,7 @@ import {instanceLastMigrationQuery} from '../processInstance.queries';
 import {FilteredInstanceHistory} from './FilteredInstanceHistory';
 import {historyRowOffset} from './historyRowOffset';
 import {HistoryPagingSentinel} from './HistoryPagingSentinel';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {ElementInstanceIcon} from './ElementInstanceIcon';
 import {HISTORY_TREE_CLASS_NAME, HistoryRowLabel} from './HistoryRowLabel';
 import {InstanceHistorySearch} from './InstanceHistorySearch';
@@ -161,7 +162,7 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 						aria-label={t('operate.processInstance.modification.plannedPlaceholderLabel', {name})}
 					>
 						<ElementInstanceIcon businessObject={businessObject} root={false} />
-						<span className="min-w-0 flex-1 truncate">{name}</span>
+						<TruncatedText text={name} className="min-w-0 flex-1" />
 						<TriangleAlert
 							role="img"
 							aria-label={t('operate.processInstance.modification.plannedWarningTitle')}

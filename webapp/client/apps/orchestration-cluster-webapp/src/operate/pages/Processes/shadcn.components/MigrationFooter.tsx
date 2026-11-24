@@ -89,6 +89,7 @@ const MigrationFooter: React.FC<Props> = ({source, target, scope, mapping, step,
 				title: t(isForbidden ? 'operate.processes.toolbar.forbidden' : 'operate.processes.toolbar.failed'),
 				subtitle: isForbidden ? t('operate.processes.toolbar.contactAdministrator') : undefined,
 				isDismissable: true,
+				autoRemove: false,
 			});
 		},
 	});

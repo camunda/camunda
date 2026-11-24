@@ -273,6 +273,19 @@ describe('<Processes /> (design system)', () => {
 		await expect.element(screen.getByLabelText('Process instance key(s)')).not.toBeInTheDocument();
 	});
 
+	it('should discard an invalid draft when the filters are cleared from the empty state', async () => {
+		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key(s)'}));
+		await userEvent.fill(screen.getByLabelText('Process instance key(s)'), 'abc');
+		await userEvent.click(screen.getByRole('button', {name: 'Clear filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key(s)'}));
+
+		await expect.element(screen.getByLabelText('Process instance key(s)')).toHaveValue('');
+	});
+
 	it('should move focus to the variables group when it is added from the menu', async () => {
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 

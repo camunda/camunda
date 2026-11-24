@@ -27,15 +27,17 @@ const CenteredMessage: React.FC<{message: string}> = ({message}) => (
 const ProcessInstanceVariables: React.FC = () => {
 	const {t} = useTranslation();
 	const {processInstanceId} = useProcessInstancePage();
-	const {isFetchingElementError} = useProcessInstanceElementSelection();
+	const {isFetchingElementError, refetchElement} = useProcessInstanceElementSelection();
 	const {isModificationModeEnabled} = useProcessInstanceModification();
 	const {scopeKey, isPlaceholder, hasNoContent, hasMultipleInstances, canQuery} = useVariableScope();
-	const {data, error, isError, isLoading} = useInfiniteQuery(
+	const {data, error, isError, isLoading, refetch} = useInfiniteQuery(
 		variablesQuery({processInstanceKey: processInstanceId, scopeKey: canQuery ? scopeKey : null}),
 	);
 
 	if ((canQuery && isError) || isFetchingElementError) {
-		return <VariablesError error={error} />;
+		return (
+			<VariablesError error={error} onRetry={() => void (isFetchingElementError ? refetchElement() : refetch())} />
+		);
 	}
 
 	if (hasNoContent) {

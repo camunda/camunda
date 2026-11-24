@@ -43,4 +43,68 @@ describe('<TruncatedText />', () => {
 
 		await expect.element(screen.getByRole('tooltip')).toHaveTextContent(LONG_TEXT);
 	});
+
+	it('should not add a tab stop or a tooltip when the text fits', async () => {
+		const screen = await render(
+			<TooltipProvider>
+				<TruncatedText text="short" />
+				<button type="button">next</button>
+			</TooltipProvider>,
+		);
+
+		await userEvent.tab();
+
+		await expect.element(screen.getByRole('button', {name: 'next'})).toHaveFocus();
+
+		await userEvent.hover(screen.getByText('short'));
+
+		await expect.element(screen.getByRole('tooltip')).not.toBeInTheDocument();
+	});
+
+	it('should reveal the full text once its container shrinks', async () => {
+		const screen = await render(
+			<TooltipProvider>
+				<div className="w-[80rem]">
+					<TruncatedText text={LONG_TEXT} />
+				</div>
+			</TooltipProvider>,
+		);
+
+		await userEvent.hover(screen.getByText(LONG_TEXT));
+
+		await expect.element(screen.getByRole('tooltip')).not.toBeInTheDocument();
+
+		await screen.rerender(
+			<TooltipProvider>
+				<div className="w-24">
+					<TruncatedText text={LONG_TEXT} />
+				</div>
+			</TooltipProvider>,
+		);
+
+		await userEvent.tab();
+
+		await expect.element(screen.getByRole('tooltip')).toHaveTextContent(LONG_TEXT);
+	});
+
+	it('should reveal the full text on focus of the surrounding link without adding a tab stop', async () => {
+		const screen = await render(
+			<TooltipProvider>
+				<a href="#process" className="block w-24">
+					<TruncatedText text={LONG_TEXT} />
+				</a>
+				<button type="button">next</button>
+			</TooltipProvider>,
+		);
+
+		await userEvent.tab();
+
+		await expect.element(screen.getByRole('link')).toHaveFocus();
+		await expect.element(screen.getByRole('tooltip')).toHaveTextContent(LONG_TEXT);
+
+		await userEvent.tab();
+
+		await expect.element(screen.getByRole('button', {name: 'next'})).toHaveFocus();
+		await expect.element(screen.getByRole('tooltip')).not.toBeInTheDocument();
+	});
 });

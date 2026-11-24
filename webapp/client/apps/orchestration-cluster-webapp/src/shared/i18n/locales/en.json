@@ -1193,7 +1193,11 @@
 						"operationState": "Operation state",
 						"operationStateLoading": "Loading operation states",
 						"emptyMessage": "No instances match these filters",
-						"emptyAdditionalInfo": "To see results, select at least one instance state"
+						"emptyAdditionalInfo": "To see results, select at least one instance state",
+						"emptyFilteredDescription": "Change the filters or clear them to see more instances.",
+						"emptyNoStateHeading": "Select an instance state",
+						"emptyDefaultHeading": "No running instances yet",
+						"emptyDefaultDescription": "Instances appear here once a process starts. To see finished instances, select them in the filters."
 					},
 					"toolbar": {
 						"selectAll": "Select all instances",
@@ -1728,6 +1732,23 @@
 				"ds": {
 					"forbidden": {
 						"heading": "You do not have permission to view this information"
+					},
+					"incidents": {
+						"noMatchesHeading": "No incidents match these error types",
+						"noMatchesDescription": "Clear the error type filter to see all incidents.",
+						"emptyHeading": "No open incidents",
+						"emptyDescription": "Incidents appear here when an element in this instance fails.",
+						"noElementIncidentsHeading": "No incidents on this element",
+						"noElementIncidentsDescription": "Select another element, or clear the selection to see all incidents."
+					},
+					"operationsLog": {
+						"multiInstanceHeading": "Select a single element instance",
+						"noInstancesHeading": "This element has not run yet",
+						"noInstancesDescription": "Operations appear here once the element runs. Select another element in the instance history.",
+						"emptyHeading": "No operations yet",
+						"emptyDescription": "Operations on this instance, such as retries or variable changes, appear here.",
+						"noMatchesHeading": "No operations match these filters",
+						"noMatchesDescription": "Change the operation type or entity type filter to see more operations."
 					}
 				},
 				"history": {
@@ -2284,6 +2305,12 @@
 				},
 				"notifications": {
 					"fetchFailed": "Couldn't fetch audit logs"
+				},
+				"ds": {
+					"emptyState": {
+						"noResultsTitle": "No operations match these filters",
+						"noResultsDescription": "Change the filters or clear them to see more operations."
+					}
 				}
 			},
 			"batchOperations": {
@@ -2314,7 +2341,11 @@
 				"pageSelectLabel_one": "Page of {{count}} page",
 				"pageSelectLabel_other": "Page of {{count}} pages",
 				"pageText": "page {{page}}",
-				"pageOf": "Page {{page}} of {{count}}"
+				"pageOf": "Page {{page}} of {{count}}",
+				"ds": {
+					"emptyHeading": "No batch operations yet",
+					"emptyDescription": "Select instances on the Processes or Decisions page and apply an action to start a batch operation."
+				}
 			},
 			"batchOperation": {
 				"title": "Batch Operations",
@@ -2358,7 +2389,9 @@
 						"tableLabel": "Batch operation items",
 						"expandFailure": "Show failure details",
 						"collapseFailure": "Hide failure details",
-						"itemStatusPrefix": "Item status"
+						"itemStatusPrefix": "Item status",
+						"emptyHeading": "No items yet",
+						"emptyDescription": "Items appear here as the batch operation processes them."
 					}
 				},
 				"actions": {
@@ -2668,7 +2701,8 @@
 						"deleteTitle": "Delete instance {{processInstanceKey}}",
 						"suspendTitle": "Suspend instance {{processInstanceKey}}",
 						"resumeTitle": "Resume instance {{processInstanceKey}}"
-					}
+					},
+					"clearFilters": "Clear filters"
 				}
 			}
 		}

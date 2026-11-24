@@ -185,7 +185,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 			await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
 
 			await expect.element(screen.getByText('Variables could not be fetched')).toBeVisible();
-			await expect.element(screen.getByText('Refresh the page to try again')).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
 			expect(getNextPageRequests()).toBe(3);
 			await expect.element(screen.getByRole('button', {name: 'Save'})).not.toBeInTheDocument();
 			await expect.element(screen.getByText('Add new variable "foo"')).not.toBeInTheDocument();
@@ -437,23 +437,31 @@ describe('<ProcessInstanceVariables /> editing', () => {
 	it.for([
 		{status: 500, title: 'Variable could not be saved'},
 		{status: 403, title: "You don't have permission to perform this operation"},
-	])('should notify when saving fails with $status', async ({status, title}, {worker}) => {
-		worker.use(
-			mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}),
-			mockUpdateElementInstanceVariablesEndpoint({
-				successResponse: HttpResponse.json(createProblemDetails({status}), {status}),
-			}),
-		);
-		const screen = await renderVariables();
+	])(
+		'should show an inline error until the value is edited when saving fails with $status',
+		async ({status, title}, {worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}),
+				mockUpdateElementInstanceVariablesEndpoint({
+					successResponse: HttpResponse.json(createProblemDetails({status}), {status}),
+				}),
+			);
+			const screen = await renderVariables();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
-		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'foo');
-		await appendToNewValue(screen.getByRole('group', {name: 'Value'}), '1');
-		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
+			await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'foo');
+			await appendToNewValue(screen.getByRole('group', {name: 'Value'}), '1');
+			await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
-		await expect.element(screen.getByText(title)).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeEnabled();
-	});
+			await expect.element(screen.getByRole('alert').filter({hasText: title})).toBeVisible();
+			await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveValue('foo');
+			await expectNoNotifications(screen);
+
+			await appendToNewValue(screen.getByRole('group', {name: 'Value'}), '2');
+
+			await expect.element(screen.getByText(title)).not.toBeInTheDocument();
+		},
+	);
 
 	it('should edit and save a variable from its full value', async ({worker}) => {
 		worker.use(
@@ -556,6 +564,36 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		await expect.element(row.getByRole('button', {name: 'Copy payload'})).toBeVisible();
 		await expect.element(row.getByRole('textbox', {name: 'payload'})).not.toBeInTheDocument();
 		await expect.element(row.getByRole('button', {name: 'Save'})).toBeDisabled();
+	});
+
+	it('should load the full value of a truncated variable when retrying after a failure', async ({worker}) => {
+		worker.use(
+			mockQueryVariablesEndpoint({
+				successResponse: variablesResponse([
+					createVariable({name: 'payload', value: '123', isTruncated: true, variableKey: '7'}),
+				]),
+			}),
+			mockGetVariableEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+			}),
+		);
+		const screen = await renderVariables();
+		const row = variableRow(screen, 'payload');
+
+		await userEvent.click(row.getByRole('button', {name: /^Edit variable /}));
+		await expect.element(row.getByRole('alert').filter({hasText: 'Variable could not be fetched'})).toBeVisible();
+		await expectNoNotifications(screen);
+
+		worker.use(
+			mockGetVariableEndpoint({
+				successResponse: HttpResponse.json(createVariable({name: 'payload', value: '1234', variableKey: '7'})),
+			}),
+		);
+		await userEvent.click(row.getByRole('button', {name: 'Try again'}));
+
+		await expect.element(row.getByText('Variable could not be fetched')).not.toBeInTheDocument();
+		await expect.element(row.getByRole('textbox', {name: 'payload'})).toBeInTheDocument();
+		await expect.element(row.getByText('1234')).toBeVisible();
 	});
 
 	it.for([

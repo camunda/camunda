@@ -60,7 +60,7 @@ describe('<BatchItemsTable />', () => {
 		const screen = await renderBatchItemsTable('CANCEL_PROCESS_INSTANCE');
 
 		await expect.element(screen.getByRole('table')).toBeVisible();
-		await expect.element(screen.getByText('No items found')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No items yet')).not.toBeInTheDocument();
 	});
 
 	it('should render the empty state when there are no items', async ({worker}) => {
@@ -72,7 +72,7 @@ describe('<BatchItemsTable />', () => {
 
 		const screen = await renderBatchItemsTable('CANCEL_PROCESS_INSTANCE');
 
-		await expect.element(screen.getByText('No items found')).toBeVisible();
+		await expect.element(screen.getByText('No items yet')).toBeVisible();
 	});
 
 	it('should expose an initial failure and allow retry', async ({worker}) => {
@@ -81,15 +81,15 @@ describe('<BatchItemsTable />', () => {
 		const screen = await renderBatchItemsTable('CANCEL_PROCESS_INSTANCE');
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
-		await expect.element(screen.getByText('No items found')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No items yet')).not.toBeInTheDocument();
 		worker.use(
 			mockQueryBatchOperationItemsEndpoint({
 				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse()),
 			}),
 		);
-		await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
 
-		await expect.element(screen.getByText('No items found')).toBeVisible();
+		await expect.element(screen.getByText('No items yet')).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
 	});
 

@@ -1181,7 +1181,11 @@
 						"operationState": "Vorgangsstatus",
 						"operationStateLoading": "Vorgangsstatus werden geladen",
 						"emptyMessage": "Keine Instanzen entsprechen diesen Filtern",
-						"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen"
+						"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen",
+						"emptyFilteredDescription": "Ändern Sie die Filter oder setzen Sie sie zurück, um mehr Instanzen zu sehen.",
+						"emptyNoStateHeading": "Instanzstatus auswählen",
+						"emptyDefaultHeading": "Noch keine laufenden Instanzen",
+						"emptyDefaultDescription": "Instanzen erscheinen hier, sobald ein Prozess startet. Um abgeschlossene Instanzen zu sehen, wählen Sie sie in den Filtern aus."
 					},
 					"toolbar": {
 						"selectAll": "Alle Instanzen auswählen",
@@ -1716,6 +1720,23 @@
 				"ds": {
 					"forbidden": {
 						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
+					},
+					"incidents": {
+						"noMatchesHeading": "Keine Incidents entsprechen diesen Fehlertypen",
+						"noMatchesDescription": "Setzen Sie den Fehlertyp-Filter zurück, um alle Incidents zu sehen.",
+						"emptyHeading": "Keine offenen Incidents",
+						"emptyDescription": "Incidents erscheinen hier, wenn ein Element dieser Instanz fehlschlägt.",
+						"noElementIncidentsHeading": "Keine Incidents für dieses Element",
+						"noElementIncidentsDescription": "Wählen Sie ein anderes Element aus oder heben Sie die Auswahl auf, um alle Incidents zu sehen."
+					},
+					"operationsLog": {
+						"multiInstanceHeading": "Eine einzelne Elementinstanz auswählen",
+						"noInstancesHeading": "Dieses Element wurde noch nicht ausgeführt",
+						"noInstancesDescription": "Operationen erscheinen hier, sobald das Element ausgeführt wird. Wählen Sie ein anderes Element im Instanzverlauf aus.",
+						"emptyHeading": "Noch keine Operationen",
+						"emptyDescription": "Operationen an dieser Instanz, etwa Wiederholungen oder Variablenänderungen, erscheinen hier.",
+						"noMatchesHeading": "Keine Operationen entsprechen diesen Filtern",
+						"noMatchesDescription": "Ändern Sie den Filter für Operationstyp oder Entitätstyp, um mehr Operationen zu sehen."
 					}
 				},
 				"history": {
@@ -2272,6 +2293,12 @@
 				},
 				"notifications": {
 					"fetchFailed": "Audit-Protokolle konnten nicht abgerufen werden"
+				},
+				"ds": {
+					"emptyState": {
+						"noResultsTitle": "Keine Operationen entsprechen diesen Filtern",
+						"noResultsDescription": "Ändern Sie die Filter oder setzen Sie sie zurück, um mehr Operationen zu sehen."
+					}
 				}
 			},
 			"batchOperations": {
@@ -2302,7 +2329,11 @@
 				"pageSelectLabel_one": "Seite von {{count}} Seite",
 				"pageSelectLabel_other": "Seite von {{count}} Seiten",
 				"pageText": "Seite {{page}}",
-				"pageOf": "Seite {{page}} von {{count}}"
+				"pageOf": "Seite {{page}} von {{count}}",
+				"ds": {
+					"emptyHeading": "Noch keine Stapeloperationen",
+					"emptyDescription": "Wählen Sie auf der Seite „Prozesse“ oder „Entscheidungen“ Instanzen aus und wenden Sie eine Aktion an, um eine Stapeloperation zu starten."
+				}
 			},
 			"batchOperation": {
 				"title": "Stapeloperationen",
@@ -2346,7 +2377,9 @@
 						"tableLabel": "Elemente der Batch-Operation",
 						"expandFailure": "Fehlerdetails anzeigen",
 						"collapseFailure": "Fehlerdetails ausblenden",
-						"itemStatusPrefix": "Status des Elements"
+						"itemStatusPrefix": "Status des Elements",
+						"emptyHeading": "Noch keine Elemente",
+						"emptyDescription": "Elemente erscheinen hier, sobald die Batch-Operation sie verarbeitet."
 					}
 				},
 				"actions": {
@@ -2656,7 +2689,8 @@
 						"deleteTitle": "Instanz {{processInstanceKey}} löschen",
 						"suspendTitle": "Instanz {{processInstanceKey}} anhalten",
 						"resumeTitle": "Instanz {{processInstanceKey}} fortsetzen"
-					}
+					},
+					"clearFilters": "Filter zurücksetzen"
 				}
 			}
 		}

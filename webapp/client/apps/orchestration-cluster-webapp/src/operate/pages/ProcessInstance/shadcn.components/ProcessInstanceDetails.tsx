@@ -22,7 +22,6 @@ import {mergePathname} from '#/shared/http/mergePathname';
 import {OPERATE_BASE} from '#/shared/operateBase';
 import {CenteredContent} from '#/operate/shared/CenteredContent/shadcn.components/CenteredContent';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
 import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {isCamundaUserTask, isMessageEventElement} from '#/operate/shared/utils/elements';
@@ -38,6 +37,7 @@ import {
 import {getExecutionDuration} from '../getExecutionDuration';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
 import {useProcessInstancePage} from '../useProcessInstancePage';
+import {DataLoadErrorAlert} from './DataLoadErrorAlert';
 import {ProcessInstanceWaitingStatus} from './ProcessInstanceWaitingStatus';
 
 type Row = {key: string; label: string; value: React.ReactNode};
@@ -146,6 +146,7 @@ const ProcessInstanceDetails: React.FC = () => {
 		anchorElementId,
 		isFetchingElement,
 		isFetchingElementError,
+		refetchElement,
 	} = useProcessInstanceElementSelection();
 	const {data: diagram} = useDiagramXml(processInstance.processDefinitionKey);
 
@@ -209,9 +210,7 @@ const ProcessInstanceDetails: React.FC = () => {
 	if (isFetchingElementError) {
 		return (
 			<div role="region" aria-label={t('operate.processInstance.details.title')} className="flex h-full min-h-0">
-				<CenteredContent className="flex-1">
-					<ErrorMessage />
-				</CenteredContent>
+				<DataLoadErrorAlert className="pt-0" onRetry={() => void refetchElement()} />
 			</div>
 		);
 	}

@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 import type {DocumentInfo} from '#/operate/shared/Documents/documentInfo';
 import {toHumanReadableBytes} from '#/operate/shared/Documents/humanReadableBytes';
 import {middleTruncate} from '#/operate/shared/Documents/middleTruncate';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {PreviewDocumentButton} from './PreviewDocumentButton';
 import {DownloadDocumentButton} from './DownloadDocumentButton';
 
@@ -55,12 +56,10 @@ const DocumentListModal: React.FC<Props> = ({documents, labelSuffix, onClose, lo
 								className="flex items-center gap-2 border-b border-border py-3 last:border-b-0"
 							>
 								<div className="grid min-w-0 flex-1 grid-flow-col grid-cols-[auto_1fr] grid-rows-2 justify-items-start gap-x-2 gap-y-1">
-									<span
-										id={`document-item-${index}`}
-										title={document.fileName}
-										className="overflow-hidden text-sm text-ellipsis whitespace-nowrap"
-									>
-										{middleTruncate(document.fileName)}
+									<span id={`document-item-${index}`} className="min-w-0 max-w-full">
+										<TruncatedText text={document.fileName} className="text-sm">
+											{middleTruncate(document.fileName)}
+										</TruncatedText>
 									</span>
 									<span className="text-xs text-neutral-foreground-subtle">{toHumanReadableBytes(document.size)}</span>
 									{document.isExpired && <Badge variant="danger">{t('operate.shared.documents.expired')}</Badge>}

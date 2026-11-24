@@ -13,8 +13,8 @@ import {createLink, useNavigate} from '@tanstack/react-router';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useMachine} from '@xstate/react';
 import {useTranslation} from 'react-i18next';
-import {Link, Skeleton} from '@camunda/design-system';
-import {Compass, ShieldAlert} from '@camunda/design-system/icons';
+import {Alert, Button, EmptyState as DSEmptyState, Link, Skeleton} from '@camunda/design-system';
+import {FunnelX, ShieldAlert, Workflow} from '@camunda/design-system/icons';
 import type {
 	BatchOperationItem,
 	BatchOperationItemState,
@@ -59,6 +59,7 @@ type Props = {
 	selectedTargetElementId?: string;
 	footerContainer?: HTMLElement | null;
 	onMigrationEnter: (source: ProcessDefinition, scope: MigrationScope) => void;
+	onClearFilters?: () => void;
 	onEnterMode?: () => void;
 	onExitMode?: () => void;
 	onSelectionScopeChange?: Dispatch<SetStateAction<BatchModificationScope | null>>;
@@ -133,6 +134,7 @@ const InstancesTable: React.FC<Props> = ({
 	selectedTargetElementId,
 	footerContainer,
 	onMigrationEnter,
+	onClearFilters,
 	onEnterMode,
 	onExitMode,
 	onSelectionScopeChange,
@@ -415,6 +417,12 @@ const InstancesTable: React.FC<Props> = ({
 	);
 
 	const hasStateFilter = search.active || search.incidents || search.completed || search.canceled || search.suspended;
+	const clearFiltersButton =
+		onClearFilters === undefined ? undefined : (
+			<Button size="sm" onClick={onClearFilters}>
+				{t('operate.shared.ds.clearFilters')}
+			</Button>
+		);
 	const emptyState = isError ? (
 		error instanceof ForbiddenError ? (
 			<EmptyState
@@ -424,18 +432,43 @@ const InstancesTable: React.FC<Props> = ({
 				button={{label: t('errorGenericErrorPageButtonLabel'), onClick: () => void refetch()}}
 			/>
 		) : (
-			<EmptyState
-				icon={<Compass aria-hidden />}
-				heading={t('operate.processes.instancesTable.errorTitle')}
+			<Alert
+				variant="destructive"
+				title={t('operate.processes.instancesTable.errorTitle')}
 				description={t('operate.processes.instancesTable.errorDescription')}
-				button={{label: t('errorGenericErrorPageButtonLabel'), onClick: () => void refetch()}}
-			/>
+				className="text-left"
+			>
+				<Button variant="secondary" size="sm" onClick={() => void refetch()}>
+					{t('errorGenericErrorPageButtonLabel')}
+				</Button>
+			</Alert>
 		)
+	) : !hasStateFilter ? (
+		<DSEmptyState
+			size="sm"
+			headingLevel={3}
+			icon={<FunnelX aria-hidden />}
+			heading={t('operate.processes.ds.instancesTable.emptyNoStateHeading')}
+			description={t('operate.processes.ds.instancesTable.emptyAdditionalInfo')}
+			action={clearFiltersButton}
+		/>
+	) : onClearFilters === undefined && mode === 'list' ? (
+		<DSEmptyState
+			size="sm"
+			headingLevel={3}
+			icon={<Workflow aria-hidden />}
+			heading={t('operate.processes.ds.instancesTable.emptyDefaultHeading')}
+			description={t('operate.processes.ds.instancesTable.emptyDefaultDescription')}
+		/>
 	) : (
-		<>
-			<p>{t('operate.processes.ds.instancesTable.emptyMessage')}</p>
-			{!hasStateFilter && <p>{t('operate.processes.ds.instancesTable.emptyAdditionalInfo')}</p>}
-		</>
+		<DSEmptyState
+			size="sm"
+			headingLevel={3}
+			icon={<FunnelX aria-hidden />}
+			heading={t('operate.processes.ds.instancesTable.emptyMessage')}
+			description={t('operate.processes.ds.instancesTable.emptyFilteredDescription')}
+			action={clearFiltersButton}
+		/>
 	);
 
 	return (

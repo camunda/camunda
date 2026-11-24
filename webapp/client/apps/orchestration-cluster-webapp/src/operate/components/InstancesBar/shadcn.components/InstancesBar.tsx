@@ -9,6 +9,7 @@
 import {Text, Tooltip, TooltipContent, TooltipTrigger, type TypographyVariant} from '@camunda/design-system';
 import {Timer} from '@camunda/design-system/icons';
 import {cn} from '#/shared/cn';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 
 type Size = 'small' | 'medium' | 'large';
 
@@ -83,18 +84,9 @@ const InstancesBar: React.FC<Props> = ({
 				</div>
 				{label && (
 					<div className="flex min-w-0 flex-1 items-center gap-2">
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Text
-									as="div"
-									variant={labelVariant[label.size]}
-									className={cn('min-w-0 overflow-hidden text-ellipsis whitespace-nowrap', labelTextColorClassName)}
-								>
-									{label.text}
-								</Text>
-							</TooltipTrigger>
-							<TooltipContent>{label.text}</TooltipContent>
-						</Tooltip>
+						<Text as="div" variant={labelVariant[label.size]} className={cn('min-w-0', labelTextColorClassName)}>
+							<TruncatedText text={label.text} />
+						</Text>
 						{showDrainingIndicator && (
 							<Tooltip>
 								<TooltipTrigger asChild>

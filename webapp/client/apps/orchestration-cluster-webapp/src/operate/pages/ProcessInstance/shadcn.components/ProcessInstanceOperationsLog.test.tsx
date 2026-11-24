@@ -243,7 +243,7 @@ describe('<ProcessInstanceOperationsLog /> (design system)', () => {
 		worker.use(mockQueryAuditLogsEndpoint({successResponse: auditLogsResponse()}));
 		const screen = await renderOperationsLog();
 
-		await expect.element(screen.getByText('No operations found for this instance')).toBeVisible();
+		await expect.element(screen.getByText('No operations yet')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: /Operation type/})).toBeVisible();
 	});
 

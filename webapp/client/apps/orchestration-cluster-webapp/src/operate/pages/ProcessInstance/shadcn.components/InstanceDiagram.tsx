@@ -277,6 +277,7 @@ const InstanceDiagram: React.FC = () => {
 						: 'operate.processInstance.diagram.calledDecisionError',
 				),
 				isDismissable: true,
+				autoRemove: false,
 			});
 		} finally {
 			if (currentInstanceId.current === processInstanceId && drillDownVersion.current === version) {

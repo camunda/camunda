@@ -199,6 +199,7 @@ function useResolvedSelection(
 		anchorElementId,
 		isFetchingElement: enabled && query.isLoading,
 		isFetchingElementError: enabled && query.isError,
+		refetchElement: query.refetch,
 		selectElement,
 		selectElementInstance,
 		selectPlaceholder,

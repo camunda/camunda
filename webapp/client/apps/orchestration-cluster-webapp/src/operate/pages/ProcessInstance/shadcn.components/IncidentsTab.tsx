@@ -34,6 +34,7 @@ const IncidentsTab: React.FC = () => {
 				isFetchingPreviousPage={tab.isFetchingPreviousPage}
 				isFetchingNextPage={tab.isFetchingNextPage}
 				onSelect={tab.selectIncident}
+				onRetry={() => void tab.refetch()}
 				onVerticalScrollStartReach={() => {
 					if (!tab.isFetchingNextPage) {
 						void tab.fetchPreviousPage();

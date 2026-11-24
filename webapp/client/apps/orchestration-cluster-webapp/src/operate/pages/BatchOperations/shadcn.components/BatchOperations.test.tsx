@@ -97,7 +97,7 @@ describe('<BatchOperations /> (DS)', () => {
 
 		const screen = await renderPage();
 
-		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
+		await expect.element(screen.getByText('No batch operations yet')).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Actor'})).not.toBeInTheDocument();
 	});
 
@@ -161,7 +161,7 @@ describe('<BatchOperations /> (DS)', () => {
 		const screen = await renderRoute();
 
 		await expect.element(screen.getByRole('table')).toBeVisible();
-		await expect.element(screen.getByText('No batch operations found')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No batch operations yet')).not.toBeInTheDocument();
 	});
 
 	it('should clamp the item range when the requested page is past the last page', async ({worker}) => {
@@ -196,11 +196,11 @@ describe('<BatchOperations /> (DS)', () => {
 		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE}));
 		document.title = 'Stale title';
 		const screen = await renderRoute();
-		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
+		await expect.element(screen.getByText('No batch operations yet')).toBeVisible();
 		expect(document.title).toBe('Operate: Batch Operations');
 
 		await i18n.changeLanguage('de');
-		await expect.element(screen.getByText('Keine Stapeloperationen gefunden')).toBeVisible();
+		await expect.element(screen.getByText('Noch keine Stapeloperationen')).toBeVisible();
 		expect(document.title).toBe('Operate: Stapeloperationen');
 	});
 
@@ -209,7 +209,7 @@ describe('<BatchOperations /> (DS)', () => {
 
 		const screen = await renderRoute();
 		await expect.element(screen.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
-		await expect.element(screen.getByText('No batch operations found')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No batch operations yet')).not.toBeInTheDocument();
 
 		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_WITH_OPERATIONS}));
 		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
@@ -223,7 +223,7 @@ describe('<BatchOperations /> (DS)', () => {
 		const screen = await renderRoute();
 
 		await expect.element(screen.getByRole('heading', {name: 'You need permission'})).toBeVisible();
-		await expect.element(screen.getByText('No batch operations found')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No batch operations yet')).not.toBeInTheDocument();
 	});
 
 	it('should keep the rows of a failed refresh and recover on retry', async ({worker}) => {
@@ -247,7 +247,7 @@ describe('<BatchOperations /> (DS)', () => {
 		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE}));
 		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
 
-		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
+		await expect.element(screen.getByText('No batch operations yet')).toBeVisible();
 		await expect.element(screen.getByRole('alert')).not.toBeInTheDocument();
 	});
 
@@ -262,15 +262,15 @@ describe('<BatchOperations /> (DS)', () => {
 			}),
 		);
 		const screen = await renderRoute(`${PATH}?page=2`);
-		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
+		await expect.element(screen.getByText('No batch operations yet')).toBeVisible();
 		await userEvent.click(screen.getByRole('button', {name: 'Previous page'}));
-		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
+		await expect.element(screen.getByText('No batch operations yet')).toBeVisible();
 
 		worker.use(mockQueryBatchOperationsEndpoint({successResponse: HttpResponse.json({}, {status: 500})}));
 		await userEvent.click(screen.getByRole('button', {name: 'Next page'}));
 
 		await expect.element(screen.getByRole('alert')).toMatchTextContent('Failed to refresh batch operations');
-		await expect.element(screen.getByText('No batch operations found')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No batch operations yet')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('No results.')).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: 'Actor'})).toBeVisible();
 	});

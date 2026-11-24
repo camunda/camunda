@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {Heading, IconButton} from '@camunda/design-system';
 import {ChevronLeft, ChevronRight} from '@camunda/design-system/icons';
 import {cn} from '#/shared/cn';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 
 const COLLAPSED_WIDTH = 56;
 
@@ -96,9 +97,9 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 						<Heading
 							as="h2"
 							variant="heading-xs"
-							className={cn('m-0 min-w-0 flex-1 truncate text-foreground', hasIcon && 'ml-2', isCollapsed && 'sr-only')}
+							className={cn('m-0 min-w-0 flex-1 text-foreground', hasIcon && 'ml-2', isCollapsed && 'sr-only')}
 						>
-							{label}
+							{isCollapsed ? label : <TruncatedText text={label} />}
 						</Heading>
 						{!isCollapsed && (
 							<IconButton

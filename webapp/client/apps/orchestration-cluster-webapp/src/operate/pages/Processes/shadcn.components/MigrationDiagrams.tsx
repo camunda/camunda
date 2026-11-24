@@ -24,6 +24,7 @@ import {Diagram} from '#/operate/shared/Diagram/shadcn.components/Diagram';
 import type {OverlayData} from '#/operate/shared/Diagram/overlayTypes';
 import {DiagramShell} from '#/operate/shared/DiagramShell/shadcn.components/DiagramShell';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {getProcessDefinitionName} from '../getProcessDefinitionName';
 import type {MigrationElements} from '../migrationMapping';
 import type {useDiagramXml} from '../useDiagramXml';
@@ -154,9 +155,7 @@ const MigrationDiagrams: React.FC<Props> = ({
 					{!isSummaryStep && (
 						<div className="flex h-12 items-center gap-6 border-b px-4 text-sm">
 							<HeaderField label={t('operate.processes.migration.source')}>
-								<span className="min-w-0 truncate" title={getProcessDefinitionName(source)}>
-									{getProcessDefinitionName(source)}
-								</span>
+								<TruncatedText text={getProcessDefinitionName(source)} className="min-w-0" />
 							</HeaderField>
 							<HeaderField label={t('operate.processes.migration.version')}>
 								<span>{source.version}</span>

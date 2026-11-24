@@ -7,7 +7,7 @@
  */
 
 import {useEffect, useMemo, useRef, useState} from 'react';
-import type {FormApi} from 'final-form';
+import type {Decorator, FormApi} from 'final-form';
 import {useTranslation} from 'react-i18next';
 import {useBlocker, useLocation, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
@@ -45,6 +45,18 @@ const Processes: React.FC<Props> = ({search}) => {
 		ENABLE_PROCESS_MIGRATION ? getInstanceMigration(instanceMigrationState) : null,
 	);
 	const preservingFormRef = useRef<FormApi<FilterFormValues> | null>(null);
+	const filterFormRef = useRef<FormApi<FilterFormValues> | null>(null);
+	const filterFormDecorators = useMemo<Decorator<FilterFormValues>[]>(
+		() => [
+			(form) => {
+				filterFormRef.current = form;
+				return () => {
+					filterFormRef.current = null;
+				};
+			},
+		],
+		[],
+	);
 	const [mode, setMode] = useState<ProcessesMode>('list');
 	const [selectedTargetElementId, setSelectedTargetElementId] = useState<string>();
 	const [selectionScope, setSelectionScope] = useState<BatchModificationScope | null>(null);
@@ -125,6 +137,12 @@ const Processes: React.FC<Props> = ({search}) => {
 			!hasOptionalFilters &&
 			variable.length === 0 &&
 			visibleFilters.length === 0);
+	const clearFilters = () => {
+		filterFormRef.current?.reset();
+		setVariableConditions([]);
+		setVisibleFilters([]);
+		void navigate({to: '.', search: {active: true, suspended: true, incidents: true}});
+	};
 
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [clientHeight, setClientHeight] = useState(0);
@@ -172,6 +190,7 @@ const Processes: React.FC<Props> = ({search}) => {
 						{t('operate.processes.title')}
 					</Heading>
 					<Form<FilterFormValues>
+						decorators={filterFormDecorators}
 						onSubmit={(values) => {
 							void navigate({
 								to: '.',
@@ -205,12 +224,7 @@ const Processes: React.FC<Props> = ({search}) => {
 									hideCollapsedLabel
 									localStorageKey="isProcessesFiltersCollapsed"
 									isResetButtonDisabled={isResetDisabled}
-									onResetClick={() => {
-										setVariableConditions([]);
-										form.reset();
-										setVisibleFilters([]);
-										void navigate({to: '.', search: {active: true, suspended: true, incidents: true}});
-									}}
+									onResetClick={clearFilters}
 								>
 									<div className="flex flex-col gap-8">
 										<ProcessFilters
@@ -281,6 +295,7 @@ const Processes: React.FC<Props> = ({search}) => {
 										selectedTargetElementId={selectedTargetElementId}
 										footerContainer={footerSlot}
 										onMigrationEnter={(source, scope) => setMigration({source, scope})}
+										onClearFilters={isResetDisabled ? undefined : clearFilters}
 										onEnterMode={() => setMode('batch-modification')}
 										onSelectionScopeChange={setSelectionScope}
 										onExitMode={() => {

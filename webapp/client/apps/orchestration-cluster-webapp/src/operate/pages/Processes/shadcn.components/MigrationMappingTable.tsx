@@ -18,6 +18,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	StatusIcon,
 	Switch,
 	Table,
 	TableBody,
@@ -29,7 +30,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@camunda/design-system';
-import {ArrowRight, CircleAlert, CircleCheck} from '@camunda/design-system/icons';
+import {ArrowRight, CircleCheck} from '@camunda/design-system/icons';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
 import {cn} from '#/shared/cn';
 import {getNameOrId} from '../getElementName';
@@ -147,7 +148,7 @@ const MigrationMappingTable: React.FC<Props> = ({
 																role="img"
 																aria-label={t('operate.processes.migration.embeddedFormElement')}
 															>
-																<CircleAlert aria-hidden className="size-4 text-warning" />
+																<StatusIcon variant="warning" />
 															</span>
 														</TooltipTrigger>
 														<TooltipContent>{t('operate.processes.migration.embeddedFormElement')}</TooltipContent>

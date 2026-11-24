@@ -31,6 +31,7 @@ import {
 import {ChevronDown, ChevronRight} from '@camunda/design-system/icons';
 import type {CallHierarchy} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {RichTextEditor} from '#/operate/shared/Editors/shadcn.components/RichTextEditor';
 import {DiffEditor} from '#/operate/shared/Editors/shadcn.components/DiffEditor';
 import {useProcessInstancePage} from '../useProcessInstancePage';
@@ -207,10 +208,15 @@ const ModificationSummaryModal: React.FC<Props> = ({onClose}) => {
 														? `${modification.element.name} → ${modification.targetElement.name}`
 														: modification.element.name}
 												</TableCell>
-												<TableCell className="max-w-48 truncate">
-													{modification.operation !== 'ADD_TOKEN' && modification.elementInstanceKey !== undefined
-														? modification.elementInstanceKey
-														: '--'}
+												<TableCell>
+													<TruncatedText
+														text={
+															modification.operation !== 'ADD_TOKEN' && modification.elementInstanceKey !== undefined
+																? modification.elementInstanceKey
+																: '--'
+														}
+														className="max-w-48"
+													/>
 												</TableCell>
 												<TableCell>
 													{modification.operation === 'CANCEL_TOKEN'
@@ -283,8 +289,12 @@ const ModificationSummaryModal: React.FC<Props> = ({onClose}) => {
 														</Button>
 													</TableCell>
 													<TableCell>{t(OPERATION_LABEL_KEYS[operation])}</TableCell>
-													<TableCell className="max-w-48 truncate">{elementName}</TableCell>
-													<TableCell className="max-w-64 truncate">{`${name}: ${newValue}`}</TableCell>
+													<TableCell>
+														<TruncatedText text={elementName} className="max-w-48" />
+													</TableCell>
+													<TableCell>
+														<TruncatedText text={`${name}: ${newValue}`} className="max-w-64" />
+													</TableCell>
 													<TableCell className="text-right">
 														<Button
 															variant="destructive"
