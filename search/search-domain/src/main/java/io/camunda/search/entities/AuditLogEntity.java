@@ -326,7 +326,12 @@ public record AuditLogEntity(
     USER,
     CLIENT,
     ANONYMOUS,
-    UNKNOWN
+    UNKNOWN,
+    /**
+     * The engine itself, for a change whose value it computes, such as a mapping result. An audit
+     * log entry must never carry it: its actor comes from the identity on the record.
+     */
+    ENGINE
   }
 
   public enum AuditLogTenantScope {

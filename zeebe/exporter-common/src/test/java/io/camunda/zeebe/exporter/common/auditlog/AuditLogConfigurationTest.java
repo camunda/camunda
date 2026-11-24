@@ -15,10 +15,13 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration.ActorAuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class AuditLogConfigurationTest {
 
@@ -314,6 +317,79 @@ class AuditLogConfigurationTest {
             Optional.empty());
 
     assertThat(config.isEnabled(auditLog)).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = AuditLogActorType.class, mode = EnumSource.Mode.EXCLUDE, names = "ANONYMOUS")
+  void shouldCheckEachActorAgainstItsOwnSection(final AuditLogActorType actorType) {
+    // given only the section of this actor type logs variable changes
+    final var config = new AuditLogConfiguration();
+    config.getUser().setCategories(Set.of());
+    sectionOf(config, actorType)
+        .setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+
+    // when
+    final var enabledFor =
+        Arrays.stream(AuditLogActorType.values())
+            .filter(type -> config.isEnabled(variableChangeBy(new AuditLogActor(type, "actor-id"))))
+            .toList();
+
+    // then
+    assertThat(enabledFor).containsExactly(actorType);
+  }
+
+  @Test
+  void shouldCheckEngineChangesAgainstTheEngineSection() {
+    // given only the engine logs variable changes
+    final var config = new AuditLogConfiguration();
+    config.getUser().setCategories(Set.of());
+    config.getClient().setCategories(Set.of());
+    config.getEngine().setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+
+    // when
+    final var clientChange =
+        config.isEnabled(
+            variableChangeBy(new AuditLogActor(AuditLogActorType.CLIENT, "billing-client")));
+    final var engineChange =
+        config.isEnabled(variableChangeBy(new AuditLogActor(AuditLogActorType.ENGINE, null)));
+
+    // then
+    assertThat(clientChange).isFalse();
+    assertThat(engineChange).isTrue();
+  }
+
+  @Test
+  void shouldNotRecordEngineChangesByDefault() {
+    // given the default configuration, where the user logs everything and the engine nothing
+    final var config = new AuditLogConfiguration();
+
+    // when
+    final var enabled =
+        config.isEnabled(variableChangeBy(new AuditLogActor(AuditLogActorType.ENGINE, null)));
+
+    // then
+    assertThat(enabled).isFalse();
+  }
+
+  private static AuditLogInfo variableChangeBy(final AuditLogActor actor) {
+    return new AuditLogInfo(
+        AuditLogOperationCategory.DEPLOYED_RESOURCES,
+        AuditLogEntityType.VARIABLE,
+        AuditLogOperationType.UPDATE,
+        actor,
+        Optional.empty());
+  }
+
+  private static ActorAuditLogConfiguration sectionOf(
+      final AuditLogConfiguration config, final AuditLogActorType actorType) {
+    return switch (actorType) {
+      case USER -> config.getUser();
+      case CLIENT -> config.getClient();
+      case UNKNOWN -> config.getUnknown();
+      case ENGINE -> config.getEngine();
+      case ANONYMOUS ->
+          throw new IllegalArgumentException("Anonymous actors have no configuration section");
+    };
   }
 
   @Nested

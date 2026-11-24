@@ -105,7 +105,7 @@ public class BatchOperationCreatedExportHandler
             case USER -> AuditLogActorType.USER;
             case CLIENT -> AuditLogActorType.CLIENT;
             case ANONYMOUS -> AuditLogActorType.ANONYMOUS;
-            case UNKNOWN -> AuditLogActorType.UNKNOWN;
+            case UNKNOWN, ENGINE -> AuditLogActorType.UNKNOWN;
             case null -> null;
           };
       return new ActorInfo(actorType, auditLogActor.actorId());

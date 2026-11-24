@@ -29,6 +29,8 @@ import io.camunda.zeebe.util.SemanticVersion;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Handles the creation of a batch operation by upserting the corresponding {@link
@@ -36,6 +38,7 @@ import java.util.Map;
  * initializing the batch operation state and type, and updating the local cache for immediate
  * access.
  */
+@NullMarked
 public class BatchOperationCreatedHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationCreationRecordValue> {
 
@@ -126,7 +129,7 @@ public class BatchOperationCreatedHandler
     return indexName;
   }
 
-  private record ActorInfo(AuditLogActorType type, String id) {
+  private record ActorInfo(@Nullable AuditLogActorType type, @Nullable String id) {
     static final ActorInfo NULL_VALUES = new ActorInfo(null, null);
   }
 
@@ -156,7 +159,7 @@ public class BatchOperationCreatedHandler
             case USER -> AuditLogActorType.USER;
             case CLIENT -> AuditLogActorType.CLIENT;
             case ANONYMOUS -> AuditLogActorType.ANONYMOUS;
-            case UNKNOWN -> AuditLogActorType.UNKNOWN;
+            case UNKNOWN, ENGINE -> AuditLogActorType.UNKNOWN;
             case null -> null;
           };
       return new ActorInfo(actorType, auditLogActor.actorId());
