@@ -9,6 +9,7 @@ package io.camunda.application.commons.actor;
 
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorScheduler.DefaultActorThreadFactory;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @VisibleForTesting
 public final class ActorSchedulerConfiguration {
+
+  private static final String GATEWAY_THREAD_NAME_PREFIX = "gateway-";
 
   private final SchedulerConfiguration schedulerConfiguration;
   private final IdleStrategySupplier idleStrategySupplier;
@@ -38,34 +41,60 @@ public final class ActorSchedulerConfiguration {
 
   @Bean(destroyMethod = "close")
   public ActorScheduler scheduler() {
-    final var cpuThreads = schedulerConfiguration.cpuThreads();
-    final var ioThreads = schedulerConfiguration.ioThreads();
-    final var metricsEnabled = schedulerConfiguration.metricsEnabled();
-    final var prefix = schedulerConfiguration.schedulerPrefix();
-    final var nodeId = schedulerConfiguration.nodeId();
-
     final var scheduler =
-        ActorScheduler.newActorScheduler()
-            .setActorClock(actorClockConfiguration.getClock().orElse(null))
-            .setCpuBoundActorThreadCount(cpuThreads)
-            .setIoBoundActorThreadCount(ioThreads)
-            .setMeterRegistry(metricsEnabled ? registry : null)
-            .setSchedulerName(String.format("%s-%s", prefix, nodeId))
-            .setIdleStrategySupplier(idleStrategySupplier)
+        newScheduler(schedulerConfiguration.schedulerPrefix())
+            .setCpuBoundActorThreadCount(schedulerConfiguration.cpuThreads())
+            .setIoBoundActorThreadCount(schedulerConfiguration.ioThreads())
             .build();
     scheduler.start();
-
     return scheduler;
   }
 
   @Bean(destroyMethod = "close")
   public GatewayActorScheduler gatewayActorScheduler(final ActorScheduler scheduler) {
-    return GatewayActorScheduler.shared(scheduler);
+    final var gatewayCpuThreads = schedulerConfiguration.gatewayCpuThreads();
+    if (gatewayCpuThreads <= 0) {
+      return GatewayActorScheduler.shared(scheduler);
+    }
+
+    final var gatewayScheduler =
+        newScheduler("Gateway")
+            .setCpuBoundActorThreadCount(gatewayCpuThreads)
+            .setIoBoundActorThreadCount(0)
+            .setActorThreadFactory(
+                (name, id, group, taskScheduler, clock, timerQueue, metrics, idleStrategy) ->
+                    new DefaultActorThreadFactory()
+                        .newThread(
+                            GATEWAY_THREAD_NAME_PREFIX + name,
+                            id,
+                            group,
+                            taskScheduler,
+                            clock,
+                            timerQueue,
+                            metrics,
+                            idleStrategy))
+            .build();
+    gatewayScheduler.start();
+    return GatewayActorScheduler.dedicated(gatewayScheduler);
   }
 
+  private ActorScheduler.ActorSchedulerBuilder newScheduler(final String prefix) {
+    return ActorScheduler.newActorScheduler()
+        .setActorClock(actorClockConfiguration.getClock().orElse(null))
+        .setMeterRegistry(schedulerConfiguration.metricsEnabled() ? registry : null)
+        .setSchedulerName(String.format("%s-%s", prefix, schedulerConfiguration.nodeId()))
+        .setIdleStrategySupplier(idleStrategySupplier);
+  }
+
+  /**
+   * @param gatewayCpuThreads the CPU threads of a separate scheduler for the gateway side, see
+   *     {@link GatewayActorScheduler}. With 0, the gateway side uses the scheduler of this
+   *     configuration.
+   */
   public record SchedulerConfiguration(
       int cpuThreads,
       int ioThreads,
+      int gatewayCpuThreads,
       boolean metricsEnabled,
       String schedulerPrefix,
       String nodeId) {}
