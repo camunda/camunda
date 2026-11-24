@@ -52,6 +52,10 @@ public final class DmnDeploymentTest {
 
   private static final String DMN_MISSING_DECISION_NAME =
       "/dmn/decision-table-with-missing-decision-name.dmn";
+  private static final String DMN_MISSING_DECISION_ID = "/dmn/decision-without-id.dmn";
+  private static final String DRG_MISSING_ID = "/dmn/drg-with-missing-id.dmn";
+  private static final String DRG_EMPTY_NAME = "/dmn/drg-with-empty-name.dmn";
+  private static final String DRG_EMPTY_NAMESPACE = "/dmn/drg-with-empty-namespace.dmn";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -151,13 +155,38 @@ public final class DmnDeploymentTest {
 
   @Test
   public void shouldRejectDmnResourceWithMissingDecisionName() {
+    assertRejectedForMissingAttribute(
+        DMN_MISSING_DECISION_NAME,
+        "decision '_51711_44808585-3491-42a8-87ea-3c4fcda46eff'",
+        "a name");
+  }
+
+  @Test
+  public void shouldRejectDmnResourceWithMissingDecisionId() {
+    assertRejectedForMissingAttribute(DMN_MISSING_DECISION_ID, "decision 'No ID'", "an ID");
+  }
+
+  @Test
+  public void shouldRejectDmnResourceWithMissingDrgId() {
+    assertRejectedForMissingAttribute(DRG_MISSING_ID, "DRG", "an ID");
+  }
+
+  @Test
+  public void shouldRejectDmnResourceWithEmptyDrgName() {
+    assertRejectedForMissingAttribute(DRG_EMPTY_NAME, "DRG 'drg-empty-name'", "a name");
+  }
+
+  @Test
+  public void shouldRejectDmnResourceWithEmptyDrgNamespace() {
+    assertRejectedForMissingAttribute(
+        DRG_EMPTY_NAMESPACE, "DRG 'drg-empty-namespace'", "a namespace");
+  }
+
+  private void assertRejectedForMissingAttribute(
+      final String resourceName, final String subject, final String attribute) {
     // when
     final var deploymentEvent =
-        engine
-            .deployment()
-            .withXmlClasspathResource(DMN_MISSING_DECISION_NAME)
-            .expectRejection()
-            .deploy();
+        engine.deployment().withXmlClasspathResource(resourceName).expectRejection().deploy();
 
     // then
     Assertions.assertThat(deploymentEvent)
@@ -165,7 +194,11 @@ public final class DmnDeploymentTest {
         .hasRecordType(RecordType.COMMAND_REJECTION)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
 
-    assertThat(deploymentEvent.getRejectionReason()).contains("because \"value\" is null");
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "Expected the %s to have %s, but it has none in resource '%s'",
+                subject, attribute, resourceName));
   }
 
   @Test
