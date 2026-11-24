@@ -32,8 +32,7 @@ import org.slf4j.LoggerFactory;
  */
 final class ClientStreamPusher {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientStreamPusher.class);
-  private static final Logger PUSH_ERROR_LOGGER =
-      new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
+  private final Logger pushErrorLogger = new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
 
   private final ClientStreamMetrics metrics;
 
@@ -125,7 +124,7 @@ final class ClientStreamPusher {
       LOGGER.trace(
           "Failed to push data to client [{}], stream is blocked", clientStream.streamId());
     } else {
-      PUSH_ERROR_LOGGER.warn(
+      pushErrorLogger.warn(
           "Failed to push data to client [{}], retrying with next client.",
           clientStream.streamId(),
           pushFailed);

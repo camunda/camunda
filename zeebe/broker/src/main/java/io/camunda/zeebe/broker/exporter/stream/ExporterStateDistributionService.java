@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 
 public class ExporterStateDistributionService implements AutoCloseable {
 
-  private static final Logger PERIODIC_LOGGER =
+  private final Logger periodicLogger =
       new ThrottledLogger(Loggers.EXPORTER_LOGGER, Duration.ofSeconds(60));
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterStateTopic;
@@ -48,7 +48,7 @@ public class ExporterStateDistributionService implements AutoCloseable {
     final var exporterState = distributeMessage.getExporterState();
 
     Loggers.EXPORTER_LOGGER.trace("Received new exporter state {}", exporterState);
-    PERIODIC_LOGGER.debug("Current exporter state {}", exporterState);
+    periodicLogger.debug("Current exporter state {}", exporterState);
 
     exporterState.forEach(exporterStateConsumer);
   }
