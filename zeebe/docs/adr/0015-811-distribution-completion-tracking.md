@@ -281,6 +281,10 @@ is deferred.**
   because the framework computes the flag from its own state.
 - **Block the queue until COMPLETED.** Rejected. This would bring back the head-of-line blocking of
   deployments by deletion.
+- **Migrate legacy work onto the new mechanism when tracking is enabled.** Not now. A distributed
+  "adopt" step could move in-flight legacy drains over and let the next minor version drop the
+  adapter, but it adds a migration command, an adopt command and a race with in-flight legacy
+  reports. The adapter alone is enough; the old path stays until it is provably unused.
 - **Keep hand-rolling per feature.** Rejected. Suspension would be the third copy.
 
 ## Consequences
