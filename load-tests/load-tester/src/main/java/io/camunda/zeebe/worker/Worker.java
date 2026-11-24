@@ -55,7 +55,7 @@ public class Worker {
     this.client = client;
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
-    resultMetrics = new WorkerResultMetrics(registry);
+    resultMetrics = new WorkerResultMetrics(registry, requestFutures);
     responseChecker = new ResponseChecker(requestFutures, resultMetrics);
     this.connectionMonitor = connectionMonitor;
   }
@@ -126,6 +126,7 @@ public class Worker {
       // completion rather than stalling the job handler thread (which would cascade into
       // broker timeouts). We lose visibility into its eventual result — log throttled so
       // the operator can notice sustained backpressure without flooding the log.
+      resultMetrics.recordTrackingDropped();
       THROTTLED_LOGGER.warn(
           "Completion-response queue full (capacity: {}); dropping future tracking",
           REQUEST_FUTURES_CAPACITY);
