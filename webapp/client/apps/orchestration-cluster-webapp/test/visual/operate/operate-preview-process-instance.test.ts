@@ -81,6 +81,44 @@ test('should match the process instance diagram panel snapshot with a selected e
 	await expect(operatePreviewProcessInstancePage.diagramPanel).toHaveScreenshot();
 });
 
+test(
+	'should match the process instance diagram panel snapshot with a keyboard-focused element',
+	{tag: '@desktop'},
+	async ({operatePreviewProcessInstancePage}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+		await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
+		await operatePreviewProcessInstancePage.diagramElement('task-1').focus();
+
+		await expect(operatePreviewProcessInstancePage.diagramElement('task-1')).toBeFocused();
+		await expect(
+			operatePreviewProcessInstancePage.diagramPanel.getByText(
+				'Use the arrow keys to move between elements and Enter to select.',
+			),
+		).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.diagramPanel).toHaveScreenshot();
+	},
+);
+
+test(
+	'should match the process instance diagram panel snapshot with a keyboard-focused selected element',
+	{tag: '@desktop'},
+	async ({operatePreviewProcessInstancePage, page}) => {
+		await page.goto(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables?elementId=task-1`);
+
+		await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
+		await operatePreviewProcessInstancePage.diagramElement('task-1').focus();
+
+		await expect(operatePreviewProcessInstancePage.diagramElement('task-1')).toBeFocused();
+		await expect(
+			operatePreviewProcessInstancePage.diagramPanel.getByText(
+				'Use the arrow keys to move between elements and Enter to select.',
+			),
+		).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.diagramPanel).toHaveScreenshot();
+	},
+);
+
 test('should match the process instance variables tab snapshot', async ({
 	network,
 	operatePreviewProcessInstancePage,

@@ -36,12 +36,16 @@ const ModificationDropdown: React.FC<ModificationDropdownParams> = (props) => {
 		}
 		if (!dropdown.canBeModified) {
 			return (
-				<p className="text-sm text-muted-foreground">{t('operate.processInstance.modification.unsupportedElement')}</p>
+				<p className="text-sm text-neutral-foreground-subtle">
+					{t('operate.processInstance.modification.unsupportedElement')}
+				</p>
 			);
 		}
 		if (availableModifications.length === 0) {
 			return (
-				<p className="text-sm text-muted-foreground">{t('operate.processInstance.modification.noModifications')}</p>
+				<p className="text-sm text-neutral-foreground-subtle">
+					{t('operate.processInstance.modification.noModifications')}
+				</p>
 			);
 		}
 
@@ -53,7 +57,7 @@ const ModificationDropdown: React.FC<ModificationDropdownParams> = (props) => {
 					</p>
 				)}
 				{runningInstancesCount > 1 && (
-					<p className="text-sm text-muted-foreground">
+					<p className="text-sm text-neutral-foreground-subtle">
 						{t('operate.processInstance.modification.specificInstanceHint')}
 					</p>
 				)}

@@ -236,7 +236,7 @@
 }
 
 .instance-agent-shine {
-	background-image: linear-gradient(120deg, transparent, var(--primary-action-default), transparent);
+	background-image: linear-gradient(120deg, transparent, var(--accent-action-default), transparent);
 	background-size: 300% 300%;
 	animation: instance-agent-shine 8s linear infinite;
 	mask:
@@ -289,15 +289,34 @@
 		stroke: var(--info-action-default);
 	}
 
-	.op-selectable:focus-visible .djs-outline {
+	.op-selected-frame .djs-outline {
 		stroke-width: 2px;
 		stroke: var(--info-action-default);
 	}
 
-	.op-selected-frame .djs-outline,
-	.op-selected-frame:focus-visible .djs-outline {
+	.op-selected .djs-visual {
+		filter: drop-shadow(0 0 1px var(--info-action-default)) drop-shadow(0 0 1px var(--info-action-default))
+			drop-shadow(0 0 1px var(--info-action-default));
+	}
+
+	.op-selectable:focus-visible .djs-outline {
 		stroke-width: 2px;
-		stroke: var(--info-action-default);
+		stroke: var(--ring);
+		stroke-dasharray: 4 3;
+	}
+
+	@media (forced-colors: active) {
+		.op-selected-frame .djs-outline {
+			stroke: Highlight;
+		}
+
+		.op-selected .djs-visual {
+			filter: drop-shadow(0 0 2px Highlight);
+		}
+
+		.op-selectable:focus-visible .djs-outline {
+			stroke: CanvasText;
+		}
 	}
 
 	.op-non-selectable {
