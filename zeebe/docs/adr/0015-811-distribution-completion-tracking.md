@@ -173,8 +173,12 @@ is deferred.**
   redelivery.
 - A distribution whose target partitions are only the source still creates its completion state,
   so hooks fire also in a single-partition cluster.
-- An unexpected processing error on a distributed command is acknowledged generically, with the
-  rejection recorded, so the distribution cannot stay open forever (#54132).
+- An unexpected processing error on a distributed command is not acknowledged: the source keeps
+  retrying, as today, so the command is applied once the cause is fixed. Acknowledging it would
+  finish the distribution while the partition never applied the command (for example a deployment).
+  The receiver records the failure as a `CommandDistribution` event (distribution key, command,
+  error), written on the first failure and when the error changes, so it is exported and visible
+  while the distribution stays open (#54132).
 - `redistribute` re-sends only to partitions that acknowledged but have not completed, and never
   re-enqueues.
 - Scaling up: the participants of a distribution are fixed when it starts.
