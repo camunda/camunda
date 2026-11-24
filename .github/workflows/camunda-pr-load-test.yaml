@@ -48,7 +48,8 @@ jobs:
     name: Sanitize Branch Name
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     outputs:
       sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
       storage-type: ${{ inputs.secondary-storage-type }}
@@ -88,8 +89,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   create-benchmark:
     name: Benchmark
@@ -97,6 +99,9 @@ jobs:
     if: >
       (github.event.action == 'labeled' && github.event.label.name == inputs.label) ||
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, inputs.label))
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -110,7 +115,8 @@ jobs:
     name: Await Benchmark
     needs: create-benchmark
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -123,12 +129,16 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   run-profiling:
     name: Run Profiling
     needs: [sanitize-branch-name, await-benchmark]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/profile-load-test.yml
     secrets: inherit
     with:
@@ -188,12 +198,16 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   get-pr-metrics:
     name: Collect PR namespace metrics
     needs: [sanitize-branch-name, await-benchmark]
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
@@ -204,6 +218,9 @@ jobs:
     name: Collect daily-on-main metrics
     needs: resolve-daily-namespace
     if: needs.resolve-daily-namespace.outputs.daily-namespace != ''
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
@@ -221,6 +238,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      id-token: write # Vault JWT login
       contents: 'read'
     outputs:
       comparison-md: ${{ steps.render.outputs.comparison-md }}
@@ -249,8 +267,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   comment-comparison-pr:
     name: Post PR vs Daily comparison comment
@@ -260,6 +279,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      id-token: write # Vault JWT login
       contents: 'read'
       pull-requests: 'write'
     env:
@@ -291,8 +311,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   auto-delete-benchmark:
     name: Auto cleanup after metrics
@@ -319,6 +340,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      id-token: write # Vault JWT login
       contents: 'read'
       pull-requests: 'write'
     steps:
@@ -384,8 +406,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   delete-benchmark:
     name: Benchmark Cleanup
