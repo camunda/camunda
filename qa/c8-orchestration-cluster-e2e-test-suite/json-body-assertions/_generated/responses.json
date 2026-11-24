@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "a5568bae57c0ff15cf361ed5b394fb1aa07561a4",
-    "generatedAt": "2026-11-20T12:08:25.586Z",
+    "commit": "792ed164be397822f655f0ed36bb24b539bede86",
+    "generatedAt": "2026-11-24T12:08:58.525Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "19ee7f7541dc2cc0744518299f9810e1fe234c33fbfd60927fe2f1ff172ea713"
+    "specSha256": "cb5ac07ff4760a486286e93cc98f20a3142aa8b643db7bda19c2ca9c1d1d0d37"
   },
   "responses": [
     {
@@ -12524,6 +12524,171 @@
                 {
                   "name": "variableKey",
                   "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/variables/history/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "actorId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "actorType",
+                  "type": "string",
+                  "enumValues": [
+                    "USER",
+                    "CLIENT",
+                    "ENGINE",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "agentElementId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "elementId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "isTruncated",
+                  "type": "boolean"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "operationType",
+                  "type": "string",
+                  "enumValues": [
+                    "CREATE",
+                    "UPDATE"
+                  ]
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "scopeKey",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "timestamp",
+                  "type": "string"
+                },
+                {
+                  "name": "value",
+                  "type": "string"
+                },
+                {
+                  "name": "variableHistoryItemKey",
+                  "type": "string"
+                },
+                {
+                  "name": "variableKey",
+                  "type": "string"
+                },
+                {
+                  "name": "variableOperationType",
+                  "type": "string",
+                  "enumValues": [
+                    "API",
+                    "USER_TASK_COMPLETION",
+                    "PROCESS_INSTANCE_CREATION",
+                    "PROCESS_INSTANCE_MODIFICATION",
+                    "JOB_COMPLETION",
+                    "JOB_FAILURE",
+                    "JOB_ERROR",
+                    "EXECUTION_LISTENER_COMPLETION",
+                    "MESSAGE_CORRELATION",
+                    "SIGNAL_BROADCAST",
+                    "CONDITIONAL_EVALUATION",
+                    "AD_HOC_SUB_PROCESS_ACTIVATION",
+                    "INPUT_MAPPING",
+                    "OUTPUT_MAPPING",
+                    "SCRIPT_RESULT",
+                    "DECISION_RESULT",
+                    "CALL_ACTIVITY_INPUT",
+                    "CALL_ACTIVITY_OUTPUT",
+                    "MULTI_INSTANCE_INPUT_ELEMENT",
+                    "MULTI_INSTANCE_LOOP_COUNTER",
+                    "MULTI_INSTANCE_OUTPUT_ELEMENT",
+                    "MULTI_INSTANCE_OUTPUT_COLLECTION",
+                    "AD_HOC_SUB_PROCESS_METADATA",
+                    "AD_HOC_SUB_PROCESS_OUTPUT_ELEMENT",
+                    "AD_HOC_SUB_PROCESS_OUTPUT_COLLECTION",
+                    "UNKNOWN"
+                  ]
                 }
               ],
               "optional": []
