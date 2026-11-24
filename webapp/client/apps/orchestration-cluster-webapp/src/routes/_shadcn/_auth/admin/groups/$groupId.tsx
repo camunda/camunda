@@ -36,10 +36,10 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/$groupId')({
 			await Promise.all([
 				queryClient.query(queries.getGroup(groupId)),
 				queryClient.query(queries.adminClientConfig()).then((clientConfig) => {
-					const sectionConfig = getAdminSectionConfig();
+					const sectionConfig = getAdminSectionConfig(clientConfig.isAdditionalIdpConfigured);
 					const visibleKinds = getVisibleMemberKinds({
 						isOidc: sectionConfig.isOidc,
-						canManageMappingRules: canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured),
+						canManageMappingRules: canManageMappingRuleMembers(sectionConfig),
 					});
 					const kind = getActiveMemberKind(visibleKinds, search.tab);
 					return queryClient.query(getMembersQuery(kind, groupId, getGroupMembersRequestBody(search)));
@@ -77,7 +77,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/$groupId')({
 		const search = Route.useSearch();
 		const {data: group} = useSuspenseQuery(queries.getGroup(groupId));
 		const {data: clientConfig} = useSuspenseQuery(queries.adminClientConfig());
-		const sectionConfig = getAdminSectionConfig();
+		const sectionConfig = getAdminSectionConfig(clientConfig.isAdditionalIdpConfigured);
 
 		const handleSearchChange = useCallback(
 			(next: Partial<GroupDetailSearch>, options?: {replace?: boolean}) => {
@@ -99,7 +99,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/$groupId')({
 			<AdminGroupDetailPage
 				group={group}
 				isOidc={sectionConfig.isOidc}
-				canManageMappingRules={canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured)}
+				canManageMappingRules={canManageMappingRuleMembers(sectionConfig)}
 				search={search}
 				onSearchChange={handleSearchChange}
 				onDeleted={handleDeleted}

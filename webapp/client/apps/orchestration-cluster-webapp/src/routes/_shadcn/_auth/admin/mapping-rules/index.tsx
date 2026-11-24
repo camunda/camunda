@@ -10,7 +10,7 @@ import {useCallback} from 'react';
 import {createFileRoute, useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {PageLayout} from '@camunda/design-system';
-import {assertAdminSectionAvailable} from '#/admin/adminSections';
+import {assertAdminSectionAvailable, loadAdminSectionConfig} from '#/admin/adminSections';
 import {AdminMappingRulesPage} from '#/admin/pages/AdminMappingRulesPage';
 import {getMappingRulesRequestBody} from '#/admin/modules/mapping-rules/getMappingRulesRequestBody';
 import {mappingRulesSearchSchema, type MappingRulesSearch} from '#/admin/modules/mapping-rules/searchSchema';
@@ -21,8 +21,8 @@ import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPag
 
 export const Route = createFileRoute('/_shadcn/_auth/admin/mapping-rules/')({
 	validateSearch: mappingRulesSearchSchema,
-	beforeLoad: () => {
-		assertAdminSectionAvailable('mapping-rules');
+	beforeLoad: async ({context: {queryClient}}) => {
+		assertAdminSectionAvailable('mapping-rules', await loadAdminSectionConfig(queryClient));
 	},
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {

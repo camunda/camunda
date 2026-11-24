@@ -16,12 +16,15 @@ import {
 	mockQueryTenantsEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {createAdminClientConfigScript} from '#/shared-test-modules/api-mocks/authorizations';
+import {SAAS_CLUSTER_ID, SAAS_ORGANIZATION_ID} from '#/shared-test-modules/api-mocks/saas';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryGroupsResponse} from '#/shared-test-modules/api-mocks/groups';
 import {createQueryMappingRulesResponse} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {createQueryTenantsResponse} from '#/shared-test-modules/api-mocks/tenants';
+import {createSaasAdminHandlers} from './saasAdminHandlers';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -124,6 +127,41 @@ test.describe('Admin section access', () => {
 		await adminIndexPage.gotoSection('users');
 
 		await expect(notFoundPage.heading).toBeVisible();
+	});
+
+	test('should serve mapping rules on SaaS only with an additional IdP', async ({
+		adminIndexPage,
+		adminMappingRulesPage,
+		notFoundPage,
+		network,
+	}) => {
+		await adminIndexPage.seedSaasBootConfig({organizationId: SAAS_ORGANIZATION_ID, clusterId: SAAS_CLUSTER_ID});
+		await adminMappingRulesPage.mockClientConfig();
+		network.use(...createSaasAdminHandlers());
+
+		await adminIndexPage.gotoSection('mapping-rules');
+
+		await expect(notFoundPage.heading).toBeVisible();
+
+		await adminMappingRulesPage.mockClientConfig(createAdminClientConfigScript({isAdditionalIdpConfigured: 'true'}));
+		await adminIndexPage.gotoSection('mapping-rules');
+
+		await expect(adminIndexPage.sectionHeading('Mapping rules')).toBeVisible();
+	});
+
+	test('should keep Admin available when the additional IdP flag cannot be loaded on SaaS', async ({
+		adminIndexPage,
+		network,
+		page,
+	}) => {
+		await adminIndexPage.seedSaasBootConfig({organizationId: SAAS_ORGANIZATION_ID, clusterId: SAAS_CLUSTER_ID});
+		await page.route('**/admin/config.js', (route) => route.fulfill({status: 500}));
+		network.use(...createSaasAdminHandlers());
+
+		await adminIndexPage.gotoSection('mapping-rules');
+
+		await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible();
+		await expect(adminIndexPage.navItem('Roles')).toBeVisible();
 	});
 
 	test('should show the access denied page on a section URL when admin access is denied', async ({
