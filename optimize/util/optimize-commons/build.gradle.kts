@@ -55,6 +55,7 @@ dependencies {
   testImplementation(libs.org.mock.server.mockserver.client.java)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.mockito.mockito.junit.jupiter)
+  testImplementation(libs.org.awaitility.awaitility)
 }
 
 group = "io.camunda.optimize"
