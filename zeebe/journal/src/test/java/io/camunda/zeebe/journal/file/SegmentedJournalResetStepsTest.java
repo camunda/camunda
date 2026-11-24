@@ -327,11 +327,16 @@ final class SegmentedJournalResetStepsTest {
       Mockito.doAnswer(call -> spySegment(call, steps))
           .when(loader)
           .createSegment(Mockito.any(), Mockito.any(), Mockito.anyLong(), Mockito.any());
-      if (config.preCreated() == PreCreatedSegment.FAILED) {
-        Mockito.doThrow(new OutOfDiskSpace("Injected: no space to pre-create the next segment"))
-            .when(loader)
-            .createUninitializedSegment(Mockito.any(), Mockito.any(), Mockito.any());
-      }
+      // pre-creating the next segment, which a successful reset starts, is not a step of the reset
+      Mockito.doAnswer(
+              call -> {
+                if (config.preCreated() == PreCreatedSegment.FAILED) {
+                  throw new OutOfDiskSpace("Injected: no space to pre-create the next segment");
+                }
+                return steps.paused(call::callRealMethod);
+              })
+          .when(loader)
+          .createUninitializedSegment(Mockito.any(), Mockito.any(), Mockito.any());
       final var journal =
           factory.journal(factory.directSegmentsManager(root, loader, metaStore), metaStore);
 
@@ -415,6 +420,7 @@ final class SegmentedJournalResetStepsTest {
     private Consumer<String> onStep = description -> {};
     private boolean active;
     private boolean diskFull;
+    private boolean paused;
 
     private ResetSteps(final int failAt) {
       this.failAt = failAt;
@@ -441,7 +447,7 @@ final class SegmentedJournalResetStepsTest {
 
     /** Returns true if the step must fail. */
     boolean before(final String name) {
-      if (!active) {
+      if (!active || paused) {
         return false;
       }
       onStep.accept("before " + name);
@@ -450,7 +456,7 @@ final class SegmentedJournalResetStepsTest {
     }
 
     void after(final String name) {
-      if (active) {
+      if (active && !paused) {
         onStep.accept("after " + name);
       }
     }
@@ -460,8 +466,23 @@ final class SegmentedJournalResetStepsTest {
     }
 
     boolean isDiskFull() {
-      return active && diskFull;
+      return active && !paused && diskFull;
     }
+
+    /** Runs an action whose file operations are not steps of the reset. */
+    Object paused(final PausedAction action) throws Throwable {
+      paused = true;
+      try {
+        return action.run();
+      } finally {
+        paused = false;
+      }
+    }
+  }
+
+  @FunctionalInterface
+  private interface PausedAction {
+    Object run() throws Throwable;
   }
 
   /** A last flushed index whose changes are steps of the reset. */

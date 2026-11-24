@@ -554,6 +554,27 @@ class SegmentsManagerTest {
     }
   }
 
+  @Test
+  void shouldRollOverToPreCreatedSegmentAfterReset() {
+    // given - a reset journal
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    segments = journalFactory.segmentsManager(directory, loader);
+    try (final var journal = journalFactory.journal(segments)) {
+      journal.append(journalFactory.entry());
+      journal.reset(10);
+      journal.append(journalFactory.entry());
+      Mockito.clearInvocations(loader);
+
+      // when - the next entry rolls over to a new segment
+      journal.append(journalFactory.entry());
+
+      // then - the roll-over uses a segment pre-created after the reset, not one created now
+      Mockito.verify(loader, Mockito.never())
+          .createSegment(Mockito.any(), Mockito.any(), Mockito.anyLong(), Mockito.any());
+      assertThat(journal.getLastIndex()).isEqualTo(11);
+    }
+  }
+
   /** A loader whose segments fail their first deletion after the file was renamed. */
   private SegmentLoader loaderFailingFirstDeleteAfterRename(final JournalException failure) {
     final var loader = Mockito.spy(journalFactory.segmentLoader());

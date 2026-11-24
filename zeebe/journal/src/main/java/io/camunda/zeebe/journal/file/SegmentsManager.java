@@ -342,6 +342,8 @@ final class SegmentsManager implements AutoCloseable {
     currentSegment = firstSegment;
     segments.put(index, firstSegment);
     journalMetrics.incSegmentCount();
+    // the reset took the pre-created segment, so the next roll-over needs a new one
+    prepareNextSegment();
   }
 
   /**
