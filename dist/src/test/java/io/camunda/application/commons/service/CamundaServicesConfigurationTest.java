@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientCfg;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.application.commons.security.AuthorizationCheckerProvider;
 import io.camunda.cluster.SecondaryStorageReadiness;
@@ -44,9 +45,11 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.probe.LongPollingActivateProbesHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.rebalance.RebalanceRequestSender;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -414,6 +417,8 @@ class CamundaServicesConfigurationTest {
         new SecurityContextProvider(),
         mock(PasswordEncoder.class),
         mock(ActivateJobsHandler.class),
+        mock(LongPollingActivateProbesHandler.class),
+        new BrokerClientCfg(Duration.ofSeconds(15)),
         SearchClientsProxy.noop(),
         authorizationCheckerProvider,
         new GatewayRestConfiguration(),

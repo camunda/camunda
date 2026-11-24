@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.service;
 
+import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientCfg;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
@@ -60,6 +61,7 @@ import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.service.MigrationStatusAggregator;
+import io.camunda.service.ProbeServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.RecoveryServices;
@@ -90,9 +92,11 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.probe.LongPollingActivateProbesHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.rebalance.RebalanceRequestSender;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -148,6 +152,8 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final PasswordEncoder passwordEncoder,
       final ActivateJobsHandler<JobActivationResult> activateJobsHandler,
+      final LongPollingActivateProbesHandler activateProbesHandler,
+      final BrokerClientCfg brokerClientCfg,
       final SearchClientsProxy searchClients,
       final AuthorizationCheckerProvider authorizationCheckerProvider,
       final GatewayRestConfiguration gatewayRestConfiguration,
@@ -477,6 +483,17 @@ public class CamundaServicesConfiguration {
                           executor,
                           converter))
                   .processDefinitionServices(tenantId, processDefinition)
+                  .probeServices(
+                      tenantId,
+                      new ProbeServices(
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          executor,
+                          converter,
+                          activateProbesHandler,
+                          brokerClientCfg.requestTimeout(),
+                          InstantSource.system()))
                   .processInstanceServices(tenantId, processInstance)
                   .recoveryServices(
                       tenantId,

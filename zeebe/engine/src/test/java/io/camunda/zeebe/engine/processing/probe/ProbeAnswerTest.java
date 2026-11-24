@@ -276,6 +276,34 @@ public final class ProbeAnswerTest {
   }
 
   @Test
+  public void shouldRespondToTheGatewaysYield() {
+    // given
+    final long probeKey = activatedProbe();
+
+    // when
+    final var yielded = ENGINE.probe().withRequest(48, 488L).yieldAsRequest(probeKey);
+
+    // then
+    assertThat(yielded.getIntent()).isEqualTo(ProbeIntent.YIELDED);
+    verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(48, 488L);
+  }
+
+  @Test
+  public void shouldRespondToARejectedYield() {
+    // given - the probe is activatable again after a first yield
+    final long probeKey = activatedProbe();
+    ENGINE.probe().yield(probeKey);
+
+    // when
+    final var rejection =
+        ENGINE.probe().withRequest(49, 499L).expectRejection().yieldAsRequest(probeKey);
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(49, 499L);
+  }
+
+  @Test
   public void shouldEndWithNoWorkerAtTheDeadlineAfterAYield() {
     // given
     final long probeKey =
