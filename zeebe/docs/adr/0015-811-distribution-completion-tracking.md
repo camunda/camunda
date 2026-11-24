@@ -89,10 +89,12 @@ are observable.**
     distribution as the reason.
 - The framework does not know about entities, counts or substates. What is involved, and when it is
   done, is up to the domain.
-- The source partition defers its own share on the builder,
-  `...deferCompletion(completionKey).distribute(command)`, because the distribution key does not
-  exist before `distribute`. Distribution skips the current partition, so its report is written
-  locally instead of being sent.
+- The source partition defers its own share with the same call, using the distribution key it
+  mints before distributing. Within one processing step the order of `deferCompletion` and
+  `distribute` does not matter. Processing order does not change: the source processes the command
+  locally first and distributes in the same step, without waiting for its own remaining work.
+  Distribution skips the current partition, so its report is written locally instead of being
+  sent.
 - The source can ask whether work is still open, and push it again:
   - `isCompletionOpen(valueType, completionKey)` answers "is this still in progress somewhere",
     for example to reject a history deletion while another partition still drains;
@@ -149,6 +151,9 @@ are observable.**
   appliers, so records from older brokers and from replay are handled as before.
 - In a mixed-version cluster, an old receiver ACKs without `completionDeferred`, so its share
   counts as COMPLETED at once. That is today's behavior.
+- Existing column families are not migrated or reused. A feature's old column family (such as
+  `PENDING_PROCESS_DELETIONS_PER_PARTITION`) keeps serving its old path and empties as that work
+  finishes; new work does not write it.
 - A feature moving onto `onAllCompleted` runs both paths: work started on the old path finishes
   on it, and new work uses the new path only once every broker is upgraded.
 - Exporter templates and golden files change. This needs approval from the protocol owners.
