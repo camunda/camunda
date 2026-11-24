@@ -528,7 +528,8 @@ public final class HttpClient implements AutoCloseable {
               credentialsProvider::shouldRetryRequest,
               retryAction,
               maxRetries,
-              sensitiveResponseBody));
+              sensitiveResponseBody,
+              new TransportFailureTranslator()));
     }
 
     result.transportFuture(

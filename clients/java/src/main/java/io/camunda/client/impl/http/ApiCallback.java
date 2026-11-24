@@ -17,7 +17,6 @@ package io.camunda.client.impl.http;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.ProblemDetail;
-import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.MalformedResponseException;
 import io.camunda.client.api.command.ProblemException;
@@ -42,6 +41,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
   private final Runnable retryAction;
   private final AtomicInteger remainingRetries;
   private final boolean sensitiveResponseBody;
+  private final TransportFailureTranslator failureTranslator;
 
   public ApiCallback(
       final CompletableFuture<RespT> response,
@@ -50,7 +50,8 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       final Predicate<StatusCode> retryPredicate,
       final Runnable retryAction,
       final int maxRetries,
-      final boolean sensitiveResponseBody) {
+      final boolean sensitiveResponseBody,
+      final TransportFailureTranslator failureTranslator) {
     this.response = response;
     this.transformer = transformer;
     if (successPredicate != null) {
@@ -62,6 +63,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
     this.retryAction = retryAction;
     remainingRetries = new AtomicInteger(maxRetries);
     this.sensitiveResponseBody = sensitiveResponseBody;
+    this.failureTranslator = failureTranslator;
   }
 
   @Override
@@ -80,12 +82,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
 
   @Override
   public void failed(final Exception ex) {
-    if (ex instanceof ClientException) {
-      response.completeExceptionally(ex);
-      return;
-    }
-
-    response.completeExceptionally(new ClientException(ex));
+    response.completeExceptionally(failureTranslator.translate(ex));
   }
 
   @Override

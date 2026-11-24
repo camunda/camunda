@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 class ApiCallbackTest {
 
   public static final int DEFAULT_REMAINING_RETRIES = 2;
+  private static final TransportFailureTranslator FAILURE_TRANSLATOR =
+      new TransportFailureTranslator();
   private CompletableFuture<String> response;
   private JsonResponseAndStatusCodeTransformer<String, String> transformer;
   private Predicate<StatusCode> retryPredicate;
@@ -50,7 +52,8 @@ class ApiCallbackTest {
             retryPredicate,
             retryAction,
             DEFAULT_REMAINING_RETRIES,
-            false);
+            false,
+            FAILURE_TRANSLATOR);
   }
 
   @Test
@@ -154,7 +157,8 @@ class ApiCallbackTest {
             retryPredicate,
             retryAction,
             DEFAULT_REMAINING_RETRIES,
-            false);
+            false,
+            FAILURE_TRANSLATOR);
 
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(503);
@@ -183,7 +187,8 @@ class ApiCallbackTest {
             retryPredicate,
             retryAction,
             DEFAULT_REMAINING_RETRIES,
-            false);
+            false,
+            FAILURE_TRANSLATOR);
 
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(500);
@@ -210,7 +215,8 @@ class ApiCallbackTest {
             retryPredicate,
             retryAction,
             DEFAULT_REMAINING_RETRIES,
-            true);
+            true,
+            FAILURE_TRANSLATOR);
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(500);
     when(apiResponse.entity()).thenReturn(ApiEntity.of("super-secret-value"));
@@ -239,7 +245,8 @@ class ApiCallbackTest {
             retryPredicate,
             retryAction,
             DEFAULT_REMAINING_RETRIES,
-            false);
+            false,
+            FAILURE_TRANSLATOR);
 
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(400);
