@@ -33,6 +33,10 @@ jobs:
           contains(github.event.pull_request.labels.*.name, 'deploy-preview')
         )
       )
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
+      deployments: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -61,9 +65,10 @@ jobs:
       uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
 
@@ -77,9 +82,10 @@ jobs:
         github-app-id-vault-path: secret/data/products/camunda/ci/camunda
         github-app-private-key-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_PRIVATE_KEY
         github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-        vault-auth-method: approle
-        vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-        vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+        vault-auth-method: jwt
+        vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+        vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+        vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         vault-url: ${{ secrets.VAULT_ADDR }}
 
     #########################################################################
@@ -101,6 +107,9 @@ jobs:
         build_status: ${{ job.status }}
         job_name: preview-env-teardown
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
         secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
@@ -124,6 +133,11 @@ jobs:
         needs.teardown-preview.result != 'skipped' &&
         github.event_name == 'pull_request'
     name: Remove Deployment Result Summary
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [teardown-preview]
@@ -143,5 +157,6 @@ jobs:
         build_status: ${{ job.status }}
         job_name: preview-env-teardown-comment
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
