@@ -33,6 +33,11 @@ import org.jspecify.annotations.NullMarked;
  * <p>Only one update is open at a time. The processor rejects a chunk without changing the open
  * update if it cannot belong to it.
  *
+ * <p>The sender may deliver a chunk more than once, for example when a new leader polls Hub again
+ * while the chunks of the previous leader are not processed yet. A chunk the open update already
+ * buffered is therefore only rejected: it changes nothing, and it never fails the update. The same
+ * update id and chunk index always mean the same chunk.
+ *
  * <p>Once every chunk is buffered, the update is being applied: its identity commands may already
  * be written, and nothing can undo them. A chunk of it is then only rejected, and the update never
  * fails, whatever is wrong with the chunk.
@@ -136,9 +141,17 @@ public final class PolicyUpdateAppendChunkProcessor
       return false;
     }
 
-    // a lower index is a chunk received again, a higher one skips a chunk; as the next chunk is
-    // below the chunk count, this also keeps every index in range
     final int nextChunkIndex = persistedUpdate.getBufferedChunkCount();
+    if (chunk.getChunkIndex() < nextChunkIndex) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.ALREADY_EXISTS,
+          "Expected chunk %d of policy update '%s' to be received next, but chunk %d is already buffered"
+              .formatted(nextChunkIndex, chunk.getUpdateId(), chunk.getChunkIndex()));
+      return false;
+    }
+    // a higher index skips a chunk; as the next chunk is below the chunk count, this also keeps
+    // every index in range
     if (chunk.getChunkIndex() != nextChunkIndex) {
       failUpdate(
           command,
