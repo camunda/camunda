@@ -131,6 +131,8 @@ public class GatewayBasedPropertiesOverride {
     securityCfg.setPrivateKeyPath(ssl.getCertificatePrivateKey());
 
     populateFromKeyStore(override);
+    BrokerBasedPropertiesOverride.populateClientAuth(
+        ssl.getClientAuth(), securityCfg.getClientAuth());
   }
 
   private void populateFromKeyStore(final GatewayBasedProperties override) {

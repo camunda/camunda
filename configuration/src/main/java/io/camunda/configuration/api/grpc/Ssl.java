@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.security.ClientAuthentication;
 import io.camunda.configuration.security.KeyStore;
 import java.io.File;
 import java.util.Map;
@@ -46,6 +47,9 @@ public class Ssl implements Cloneable {
    * Currently only supports PKCS12 format.
    */
   @NestedConfigurationProperty private KeyStore keyStore = new KeyStore();
+
+  /** Mutual TLS: whether gRPC clients must present a certificate, and which ones are allowed. */
+  @NestedConfigurationProperty private ClientAuthentication clientAuth = new ClientAuthentication();
 
   public boolean isEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -92,6 +96,14 @@ public class Ssl implements Cloneable {
 
   public void setKeyStore(final KeyStore keyStore) {
     this.keyStore = keyStore;
+  }
+
+  public ClientAuthentication getClientAuth() {
+    return clientAuth;
+  }
+
+  public void setClientAuth(final ClientAuthentication clientAuth) {
+    this.clientAuth = clientAuth;
   }
 
   @Override

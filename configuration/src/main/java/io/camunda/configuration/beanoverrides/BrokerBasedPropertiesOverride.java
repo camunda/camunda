@@ -44,6 +44,7 @@ import io.camunda.configuration.processing.engine.EngineStorageOrdinals;
 import io.camunda.configuration.processing.flowcontrol.Limit;
 import io.camunda.configuration.processing.flowcontrol.Write;
 import io.camunda.configuration.processing.flowcontrol.write.Throttle;
+import io.camunda.configuration.security.ClientAuthentication;
 import io.camunda.configuration.security.KeyStore;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
@@ -73,6 +74,7 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig
 import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
 import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
+import io.camunda.zeebe.gateway.impl.configuration.ClientAuthCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
@@ -524,6 +526,15 @@ public class BrokerBasedPropertiesOverride {
     securityCfg.setPrivateKeyPath(ssl.getCertificatePrivateKey());
 
     populateFromKeyStore(override, camunda);
+    populateClientAuth(ssl.getClientAuth(), securityCfg.getClientAuth());
+  }
+
+  static void populateClientAuth(final ClientAuthentication source, final ClientAuthCfg target) {
+    target
+        .setMode(source.getMode())
+        .setTrustedCertificatesPath(source.getTrustedCertificates())
+        .setAllowedIdentities(List.copyOf(source.getAllowedIdentities()))
+        .setCommonNameFallback(source.isCommonNameFallback());
   }
 
   private static void populateFromKeyStore(
