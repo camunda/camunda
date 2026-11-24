@@ -332,7 +332,7 @@ jobs:
               sleep 10
             fi
           done
-          echo "::error::Preview environment ${PREVIEW_HOST} is not reachable: HTTP ${last_code:-connection error} — it may have been torn down by an earlier attempt of this run (check the teardown jobs of the first attempt, or redeploy it with version=${{ matrix.deployment.version }} before re-running). This failure is an environment-lifecycle problem, not a Playwright spec failure."
+          echo "::error::Preview environment ${PREVIEW_HOST} is not reachable: HTTP ${last_code:-connection error}. It was most likely torn down by an earlier attempt of this run. To recover, use 'Re-run all jobs' from the run page: app names derive from the run number, so this re-creates every environment, including this one; 'Re-run failed jobs' only works while the environment still exists. This failure is an environment-lifecycle problem, not a Playwright spec failure."
           # The annotation alone does not fail the step; exit nonzero so the job
           # stops here, Playwright never runs against the dead environment, and
           # the pre-flight step failure routes this leg to the deploy bucket.
@@ -448,13 +448,23 @@ jobs:
 
   teardown-8-8:
     name: Teardown 8.8 Preview Environment
+    # Teardown only when the whole run is green. Tearing down a passed leg
+    # while another version's deploy/build failed deletes the very
+    # environment a later "re-run failed jobs" needs, turning one flaky
+    # build into three misleading 404 smoke-test failures (see #70652).
     if: >
       always() &&
       needs.deploy-8-8.result == 'success' &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-9.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-10.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-11.result) &&
       needs.test.result == 'success' &&
       !inputs.skip-teardown
     needs:
     - deploy-8-8
+    - deploy-8-9
+    - deploy-8-10
+    - deploy-8-11
     - test
     uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.8
     secrets: inherit
@@ -464,13 +474,21 @@ jobs:
 
   teardown-8-9:
     name: Teardown 8.9 Preview Environment
+    # Same all-green gate as teardown-8-8: keep environments alive for
+    # "re-run failed jobs" unless the entire run succeeded.
     if: >
       always() &&
       needs.deploy-8-9.result == 'success' &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-8.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-10.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-11.result) &&
       needs.test.result == 'success' &&
       !inputs.skip-teardown
     needs:
+    - deploy-8-8
     - deploy-8-9
+    - deploy-8-10
+    - deploy-8-11
     - test
     uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.9
     secrets: inherit
@@ -480,13 +498,21 @@ jobs:
 
   teardown-8-10:
     name: Teardown 8.10 Preview Environment
+    # Same all-green gate as teardown-8-8: keep environments alive for
+    # "re-run failed jobs" unless the entire run succeeded.
     if: >
       always() &&
       needs.deploy-8-10.result == 'success' &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-8.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-9.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-11.result) &&
       needs.test.result == 'success' &&
       !inputs.skip-teardown
     needs:
+    - deploy-8-8
+    - deploy-8-9
     - deploy-8-10
+    - deploy-8-11
     - test
     uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.10
     secrets: inherit
@@ -496,12 +522,20 @@ jobs:
 
   teardown-8-11:
     name: Teardown 8.11 Preview Environment
+    # Same all-green gate as teardown-8-8: keep environments alive for
+    # "re-run failed jobs" unless the entire run succeeded.
     if: >
       always() &&
       needs.deploy-8-11.result == 'success' &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-8.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-9.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-10.result) &&
       needs.test.result == 'success' &&
       !inputs.skip-teardown
     needs:
+    - deploy-8-8
+    - deploy-8-9
+    - deploy-8-10
     - deploy-8-11
     - test
     uses: ./.github/workflows/preview-env-teardown.yml
