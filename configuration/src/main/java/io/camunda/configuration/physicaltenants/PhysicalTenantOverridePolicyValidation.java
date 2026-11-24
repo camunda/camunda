@@ -127,6 +127,9 @@ final class PhysicalTenantOverridePolicyValidation {
               // tenant with soft values disabled would push GC reclamation onto the others. Bound a
               // single tenant's cache with the overridable process-cache-capacity instead
               "processing.engine.caches.process-cache-soft-values",
+              // same shared heap as the process caches above: one tenant's TTL would decide how
+              // long every tenant's deployed resources stay in memory
+              "processing.engine.caches.deployment-cache-ttl",
               // camunda.security.* — identity-security settings that must apply uniformly
               "security.authentication.method",
               "security.authentication.unprotected-api",

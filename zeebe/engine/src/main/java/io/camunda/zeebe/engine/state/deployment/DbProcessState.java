@@ -235,12 +235,18 @@ public final class DbProcessState implements MutableProcessState {
             .build();
     processesByTenantAndProcessIdAndVersionCache = newProcessCacheBuilder(config).build();
     processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+        CacheBuilder.newBuilder()
+            .maximumSize(config.getProcessCacheCapacity())
+            .expireAfterAccess(config.getDeploymentCacheTtl())
+            .build();
   }
 
   private static CacheBuilder<Object, Object> newProcessCacheBuilder(
       final EngineConfiguration config) {
-    final var builder = CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity());
+    final var builder =
+        CacheBuilder.newBuilder()
+            .maximumSize(config.getProcessCacheCapacity())
+            .expireAfterAccess(config.getDeploymentCacheTtl());
     // soft values: a cached process is a large object graph (parsed model, compiled FEEL
     // expressions) whose size we can't weigh, so let the GC reclaim entries under heap pressure
     return config.isProcessCacheSoftValues() ? builder.softValues() : builder;

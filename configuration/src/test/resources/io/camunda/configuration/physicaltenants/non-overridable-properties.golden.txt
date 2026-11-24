@@ -100,6 +100,7 @@ data.primary-storage.rocks-db.memory-minimum
 data.primary-storage.versioned-directory-retention-count
 data.secondary-storage.rdbms.max-varchar-field-length
 license.key
+processing.engine.caches.deployment-cache-ttl
 processing.engine.caches.process-cache-soft-values
 security.authentication.catch-all-unhandled-paths-enabled
 security.authentication.method
