@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
@@ -19,7 +20,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AutoClose;
@@ -130,12 +133,43 @@ final class TestJournalFactory {
     return segmentsManager(directory, loader, metaStore, name, ForkJoinPool.commonPool());
   }
 
+  /**
+   * A segments manager that deletes compacted segments and pre-creates the next segment on the
+   * calling thread, so that a test knows what is on disk at any point.
+   */
+  SegmentsManager directSegmentsManager(
+      final Path directory, final SegmentLoader loader, final JournalMetaStore metaStore) {
+    return segmentsManager(
+        directory,
+        loader,
+        metaStore,
+        "journal",
+        Runnable::run,
+        MoreExecutors::newDirectExecutorService);
+  }
+
   private SegmentsManager segmentsManager(
       final Path directory,
       final SegmentLoader loader,
       final JournalMetaStore metaStore,
       final String name,
       final Executor deletionExecutor) {
+    return segmentsManager(
+        directory,
+        loader,
+        metaStore,
+        name,
+        deletionExecutor,
+        () -> SegmentsManager.newBackgroundIoExecutor(name));
+  }
+
+  private SegmentsManager segmentsManager(
+      final Path directory,
+      final SegmentLoader loader,
+      final JournalMetaStore metaStore,
+      final String name,
+      final Executor deletionExecutor,
+      final Supplier<ExecutorService> preparationExecutors) {
     return new SegmentsManager(
         index,
         maxSegmentSize(),
@@ -145,10 +179,14 @@ final class TestJournalFactory {
         metrics,
         metaStore,
         deletionExecutor,
-        () -> SegmentsManager.newBackgroundIoExecutor(name));
+        preparationExecutors);
   }
 
   SegmentedJournal journal(final SegmentsManager segments) {
+    return journal(segments, metaStore);
+  }
+
+  SegmentedJournal journal(final SegmentsManager segments, final JournalMetaStore metaStore) {
     return new SegmentedJournal(index, segments, metrics, metaStore);
   }
 
