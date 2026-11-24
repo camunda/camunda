@@ -121,6 +121,25 @@ class WorkerTest {
     assertThat(publications("success", "")).isEqualTo(1.0);
   }
 
+  @Test
+  void shouldExposeClientInfoWithStaticConfiguration() {
+    // given
+    final var client = mock(CamundaClient.class);
+
+    // when
+    newWorker(client, sendMessageProperties());
+
+    // then
+    final var gauge =
+        registry
+            .get(WorkerMetricsDoc.CLIENT_INFO.getName())
+            .tag("name", "worker")
+            .tag("completion_delay", COMPLETION_DELAY.toString())
+            .tag("send_message", "true")
+            .gauge();
+    assertThat(gauge.value()).isEqualTo(1.0);
+  }
+
   private static long timeHandleJob(
       final Worker worker, final JobClient jobClient, final ActivatedJob job) {
     final long start = System.currentTimeMillis();
