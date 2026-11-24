@@ -39,7 +39,10 @@ import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -928,6 +931,32 @@ public class BatchOperationIT {
             rdbmsService,
             batchOperation.batchOperationKey(),
             resourceAccessChecksFromResourceIds(batchOperation.batchOperationKey()));
+
+    // then
+    assertThat(result.total()).isEqualTo(2);
+    assertThat(result.items()).hasSize(2);
+  }
+
+  @TestTemplate
+  public void shouldReturnBatchItemsWithBatchReadAccessWithoutTenantAccess(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final var batchOperation = createAndSaveBatchOperation(writer, b -> b);
+    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
+
+    // when - batch operation items carry no tenant, so a caller without tenants keeps access
+    final var result =
+        searchBatchOperationItems(
+            rdbmsService,
+            batchOperation.batchOperationKey(),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.enabled(
+                    Authorization.of(
+                        b -> b.resourceIds(List.of(batchOperation.batchOperationKey())))),
+                TenantCheck.enabled(List.of())));
 
     // then
     assertThat(result.total()).isEqualTo(2);
