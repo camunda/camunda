@@ -50,6 +50,8 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      id-token: write # Vault JWT login
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.2'
@@ -66,8 +68,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   validate-pom-metadata:
     if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
@@ -75,7 +78,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@v6
         with:
@@ -99,14 +103,17 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
     name: Java checks
     timeout-minutes: 15
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: gcp-perf-core-8-default
     steps:
       - uses: actions/checkout@v4
@@ -124,11 +131,15 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   java-unit-tests:
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
     runs-on: gcp-perf-core-16-default
@@ -175,9 +186,10 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   generate-db-versions:
     name: "Generate DB versions"
@@ -196,6 +208,9 @@ jobs:
         uses: ./.github/actions/read-db-versions
 
   optimize-frontend-unit-tests:
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
     if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
@@ -238,11 +253,15 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   optimize-backend-unit-tests:
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
     if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
@@ -276,15 +295,20 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
     timeout-minutes: 10
     needs: [detect-changes]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
+      pull-requests: write
     env:
       # set the comparison based on the type of workflow trigger:
       #   - for PRs, we use the last commit of the base
@@ -326,9 +350,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
@@ -336,6 +361,11 @@ jobs:
     # This name is hard-coded in the branch rules; remember to update that if this name changes
     if: always()
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      checks: read
+      id-token: write
+      pull-requests: write
     needs:
       - actionlint
       - generate-db-versions
@@ -351,14 +381,19 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
   deploy-snapshots:
     name: Deploy snapshot artifacts
     needs: [ check-results ]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Vault JWT login
+      actions: read  # check-snapshot-deploy lists the run's artifacts
+      contents: read  # check-snapshot-deploy reads the branch head
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-maven-snapshot
@@ -370,9 +405,10 @@ jobs:
         uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
@@ -405,9 +441,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
