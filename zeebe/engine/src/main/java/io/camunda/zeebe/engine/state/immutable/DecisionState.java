@@ -61,18 +61,6 @@ public interface DecisionState {
       final String tenantId, DirectBuffer decisionId, String versionTag);
 
   /**
-   * Query decision requirements (DRGs) by the given decision requirements id and return the latest
-   * version of the DRG.
-   *
-   * @param tenantId the tenant the DRG belongs to
-   * @param decisionRequirementsId the id of the DRG
-   * @return the latest version of the DRG, or {@link Optional#empty()} if no DRG is deployed with
-   *     the given id
-   */
-  Optional<DeployedDrg> findLatestDecisionRequirementsByTenantAndId(
-      final String tenantId, DirectBuffer decisionRequirementsId);
-
-  /**
    * Query decision requirements (DRGs) by the given decision requirements key.
    *
    * @param tenantId the tenant the DRG belongs to

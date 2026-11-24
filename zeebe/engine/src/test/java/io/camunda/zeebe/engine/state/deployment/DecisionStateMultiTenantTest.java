@@ -52,13 +52,41 @@ public class DecisionStateMultiTenantTest {
     var actualDrg2 = decisionState.findDecisionRequirementsByTenantAndKey(tenant2, drgKey);
     assertDeployedDrg(actualDrg1.get(), tenant1, drgKey, drgId, version);
     assertDeployedDrg(actualDrg2.get(), tenant2, drgKey, drgId, version);
+  }
 
-    actualDrg1 =
-        decisionState.findLatestDecisionRequirementsByTenantAndId(tenant1, wrapString(drgId));
-    actualDrg2 =
-        decisionState.findLatestDecisionRequirementsByTenantAndId(tenant2, wrapString(drgId));
-    assertDeployedDrg(actualDrg1.get(), tenant1, drgKey, drgId, version);
-    assertDeployedDrg(actualDrg2.get(), tenant2, drgKey, drgId, version);
+  @Test
+  void shouldKeepPersistedDrgsApartPerTenant() {
+    // given
+    final var drgKey = 1L;
+    final var drgId = "drgId";
+    final var tenant1 = "tenant1";
+    final var tenant2 = "tenant2";
+    decisionState.storeDecisionRequirements(
+        sampleDecisionRequirementsRecord(tenant1, drgKey, drgId, 1));
+    decisionState.storeDecisionRequirements(
+        sampleDecisionRequirementsRecord(tenant2, drgKey, drgId, 5));
+
+    // when
+    final var latest1 =
+        decisionState.findLatestPersistedDecisionRequirementsByTenantAndId(
+            tenant1, wrapString(drgId));
+    final var latest2 =
+        decisionState.findLatestPersistedDecisionRequirementsByTenantAndId(
+            tenant2, wrapString(drgId));
+    final var byKey1 =
+        decisionState.findPersistedDecisionRequirementsByTenantAndKey(tenant1, drgKey);
+    final var byKey2 =
+        decisionState.findPersistedDecisionRequirementsByTenantAndKey(tenant2, drgKey);
+
+    // then
+    assertThat(latest1.orElseThrow().getTenantId()).isEqualTo(tenant1);
+    assertThat(latest1.orElseThrow().getDecisionRequirementsVersion()).isEqualTo(1);
+    assertThat(latest2.orElseThrow().getTenantId()).isEqualTo(tenant2);
+    assertThat(latest2.orElseThrow().getDecisionRequirementsVersion()).isEqualTo(5);
+    assertThat(byKey1.orElseThrow().getTenantId()).isEqualTo(tenant1);
+    assertThat(byKey1.orElseThrow().getDecisionRequirementsVersion()).isEqualTo(1);
+    assertThat(byKey2.orElseThrow().getTenantId()).isEqualTo(tenant2);
+    assertThat(byKey2.orElseThrow().getDecisionRequirementsVersion()).isEqualTo(5);
   }
 
   @Test
