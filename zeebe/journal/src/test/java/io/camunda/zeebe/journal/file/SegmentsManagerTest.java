@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
@@ -351,6 +352,48 @@ class SegmentsManagerTest {
       final var inOrder = Mockito.inOrder(newFirstSegment, oldLastSegment);
       inOrder.verify(newFirstSegment).flushDescriptor();
       inOrder.verify(oldLastSegment).delete();
+    }
+  }
+
+  @Test
+  void shouldCloseNewFirstSegmentWhenDiscardingItAfterFailedResetFails() {
+    // given - deleting any segment fails, the old ones and the one the reset creates
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    try (final var journal = openJournal()) {
+      journal.append(1, journalFactory.entry()).index();
+      journal.append(2, journalFactory.entry()).index();
+    }
+    final var deleteFailure = new JournalException("Injected: failed to delete the old segment");
+    final var discardFailure = new JournalException("Injected: failed to delete the new segment");
+    final var newSegment = new AtomicReference<Segment>();
+    //noinspection resource
+    Mockito.doAnswer(
+            call -> {
+              final var spy = Mockito.spy((Segment) call.callRealMethod());
+              Mockito.doThrow(deleteFailure).when(spy).delete();
+              return spy;
+            })
+        .when(loader)
+        .loadExistingSegment(Mockito.any(), Mockito.anyLong(), Mockito.any());
+    //noinspection resource
+    Mockito.doAnswer(
+            call -> {
+              final var spy = Mockito.spy((Segment) call.callRealMethod());
+              Mockito.doThrow(discardFailure).when(spy).delete();
+              newSegment.set(spy);
+              return spy;
+            })
+        .when(loader)
+        .createSegment(Mockito.any(), Mockito.any(), Mockito.anyLong(), Mockito.any());
+    segments = journalFactory.segmentsManager(directory, loader);
+    try (final var journal = journalFactory.journal(segments)) {
+
+      // when
+      final var error = catchThrowable(() -> journal.reset(10));
+
+      // then - the reset fails for the old segment, and the new one is closed, not left mapped
+      assertThat(error).isSameAs(deleteFailure).hasSuppressedException(discardFailure);
+      assertThat(newSegment.get().isOpen()).isFalse();
     }
   }
 
