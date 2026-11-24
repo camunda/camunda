@@ -124,7 +124,10 @@ public class DbFormState implements MutableFormState {
             DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.FORM_VERSION, transactionContext);
 
     formsByTenantIdAndIdCache =
-        CacheBuilder.newBuilder().maximumSize(config.getFormCacheCapacity()).build();
+        CacheBuilder.newBuilder()
+            .maximumSize(config.getFormCacheCapacity())
+            .expireAfterAccess(config.getDeploymentCacheTtl())
+            .build();
   }
 
   @Override

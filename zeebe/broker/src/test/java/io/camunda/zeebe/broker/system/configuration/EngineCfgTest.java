@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.system.configuration.engine.EngineCfg;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import java.time.Duration;
 import java.util.HashMap;
@@ -69,6 +70,21 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY);
     assertThat(configuration.isCandidateGroupNameResolution())
         .isEqualTo(EngineConfiguration.DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION);
+    assertThat(configuration.getDeploymentCacheTtl())
+        .isEqualTo(EngineConfiguration.DEFAULT_DEPLOYMENT_CACHE_TTL);
+  }
+
+  @Test
+  void shouldSetDeploymentCacheTtl() {
+    // given
+    final var engineCfg = new EngineCfg();
+    engineCfg.getCaches().setDeploymentCacheTtl(Duration.ofMinutes(5));
+
+    // when
+    final var configuration = engineCfg.createEngineConfiguration();
+
+    // then
+    assertThat(configuration.getDeploymentCacheTtl()).isEqualTo(Duration.ofMinutes(5));
   }
 
   @Test
