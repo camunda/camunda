@@ -10,6 +10,7 @@ package io.camunda.secretstore.azure;
 import com.azure.core.credential.AccessToken;
 import com.azure.core.credential.TokenCredential;
 import com.azure.core.credential.TokenRequestContext;
+import com.azure.core.exception.ClientAuthenticationException;
 import com.azure.core.http.HttpClient;
 import com.azure.core.util.Configuration;
 import com.azure.identity.ChainedTokenCredentialBuilder;
@@ -258,6 +259,13 @@ final class AzureCredentialChain {
    * credential that is available but fails is reported by its own {@link SignInCredential}, and the
    * chain then fails with a plain {@link com.azure.core.exception.ClientAuthenticationException}
    * that this ignores, so a failed token request is counted once either way.
+   *
+   * <p>Being the credential the vault client holds, it also redacts the failures it passes on: the
+   * client's token cache logs every failure at ERROR, whatever the identity loggers are set to, and
+   * a failure to parse a sign-in response quotes the response, which can hold the token. A failed
+   * sign-in therefore leaves with only its {@link SignInMonitor#reason(Throwable) reason} as its
+   * message, and without its causes or HTTP response, but with its type, which callers tell sign-in
+   * failures by.
    */
   private record NoSignInMethodReporting(TokenCredential chain, SignInMonitor monitor)
       implements TokenCredential {
@@ -269,7 +277,10 @@ final class AzureCredentialChain {
 
     @Override
     public Mono<AccessToken> getToken(final TokenRequestContext request) {
-      return chain.getToken(request).doOnError(this::report);
+      return chain
+          .getToken(request)
+          .doOnError(this::report)
+          .onErrorMap(NoSignInMethodReporting::redacted);
     }
 
     @Override
@@ -278,7 +289,8 @@ final class AzureCredentialChain {
         return chain.getTokenSync(request);
       } catch (final RuntimeException e) {
         report(e);
-        throw e;
+        // both redacted types are runtime exceptions, and anything else is passed on as it is
+        throw (RuntimeException) redacted(e);
       }
     }
 
@@ -286,6 +298,16 @@ final class AzureCredentialChain {
       if (failure instanceof CredentialUnavailableException) {
         monitor.failed(DESCRIPTION, failure);
       }
+    }
+
+    private static Throwable redacted(final Throwable failure) {
+      return switch (failure) {
+        case final CredentialUnavailableException unavailable ->
+            new CredentialUnavailableException(SignInMonitor.reason(unavailable));
+        case final ClientAuthenticationException authentication ->
+            new ClientAuthenticationException(SignInMonitor.reason(authentication), null);
+        default -> failure;
+      };
     }
   }
 }
