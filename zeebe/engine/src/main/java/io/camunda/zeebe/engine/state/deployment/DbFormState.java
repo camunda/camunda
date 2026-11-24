@@ -121,7 +121,11 @@ public class DbFormState implements MutableFormState {
 
     versionManager =
         new VersionManager(
-            DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.FORM_VERSION, transactionContext);
+            DEFAULT_VERSION_VALUE,
+            zeebeDb,
+            ZbColumnFamilies.FORM_VERSION,
+            transactionContext,
+            config.getFormCacheCapacity());
 
     formsByTenantIdAndIdCache =
         CacheBuilder.newBuilder()

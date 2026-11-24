@@ -126,7 +126,11 @@ public class DbResourceState implements MutableResourceState {
 
     versionManager =
         new VersionManager(
-            DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.RESOURCE_VERSION, transactionContext);
+            DEFAULT_VERSION_VALUE,
+            zeebeDb,
+            ZbColumnFamilies.RESOURCE_VERSION,
+            transactionContext,
+            config.getResourceCacheCapacity());
 
     rpaReexportMigrationKey = new DbString();
     rpaReexportMigrationKey.wrapString(RPA_REEXPORT_MIGRATION_KEY_VALUE);
