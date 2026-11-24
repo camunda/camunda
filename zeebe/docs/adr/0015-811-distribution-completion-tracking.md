@@ -67,7 +67,7 @@ are observable.**
   changes how large a distributed command can be.
 - New code uses `onAllAcknowledged` instead of `afterQueue(...).continueWith(...)`. The
   `CONTINUATION_*` intents, their processor and their appliers stay: older brokers and replay of
-  an existing log can still produce them (D6).
+  an existing log can still produce them (D7).
 
 **D3. A partition defers its completion under a key the domain chooses, and acknowledges it later.**
 
@@ -139,10 +139,43 @@ is deferred.**
     such as why a partition still defers its completion, but a read model must correlate records
     from several partitions.
 
-**D6. Protocol and compatibility.**
+**D6. Delivery is unreliable; every step survives loss, duplication, reordering and failover.**
 
-- New intents on `CommandDistribution`: `COMPLETE` (command) and `PARTITION_COMPLETED` and
-  `COMPLETED` (events).
+- All state changes, on the source and on receivers (deferring, acknowledging and cancelling
+  completion, pending `COMPLETE`s), are events with appliers. Nothing is lost on replay or leader
+  change.
+- `COMPLETE` is retried from a persistent outbox on the receiver, `[distributionKey] →
+  (source partition, outcome)`, by the redistribution scheduler, until the source acknowledges it
+  with `COMPLETE_ACKNOWLEDGE`. That acknowledgement is routed by an explicit partition field, not
+  by decoding the key.
+- The source always acknowledges `COMPLETE`: also a duplicate, one for an unknown or finished
+  distribution, and one from a partition outside the distribution.
+- The outbox entry doubles as a tombstone. While a deferral or an unacknowledged `COMPLETE` exists
+  for a distribution key, a redelivered command is not processed again, `deferCompletion` is a
+  no-op, and the ACK says `completionDeferred = true`. A lost ACK followed by an early
+  `ackCompletion(CANCELLED)` therefore cannot be reported as COMPLETED.
+- A `COMPLETE` that arrives before the ACK does everything the ACK does (advance the queue,
+  finish the distribution). The late ACK is then harmless.
+- "Newer" for cancelling a deferral means a larger distribution key from the same source.
+  Distributions for one (value type, completion key) must come from one owning partition. An older
+  or tombstoned key never cancels a newer deferral.
+- A distribution whose target partitions are only the source still creates its completion state,
+  so hooks fire also in a single-partition cluster.
+- An unexpected processing error on a distributed command is acknowledged generically, with the
+  rejection recorded, so the distribution cannot stay open forever (#54132).
+- `redistribute` re-sends only to partitions that acknowledged but have not completed, and never
+  re-enqueues.
+- Deferral and completion column families are partition-local. A partition created by scaling
+  starts without deferrals; `ackCompletion` without a deferral is a no-op.
+- Work that never ends (for example an instance stuck in an incident) keeps its distribution open.
+  Operators can see it through the open-deferral gauge, and need a way to cancel it (open
+  question).
+
+**D7. Protocol and compatibility.**
+
+- New intents on `CommandDistribution`: `COMPLETE` and `COMPLETE_ACKNOWLEDGE` (commands);
+  `PARTITION_COMPLETED` and `COMPLETED` on the source, and the receiver's events for deferring,
+  acknowledging and cancelling completion (events).
 - New properties on `CommandDistributionRecord`: `completionDeferred`, `completionKey`, the
   rejection fields, and the outcome and reason. All are small and empty by default.
 - Partition-local column families: deferrals on each partition (D3); on the source, the
@@ -160,6 +193,10 @@ is deferred.**
   finishes; new work does not write it.
 - A feature moving onto `onAllCompleted` runs both paths: work started on the old path finishes
   on it, and new work uses the new path only once every broker is upgraded.
+- "Every broker is upgraded" needs an explicit cluster-wide signal (a dynamic-config feature flag
+  or a minimum broker version); the engine has none today. Until it is set, no broker writes the
+  new intents and no feature switches paths, so no `COMPLETE` reaches a broker that cannot
+  process it, and a new source never finishes while an old receiver still works on the old path.
 - Exporter templates and golden files change. This needs approval from the protocol owners.
 
 ## Alternatives considered
@@ -185,7 +222,7 @@ is deferred.**
 - Deletion, batch operations and suspension keep their substates (`DRAINING`, chunk states,
   `SUSPENDING`). New work no longer writes their own completion commands, pending-partition column
   families and last-one-wins checks; they adopt with two calls. The old code stays only to finish
-  work started before the upgrade and to replay old logs (D6).
+  work started before the upgrade and to replay old logs (D7).
 - Batch operations report structured errors per partition and decide between COMPLETED and FAILED
   from them. Whether they fit needs a FAILED outcome with a payload; this is explored in a
   separate spike.
@@ -204,6 +241,7 @@ is deferred.**
 - Retention of finished distributions for status queries: in the engine with a TTL, or only in
   secondary storage.
 - Whether any feature needs a FAILED outcome in addition to CANCELLED.
+- How operators cancel an open deferral whose work never ends (D6).
 - Naming: `deferCompletion`/`ackCompletion`, or `completeDistribution` instead of `ackCompletion`.
 - Export of per-partition state: by the source only, or by the source and the receivers (D5).
 
