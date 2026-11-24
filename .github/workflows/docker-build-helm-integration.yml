@@ -430,9 +430,22 @@ jobs:
 
       - name: Get Maven project version
         id: maven-version
+        # First Maven call on a cold cache: retry so a transient artifact-
+        # resolution blip doesn't fail the build. Maven logs to stdout, which
+        # the capture swallows, so echo it on failure to keep real errors visible.
         run: |
-          VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args="\${project.version}" --non-recursive exec:exec)
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          for attempt in 1 2 3; do
+            # shellcheck disable=SC2016
+            if VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec); then
+              echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::warning::Maven project version lookup failed (attempt ${attempt}/3)"
+            printf '%s\n' "${VERSION}" >&2
+            sleep $((attempt * 15))
+          done
+          echo "::error::Could not resolve the Maven project version after 3 attempts"
+          exit 1
 
       - name: Set semantic image tag
         id: set-image-tag
