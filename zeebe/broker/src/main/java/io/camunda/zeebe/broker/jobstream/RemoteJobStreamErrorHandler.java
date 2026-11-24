@@ -38,9 +38,8 @@ import org.slf4j.LoggerFactory;
  */
 final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<ActivatedJob> {
   private static final Logger LOGGER = LoggerFactory.getLogger(RemoteStreamErrorHandler.class);
-  private static final Logger NO_WRITER_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
-  private static final Logger FAILED_WRITER_LOGGER =
-      new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
+  private final Logger noWriterLogger = new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
+  private final Logger failedWriterLogger = new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
 
   private final JobStreamErrorHandler errorHandler;
 
@@ -55,7 +54,7 @@ final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<Acti
     final var partitionId = Protocol.decodePartitionId(job.jobKey());
     final var writer = partitionWriters.get(partitionId);
     if (writer == null) {
-      NO_WRITER_LOGGER.warn(
+      noWriterLogger.warn(
           """
           Cannot handle failed job push on partition {} there is no writer registered;
           this can occur during an election""",
@@ -87,7 +86,7 @@ final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<Acti
     final var writeResult =
         writer.tryWrite(WriteContext.internal(), result.getRecordBatch().entries());
     if (writeResult.isLeft()) {
-      FAILED_WRITER_LOGGER.warn(
+      failedWriterLogger.warn(
           """
           Failed to handle failed job push {} on partition {}. Write to logstream failed with {};
           job will remain activated until it times out.""",

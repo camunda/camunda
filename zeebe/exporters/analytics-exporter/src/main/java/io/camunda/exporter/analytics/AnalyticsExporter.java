@@ -23,8 +23,7 @@ public class AnalyticsExporter implements Exporter {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(AnalyticsExporter.class.getPackageName());
-  private static final ThrottledLogger SAMPLED_WARN_LOG =
-      new ThrottledLogger(LOG, Duration.ofMinutes(1));
+  private final ThrottledLogger sampledWarnLog = new ThrottledLogger(LOG, Duration.ofMinutes(1));
   private final OtelSdkManager otelSdkManager;
 
   private AnalyticsExporterConfig config;
@@ -104,7 +103,7 @@ public class AnalyticsExporter implements Exporter {
     try {
       handlers.handle(record);
     } catch (final Exception e) {
-      SAMPLED_WARN_LOG.warn("Failed to handle record at position {}", record.getPosition(), e);
+      sampledWarnLog.warn("Failed to handle record at position {}", record.getPosition(), e);
     }
     if (metadata.isDirty()) {
       controller.updateLastExportedRecordPosition(record.getPosition(), metadata.serialize());
@@ -124,7 +123,7 @@ public class AnalyticsExporter implements Exporter {
     try {
       otelSdkManager.flushMetrics();
     } catch (final Exception e) {
-      SAMPLED_WARN_LOG.warn("Failed to flush metrics", e);
+      sampledWarnLog.warn("Failed to flush metrics", e);
     } finally {
       scheduleMetricFlush();
     }
@@ -140,7 +139,7 @@ public class AnalyticsExporter implements Exporter {
     try {
       otelSdkManager.emitHeartbeat();
     } catch (final Exception e) {
-      SAMPLED_WARN_LOG.warn("Failed to emit heartbeat", e);
+      sampledWarnLog.warn("Failed to emit heartbeat", e);
     } finally {
       scheduleHeartbeat();
     }
