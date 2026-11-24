@@ -59,7 +59,7 @@ public class SessionAuthenticationRefreshTest {
 
     @BeforeEach
     public void setup() {
-      when(roleServices.hasMembersOfType(any(), any(), any())).thenReturn(true);
+      when(roleServices.hasMembers(any(), any())).thenReturn(true);
       refreshInterval =
           Duration.parse(
               securityConfiguration.getAuthentication().getAuthenticationRefreshInterval());

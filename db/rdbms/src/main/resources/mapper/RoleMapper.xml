@@ -127,6 +127,14 @@ FROM (
 
   <sql id="searchMemberFilter">
     <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND r.ROLE_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+
       <if test="filter.roleId != null">
         AND r.ROLE_ID = #{filter.roleId}
       </if>

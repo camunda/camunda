@@ -42,7 +42,7 @@ class AdminUserCheckFilterTest {
     // given
     final var securityConfig = new SecurityConfiguration();
     securityConfig.getAuthentication().setUnprotectedApi(false);
-    when(roleServices.hasMembersOfType(any(), any(), any())).thenReturn(false);
+    when(roleServices.hasMembers(any(), any())).thenReturn(false);
     when(request.getContextPath()).thenReturn("localhost:8080");
     final AdminUserCheckFilter adminUserCheckFilter =
         new AdminUserCheckFilter(securityConfig, roleServices);
@@ -74,11 +74,30 @@ class AdminUserCheckFilterTest {
   }
 
   @Test
+  void shouldNotRedirectIfAdminRoleHasConfiguredGroupMember() throws ServletException, IOException {
+    // given
+    final var securityConfig = new SecurityConfiguration();
+    securityConfig.getAuthentication().setUnprotectedApi(false);
+    securityConfig
+        .getInitialization()
+        .getDefaultRoles()
+        .put("admin", Map.of("groups", Set.of("adminGroup")));
+    final AdminUserCheckFilter adminUserCheckFilter =
+        new AdminUserCheckFilter(securityConfig, roleServices);
+
+    // when
+    adminUserCheckFilter.doFilterInternal(request, response, filterChain);
+
+    // then
+    verify(filterChain).doFilter(request, response);
+  }
+
+  @Test
   void shouldNotRedirectIfAdminUserExists() throws ServletException, IOException {
     // given
     final var securityConfig = new SecurityConfiguration();
     securityConfig.getAuthentication().setUnprotectedApi(false);
-    when(roleServices.hasMembersOfType(any(), any(), any())).thenReturn(true);
+    when(roleServices.hasMembers(any(), any())).thenReturn(true);
     final AdminUserCheckFilter adminUserCheckFilter =
         new AdminUserCheckFilter(securityConfig, roleServices);
 

@@ -28,29 +28,33 @@
   </resultMap>
 
   <select id="usageMetricTUStatistics"
-    parameterType="io.camunda.search.filter.UsageMetricsFilter"
+    parameterType="io.camunda.db.rdbms.read.domain.UsageMetricsTUDbQuery"
     resultMap="UsageMetricTUStatisticsResultMap"
     statementType="PREPARED">
     SELECT COUNT(DISTINCT ASSIGNEE_HASH) AS TU
         FROM ${prefix}USAGE_METRIC_TU
-    <bind name="filter" value="_parameter"/>
     <include refid="io.camunda.db.rdbms.sql.UsageMetricTUMapper.usageMetricStatisticsFilter"/>
   </select>
 
   <select id="usageMetricTUTenantsStatistics"
-    parameterType="io.camunda.search.filter.UsageMetricsFilter"
+    parameterType="io.camunda.db.rdbms.read.domain.UsageMetricsTUDbQuery"
     resultMap="UsageMetricTUStatisticsResultMap2"
     statementType="PREPARED">
     SELECT TENANT_ID,
            COUNT(DISTINCT ASSIGNEE_HASH) AS TU
     FROM ${prefix}USAGE_METRIC_TU
-    <bind name="filter" value="_parameter"/>
     <include refid="io.camunda.db.rdbms.sql.UsageMetricTUMapper.usageMetricStatisticsFilter"/>
     GROUP BY TENANT_ID
   </select>
 
   <sql id="usageMetricStatisticsFilter">
     <where>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
       <if test="filter.startTime != null">
         AND END_TIME &gt;= #{filter.startTime}
       </if>

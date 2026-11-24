@@ -69,9 +69,11 @@ public class UsageMetricAuthorizationIT {
   private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";
   private static final String PROCESS_ID = "service_tasks_v1";
+  private static final String PROCESS_ID_WITH_USER_TASK = "PROCESS_WITH_USER_TASK_PRE_ASSIGNED";
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";
   private static final String UNAUTHORIZED = "unauthorizedUser";
+  private static final String TENANT_MEMBER_WITHOUT_PERMISSION = "tenantMemberWithoutPermission";
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -99,6 +101,10 @@ public class UsageMetricAuthorizationIT {
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER = new TestUser(UNAUTHORIZED, PASSWORD, List.of());
 
+  @UserDefinition
+  private static final TestUser TENANT_MEMBER_WITHOUT_PERMISSION_USER =
+      new TestUser(TENANT_MEMBER_WITHOUT_PERMISSION, PASSWORD, List.of());
+
   private static void waitForUsageMetrics(
       final CamundaClient camundaClient, final Consumer<UsageMetricsStatistics> fnRequirements) {
     Awaitility.await("should export metrics to secondary storage")
@@ -109,6 +115,7 @@ public class UsageMetricAuthorizationIT {
                 assertThat(
                         camundaClient
                             .newUsageMetricsRequest(NOW_MINUS_1D, NOW_PLUS_1D)
+                            .withTenants(true)
                             .send()
                             .join())
                     .satisfies(fnRequirements));
@@ -142,15 +149,35 @@ public class UsageMetricAuthorizationIT {
     assignUserToTenant(adminClient, ADMIN, TENANT_A);
     assignUserToTenant(adminClient, ADMIN, TENANT_B);
     assignUserToTenant(adminClient, RESTRICTED, TENANT_A);
-    waitForUsersAssignedToTenant(adminClient, TENANT_A, ADMIN, RESTRICTED);
-    waitForUsersAssignedToTenant(adminClient, TENANT_B, ADMIN);
+    assignUserToTenant(adminClient, TENANT_MEMBER_WITHOUT_PERMISSION, TENANT_A);
+    assignUserToTenant(adminClient, TENANT_MEMBER_WITHOUT_PERMISSION, TENANT_B);
+    waitForUsersAssignedToTenant(
+        adminClient, TENANT_A, ADMIN, RESTRICTED, TENANT_MEMBER_WITHOUT_PERMISSION);
+    waitForUsersAssignedToTenant(adminClient, TENANT_B, ADMIN, TENANT_MEMBER_WITHOUT_PERMISSION);
 
     // Create PIs & wait for metrics to be exported
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
+    deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_A);
+    deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_B);
-    waitForUsageMetrics(adminClient, res -> assertThat(res.getProcessInstances()).isEqualTo(2));
+    startProcessInstance(adminClient, PROCESS_ID_WITH_USER_TASK, TENANT_A);
+    startProcessInstance(adminClient, PROCESS_ID_WITH_USER_TASK, TENANT_B);
+    waitForUsageMetrics(
+        adminClient,
+        res -> {
+          // both tenants share the assignee, so the overall assignee count reaches 1 as soon as
+          // the first tenant's metric is exported; wait for each tenant instead
+          assertThat(res.getProcessInstances()).isEqualTo(4);
+          assertThat(res.getTenants()).containsOnlyKeys(TENANT_A, TENANT_B);
+          assertThat(res.getTenants().values())
+              .allSatisfy(
+                  tenant -> {
+                    assertThat(tenant.getProcessInstances()).isEqualTo(2);
+                    assertThat(tenant.getAssignees()).isEqualTo(1);
+                  });
+        });
   }
 
   @ParameterizedTest
@@ -220,19 +247,22 @@ public class UsageMetricAuthorizationIT {
         Arguments.of(
             ADMIN_USER,
             new UsageMetricsStatisticsImpl(
-                2,
+                4,
                 0,
-                0,
+                1,
                 2,
                 Map.of(
                     TENANT_A,
-                    new UsageMetricsStatisticsItemImpl(1, 0, 0),
+                    new UsageMetricsStatisticsItemImpl(2, 0, 1),
                     TENANT_B,
-                    new UsageMetricsStatisticsItemImpl(1, 0, 0)))),
+                    new UsageMetricsStatisticsItemImpl(2, 0, 1)))),
         Arguments.of(
             RESTRICTED_USER,
             new UsageMetricsStatisticsImpl(
-                1, 0, 0, 1, Map.of(TENANT_A, new UsageMetricsStatisticsItemImpl(1, 0, 0)))),
-        Arguments.of(UNAUTHORIZED_USER, new UsageMetricsStatisticsImpl(0, 0, 0, 0, Map.of())));
+                2, 0, 1, 1, Map.of(TENANT_A, new UsageMetricsStatisticsItemImpl(2, 0, 1)))),
+        Arguments.of(UNAUTHORIZED_USER, new UsageMetricsStatisticsImpl(0, 0, 0, 0, Map.of())),
+        Arguments.of(
+            TENANT_MEMBER_WITHOUT_PERMISSION_USER,
+            new UsageMetricsStatisticsImpl(0, 0, 0, 0, Map.of())));
   }
 }

@@ -25,7 +25,7 @@ public final class BatchOperationFilterTransformer
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    return matchAll();
+    return stringTerms(ID, authorization.resourceIds());
   }
 
   @Override
