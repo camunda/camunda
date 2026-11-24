@@ -30,7 +30,8 @@ class ResponseCheckerTest {
 
   @BeforeEach
   void setUp() {
-    checker = new ResponseChecker(futures, new WorkerResultMetrics(registry, futures));
+    checker =
+        new ResponseChecker(futures, new WorkerResultMetrics(registry, "benchmark-task", futures));
     checker.start();
   }
 
