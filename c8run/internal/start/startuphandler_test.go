@@ -362,14 +362,14 @@ func TestConfigureJavaCompatibilityOptionsAddsJava25Options(t *testing.T) {
 		t.Fatalf("configureJavaCompatibilityOptions returned error: %v", err)
 	}
 	actualOptions := os.Getenv(jdkJavaOptionsEnvironment)
-	for _, expectedOption := range []string{"-Dexisting=true", "--enable-native-access=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow"} {
+	for _, expectedOption := range []string{"-Dexisting=true", "-XX:-UseBASE64Intrinsics", "--enable-native-access=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow"} {
 		if !strings.Contains(actualOptions, expectedOption) {
 			t.Fatalf("expected %s in %s", expectedOption, actualOptions)
 		}
 	}
 }
 
-func TestConfigureJavaCompatibilityOptionsSkipsOlderJavaVersions(t *testing.T) {
+func TestConfigureJavaCompatibilityOptionsAddsOnlyJava4ShellMitigationOnJava21(t *testing.T) {
 	// given
 	t.Setenv(jdkJavaOptionsEnvironment, "-Dexisting=true")
 
@@ -380,14 +380,31 @@ func TestConfigureJavaCompatibilityOptionsSkipsOlderJavaVersions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("configureJavaCompatibilityOptions returned error: %v", err)
 	}
-	if os.Getenv(jdkJavaOptionsEnvironment) != "-Dexisting=true" {
-		t.Fatalf("expected existing options to be unchanged, got %s", os.Getenv(jdkJavaOptionsEnvironment))
+	expected := "-Dexisting=true -XX:-UseBASE64Intrinsics"
+	if os.Getenv(jdkJavaOptionsEnvironment) != expected {
+		t.Fatalf("expected %s, got %s", expected, os.Getenv(jdkJavaOptionsEnvironment))
+	}
+}
+
+func TestConfigureJavaCompatibilityOptionsAddsJava4ShellMitigationWithoutUserOptions(t *testing.T) {
+	// given
+	t.Setenv(jdkJavaOptionsEnvironment, "")
+
+	// when
+	err := configureJavaCompatibilityOptions(21)
+
+	// then
+	if err != nil {
+		t.Fatalf("configureJavaCompatibilityOptions returned error: %v", err)
+	}
+	if os.Getenv(jdkJavaOptionsEnvironment) != "-XX:-UseBASE64Intrinsics" {
+		t.Fatalf("expected -XX:-UseBASE64Intrinsics, got %s", os.Getenv(jdkJavaOptionsEnvironment))
 	}
 }
 
 func TestConfigureJavaCompatibilityOptionsDoesNotDuplicateJava25Options(t *testing.T) {
 	// given
-	options := "--enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow"
+	options := "-XX:-UseBASE64Intrinsics --enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow"
 	t.Setenv(jdkJavaOptionsEnvironment, options)
 
 	// when

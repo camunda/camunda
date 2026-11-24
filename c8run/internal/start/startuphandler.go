@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -43,6 +44,12 @@ const (
 var java25RuntimeOptions = []string{
 	"--enable-native-access=ALL-UNNAMED",
 	"--sun-misc-unsafe-memory-access=allow",
+}
+
+// java4ShellMitigationOptions mitigate CVE-2026-114938 (Java4Shell) on JDKs older than
+// 21.0.13.1 / 25.0.5.1. Remove them together with the launcher flag tracked in #69813.
+var java4ShellMitigationOptions = []string{
+	"-XX:-UseBASE64Intrinsics",
 }
 
 func printSystemInformation(javaVersion, javaHome, javaOpts string, connectorsEnabled bool) {
@@ -301,12 +308,13 @@ func leadingInteger(value string) (int, error) {
 }
 
 func configureJavaCompatibilityOptions(javaMajorVersion int) error {
-	if javaMajorVersion < java25RuntimeVersion {
-		return nil
+	requiredOptions := java4ShellMitigationOptions
+	if javaMajorVersion >= java25RuntimeVersion {
+		requiredOptions = append(slices.Clone(requiredOptions), java25RuntimeOptions...)
 	}
 
 	currentOptions := os.Getenv(jdkJavaOptionsEnvironment)
-	updatedOptions := appendMissingOptions(currentOptions, java25RuntimeOptions)
+	updatedOptions := appendMissingOptions(currentOptions, requiredOptions)
 	if updatedOptions == currentOptions {
 		return nil
 	}
