@@ -156,9 +156,16 @@ is deferred.**
   `ackCompletion(CANCELLED)` therefore cannot be reported as COMPLETED.
 - A `COMPLETE` that arrives before the ACK does everything the ACK does (advance the queue,
   finish the distribution). The late ACK is then harmless.
-- "Newer" for cancelling a deferral means a larger distribution key from the same source.
-  Distributions for one (value type, completion key) must come from one owning partition. An older
-  or tombstoned key never cancels a newer deferral.
+- Distributions that can cancel each other's deferral use an ordered queue of their own, one per
+  feature (for example `SUSPENSION` for suspend and resume, `RESOURCE_DELETION` for deletion), and
+  come from one owning partition. The queue delivers B only after A is acknowledged, so a receiver
+  sees them in order, and a slow drain of one feature never blocks another feature's queue.
+- A queue cannot stop a retry of A that is already in flight from arriving after B. Each receiver
+  therefore keeps, per (source partition, queue), the highest distribution key it has processed.
+  A command with a lower or equal key is acknowledged without being processed again. "Newer" thus
+  means a larger key from the same source, and an older key never cancels a newer deferral.
+- Distributions that cannot cancel each other stay unordered; the tombstone (above) handles their
+  redelivery.
 - A distribution whose target partitions are only the source still creates its completion state,
   so hooks fire also in a single-partition cluster.
 - An unexpected processing error on a distributed command is acknowledged generically, with the
