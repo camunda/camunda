@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -55,16 +56,18 @@ public class Worker {
       final LoadTesterProperties properties,
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
-      final MeterRegistry registry) {
+      final MeterRegistry registry,
+      @Value("${camunda.client.worker.defaults.type}") final String jobType) {
     this.client = client;
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
-    resultMetrics = new WorkerResultMetrics(registry, requestFutures);
+    resultMetrics = new WorkerResultMetrics(registry, jobType, requestFutures);
 
     // Static values, registered early so they are available even if the client never connects.
     Gauge.builder(WorkerMetricsDoc.CLIENT_INFO.getName(), () -> 1)
         .description(WorkerMetricsDoc.CLIENT_INFO.getDescription())
         .tag(StarterMetricKeyNames.NAME.asString(), "worker")
+        .tag(WorkerMetricKeyNames.JOB_TYPE.asString(), jobType)
         .tag(
             WorkerMetricKeyNames.COMPLETION_DELAY.asString(),
             workerCfg.getCompletionDelay().toString())
