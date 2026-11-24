@@ -11,6 +11,10 @@ permissions:
 
 jobs:
   triage:
+    permissions:
+      issues: write
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
     steps:
     - name: Generate GitHub token
@@ -21,9 +25,10 @@ jobs:
         github-app-id-vault-path: secret/data/products/camunda/ci/camunda
         github-app-private-key-vault-key: PROJECT_BOARD_AUTOMATION_APP_PRIVATE_KEY
         github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-        vault-auth-method: approle
-        vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-        vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+        vault-auth-method: jwt
+        vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+        vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+        vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         vault-url: ${{ secrets.VAULT_ADDR }}
     - uses: github/issue-labeler@c1b0f9f52a63158c4adc09425e858e87b32e9685 # v3.4
       with:

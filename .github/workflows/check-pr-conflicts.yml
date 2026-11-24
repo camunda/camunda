@@ -15,6 +15,11 @@ env:
 jobs:
   check-all-pr-conflicts:
     if: ${{ github.event_name == 'schedule' }}
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -29,12 +34,18 @@ jobs:
       with:
         build_status: ${{ job.status }}
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
   check-single-pr-conflict:
     # No check on label `deploy-preview` here, because it wouldn't run
     # if there's a remaining merge conflict. Thus, only a cleanup can happen here.
     if: ${{ github.event_name == 'pull_request' }}
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     steps:
     - name: Check PR for merge conflicts
@@ -53,5 +64,6 @@ jobs:
       with:
         build_status: ${{ job.status }}
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
