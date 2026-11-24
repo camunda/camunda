@@ -52,6 +52,12 @@ jobs:
       uses: ./.github/actions/paths-filter
 
   docker:
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+      id-token: write # Vault JWT login
     name: Optimize Build
     if: github.event_name == 'pull_request'
     uses: ./.github/workflows/optimize-ci-build-reusable.yml
