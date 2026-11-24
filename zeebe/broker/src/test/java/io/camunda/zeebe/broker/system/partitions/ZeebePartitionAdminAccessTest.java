@@ -8,12 +8,14 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -124,6 +126,7 @@ final class ZeebePartitionAdminAccessTest {
   final class MigrationStatus {
 
     @TempDir private File dbDirectory;
+    @TempDir private File secondDbDirectory;
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
 
     @BeforeEach
@@ -135,6 +138,35 @@ final class ZeebePartitionAdminAccessTest {
     @AfterEach
     void closeDb() throws Exception {
       zeebeDb.close();
+    }
+
+    @Test
+    void shouldReuseTheReaderForTheSameDbAndRebuildItWhenTheDbChanges() throws Exception {
+      // given - delegating mocks count how often a transaction context is opened on each db
+      final var firstDb = mock(ZeebeDb.class, delegatesTo(zeebeDb));
+      when(adminControl.isMigrationSnapshotTaken()).thenReturn(true);
+      when(adminControl.getZeebeDb()).thenReturn(firstDb);
+
+      try (final ZeebeDb<ZbColumnFamilies> secondDb =
+          TestZeebeDbFactory.defaultFactory().createDb(secondDbDirectory)) {
+        final var secondDbSpy = mock(ZeebeDb.class, delegatesTo(secondDb));
+        MigratedVersionWriter.writeMigratedByVersion(secondDb, VersionUtil.getVersion());
+
+        // when
+        sut.getMigrationStatus().join();
+        sut.getMigrationStatus().join();
+
+        // then
+        verify(firstDb, times(1)).createContext();
+
+        // when - the partition swaps to a db that has a migrated version recorded
+        when(adminControl.getZeebeDb()).thenReturn(secondDbSpy);
+        final var status = sut.getMigrationStatus().join();
+
+        // then
+        assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+        verify(secondDbSpy, times(1)).createContext();
+      }
     }
 
     @Test
