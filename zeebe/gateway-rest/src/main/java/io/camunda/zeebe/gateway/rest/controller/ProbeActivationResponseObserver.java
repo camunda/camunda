@@ -41,10 +41,16 @@ final class ProbeActivationResponseObserver implements ResponseObserver<ProbeBat
     this.physicalTenantId = physicalTenantId;
   }
 
+  /**
+   * Throws when the poll was cancelled after the handler last checked {@link #isCancelled()}: the
+   * probes never reach the worker, and the handler yields them only when delivery fails (D41).
+   */
   @Override
   public void onCompleted() {
-    result.complete(
-        ResponseEntity.ok(ProbeActivationResult.Builder.create().probes(probes).build()));
+    if (!result.complete(
+        ResponseEntity.ok(ProbeActivationResult.Builder.create().probes(probes).build()))) {
+      throw new IllegalStateException("the request was cancelled before the probes were sent");
+    }
   }
 
   @Override

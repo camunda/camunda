@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.gateway.protocol.model.ActivatedProbeResult;
 import io.camunda.gateway.protocol.model.ProbeActivationResult;
@@ -66,5 +67,27 @@ final class ProbeActivationResponseObserverTest {
     // then - the handler yields what it collected instead of answering
     assertThat(observer.isCancelled()).isTrue();
     assertThat(cancelled).isTrue();
+  }
+
+  @Test
+  void shouldFailToDeliverWhenTheRequestIsCancelledAfterTheLastCheck() {
+    // given - the handler saw the poll as live, then the worker's request went away
+    final var batch =
+        new ProbeBatchRecord()
+            .addProbe(
+                1L,
+                new ProbeRecord()
+                    .setProbeId("a")
+                    .setTenantId("<default>")
+                    .setWorker("w")
+                    .setDeadline(10L)
+                    .setInput(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{}"))));
+    assertThat(observer.isCancelled()).isFalse();
+    observer.onNext(batch);
+    result.cancel(false);
+
+    // when / then - the failure makes the handler yield the probes instead of leaving them
+    // activated until their deadline
+    assertThatThrownBy(observer::onCompleted).isInstanceOf(IllegalStateException.class);
   }
 }
