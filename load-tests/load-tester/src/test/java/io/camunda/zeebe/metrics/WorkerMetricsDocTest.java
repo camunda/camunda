@@ -9,6 +9,8 @@ package io.camunda.zeebe.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc.WorkerMetricKeyNames;
 import io.micrometer.core.instrument.Meter.Type;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +28,10 @@ class WorkerMetricsDocTest {
         .isEqualTo(
             "Total number of message publications by the worker, by outcome and error type.");
     assertThat(metric.getKeyNames())
-        .containsExactly(ResultMetricKeyNames.OUTCOME, ResultMetricKeyNames.ERROR);
+        .containsExactly(
+            WorkerMetricKeyNames.JOB_TYPE,
+            ResultMetricKeyNames.OUTCOME,
+            ResultMetricKeyNames.ERROR);
   }
 
   @Test
@@ -40,7 +45,10 @@ class WorkerMetricsDocTest {
     assertThat(metric.getDescription())
         .isEqualTo("Total number of answered job completion requests by outcome and error type.");
     assertThat(metric.getKeyNames())
-        .containsExactly(ResultMetricKeyNames.OUTCOME, ResultMetricKeyNames.ERROR);
+        .containsExactly(
+            WorkerMetricKeyNames.JOB_TYPE,
+            ResultMetricKeyNames.OUTCOME,
+            ResultMetricKeyNames.ERROR);
   }
 
   @Test
@@ -54,7 +62,7 @@ class WorkerMetricsDocTest {
     assertThat(metric.getDescription())
         .isEqualTo(
             "Total number of job completions dropped from result tracking because the queue was full.");
-    assertThat(metric.getKeyNames()).isEmpty();
+    assertThat(metric.getKeyNames()).containsExactly(WorkerMetricKeyNames.JOB_TYPE);
   }
 
   @Test
@@ -67,6 +75,23 @@ class WorkerMetricsDocTest {
     assertThat(metric.getType()).isEqualTo(Type.GAUGE);
     assertThat(metric.getDescription())
         .isEqualTo("Number of job completion requests queued and not yet awaited.");
-    assertThat(metric.getKeyNames()).isEmpty();
+    assertThat(metric.getKeyNames()).containsExactly(WorkerMetricKeyNames.JOB_TYPE);
+  }
+
+  @Test
+  void shouldDefineClientInfoGauge() {
+    // given
+    final var metric = WorkerMetricsDoc.CLIENT_INFO;
+
+    // when / then
+    assertThat(metric.getName()).isEqualTo("client.info");
+    assertThat(metric.getType()).isEqualTo(Type.GAUGE);
+    assertThat(metric.getDescription()).isEqualTo("The information about the client.");
+    assertThat(metric.getKeyNames())
+        .containsExactly(
+            StarterMetricKeyNames.NAME,
+            WorkerMetricKeyNames.JOB_TYPE,
+            WorkerMetricKeyNames.COMPLETION_DELAY,
+            WorkerMetricKeyNames.SEND_MESSAGE);
   }
 }
