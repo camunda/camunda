@@ -40,7 +40,11 @@ public interface AgentRunExecutionPlanInterpreter extends ProcessExecutionPlanIn
 
   /** Other process filters read fields that agent runs do not have, so they are rejected. */
   static void validateFilters(final ProcessReportDataDto reportData) {
-    reportData.getFilter().stream()
+    validateFilters(reportData.getFilter());
+  }
+
+  static void validateFilters(final List<ProcessFilterDto<?>> filters) {
+    filters.stream()
         .filter(filter -> !SUPPORTED_FILTERS.contains(filter.getClass()))
         .findFirst()
         .ifPresent(

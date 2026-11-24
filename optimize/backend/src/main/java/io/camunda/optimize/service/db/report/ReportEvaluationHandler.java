@@ -45,8 +45,10 @@ import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespon
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import io.camunda.optimize.rest.AgenticPhase2Guard;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.service.db.report.interpreter.plan.process.AgentRunExecutionPlanInterpreter;
 import io.camunda.optimize.service.exceptions.OptimizeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -112,7 +114,7 @@ public abstract class ReportEvaluationHandler {
     final long startNanos = System.nanoTime();
     try {
       evaluationInfo.postFetchSavedReport(reportService);
-      validateAgentInsightsReport(evaluationInfo.getReport());
+      validateAgentInsightsReport(evaluationInfo);
       updateAndSetLatestReportDefinitionXml(evaluationInfo);
       setDataSourcesForSystemGeneratedReports(evaluationInfo);
       final RoleType currentUserRole =
@@ -174,7 +176,8 @@ public abstract class ReportEvaluationHandler {
    * they do not exist (404). Agent run views are only evaluated in the seeded, non-editable agent
    * insights reports, which get the user's definitions filled in below.
    */
-  private void validateAgentInsightsReport(final ReportDefinitionDto<?> report) {
+  private void validateAgentInsightsReport(final ReportEvaluationInfo evaluationInfo) {
+    final ReportDefinitionDto<?> report = evaluationInfo.getReport();
     if (report == null || !(report.getData() instanceof final ProcessReportDataDto data)) {
       return;
     }
@@ -184,8 +187,19 @@ public abstract class ReportEvaluationHandler {
       agenticPhase2Guard.requireEnabled();
     }
     if (agentRunView && !data.isAgentInsightsReport()) {
-      throw new OptimizeValidationException(
+      throw new BadRequestException(
           "The agentRun view is only supported in agent insights reports.");
+    }
+    // Checked before the additional filters are merged into the report, which drops variable
+    // filters for variables the report does not know and would evaluate without them.
+    if (agentRunView && evaluationInfo.getAdditionalFilters() != null) {
+      try {
+        AgentRunExecutionPlanInterpreter.validateFilters(
+            Optional.ofNullable(evaluationInfo.getAdditionalFilters().getFilter())
+                .orElse(List.of()));
+      } catch (final OptimizeValidationException e) {
+        throw new BadRequestException(e.getMessage(), e);
+      }
     }
   }
 

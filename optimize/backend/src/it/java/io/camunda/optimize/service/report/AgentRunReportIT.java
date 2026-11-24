@@ -45,6 +45,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGr
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ReportReader;
@@ -207,6 +208,29 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
     assertThatThrownBy(() -> evaluate(reportId, noExtraFilters()))
         .isInstanceOf(ReportEvaluationException.class)
         .hasRootCauseInstanceOf(OptimizeValidationException.class);
+  }
+
+  @Test
+  void shouldRejectUnsupportedFiltersSentWithTheEvaluation() {
+    // given a variable filter for a variable the report does not know, which the evaluation
+    // would otherwise drop and evaluate without
+    final String processKey = uniqueKey();
+    persistProcessDefinition(processKey, ZEEBE_DEFAULT_TENANT_ID);
+    final String reportId = createAgentRunReport(List.of(FREQUENCY), completedRunsOnly());
+    final AdditionalProcessReportEvaluationFilterDto variableFilter =
+        new AdditionalProcessReportEvaluationFilterDto(
+            ProcessFilterBuilder.filter()
+                .variable()
+                .booleanType()
+                .name(uniqueKey())
+                .booleanTrue()
+                .add()
+                .buildList());
+
+    // when / then
+    assertThatThrownBy(() -> evaluate(reportId, variableFilter))
+        .isInstanceOf(BadRequestException.class)
+        .hasMessageContaining("not supported for agentRun views");
   }
 
   @Test

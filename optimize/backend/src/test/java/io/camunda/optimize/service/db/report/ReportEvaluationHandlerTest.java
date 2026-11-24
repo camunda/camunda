@@ -26,13 +26,14 @@ import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinition
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.rest.AgenticPhase2Guard;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.identity.CollapsedSubprocessNodesService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -124,8 +125,36 @@ class ReportEvaluationHandlerTest {
 
     // when / then
     assertThatThrownBy(() -> underTest.evaluateReport(evaluationWithoutSelection(reportData)))
-        .isInstanceOf(OptimizeValidationException.class)
+        .isInstanceOf(BadRequestException.class)
         .hasMessageContaining("agentRun");
+  }
+
+  // Additional variable filters for variables the report does not know are dropped when they are
+  // merged into the report, so they must be rejected before that instead of being ignored.
+  @Test
+  void shouldRejectUnsupportedFilterSentWithAgentRunReportEvaluation() {
+    // given
+    configurationService.getAgenticPhase2Configuration().setEnabled(true);
+    final ProcessReportDataDto reportData = agentRunReportData();
+    reportData.setAgentInsightsReport(true);
+    final ReportEvaluationInfo evaluation =
+        ReportEvaluationInfo.builder(new SingleProcessReportDefinitionRequestDto(reportData))
+            .userId(USER_ID)
+            .additionalFilters(
+                new AdditionalProcessReportEvaluationFilterDto(
+                    ProcessFilterBuilder.filter()
+                        .variable()
+                        .booleanType()
+                        .name(uniqueKey())
+                        .booleanTrue()
+                        .add()
+                        .buildList()))
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> underTest.evaluateReport(evaluation))
+        .isInstanceOf(BadRequestException.class)
+        .hasMessageContaining("not supported for agentRun views");
   }
 
   @Test
