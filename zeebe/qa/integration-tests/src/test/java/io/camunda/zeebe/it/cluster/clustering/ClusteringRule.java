@@ -18,8 +18,6 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.utils.Version;
 import io.camunda.application.commons.actor.ActorClockConfiguration;
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
@@ -715,8 +713,8 @@ public class ClusteringRule extends ExternalResource {
     LOGGER.debug(
         "Disconnecting node {} to cluster",
         broker.getSystemContext().getBrokerConfiguration().getCluster().getNodeId());
-    ((NettyUnicastService) cluster.getUnicastService()).stop().join();
-    ((NettyMessagingService) cluster.getMessagingService()).stop().join();
+    // stops both cluster transports, UDP and TCP
+    cluster.getNetworkService().stop().join();
     broker.getBrokerContext().getApiMessagingService().stop().join();
   }
 
@@ -726,8 +724,7 @@ public class ClusteringRule extends ExternalResource {
     LOGGER.debug(
         "Connecting node {} to cluster",
         broker.getSystemContext().getBrokerConfiguration().getCluster().getNodeId());
-    ((NettyUnicastService) cluster.getUnicastService()).start().join();
-    ((NettyMessagingService) cluster.getMessagingService()).start().join();
+    cluster.getNetworkService().start().join();
   }
 
   public void stopBrokerAndAwaitNewLeader(final int nodeId) {

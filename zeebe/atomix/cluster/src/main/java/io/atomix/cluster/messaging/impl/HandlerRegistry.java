@@ -45,6 +45,17 @@ final class HandlerRegistry {
   }
 
   /**
+   * Unregisters the given handler, but only if it is still the one registered for the type, so that
+   * a handler which has since replaced it is left in place.
+   *
+   * @param type the message type
+   * @param handler the handler to remove
+   */
+  void unregister(final String type, final BiConsumer<ProtocolRequest, ServerConnection> handler) {
+    handlers.remove(type, handler);
+  }
+
+  /**
    * Looks up a message type handler.
    *
    * @param type the message type
