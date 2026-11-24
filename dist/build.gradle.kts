@@ -456,6 +456,7 @@ dependencies {
   implementation(project(":zeebe-transport"))
   implementation(libs.io.micrometer.micrometer.commons)
   implementation(libs.io.micrometer.micrometer.core)
+  implementation(libs.io.opentelemetry.opentelemetry.api)
   implementation(libs.io.micrometer.micrometer.observation)
   implementation(libs.org.springframework.boot.spring.boot.micrometer.observation)
   implementation(libs.org.springframework.boot.spring.boot.starter.web) {
@@ -492,7 +493,10 @@ dependencies {
   implementation(libs.org.apache.httpcomponents.core5.httpcore5)
   implementation(libs.com.zaxxer.hikaricp)
   runtimeOnly(libs.io.micrometer.micrometer.registry.otlp)
-  runtimeOnly("org.springframework.boot:spring-boot-opentelemetry")
+  runtimeOnly("org.springframework.boot:spring-boot-starter-opentelemetry") {
+    // Match Maven / analytics-exporter: use the JDK HTTP sender instead of OkHttp.
+    exclude(group = "io.opentelemetry", module = "opentelemetry-exporter-sender-okhttp")
+  }
   runtimeOnly(libs.org.bouncycastle.bcpkix.jdk18on)
   runtimeOnly(libs.org.bouncycastle.bcprov.jdk18on)
   testImplementation(libs.org.apache.logging.log4j.log4j.core.test)

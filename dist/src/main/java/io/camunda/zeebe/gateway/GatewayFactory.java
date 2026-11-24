@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
 import java.time.Duration;
 import java.util.function.Function;
 import org.agrona.CloseHelper;
@@ -55,7 +56,8 @@ public final class GatewayFactory {
       final int maxVariableNameLength,
       final @Nullable ServiceRegistry serviceRegistry,
       final @Nullable ScopedJwtDecoderFactory scopedJwtDecoderFactory,
-      final @Nullable ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory) {
+      final @Nullable ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
+      final @Nullable ObservationRegistry observationRegistry) {
     final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
         authConfig ->
             required(scopedJwtDecoderFactory, "ScopedJwtDecoderFactory")
@@ -81,7 +83,8 @@ public final class GatewayFactory {
         passwordEncoder,
         meterRegistry,
         maxVariableNameLength,
-        physicalTenantResolver);
+        physicalTenantResolver,
+        observationRegistry != null ? observationRegistry : ObservationRegistry.NOOP);
   }
 
   /**
