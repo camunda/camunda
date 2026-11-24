@@ -40,6 +40,21 @@ permissions:
 
 jobs:
   build_and_test_c8run:
+    permissions:
+      actions: write
+      attestations: none
+      checks: write
+      contents: read
+      deployments: none
+      issues: none
+      discussions: none
+      packages: none
+      pages: none
+      pull-requests: none
+      repository-projects: none
+      security-events: none
+      statuses: write
+      id-token: write
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
@@ -66,6 +81,9 @@ jobs:
         with:
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           java-version: |
@@ -81,9 +99,10 @@ jobs:
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/qa/ci/common NEXUS_USERNAME;
             secret/data/products/qa/ci/common NEXUS_PASSWORD;
@@ -150,5 +169,8 @@ jobs:
           build_status: ${{ job.status }}
           job_name: build_and_test_c8run/${{ matrix.env }}/${{ matrix.config }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
