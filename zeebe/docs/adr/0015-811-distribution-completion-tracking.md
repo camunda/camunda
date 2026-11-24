@@ -49,6 +49,10 @@ are observable.**
   common case: deployment, clock, identity, cluster variables, global listeners, signals.
 - There is no opt-in. Every distribution is tracked and exported, so a client or user can see when
   every partition has acknowledged it, and when all of its work is done.
+- Exception: a distribution whose only participant is the source (a single-partition cluster, or
+  a command for the current partition only), with no hook and no deferral, writes no tracking
+  records. The command's own events already mean "done everywhere"; tracking would add four
+  records to every such command.
 - Ordered queues advance on ACKNOWLEDGED, as today. Remaining work can take hours or years (a
   drain), and must never block the queue.
 
@@ -268,7 +272,7 @@ is deferred.**
 - Batch operations report structured errors per partition and decide between COMPLETED and FAILED
   from them. Whether they fit needs a FAILED outcome with a payload; this is explored in a
   separate spike.
-- Every distribution writes one extra event (`COMPLETED`). A distribution with deferred completion
+- Every distribution with another participant writes one extra event (`COMPLETED`). A distribution with deferred completion
   writes about three extra records per partition: the `COMPLETE` command, its ACK, and
   `PARTITION_COMPLETED`.
 - Source state for a distribution with deferred completion lives until every partition has sent
