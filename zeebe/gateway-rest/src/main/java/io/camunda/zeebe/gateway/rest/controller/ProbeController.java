@@ -132,7 +132,6 @@ public class ProbeController {
     // the worker's request is gone, for example its connection broke: the poll is cancelled, and
     // the probes it collected but could not deliver are yielded (D41)
     deferred.onError(error -> result.cancel(false));
-    deferred.onTimeout(() -> result.cancel(false));
     return deferred;
   }
 
