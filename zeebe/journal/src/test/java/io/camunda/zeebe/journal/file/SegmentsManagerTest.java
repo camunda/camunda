@@ -323,6 +323,38 @@ class SegmentsManagerTest {
   }
 
   @Test
+  void shouldForceNewFirstSegmentBeforeDeletingOldSegmentsOnReset() {
+    // given - a journal whose segments are spied on, including the one the reset creates
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    try (final var journal = openJournal()) {
+      journal.append(1, journalFactory.entry()).index();
+      journal.append(2, journalFactory.entry()).index();
+    }
+    //noinspection resource
+    Mockito.doAnswer(call -> Mockito.spy(call.callRealMethod()))
+        .when(loader)
+        .loadExistingSegment(Mockito.any(), Mockito.anyLong(), Mockito.any());
+    //noinspection resource
+    Mockito.doAnswer(call -> Mockito.spy(call.callRealMethod()))
+        .when(loader)
+        .createSegment(Mockito.any(), Mockito.any(), Mockito.anyLong(), Mockito.any());
+    segments = journalFactory.segmentsManager(directory, loader);
+    try (final var journal = journalFactory.journal(segments)) {
+      final var oldLastSegment = segments.getLastSegment();
+
+      // when
+      journal.reset(10);
+
+      // then - the new first segment is on disk before any old segment is gone, so that a power
+      // loss after the deletion still finds the reset
+      final var newFirstSegment = segments.getFirstSegment();
+      final var inOrder = Mockito.inOrder(newFirstSegment, oldLastSegment);
+      inOrder.verify(newFirstSegment).flushDescriptor();
+      inOrder.verify(oldLastSegment).delete();
+    }
+  }
+
+  @Test
   void shouldPrepareNextSegmentOnBgIoThread() {
     // given - the next segment is prepared asynchronously; this does blocking I/O, so it must not
     // occupy a thread of the JVM-wide common ForkJoinPool, where it could starve unrelated work

@@ -87,7 +87,9 @@ final class SegmentedJournalResetStepsTest {
         final int step = failAt;
         final String failure = config + ", fail " + steps.get(step);
         tests.add(
-            dynamicTest(failure + ", then append and restart", () -> failThenAppend(config, step)));
+            dynamicTest(
+                failure + ", then append and restart",
+                () -> failThenAppend(config, step, steps.get(step))));
         tests.add(
             dynamicTest(failure + ", then retry the reset", () -> failThenRetry(config, step)));
       }
@@ -142,11 +144,14 @@ final class SegmentedJournalResetStepsTest {
     }
   }
 
-  private void failThenAppend(final Config config, final int failAt) throws FlushException {
+  private void failThenAppend(final Config config, final int failAt, final String failedStep)
+      throws FlushException {
     // given
     final var root = newDirectory("fail-append-" + config.fileName() + "-" + failAt);
     final var steps = new ResetSteps(failAt);
     try (final var journal = ResetJournal.open(root, config, steps)) {
+      final var segmentFilesBefore = segmentFiles(root);
+
       // when - a step of the reset fails
       assertThatThrownBy(() -> steps.during(journal::reset)).isNotNull();
 
@@ -154,10 +159,23 @@ final class SegmentedJournalResetStepsTest {
       assertOldPrefixOrReset(journal.journal, journal.oldEntries);
       final var expected = new ArrayList<>(JournalEntry.readAll(journal.journal));
 
+      // and the next flush stores no index after what is left
+      journal.journal.flush();
+      assertThat(journal.metaStore.loadLastFlushedIndex()).isEqualTo(expected.getLast().index());
+
+      // and a failed delete leaves no new segment behind
+      if (failedStep.startsWith("delete segment")) {
+        assertThat(segmentFiles(root)).isSubsetOf(segmentFilesBefore);
+      }
+
       // when - a new leader continues the old log, and the node then restarts gracefully
       final var appended = JournalEntry.of(journal.journal.append(ENTRY));
       assertThat(appended.index()).isEqualTo(expected.getLast().index() + 1);
       expected.add(appended);
+
+      // then - the reader that followed the log continues with the appended entry
+      assertThat(journal.reader.hasNext()).isTrue();
+      assertThat(JournalEntry.of(journal.reader.next())).isEqualTo(appended);
       journal.closeJournal();
 
       // then - the appended entry survived the restart, so it was not written to a deleted segment
@@ -202,6 +220,17 @@ final class SegmentedJournalResetStepsTest {
           .hasSizeLessThanOrEqualTo(oldEntries.size())
           .containsExactlyElementsOf(oldEntries.subList(0, entries.size()));
       assertThat(journal.getLastIndex()).isEqualTo(entries.getLast().index());
+    }
+  }
+
+  private static List<String> segmentFiles(final Path root) {
+    try (final var files = Files.list(root.resolve("data"))) {
+      return files
+          .map(file -> file.getFileName().toString())
+          .filter(name -> SegmentFile.isSegmentFile("journal", name))
+          .toList();
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 
