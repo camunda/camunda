@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import org.jspecify.annotations.NullMarked;
 
 /** Reads the identity data from the state, as the identity processors see it. */
@@ -38,5 +40,14 @@ public final class StateIdentityView implements IdentityView {
   @Override
   public boolean mappingRuleExists(final String mappingRuleId) {
     return state.getMappingRuleState().get(mappingRuleId).isPresent();
+  }
+
+  @Override
+  public boolean hasRelation(
+      final EntityType entityType,
+      final String entityId,
+      final RelationType relationType,
+      final String relationId) {
+    return state.getMembershipState().hasRelation(entityType, entityId, relationType, relationId);
   }
 }
