@@ -744,6 +744,18 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-metadata-store-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-metadata-store-impl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-cluster-config-api</artifactId>
         <version>${project.version}</version>
       </dependency>
