@@ -20,6 +20,8 @@
 
   <properties>
     <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
+    <!-- PIT mutates this module's own package only, see docs/testing/mutation-testing.md -->
+    <pit.targetClasses>io.camunda.zeebe.metadata.store.api.*</pit.targetClasses>
   </properties>
 
   <dependencies>
