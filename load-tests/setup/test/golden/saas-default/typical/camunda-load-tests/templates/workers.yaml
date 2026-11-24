@@ -1,0 +1,141 @@
+---
+# Source: camunda-load-tests/templates/workers.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  labels:
+    app: worker
+
+    app.kubernetes.io/name: camunda-load-tests
+    app.kubernetes.io/instance: c8-golden-saas-typical-test
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+spec:
+  selector:
+    matchLabels:
+      app: worker
+  replicas: 6
+  template:
+    metadata:
+      labels:
+        app: worker
+        app.kubernetes.io/component: zeebe-client
+
+        app.kubernetes.io/name: camunda-load-tests
+        app.kubernetes.io/instance: c8-golden-saas-typical-test
+
+        app.kubernetes.io/managed-by: Helm
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
+      annotations:
+        
+        checksum/saas-credentials: d9ec342b97439c75d5c50cd23b6f60d5c0de549f86549264b79397a9d475dc63
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry
+      containers:
+        - name: worker
+          image: "registry.camunda.cloud/team-zeebe/worker:SNAPSHOT"
+          imagePullPolicy: Always
+          env:
+            - name: JDK_JAVA_OPTIONS
+              value: >-
+                -XX:+ExitOnOutOfMemoryError
+                -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/heap-dumps
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: ZEEBE_REST_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-typical-test-credentials
+                  key: zeebeRestAddress
+            - name: ZEEBE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-typical-test-credentials
+                  key: clientId
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-typical-test-credentials
+                  key: clientSecret
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-typical-test-credentials
+                  key: authServer
+            - name: ZEEBE_TOKEN_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-typical-test-credentials
+                  key: authorizationAudience
+            - name: ZEEBE_AUTH_TYPE
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-typical-test-credentials
+                  key: authType
+            - name: ZEEBE_GRPC_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-typical-test-credentials
+                  key: zeebeGrpcAddress
+            ##
+            ## Spring Boot compatible env vars (for migrated load tester, ignored by old HOCON app)
+            ##
+            - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
+              value: "true"
+            - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+              value: "false"
+            - name: CAMUNDA_CLIENT_MODE
+              value: "saas"
+            - name: CAMUNDA_CLIENT_AUTH_METHOD
+              value: "oidc"
+            - name: LOAD_TESTER_WORKER_CAPACITY
+              value: "60"
+            - name: LOAD_TESTER_WORKER_THREADS
+              value: "30"
+            - name: LOAD_TESTER_WORKER_COMPLETION_DELAY
+              value: "50ms"
+            - name: LOAD_TESTER_WORKER_WORKER_NAME
+              value: "worker"
+            - name: LOAD_TESTER_WORKER_JOB_TYPE
+              value: "benchmark-task"
+            - name: LOAD_TESTER_WORKER_PAYLOAD_PATH
+              value: "bpmn/typical_payload.json"
+            - name: LOGGING_LEVEL_IO_CAMUNDA_ZEEBE
+              value: "INFO"
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 500m
+              memory: 512Mi
+          ports:
+            - containerPort: 9600
+              name: "http"
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /health/readiness
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health/readiness
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: heap-dumps
+              mountPath: /heap-dumps
+      volumes:
+        - name: heap-dumps
+          emptyDir: {}
