@@ -14,11 +14,12 @@ from .context import VerifyError
 from .context import kubectl
 from .context import log
 from .k6 import verify_metrics
+from .k6 import wait_for_k6_statefulsets
 from .k6 import wait_for_testruns
 from .pods import wait_for_pods
 
 VERIFY_HELP = (
-    "Wait for the pods and k6 TestRuns of a load test to be healthy, for the client to be "
+    "Wait for the pods and k6 tests of a load test to be healthy, for the client to be "
     "connected to the gateway, and for k6 to report metrics to Prometheus."
 )
 
@@ -71,6 +72,7 @@ def run_verify(
 
     try:
         wait_for_testruns(ctx)
+        wait_for_k6_statefulsets(ctx)
         verify_metrics(
             ctx,
             lambda: PrometheusClient(prometheus_url, prometheus_user, prometheus_password, ""),
@@ -96,7 +98,7 @@ def run_verify(
     default=30,
     type=click.IntRange(min=1),
     show_default=True,
-    help="Number of attempts for each wait (pods and k6 TestRuns).",
+    help="Number of attempts for each wait (pods and k6 tests).",
 )
 @option(
     "--connectivity-timeout",

@@ -1,4 +1,4 @@
-"""Checks of the k6 TestRuns deployed by the load test chart."""
+"""Checks of the k6 TestRuns and StatefulSets deployed by the load test chart."""
 
 import json
 from collections.abc import Callable
@@ -24,6 +24,14 @@ def list_testruns(ctx: Context) -> dict[str, str]:
         raise VerifyError(f"Unable to list k6 TestRuns in {ctx.namespace}: {result.stderr.strip()}")
     items = json.loads(result.stdout)["items"]
     return {item["metadata"]["name"]: item.get("status", {}).get("stage", "") for item in items}
+
+
+def list_k6_statefulsets(ctx: Context) -> list[str]:
+    """Return the names of the k6 tests that run as a StatefulSet. A failing kubectl must not be reported as "none"."""
+    result = kubectl("get", "statefulsets", "-n", ctx.namespace, "-l", "app.kubernetes.io/component=k6", "-o", "json")
+    if result.returncode != 0:
+        raise VerifyError(f"Unable to list k6 StatefulSets in {ctx.namespace}: {result.stderr.strip()}")
+    return [item["metadata"]["name"] for item in json.loads(result.stdout)["items"]]
 
 
 def failed_k6_pods(ctx: Context) -> list[str]:
@@ -78,39 +86,60 @@ def wait_for_testruns(ctx: Context) -> None:
             log(f"k6 TestRun {name} is {stage}, skipping its runner pods.")
 
 
-def verify_metrics(ctx: Context, new_client: Callable[[], PrometheusClient], timeout: int) -> None:
-    """Wait until k6 reports metrics to Prometheus (k6_http_reqs_total >= 1), if there are k6 TestRuns.
+def wait_for_k6_statefulsets(ctx: Context) -> None:
+    """Wait until the pods of every k6 StatefulSet are ready, if there are any.
 
-    The client is only created for k6 TestRuns, so load tests without k6 never need Prometheus credentials.
+    The k6 container has no readiness probe, so a ready pod only shows that k6 started: verify_metrics checks
+    that the test sends requests.
     """
-    if not list_testruns(ctx):
+    statefulsets = list_k6_statefulsets(ctx)
+    if not statefulsets:
+        log(f"No k6 StatefulSet deployed in {ctx.namespace}, nothing to verify.")
+        return
+
+    for name in statefulsets:
+        wait_for_pods(ctx, f"app.kubernetes.io/name={name}", f"k6 pods of StatefulSet {name}")
+
+
+def verify_metrics(ctx: Context, new_client: Callable[[], PrometheusClient], timeout: int) -> None:
+    """Wait until each started k6 TestRun and each k6 StatefulSet reports k6_http_reqs_total >= 1.
+
+    The k6 tests report metrics with the TestRun or StatefulSet name as `testrun_name`. A stopped or finished
+    TestRun sends no new samples, so it is not checked. The client is only created when a test is checked, so
+    load tests without k6 never need Prometheus credentials.
+    """
+    testruns = list_testruns(ctx)
+    expected = {name for name, stage in testruns.items() if stage == "started"} | set(list_k6_statefulsets(ctx))
+    if not expected:
         return
 
     client = new_client()
 
-    query = f'sum(k6_http_reqs_total{{namespace="{ctx.namespace}", expected_response="true"}})'
+    query = f'sum by (testrun_name) (k6_http_reqs_total{{namespace="{ctx.namespace}", expected_response="true"}}) >= 1'
     deadline = ctx.clock() + timeout
     attempt = 0
+    missing = sorted(expected)
     while ctx.clock() < deadline:
         attempt += 1
         log(f"Checking k6 metrics (attempt {attempt}, {max(0, deadline - ctx.clock()):.0f}s left)")
-        http_reqs = query_value(client, query)
-        if http_reqs >= 1:
-            log(f"Namespace {ctx.namespace}: k6 reports metrics (k6_http_reqs_total={http_reqs:g})")
+        missing = sorted(expected - reporting_tests(client, query))
+        if not missing:
+            log(f"Namespace {ctx.namespace}: k6 reports metrics for {', '.join(sorted(expected))}")
             return
+        log(f"No k6 metrics yet for {', '.join(missing)}")
         ctx.sleep(min(ctx.retry_delay, max(0, deadline - ctx.clock())))
 
     raise VerifyError(
-        f"Namespace {ctx.namespace} k6 did not report metrics to Prometheus within {timeout}s "
-        "(k6_http_reqs_total never reached 1)"
+        f"Namespace {ctx.namespace}: the k6 tests {', '.join(missing)} did not report metrics to Prometheus within "
+        f"{timeout}s (k6_http_reqs_total never reached 1)"
     )
 
 
-def query_value(client: PrometheusClient, query: str) -> float:
-    """Return the value of a single-sample query, 0 if there is none or Prometheus cannot be queried (yet)."""
+def reporting_tests(client: PrometheusClient, query: str) -> set[str]:
+    """Return the `testrun_name` of each series of the query, none if Prometheus cannot be queried (yet)."""
     try:
         result = client.query(query).data.result
     except (PrometheusError, ReportError, URLError, OSError, ValueError) as error:
         log(f"Prometheus query failed: {error}")
-        return 0
-    return result[0].value if result else 0
+        return set()
+    return {str(series.metric["testrun_name"]) for series in result if "testrun_name" in series.metric}

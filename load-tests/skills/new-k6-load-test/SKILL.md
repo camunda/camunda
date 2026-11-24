@@ -20,7 +20,7 @@ Existing tests are `k6/scripts/test.*.js` and are registered in `k6.tests` in `v
    shape cannot share a script with an existing test.
 4. State the decision and the reason to the user before writing code.
 
-See "In which case to use k6 tests?" in `README.md`.
+See "When to use k6 tests" in `README.md`.
 
 ## 2. Put the test script in `k6/scripts/`
 
@@ -37,9 +37,10 @@ See "In which case to use k6 tests?" in `README.md`.
 5. Define the load in `options.scenarios`, with one exported function per scenario (`exec`).
    Set a long `duration` (for example `"60d"`) so that the test runs as long as the load test.
 6. Call `check()` on the response of each request. Do not use `thresholds`: `K6_NO_THRESHOLDS`
-   is set in `templates/k6/testrun.yaml` and k6 ignores them.
+   is set in `load-test-setup.k6.env` (`templates/_helpers.tpl`) and k6 ignores them.
 7. Do not store per-request data in module-level arrays, and do not add custom `Trend` metrics.
-   k6 memory grows without bound on long runs, the pod is OOM-killed and not restarted.
+   k6 memory grows without bound on long runs, the pod is OOM-killed. A TestRun
+   pod is not restarted, a StatefulSet pod is.
 8. Log with `console.log` at module level and in `setup()` to show what the test does at start.
    Logging in scenario functions is allowed, but they run on every iteration for the whole test:
    logging each error without a rate limit or back-off delay writes one line per failed request
@@ -87,7 +88,8 @@ k6:
       script: test.mytest.js
 ```
 
-1. The key (`my-test`) becomes the `TestRun` name `k6-my-test`.
+1. The key (`my-test`) becomes the name `k6-my-test` of the `TestRun`, or of the StatefulSet when
+   the test sets `runner.statefulset`.
 2. `script` is the file name in `k6/scripts/`.
 3. Skip this step when the test extends an existing test that is already enabled.
 4. If the test needs a feature that is not available everywhere (a secondary storage, an
@@ -113,7 +115,7 @@ To run the k6 test in a cluster, see "How to run a load test" in `load-tests/set
       DATA_DIR=/path/to/data CAMUNDA_BASE_URL=http://localhost:8080 k6 run k6/scripts/test.mytest.js
       k6 run -e DATA_DIR=/path/to/data k6/scripts/test.mytest.js
       ```
-      In the cluster, `testrun.yaml` sets `DATA_DIR=/data`, which is where the `k6-data`
+      In the cluster, `load-test-setup.k6.env` sets `DATA_DIR=/data`, which is where the `k6-data`
       ConfigMap is mounted.
 2. Format the scripts and run the unit tests, and update `k6/tests/` when the behavior of
    any `*.js` changes:
@@ -126,7 +128,7 @@ To run the k6 test in a cluster, see "How to run a load test" in `load-tests/set
    make -C ../../test update-golden
    ```
    Review `git diff ../../test/golden/` and commit it in the same PR.
-4. Update the "Which tests are deployed?" list in `README.md` with one line for the new test.
+4. Update the "Deployed tests" list in `README.md` with one line for the new test.
    Skip this when the test extends an existing one and the description is still correct.
 5. Run `./mvnw license:format spotless:apply -T1C` from the repository root when a `.md` file
    changed.

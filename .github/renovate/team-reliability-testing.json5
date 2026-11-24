@@ -147,6 +147,7 @@
   kubernetes: {
     managerFilePatterns: [
       "load-tests/setup/charts/load-test-setup/templates/k6/testrun.yaml",
+      "load-tests/setup/charts/load-test-setup/templates/k6/statefulset.yaml",
     ],
   },
 
