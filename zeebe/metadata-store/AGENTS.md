@@ -9,10 +9,12 @@ A namespaced key-value store for cluster metadata, backed by the system partitio
 `io.camunda.zeebe.metadata.store.impl`, each with its subpackages. The two never share a package.
 
 - `api/` (`zeebe-metadata-store-api`) — the contract consumers compile against: the
-  `ClusterMetadataStore` and `NamespaceApi` interfaces, value types (`Namespace`, `StoreKey`,
-  `KeyValue`, events, `Subscription`), `Write` and `Condition`, the
-  `ClusterMetadataStoreException` hierarchy, and validation that needs no store state (key and
-  namespace names, batch rules). Every call returns an `ActorFuture`.
+  `ClusterMetadataStore` and `NamespaceApi` interfaces, value types (`Namespace`,
+  `NamespaceScope`, `StoreKey`, `StoreValue`, `KeyValue`, `KeyEvent`, `NamespaceChange`),
+  `WatchListener` and `Subscription`, `Write`, `Batch` and `Condition`, the
+  `ClusterMetadataStoreException` hierarchy, and validation that needs no store state: a key,
+  namespace name or batch that breaks a rule cannot be built. Every call except the two watches
+  returns an `ActorFuture`; a store implements `batch`, and the single writes are batches of one.
 - `impl/` (`zeebe-metadata-store-impl`) — behavior: the state, the Raft-backed store, and
   everything else that reads or writes stored data.
 

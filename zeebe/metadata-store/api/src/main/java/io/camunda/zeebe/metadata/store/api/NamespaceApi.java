@@ -10,7 +10,6 @@ package io.camunda.zeebe.metadata.store.api;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
 
 /**
  * Creates, deletes, lists and follows namespaces. Handed to the components that manage namespaces
@@ -20,8 +19,8 @@ import java.util.function.BiConsumer;
 public interface NamespaceApi {
 
   /**
-   * Creates the namespace. Fails with {@link
-   * ClusterMetadataStoreException.NamespaceAlreadyExistsException} if it exists.
+   * Creates the namespace. If it exists, the returned future fails with {@link
+   * ClusterMetadataStoreException.NamespaceAlreadyExistsException}.
    */
   ActorFuture<Void> createNamespace(Namespace namespace);
 
@@ -37,7 +36,8 @@ public interface NamespaceApi {
    * Registers a listener for namespaces of the scope being created or deleted. It reports
    * namespaces only, never their keys. Registration does not report existing namespaces: register
    * first, then call {@link #list(NamespaceScope)}. The listener is called on the given executor,
-   * one event at a time and in commit order.
+   * one event at a time and in commit order. Like {@link ClusterMetadataStore#watch}, it returns
+   * its handle at once and throws the errors known when it is called.
    *
    * @throws ClusterMetadataStoreException.ViewStalledException if this broker's view can no longer
    *     follow the store; nothing is registered
@@ -45,19 +45,5 @@ public interface NamespaceApi {
    *     registered
    */
   Subscription watchNamespace(
-      NamespaceScope scope, BiConsumer<Namespace, NamespaceEvent> listener, Executor executor);
-
-  /** Whose data a namespace holds. */
-  enum NamespaceScope {
-    /** The whole cluster; the namespace name is a fixed name chosen by its consumer. */
-    CLUSTER,
-    /** One physical tenant; the namespace name is the physical tenant id. */
-    PHYSICAL_TENANT
-  }
-
-  /** What happened to a namespace, as {@link #watchNamespace} delivers it. */
-  enum NamespaceEvent {
-    CREATED,
-    DELETED
-  }
+      NamespaceScope scope, WatchListener<NamespaceChange> listener, Executor executor);
 }

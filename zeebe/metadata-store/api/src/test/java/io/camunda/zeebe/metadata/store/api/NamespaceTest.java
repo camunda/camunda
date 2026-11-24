@@ -14,11 +14,11 @@ import io.camunda.zeebe.metadata.store.api.ClusterMetadataStoreException.Invalid
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** Namespace names follow their own rule, wider than keys: they allow uppercase and '_'. */
+/** Namespace names hold lower-case letters, digits, '-' and '_', and nothing else. */
 final class NamespaceTest {
 
   @ParameterizedTest
-  @ValueSource(strings = {"config", "region-failover", "Tenant_A", "tenant-01"})
+  @ValueSource(strings = {"config", "region-failover", "tenant_a", "tenant01", "pt1"})
   void shouldAcceptValidName(final String name) {
     // when - then
     assertThatCode(() -> Namespace.cluster(name)).doesNotThrowAnyException();
@@ -26,7 +26,7 @@ final class NamespaceTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"", "a.b", "a b", "a/b", "a:b", "ä", "a\u0000b"})
+  @ValueSource(strings = {"", "Tenant", "TENANT_A", "a.b", "a b", "a/b", "a:b", "ä", "a\u0000b"})
   void shouldRejectInvalidName(final String name) {
     // when - then
     assertThatThrownBy(() -> Namespace.cluster(name)).isInstanceOf(InvalidArgumentException.class);

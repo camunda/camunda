@@ -7,10 +7,8 @@
  */
 package io.camunda.zeebe.metadata.store.api;
 
-import java.util.function.Consumer;
-
 /**
- * A registered listener, returned by {@link ClusterMetadataStore#watch} and {@link
+ * A registered watch, returned by {@link ClusterMetadataStore#watch} and {@link
  * NamespaceApi#watchNamespace}. Closing it removes the listener; closing it again does nothing.
  */
 public interface Subscription extends AutoCloseable {
@@ -19,16 +17,8 @@ public interface Subscription extends AutoCloseable {
   void close();
 
   /**
-   * Registers a callback for the case that the store ends the subscription. It is called once, with
-   * the reason, on the executor of the subscription and after its last event. It is not called when
-   * the consumer closes the subscription itself. If the store has already ended the subscription,
-   * the callback is scheduled on that executor after any earlier queued events.
-   */
-  void onClosed(Consumer<CloseReason> callback);
-
-  /**
-   * Why the store ended a subscription. New kinds may be added; a consumer that switches over them
-   * keeps a default branch.
+   * Why the store ended a subscription, as {@link WatchListener#onClosed} receives it. New kinds
+   * may be added; a consumer that switches over them keeps a default branch.
    */
   enum CloseReason {
     /** The namespace of the watched key was deleted. */
