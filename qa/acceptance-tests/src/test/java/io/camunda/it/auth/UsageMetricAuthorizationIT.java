@@ -101,6 +101,10 @@ public class UsageMetricAuthorizationIT {
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER = new TestUser(UNAUTHORIZED, PASSWORD, List.of());
 
+  @UserDefinition
+  private static final TestUser TENANT_MEMBER_WITHOUT_PERMISSION_USER =
+      new TestUser(TENANT_MEMBER_WITHOUT_PERMISSION, PASSWORD, List.of());
+
   private static void waitForUsageMetrics(
       final CamundaClient camundaClient, final Consumer<UsageMetricsStatistics> fnRequirements) {
     Awaitility.await("should export metrics to secondary storage")
@@ -145,8 +149,11 @@ public class UsageMetricAuthorizationIT {
     assignUserToTenant(adminClient, ADMIN, TENANT_A);
     assignUserToTenant(adminClient, ADMIN, TENANT_B);
     assignUserToTenant(adminClient, RESTRICTED, TENANT_A);
-    waitForUsersAssignedToTenant(adminClient, TENANT_A, ADMIN, RESTRICTED);
-    waitForUsersAssignedToTenant(adminClient, TENANT_B, ADMIN);
+    assignUserToTenant(adminClient, TENANT_MEMBER_WITHOUT_PERMISSION, TENANT_A);
+    assignUserToTenant(adminClient, TENANT_MEMBER_WITHOUT_PERMISSION, TENANT_B);
+    waitForUsersAssignedToTenant(
+        adminClient, TENANT_A, ADMIN, RESTRICTED, TENANT_MEMBER_WITHOUT_PERMISSION);
+    waitForUsersAssignedToTenant(adminClient, TENANT_B, ADMIN, TENANT_MEMBER_WITHOUT_PERMISSION);
 
     // Create PIs & wait for metrics to be exported
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
@@ -248,11 +255,14 @@ public class UsageMetricAuthorizationIT {
                     TENANT_A,
                     new UsageMetricsStatisticsItemImpl(2, 0, 1),
                     TENANT_B,
-                    new UsageMetricsStatisticsItemImpl(1, 0, 0)))),
+                    new UsageMetricsStatisticsItemImpl(2, 0, 1)))),
         Arguments.of(
             RESTRICTED_USER,
             new UsageMetricsStatisticsImpl(
-                1, 0, 0, 1, Map.of(TENANT_A, new UsageMetricsStatisticsItemImpl(1, 0, 0)))),
-        Arguments.of(UNAUTHORIZED_USER, new UsageMetricsStatisticsImpl(0, 0, 0, 0, Map.of())));
+                2, 0, 1, 1, Map.of(TENANT_A, new UsageMetricsStatisticsItemImpl(2, 0, 1)))),
+        Arguments.of(UNAUTHORIZED_USER, new UsageMetricsStatisticsImpl(0, 0, 0, 0, Map.of())),
+        Arguments.of(
+            TENANT_MEMBER_WITHOUT_PERMISSION_USER,
+            new UsageMetricsStatisticsImpl(0, 0, 0, 0, Map.of())));
   }
 }
