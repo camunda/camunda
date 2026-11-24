@@ -880,10 +880,12 @@ public class PassiveRole extends InactiveRole {
 
     if (!request.entries().isEmpty()) {
 
-      // If the previous term is zero, that indicates the previous index represents the beginning of
-      // the log.
-      // Reset the log to the previous index plus one.
-      if (request.prevLogTerm() == 0) {
+      // A previous term of zero means the entries start the leader's log. Reset the log only if it
+      // does not start at the same index, e.g. because it was compacted. Otherwise, the entries
+      // are compared below like any others, so that entries this member acknowledged and the
+      // leader may have committed are not deleted.
+      if (request.prevLogTerm() == 0
+          && raft.getLog().getFirstIndex() != request.prevLogIndex() + 1) {
         log.debug("Reset first index to {}", request.prevLogIndex() + 1);
         raft.getLog().reset(request.prevLogIndex() + 1);
       }

@@ -598,6 +598,17 @@ public final class ControllableRaftContexts {
   // nodes to wait until this node is ready. This is required because we can only tolerate data loss
   // of one node at a time.
   public void restartWithDataLoss(final MemberId memberId) {
+    final var newContext = restartWithDataLossWithoutCatchingUp(memberId);
+
+    // Wait until member has recovered lost data and have caught up with the leader
+    waitUntilMembersIsReadyIn(newContext, 100);
+  }
+
+  /**
+   * Like {@link #restartWithDataLoss(MemberId)}, but returns right after the member is bootstrapped
+   * again, with an empty log, so that a test controls how it catches up with the leader.
+   */
+  public RaftContext restartWithDataLossWithoutCatchingUp(final MemberId memberId) {
     LOG.info("Shutting down member {}", memberId.id());
     {
       final var raftContext = raftServers.get(memberId);
@@ -628,9 +639,7 @@ public final class ControllableRaftContexts {
     try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
       newContext.getCluster().bootstrap(raftServers.keySet());
     }
-
-    // Wait until member has recovered lost data and have caught up with the leader
-    waitUntilMembersIsReadyIn(newContext, 100);
+    return newContext;
   }
 
   private void waitUntilThereIsAnotherLeader(final MemberId memberId) {
