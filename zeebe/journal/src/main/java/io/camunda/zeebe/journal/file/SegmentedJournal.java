@@ -122,11 +122,12 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public void deleteAfter(final long indexExclusive) {
-    assertNoSyncFailure();
     journalMetrics.observeSegmentTruncation(
         () -> {
           final var stamp = rwlock.writeLock();
           try {
+            // checked under the lock, as a delayed flush may fail while this waits for it
+            assertNoSyncFailure();
             writer.deleteAfter(indexExclusive, hasConcurrentReaderPast(indexExclusive));
             readers.forEach(reader -> reader.onTruncatedAfter(indexExclusive));
           } catch (final RuntimeException e) {
@@ -144,6 +145,8 @@ public final class SegmentedJournal implements Journal {
   public boolean deleteUntil(final long index) {
     final var stamp = rwlock.writeLock();
     try {
+      // deleting segments syncs the directory, which a failed sync may have left clean
+      assertNoSyncFailure();
       return segments.deleteUntil(index);
     } catch (final SyncFailed e) {
       recordSyncFailure(e);
@@ -155,9 +158,10 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public void reset(final long nextIndex) {
-    assertNoSyncFailure();
     final var stamp = rwlock.writeLock();
     try {
+      // checked under the lock, as a delayed flush may fail while this waits for it
+      assertNoSyncFailure();
       journalIndex.clear();
       writer.reset(nextIndex);
       // no need to update the meta store's last flushed index as usage is that we always reset
@@ -232,20 +236,11 @@ public final class SegmentedJournal implements Journal {
   }
 
   private void flushUnderReadLock() throws FlushException {
-    final var previousFailure = syncFailure;
+    final var previousFailure = findSyncFailure();
     if (previousFailure != null) {
       throw new FlushException(
           "Expected to flush the journal, but a previous sync or deletion failed; records written since the last successful flush may not be on disk",
           previousFailure);
-    }
-
-    // creating the next segment and deleting compacted ones happens in the background; fail now
-    // instead of publishing records while a failed sync there goes unnoticed
-    final var backgroundFailure = segments.getBackgroundSyncFailure();
-    if (backgroundFailure != null) {
-      recordSyncFailure(backgroundFailure);
-      throw new FlushException(
-          "Expected to flush the journal, but a sync in the background failed", backgroundFailure);
     }
 
     if (!isOpen() || isEmpty()) {
@@ -283,12 +278,30 @@ public final class SegmentedJournal implements Journal {
   }
 
   private void assertNoSyncFailure() {
-    final var previousFailure = syncFailure;
+    final var previousFailure = findSyncFailure();
     if (previousFailure != null) {
       throw new SyncFailed(
           "Expected to write to the journal, but a previous sync or deletion failed; nothing written can be persisted anymore",
           previousFailure);
     }
+  }
+
+  /**
+   * Returns the first sync that failed, if any. Creating the next segment and deleting compacted
+   * ones happen in the background, where a failed sync would otherwise go unnoticed until the next
+   * operation that needs them.
+   */
+  private @Nullable Throwable findSyncFailure() {
+    final var previousFailure = syncFailure;
+    if (previousFailure != null) {
+      return previousFailure;
+    }
+
+    final var backgroundFailure = segments.getBackgroundSyncFailure();
+    if (backgroundFailure != null) {
+      recordSyncFailure(backgroundFailure);
+    }
+    return backgroundFailure;
   }
 
   private void recordSyncFailure(final Throwable failure) {
