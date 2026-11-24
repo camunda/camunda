@@ -5,8 +5,8 @@ A namespaced key-value store for cluster metadata, backed by the system partitio
 
 ## Modules
 
-`api` owns `io.camunda.zeebe.metadata.store.api`; `impl` owns `io.camunda.zeebe.metadata.store`
-and its subpackages other than `api`. The two never share a package.
+`api` owns `io.camunda.zeebe.metadata.store.api` and `impl` owns
+`io.camunda.zeebe.metadata.store.impl`, each with its subpackages. The two never share a package.
 
 - `api/` (`zeebe-metadata-store-api`) — the contract consumers compile against: the
   `ClusterMetadataStore` and `NamespaceApi` interfaces, value types (`Namespace`, `StoreKey`,

@@ -23,9 +23,4 @@
     <module>api</module>
     <module>impl</module>
   </modules>
-
-  <properties>
-    <!-- PIT scope for this module, see docs/testing/mutation-testing.md -->
-    <pit.targetClasses>io.camunda.zeebe.metadata.store.*</pit.targetClasses>
-  </properties>
 </project>

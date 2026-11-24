@@ -40,6 +40,7 @@ This is a small overview of the contents of the different modules:
 * `gateway-rest` gateway REST API implementation
 * `journal` contains the append-only log used by the consensus algorithm
 * `logstreams` is an implementation of an append-only log backed by the filesystem
+* `metadata-store` namespaced key-value store for cluster metadata, backed by the system partition
 * `micrometer` Micrometer helpers: stateful gauges, enum meters and bounded meter caches
 * `msgpack-core` core Message Pack encoding/decoding implementation
 * `msgpack-value` Message Pack property value representation

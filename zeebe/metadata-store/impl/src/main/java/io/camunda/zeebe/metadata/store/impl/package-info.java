@@ -6,6 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 @NullMarked
-package io.camunda.zeebe.metadata.store;
+package io.camunda.zeebe.metadata.store.impl;
 
 import org.jspecify.annotations.NullMarked;
