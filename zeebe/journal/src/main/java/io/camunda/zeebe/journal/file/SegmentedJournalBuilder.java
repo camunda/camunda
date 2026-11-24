@@ -179,6 +179,7 @@ public class SegmentedJournalBuilder {
     final var journalMetrics = new JournalMetrics(meterRegistry);
     final var segmentLoader = new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator);
     final var metaStore = requireNonNull(journalMetaStore, "must specify a journal meta store");
+    final var journalName = name;
     final var segmentsManager =
         new SegmentsManager(
             journalIndex,
@@ -188,7 +189,8 @@ public class SegmentedJournalBuilder {
             segmentLoader,
             journalMetrics,
             metaStore,
-            SEGMENT_DELETION_EXECUTOR);
+            SEGMENT_DELETION_EXECUTOR,
+            () -> SegmentsManager.newBackgroundIoExecutor(journalName));
 
     return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, metaStore);
   }
