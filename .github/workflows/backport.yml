@@ -35,7 +35,8 @@ jobs:
       )
     # No GITHUB_TOKEN permissions needed; all GitHub operations use the
     # Monorepo DevOps Automation GitHub App token generated in the first step.
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Generate GitHub token
         id: github-token
@@ -45,9 +46,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
           github-app-private-key-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         # Credentials stay: backport-action pushes the backport branches.

@@ -73,6 +73,9 @@ on:
 jobs:
   e2e:
     name: Run e2e testbench process
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     uses: ./.github/workflows/zeebe-testbench.yaml
     with:
       processId: e2e_testbench_protocol
