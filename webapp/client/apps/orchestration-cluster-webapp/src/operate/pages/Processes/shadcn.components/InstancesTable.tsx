@@ -7,7 +7,8 @@
  */
 
 import {OPERATE_BASE} from '#/shared/operateBase';
-import {useEffect, useMemo} from 'react';
+import {useEffect, useMemo, useState, type Dispatch, type SetStateAction} from 'react';
+import {createPortal} from 'react-dom';
 import {createLink, useNavigate} from '@tanstack/react-router';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useMachine} from '@xstate/react';
@@ -36,17 +37,31 @@ import {useProcessInstancesSelection} from '../useProcessInstancesSelection';
 import {batchOperationItemsForInstancesQueryOptions} from '../batchOperationItems.queries';
 import type {ProcessesSearch} from '../processesFilter';
 import {processBulkOperationMachine} from '../processBulkOperationMachine';
+import {useDiagramXml} from '../useDiagramXml';
+import {getElementName} from '../getElementName';
+import type {BatchModificationScope} from '../useBatchModificationStatistics';
+import {BatchModificationFooter} from './BatchModificationFooter';
 import {InstanceOperations} from './InstanceOperations';
+import {MoveHelperDialog} from './MoveHelperDialog';
+import type {ProcessDefinitionSelection} from './processDefinitionSelection';
+import type {ProcessesMode, ProcessesNavigationBlocker} from './processesMode';
 import {ProcessBulkActionDialog} from './ProcessBulkActionDialog';
 import {useProcessBulkActions} from './useProcessBulkActions';
-import type {ProcessDefinitionSelection} from './processDefinitionSelection';
 import type {MigrationScope} from '../getMigrationFilter';
+import {useMoveBatchAction} from './useMoveBatchAction';
 
 type Props = {
 	search: ProcessesSearch;
+	mode?: ProcessesMode;
+	navigationBlocker?: ProcessesNavigationBlocker;
 	processDefinitionSelection: ProcessDefinitionSelection;
 	isDefinitionSelectionPlaceholder?: boolean;
+	selectedTargetElementId?: string;
+	footerContainer?: HTMLElement | null;
 	onMigrationEnter: (source: ProcessDefinition, scope: MigrationScope) => void;
+	onEnterMode?: () => void;
+	onExitMode?: () => void;
+	onSelectionScopeChange?: Dispatch<SetStateAction<BatchModificationScope | null>>;
 };
 
 const TABLE_CONTAINER_CLASSES = [
@@ -111,9 +126,16 @@ const NO_INSTANCES: ProcessInstance[] = [];
 
 const InstancesTable: React.FC<Props> = ({
 	search,
+	mode = 'list',
+	navigationBlocker,
 	processDefinitionSelection,
 	isDefinitionSelectionPlaceholder = false,
+	selectedTargetElementId,
+	footerContainer,
 	onMigrationEnter,
+	onEnterMode,
+	onExitMode,
+	onSelectionScopeChange,
 }) => {
 	const {t} = useTranslation();
 	const {
@@ -131,7 +153,7 @@ const InstancesTable: React.FC<Props> = ({
 		isFetchingNextPage,
 		hasNextPage: loadedHasNextPage,
 		fetchNextPage,
-	} = useProcessInstancesSearch(search);
+	} = useProcessInstancesSearch(search, mode !== 'batch-modification');
 	const isError = status === 'error';
 	const processInstances = isError ? NO_INSTANCES : loadedInstances;
 	const totalCount = isError ? 0 : loadedTotalCount;
@@ -148,20 +170,63 @@ const InstancesTable: React.FC<Props> = ({
 	const [operation, send] = useMachine(processBulkOperationMachine, {
 		input: {queryClient, navigate, batchOperationRoute: `${OPERATE_BASE}/batch-operations/$batchOperationKey`},
 	});
-	const isSubmitting = operation.matches('submitting');
+	const [modification, sendModification] = useMachine(processBulkOperationMachine, {
+		input: {queryClient, navigate, batchOperationRoute: `${OPERATE_BASE}/batch-operations/$batchOperationKey`},
+	});
+	const isSubmitting = operation.matches('submitting') || modification.matches('submitting');
 	const {acceptedKey, acceptedIdentity} = operation.context;
 	const {reset, filterIdentity} = selection;
+	const modificationFilter = selection.getModificationFilter();
+	const selectionFilterKey = JSON.stringify(selection.getModificationStatisticsFilter());
+	const selectionFilter = useMemo(
+		() => JSON.parse(selectionFilterKey) as ReturnType<typeof selection.getModificationStatisticsFilter>,
+		[selectionFilterKey],
+	);
+	const scopeIdentity = JSON.stringify({filter: selectionFilter, selectedCount: selection.selectedCount});
+	useEffect(() => {
+		onSelectionScopeChange?.((previous) =>
+			previous !== null && JSON.stringify(previous) === scopeIdentity
+				? previous
+				: {filter: selectionFilter, selectedCount: selection.selectedCount},
+		);
+	}, [selectionFilter, selection.selectedCount, scopeIdentity, onSelectionScopeChange]);
+	const definitionKey =
+		processDefinitionSelection?.kind === 'single-version'
+			? processDefinitionSelection.definition.processDefinitionKey
+			: undefined;
+	const {data: diagramData} = useDiagramXml(definitionKey);
+	const [modeDefinition, setModeDefinition] = useState<ProcessDefinition | null>(null);
+	const isDefinitionChanged = modeDefinition === null || modeDefinition.processDefinitionKey !== definitionKey;
+	const exitMode = () => {
+		setModeDefinition(null);
+		onExitMode?.();
+	};
 	useEffect(() => {
 		if (acceptedKey !== null && acceptedIdentity === filterIdentity) {
 			reset();
 		}
 	}, [acceptedKey, acceptedIdentity, filterIdentity, reset]);
+	const moveAction = useMoveBatchAction({
+		mode,
+		isSubmitting,
+		selection,
+		processDefinitionSelection,
+		sourceElementId: search.elementId,
+		onEnter: () => {
+			setModeDefinition(
+				processDefinitionSelection?.kind === 'single-version' ? processDefinitionSelection.definition : null,
+			);
+			onEnterMode?.();
+		},
+	});
 	const bulkActions = useProcessBulkActions({
 		selection,
 		isSubmitting,
 		onSubmit: (action) =>
 			send({type: 'submit', action, body: selection.getRequest(action), filterIdentity: selection.filterIdentity}),
 		migration: {search, processDefinitionSelection, isDefinitionSelectionPlaceholder, onEnter: onMigrationEnter},
+		mode,
+		moveAction: onEnterMode ? moveAction : undefined,
 	});
 	const canSelect = status === 'success' && !isPlaceholderData && !isSubmitting;
 
@@ -427,6 +492,50 @@ const InstancesTable: React.FC<Props> = ({
 			/>
 			<ProcessBulkActionDialog {...bulkActions.dialogProps} />
 			{bulkActions.migrationHelper}
+			{onEnterMode && <MoveHelperDialog {...moveAction.helperProps} />}
+			{mode === 'batch-modification' &&
+				processDefinitionSelection &&
+				onExitMode &&
+				navigationBlocker &&
+				footerContainer &&
+				createPortal(
+					<BatchModificationFooter
+						blocker={navigationBlocker}
+						scope={{filter: selectionFilter, selectedCount: selection.selectedCount}}
+						hasActiveScope={modificationFilter !== null}
+						processDefinitionSelection={processDefinitionSelection}
+						isDefinitionChanged={isDefinitionChanged}
+						sourceElementId={search.elementId}
+						targetElementId={selectedTargetElementId}
+						sourceLabel={getElementName({businessObjects: diagramData?.businessObjects, elementId: search.elementId})}
+						targetLabel={getElementName({
+							businessObjects: diagramData?.businessObjects,
+							elementId: selectedTargetElementId,
+						})}
+						onExit={exitMode}
+						onSubmit={(moveInstruction) => {
+							if (
+								selection.selectedCount < 1 ||
+								modificationFilter === null ||
+								modeDefinition === null ||
+								isDefinitionChanged
+							) {
+								return;
+							}
+							exitMode();
+							sendModification({
+								type: 'submit',
+								action: 'modify',
+								body: {
+									filter: {...modificationFilter, tenantId: {$eq: modeDefinition.tenantId}},
+									moveInstructions: [moveInstruction],
+								},
+								filterIdentity,
+							});
+						}}
+					/>,
+					footerContainer,
+				)}
 		</section>
 	);
 };

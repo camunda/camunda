@@ -30,7 +30,11 @@ import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
-import {createGetProcessDefinitionStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {
+	createGetProcessDefinitionStatisticsResponse,
+	createProcessDefinitionStatistic,
+} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {BPMN_XML as MOVE_BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 const BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -221,4 +225,71 @@ test('should match the instances table snapshot when the search is forbidden', a
 		timeout: 15000,
 	});
 	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
+});
+
+test.describe('batch move mode', () => {
+	test.beforeEach(async ({network, operatePreviewProcessesPage, page}) => {
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({
+								processDefinitionId: 'my_simple_process',
+								tenantId: 'tenant-a',
+								name: 'Invoice process',
+								version: 1,
+							}),
+						],
+					}),
+				),
+			}),
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '2251799813700001', state: 'ACTIVE'})],
+					}),
+				),
+			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(MOVE_BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createGetProcessDefinitionStatisticsResponse([
+						createProcessDefinitionStatistic({elementId: 'task-1', active: 1}),
+					]),
+				),
+			}),
+		);
+		await page.goto(
+			`${operatePreviewProcessesPage.processesUrl}?process=my_simple_process&version=1&tenantId=tenant-a&elementId=task-1`,
+		);
+		await operatePreviewProcessesPage.instancesTable
+			.getByRole('checkbox', {name: 'Select instance 2251799813700001'})
+			.click();
+		await page.getByRole('button', {name: 'Move'}).click();
+	});
+
+	test('should match the move helper dialog snapshot', async ({page}) => {
+		const dialog = page.getByRole('dialog');
+
+		await expect(dialog.getByRole('button', {name: 'Continue'})).toBeVisible();
+		await expect(dialog).toHaveScreenshot();
+	});
+
+	test('should match the batch modification mode snapshot with a target selected', async ({page}) => {
+		await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
+		await page.locator('[data-element-id="end_event"]').click();
+
+		await expect(page.getByRole('button', {name: 'Review Modification'})).toBeEnabled();
+		await expect(page).toHaveScreenshot();
+	});
+
+	test('should match the exit confirmation dialog snapshot', async ({page}) => {
+		await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
+		await page.getByRole('button', {name: 'Exit'}).click();
+		const dialog = page.getByRole('alertdialog');
+
+		await expect(dialog.getByRole('button', {name: 'Exit'})).toBeVisible();
+		await expect(dialog).toHaveScreenshot();
+	});
 });
