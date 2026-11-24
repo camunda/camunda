@@ -28,13 +28,15 @@ describe('<StateOverlay />', () => {
 				{state: 'EVALUATED', label: 'Evaluated'},
 				{state: 'FAILED', label: 'Failed'},
 			] as const
-		).flatMap(({state, label}) => [undefined, 0, 3].map((count) => ({state, label, count}))),
-	)('should name the $state overlay with count $count', async ({state, label, count}) => {
+		).flatMap(({state, label}) => [
+			{state, count: undefined, name: label},
+			{state, count: 0, name: `${label}: 0`},
+			{state, count: 3, name: `${label}: 3`},
+		]),
+	)('should name the $state overlay with count $count', async ({state, count, name}) => {
 		const screen = await render(<StateOverlay state={state} container={getContainer()} count={count} />);
 
-		await expect
-			.element(screen.getByRole('img', {name: count === undefined ? label : `${label}: ${count}`, exact: true}))
-			.toBeVisible();
+		await expect.element(screen.getByRole('img', {name, exact: true})).toBeVisible();
 	});
 
 	it('renders the count when provided', async () => {

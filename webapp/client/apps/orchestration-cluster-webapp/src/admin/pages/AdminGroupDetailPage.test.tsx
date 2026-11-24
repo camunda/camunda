@@ -11,7 +11,7 @@ import {cleanup} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
 import {useCallback, useState} from 'react';
-import {afterEach, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -86,7 +86,11 @@ function mockMembersChangingOn(
 	];
 }
 
-function mockLaggingAssign(urls: {assign: string; list: string}, {before, after}: {before: object[]; after: object[]}) {
+function mockLaggingAssign(
+	urls: {assign: string; list: string},
+	{before, after}: {before: object[]; after: object[]},
+	newListHeld: Promise<void> = Promise.resolve(),
+) {
 	let assigned = false;
 	let lookupsAfterAssign = 0;
 	const handlers = [
@@ -96,6 +100,9 @@ function mockLaggingAssign(urls: {assign: string; list: string}, {before, after}
 		}),
 		http.post(decodeURIComponent(urls.list), async ({request}) => {
 			const {page} = (await request.json()) as {page: {from: number; limit: number}};
+			if (lookupsAfterAssign > 0) {
+				await newListHeld;
+			}
 			if (assigned) {
 				lookupsAfterAssign += 1;
 			}
@@ -365,6 +372,11 @@ describe('<AdminGroupDetailPage />', () => {
 
 	it('should list an assigned user in username order before the server shows it', async ({worker}) => {
 		// given
+		const newListGate = {release: () => {}};
+		const newListHeld = new Promise<void>((resolve) => {
+			newListGate.release = resolve;
+		});
+		onTestFinished(() => newListGate.release());
 		const server = mockLaggingAssign(
 			{
 				assign: endpoints.assignUserToGroup.getUrl({groupId: ':groupId', username: ':username'}),
@@ -374,6 +386,7 @@ describe('<AdminGroupDetailPage />', () => {
 				before: [{username: 'alice'}, {username: 'carol'}],
 				after: [{username: 'alice'}, {username: 'bob'}, {username: 'carol'}],
 			},
+			newListHeld,
 		);
 		worker.use(...server.handlers, mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}));
 		const {screen} = await renderPage({isOidc: true});
@@ -386,15 +399,12 @@ describe('<AdminGroupDetailPage />', () => {
 		// then
 		await expect.element(screen.getByRole('cell', {name: 'bob', exact: true})).toBeVisible();
 		expect(server.hasServedNewList()).toBe(false);
-		const usernames = screen
-			.getByRole('cell')
-			.elements()
-			.map((cell) => cell.textContent);
-		expect(usernames.filter((text) => ['alice', 'bob', 'carol'].includes(text ?? ''))).toEqual([
-			'alice',
-			'bob',
-			'carol',
-		]);
+		const memberCells = screen.getByRole('cell', {name: /^(alice|bob|carol)$/});
+		await expect.element(memberCells.nth(0)).toHaveTextContent('alice');
+		await expect.element(memberCells.nth(1)).toHaveTextContent('bob');
+		await expect.element(memberCells.nth(2)).toHaveTextContent('carol');
+		await expect.element(memberCells.nth(3)).not.toBeInTheDocument();
+		newListGate.release();
 		await vi.waitFor(() => expect(server.hasServedNewList()).toBe(true), RETRY_BUDGET);
 		await expect.element(screen.getByText("Couldn't confirm the change took effect")).not.toBeInTheDocument();
 	}, 15_000);

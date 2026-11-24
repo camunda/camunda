@@ -25,6 +25,7 @@ describe('<CellEntityKey /> (design system)', () => {
 			entityType: 'USER_TASK',
 			operationType: 'ASSIGN',
 			entityKey: '2251799813685279',
+			batchOperationKey: null,
 			linkName: 'View user task 2251799813685279',
 			href: '/tasklist/2251799813685279',
 		},
@@ -32,6 +33,7 @@ describe('<CellEntityKey /> (design system)', () => {
 			entityType: 'PROCESS_INSTANCE',
 			operationType: 'MODIFY',
 			entityKey: '2251799813685280',
+			batchOperationKey: null,
 			linkName: 'View process instance 2251799813685280',
 			href: '/operate-preview/processes/2251799813685280',
 		},
@@ -39,6 +41,7 @@ describe('<CellEntityKey /> (design system)', () => {
 			entityType: 'DECISION',
 			operationType: 'EVALUATE',
 			entityKey: '2251799813685281',
+			batchOperationKey: null,
 			linkName: 'View decision instance 2251799813685281',
 			href: '/operate-preview/decisions/2251799813685281',
 		},
@@ -56,7 +59,7 @@ describe('<CellEntityKey /> (design system)', () => {
 				entityType: testCase.entityType,
 				operationType: testCase.operationType,
 				entityKey: testCase.entityKey,
-				batchOperationKey: 'batchOperationKey' in testCase ? testCase.batchOperationKey : undefined,
+				batchOperationKey: testCase.batchOperationKey,
 			}),
 		);
 
