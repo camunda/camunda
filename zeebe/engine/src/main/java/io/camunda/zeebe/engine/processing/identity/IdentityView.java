@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -25,4 +27,8 @@ public interface IdentityView {
   boolean userExists(String username);
 
   boolean mappingRuleExists(String mappingRuleId);
+
+  /** Whether the entity is a member of the role, group or tenant. */
+  boolean hasRelation(
+      EntityType entityType, String entityId, RelationType relationType, String relationId);
 }

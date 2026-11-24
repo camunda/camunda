@@ -9,12 +9,14 @@ package io.camunda.zeebe.engine.processing.policy;
 
 import io.camunda.zeebe.engine.processing.identity.IdentityView;
 import io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommandMapper.IdentityCommand;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashMap;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
@@ -87,5 +89,14 @@ final class PolicyUpdateIdentityView implements IdentityView {
   public boolean mappingRuleExists(final String mappingRuleId) {
     final var changed = mappingRules.get(mappingRuleId);
     return changed != null ? changed : state.mappingRuleExists(mappingRuleId);
+  }
+
+  @Override
+  public boolean hasRelation(
+      final EntityType entityType,
+      final String entityId,
+      final RelationType relationType,
+      final String relationId) {
+    return state.hasRelation(entityType, entityId, relationType, relationId);
   }
 }
