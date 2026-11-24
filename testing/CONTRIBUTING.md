@@ -335,6 +335,32 @@ On the new stable branch, update `DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION` and
 [`CamundaProcessTestRuntimeDefaults`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/runtime/CamundaProcessTestRuntimeDefaults.java)
 to match the released minor version (e.g. `8.9-SNAPSHOT` for the `8.9.0` release).
 
+### Connectors version
+
+The Connectors image that CPT uses by default is the Maven property
+`io.camunda.process.test.connectorsDockerImageVersion` in
+[`camunda-process-test-java/pom.xml`](camunda-process-test-java/pom.xml). It follows the project
+version (`${project.version}`), and Connectors publishes `X.Y.Z` only **after** Camunda `X.Y.Z`, as
+it depends on the Camunda release. Nobody needs to edit it at release time:
+
+- **`main` and SNAPSHOT versions**: CPT replaces a SNAPSHOT version with the default SNAPSHOT image
+  (`DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION`), so CI doesn't depend on a published image. This also
+  holds for the stable branch after a release, and for the release-to-stable merge-back PR.
+- **Minor releases (`X.Y.0`)**: nothing is set. The placeholder resolves to the release version, so
+  CPT `X.Y.0` defaults to Connectors `X.Y.0`, which is published shortly after the release.
+- **Stable branches**: Renovate replaces the placeholder with a published Connectors version of the
+  minor line of the branch (e.g. `8.11.0` on `stable/8.11` once it exists), then follows the patch
+  releases. The rules are in `.github/renovate.json5`. `main` keeps the placeholder.
+- **Patch releases (`X.Y.Z`)**: they ship the version Renovate has set. If Renovate hasn't replaced
+  the placeholder before the release, the `Pin Connectors Version for Process Test` step of
+  `.github/workflows/camunda-platform-release.yml` pins the latest published Connectors `X.Y.*` image
+  from Docker Hub and commits it before the release is prepared. The merge-back validator in
+  `.github/workflows/auto-merge-back-to-stable.yml` allows this property change. If no `X.Y.*`
+  image is published yet (e.g. an urgent `X.Y.1` right after `X.Y.0`), the step doesn't block the
+  release: it prints a warning and pins `X.Y.0`, which Connectors publishes soon. The step
+  `Restore Connectors Version Placeholder for Process Test` then puts the placeholder back on the
+  branch after the release, so CI and the merge-back PR don't depend on the missing image.
+
 ### Add a compatibility-test entry
 
 In `.github/workflows/camunda-process-test-compatibility-trigger.yml`, add a `matrix` entry for the

@@ -175,6 +175,40 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Pin Connectors Version for Process Test
+        run: |
+          # The Connectors version of Camunda Process Test follows the project version. On a stable
+          # branch, Renovate replaces it with a published Connectors version. A patch release must not
+          # ship the placeholder: Connectors X.Y.Z is published well after Camunda X.Y.Z, so the image
+          # wouldn't exist for a long time. If Renovate hasn't replaced it before the release, pin the
+          # latest published patch version of the minor line instead. A minor release keeps the
+          # placeholder, as Connectors X.Y.0 follows shortly after the release.
+          if [[ "$IS_STABLE_VERSION" != "true" || "$RELEASE_PATCH" == "0" ]]; then
+            echo "Skipping: ${RELEASE_VERSION} is not a patch release"
+            exit 0
+          fi
+
+          POM=testing/camunda-process-test-java/pom.xml
+          if ! grep -qF "<io.camunda.process.test.connectorsDockerImageVersion>\${project.version}<" "$POM"; then
+            echo "Skipping: the Connectors version is already pinned"
+            exit 0
+          fi
+
+          LINE="${RELEASE_MAJOR}.${RELEASE_MINOR}"
+          TAGS=$(curl -fsS --retry 5 --retry-all-errors "https://hub.docker.com/v2/repositories/camunda/connectors-bundle/tags?name=${LINE}.&page_size=100")
+          CONNECTORS_VERSION=$(jq -r '.results[].name' <<< "$TAGS" | { grep -E "^${LINE//./\\.}\.[0-9]+$" || true; } | sort -V | tail -n 1)
+          if [[ -z "$CONNECTORS_VERSION" ]]; then
+            # No image of this minor line is published yet, e.g. an urgent X.Y.1 right after X.Y.0. Don't
+            # block the release: pin X.Y.0, which Connectors publishes soon, and restore the placeholder
+            # after the release so the branch and the merge-back PR don't depend on a missing image.
+            CONNECTORS_VERSION="${LINE}.0"
+            echo "CPT_CONNECTORS_PIN_UNPUBLISHED=true" >> "$GITHUB_ENV"
+            echo "::warning::No published camunda/connectors-bundle ${LINE}.x image found, pinning ${CONNECTORS_VERSION} until it is published"
+          fi
+          echo "Pinning the Connectors version to ${CONNECTORS_VERSION}"
+
+          ./mvnw -B versions:set-property -pl testing/camunda-process-test-java -DgenerateBackupPoms=false -Dproperty=io.camunda.process.test.connectorsDockerImageVersion -DnewVersion="${CONNECTORS_VERSION}" -P\!include-optimize
+          git commit -m "build: pin the CPT Connectors version to ${CONNECTORS_VERSION}" "$POM"
       - name: Maven Prepare Release
         id: maven-prepare-release
         run: |
@@ -430,6 +464,22 @@ jobs:
               rm -f "${file}"
             fi
           done
+      - name: Restore Connectors Version Placeholder for Process Test
+        if: ${{ env.CPT_CONNECTORS_PIN_UNPUBLISHED == 'true' }}
+        run: |
+          # The Connectors image pinned for this release isn't published yet (see the step "Pin
+          # Connectors Version for Process Test"). The tag keeps the pinned version. Restore the
+          # placeholder on the branch so that CI and the merge-back PR don't depend on the missing
+          # image; Renovate replaces the placeholder once the image is published. This needs a text
+          # replacement, as versions:set-property would resolve ${project.version} to the current
+          # SNAPSHOT version.
+          POM=testing/camunda-process-test-java/pom.xml
+          sed -i "s|\(<io\.camunda\.process\.test\.connectorsDockerImageVersion>\)[^<]*|\1\${project.version}|" "$POM"
+          if ! grep -qF "<io.camunda.process.test.connectorsDockerImageVersion>\${project.version}<" "$POM"; then
+            echo "::error::Could not restore the Connectors version placeholder in ${POM}"
+            exit 1
+          fi
+          git commit -m "build: restore the CPT Connectors version placeholder" "$POM"
       # The GitHub App token generated at the start of this job expires after 1 hour.
       # Maven prepare + perform can take longer than that, so we generate a fresh token
       # before pushing. See: https://github.com/camunda/camunda/issues/47369
