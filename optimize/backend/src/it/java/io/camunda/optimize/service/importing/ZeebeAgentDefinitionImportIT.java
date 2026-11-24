@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
 import io.camunda.optimize.dto.optimize.query.agent.AgentDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.agent.AgentIds;
 import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.dto.zeebe.agentdefinition.ZeebeAgentDefinitionDataDto;
@@ -123,19 +124,26 @@ class ZeebeAgentDefinitionImportIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
-  void shouldNotChangeAgentWhenTheSameRecordsAreImportedAgain() {
+  void shouldNotWriteAgentWhenTheSameRecordsAreImportedAgain() {
     // given the engine writes the same agent definition on every partition
     seedCreated("review", 1, "Review", AgentDefinitionType.AI_AGENT_TASK, null);
     seedCreated("review", 2, "Review v2", AgentDefinitionType.AI_AGENT_TASK, null);
     importAllZeebeEntitiesFromScratch();
     final List<AgentDefinitionDto> afterFirstImport = getAllAgentDefinitions();
+    final long versionAfterFirstImport = getAgentDocumentVersion("review");
+
+    // when the copy of version 2 from another partition arrives later
     seedCreated("review", 2, "Review v2", AgentDefinitionType.AI_AGENT_TASK, null);
     importAllZeebeEntitiesFromLastIndex();
 
-    // when
+    // then the merge script skips the write, so the database version does not go up
+    assertThat(getAgentDocumentVersion("review")).isEqualTo(versionAfterFirstImport);
+
+    // when all records are imported again
     importAllZeebeEntitiesFromScratch();
 
     // then
+    assertThat(getAgentDocumentVersion("review")).isEqualTo(versionAfterFirstImport);
     assertThat(getAllAgentDefinitions()).containsExactlyInAnyOrderElementsOf(afterFirstImport);
     assertThat(getAgentDefinition(DEFAULT_TENANT).getProcessDefinitionVersions())
         .containsExactlyInAnyOrder("1", "2");
@@ -189,6 +197,12 @@ class ZeebeAgentDefinitionImportIT extends AbstractBrokerlessZeebeCCSMIT {
   private List<AgentDefinitionDto> getAllAgentDefinitions() {
     return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         AGENT_DEFINITION_INDEX_NAME, AgentDefinitionDto.class);
+  }
+
+  private long getAgentDocumentVersion(final String elementId) {
+    return databaseIntegrationTestExtension.getDocumentVersion(
+        AGENT_DEFINITION_INDEX_NAME,
+        AgentIds.agentDefinitionDocumentId(DEFAULT_TENANT, processId, elementId));
   }
 
   private AgentDefinitionDto getAgentDefinition(final String tenantId) {

@@ -199,6 +199,9 @@ public abstract class DatabaseTestService {
       final String idField,
       final Class<T> type);
 
+  /** The database's version counter of the document, which goes up on every write but a noop. */
+  public abstract long getDocumentVersion(final String indexName, final String entryId);
+
   public abstract <T> Optional<T> getDatabaseEntryById(
       final String indexName, final String entryId, final Class<T> type);
 

@@ -575,6 +575,16 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public long getDocumentVersion(final String indexName, final String entryId) {
+    return getOptimizeOpenSearchClient()
+        .get(
+            RequestDSL.getRequest(indexName, entryId),
+            Object.class,
+            "Could not retrieve entry from index " + indexName + " with id " + entryId)
+        .version();
+  }
+
+  @Override
   public <T> Optional<T> getDatabaseEntryById(
       final String indexName, final String entryId, final Class<T> type) {
     return Optional.ofNullable(

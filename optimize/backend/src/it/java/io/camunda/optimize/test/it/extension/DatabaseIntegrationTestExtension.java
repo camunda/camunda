@@ -181,6 +181,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.indexExistsCheckWithoutApplyingOptimizePrefix(expectedIndex);
   }
 
+  public long getDocumentVersion(final String indexName, final String entryId) {
+    return databaseTestService.getDocumentVersion(indexName, entryId);
+  }
+
   public <T> Optional<T> getDatabaseEntryById(
       final String indexName, final String entryId, final Class<T> type) {
     return databaseTestService.getDatabaseEntryById(indexName, entryId, type);
