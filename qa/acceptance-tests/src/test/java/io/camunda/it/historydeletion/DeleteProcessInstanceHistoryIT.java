@@ -61,7 +61,6 @@ public class DeleteProcessInstanceHistoryIT {
               });
 
   private static final Duration DELETION_TIMEOUT = Duration.ofSeconds(30);
-  private static final String END_EVENT_ID = "end";
   private static CamundaClient camundaClient;
 
   @Test
@@ -74,7 +73,8 @@ public class DeleteProcessInstanceHistoryIT {
         processId + ".bpmn");
     final long piKey1 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
     final long piKey2 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
-    waitForProcessInstances(camundaClient, f -> f.processDefinitionId(processId), 2);
+    waitForCompletedProcessInstanceData(camundaClient, piKey1);
+    waitForCompletedProcessInstanceData(camundaClient, piKey2);
 
     // when - delete by process definition id
     final var batchResult =
@@ -128,6 +128,7 @@ public class DeleteProcessInstanceHistoryIT {
     final ProcessInstance subprocessInstance = subprocessSearchResult.items().getFirst();
     assertThat(subprocessInstance.getProcessInstanceKey()).isNotEqualTo(rootProcessInstanceKey);
     assertThat(subprocessInstance.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    waitForCompletedProcessInstanceData(camundaClient, subprocessInstance.getProcessInstanceKey());
 
     // when - delete by (sub) process definition id
     final var batchResult =
@@ -160,7 +161,8 @@ public class DeleteProcessInstanceHistoryIT {
         processId + ".bpmn");
     final long piKey1 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
     final long piKey2 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
-    waitForProcessInstances(camundaClient, f -> f.processDefinitionId(processId), 2);
+    waitForCompletedProcessInstanceData(camundaClient, piKey1);
+    waitForCompletedProcessInstanceData(camundaClient, piKey2);
 
     // when - delete only one by key
     final var batchResult =
@@ -240,7 +242,7 @@ public class DeleteProcessInstanceHistoryIT {
     final var processId = Strings.newRandomValidBpmnId();
     deployProcessAndWaitForIt(
         camundaClient,
-        Bpmn.createExecutableProcess(processId).startEvent().endEvent(END_EVENT_ID).done(),
+        Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
         processId + ".bpmn");
     final long piKey = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
     waitForCompletedProcessInstanceData(camundaClient, piKey);
@@ -260,7 +262,7 @@ public class DeleteProcessInstanceHistoryIT {
     final var processId = Strings.newRandomValidBpmnId();
     deployProcessAndWaitForIt(
         camundaClient,
-        Bpmn.createExecutableProcess(processId).startEvent().endEvent(END_EVENT_ID).done(),
+        Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
         processId + ".bpmn");
     final long piKey1 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
     final long piKey2 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
@@ -442,16 +444,26 @@ public class DeleteProcessInstanceHistoryIT {
   }
 
   /**
-   * Waits until a completed start-to-end process instance and all of its element instances can be
-   * found in secondary storage. The history deletion deletes the documents it can find when it
-   * runs, so an element instance that becomes searchable only after that would be left behind. The
-   * end event is the last element instance to be exported.
+   * Waits until a completed start-to-end process instance, both of its element instances and its
+   * sequence flow can be found in secondary storage. They are in separate indices, each with its
+   * own refresh, and the history deletion only deletes the documents it can find when it runs, so a
+   * document that becomes searchable only after that would be left behind.
    */
   private static void waitForCompletedProcessInstanceData(
       final CamundaClient client, final long processInstanceKey) {
     waitForProcessInstancesToBeCompleted(client, f -> f.processInstanceKey(processInstanceKey), 1);
-    waitForElementInstances(
-        client, f -> f.processInstanceKey(processInstanceKey).elementId(END_EVENT_ID), 1);
+    waitForElementInstances(client, f -> f.processInstanceKey(processInstanceKey), 2);
+    Awaitility.await("should wait until the sequence flow is available")
+        .atMost(DELETION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        client
+                            .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+                            .send()
+                            .join())
+                    .hasSize(1));
   }
 
   /**
