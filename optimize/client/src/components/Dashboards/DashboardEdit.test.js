@@ -12,7 +12,6 @@ import {shallow} from 'enzyme';
 import {nowDirty, isDirty} from 'saveGuard';
 import {EntityNameForm} from 'components';
 import {showPrompt} from 'prompt';
-import {track} from 'tracking';
 
 import {FiltersEdit} from './filters';
 
@@ -31,7 +30,6 @@ jest.mock('./service', () => ({
   convertFilterToDefaultValues: () => null,
   getDefaultFilter: () => [],
 }));
-jest.mock('tracking', () => ({track: jest.fn()}));
 
 beforeEach(() => {
   showPrompt.mockClear();
@@ -203,7 +201,6 @@ it('should add tile', () => {
   node.find('AddButton').prop('addTile')(newTextTile);
 
   expect(node.state('tiles')[0]).toEqual(newTextTile);
-  expect(track).toHaveBeenCalledWith('createTextTile', {entityId: ''});
 });
 
 it('should update tile', () => {
@@ -222,7 +219,6 @@ it('should update tile', () => {
   node.find('DashboardRenderer').prop('onTileUpdate')(newTextTile);
 
   expect(node.state('tiles')[0]).toEqual(newTextTile);
-  expect(track).toHaveBeenCalledWith('updateTextTile', {entityId: ''});
 });
 
 it('should delete tile', () => {
@@ -237,7 +233,6 @@ it('should delete tile', () => {
   node.find('DashboardRenderer').prop('onTileDelete')(textTile);
 
   expect(node.state('tiles')).toEqual([]);
-  expect(track).toHaveBeenCalledWith('deleteTextTile', {entityId: ''});
 });
 
 it('should update description', () => {
@@ -246,7 +241,6 @@ it('should update description', () => {
   node.find(EntityNameForm).prop('onDescriptionChange')('some description');
 
   expect(node.state('description')).toEqual('some description');
-  expect(track).toHaveBeenCalledWith('editDescription', {entity: 'dashboard', entityId: 'id'});
 });
 
 it('should use first optimize report to fetch report definition when creating new report', () => {

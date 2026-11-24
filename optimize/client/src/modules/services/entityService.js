@@ -7,18 +7,11 @@
  */
 
 import {get, post, put} from 'request';
-import {track} from 'tracking';
-import {createEventName} from './entityService.tsx';
 export {deleteEntity} from './entityService.tsx';
 
 export async function loadEntity(type, id, query) {
   const response = await get(`api/${type}/` + id, query);
-  const json = await response.json();
-  track(createEventName('view', type), {
-    entityId: id,
-  });
-
-  return await json;
+  return await response.json();
 }
 
 export async function copyReport(id) {
@@ -29,7 +22,6 @@ export async function copyReport(id) {
 
 export async function updateEntity(type, id, data, options = {}) {
   const response = await put(`api/${type}/${id}`, data, options);
-  track(createEventName('update', type), {entityId: id});
   return response;
 }
 

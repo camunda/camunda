@@ -17,7 +17,6 @@ import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
-import {track} from 'tracking';
 
 import './TemplateModal.scss';
 
@@ -30,7 +29,6 @@ export default function TemplateModal({
   templateToState = (data) => data,
   onConfirm,
   initialDefinitions = [],
-  trackingEventName,
 }) {
   const blankTemplate = templateGroups[0].templates[0];
   const firstTemplate = templateGroups[1]?.templates[0];
@@ -233,10 +231,7 @@ export default function TemplateModal({
         <Button
           disabled={!validSelection}
           className="confirm"
-          onClick={() => {
-            onConfirm?.(newEntityState);
-            track(trackingEventName || createEventName(entity), {templateName: name});
-          }}
+          onClick={() => onConfirm?.(newEntityState)}
           as={!onConfirm ? Link : undefined}
           to={
             !onConfirm
@@ -286,8 +281,4 @@ function getDisableStateText(selectedDefinitions) {
 
 function getDescription(entity, name, disableDescription) {
   return !disableDescription ? t(entity + '.templates.' + name + '-description') : null;
-}
-
-function createEventName(entityType) {
-  return 'use' + entityType.charAt(0).toUpperCase() + entityType.slice(1) + 'Template';
 }

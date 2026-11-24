@@ -169,7 +169,3 @@ locales:
 ui:
   # If you have SSO enabled, you can set the property below to hide the logout option if it is not needed
   logoutHidden: false
-
-telemetry:
-  # Sets the initial property value of telemetry configuration once when it has never been enabled/disabled before.
-  initializeTelemetry: false

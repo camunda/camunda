@@ -65,15 +65,11 @@ it('should create the report when confirming the template modal and invoke onCon
 
   node.find('ReportTemplateModal').simulate('confirm', {id: 'testReport', name: 'reportName'});
 
-  expect(createEntity).toHaveBeenCalledWith(
-    'report/process/single',
-    {
-      collectionId: null,
-      id: 'testReport',
-      name: 'reportName',
-    },
-    'dashboard'
-  );
+  expect(createEntity).toHaveBeenCalledWith('report/process/single', {
+    collectionId: null,
+    id: 'testReport',
+    name: 'reportName',
+  });
   expect(spy).toHaveBeenCalledWith({id: '123', type: 'optimize_report'});
 });
 

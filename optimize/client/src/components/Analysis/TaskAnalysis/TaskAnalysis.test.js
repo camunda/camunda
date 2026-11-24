@@ -10,7 +10,6 @@ import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {loadProcessDefinitionXml, getFlowNodeNames, incompatibleFilters} from 'services';
-import {track} from 'tracking';
 
 import {loadNodesOutliers, loadDurationData, loadCommonOutliersVariables} from './service';
 import TaskAnalysis from './TaskAnalysis';
@@ -41,8 +40,6 @@ jest.mock('services', () => {
     incompatibleFilters: jest.fn(),
   };
 });
-
-jest.mock('tracking', () => ({track: jest.fn()}));
 
 jest.mock('hooks', () => ({
   useErrorHandling: jest.fn().mockImplementation(() => ({
@@ -79,7 +76,6 @@ it('should load the process definition xml when the process definition id is upd
   runAllEffects();
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someKey', 'someVersion', 'a');
-  expect(track).toHaveBeenCalledWith('startOutlierAnalysis', {processDefinitionKey: 'someKey'});
 });
 
 it('should load outlier data and flownode names when the process definition version changes', async () => {

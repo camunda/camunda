@@ -29,7 +29,7 @@ The front-end application was initially created using the `create-react-app` CLI
 1. **Application startup**: The application is started using the command `yarn start`. This command utilizes Vite to spin up a development server, which serves the `index.html` file efficiently.
 2. **Initializing React app**: The HTML file loads the JavaScript required for the React.js application. The main entry point is the `src/index.js` file, which then loads all the other modules.
 3. **Main React component**: The `src/App.js` file is then loaded as the main React.js component.
-4. **Utilities and router initialization**: The `App.js` component initializes various utilities (such as notifications, analytics, translations, and onboarding) and sets up routing for different pages (Home, Report, Dashboard, Analysis, EventsBasedProcess, etc.)
+4. **Utilities and router initialization**: The `App.js` component initializes various utilities (such as notifications, analytics, and translations) and sets up routing for different pages (Home, Report, Dashboard, Analysis, EventsBasedProcess, etc.)
 
 Below is a flow diagram of the start-up process:
 
@@ -80,7 +80,7 @@ The `modules` directory contains everything that is reused across routes and com
 - **hooks**: Custom reusable React hooks.
 - **services**: Global services for API calls, formatting, and other functionalities.
 - **shared-styles**: Shared styles and SCSS files.
-- **tracking**: Components and services for Mixpanel tracking.
+- **tracking**: Loads the Osano cookie consent script.
 - **translation**: Components and utilities for handling translations. This is explained in detail below.
 - **request.ts**: Utility for handling requests.
 - **types.ts**: Global TypeScript type definitions.
