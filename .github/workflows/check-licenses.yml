@@ -13,7 +13,8 @@ on:
 jobs:
   analyze:
     name: Analyze dependencies
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: gcp-core-8-longrunning
     strategy:
       # The matrix is necessary to run separate analyses
@@ -30,9 +31,10 @@ jobs:
       uses: hashicorp/vault-action@v3.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
     - name: Setup Maven
