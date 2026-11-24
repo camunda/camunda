@@ -137,6 +137,52 @@ public final class OutputMappingVariableSourceTest {
   }
 
   @Test
+  public void shouldSourceMappedVariableOfAdHocSubProcessAndNotItsOutputCollection() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .adHocSubProcess(
+                    "ahsp",
+                    a -> {
+                      a.zeebeActiveElementsCollectionExpression("activateElements")
+                          .zeebeOutputCollection("results")
+                          .zeebeOutputElementExpression("result")
+                          .zeebeOutputExpression("results", "total");
+                      a.serviceTask("task", t -> t.zeebeJobType(jobType));
+                    })
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("activateElements", List.of("task"))
+            .create();
+    final long ahspKey = elementInstanceKey(processInstanceKey, "ahsp");
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(jobType)
+        .withVariable("result", 1)
+        .complete();
+
+    // then
+    assertThat(variableRecords(processInstanceKey, "total"))
+        .extracting(OutputMappingVariableSourceTest::sourceOf)
+        .containsExactly(tuple(VariableOperationType.OUTPUT_MAPPING, ahspKey, "ahsp"));
+    assertThat(variableRecords(processInstanceKey, "results"))
+        .isNotEmpty()
+        .extracting(record -> record.getValue().getSource().getType())
+        .doesNotContain(VariableOperationType.OUTPUT_MAPPING);
+  }
+
+  @Test
   public void shouldSourceMappedVariableOfMultiInstanceFromInnerInstance() {
     // given
     final long processInstanceKey =
