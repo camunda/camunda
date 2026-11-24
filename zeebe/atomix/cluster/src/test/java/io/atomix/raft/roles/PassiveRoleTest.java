@@ -52,23 +52,22 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
 
-public class PassiveRoleTest {
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
+final class PassiveRoleTest {
 
-  @Rule public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
   private RaftLog log;
   private PassiveRole role;
   private RaftContext ctx;
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
-  @Before
-  public void setup() throws IOException {
+  @BeforeEach
+  void setup() throws IOException {
     ctx = mock(RaftContext.class);
 
     log = mock(RaftLog.class);
@@ -96,7 +95,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldFailAppendWithIncorrectChecksum() {
+  void shouldFailAppendWithIncorrectChecksum() {
     // given
     final var entries = List.of(new ReplicatableJournalRecord(1, 1, 12345, new byte[1]));
     final VersionedAppendRequest request =
@@ -121,7 +120,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldFlushAfterAppendRequest() throws CheckedJournalException {
+  void shouldFlushAfterAppendRequest() throws CheckedJournalException {
     // given
     final var entries =
         List.of(
@@ -151,7 +150,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldFlushAfterPartiallyAppendedRequest() throws CheckedJournalException {
+  void shouldFlushAfterPartiallyAppendedRequest() throws CheckedJournalException {
     // given
     final var entries =
         List.of(
@@ -181,7 +180,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldNotFlushIfNoEntryIsAppended() throws CheckedJournalException {
+  void shouldNotFlushIfNoEntryIsAppended() throws CheckedJournalException {
     // given
     final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
     final VersionedAppendRequest request =
@@ -207,7 +206,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldFlushEventWithFailure() throws CheckedJournalException {
+  void shouldFlushEventWithFailure() throws CheckedJournalException {
     // given
     final var entries =
         List.of(
@@ -238,7 +237,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldAppendOldVersion() throws CheckedJournalException {
+  void shouldAppendOldVersion() throws CheckedJournalException {
     // given
     final var entries = List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
     final var request = new AppendRequest(2, "a", 0, 0, entries, 1);
@@ -254,7 +253,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldCompleteFutureWithErrorIfAppendFails() throws CheckedJournalException {
+  void shouldCompleteFutureWithErrorIfAppendFails() throws CheckedJournalException {
     // given
     final var entries = List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
     final var request = new AppendRequest(2, "a", 0, 0, entries, 1);
@@ -268,7 +267,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldNotAbortPendingSnapshotOnEmptyAppend() throws Exception {
+  void shouldNotAbortPendingSnapshotOnEmptyAppend() throws Exception {
     // given - a pending snapshot is in progress
     final ReceivedSnapshot receivedSnapshot = mock(ReceivedSnapshot.class);
     setPendingSnapshot(receivedSnapshot);
@@ -293,7 +292,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldAbortPendingSnapshotOnNonEmptyAppend() throws Exception {
+  void shouldAbortPendingSnapshotOnNonEmptyAppend() throws Exception {
     // given - a pending snapshot is in progress
     final ReceivedSnapshot receivedSnapshot = mock(ReceivedSnapshot.class);
     setPendingSnapshot(receivedSnapshot);
@@ -322,7 +321,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldRollBackConfigurationWhenAppendRequestResetsTheLog()
+  void shouldRollBackConfigurationWhenAppendRequestResetsTheLog()
       throws CheckedJournalException {
     // given - a request that starts the log anew, as its previous term is zero
     final var request =
@@ -346,7 +345,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldRollBackConfigurationWhenAnEntryOfAnotherTermReplacesTheLastEntry()
+  void shouldRollBackConfigurationWhenAnEntryOfAnotherTermReplacesTheLastEntry()
       throws CheckedJournalException {
     // given - the last local entry has another term than the entry the leader sends for its index
     final var lastEntry = mock(IndexedRaftLogEntry.class);
@@ -374,7 +373,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldRollBackConfigurationWhenTruncatingTheLogFailsToFlush()
+  void shouldRollBackConfigurationWhenTruncatingTheLogFailsToFlush()
       throws CheckedJournalException {
     // given - the journal is truncated before the flush that fails, so the entry is gone
     final var lastEntry = mock(IndexedRaftLogEntry.class);
@@ -400,7 +399,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldCheckForDataLossWithTheIndexTheLeaderAgreesOn() throws CheckedJournalException {
+  void shouldCheckForDataLossWithTheIndexTheLeaderAgreesOn() throws CheckedJournalException {
     // given - a promotable member whose log ends far beyond what this append covers
     final var promotableRole = new PromotableRole(ctx);
     when(log.getLastIndex()).thenReturn(120L);
@@ -431,7 +430,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldCheckForDataLossWithTheLocalLogEndWhenPassive() throws CheckedJournalException {
+  void shouldCheckForDataLossWithTheLocalLogEndWhenPassive() throws CheckedJournalException {
     // given - a passive member whose log ends far beyond what this append covers
     when(log.getLastIndex()).thenReturn(120L);
     final var entries =
@@ -480,7 +479,7 @@ public class PassiveRoleTest {
    * the leader then rejected as a stale configuration.
    */
   @Test
-  public void shouldStoreTheConfigurationsOwnTerm() {
+  void shouldStoreTheConfigurationsOwnTerm() {
     // given
     final var cluster = mock(RaftClusterContext.class);
     when(ctx.getCluster()).thenReturn(cluster);
