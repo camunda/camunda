@@ -1830,6 +1830,27 @@
         <artifactId>asm</artifactId>
         <version>${version.asm}</version>
       </dependency>
+      <!-- jnr-ffi 2.2.x declares these at 9.7.1 -->
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-analysis</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-commons</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-tree</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-util</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
 
       <dependency>
         <groupId>com.cronutils</groupId>
