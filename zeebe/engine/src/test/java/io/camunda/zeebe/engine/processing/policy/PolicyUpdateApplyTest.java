@@ -197,6 +197,104 @@ public final class PolicyUpdateApplyTest {
   }
 
   @Test
+  public void shouldAddAMemberToARoleThatTheSameUpdateCreates() {
+    // given the role is not in the state yet
+    final var roleId = "role-" + uid();
+    final var clientId = "client-" + uid();
+    final var chunk =
+        chunk()
+            .setRoles(List.<RoleRecordValue>of(new RoleRecord().setRoleId(roleId).setName(roleId)))
+            .setMemberships(
+                List.<PolicyMembershipEntryValue>of(
+                    membership(PolicyUpdateEntityType.ROLE, roleId, EntityType.CLIENT, clientId)));
+
+    // when
+    apply(chunk);
+
+    // then
+    appliedRecord(chunk.getUpdateId());
+    assertThat(
+            RecordingExporter.roleRecords(RoleIntent.ENTITY_ADDED)
+                .withRoleId(roleId)
+                .withEntityId(clientId)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldAcceptAMemberThatTheSameUpdateAddsAndRemoves() {
+    // given
+    final var roleId = "role-" + uid();
+    final var clientId = "client-" + uid();
+    final var membership =
+        membership(PolicyUpdateEntityType.ROLE, roleId, EntityType.CLIENT, clientId);
+    final var chunk =
+        chunk()
+            .setRoles(List.<RoleRecordValue>of(new RoleRecord().setRoleId(roleId).setName(roleId)))
+            .setMemberships(List.<PolicyMembershipEntryValue>of(membership))
+            .setMembershipDeletes(List.<PolicyMembershipEntryValue>of(membership));
+
+    // when
+    apply(chunk);
+
+    // then
+    appliedRecord(chunk.getUpdateId());
+    assertThat(
+            RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
+                .withRoleId(roleId)
+                .withEntityId(clientId)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldApplyNothingOfAnUpdateWithAnInvalidRoleEntry() {
+    // given a valid role and a member of a role that neither the state nor the update has
+    final var validRoleId = "role-" + uid();
+    final var missingRoleId = "role-" + uid();
+    final var invalid =
+        chunk()
+            .setRoles(
+                List.<RoleRecordValue>of(
+                    new RoleRecord().setRoleId(validRoleId).setName(validRoleId)))
+            .setMemberships(
+                List.<PolicyMembershipEntryValue>of(
+                    membership(
+                        PolicyUpdateEntityType.ROLE,
+                        missingRoleId,
+                        EntityType.CLIENT,
+                        "client-" + uid())));
+
+    // when
+    apply(invalid);
+
+    // then
+    final var rejection = rejectionOf(invalid.getUpdateId());
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            "Expected to update role with ID '%s', but a role with this ID does not exist."
+                .formatted(missingRoleId));
+
+    // a later update marks the end of everything the invalid one could have caused
+    final var later = chunk();
+    apply(later);
+    final var laterUpdateId = later.getUpdateId();
+    assertThat(
+            RecordingExporter.records()
+                .limit(
+                    record ->
+                        record.getIntent() == PolicyUpdateIntent.CHUNK_APPLIED
+                            && ((PolicyUpdateRecordValue) record.getValue())
+                                .getUpdateId()
+                                .equals(laterUpdateId))
+                .roleRecords()
+                .withRoleId(validRoleId)
+                .exists())
+        .isFalse();
+  }
+
+  @Test
   public void shouldApplyNothingOfAnUpdateWithAnInvalidAuthorization() {
     // given a valid role and an authorization of a role that neither the state nor the update has
     final var validRoleId = "role-" + uid();

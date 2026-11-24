@@ -10,11 +10,14 @@ package io.camunda.zeebe.engine.processing.policy;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator;
+import io.camunda.zeebe.engine.processing.identity.RoleValidator;
 import io.camunda.zeebe.engine.processing.identity.StateIdentityView;
 import io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommandMapper.IdentityCommand;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
@@ -35,10 +38,11 @@ import org.jspecify.annotations.NullMarked;
  * nothing. The chunks are mapped to identity commands, which are validated in apply order against
  * the state plus the commands before them, including those of earlier chunks.
  *
- * <p>Only the creates and updates of authorizations are validated so far; the other commands pass
- * unchecked and can still be rejected by their processors. The check for permissions that already
- * exist is left out, since the update maps an authorization to a create only if no authorization
- * with the same owner and resource exists, and the duplicate check covers the update itself.
+ * <p>Only the role commands and the creates and updates of authorizations are validated so far; the
+ * other commands pass unchecked and can still be rejected by their processors. The check for
+ * permissions that already exist is left out, since the update maps an authorization to a create
+ * only if no authorization with the same owner and resource exists, and the duplicate check covers
+ * the update itself.
  */
 @NullMarked
 public final class PolicyUpdateValidator {
@@ -78,25 +82,38 @@ public final class PolicyUpdateValidator {
     }
 
     final var view = new PolicyUpdateIdentityView(new StateIdentityView(state));
+    final var roleValidator = new RoleValidator(view, securityConfig);
     final var authorizationValidator = new AuthorizationEntityValidator(view, securityConfig);
     final var errors = new ArrayList<String>();
     for (final var command : commands) {
-      validate(command, authorizationValidator)
+      validate(command, roleValidator, authorizationValidator)
           .ifRightOrLeft(valid -> view.apply(command), rejection -> errors.add(rejection.reason()));
     }
     return errors;
   }
 
   private static Either<Rejection, ?> validate(
-      final IdentityCommand command, final AuthorizationEntityValidator authorizationValidator) {
-    if (command.value() instanceof final AuthorizationRecord authorization) {
-      return switch ((AuthorizationIntent) command.intent()) {
-        case CREATE -> validateUpsert(authorization, "create", authorizationValidator);
-        case UPDATE -> validateUpsert(authorization, "update", authorizationValidator);
-        default -> Either.right(authorization);
-      };
-    }
-    return Either.right(command);
+      final IdentityCommand command,
+      final RoleValidator roleValidator,
+      final AuthorizationEntityValidator authorizationValidator) {
+    return switch (command.value()) {
+      case final RoleRecord role ->
+          switch ((RoleIntent) command.intent()) {
+            case CREATE -> roleValidator.validateCreate(role);
+            case UPDATE -> roleValidator.validateUpdate(role);
+            case DELETE -> roleValidator.validateDelete(role);
+            case ADD_ENTITY -> roleValidator.validateAddEntity(role);
+            case REMOVE_ENTITY -> roleValidator.validateRemoveEntity(role);
+            default -> Either.right(role);
+          };
+      case final AuthorizationRecord authorization ->
+          switch ((AuthorizationIntent) command.intent()) {
+            case CREATE -> validateUpsert(authorization, "create", authorizationValidator);
+            case UPDATE -> validateUpsert(authorization, "update", authorizationValidator);
+            default -> Either.right(authorization);
+          };
+      default -> Either.right(command);
+    };
   }
 
   /** The checks of the authorization processors that don't read the stored authorizations. */
