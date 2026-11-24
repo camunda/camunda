@@ -8,9 +8,12 @@
 package io.camunda.zeebe.worker;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.bean.BeanInfo;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -24,13 +27,13 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -57,8 +60,9 @@ public class Worker {
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
       final MeterRegistry registry,
-      @Value("${camunda.client.worker.defaults.type}") final String jobType) {
+      final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers) {
     this.client = client;
+    final var jobType = resolveJobType(jobWorkerValueCustomizers);
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
     resultMetrics = new WorkerResultMetrics(registry, jobType, requestFutures);
@@ -76,6 +80,26 @@ public class Worker {
         .register(registry);
     responseChecker = new ResponseChecker(requestFutures, resultMetrics);
     this.connectionMonitor = connectionMonitor;
+  }
+
+  // The subscription is created after this bean, so the type is resolved by running the same
+  // customizers on the value that the annotation processor builds for handleJob.
+  static String resolveJobType(final List<JobWorkerValueCustomizer> customizers) {
+    try {
+      final var method = Worker.class.getMethod("handleJob", JobClient.class, ActivatedJob.class);
+      final var beanInfo =
+          BeanInfo.builder()
+              .beanName("worker")
+              .beanSupplier(() -> null)
+              .targetClass(Worker.class)
+              .build();
+      final var value =
+          AnnotationUtil.getJobWorkerValue(beanInfo.toMethodInfo(method)).orElseThrow();
+      customizers.forEach(customizer -> customizer.customize(value));
+      return value.getType();
+    } catch (final NoSuchMethodException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   @PostConstruct
