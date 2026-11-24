@@ -60,7 +60,8 @@ public class AuthorizationUpdateProcessor
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
     permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
-    authorizationEntityChecker = new AuthorizationEntityValidator(processingState, securityConfig);
+    authorizationEntityChecker =
+        new AuthorizationEntityValidator(new StateIdentityView(processingState), securityConfig);
     this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
   }
 
@@ -77,13 +78,10 @@ public class AuthorizationUpdateProcessor
                     authorizationRecord, AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE))
         .flatMap(
             record ->
-                permissionsBehavior.hasValidPermissionTypes(
-                    command.getValue(),
-                    command.getValue().getPermissionTypes(),
-                    record.getResourceType(),
-                    "Expected to update authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
+                authorizationEntityChecker.validatePermissionTypes(
+                    command.getValue(), record.getResourceType(), "update"))
         .flatMap(record -> authorizationEntityChecker.validateResourceMatcher(record, "update"))
-        .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
+        .flatMap(authorizationEntityChecker::ownerAndResourceExists)
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
@@ -101,7 +99,7 @@ public class AuthorizationUpdateProcessor
         command.getValue().getAuthorizationKey());
     permissionsBehavior
         .authorizationExists(command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE)
-        .flatMap(s -> authorizationEntityChecker.ownerAndResourceExists(command))
+        .flatMap(s -> authorizationEntityChecker.ownerAndResourceExists(command.getValue()))
         .ifRightOrLeft(
             ignored -> {
               stateWriter.appendFollowUpEvent(

@@ -10,14 +10,9 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.util.Either;
 import org.slf4j.Logger;
 
@@ -41,29 +36,24 @@ public class AuthorizationEntityValidator {
       "Expected to %s authorization with matcher '%s', but both resource ID and resource property name were provided. Resource property names are only valid for matcher 'PROPERTY'.";
   public static final String UNSPECIFIED_MATCHER_ERROR_MESSAGE =
       "Expected to %s authorization, but resource matcher is UNSPECIFIED. Please specify a valid resource matcher (ID, ANY or PROPERTY).";
+  public static final String PERMISSION_TYPES_NOT_SUPPORTED_ERROR_MESSAGE =
+      "Expected to %s authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'";
   public static final String MATCHER_NOT_SUPPORTED_ERROR_MESSAGE =
       "Expected to %s authorization, but resource matcher '%s' is not supported.";
 
   private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
-  private final UserState userState;
-  private final MappingRuleState mappingRuleState;
-  private final GroupState groupState;
-  private final RoleState roleState;
+  private final IdentityView identityView;
   private final EngineSecurityConfig securityConfig;
 
   public AuthorizationEntityValidator(
-      final ProcessingState processingState, final EngineSecurityConfig securityConfig) {
-    userState = processingState.getUserState();
-    mappingRuleState = processingState.getMappingRuleState();
-    groupState = processingState.getGroupState();
-    roleState = processingState.getRoleState();
+      final IdentityView identityView, final EngineSecurityConfig securityConfig) {
+    this.identityView = identityView;
     this.securityConfig = securityConfig;
   }
 
   public Either<Rejection, AuthorizationRecord> ownerAndResourceExists(
-      final TypedRecord<AuthorizationRecord> command) {
-    final var record = command.getValue();
+      final AuthorizationRecord record) {
     final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
     // The groups of an IdP's groups claim exist only in the IdP, so they can't be required to exist
     // here. With several IdPs, a group can't be told apart from a group of one of them.
@@ -75,7 +65,7 @@ public class AuthorizationEntityValidator {
         record.getResourceType());
     switch (record.getOwnerType()) {
       case GROUP:
-        if (groupMustExist && groupState.get(record.getOwnerId()).isEmpty()) {
+        if (groupMustExist && !identityView.groupExists(record.getOwnerId())) {
           LOG.debug("Owner group '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
@@ -84,7 +74,7 @@ public class AuthorizationEntityValidator {
         }
         break;
       case MAPPING_RULE:
-        if (mappingRuleState.get(record.getOwnerId()).isEmpty()) {
+        if (!identityView.mappingRuleExists(record.getOwnerId())) {
           LOG.debug("Owner mapping rule '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
@@ -93,7 +83,7 @@ public class AuthorizationEntityValidator {
         }
         break;
       case ROLE:
-        if (roleState.getRole(record.getOwnerId()).isEmpty()) {
+        if (!identityView.roleExists(record.getOwnerId())) {
           LOG.debug("Owner role '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
@@ -102,7 +92,7 @@ public class AuthorizationEntityValidator {
         }
         break;
       case USER:
-        if (localUserEnabled && userState.getUser(record.getOwnerId()).isEmpty()) {
+        if (localUserEnabled && !identityView.userExists(record.getOwnerId())) {
           LOG.debug("Owner user '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
@@ -116,7 +106,7 @@ public class AuthorizationEntityValidator {
     if (!record.getResourceId().equals("*")) {
       switch (record.getResourceType()) {
         case GROUP:
-          if (groupMustExist && groupState.get(record.getResourceId()).isEmpty()) {
+          if (groupMustExist && !identityView.groupExists(record.getResourceId())) {
             LOG.debug("Resource group '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(
@@ -125,7 +115,7 @@ public class AuthorizationEntityValidator {
           }
           break;
         case MAPPING_RULE:
-          if (mappingRuleState.get(record.getResourceId()).isEmpty()) {
+          if (!identityView.mappingRuleExists(record.getResourceId())) {
             LOG.debug("Resource mapping rule '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(
@@ -134,7 +124,7 @@ public class AuthorizationEntityValidator {
           }
           break;
         case ROLE:
-          if (roleState.getRole(record.getResourceId()).isEmpty()) {
+          if (!identityView.roleExists(record.getResourceId())) {
             LOG.debug("Resource role '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(
@@ -143,7 +133,7 @@ public class AuthorizationEntityValidator {
           }
           break;
         case USER:
-          if (localUserEnabled && userState.getUser(record.getResourceId()).isEmpty()) {
+          if (localUserEnabled && !identityView.userExists(record.getResourceId())) {
             LOG.debug("Resource user '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(
@@ -156,6 +146,35 @@ public class AuthorizationEntityValidator {
       }
     }
     return Either.right(record);
+  }
+
+  /**
+   * Validates that the resource type supports every permission type of the authorization.
+   *
+   * @param record the authorization record to validate
+   * @param resourceType the resource type whose supported permission types apply
+   * @param operation the operation being performed (e.g., "create", "update") for error messages
+   * @return Either a Rejection with error details or the validated AuthorizationRecord
+   */
+  public Either<Rejection, AuthorizationRecord> validatePermissionTypes(
+      final AuthorizationRecord record,
+      final AuthorizationResourceType resourceType,
+      final String operation) {
+    if (resourceType.getSupportedPermissionTypes().containsAll(record.getPermissionTypes())) {
+      return Either.right(record);
+    }
+
+    final var permissionTypes = record.getPermissionTypes();
+    permissionTypes.removeAll(resourceType.getSupportedPermissionTypes());
+
+    return Either.left(
+        new Rejection(
+            RejectionType.INVALID_ARGUMENT,
+            PERMISSION_TYPES_NOT_SUPPORTED_ERROR_MESSAGE.formatted(
+                operation,
+                permissionTypes,
+                resourceType,
+                resourceType.getSupportedPermissionTypes())));
   }
 
   /**
