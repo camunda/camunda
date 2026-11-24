@@ -90,11 +90,15 @@ checkstyle {
   maxWarnings = 0
 }
 
-// Maven checks only the module's own src/main/java and src/test/java; Gradle's source sets also
-// contain generated sources (SBE, protobuf, OpenAPI), which are not ours to fix.
-tasks.named<Checkstyle>("checkstyleMain") { setSource(fileTree("src/main/java")) }
+// Maven checks only the *.java files in the module's own src/main/java and src/test/java; Gradle's
+// source sets also contain generated sources (SBE, protobuf, OpenAPI), which are not ours to fix.
+tasks.named<Checkstyle>("checkstyleMain") {
+  setSource(fileTree("src/main/java") { include("**/*.java") })
+}
 
-tasks.named<Checkstyle>("checkstyleTest") { setSource(fileTree("src/test/java")) }
+tasks.named<Checkstyle>("checkstyleTest") {
+  setSource(fileTree("src/test/java") { include("**/*.java") })
+}
 
 // Maven -Dquickly skips checks (skipChecks); do the same here.
 tasks.withType<Checkstyle>().configureEach { skipWhen(quickly) }
@@ -134,7 +138,8 @@ tasks.withType<SpotBugsTask>().configureEach { skipWhen(quickly) }
 tasks.register("javaChecks") {
   group = "verification"
   description = "Runs the checks of the Maven Java Checks job: checkstyle, spotbugs"
-  dependsOn(tasks.withType<Checkstyle>(), "spotbugsMain", "testClasses")
+  // Not every Checkstyle task: extra source sets (e.g. src/tool) are not checked by Maven.
+  dependsOn("checkstyleMain", "checkstyleTest", "spotbugsMain", "testClasses")
 }
 
 publishing {
