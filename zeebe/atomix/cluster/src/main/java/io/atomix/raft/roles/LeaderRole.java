@@ -870,6 +870,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .withSucceeded(false)
                   .withLastLogIndex(raft.getLog().getLastIndex())
                   .withLastSnapshotIndex(raft.getCurrentSnapshotIndex())
+                  .withConfigurationIndex(raft.getCurrentConfigurationIndex())
                   .build()));
     } else {
       raft.setLeader(request.leader());

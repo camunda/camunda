@@ -247,21 +247,14 @@ final class LeaderAppender {
   }
 
   /**
-   * Updates the configuration index of the member based on the append response. This allows members
-   * which lost a configuration to update the leader and effectively request a configuration update.
+   * Stores the configuration index that the member reported, so that the leader can see when it
+   * differs from the leader's own and send the current configuration. This includes 0, the index of
+   * the initial configuration: a member can fall back to it, for example when a log reset drops a
+   * newer configuration, and it must then receive the current configuration.
    */
   private void updateConfigurationIndex(
       final RaftMemberContext member, final AppendResponse response) {
-    final var configIndex = response.configurationIndex();
-    if (configIndex == 0) {
-      // Backwards compatibility: old members don't send a configuration index in the response.
-      // When we find the default value of 0, don't update the index and rely on the old behaviour
-      // where the configuration index is only updated in handleConfigureResponse.
-      // Otherwise, we'd constantly update the configuration index of old members to 0 and keep
-      // re-sending the configuration instead of appending.
-      return;
-    }
-    member.setConfigIndex(configIndex);
+    member.setConfigIndex(response.configurationIndex());
   }
 
   /** Updates the match index when a response is received. */
