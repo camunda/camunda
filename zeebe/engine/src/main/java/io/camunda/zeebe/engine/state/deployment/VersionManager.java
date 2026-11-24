@@ -45,6 +45,8 @@ public final class VersionManager {
     tenantAwareIdKey = new DbTenantAwareKey<>(tenantIdKey, idKey, PlacementType.PREFIX);
     versionInfoColumnFamily =
         zeebeDb.createColumnFamily(columnFamily, transactionContext, tenantAwareIdKey, versionInfo);
+    // Keeps the version info of recently used resource ids in memory to skip RocksDB reads,
+    // dropping the least recently used ones so old ids don't stay in heap forever.
     versionByTenantCache =
         CacheBuilder.newBuilder()
             .maximumSize(cacheCapacity)
