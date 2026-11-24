@@ -29,6 +29,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_GROUP_NAME_CACHE_CAPACITY = 1000;
   public static final boolean DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION = true;
   public static final Duration DEFAULT_AUTHORIZATIONS_CACHE_TTL = Duration.ofSeconds(10);
+  public static final Duration DEFAULT_DEPLOYMENT_CACHE_TTL = Duration.ofMinutes(30);
   public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
@@ -87,6 +88,7 @@ public final class EngineConfiguration {
   private boolean processCacheSoftValues = DEFAULT_PROCESS_CACHE_SOFT_VALUES;
   private int authorizationsCacheCapacity = DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
   private Duration authorizationsCacheTtl = DEFAULT_AUTHORIZATIONS_CACHE_TTL;
+  private Duration deploymentCacheTtl = DEFAULT_DEPLOYMENT_CACHE_TTL;
   private int groupNameCacheCapacity = DEFAULT_GROUP_NAME_CACHE_CAPACITY;
   private boolean candidateGroupNameResolution = DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION;
   private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
@@ -217,6 +219,15 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setAuthorizationsCacheTtl(final Duration authorizationsCacheTtl) {
     this.authorizationsCacheTtl = authorizationsCacheTtl;
+    return this;
+  }
+
+  public Duration getDeploymentCacheTtl() {
+    return deploymentCacheTtl;
+  }
+
+  public EngineConfiguration setDeploymentCacheTtl(final Duration deploymentCacheTtl) {
+    this.deploymentCacheTtl = deploymentCacheTtl;
     return this;
   }
 

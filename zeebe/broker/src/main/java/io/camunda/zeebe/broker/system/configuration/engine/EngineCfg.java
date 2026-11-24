@@ -180,6 +180,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setProcessCacheSoftValues(caches.isProcessCacheSoftValues())
         .setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity())
         .setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl())
+        .setDeploymentCacheTtl(caches.getDeploymentCacheTtl())
         .setGroupNameCacheCapacity(caches.getGroupNameCacheCapacity())
         .setCandidateGroupNameResolution(caches.isCandidateGroupNameResolution())
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
