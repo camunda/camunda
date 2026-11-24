@@ -42,7 +42,10 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public record AuditLogInfo(
     AuditLogOperationCategory category,
     AuditLogEntityType entityType,
@@ -267,7 +270,7 @@ public record AuditLogInfo(
     return OPERATION_TYPE_MAP.getOrDefault(intent, AuditLogOperationType.UNKNOWN);
   }
 
-  public record AuditLogActor(AuditLogActorType actorType, String actorId) {
+  public record AuditLogActor(AuditLogActorType actorType, @Nullable String actorId) {
 
     public static final AuditLogActor ANONYMOUS =
         new AuditLogActor(AuditLogActorType.ANONYMOUS, null);
