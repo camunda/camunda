@@ -13,6 +13,7 @@ import {flushSync} from 'react-dom';
 import {observer} from 'mobx-react-lite';
 import {useTranslation} from 'react-i18next';
 import {themeStore} from '#/shared/theme/theme';
+import {applyDsTheme, defineDsTheme, getMonacoThemeName, type EditorTheme} from './dsMonacoTheme';
 
 type EditorHandle = {showMarkers: () => void; hideMarkers: () => void};
 type Props = {
@@ -30,6 +31,7 @@ type Props = {
 	options?: editor.IStandaloneEditorConstructionOptions;
 	loading?: ReactNode;
 	jsonSchema?: object;
+	theme?: EditorTheme;
 };
 
 const MonacoEditor = observer(
@@ -48,16 +50,25 @@ const MonacoEditor = observer(
 		options,
 		loading,
 		jsonSchema,
+		theme = 'stock',
 	}: Props) => {
 		const {t} = useTranslation();
+		const colorMode = themeStore.actualTheme;
 		const modelId = useId();
 		const modelPath = `inmemory://operate-editor/${modelId}`;
 		const schemaUri = `${modelPath}.schema.json`;
 		const [monaco, setMonaco] = useState<Monaco | null>(null);
 		const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+		const wrapperRef = useRef<HTMLElement>(null);
 		const keyListener = useRef<{dispose: () => void} | null>(null);
 
 		useEffect(() => () => keyListener.current?.dispose(), []);
+		useEffect(() => {
+			const container = editorRef.current?.getContainerDomNode();
+			if (theme === 'ds' && monaco && container) {
+				applyDsTheme(monaco, container, colorMode);
+			}
+		}, [theme, monaco, colorMode]);
 		useEffect(() => {
 			const textbox = editorRef.current?.getDomNode()?.querySelector('[role="textbox"]');
 			if (id === undefined) {
@@ -94,7 +105,13 @@ const MonacoEditor = observer(
 				height={height}
 				width={width}
 				path={modelPath}
-				theme={themeStore.actualTheme === 'dark' ? 'vs-dark' : 'light'}
+				theme={getMonacoThemeName(theme, colorMode)}
+				wrapperProps={{ref: wrapperRef}}
+				beforeMount={(monaco) => {
+					if (theme === 'ds') {
+						defineDsTheme(monaco, wrapperRef.current ?? document.body, colorMode);
+					}
+				}}
 				options={{
 					minimap: {enabled: false},
 					fontSize: 13,

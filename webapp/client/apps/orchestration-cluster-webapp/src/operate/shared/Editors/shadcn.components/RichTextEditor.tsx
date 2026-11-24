@@ -22,7 +22,7 @@ const RichTextEditor = (props: ComponentProps<typeof LazyMonacoEditor>) => {
 
 	return (
 		<Suspense fallback={loading}>
-			<LazyMonacoEditor {...props} loading={loading} />
+			<LazyMonacoEditor theme="ds" {...props} loading={loading} />
 		</Suspense>
 	);
 };
