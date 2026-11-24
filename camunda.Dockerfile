@@ -130,6 +130,8 @@ FROM base-${BASE} AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
+# re-declared so this stage's RUN instructions can read the top-level default
+ARG BASE
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
@@ -225,6 +227,29 @@ COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 COPY --from=dist /camunda/rocksdb-lib/ /usr/java/packages/lib/
 
 RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
+
+# The launcher is a POSIX shell script, and the two bases disagree on what /bin/sh does with a
+# variable name that is not a shell identifier: the hardened base's busybox keeps it, while the
+# public base's dash drops it before the JVM starts, so an env secret named e.g. `db-password`
+# resolves in one image and reports NOT_FOUND in the other. Ubuntu's busybox (1.36) drops it as
+# well, so the shells cannot be matched by installing the same package; bash, which both bases
+# ship, keeps it. Pin the public base's launcher to bash so both images behave the same.
+RUN if [ "${BASE}" = "public" ]; then \
+      sed -i '1s|^#!/usr/bin/env sh$|#!/bin/bash|' "${CAMUNDA_HOME}/bin/camunda" && \
+      chown 1001:0 "${CAMUNDA_HOME}/bin/camunda"; \
+    fi
+
+# Mechanism-agnostic guard: whatever interpreter the launcher resolves to, it must hand a
+# non-identifier variable name to the JVM. Fail the build rather than ship an image that silently
+# cannot resolve such names. $interpreter is deliberately unquoted: it is "/usr/bin/env sh", which
+# has to word-split into the command and its argument.
+# hadolint ignore=SC2086
+RUN launcher="${CAMUNDA_HOME}/bin/camunda"; \
+    interpreter="$(sed -n '1s|^#!||p' "$launcher")"; \
+    if [ "$(env 'PROBE_non-posix=1' $interpreter -c 'printenv PROBE_non-posix' 2>/dev/null)" != "1" ]; then \
+      echo "error: '$interpreter' drops environment variables whose names are not valid shell identifiers, so env secret names such as 'db-password' would not resolve" >&2; \
+      exit 1; \
+    fi
 
 USER 1001:1001
 
