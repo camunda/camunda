@@ -42,7 +42,10 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -1083,6 +1086,34 @@ public class BatchOperationIT {
             batchOperation.batchOperationKey(),
             resourceAccessChecksFromResourceIds(
                 AuthorizationResourceType.BATCH, batchOperation.batchOperationKey()));
+
+    // then
+    assertThat(result.total()).isEqualTo(2);
+    assertThat(result.items()).hasSize(2);
+  }
+
+  @TestTemplate
+  public void shouldReturnBatchItemsWithBatchReadAccessWithoutTenantAccess(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation = createAndSaveBatchOperation(writer, b -> b);
+    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
+
+    // when - batch operation items carry no tenant, so a caller without tenants keeps access
+    final var result =
+        searchBatchOperationItems(
+            rdbmsService,
+            batchOperation.batchOperationKey(),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.enabled(
+                    RequiredAuthorization.of(
+                        b ->
+                            b.resourceType(AuthorizationResourceType.BATCH)
+                                .resourceIds(List.of(batchOperation.batchOperationKey())))),
+                TenantCheck.enabled(List.of())));
 
     // then
     assertThat(result.total()).isEqualTo(2);
