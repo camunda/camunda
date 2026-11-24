@@ -40,18 +40,8 @@ on:
 
 permissions:
   actions: read
-  attestations: none
   checks: read
   contents: write
-  deployments: none
-  id-token: none
-  issues: none
-  discussions: none
-  packages: none
-  pages: none
-  pull-requests: none
-  repository-projects: none
-  security-events: none
   statuses: write
 
 defaults:
@@ -62,17 +52,8 @@ jobs:
   release:
     permissions:
       actions: read
-      attestations: none
       checks: read
       contents: write
-      deployments: none
-      issues: none
-      discussions: none
-      packages: none
-      pages: none
-      pull-requests: none
-      repository-projects: none
-      security-events: none
       statuses: write
       id-token: write
     name: C8Run - ${{ matrix.os.name }}

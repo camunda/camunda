@@ -42,37 +42,12 @@ env:
   TEST_OWNER: '@camunda/distribution'
 
 permissions:
-  actions: none
-  attestations: none
-  checks: none
   contents: read
-  deployments: none
-  id-token: none
-  issues: none
-  discussions: none
-  packages: none
-  pages: none
-  pull-requests: none
-  repository-projects: none
-  security-events: none
-  statuses: none
 
 jobs:
   linting:
     permissions:
-      actions: none
-      attestations: none
-      checks: none
       contents: read
-      deployments: none
-      issues: none
-      discussions: none
-      packages: none
-      pages: none
-      pull-requests: none
-      repository-projects: none
-      security-events: none
-      statuses: none
       id-token: write
     name: C8Run linting
     runs-on: ubuntu-latest
@@ -105,19 +80,7 @@ jobs:
 
   test_c8run_unittests:
     permissions:
-      actions: none
-      attestations: none
-      checks: none
       contents: read
-      deployments: none
-      issues: none
-      discussions: none
-      packages: none
-      pages: none
-      pull-requests: none
-      repository-projects: none
-      security-events: none
-      statuses: none
       id-token: write
     strategy:
       matrix:
@@ -163,19 +126,7 @@ jobs:
 
   camunda-dist-build:
     permissions:
-      actions: none
-      attestations: none
-      checks: none
       contents: read
-      deployments: none
-      issues: none
-      discussions: none
-      packages: none
-      pages: none
-      pull-requests: none
-      repository-projects: none
-      security-events: none
-      statuses: none
       id-token: write
     name: Build camunda-dist
     runs-on: gcp-perf-core-16-default
@@ -228,19 +179,7 @@ jobs:
 
   test_c8run_on_unix:
     permissions:
-      actions: none
-      attestations: none
-      checks: none
       contents: read
-      deployments: none
-      issues: none
-      discussions: none
-      packages: none
-      pages: none
-      pull-requests: none
-      repository-projects: none
-      security-events: none
-      statuses: none
       id-token: write
     strategy:
       matrix:
@@ -328,19 +267,7 @@ jobs:
 
   test_c8run_e2e_on_windows:
     permissions:
-      actions: none
-      attestations: none
-      checks: none
       contents: read
-      deployments: none
-      issues: none
-      discussions: none
-      packages: none
-      pages: none
-      pull-requests: none
-      repository-projects: none
-      security-events: none
-      statuses: none
       id-token: write
     name: C8Run Test Windows
     runs-on: windows-latest
