@@ -89,6 +89,28 @@ public class Network implements Cloneable {
    */
   private Duration heartbeatInterval = Duration.ofSeconds(5);
 
+  /**
+   * Controls whether cluster membership gossip uses UDP. When disabled, gossip is sent over TCP
+   * instead and no UDP socket is bound at all, so gossip is encrypted whenever TLS is enabled on
+   * the internal API.
+   *
+   * <p>Only disable UDP once every node in the cluster runs a version that can receive gossip over
+   * TCP; an older node cannot hear gossip from a node that has UDP disabled.
+   *
+   * <p>The setting can be changed one node at a time, in either direction. While the cluster runs
+   * both settings, gossip sent over UDP does not reach nodes that have UDP disabled; they still get
+   * membership updates through the periodic sync, up to one sync interval later. Failure detection
+   * is unaffected.
+   *
+   * <p>Costs: UDP gossip is a single fire-and-forget datagram, whereas TCP gossip reuses a pooled
+   * connection. For an unreachable peer, that means a connection attempt every gossip interval
+   * instead of a datagram write. Failure detection is unaffected, as its probes already use TCP.
+   *
+   * <p>This covers Camunda's own cluster protocols. Protocols the JVM uses underneath, such as DNS,
+   * still use UDP and are out of scope.
+   */
+  private boolean udpEnabled = true;
+
   /** Sets the internal api configuration */
   @NestedConfigurationProperty private InternalApi internalApi = new InternalApi();
 
@@ -196,6 +218,19 @@ public class Network implements Cloneable {
 
   public void setHeartbeatInterval(final Duration heartbeatInterval) {
     this.heartbeatInterval = heartbeatInterval;
+  }
+
+  public boolean isUdpEnabled() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".udp-enabled",
+        udpEnabled,
+        Boolean.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.NOT_SUPPORTED,
+        Set.of());
+  }
+
+  public void setUdpEnabled(final boolean udpEnabled) {
+    this.udpEnabled = udpEnabled;
   }
 
   public InternalApi getInternalApi() {

@@ -45,6 +45,7 @@ public final class ClusterCfg {
   private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
   private DataSize socketSendBuffer = null;
   private DataSize socketReceiveBuffer = null;
+  private boolean udpEnabled = true;
 
   public String getMemberId() {
     return memberId;
@@ -178,6 +179,15 @@ public final class ClusterCfg {
     return this;
   }
 
+  public boolean isUdpEnabled() {
+    return udpEnabled;
+  }
+
+  public ClusterCfg setUdpEnabled(final boolean udpEnabled) {
+    this.udpEnabled = udpEnabled;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -192,7 +202,8 @@ public final class ClusterCfg {
         messageCompression,
         configManager,
         socketSendBuffer,
-        socketReceiveBuffer);
+        socketReceiveBuffer,
+        udpEnabled);
   }
 
   @Override
@@ -215,7 +226,8 @@ public final class ClusterCfg {
         && Objects.equals(messageCompression, that.messageCompression)
         && Objects.equals(configManager, that.configManager)
         && Objects.equals(socketSendBuffer, that.socketSendBuffer)
-        && Objects.equals(socketReceiveBuffer, that.socketReceiveBuffer);
+        && Objects.equals(socketReceiveBuffer, that.socketReceiveBuffer)
+        && udpEnabled == that.udpEnabled;
   }
 
   @Override
@@ -248,6 +260,8 @@ public final class ClusterCfg {
         + socketSendBuffer
         + ", socketReceiveBuffer="
         + socketReceiveBuffer
+        + ", udpEnabled="
+        + udpEnabled
         + '}';
   }
 }

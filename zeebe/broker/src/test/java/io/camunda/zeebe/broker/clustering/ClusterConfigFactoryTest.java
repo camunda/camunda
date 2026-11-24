@@ -51,4 +51,38 @@ final class ClusterConfigFactoryTest {
     assertThat(clusterConfig.getNodeConfig().getId().id()).isEqualTo("2");
     assertThat(clusterConfig.getNodeConfig().getZoneId()).isNull();
   }
+
+  @Test
+  void shouldCarryUdpEnabledIntoTheMessagingConfig() {
+    // given
+    final var cfg = internalApiConfig();
+    cfg.getNetwork().setUdpEnabled(false);
+
+    // when
+    final var clusterConfig = new ClusterConfigFactory().mapConfiguration(cfg);
+
+    // then - this is the only path by which the property reaches the transport
+    assertThat(clusterConfig.getMessagingConfig().isUdpEnabled()).isFalse();
+  }
+
+  @Test
+  void shouldEnableUdpInTheMessagingConfigByDefault() {
+    // given
+    final var cfg = internalApiConfig();
+
+    // when
+    final var clusterConfig = new ClusterConfigFactory().mapConfiguration(cfg);
+
+    // then
+    assertThat(clusterConfig.getMessagingConfig().isUdpEnabled()).isTrue();
+  }
+
+  private static BrokerCfg internalApiConfig() {
+    final var cfg = new BrokerCfg();
+    cfg.getNetwork().getInternalApi().setHost("localhost");
+    cfg.getNetwork().getInternalApi().setPort(26502);
+    cfg.getNetwork().getInternalApi().setAdvertisedHost("localhost");
+    cfg.getNetwork().getInternalApi().setAdvertisedPort(26502);
+    return cfg;
+  }
 }
