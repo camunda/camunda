@@ -63,7 +63,8 @@ jobs:
     name: Query Prometheus and render summary
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Validate namespace prefix
         run: |
@@ -82,9 +83,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/qa/ci/common LDAP_QA_USER | LOADTESTCTL_PROMETHEUS_USER;
             secret/data/products/qa/ci/common LDAP_QA_PASSWORD | LOADTESTCTL_PROMETHEUS_PASSWORD;
