@@ -17,11 +17,10 @@ import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 
 type Props = {
   type: 'from' | 'to';
-  onChange?: () => void;
   labelText: string;
 };
 
-const TimeInput: React.FC<Props> = ({type, labelText, onChange}) => {
+const TimeInput: React.FC<Props> = ({type, labelText}) => {
   return (
     <Field
       name={`${type}Time`}
@@ -40,7 +39,6 @@ const TimeInput: React.FC<Props> = ({type, labelText, onChange}) => {
             size="sm"
             onChange={(event) => {
               input.onChange(event.target.value);
-              onChange?.();
             }}
             placeholder="hh:mm:ss"
             data-testid={`${type}Time`}

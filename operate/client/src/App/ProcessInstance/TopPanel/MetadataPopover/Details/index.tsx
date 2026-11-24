@@ -12,7 +12,6 @@ import isNil from 'lodash/isNil';
 import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
-import {tracking} from 'modules/tracking';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {Header} from '../Header';
 import {SummaryDataKey, SummaryDataValue} from '../styled';
@@ -72,11 +71,6 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
             ? {
                 href: window.clientConfig!.tasklistUrl,
                 label: 'Open Tasklist',
-                onClick: () => {
-                  tracking.track({
-                    eventName: 'open-tasklist-link-clicked',
-                  });
-                },
               }
             : undefined
         }
@@ -85,9 +79,6 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
           label: 'View',
           onClick: () => {
             setIsModalVisible(true);
-            tracking.track({
-              eventName: 'flow-node-instance-details-opened',
-            });
           },
         }}
       />

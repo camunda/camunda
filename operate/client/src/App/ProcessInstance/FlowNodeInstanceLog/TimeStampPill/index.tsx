@@ -9,7 +9,6 @@
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {observer} from 'mobx-react';
-import {tracking} from 'modules/tracking';
 import {Toggle} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
@@ -33,7 +32,6 @@ const TimeStampPill: React.FC = observer(() => {
       labelB="Hide End Date"
       onClick={() => {
         toggleTimeStampVisibility();
-        tracking.track({eventName: 'instance-history-end-time-toggled'});
       }}
       disabled={isDisabled}
       size="sm"

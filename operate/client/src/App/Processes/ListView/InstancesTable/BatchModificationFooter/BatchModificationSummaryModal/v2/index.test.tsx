@@ -30,13 +30,6 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockModifyProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/mockModifyProcessInstancesBatchOperation';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {tracking} from 'modules/tracking';
-
-vi.mock('modules/tracking', () => ({
-  tracking: {
-    track: vi.fn(),
-  },
-}));
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
@@ -148,11 +141,6 @@ describe('BatchModificationSummaryModal', () => {
 
     await waitFor(() => {
       expect(batchModificationStore.state.isEnabled).toBe(false);
-    });
-
-    expect(tracking.track).toHaveBeenCalledWith({
-      eventName: 'batch-operation',
-      operationType: 'MODIFY_PROCESS_INSTANCE',
     });
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);

@@ -13,7 +13,6 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {incidentsStore} from 'modules/stores/incidents';
 import {IncidentsBanner} from './IncidentsBanner';
-import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from './styled';
 import {IncidentsWrapper} from '../IncidentsWrapper';
@@ -236,20 +235,6 @@ const TopPanel: React.FC = observer(() => {
 
   const {isModificationModeEnabled} = modificationsStore;
 
-  useEffect(() => {
-    if (!isModificationModeEnabled) {
-      if (flowNodeSelection?.flowNodeId) {
-        tracking.track({
-          eventName: 'metadata-popover-opened',
-        });
-      } else {
-        tracking.track({
-          eventName: 'metadata-popover-closed',
-        });
-      }
-    }
-  }, [flowNodeSelection?.flowNodeId, isModificationModeEnabled]);
-
   const getStatus = () => {
     if (isXmlFetching) {
       return 'loading';
@@ -274,12 +259,6 @@ const TopPanel: React.FC = observer(() => {
             if (isInTransition) {
               return;
             }
-
-            tracking.track({
-              eventName: isIncidentBarOpen
-                ? 'incidents-panel-closed'
-                : 'incidents-panel-opened',
-            });
 
             setIncidentBarOpen(!isIncidentBarOpen);
           }}

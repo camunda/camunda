@@ -15,7 +15,6 @@ import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {drdStore} from 'modules/stores/drd';
 import {drdDataStore} from 'modules/stores/drdData';
 import {PanelHeader, Container, Stack} from './styled';
-import {tracking} from 'modules/tracking';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {Button} from '@carbon/react';
 import {Close, Maximize, Minimize} from '@carbon/react/icons';
@@ -95,10 +94,6 @@ const Drd: React.FC<{decisionDefinitionKey?: string}> = observer(
                 size="lg"
                 onClick={() => {
                   setPanelState('maximized');
-                  tracking.track({
-                    eventName: 'drd-panel-interaction',
-                    action: 'maximize',
-                  });
                 }}
               />
             )}
@@ -113,10 +108,6 @@ const Drd: React.FC<{decisionDefinitionKey?: string}> = observer(
                 size="lg"
                 onClick={() => {
                   setPanelState('minimized');
-                  tracking.track({
-                    eventName: 'drd-panel-interaction',
-                    action: 'minimize',
-                  });
                 }}
               />
             )}
@@ -130,10 +121,6 @@ const Drd: React.FC<{decisionDefinitionKey?: string}> = observer(
               size="lg"
               onClick={() => {
                 setPanelState('closed');
-                tracking.track({
-                  eventName: 'drd-panel-interaction',
-                  action: 'close',
-                });
               }}
             />
           </Stack>

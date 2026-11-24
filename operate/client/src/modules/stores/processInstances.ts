@@ -28,7 +28,6 @@ import {
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {createOperation} from 'modules/utils/instance';
 import {hasActiveOperations} from './utils/hasActiveOperations';
-import {tracking} from 'modules/tracking';
 import type {
   ProcessInstanceEntity,
   OperationEntityType,
@@ -273,12 +272,6 @@ class ProcessInstances extends NetworkReconnectionHandler {
 
     if (response.isSuccess) {
       const {processInstances, totalCount} = response.data;
-
-      tracking.track({
-        eventName: 'instances-loaded',
-        filters: Object.keys(payload.query),
-        ...payload.sorting,
-      });
 
       this.setProcessInstances({
         filteredProcessInstancesCount: totalCount,

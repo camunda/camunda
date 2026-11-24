@@ -11,7 +11,6 @@ import {Footer} from './index';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
 import {MemoryRouter} from 'react-router';
-import {tracking} from 'modules/tracking';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockMigrateProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/migrateProcessInstancesBatchOperation';
@@ -24,11 +23,6 @@ type Props = {
   children?: React.ReactNode;
 };
 
-vi.mock('modules/tracking', () => ({
-  tracking: {
-    track: vi.fn(),
-  },
-}));
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
@@ -165,27 +159,6 @@ describe('Footer', () => {
     expect(processInstanceMigrationStore.isEnabled).toBe(false);
   });
 
-  it('should track confirm button click', async () => {
-    processInstanceMigrationStore.setBatchOperationQuery({
-      active: true,
-    });
-    processInstanceMigrationStore.setTargetProcessDefinitionKey('test-key');
-
-    const {user} = render(<Footer />, {wrapper: Wrapper});
-
-    await user.click(screen.getByRole('button', {name: /map element/i}));
-    await user.click(screen.getByRole('button', {name: /next/i}));
-    await user.click(screen.getByRole('button', {name: /confirm/i}));
-
-    const withinModal = within(screen.getByRole('dialog'));
-    await user.type(withinModal.getByRole('textbox'), 'MIGRATE');
-    await user.click(withinModal.getByRole('button', {name: /confirm/i}));
-
-    expect(tracking.track).toHaveBeenCalledWith({
-      eventName: 'process-instance-migration-confirmed',
-    });
-  });
-
   it('should perform migration batch operation successfully and expand operations panel', async () => {
     mockMigrateProcessInstancesBatchOperation().withDelay({
       batchOperationKey: 'migrate-operation-123',
@@ -228,11 +201,6 @@ describe('Footer', () => {
     expect(processInstanceMigrationStore.isEnabled).toBe(false);
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
     expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
-
-    expect(tracking.track).toHaveBeenCalledWith({
-      eventName: 'batch-operation',
-      operationType: 'MIGRATE_PROCESS_INSTANCE',
-    });
 
     expect(notificationsStore.displayNotification).not.toHaveBeenCalledWith(
       expect.objectContaining({kind: 'error'}),
@@ -278,14 +246,6 @@ describe('Footer', () => {
       subtitle: 'You do not have permission',
       isDismissable: true,
     });
-
-    expect(tracking.track).toHaveBeenCalledWith({
-      eventName: 'process-instance-migration-confirmed',
-    });
-    expect(tracking.track).not.toHaveBeenCalledWith({
-      eventName: 'batch-operation',
-      operationType: 'MIGRATE_PROCESS_INSTANCE',
-    });
   });
 
   it('should show an error and keep the migration view open when batch migration creation fails', async () => {
@@ -326,14 +286,6 @@ describe('Footer', () => {
       title: 'Operation could not be created',
       subtitle: undefined,
       isDismissable: true,
-    });
-
-    expect(tracking.track).toHaveBeenCalledWith({
-      eventName: 'process-instance-migration-confirmed',
-    });
-    expect(tracking.track).not.toHaveBeenCalledWith({
-      eventName: 'batch-operation',
-      operationType: 'MIGRATE_PROCESS_INSTANCE',
     });
   });
 });

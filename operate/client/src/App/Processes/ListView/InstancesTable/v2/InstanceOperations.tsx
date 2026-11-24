@@ -9,7 +9,6 @@
 import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {tracking} from 'modules/tracking';
 import {operationsStore, type ErrorHandler} from 'modules/stores/operations';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
 import type {OperationConfig} from 'modules/components/Operations/types';
@@ -57,14 +56,6 @@ const InstanceOperations: React.FC<Props> = ({
     });
   };
 
-  const handleOperationSuccess = (operationType: OperationEntityType) => {
-    tracking.track({
-      eventName: 'single-operation',
-      operationType,
-      source: 'instances-list',
-    });
-  };
-
   const applyOperation = async (operationType: OperationEntityType) => {
     try {
       processInstancesStore.markProcessInstancesWithActiveOperations({
@@ -84,7 +75,6 @@ const InstanceOperations: React.FC<Props> = ({
           });
           handleOperationError(error);
         },
-        onSuccess: () => handleOperationSuccess(operationType),
       });
     } catch (error) {
       processInstancesStore.unmarkProcessInstancesWithActiveOperations({

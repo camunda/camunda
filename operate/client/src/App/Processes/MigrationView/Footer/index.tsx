@@ -14,7 +14,6 @@ import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {useNavigate} from 'react-router';
 import {Locations} from 'modules/Routes';
-import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -27,12 +26,6 @@ const Footer: React.FC = observer(() => {
 
   const {isPending, mutate: migrateProcess} =
     useMigrateProcessInstancesBatchOperation({
-      onSuccess: () => {
-        tracking.track({
-          eventName: 'batch-operation',
-          operationType: 'MIGRATE_PROCESS_INSTANCE',
-        });
-      },
       onError: (error) => {
         notificationsStore.displayNotification({
           kind: 'error',
@@ -182,10 +175,6 @@ const Footer: React.FC = observer(() => {
                     excludeIds,
                     processDefinitionKey:
                       sourceProcessDefinitionKey ?? undefined,
-                  });
-
-                  tracking.track({
-                    eventName: 'process-instance-migration-confirmed',
                   });
 
                   setOpen(false);

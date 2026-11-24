@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {tracking} from 'modules/tracking';
 import {CarbonBreadcrumb} from './styled';
 import {Link} from 'modules/components/Link';
 import {OverflowMenu, OverflowMenuItem, BreadcrumbItem} from '@carbon/react';
@@ -49,12 +48,6 @@ const Breadcrumb: React.FC<Props> = ({callHierarchy, processInstance}) => {
             <Link
               to={Paths.processInstance(processInstanceKey)}
               title={`View Process ${processDefinitionName} - Instance ${processInstanceKey}`}
-              onClick={() => {
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'process-details-breadcrumb',
-                });
-              }}
             >
               {`${processDefinitionName}`}
             </Link>
@@ -85,12 +78,6 @@ const Breadcrumb: React.FC<Props> = ({callHierarchy, processInstance}) => {
               <Link
                 to={Paths.processInstance(lastBreadcrumb.processInstanceKey)}
                 title={`View Process ${lastBreadcrumb.processDefinitionName} - Instance ${lastBreadcrumb.processInstanceKey}`}
-                onClick={() => {
-                  tracking.track({
-                    eventName: 'navigation',
-                    link: 'process-details-breadcrumb',
-                  });
-                }}
               >
                 {`${lastBreadcrumb.processDefinitionName}`}
               </Link>

@@ -9,7 +9,6 @@
 import {cancelAllTokens, finishMovingToken} from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
-import {tracking} from 'modules/tracking';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 vi.mock('modules/stores/modifications', () => ({
@@ -32,13 +31,6 @@ const mockedIsMultiInstance = vi.mocked(isMultiInstance);
 vi.mock('modules/bpmn-js/utils/isMultiInstance', () => ({
   isMultiInstance: vi.fn(),
 }));
-
-vi.mock('modules/tracking', () => ({
-  tracking: {
-    track: vi.fn(),
-  },
-}));
-
 describe('cancelAllTokens', () => {
   it('should add a cancel modification with the correct parameters', () => {
     const flowNodeId = 'node1';
@@ -88,14 +80,6 @@ describe('finishMovingToken', () => {
   beforeEach(() => {
     modificationsStore.state.sourceFlowNodeIdForMoveOperation = 'sourceNode';
     modificationsStore.state.sourceFlowNodeInstanceKeyForMoveOperation = null;
-  });
-
-  it('should track the move-token event', () => {
-    finishMovingToken(5, 3, businessObjects, 'targetNode');
-
-    expect(tracking.track).toHaveBeenCalledWith({
-      eventName: 'move-token',
-    });
   });
 
   it('should add a move modification when targetFlowNodeId is provided', () => {

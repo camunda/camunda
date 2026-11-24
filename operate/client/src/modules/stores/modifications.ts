@@ -14,7 +14,6 @@ import {
   type FlowNodeVariables,
 } from 'modules/api/processInstances/modify';
 import {logger} from 'modules/logger';
-import {tracking} from 'modules/tracking';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {getFlowNodesInBetween} from 'modules/utils/processInstanceDetailsDiagram';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
@@ -223,9 +222,6 @@ class Modifications {
   };
 
   enableModificationMode = () => {
-    tracking.track({
-      eventName: 'enable-modification-mode',
-    });
     this.setStatus('enabled');
   };
 

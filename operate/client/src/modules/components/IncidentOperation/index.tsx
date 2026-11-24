@@ -15,7 +15,6 @@ import {OperationItems} from 'modules/components/OperationItems';
 import {OperationItem} from 'modules/components/OperationItem';
 import {observer} from 'mobx-react';
 
-import {tracking} from 'modules/tracking';
 import {InlineLoading} from '@carbon/react';
 import {Container} from './styled';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -51,13 +50,6 @@ const IncidentOperation: React.FC<Props> = observer(
           incidentId: incident.id,
         },
         onError: handleError,
-        onSuccess: () => {
-          tracking.track({
-            eventName: 'single-operation',
-            operationType: 'RESOLVE_INCIDENT',
-            source: 'incident-table',
-          });
-        },
       });
     };
 

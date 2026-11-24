@@ -9,7 +9,6 @@
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {modificationsStore} from 'modules/stores/modifications';
-import {tracking} from 'modules/tracking';
 import {generateUniqueID} from './generateUniqueID';
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import {getFlowNodeParents} from './processInstanceDetailsDiagram';
@@ -35,10 +34,6 @@ const finishMovingToken = (
   bpmnProcessId?: string,
   targetFlowNodeId?: string,
 ) => {
-  tracking.track({
-    eventName: 'move-token',
-  });
-
   let newScopeCount = 1;
 
   const {

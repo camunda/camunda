@@ -38,7 +38,6 @@ const VariablesPanel: React.FC = observer(() => {
           removePadding: true,
         },
       ]}
-      eventName="variables-panel-used"
     />
   );
 });

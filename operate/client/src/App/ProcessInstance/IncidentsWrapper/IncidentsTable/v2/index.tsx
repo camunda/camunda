@@ -17,7 +17,6 @@ import {type Incident} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {useLocation} from 'react-router';
-import {tracking} from 'modules/tracking';
 import {Button} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';
 import {useState} from 'react';
@@ -109,12 +108,6 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
           }
           return incident.isSelected;
         }}
-        onSort={(sortKey: string) => {
-          tracking.track({
-            eventName: 'incidents-sorted',
-            column: sortKey,
-          });
-        }}
         headerColumns={[
           {
             header: 'Incident Type',
@@ -178,10 +171,6 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
                     kind="ghost"
                     onClick={(event) => {
                       event.stopPropagation();
-
-                      tracking.track({
-                        eventName: 'incidents-panel-full-error-message-opened',
-                      });
 
                       handleMoreButtonClick(
                         incident.errorMessage,

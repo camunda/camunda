@@ -55,9 +55,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     properties = {
       // OperateProperties.PREFIX + ".cloud.organizationId=organizationId",//  -- leave out to test
       // for null values
-      OperateProperties.PREFIX + ".cloud.clusterId=clusterId",
-      OperateProperties.PREFIX + ".cloud.mixpanelToken=i-am-a-token",
-      OperateProperties.PREFIX + ".cloud.mixpanelAPIHost=https://fake.mixpanel.com"
+      OperateProperties.PREFIX + ".cloud.clusterId=clusterId"
     })
 public class ClientConfigRestServiceIT extends OperateAbstractIT {
 
@@ -108,8 +106,6 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"baseName\":\"/operate\","
                 + "\"organizationId\":null,"
                 + "\"clusterId\":\"clusterId\","
-                + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
-                + "\"mixpanelToken\":\"i-am-a-token\","
                 + "\"isLoginDelegated\":true,"
                 + "\"tasklistUrl\":\"https://tasklist.camunda.io/tl\","
                 + "\"resourcePermissionsEnabled\":true,"
@@ -142,8 +138,6 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"baseName\":\"/operate\","
                 + "\"organizationId\":null,"
                 + "\"clusterId\":\"clusterId\","
-                + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
-                + "\"mixpanelToken\":\"i-am-a-token\","
                 + "\"isLoginDelegated\":true,"
                 + "\"tasklistUrl\":null,"
                 + "\"resourcePermissionsEnabled\":true,"
@@ -193,8 +187,6 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"baseName\":\"/operate\","
                 + "\"organizationId\":null,"
                 + "\"clusterId\":\"clusterId\","
-                + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
-                + "\"mixpanelToken\":\"i-am-a-token\","
                 + "\"isLoginDelegated\":true,"
                 + "\"tasklistUrl\":null,"
                 + "\"resourcePermissionsEnabled\":true,"

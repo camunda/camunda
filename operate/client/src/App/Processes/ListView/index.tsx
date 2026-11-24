@@ -23,7 +23,6 @@ import {PAGE_TITLE} from 'modules/constants';
 import {notificationsStore} from 'modules/stores/notifications';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {reaction} from 'mobx';
-import {tracking} from 'modules/tracking';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
@@ -84,11 +83,6 @@ const ListView: React.FC = observer(() => {
       () => variableFilterStore.state.variable,
       () => {
         if (processesStore.state.status === 'fetched') {
-          tracking.track({
-            eventName: 'process-instances-filtered',
-            filterName: 'variable',
-            multipleValues: variableFilterStore.state.isInMultipleMode,
-          });
           processInstancesStore.fetchProcessInstancesFromFilters();
         }
       },

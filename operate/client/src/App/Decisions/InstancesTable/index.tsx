@@ -17,7 +17,6 @@ import {useLocation} from 'react-router';
 import {Container, DecisionName} from './styled';
 import {observer} from 'mobx-react';
 import {Paths} from 'modules/Routes';
-import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Link';
 import {useFilters} from 'modules/hooks/useFilters';
 import {getDecisionInstanceFilters} from 'modules/utils/filter';
@@ -151,12 +150,6 @@ const InstancesTable: React.FC = observer(() => {
               decisionInstanceKey: (
                 <Link
                   to={Paths.decisionInstance(id)}
-                  onClick={() => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'decision-instances-parent-process-details',
-                    });
-                  }}
                   title={`View decision instance ${id}`}
                   aria-label={`View decision instance ${id}`}
                 >
@@ -173,12 +166,6 @@ const InstancesTable: React.FC = observer(() => {
                       to={Paths.processInstance(processInstanceId)}
                       title={`View process instance ${processInstanceId}`}
                       aria-label={`View process instance ${processInstanceId}`}
-                      onClick={() => {
-                        tracking.track({
-                          eventName: 'navigation',
-                          link: 'decision-instances-parent-process-details',
-                        });
-                      }}
                     >
                       {processInstanceId}
                     </Link>

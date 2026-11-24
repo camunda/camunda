@@ -9,7 +9,6 @@
 import {Container, Stack, Layer} from './styled';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
-import {tracking} from 'modules/tracking';
 import {Button, MultiSelect} from '@carbon/react';
 import {useIncidentsElements} from 'modules/hooks/incidents';
 
@@ -64,9 +63,6 @@ const IncidentsFilter: React.FC = observer(() => {
             kind="ghost"
             onClick={() => {
               clearSelection();
-              tracking.track({
-                eventName: 'incident-filters-cleared',
-              });
             }}
             disabled={
               selectedFlowNodes.length === 0 && selectedErrorTypes.length === 0
