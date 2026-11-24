@@ -1039,6 +1039,7 @@ jobs:
     permissions:
       contents: read
       id-token: write # Vault JWT login
+      actions: read
     runs-on: ubuntu-latest
     needs: [release, github, optimize-docker, camunda-docker]
     if: ${{ always() && !cancelled() &&
@@ -1089,6 +1090,7 @@ jobs:
     permissions:
       contents: read
       id-token: write # Vault JWT login
+      actions: read
     runs-on: ubuntu-latest
     needs: [release, github, optimize-docker, camunda-docker]
     if: ${{ always() && !cancelled() &&
