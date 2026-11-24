@@ -239,11 +239,20 @@ public record AuditLogInfo(
           Map.entry(ValueType.USER_TASK, AuditLogEntityType.USER_TASK));
 
   public static AuditLogInfo of(final Record<?> record) {
+    return of(record, AuditLogActor.of(record));
+  }
+
+  /**
+   * Creates the info with the given actor instead of the one from the record's identity. This lets
+   * a caller check a record against the configuration as another actor, such as {@link
+   * AuditLogActor#ENGINE}.
+   */
+  public static AuditLogInfo of(final Record<?> record, final AuditLogActor actor) {
     return new AuditLogInfo(
         getOperationCategory(record),
         getEntityType(record),
         getOperationType(record),
-        AuditLogActor.of(record),
+        actor,
         AuditLogTenant.of(record));
   }
 
@@ -286,6 +295,7 @@ public record AuditLogInfo(
     public static final AuditLogActor ANONYMOUS =
         new AuditLogActor(AuditLogActorType.ANONYMOUS, null);
     public static final AuditLogActor UNKNOWN = new AuditLogActor(AuditLogActorType.UNKNOWN, null);
+    public static final AuditLogActor ENGINE = new AuditLogActor(AuditLogActorType.ENGINE, null);
 
     public static AuditLogActor unknown() {
       return UNKNOWN;
