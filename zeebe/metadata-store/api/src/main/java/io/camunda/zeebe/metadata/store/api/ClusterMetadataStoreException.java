@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.metadata.store.api;
 
-import java.util.Map;
-import java.util.Optional;
+import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The base of every cluster metadata store error. Unchecked, so {@link ClusterMetadataStore#watch}
@@ -72,17 +73,28 @@ public abstract class ClusterMetadataStoreException extends RuntimeException {
    */
   public static class ConditionFailedException extends ClusterMetadataStoreException {
 
-    private final transient Map<StoreKey, Optional<KeyValue>> current;
+    private final transient List<FailedCondition> failed;
 
-    public ConditionFailedException(
-        final String message, final Map<StoreKey, Optional<KeyValue>> current) {
+    public ConditionFailedException(final String message, final List<FailedCondition> failed) {
       super(message);
-      this.current = Map.copyOf(current);
+      this.failed = List.copyOf(failed);
     }
 
     /** Each key whose condition failed, with its current value. */
-    public Map<StoreKey, Optional<KeyValue>> current() {
-      return current;
+    public List<FailedCondition> failed() {
+      return failed;
+    }
+
+    /**
+     * @param key the key whose condition failed
+     * @param current its pair as {@link ClusterMetadataStore#get} returns it now; absent if the key
+     *     holds no value
+     */
+    public record FailedCondition(StoreKey key, @Nullable KeyValue current) {
+
+      public FailedCondition {
+        Objects.requireNonNull(key, "key");
+      }
     }
   }
 
