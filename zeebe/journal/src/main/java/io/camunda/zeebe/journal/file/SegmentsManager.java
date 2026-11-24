@@ -161,29 +161,37 @@ final class SegmentsManager implements AutoCloseable {
     final var lastWrittenAsqn = lastSegment != null ? lastSegment.lastAsqn() : INITIAL_ASQN;
     final var nextSegmentIndex =
         requireNonNull(currentSegment, "currentSegment is null").lastIndex() + 1;
-    final var descriptor =
-        SegmentDescriptor.builder()
-            .withId(lastSegment != null ? lastSegment.descriptor().id() + 1 : 1)
-            .withIndex(nextSegmentIndex)
-            .withMaxSegmentSize(maxSegmentSize)
-            .build();
-    if (nextSegment != null) {
-      try {
-        currentSegment =
-            nextSegment.join().initializeForUse(nextSegmentIndex, lastWrittenAsqn, journalMetrics);
-      } catch (final CompletionException e) {
-        LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
-        nextSegment = null;
-        currentSegment = createSegment(descriptor, lastWrittenAsqn);
-      }
-    } else {
-      currentSegment = createSegment(descriptor, lastWrittenAsqn);
-    }
+    currentSegment = takeNextSegment(nextSegmentIndex, lastWrittenAsqn);
     prepareNextSegment();
 
-    segments.put(descriptor.index(), currentSegment);
+    segments.put(nextSegmentIndex, currentSegment);
     journalMetrics.incSegmentCount();
     return currentSegment;
+  }
+
+  /**
+   * Takes the pre-created segment and lets it start at the given index. Creates a new segment
+   * instead if none was pre-created, or if pre-creating it failed.
+   */
+  private Segment takeNextSegment(final long index, final long lastWrittenAsqn) {
+    final var preparedSegment = nextSegment;
+    nextSegment = null;
+    if (preparedSegment != null) {
+      try {
+        return preparedSegment.join().initializeForUse(index, lastWrittenAsqn, journalMetrics);
+      } catch (final CompletionException e) {
+        LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
+      }
+    }
+
+    final var lastSegment = getLastSegment();
+    final var descriptor =
+        SegmentDescriptor.builder()
+            .withId(lastSegment != null ? lastSegment.descriptor().id() + 1 : FIRST_SEGMENT_ID)
+            .withIndex(index)
+            .withMaxSegmentSize(maxSegmentSize)
+            .build();
+    return createSegment(descriptor, lastWrittenAsqn);
   }
 
   @Nullable Segment getNextSegment(final long index) {
