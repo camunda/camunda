@@ -49,7 +49,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
-import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerValidator;
+import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.GroupConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.RoleConfigurer;
@@ -139,7 +139,6 @@ public final class SystemContext {
   private final Map<String, IntFunction<Long>> exportedPositionSuppliers;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
-  private final GlobalListenerValidator globalListenerValidator;
 
   /**
    * Creates a {@code SystemContext} where each physical tenant carries its own {@link
@@ -179,7 +178,6 @@ public final class SystemContext {
     this.exportedPositionSuppliers = Map.copyOf(exportedPositionSuppliers);
     this.nodeIdProvider = nodeIdProvider;
     this.physicalTenantIds = physicalTenantIds;
-    globalListenerValidator = new GlobalListenerValidator();
     initSystemContext();
   }
 
@@ -681,7 +679,7 @@ public final class SystemContext {
           listenerCfg.createGlobalListenerConfiguration().toRecord();
 
       // Check if id is present
-      if (globalListenerValidator.idProvided(listenerRecord).isLeft()) {
+      if (listenerRecord.getId().isBlank()) {
         LOG.warn(
             "[physical tenant '{}'] Missing id for global listener; listener will be ignored "
                 + "[{}.type]",
@@ -691,7 +689,7 @@ public final class SystemContext {
       }
 
       // Check if type is present
-      if (globalListenerValidator.typeProvided(listenerRecord).isLeft()) {
+      if (listenerRecord.getType().isBlank()) {
         LOG.warn(
             "[physical tenant '{}'] Missing job type for global listener; listener will be "
                 + "ignored [{}.type]",
@@ -701,7 +699,7 @@ public final class SystemContext {
       }
 
       // Validate event types
-      // Note: the validator is not used directly because autocorrection is attempted here
+      // Note: the engine's validator is not used because autocorrection is attempted here
       final var eventTypes = // consider event types in lowercase for validation
           listenerRecord.getEventTypes().stream().map(String::toLowerCase).toList();
       final boolean containsAllEventsKeyword =
@@ -711,7 +709,7 @@ public final class SystemContext {
           eventTypes.stream()
               .filter( // check if provided event types have valid values
                   eventType -> {
-                    if (globalListenerValidator.isValidEventType(listenerRecord, eventType)) {
+                    if (GlobalListenerConfiguration.VALID_EVENT_TYPES.contains(eventType)) {
                       return true;
                     } else {
                       LOG.warn(
