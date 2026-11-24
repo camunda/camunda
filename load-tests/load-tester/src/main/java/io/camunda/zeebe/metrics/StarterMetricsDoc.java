@@ -51,13 +51,14 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
   /**
    * Total number of answered process instance start requests by their {@code outcome}: {@code
    * success} or {@code failure}. Failures also carry the {@code error} type, e.g. {@code
-   * grpc_resource_exhausted} or {@code http_503}; successes use {@code none}. Counted when the
-   * answer arrives, so requests without an answer are not included, they show up in the in-flight
-   * gauge. Used by the quicker load test to compute throughput at the end of a finite run.
+   * grpc_resource_exhausted} or {@code http_503}; successes have no {@code error} tag. Counted when
+   * the answer arrives, so requests without an answer are not included, they show up in the
+   * in-flight gauge. Used by the quicker load test to compute throughput at the end of a finite
+   * run.
    */
   PROCESS_INSTANCES_STARTED {
     private static final KeyName[] KEY_NAMES =
-        new KeyName[] {StarterMetricKeyNames.OUTCOME, StarterMetricKeyNames.ERROR};
+        new KeyName[] {ResultMetricKeyNames.OUTCOME, ResultMetricKeyNames.ERROR};
 
     @Override
     public KeyName[] getKeyNames() {
@@ -87,7 +88,7 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
    * sustained, e.g. because the cluster responds slower than the starter schedules requests.
    */
   PROCESS_INSTANCES_SUBMISSIONS {
-    private static final KeyName[] KEY_NAMES = new KeyName[] {StarterMetricKeyNames.OUTCOME};
+    private static final KeyName[] KEY_NAMES = new KeyName[] {ResultMetricKeyNames.OUTCOME};
 
     @Override
     public KeyName[] getKeyNames() {
@@ -159,24 +160,6 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "name";
-      }
-    },
-
-    /** The outcome of a start submission or of its answer */
-    OUTCOME {
-      @Override
-      public String asString() {
-        return "outcome";
-      }
-    },
-
-    /**
-     * The error type of a failed answer, e.g. {@code grpc_resource_exhausted} or {@code http_503}
-     */
-    ERROR {
-      @Override
-      public String asString() {
-        return "error";
       }
     },
 
