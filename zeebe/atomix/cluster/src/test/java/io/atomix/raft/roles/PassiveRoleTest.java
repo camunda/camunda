@@ -17,6 +17,7 @@ package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -315,6 +316,37 @@ final class PassiveRoleTest {
     // then - the pending snapshot should be aborted
     verify(receivedSnapshot).abort();
     assertThat(getPendingSnapshot()).as("pending snapshot should be cleared").isNull();
+  }
+
+  @Test
+  void shouldKeepMatchingEntriesWhenAppendRequestStartsTheLog() throws CheckedJournalException {
+    // given - the local log starts at the leader's first entry and already holds it, e.g. because
+    // this member kept the entry after it rejected an append whose flush failed
+    final var lastEntry = mock(IndexedRaftLogEntry.class);
+    when(lastEntry.index()).thenReturn(1L);
+    when(lastEntry.term()).thenReturn(1L);
+    when(log.getFirstIndex()).thenReturn(1L);
+    when(log.getLastIndex()).thenReturn(1L);
+    when(log.getLastEntry()).thenReturn(lastEntry);
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1])))
+            .withCommitIndex(0)
+            .build();
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the entry, which the leader may have committed with this member, is kept
+    verify(log, never()).reset(anyLong());
+    verify(log, never()).deleteAfter(anyLong());
+    assertThat(response.succeeded()).isTrue();
+    assertThat(response.lastLogIndex()).isOne();
   }
 
   @Test
