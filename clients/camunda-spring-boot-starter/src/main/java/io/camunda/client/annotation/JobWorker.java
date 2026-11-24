@@ -110,6 +110,11 @@ public @interface JobWorker {
   /**
    * Whether job streaming should be enabled for this job type. Useful in high-performance setups
    * but can only be used with a gRPC connection. Can only be used as a singleton.
+   *
+   * <p>Jobs are pushed to a stream in the order they are created, so job priority is not taken into
+   * account for streamed jobs. While a matching stream is open for a job type, new jobs of that
+   * type are pushed to it instead of being activated by priority. To keep job priority in effect
+   * for a job type, leave streaming disabled on all workers of that type.
    */
   boolean[] streamEnabled() default {};
 
