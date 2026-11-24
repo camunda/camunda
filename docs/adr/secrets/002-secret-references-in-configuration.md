@@ -76,7 +76,7 @@ Each node runs a refresh task per tenant that reads every reference at the tenan
 3. Send new work to the new client.
 4. Close the old client once its running work has finished, or after a timeout the client sets.
 
-If the build or the check fails, the new client is closed and the old one stays in use. A failed read keeps the current value too, including a secret that the store reports as missing or forbidden, and is retried with exponential backoff from 10 seconds up to the refresh interval.
+If the build or the check fails, the new client is closed and the old one stays in use. A value that failed on a client is retried with exponential backoff from the refresh interval up to an hour, in case the secret was written before the service accepted it. A different value is applied at the next read. A failed read keeps the current value too, including a secret that the store reports as missing or forbidden, and is retried with exponential backoff from 10 seconds up to the refresh interval.
 
 ### D6. By default, literal credentials are reported, not rejected
 
