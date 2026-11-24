@@ -229,6 +229,7 @@ public final class DbDecisionState implements MutableDecisionState {
     drgCache =
         CacheBuilder.newBuilder()
             .maximumSize(config.getDrgCacheCapacity())
+            .expireAfterAccess(config.getDeploymentCacheTtl())
             .build(
                 new CacheLoader<>() {
                   @Override

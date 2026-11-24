@@ -137,6 +137,7 @@ public class DbResourceState implements MutableResourceState {
     resourcesByTenantIdAndIdCache =
         CacheBuilder.newBuilder()
             .maximumSize(config.getResourceCacheCapacity())
+            .expireAfterAccess(config.getDeploymentCacheTtl())
             .build(
                 new CacheLoader<>() {
                   @Override

@@ -358,6 +358,7 @@ public class BrokerBasedPropertiesOverride {
     cachesCfg.setResourceCacheCapacity(caches.getResourceCacheCapacity());
     cachesCfg.setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity());
     cachesCfg.setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl());
+    cachesCfg.setDeploymentCacheTtl(caches.getDeploymentCacheTtl());
     cachesCfg.setGroupNameCacheCapacity(caches.getGroupNameCacheCapacity());
     cachesCfg.setCandidateGroupNameResolution(caches.isCandidateGroupNameResolution());
   }
