@@ -265,7 +265,7 @@ public class PassiveRole extends InactiveRole {
         log.error("Failed to commit pending snapshot {}, rolling back", pendingSnapshot, e);
         abortPendingSnapshots();
         if (logReset) {
-          raft.getCluster().reloadStoredConfiguration();
+          reloadStoredConfigurationAfterInstall();
         }
         return CompletableFuture.completedFuture(
             logResponse(
@@ -284,7 +284,7 @@ public class PassiveRole extends InactiveRole {
       snapshotReplicationMetrics.observeDuration(elapsed);
       raft.updateCurrentSnapshot();
       onSnapshotReceiveCompletedOrAborted();
-      raft.getCluster().reloadStoredConfiguration();
+      reloadStoredConfigurationAfterInstall();
     } else {
       setNextExpected(request.nextChunkId());
       previouslyReceivedSnapshotChunkId = request.chunkId();
@@ -1177,6 +1177,19 @@ public class PassiveRole extends InactiveRole {
                 .withConfigurationIndex(raft.getCurrentConfigurationIndex())
                 .build()));
     return succeeded;
+  }
+
+  /**
+   * Reloads the stored configuration once the install is settled. A failure here must not change
+   * the install response: the snapshot is already persisted or aborted, and the leader cannot
+   * repair a member's configuration, so the failure is only logged.
+   */
+  private void reloadStoredConfigurationAfterInstall() {
+    try {
+      raft.getCluster().reloadStoredConfiguration();
+    } catch (final Exception e) {
+      log.error("Failed to reload the stored configuration after the snapshot install", e);
+    }
   }
 
   private void resetLogOnReceivingSnapshot(final long snapshotIndex) {

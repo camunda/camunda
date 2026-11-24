@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -176,6 +177,33 @@ final class PassiveRoleInstallTest {
     inOrder.verify(log).reset(SNAPSHOT_INDEX + 1);
     inOrder.verify(receivedSnapshot).abort();
     inOrder.verify(cluster).reloadStoredConfiguration();
+  }
+
+  @Test
+  void shouldRespondOkWhenConfigurationReloadFailsAfterSnapshotIsPersisted() {
+    // given
+    doThrow(new IllegalStateException("fail")).when(cluster).reloadStoredConfiguration();
+
+    // when
+    final var response = install(onlyChunk());
+
+    // then - the snapshot is persisted, so the install succeeded
+    assertThat(response.status()).isEqualTo(Status.OK);
+    verify(receivedSnapshot).persist();
+  }
+
+  @Test
+  void shouldRespondWithErrorWhenConfigurationReloadFailsAfterSnapshotFailedToPersist() {
+    // given
+    when(receivedSnapshot.persist())
+        .thenReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("fail")));
+    doThrow(new IllegalStateException("fail")).when(cluster).reloadStoredConfiguration();
+
+    // when
+    final var response = install(onlyChunk());
+
+    // then
+    assertThat(response.status()).isEqualTo(Status.ERROR);
   }
 
   @Test
