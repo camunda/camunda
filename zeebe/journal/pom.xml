@@ -110,6 +110,18 @@
       <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik-api</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -198,6 +210,8 @@ As a long term fix, we should move the generated classes in a `generated.*` pack
               of the sbe-tool
             -->
             <dependency>io.camunda:zeebe-protocol</dependency>
+            <!-- the jqwik test engine, which runs the property tests -->
+            <dependency>net.jqwik:jqwik</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
