@@ -174,3 +174,46 @@ func TestConnectorsCmdUsesPropertiesLauncherWhenVersionRequiresIt(t *testing.T) 
 		t.Fatalf("did not expect legacy main class when PropertiesLauncher is enabled")
 	}
 }
+
+func TestConnectorsCmdDisablesBase64IntrinsicsBeforeMainClass(t *testing.T) {
+	tests := []struct {
+		name              string
+		connectorsVersion string
+		mainClass         string
+	}{
+		{
+			name:              "legacy main class",
+			connectorsVersion: "8.8.1",
+			mainClass:         "io.camunda.connector.runtime.app.ConnectorRuntimeApplication",
+		},
+		{
+			name:              "properties launcher",
+			connectorsVersion: "8.9.0",
+			mainClass:         "org.springframework.boot.loader.launch.PropertiesLauncher",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			windowsC8Run := &WindowsC8Run{}
+
+			// when
+			cmd := windowsC8Run.ConnectorsCmd(context.Background(), "java", "C:\\test\\parent\\dir", tt.connectorsVersion, 8080)
+
+			// then: JVM options are only honored before the main class
+			flagIdx, mainIdx := -1, -1
+			for i, arg := range cmd.Args {
+				switch arg {
+				case "-XX:-UseBASE64Intrinsics":
+					flagIdx = i
+				case tt.mainClass:
+					mainIdx = i
+				}
+			}
+			if flagIdx == -1 || mainIdx == -1 || flagIdx > mainIdx {
+				t.Fatalf("expected -XX:-UseBASE64Intrinsics before the main class, got args: %v", cmd.Args)
+			}
+		})
+	}
+}
