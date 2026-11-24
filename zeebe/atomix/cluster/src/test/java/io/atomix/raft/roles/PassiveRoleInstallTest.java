@@ -39,12 +39,14 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsExcepti
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /**
  * A follower which does not need a snapshot tells the leader to stop sending it. Otherwise, the
@@ -177,6 +179,24 @@ final class PassiveRoleInstallTest {
     inOrder.verify(log).reset(SNAPSHOT_INDEX + 1);
     inOrder.verify(receivedSnapshot).abort();
     inOrder.verify(cluster).reloadStoredConfiguration();
+  }
+
+  @Test
+  void shouldFailWhenCommittingSnapshotFailsAfterResettingTheLog() {
+    // given - syncing the committed snapshot fails
+    final var syncFailure = new IOException("Input/output error");
+    when(receivedSnapshot.persist())
+        .thenReturn(CompletableActorFuture.completedExceptionally(syncFailure));
+
+    // when
+    final var response = install(onlyChunk());
+
+    // then - the log no longer has the entries the snapshot was to replace
+    assertThat(response.status()).isEqualTo(Status.ERROR);
+    verify(log).reset(SNAPSHOT_INDEX + 1);
+    final var failure = ArgumentCaptor.forClass(Throwable.class);
+    verify(raft).onStorageFailure(failure.capture());
+    assertThat(failure.getValue()).hasRootCause(syncFailure);
   }
 
   @Test

@@ -44,6 +44,7 @@ import io.atomix.raft.protocol.ReplicatableRaftRecord;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
+import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.system.Configuration;
@@ -263,6 +264,16 @@ public class PassiveRole extends InactiveRole {
         log.info("Committed snapshot {}", persistedSnapshot);
       } catch (final Exception e) {
         log.error("Failed to commit pending snapshot {}, rolling back", pendingSnapshot, e);
+        if (logReset) {
+          // The log no longer has the entries this member may have acknowledged, and the snapshot
+          // that replaces them is gone too. With an empty log, it would vote for any candidate,
+          // even one that misses committed entries, so it must stop instead.
+          raft.onStorageFailure(
+              new StorageException(
+                  "Failed to commit the received snapshot %s after resetting the log for it"
+                      .formatted(pendingSnapshot.snapshotId().getSnapshotIdAsString()),
+                  e));
+        }
         abortPendingSnapshots();
         if (logReset) {
           reloadStoredConfigurationAfterInstall();

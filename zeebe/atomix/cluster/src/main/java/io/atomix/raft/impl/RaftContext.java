@@ -358,9 +358,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
-   * Called by the journal and the meta store when a write to them may not have reached the disk,
-   * possibly from another thread. The write's caller gets the failure as an exception too, but may
-   * not propagate it: e.g. when it runs in a future's callback, the failure ends up in that future.
+   * Called when data this server relies on may not be on disk anymore: by the journal and the meta
+   * store when a write to them may not have reached the disk, possibly from another thread, and by
+   * a role that lost data otherwise, e.g. a follower that reset its log for a snapshot it then
+   * failed to commit. The write's caller gets the failure as an exception too, but may not
+   * propagate it: e.g. when it runs in a future's callback, the failure ends up in that future.
    *
    * <p>From the moment it returns, this server answers no request and changes to no role but
    * inactive (see {@link #handleRequestOnContext} and {@link #transition(Role)}): every
@@ -369,7 +371,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * later; until then, nothing that runs can persist anything, as the journal and the meta store
    * reject every write after a failed one.
    */
-  private void onStorageFailure(final Throwable cause) {
+  public void onStorageFailure(final Throwable cause) {
     if (recordStorageFailure(cause)) {
       threadContext.execute(this::failOnStorageFailure);
     }
