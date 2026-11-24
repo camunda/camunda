@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -17,7 +20,6 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Object2ObjectHashMap;
 
 public final class VersionManager {
 
@@ -28,13 +30,14 @@ public final class VersionManager {
   private final DbString tenantIdKey;
   private final DbTenantAwareKey<DbString> tenantAwareIdKey;
   private final VersionInfo versionInfo = new VersionInfo();
-  private final Object2ObjectHashMap<TenantIdAndResourceId, VersionInfo> versionByTenantCache;
+  private final LoadingCache<TenantIdAndResourceId, VersionInfo> versionByTenantCache;
 
   public VersionManager(
       final long initialValue,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final ZbColumnFamilies columnFamily,
-      final TransactionContext transactionContext) {
+      final TransactionContext transactionContext,
+      final long cacheCapacity) {
     this.initialValue = initialValue;
 
     tenantIdKey = new DbString();
@@ -42,21 +45,27 @@ public final class VersionManager {
     tenantAwareIdKey = new DbTenantAwareKey<>(tenantIdKey, idKey, PlacementType.PREFIX);
     versionInfoColumnFamily =
         zeebeDb.createColumnFamily(columnFamily, transactionContext, tenantAwareIdKey, versionInfo);
-    versionByTenantCache = new Object2ObjectHashMap<>();
+    versionByTenantCache =
+        CacheBuilder.newBuilder()
+            .maximumSize(cacheCapacity)
+            .build(
+                new CacheLoader<>() {
+                  @Override
+                  public VersionInfo load(final TenantIdAndResourceId key) {
+                    final var persistedVersionInfo = versionInfoColumnFamily.get(tenantAwareIdKey);
+
+                    if (persistedVersionInfo == null) {
+                      return new VersionInfo().setHighestVersionIfHigher(initialValue);
+                    } else {
+                      return new VersionInfo(persistedVersionInfo);
+                    }
+                  }
+                });
   }
 
   private VersionInfo getVersionInfo() {
-    return versionByTenantCache.computeIfAbsent(
-        new TenantIdAndResourceId(tenantIdKey.toString(), idKey.toString()),
-        (key) -> {
-          final var persistedVersionInfo = versionInfoColumnFamily.get(tenantAwareIdKey);
-
-          if (persistedVersionInfo == null) {
-            return new VersionInfo().setHighestVersionIfHigher(initialValue);
-          } else {
-            return new VersionInfo(persistedVersionInfo);
-          }
-        });
+    return versionByTenantCache.getUnchecked(
+        new TenantIdAndResourceId(tenantIdKey.toString(), idKey.toString()));
   }
 
   public void addResourceVersion(final String resourceId, final long value, final String tenantId) {
@@ -86,7 +95,7 @@ public final class VersionManager {
   }
 
   public void clear() {
-    versionByTenantCache.clear();
+    versionByTenantCache.invalidateAll();
   }
 
   /**
