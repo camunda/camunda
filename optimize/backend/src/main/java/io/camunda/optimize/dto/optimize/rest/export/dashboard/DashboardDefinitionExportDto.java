@@ -31,6 +31,7 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
   private boolean isInstantPreviewDashboard = false;
   private boolean isAgenticControlDashboard = false;
   private boolean isBusinessValueDashboard = false;
+  private boolean isAgentInsightsDashboard = false;
 
   public DashboardDefinitionExportDto(final DashboardDefinitionRestDto dashboardDefinition) {
     super(
@@ -110,6 +111,14 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
     this.isBusinessValueDashboard = isBusinessValueDashboard;
   }
 
+  public boolean isAgentInsightsDashboard() {
+    return isAgentInsightsDashboard;
+  }
+
+  public void setAgentInsightsDashboard(final boolean isAgentInsightsDashboard) {
+    this.isAgentInsightsDashboard = isAgentInsightsDashboard;
+  }
+
   @Override
   protected boolean canEqual(final Object other) {
     return other instanceof DashboardDefinitionExportDto;
@@ -124,7 +133,8 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
         collectionId,
         isInstantPreviewDashboard,
         isAgenticControlDashboard,
-        isBusinessValueDashboard);
+        isBusinessValueDashboard,
+        isAgentInsightsDashboard);
   }
 
   @Override
@@ -142,6 +152,7 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
     return isInstantPreviewDashboard == that.isInstantPreviewDashboard
         && isAgenticControlDashboard == that.isAgenticControlDashboard
         && isBusinessValueDashboard == that.isBusinessValueDashboard
+        && isAgentInsightsDashboard == that.isAgentInsightsDashboard
         && Objects.equals(tiles, that.tiles)
         && Objects.equals(availableFilters, that.availableFilters)
         && Objects.equals(collectionId, that.collectionId);
@@ -161,6 +172,8 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
         + isAgenticControlDashboard()
         + ", isBusinessValueDashboard="
         + isBusinessValueDashboard()
+        + ", isAgentInsightsDashboard="
+        + isAgentInsightsDashboard()
         + ")";
   }
 

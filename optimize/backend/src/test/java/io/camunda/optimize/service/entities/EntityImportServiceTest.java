@@ -16,12 +16,15 @@ import static org.mockito.Mockito.when;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
+import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
+import io.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.collection.CollectionService;
 import io.camunda.optimize.service.entities.dashboard.DashboardImportService;
 import io.camunda.optimize.service.entities.report.ReportImportService;
+import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -101,5 +104,18 @@ public class EntityImportServiceTest {
 
     // then
     verify(collectionService, never()).getCollectionDefinition(anyString());
+  }
+
+  @Test
+  public void shouldRejectImportOfAgentInsightsDashboard() {
+    // given
+    final DashboardDefinitionExportDto dashboard = new DashboardDefinitionExportDto();
+    dashboard.setExportEntityType(ExportEntityType.DASHBOARD);
+    dashboard.setAgentInsightsDashboard(true);
+
+    // when / then
+    assertThatThrownBy(() -> underTest.importEntities(null, Set.of(dashboard)))
+        .isInstanceOf(OptimizeValidationException.class)
+        .hasMessageContaining("agent insights");
   }
 }

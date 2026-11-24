@@ -42,6 +42,8 @@ public abstract class DashboardIndex<TBuilder> extends DefaultIndexMappingCreato
       BaseDashboardDefinitionDto.Fields.agenticControlDashboard;
   public static final String BUSINESS_VALUE_DASHBOARD =
       BaseDashboardDefinitionDto.Fields.businessValueDashboard;
+  public static final String AGENT_INSIGHTS_DASHBOARD =
+      BaseDashboardDefinitionDto.Fields.agentInsightsDashboard;
   public static final String AVAILABLE_FILTERS = BaseDashboardDefinitionDto.Fields.availableFilters;
 
   public static final String POSITION = DashboardReportTileDto.Fields.position;
@@ -107,6 +109,7 @@ public abstract class DashboardIndex<TBuilder> extends DefaultIndexMappingCreato
         .properties(INSTANT_PREVIEW_DASHBOARD, p -> p.boolean_(k -> k))
         .properties(AGENTIC_CONTROL_DASHBOARD, p -> p.boolean_(k -> k))
         .properties(BUSINESS_VALUE_DASHBOARD, p -> p.boolean_(k -> k))
+        .properties(AGENT_INSIGHTS_DASHBOARD, p -> p.boolean_(k -> k))
         .properties(
             AVAILABLE_FILTERS,
             p ->
