@@ -21,6 +21,7 @@ mutates each module's own package only.
   - `state` — the immutable `StoreState`, `KeyPath` (prefix ranges on plain canonical keys), the
     `Entry` a write commits, and `EntryApplier`, the pure function that applies an entry and
     reports its changes.
+  - `write` — `WriteEvaluator`, which turns a batch into an entry, or no entry, or an error.
 
 A new type belongs in `api/` when code outside the module must reference it; otherwise it goes in
 `impl/` if every store uses it, or in the module of the one store that does. Keep `api/` free of
