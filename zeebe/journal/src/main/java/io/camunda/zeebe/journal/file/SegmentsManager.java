@@ -419,7 +419,16 @@ final class SegmentsManager implements AutoCloseable {
   void open() {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
-    for (final Segment segment : loadSegments()) {
+    final var loadedSegments = loadSegments();
+    for (int i = 0; i < loadedSegments.size(); i++) {
+      final var segment = loadedSegments.get(i);
+      final var next = i + 1 < loadedSegments.size() ? loadedSegments.get(i + 1) : null;
+      if (next != null && next.index() == segment.index()) {
+        // an empty segment, followed by the segment that a failed reset to its index left on disk;
+        // a reset only deletes the segments it knows, so a crash after it would bring this one back
+        deleteReplacedSegment(segment);
+        continue;
+      }
       segments.put(segment.descriptor().index(), segment);
       journalMetrics.incSegmentCount();
     }
@@ -451,6 +460,18 @@ final class SegmentsManager implements AutoCloseable {
     // created last, so that nothing above can fail while holding an executor that no one would
     // close; the executor is only needed once open() has returned, to prepare the next segment
     bgIoExecutor = preparationExecutors.get();
+  }
+
+  private static void deleteReplacedSegment(final Segment segment) {
+    try {
+      segment.delete();
+    } catch (final JournalException e) {
+      if (!segment.isMarkedForDeletion()) {
+        throw e;
+      }
+      // the next successful directory flush, at the latest the one of a reset, persists the rename
+      LOG.warn("Failed to flush the deletion of the replaced segment {}", segment, e);
+    }
   }
 
   /**
