@@ -232,6 +232,20 @@ components:
       # matches the RDBMS secondary storage's varchar column size.
       example: item-1
 
+    ProbeId:
+      description: |
+        The ID of a probe, as its worker registered it: 1 to 256 characters, without whitespace,
+        and not `*`. The engine matches it to the probe IDs of polling workers by exact equality.
+      type: string
+      format: ProbeId
+      x-semantic-type: ProbeId
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # `*` is rejected by ProbeRequestValidator: it would read as a wildcard to workers.
+      pattern: ^\S+$
+      example: validate-configuration/io.camunda:aws-credential:1
+
     JobLeaseToken:
       description: |
         An opaque, engine-minted fencing token identifying a single activation of a job.
