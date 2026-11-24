@@ -9,15 +9,24 @@ package io.camunda.configuration.data;
 
 import io.camunda.configuration.data.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-/** Configuration for audit logging, including separate settings for user and client operations. */
+/**
+ * Configuration for audit logging, with separate settings for operations by users, clients, unknown
+ * actors and the engine itself.
+ */
+@NullMarked
 public class AuditLog {
   private boolean enabled = true;
 
   @NestedConfigurationProperty private AuditLogEntry user = AuditLogEntry.logAll();
   @NestedConfigurationProperty private AuditLogEntry client = AuditLogEntry.logNone();
   @NestedConfigurationProperty private AuditLogEntry unknown = AuditLogEntry.logNone();
+  @NestedConfigurationProperty private AuditLogEntry engine = AuditLogEntry.logNone();
+
+  /** Whether the variable history is recorded. It has no effect when the audit log is disabled. */
+  private boolean variableHistoryEnabled = false;
 
   public boolean isEnabled() {
     return enabled;
@@ -51,6 +60,22 @@ public class AuditLog {
     this.unknown = unknown;
   }
 
+  public AuditLogEntry getEngine() {
+    return engine;
+  }
+
+  public void setEngine(final AuditLogEntry engine) {
+    this.engine = engine;
+  }
+
+  public boolean isVariableHistoryEnabled() {
+    return variableHistoryEnabled;
+  }
+
+  public void setVariableHistoryEnabled(final boolean variableHistoryEnabled) {
+    this.variableHistoryEnabled = variableHistoryEnabled;
+  }
+
   /** Converts this configuration to an {@link AuditLogConfiguration} for the exporter. */
   public AuditLogConfiguration toConfiguration() {
     final AuditLogConfiguration auditLogConfiguration = new AuditLogConfiguration();
@@ -67,6 +92,11 @@ public class AuditLog {
         .getUnknown()
         .setCategories(getUnknown().getCategories())
         .setExcludes(getUnknown().getExcludes());
+    auditLogConfiguration
+        .getEngine()
+        .setCategories(getEngine().getCategories())
+        .setExcludes(getEngine().getExcludes());
+    auditLogConfiguration.setVariableHistoryEnabled(isVariableHistoryEnabled());
     return auditLogConfiguration;
   }
 }

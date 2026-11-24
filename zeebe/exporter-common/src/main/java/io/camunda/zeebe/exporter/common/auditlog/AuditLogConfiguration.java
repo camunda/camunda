@@ -10,7 +10,9 @@ package io.camunda.zeebe.exporter.common.auditlog;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class AuditLogConfiguration implements AuditLogCheck {
 
   private boolean enabled = true;
@@ -18,6 +20,13 @@ public final class AuditLogConfiguration implements AuditLogCheck {
   private ActorAuditLogConfiguration user = ActorAuditLogConfiguration.logAll();
   private ActorAuditLogConfiguration client = ActorAuditLogConfiguration.logNone();
   private ActorAuditLogConfiguration unknown = ActorAuditLogConfiguration.logNone();
+  private ActorAuditLogConfiguration engine = ActorAuditLogConfiguration.logNone();
+
+  /**
+   * Whether the variable history is recorded. It has no effect when the audit log is disabled, and
+   * it does not count in {@link #isEnabled()}.
+   */
+  private boolean variableHistoryEnabled = false;
 
   public ActorAuditLogConfiguration getUser() {
     return user;
@@ -46,6 +55,23 @@ public final class AuditLogConfiguration implements AuditLogCheck {
     return this;
   }
 
+  public ActorAuditLogConfiguration getEngine() {
+    return engine;
+  }
+
+  public AuditLogConfiguration setEngine(final ActorAuditLogConfiguration engine) {
+    this.engine = engine;
+    return this;
+  }
+
+  public boolean isVariableHistoryEnabled() {
+    return variableHistoryEnabled;
+  }
+
+  public void setVariableHistoryEnabled(final boolean variableHistoryEnabled) {
+    this.variableHistoryEnabled = variableHistoryEnabled;
+  }
+
   @Override
   public String toString() {
     return "AuditLogConfiguration{"
@@ -57,6 +83,10 @@ public final class AuditLogConfiguration implements AuditLogCheck {
         + client
         + ", unknown="
         + unknown
+        + ", engine="
+        + engine
+        + ", variableHistoryEnabled="
+        + variableHistoryEnabled
         + '}';
   }
 
@@ -64,7 +94,8 @@ public final class AuditLogConfiguration implements AuditLogCheck {
     return enabled
         && !(getUser().getCategories().isEmpty()
             && getClient().getCategories().isEmpty()
-            && getUnknown().getCategories().isEmpty());
+            && getUnknown().getCategories().isEmpty()
+            && getEngine().getCategories().isEmpty());
   }
 
   public void setEnabled(final boolean enabled) {
