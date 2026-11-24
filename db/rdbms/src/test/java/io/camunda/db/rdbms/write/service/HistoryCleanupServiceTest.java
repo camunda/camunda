@@ -19,8 +19,10 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.search.entities.BatchOperationType;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -55,6 +57,8 @@ class HistoryCleanupServiceTest {
   private UsageMetricTUWriter usageMetricTUWriter;
   private AuditLogWriter auditLogWriter;
   private WaitStateWriter waitStateWriter;
+  private AgentInstanceWriter agentInstanceWriter;
+  private AgentHistoryWriter agentHistoryWriter;
 
   private RdbmsWriterConfig.HistoryConfig historyConfig;
   private RdbmsWriters rdbmsWriters;
@@ -80,6 +84,8 @@ class HistoryCleanupServiceTest {
     usageMetricTUWriter = mock(UsageMetricTUWriter.class);
     auditLogWriter = mock(AuditLogWriter.class);
     waitStateWriter = mock(WaitStateWriter.class);
+    agentInstanceWriter = mock(AgentInstanceWriter.class);
+    agentHistoryWriter = mock(AgentHistoryWriter.class);
     when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
         .thenReturn(java.util.Collections.emptyList());
 
@@ -99,6 +105,8 @@ class HistoryCleanupServiceTest {
         .thenReturn(0);
     when(auditLogWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
     when(waitStateWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
+    when(agentInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
+    when(agentHistoryWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
 
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
     when(usageMetricWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
@@ -146,6 +154,8 @@ class HistoryCleanupServiceTest {
         .thenReturn(mock(RdbmsWriterMetrics.class, Mockito.RETURNS_DEEP_STUBS));
     when(rdbmsWriters.getAuditLogWriter()).thenReturn(auditLogWriter);
     when(rdbmsWriters.getWaitStateWriter()).thenReturn(waitStateWriter);
+    when(rdbmsWriters.getAgentInstanceWriter()).thenReturn(agentInstanceWriter);
+    when(rdbmsWriters.getAgentHistoryWriter()).thenReturn(agentHistoryWriter);
 
     historyCleanupService = new HistoryCleanupService(config, rdbmsWriters, processInstanceReader);
   }
@@ -205,6 +215,38 @@ class HistoryCleanupServiceTest {
     verify(decisionInstanceWriter)
         .cleanupHistory(PARTITION_ID, CLEANUP_DATE, CHILD_ENTITY_BATCH_SIZE);
     verify(auditLogWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, CHILD_ENTITY_BATCH_SIZE);
+  }
+
+  @Test
+  void shouldCleanUpEveryProcessInstanceDependantWriter() throws Exception {
+    // given
+    final var expiredProcessInstanceKeys = List.of(1L, 2L, 3L);
+    when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
+        .thenReturn(expiredProcessInstanceKeys);
+
+    // every RdbmsWriters getter returning a ProcessInstanceDependant writer is stubbed with a
+    // fresh mock, so a dependant writer added in the future is covered without touching this test
+    final var dependantWriters = new ArrayList<ProcessInstanceDependant>();
+    for (final Method getter : RdbmsWriters.class.getMethods()) {
+      if (ProcessInstanceDependant.class.isAssignableFrom(getter.getReturnType())) {
+        final var writer = (ProcessInstanceDependant) mock(getter.getReturnType());
+        when(writer.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
+        when(getter.invoke(rdbmsWriters)).thenReturn(writer);
+        dependantWriters.add(writer);
+      }
+    }
+    assertThat(dependantWriters).isNotEmpty();
+    final var service = new HistoryCleanupService(config, rdbmsWriters, processInstanceReader);
+
+    // when
+    service.cleanupHistory(PARTITION_ID, CLEANUP_DATE);
+
+    // then
+    for (final var writer : dependantWriters) {
+      verify(writer)
+          .deleteRootProcessInstanceRelatedData(
+              expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    }
   }
 
   @Test
