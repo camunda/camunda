@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
@@ -68,6 +68,10 @@ function renderList(overrides: RenderOverrides = {}) {
 }
 
 const {getObserver} = setUpFakeIntersectionObserver();
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
 
 describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (variant: ExpandableListVariant) => {
 	it('should show loading skeleton rows in the table while pending', async () => {
@@ -453,7 +457,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 	it('should preserve the scroll offset when previous-page rows are prepended', async () => {
 		// given
 		const rowHeight = 60;
-		const getBoundingClientRect = mockElementHeights({rowHeight});
+		mockElementHeights({rowHeight});
 		const rows = [buildRow({id: 'process-2', name: 'Shipping process'})];
 		const screen = await renderList({variant, rows, hasPreviousPage: true});
 		const container = screen.getByTestId('list').element() as HTMLDivElement;
@@ -491,13 +495,12 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 
 		// then
 		expect(container.scrollTop).toBe(50 + rowHeight);
-		getBoundingClientRect.mockRestore();
 	});
 
 	it('should preserve the scroll offset when a previous-page fetch prepends a row while the capped page window evicts one from the bottom', async () => {
 		// given
 		const rowHeight = 60;
-		const getBoundingClientRect = mockElementHeights({rowHeight});
+		mockElementHeights({rowHeight});
 		const rows = [
 			buildRow({id: 'process-1', name: 'Order process'}),
 			buildRow({id: 'process-2', name: 'Shipping process'}),
@@ -542,13 +545,12 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 
 		// then
 		expect(container.scrollTop).toBe(50 + rowHeight);
-		getBoundingClientRect.mockRestore();
 	});
 
 	it('should reduce the scroll offset by the height of the rows the capped page window evicts from the top after a next-page fetch', async () => {
 		// given
 		const rowHeight = 60;
-		const getBoundingClientRect = mockElementHeights({rowHeight});
+		mockElementHeights({rowHeight});
 		const rows = [
 			buildRow({id: 'process-1', name: 'Order process'}),
 			buildRow({id: 'process-2', name: 'Shipping process'}),
@@ -592,7 +594,6 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 
 		// then
 		expect(container.scrollTop).toBe(200 - 2 * rowHeight);
-		getBoundingClientRect.mockRestore();
 	});
 });
 
@@ -696,7 +697,7 @@ describe('<ExpandableList /> nativeExpansion variant', () => {
 		// given
 		const rowHeight = 60;
 		const detailHeight = 500;
-		const getBoundingClientRect = mockElementHeights({rowHeight, detailHeight});
+		mockElementHeights({rowHeight, detailHeight});
 		const rowA = buildRow({id: 'process-a', name: 'Order process'});
 		const rowB = buildRow({id: 'process-b', name: 'Shipping process'});
 		const rowC = buildRow({id: 'process-c', name: 'Payment process'});
@@ -772,6 +773,5 @@ describe('<ExpandableList /> nativeExpansion variant', () => {
 
 		// then
 		expect(container.scrollTop).toBe(50 + rowHeight * 2 + detailHeight);
-		getBoundingClientRect.mockRestore();
 	});
 });
