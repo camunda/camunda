@@ -230,6 +230,10 @@ jobs:
           # Assign the amount of seconds that the plugin will wait for a deployment
           # state. Can not be less than Constants.WAIT_MAX_TIME_DEFAULT_VALUE.
           CENTRAL_WAIT_MAX_TIME: "10800"
+          # TEMPORARY (INC-9357): Maven Central rejects publishing until 2026-12-01 (monthly file
+          # limit), failing validation. Return right after upload instead of waiting for VALIDATED
+          # (plugin default) so the release continues. Revert to VALIDATED once publishing works.
+          CENTRAL_WAIT_UNTIL: "UPLOADED"
           # maven-scm discards git's stderr (GitRemoteInfoCommand builds its
           # ScmException from the URL alone), so a failed ls-remote reports nothing
           # but "unbale to execute ls-remote". A file path routes git's own
@@ -276,7 +280,7 @@ jobs:
             -DskipQaBuild=true \
             -P-autoFormat \
             ${PROFILE_FLAGS} \
-            -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -DwaitMaxTime=${CENTRAL_WAIT_MAX_TIME} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\""
+            -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -DwaitMaxTime=${CENTRAL_WAIT_MAX_TIME} -DwaitUntil=${CENTRAL_WAIT_UNTIL} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\""
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
