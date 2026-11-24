@@ -111,6 +111,7 @@ public class UsageMetricAuthorizationIT {
                 assertThat(
                         camundaClient
                             .newUsageMetricsRequest(NOW_MINUS_1D, NOW_PLUS_1D)
+                            .withTenants(true)
                             .send()
                             .join())
                     .satisfies(fnRequirements));
@@ -159,8 +160,16 @@ public class UsageMetricAuthorizationIT {
     waitForUsageMetrics(
         adminClient,
         res -> {
+          // both tenants share the assignee, so the overall assignee count reaches 1 as soon as
+          // the first tenant's metric is exported; wait for each tenant instead
           assertThat(res.getProcessInstances()).isEqualTo(4);
-          assertThat(res.getAssignees()).isEqualTo(1);
+          assertThat(res.getTenants()).containsOnlyKeys(TENANT_A, TENANT_B);
+          assertThat(res.getTenants().values())
+              .allSatisfy(
+                  tenant -> {
+                    assertThat(tenant.getProcessInstances()).isEqualTo(2);
+                    assertThat(tenant.getAssignees()).isEqualTo(1);
+                  });
         });
   }
 
