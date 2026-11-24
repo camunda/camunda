@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.metadata.store.api;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -15,6 +14,11 @@ import java.util.Objects;
  * current value only; the previous value is ignored.
  */
 public sealed interface Condition {
+
+  /** Always holds: the write is unconditional. */
+  static Condition always() {
+    return new Always();
+  }
 
   /** The key holds no value. */
   static Condition absent() {
@@ -27,37 +31,23 @@ public sealed interface Condition {
   }
 
   /**
-   * The current value has exactly these bytes. Pass the array that was read, never a value
+   * The current value has exactly these bytes. Pass the value that was read, never a value
    * serialized again.
    */
-  static Condition valueEquals(final byte[] expected) {
+  static Condition valueEquals(final Value expected) {
     return new ValueEquals(expected);
   }
+
+  record Always() implements Condition {}
 
   record Absent() implements Condition {}
 
   record Exists() implements Condition {}
 
-  /** Equality compares the expected bytes. */
-  record ValueEquals(byte[] expected) implements Condition {
+  record ValueEquals(Value expected) implements Condition {
 
     public ValueEquals {
       Objects.requireNonNull(expected, "expected");
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      return o instanceof ValueEquals(final byte[] expected1) && Arrays.equals(expected, expected1);
-    }
-
-    @Override
-    public int hashCode() {
-      return Arrays.hashCode(expected);
-    }
-
-    @Override
-    public String toString() {
-      return "ValueEquals[expected=%s]".formatted(Arrays.toString(expected));
     }
   }
 }

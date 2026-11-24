@@ -8,10 +8,12 @@
 package io.camunda.zeebe.metadata.store.api;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Reads, writes and watches keys of the cluster metadata store. Namespaces are managed through
@@ -39,37 +41,56 @@ public interface ClusterMetadataStore {
   ActorFuture<List<KeyValue>> list(StoreKey prefix);
 
   /**
+   * Applies the batch as one write, all or nothing, checked in the order of its writes, so a {@link
+   * Write.CreateNamespace} can be followed by writes into that namespace. A {@link
+   * ClusterMetadataStoreException.ConditionFailedException} means nothing was applied; a {@link
+   * ClusterMetadataStoreException.WriteTimeoutException} does not establish that. Every other write
+   * method of this interface is a batch of one write.
+   */
+  ActorFuture<Void> batch(Batch batch);
+
+  /**
    * Writes the value of one key. The old current value becomes the previous value; a key that
    * already holds the same bytes is left as it is. Completes once the write is committed; this
    * broker's view can apply it shortly after.
    */
-  ActorFuture<Void> put(StoreKey key, byte[] value);
+  default ActorFuture<Void> put(final StoreKey key, final Value value) {
+    return put(key, value, Condition.always());
+  }
 
   /**
-   * Like {@link #put(StoreKey, byte[])}, but only if the condition holds. Otherwise fails with
+   * Like {@link #put(StoreKey, Value)}, but only if the condition holds. Otherwise fails with
    * {@link ClusterMetadataStoreException.ConditionFailedException}.
    */
-  ActorFuture<Void> put(StoreKey key, byte[] value, Condition condition);
+  default ActorFuture<Void> put(final StoreKey key, final Value value, final Condition condition) {
+    return batchOfOne(() -> new Write.Put(key, value, condition));
+  }
 
   /**
    * Deletes one key, with its current and previous value. Keys underneath it are not touched. A key
    * that holds no value is not an error.
    */
-  ActorFuture<Void> delete(StoreKey key);
+  default ActorFuture<Void> delete(final StoreKey key) {
+    return delete(key, Condition.always());
+  }
 
   /**
    * Like {@link #delete(StoreKey)}, but only if the condition holds. Otherwise fails with {@link
    * ClusterMetadataStoreException.ConditionFailedException}.
    */
-  ActorFuture<Void> delete(StoreKey key, Condition condition);
+  default ActorFuture<Void> delete(final StoreKey key, final Condition condition) {
+    return batchOfOne(() -> new Write.Delete(key, condition));
+  }
 
   /**
    * Deletes every key at or under the prefix, at any depth, as one write. The prefix matches on
-   * whole segments, as in {@link #list(StoreKey)}. An empty key fails with {@link
+   * whole segments, as in {@link #list(StoreKey)}. An empty key fails the future with {@link
    * ClusterMetadataStoreException.InvalidArgumentException}. A prefix that matches no key is not an
    * error.
    */
-  ActorFuture<Void> deletePrefix(StoreKey prefix);
+  default ActorFuture<Void> deletePrefix(final StoreKey prefix) {
+    return batchOfOne(() -> new Write.DeletePrefix(prefix));
+  }
 
   /**
    * Registers a listener for every change of the key or of a key underneath it, on this broker's
@@ -93,14 +114,14 @@ public interface ClusterMetadataStore {
    */
   Subscription watch(StoreKey key, Consumer<KeyEvent> listener, Executor executor);
 
-  /**
-   * Applies the writes as one write, all or nothing, checked in the order of the list, so a {@link
-   * Write.CreateNamespace} can be followed by writes into that namespace. A {@link
-   * ClusterMetadataStoreException.ConditionFailedException} means nothing was applied; a {@link
-   * ClusterMetadataStoreException.WriteTimeoutException} does not establish that. Two writes must
-   * not address the same key, and no write may address a key at or under a {@link
-   * Write.DeletePrefix} of the same batch; otherwise the batch fails with {@link
-   * ClusterMetadataStoreException.InvalidArgumentException}.
-   */
-  ActorFuture<Void> batch(List<Write> writes);
+  /** Fails the future, rather than throwing, if the write breaks a rule, as every call does. */
+  private ActorFuture<Void> batchOfOne(final Supplier<Write> write) {
+    final Batch batch;
+    try {
+      batch = Batch.of(write.get());
+    } catch (final ClusterMetadataStoreException e) {
+      return CompletableActorFuture.completedExceptionally(e);
+    }
+    return batch(batch);
+  }
 }

@@ -30,7 +30,7 @@ final class WriteTest {
   private static final Namespace NAMESPACE = Namespace.cluster("config");
   private static final Namespace OTHER_NAMESPACE = Namespace.cluster("other");
   private static final StoreKey EMPTY = StoreKey.of(NAMESPACE, "");
-  private static final byte[] VALUE = {1};
+  private static final Value VALUE = Value.of(new byte[] {1});
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("keyWrites")
@@ -54,7 +54,7 @@ final class WriteTest {
             new Put(StoreKey.of(OTHER_NAMESPACE, "a.b.c"), VALUE));
 
     // when - then
-    assertThatCode(() -> Write.validateBatch(batch)).doesNotThrowAnyException();
+    assertThatCode(() -> new Batch(batch)).doesNotThrowAnyException();
   }
 
   @Test
@@ -63,8 +63,7 @@ final class WriteTest {
     final var batch = List.<Write>of(new Put(key("a"), VALUE), new Delete(key("a")));
 
     // when - then
-    assertThatThrownBy(() -> Write.validateBatch(batch))
-        .isInstanceOf(InvalidArgumentException.class);
+    assertThatThrownBy(() -> new Batch(batch)).isInstanceOf(InvalidArgumentException.class);
   }
 
   @Test
@@ -74,8 +73,7 @@ final class WriteTest {
         List.<Write>of(new Check(key("a"), Condition.exists()), new Put(key("a"), VALUE));
 
     // when - then
-    assertThatThrownBy(() -> Write.validateBatch(batch))
-        .isInstanceOf(InvalidArgumentException.class);
+    assertThatThrownBy(() -> new Batch(batch)).isInstanceOf(InvalidArgumentException.class);
   }
 
   @Test
@@ -84,8 +82,7 @@ final class WriteTest {
     final var batch = List.<Write>of(new DeletePrefix(key("a")), new DeletePrefix(key("a")));
 
     // when - then
-    assertThatThrownBy(() -> Write.validateBatch(batch))
-        .isInstanceOf(InvalidArgumentException.class);
+    assertThatThrownBy(() -> new Batch(batch)).isInstanceOf(InvalidArgumentException.class);
   }
 
   @ParameterizedTest(name = "{0} at {1}")
@@ -97,9 +94,9 @@ final class WriteTest {
     final var other = write.apply(key(key));
 
     // when - then
-    assertThatThrownBy(() -> Write.validateBatch(List.of(deletePrefix, other)))
+    assertThatThrownBy(() -> new Batch(List.of(deletePrefix, other)))
         .isInstanceOf(InvalidArgumentException.class);
-    assertThatThrownBy(() -> Write.validateBatch(List.of(other, deletePrefix)))
+    assertThatThrownBy(() -> new Batch(List.of(other, deletePrefix)))
         .isInstanceOf(InvalidArgumentException.class);
   }
 
@@ -112,8 +109,7 @@ final class WriteTest {
             new CreateNamespace(Namespace.tenant("tenant-a")));
 
     // when - then
-    assertThatThrownBy(() -> Write.validateBatch(batch))
-        .isInstanceOf(InvalidArgumentException.class);
+    assertThatThrownBy(() -> new Batch(batch)).isInstanceOf(InvalidArgumentException.class);
   }
 
   static Stream<Arguments> keyWrites() {
