@@ -65,9 +65,8 @@ public final class SecretStoreRegistries implements AutoCloseable {
     if (closed) {
       throw new IllegalStateException("The secret stores have been closed");
     }
-    final var replaced = byPhysicalTenant.get(physicalTenantId);
     final var stores = factory.apply(physicalTenantId, secrets);
-    byPhysicalTenant.put(physicalTenantId, stores);
+    final var replaced = byPhysicalTenant.put(physicalTenantId, stores);
     if (replaced != null) {
       replaced.close();
     }
