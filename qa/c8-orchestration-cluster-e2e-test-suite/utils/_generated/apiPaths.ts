@@ -216,5 +216,6 @@ export type ApiPath =
   | '/users'
   | '/users/search'
   | '/users/{username}'
+  | '/variables/history/search'
   | '/variables/search'
   | '/variables/{variableKey}';
