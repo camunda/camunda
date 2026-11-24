@@ -108,6 +108,7 @@ public class EntityImportService {
     final CollectionDefinitionDto collection =
         getAndValidateCollectionExistsAndIsAccessibleOrFail(userId, collectionId);
     validateCompletenessOrFail(entitiesToImport);
+    validateNoAgentInsightsEntities(entitiesToImport);
 
     final List<ReportDefinitionExportDto> reportsToImport =
         retrieveAllReportsToImport(entitiesToImport);

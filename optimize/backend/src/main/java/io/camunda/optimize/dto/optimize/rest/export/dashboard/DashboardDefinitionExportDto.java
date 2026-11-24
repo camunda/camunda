@@ -43,6 +43,7 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
     tiles = dashboardDefinition.getTiles();
     availableFilters = dashboardDefinition.getAvailableFilters();
     collectionId = dashboardDefinition.getCollectionId();
+    isAgentInsightsDashboard = dashboardDefinition.isAgentInsightsDashboard();
   }
 
   public DashboardDefinitionExportDto() {}

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
@@ -115,6 +116,20 @@ public class EntityImportServiceTest {
 
     // when / then
     assertThatThrownBy(() -> underTest.importEntities(null, Set.of(dashboard)))
+        .isInstanceOf(OptimizeValidationException.class)
+        .hasMessageContaining("agent insights");
+  }
+
+  @Test
+  public void shouldRejectUserImportOfExportedAgentInsightsDashboard() {
+    // given an export of the seeded dashboard, as DashboardExportService builds it
+    final DashboardDefinitionRestDto seeded = new DashboardDefinitionRestDto();
+    seeded.setId("agent-insights-dashboard");
+    seeded.setAgentInsightsDashboard(true);
+    final DashboardDefinitionExportDto exported = new DashboardDefinitionExportDto(seeded);
+
+    // when / then
+    assertThatThrownBy(() -> underTest.importEntitiesAsUser(USER_ID, null, Set.of(exported)))
         .isInstanceOf(OptimizeValidationException.class)
         .hasMessageContaining("agent insights");
   }
