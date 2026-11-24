@@ -14,7 +14,6 @@ import {
   getDecisionInstancesRequestFilters,
   getSortParams,
 } from 'modules/utils/filter';
-import {tracking} from 'modules/tracking';
 import type {DecisionInstanceEntity} from 'modules/types/operate';
 
 type FetchType = 'initial' | 'prev' | 'next';
@@ -92,12 +91,6 @@ class DecisionInstances extends NetworkReconnectionHandler {
     const response = await fetchDecisionInstances(payload);
     if (response.isSuccess) {
       const {decisionInstances, totalCount} = response.data;
-
-      tracking.track({
-        eventName: 'decisions-loaded',
-        filters: Object.keys(payload.query),
-        ...payload.sorting,
-      });
 
       this.setDecisionInstances({
         decisionInstances: this.getDecisionInstances(

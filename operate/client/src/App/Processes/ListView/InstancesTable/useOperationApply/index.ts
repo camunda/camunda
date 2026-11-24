@@ -10,7 +10,6 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {operationsStore} from 'modules/stores/operations';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
 import {type Modifications} from 'modules/api/processInstances/operations';
 import type {OperationEntityType} from 'modules/types/operate';
@@ -74,10 +73,6 @@ function useOperationApply() {
         modifications,
         onSuccess() {
           onSuccess();
-          tracking.track({
-            eventName: 'batch-operation',
-            operationType,
-          });
         },
         onError: ({operationType, statusCode}) => {
           processInstancesStore.unmarkProcessInstancesWithActiveOperations({

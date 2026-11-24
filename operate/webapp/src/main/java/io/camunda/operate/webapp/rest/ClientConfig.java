@@ -25,8 +25,6 @@ public class ClientConfig {
   public String baseName;
   public String organizationId;
   public String clusterId;
-  public String mixpanelAPIHost;
-  public String mixpanelToken;
   public boolean isLoginDelegated;
   public String tasklistUrl;
   public boolean resourcePermissionsEnabled;
@@ -40,8 +38,6 @@ public class ClientConfig {
     isEnterprise = operateProperties.isEnterprise();
     clusterId = operateProperties.getCloud().getClusterId();
     organizationId = operateProperties.getCloud().getOrganizationId();
-    mixpanelAPIHost = operateProperties.getCloud().getMixpanelAPIHost();
-    mixpanelToken = operateProperties.getCloud().getMixpanelToken();
     contextPath = context.getContextPath();
     baseName = context.getContextPath() + "/operate";
     // when operating in SaaS we don't have the logout option.

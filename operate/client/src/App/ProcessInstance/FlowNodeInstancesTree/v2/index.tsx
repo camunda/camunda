@@ -15,7 +15,6 @@ import {
   MAX_INSTANCES_STORED,
 } from 'modules/stores/flowNodeInstance';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
-import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {TreeNode} from '../styled';
@@ -264,7 +263,6 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               flowNodeInstance.id,
             );
           } else {
-            tracking.track({eventName: 'instance-history-item-clicked'});
             if (isAdHocSubProcessInnerInstance) {
               if (!isExpanded) {
                 expandSubtree(flowNodeInstance);

@@ -19,7 +19,6 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';
 import {notificationsStore} from 'modules/stores/notifications';
-import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {useProcessDefinitionState} from 'modules/queries/processDefinitions/useProcessDefinitionState';
@@ -81,12 +80,6 @@ const ProcessOperations: React.FC<Props> = observer(
                   runningInstancesCount !== 0
                 }
                 onClick={() => {
-                  tracking.track({
-                    eventName: 'definition-deletion-button',
-                    resource: 'process',
-                    version: processVersion,
-                  });
-
                   setIsDeleteModalVisible(true);
                 }}
               />
@@ -147,12 +140,6 @@ const ProcessOperations: React.FC<Props> = observer(
           onDelete={() => {
             setIsOperationRunning(true);
             setIsDeleteModalVisible(false);
-
-            tracking.track({
-              eventName: 'definition-deletion-confirmation',
-              resource: 'process',
-              version: processVersion,
-            });
 
             operationsStore.applyDeleteProcessDefinitionOperation({
               processDefinitionId,

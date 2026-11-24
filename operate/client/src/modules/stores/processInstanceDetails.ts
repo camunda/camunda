@@ -22,7 +22,6 @@ import {PAGE_TITLE, PERMISSIONS} from 'modules/constants';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {hasActiveOperations} from './utils/hasActiveOperations';
-import {tracking} from 'modules/tracking';
 import isEqual from 'lodash/isEqual';
 import isNil from 'lodash/isNil';
 import type {
@@ -97,15 +96,6 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
         this.stopPolling();
       }
     });
-
-    const {processInstance} = this.state;
-
-    if (processInstance !== null) {
-      tracking.track({
-        eventName: 'process-instance-details-loaded',
-        state: processInstance.state,
-      });
-    }
   };
 
   fetchProcessInstance = this.retryOnConnectionLost(

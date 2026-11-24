@@ -20,7 +20,6 @@ import {
 import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import {pages} from 'common/routing';
-import {tracking} from 'common/tracking';
 import {authenticationStore} from 'common/auth/authentication';
 import {themeStore} from 'common/theme/theme';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
@@ -37,11 +36,6 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
       key: 'docs',
       label: t('headerSidebarDocumentationLink'),
       onClick: () => {
-        tracking.track({
-          eventName: 'info-bar',
-          link: 'documentation',
-        });
-
         window.open('https://docs.camunda.io/', '_blank');
       },
     },
@@ -49,11 +43,6 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
       key: 'academy',
       label: t('headerSidebarCamundaAcademyLink'),
       onClick: () => {
-        tracking.track({
-          eventName: 'info-bar',
-          link: 'academy',
-        });
-
         window.open('https://academy.camunda.com/', '_blank');
       },
     },
@@ -62,11 +51,6 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
     key: 'feedbackAndSupport',
     label: t('headerSidebarFeedbackAndSupportLink'),
     onClick: () => {
-      tracking.track({
-        eventName: 'info-bar',
-        link: 'feedback',
-      });
-
       window.open('https://jira.camunda.com/projects/SUPPORT/queues', '_blank');
     },
   } as const;
@@ -74,11 +58,6 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
     key: 'communityForum',
     label: t('headerSidebarCommunityForumLink'),
     onClick: () => {
-      tracking.track({
-        eventName: 'info-bar',
-        link: 'forum',
-      });
-
       window.open('https://forum.camunda.io', '_blank');
     },
   };
@@ -108,12 +87,6 @@ const Header: React.FC = observer(() => {
 
   const {t} = useTranslation();
 
-  useEffect(() => {
-    if (currentUser) {
-      tracking.identifyUser(currentUser);
-    }
-  }, [currentUser]);
-
   return (
     <C3Navigation
       toggleAppbar={(isAppBarOpen) => setIsAppBarOpen(isAppBarOpen)}
@@ -121,12 +94,6 @@ const Header: React.FC = observer(() => {
       appBar={{
         ariaLabel: t('headerAppBarLabel'),
         isOpen: isAppBarOpen,
-        elementClicked: (app: string) => {
-          tracking.track({
-            eventName: 'app-switcher-item-clicked',
-            app,
-          });
-        },
         appTeaserRouteProps: IS_SAAS ? {} : undefined,
         elements: IS_SAAS ? undefined : [],
       }}
@@ -135,12 +102,6 @@ const Header: React.FC = observer(() => {
         name: 'Tasklist',
         routeProps: {
           to: pages.initial,
-          onClick: () => {
-            tracking.track({
-              eventName: 'navigation',
-              link: 'header-logo',
-            });
-          },
         },
       }}
       forwardRef={RouterLink}
@@ -154,12 +115,6 @@ const Header: React.FC = observer(() => {
                 label: t('headerNavItemTasks'),
                 routeProps: {
                   to: pages.initial,
-                  onClick: () => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'header-tasks',
-                    });
-                  },
                 },
               },
               {
@@ -170,12 +125,6 @@ const Header: React.FC = observer(() => {
                   to: pages.processes({
                     tenantId: getStateLocally('tenantId') ?? undefined,
                   }),
-                  onClick: () => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'header-processes',
-                    });
-                  },
                 },
               },
             ],
@@ -220,11 +169,6 @@ const Header: React.FC = observer(() => {
                   key: 'cookie',
                   label: t('headerCookiePreferencesLabel'),
                   onClick: () => {
-                    tracking.track({
-                      eventName: 'user-side-bar',
-                      link: 'cookies',
-                    });
-
                     window.Osano?.cm?.showDrawer(
                       'osano-cm-dom-info-dialog-open',
                     );
@@ -235,11 +179,6 @@ const Header: React.FC = observer(() => {
             key: 'terms',
             label: t('headerTermsOfUseLabel'),
             onClick: () => {
-              tracking.track({
-                eventName: 'user-side-bar',
-                link: 'terms-conditions',
-              });
-
               window.open(
                 'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
                 '_blank',
@@ -250,11 +189,6 @@ const Header: React.FC = observer(() => {
             key: 'privacy',
             label: t('headerPrivacyPolicyLabel'),
             onClick: () => {
-              tracking.track({
-                eventName: 'user-side-bar',
-                link: 'privacy-policy',
-              });
-
               window.open('https://camunda.com/legal/privacy/', '_blank');
             },
           },
@@ -262,11 +196,6 @@ const Header: React.FC = observer(() => {
             key: 'imprint',
             label: t('headerImprintLabel'),
             onClick: () => {
-              tracking.track({
-                eventName: 'user-side-bar',
-                link: 'imprint',
-              });
-
               window.open('https://camunda.com/legal/imprint/', '_blank');
             },
           },

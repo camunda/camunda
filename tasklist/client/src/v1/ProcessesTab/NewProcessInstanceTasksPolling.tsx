@@ -9,7 +9,6 @@
 import {pages} from 'common/routing';
 import type {Task} from 'v1/api/types';
 import {useLocation, useNavigate} from 'react-router';
-import {tracking} from 'common/tracking';
 import {useQuery} from '@tanstack/react-query';
 import {request, type RequestError} from 'common/api/request';
 import {api} from 'v1/api';
@@ -59,11 +58,6 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
             location.pathname === `/${pages.processes()}`
           ) {
             const [{id}] = data;
-
-            tracking.track({
-              eventName: 'process-tasks-polling-ended',
-              outcome: 'single-task-found',
-            });
 
             navigate({pathname: pages.taskDetails(id)});
 

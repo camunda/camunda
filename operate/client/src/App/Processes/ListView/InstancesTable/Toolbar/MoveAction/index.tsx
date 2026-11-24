@@ -27,7 +27,6 @@ import modalDiagramImageDark from './images/modal-diagram-image-dark.png';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {tracking} from 'modules/tracking';
 import {HelperModal} from 'modules/components/HelperModal';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
@@ -106,9 +105,6 @@ const MoveAction: React.FC = observer(() => {
           <TableBatchAction
             renderIcon={Move}
             onClick={() => {
-              tracking.track({
-                eventName: 'batch-move-modification-move-button-clicked',
-              });
               if (getStateLocally()?.[localStorageKey]) {
                 batchModificationStore.enable();
               } else {

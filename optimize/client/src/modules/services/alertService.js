@@ -7,7 +7,6 @@
  */
 
 import {del, get, post, put} from 'request';
-import {track} from 'tracking';
 
 export async function loadAlerts(collection) {
   const response = await get(`api/collection/${collection}/alerts`);
@@ -16,19 +15,15 @@ export async function loadAlerts(collection) {
 
 export async function addAlert(alert) {
   const response = await post(`api/alert`, alert);
-  const json = await response.json();
-  track('createAlert', {entityId: json.id});
   return response;
 }
 
 export async function editAlert(id, alert) {
   const response = await put(`api/alert/${id}`, alert);
-  track('updateAlert', {entityId: id});
   return response;
 }
 
 export async function removeAlert(id) {
   const response = await del(`api/alert/${id}`);
-  track('deleteAlert', {entityId: id});
   return response;
 }

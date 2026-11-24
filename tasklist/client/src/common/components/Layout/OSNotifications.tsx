@@ -9,13 +9,11 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useTasks as useV1Tasks} from 'v1/api/useTasks.query';
 import {useTasks as useV2Tasks} from 'v2/api/useTasks.query';
-import {encodeTaskEmptyPageRef} from 'common/tracking/reftags';
 import {
   type NavigateFunction,
   useBeforeUnload,
   useNavigate,
 } from 'react-router';
-import {tracking} from 'common/tracking';
 import {pages} from 'common/routing';
 import type {TaskFilters as V1TaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import type {TaskFilters as V2TaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
@@ -31,15 +29,12 @@ const SORT_BY = 'creation';
 
 type State = 'stopped' | 'focused' | 'blurred' | 'offline';
 
-function taskListWithRefUrl(
+function taskListUrl(
   params: Pick<V1TaskFilters | V2TaskFilters, 'filter' | 'sortBy'>,
 ) {
   return {
     pathname: pages.initial,
-    search: new URLSearchParams({
-      ...params,
-      ref: encodeTaskEmptyPageRef({by: 'os-notification'}),
-    }).toString(),
+    search: new URLSearchParams(params).toString(),
   };
 }
 
@@ -58,7 +53,7 @@ function createNotification(numTasks: number, navigate: NavigateFunction) {
   });
   notification.onclick = () => {
     window.focus();
-    navigate(taskListWithRefUrl({filter: FILTER, sortBy: SORT_BY}));
+    navigate(taskListUrl({filter: FILTER, sortBy: SORT_BY}));
   };
   return notification;
 }
@@ -70,9 +65,6 @@ function useStateMachine(enable: boolean) {
 
   useEffect(() => {
     if (Notification.permission !== 'granted') {
-      tracking.track({
-        eventName: 'os-notification-opted-out',
-      });
       setState('stopped');
       return;
     }

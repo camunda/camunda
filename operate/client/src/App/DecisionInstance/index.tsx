@@ -13,7 +13,6 @@ import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {drdDataStore} from 'modules/stores/drdData';
 import {PAGE_TITLE} from 'modules/constants';
-import {tracking} from 'modules/tracking';
 import {InstanceDetail} from '../Layout/InstanceDetail';
 import {DecisionPanel} from './DecisionPanel';
 import {Header} from './Header';
@@ -50,15 +49,6 @@ const DecisionInstance: React.FC = observer(() => {
       );
     }
   }, [decisionInstanceId, decisionName]);
-
-  useEffect(() => {
-    if (decisionInstance !== null) {
-      tracking.track({
-        eventName: 'decision-instance-details-loaded',
-        state: decisionInstance.state,
-      });
-    }
-  }, [decisionInstance]);
 
   if (decisionInstanceDetailsStore.state.status === 'forbidden') {
     return <Forbidden />;

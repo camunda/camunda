@@ -16,7 +16,6 @@ import {DashboardRenderer, EntityNameForm} from 'components';
 import {t} from 'translation';
 import {nowDirty, nowPristine, isDirty} from 'saveGuard';
 import {showPrompt} from 'prompt';
-import {track} from 'tracking';
 
 import {AddButton} from './AddButton';
 import {EditButton} from './EditButton';
@@ -128,7 +127,6 @@ export class DashboardEdit extends React.Component {
   };
 
   updateDescription = (description) => {
-    track('editDescription', {entity: 'dashboard', entityId: this.state.id});
     this.setState({description});
   };
 
@@ -160,8 +158,6 @@ export class DashboardEdit extends React.Component {
         node.dispatchEvent(createEvent('mousemove', this.mousePosition));
       });
     });
-
-    track(getEventName('create', newTile.type), {entityId: newTile.id});
   };
 
   updateTile = (tile) => {
@@ -178,7 +174,6 @@ export class DashboardEdit extends React.Component {
           return oldTile;
         });
 
-        track(getEventName('update', tile.type), {entityId: tile.id});
         return {tiles: newTiles};
       });
     }
@@ -188,7 +183,6 @@ export class DashboardEdit extends React.Component {
     this.setState({
       tiles: this.state.tiles.filter((tile) => tile !== tileToRemove),
     });
-    track(getEventName('delete', tileToRemove.type), {entityId: tileToRemove.id});
   };
 
   componentDidUpdate(prevProps) {
@@ -356,12 +350,4 @@ function createEvent(type, position) {
     clientX: position.x,
     clientY: position.y,
   });
-}
-
-function getEventName(action, eventType) {
-  const eventNameTokens = eventType.split('_');
-  const eventName = eventNameTokens
-    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
-    .join('');
-  return action + eventName + 'Tile';
 }

@@ -23,7 +23,6 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_API_CONFIGURATION;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_MODE_PROFILES;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PANEL_NOTIFICATION_CONFIGURATION;
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static io.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static io.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
@@ -147,7 +146,6 @@ public class ConfigurationService {
   private UIConfiguration uiConfiguration;
   private UserTaskIdentityCacheConfiguration userTaskIdentityCacheConfiguration;
   private UserIdentityCacheConfiguration userIdentityCacheConfiguration;
-  private TelemetryConfiguration telemetryConfiguration;
   private ExternalVariableConfiguration externalVariableConfiguration;
   private GlobalCacheConfiguration caches;
   private AnalyticsConfiguration analytics;
@@ -1100,18 +1098,6 @@ public class ConfigurationService {
 
   public void setOptimizeApiConfiguration(final OptimizeApiConfiguration optimizeApiConfiguration) {
     this.optimizeApiConfiguration = optimizeApiConfiguration;
-  }
-
-  public TelemetryConfiguration getTelemetryConfiguration() {
-    if (telemetryConfiguration == null) {
-      telemetryConfiguration =
-          configJsonContext.read(TELEMETRY_CONFIGURATION, TelemetryConfiguration.class);
-    }
-    return telemetryConfiguration;
-  }
-
-  public void setTelemetryConfiguration(final TelemetryConfiguration telemetryConfiguration) {
-    this.telemetryConfiguration = telemetryConfiguration;
   }
 
   public ExternalVariableConfiguration getExternalVariableConfiguration() {

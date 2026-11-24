@@ -9,7 +9,6 @@
 import {memo} from 'react';
 import {OverflowMenu, OverflowMenuItem} from '@carbon/react';
 import {SortAscending, Checkmark} from '@carbon/react/icons';
-import {tracking} from 'common/tracking';
 import {
   useMultiModeTaskFilters,
   type MultiModeTaskFilters,
@@ -102,19 +101,8 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
               </div>
             }
             onClick={() => {
-              const customFilters = getStateLocally('customFilters')?.[filter];
-
               searchParams.set('sortBy', id);
               setSearchParams(searchParams);
-
-              tracking.track({
-                eventName: 'tasks-filtered',
-                filter: filter,
-                sorting: sortBy,
-                customFilters: Object.keys(customFilters ?? {}),
-                customFilterVariableCount:
-                  customFilters?.variables?.length ?? 0,
-              });
             }}
           />
         ))}

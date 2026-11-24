@@ -50,8 +50,6 @@ import org.springframework.web.context.WebApplicationContext;
       "CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID=organizationId",
       // CAMUNDA_TASKLIST_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
       "CAMUNDA_TASKLIST_CLOUD_STAGE=stage",
-      "CAMUNDA_TASKLIST_CLOUD_MIXPANELTOKEN=i-am-a-token",
-      "CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST=https://fake.mixpanel.com",
       "management.endpoint.health.group.readiness.include=readinessState"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -100,8 +98,6 @@ public class ClientConfigRestServiceIT {
                 + "\"organizationId\":\"organizationId\","
                 + "\"clusterId\":null,"
                 + "\"stage\":\"stage\","
-                + "\"mixpanelToken\":\"i-am-a-token\","
-                + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
                 + "\"isResourcePermissionsEnabled\":false,"
                 + "\"isUserAccessRestrictionsEnabled\":true,"
                 + "\"maxRequestSize\":10485760};");

@@ -10,7 +10,6 @@ import {getAccordionItemTitle} from './utils/getAccordionItemTitle';
 import {getAccordionItemLabel} from './utils/getAccordionItemLabel';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {tracking} from 'modules/tracking';
 import type {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
 import {Li, LinkWrapper} from '../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
@@ -62,10 +61,6 @@ const Details: React.FC<Props> = observer(
                 })}
                 onClick={() => {
                   panelStatesStore.expandFiltersPanel();
-                  tracking.track({
-                    eventName: 'navigation',
-                    link: 'dashboard-process-instances-by-name-single-version',
-                  });
                 }}
                 title={getAccordionItemTitle({
                   processName: process.name || processName,

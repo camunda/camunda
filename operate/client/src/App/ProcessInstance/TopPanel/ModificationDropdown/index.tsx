@@ -14,7 +14,6 @@ import isNil from 'lodash/isNil';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {tracking} from 'modules/tracking';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {Popover} from 'modules/components/Popover';
 import {
@@ -153,10 +152,6 @@ const ModificationDropdown: React.FC<Props> = observer(
                             ) {
                               modificationsStore.startAddingToken(flowNodeId);
                             } else {
-                              tracking.track({
-                                eventName: 'add-token',
-                              });
-
                               modificationsStore.addModification({
                                 type: 'token',
                                 payload: {
@@ -197,10 +192,6 @@ const ModificationDropdown: React.FC<Props> = observer(
                           size="sm"
                           renderIcon={Error}
                           onClick={() => {
-                            tracking.track({
-                              eventName: 'cancel-token',
-                            });
-
                             modificationsStore.cancelToken(
                               flowNodeId,
                               flowNodeInstanceId,
@@ -222,10 +213,6 @@ const ModificationDropdown: React.FC<Props> = observer(
                           size="sm"
                           renderIcon={Error}
                           onClick={() => {
-                            tracking.track({
-                              eventName: 'cancel-token',
-                            });
-
                             cancelAllTokens(
                               flowNodeId,
                               totalRunningInstances ?? 0,

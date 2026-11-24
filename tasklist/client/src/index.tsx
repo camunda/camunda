@@ -10,7 +10,7 @@
 
 import {createRoot} from 'react-dom/client';
 import {App} from './App';
-import {tracking} from 'common/tracking';
+import {loadOsano} from 'common/osano';
 import {initI18next} from 'common/i18n/i18next';
 import './index.scss';
 import {StrictMode} from 'react';
@@ -34,7 +34,7 @@ const container = document.querySelector('#root');
 const root = createRoot(container!);
 initI18next();
 
-Promise.all([tracking.loadAnalyticsToWillingUsers(), mock()]).finally(() => {
+Promise.all([loadOsano(), mock()]).finally(() => {
   root.render(
     <StrictMode>
       <App />

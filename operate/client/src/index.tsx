@@ -14,7 +14,7 @@ import 'dmn-js/dist/assets/dmn-js-drd.css';
 import 'dmn-js/dist/assets/dmn-js-literal-expression.css';
 import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
 import 'bpmn-js/dist/assets/bpmn-js.css';
-import {tracking} from 'modules/tracking';
+import {loadOsano} from 'modules/osano';
 import {createRoot} from 'react-dom/client';
 
 function enableMockingForDevEnv(): Promise<void> {
@@ -33,10 +33,7 @@ function enableMockingForDevEnv(): Promise<void> {
   });
 }
 
-Promise.all([
-  tracking.loadAnalyticsToWillingUsers(),
-  enableMockingForDevEnv(),
-]).then(() => {
+Promise.all([loadOsano(), enableMockingForDevEnv()]).then(() => {
   const rootElement = document.getElementById('root');
   if (rootElement !== null) {
     const root = createRoot(rootElement);

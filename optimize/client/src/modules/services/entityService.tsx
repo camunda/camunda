@@ -10,7 +10,6 @@ import {ChartColumn, Dashboard, Folder} from '@carbon/icons-react';
 
 import {del, get, post} from 'request';
 import {EntityListEntity, GenericReport} from 'types';
-import {track} from 'tracking';
 
 export async function loadReports(collection?: string | null): Promise<GenericReport[]> {
   let url = 'api/report';
@@ -37,17 +36,7 @@ export async function loadEntities(
 
 export async function deleteEntity(type: string, id: string): Promise<Response> {
   const response = await del(`api/${type}/${id}`, {force: true});
-  track(createEventName('delete', type), {entityId: id});
   return response;
-}
-
-export function createEventName(action: string, entityType: string) {
-  const type = getEntityType(entityType);
-  return action + type.charAt(0).toUpperCase() + type.slice(1);
-}
-
-function getEntityType(entityType: string) {
-  return entityType === 'dashboard/instant' ? 'instantPreviewDashboard' : entityType;
 }
 
 export async function copyEntity(
@@ -72,14 +61,9 @@ export async function copyEntity(
   return json.id as string;
 }
 
-export async function createEntity(
-  type: string,
-  initialValues = {},
-  context?: string
-): Promise<GenericReport> {
+export async function createEntity(type: string, initialValues = {}): Promise<GenericReport> {
   const response = await post('api/' + type, initialValues);
   const json = await response.json();
-  track(createEventName('create', type), {entityId: json.id, context});
   return json.id;
 }
 

@@ -10,7 +10,6 @@ import {observer} from 'mobx-react';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {drdStore} from 'modules/stores/drd';
 import {Button} from '@carbon/react';
-import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
 import {useParams} from 'react-router';
@@ -104,12 +103,6 @@ const Header: React.FC = observer(() => {
                 })}
                 title={versionColumnTitle}
                 aria-label={versionColumnTitle}
-                onClick={() => {
-                  tracking.track({
-                    eventName: 'navigation',
-                    link: 'decision-details-version',
-                  });
-                }}
               >
                 {decisionInstance.decisionVersion}
               </Link>
@@ -139,12 +132,6 @@ const Header: React.FC = observer(() => {
                     )}
                     title={`View process instance ${decisionInstance.processInstanceId}`}
                     aria-label={`View process instance ${decisionInstance.processInstanceId}`}
-                    onClick={() => {
-                      tracking.track({
-                        eventName: 'navigation',
-                        link: 'decision-details-parent-process-details',
-                      });
-                    }}
                   >
                     {decisionInstance.processInstanceId}
                   </Link>
@@ -163,10 +150,6 @@ const Header: React.FC = observer(() => {
             aria-label="Open Decision Requirements Diagram"
             onClick={() => {
               drdStore.setPanelState('minimized');
-              tracking.track({
-                eventName: 'drd-panel-interaction',
-                action: 'open',
-              });
             }}
           >
             Open DRD

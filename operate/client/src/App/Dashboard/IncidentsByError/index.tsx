@@ -13,7 +13,6 @@ import {useLocation} from 'react-router';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {tracking} from 'modules/tracking';
 import {getAccordionTitle} from './utils/getAccordionTitle';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {truncateErrorMessage} from './utils/truncateErrorMessage';
@@ -75,10 +74,6 @@ const IncidentsByError: React.FC = observer(() => {
                 })}
                 onClick={() => {
                   panelStatesStore.expandFiltersPanel();
-                  tracking.track({
-                    eventName: 'navigation',
-                    link: 'dashboard-process-incidents-by-error-message-all-processes',
-                  });
                 }}
                 title={getAccordionTitle(instancesWithErrorCount, errorMessage)}
               >

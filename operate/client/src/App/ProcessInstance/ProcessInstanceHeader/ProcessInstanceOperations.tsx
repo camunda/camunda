@@ -13,7 +13,6 @@ import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {Operations} from 'modules/components/Operations';
 import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
-import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
 import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
 import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
@@ -94,12 +93,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const handleOperationSuccess = (operationType: OperationEntityType) => {
     invalidateQueries();
 
-    tracking.track({
-      eventName: 'single-operation',
-      operationType,
-      source: 'instance-header',
-    });
-
     if (operationType === 'DELETE_PROCESS_INSTANCE') {
       navigate(
         Locations.processes({
@@ -139,11 +132,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const handleEnterModificationMode = () => {
     if (getStateLocally()?.hideModificationHelperModal) {
       modificationsStore.enableModificationMode();
-      tracking.track({
-        eventName: 'single-operation',
-        operationType: 'MODIFY_PROCESS_INSTANCE',
-        source: 'instance-header',
-      });
     } else {
       setIsModificationModeHelperModalVisible(true);
     }
@@ -156,11 +144,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const handleModificationModalSubmit = () => {
     setIsModificationModeHelperModalVisible(false);
     modificationsStore.enableModificationMode();
-    tracking.track({
-      eventName: 'single-operation',
-      operationType: 'MODIFY_PROCESS_INSTANCE',
-      source: 'instance-header',
-    });
   };
 
   const operations: OperationConfig[] = [];

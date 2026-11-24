@@ -6,8 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export const track = jest.fn();
-
-export function Tracking() {
-  return <div className="tracking" />;
-}
+export {loadOsano} from './osano';

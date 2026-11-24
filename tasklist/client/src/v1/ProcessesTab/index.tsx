@@ -32,7 +32,6 @@ import {FirstTimeModal} from 'common/processes/FirstTimeModal';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {logger} from 'common/utils/logger';
 import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
-import {tracking} from 'common/tracking';
 import {useProcesses} from 'v1/api/useProcesses.query';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
@@ -170,9 +169,6 @@ const ProcessesTab: React.FC = observer(() => {
   );
   const {mutateAsync: startProcess} = useStartProcess({
     onSuccess(data) {
-      tracking.track({
-        eventName: 'process-started',
-      });
       setStartProcessStatus('active-tasks');
 
       newProcessInstance.setInstance({
@@ -236,9 +232,6 @@ const ProcessesTab: React.FC = observer(() => {
 
   useEffect(() => {
     if (error !== null) {
-      tracking.track({
-        eventName: 'processes-fetch-failed',
-      });
       notificationsStore.displayNotification({
         isDismissable: false,
         kind: 'error',
@@ -395,11 +388,6 @@ const ProcessesTab: React.FC = observer(() => {
                           target="_blank"
                           rel="noopener noreferrer"
                           inline
-                          onClick={() => {
-                            tracking.track({
-                              eventName: 'processes-empty-message-link-clicked',
-                            });
-                          }}
                         >
                           {t('processesErrorBodyLinkLabel')}
                         </Link>
@@ -446,9 +434,6 @@ const ProcessesTab: React.FC = observer(() => {
                               const {bpmnProcessId} = process;
                               if (process.startEventFormId === null) {
                                 setStartProcessStatus('active');
-                                tracking.track({
-                                  eventName: 'process-start-clicked',
-                                });
                                 try {
                                   await startProcess({
                                     bpmnProcessId,
@@ -472,9 +457,6 @@ const ProcessesTab: React.FC = observer(() => {
                               setSelectedProcess(null);
                               const displayName =
                                 getProcessDisplayName(process);
-                              tracking.track({
-                                eventName: 'process-start-failed',
-                              });
                               setStartProcessStatus('inactive');
                               if (
                                 getClientConfig().isMultiTenancyEnabled &&

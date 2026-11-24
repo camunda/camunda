@@ -9,7 +9,6 @@
 import {useRef} from 'react';
 import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
-import {tracking} from 'modules/tracking';
 import {formatDate, formatISODate, formatTime} from './formatDate';
 import {Calendar} from '@carbon/react/icons';
 import {DateRangeModal} from './DateRangeModal';
@@ -64,10 +63,6 @@ const DateRangeField: React.FC<Props> = observer(
     const handleClick = () => {
       if (!isModalOpen) {
         onClick();
-        tracking.track({
-          eventName: 'date-range-popover-opened',
-          filterName,
-        });
       }
     };
 
@@ -100,7 +95,6 @@ const DateRangeField: React.FC<Props> = observer(
           <DateRangeModal
             isModalOpen={isModalOpen}
             title={popoverTitle}
-            filterName={filterName}
             onCancel={onModalClose}
             onApply={({fromDateTime, toDateTime}) => {
               onModalClose();

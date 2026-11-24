@@ -5,11 +5,5 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.mixpanel;
 
-import io.camunda.optimize.service.mixpanel.client.EventReportingEvent;
-
-public interface EventReportingService {
-
-  void sendEntityEvent(EventReportingEvent event, String entityId);
-}
+export const loadOsano = jest.fn();

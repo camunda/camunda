@@ -16,7 +16,6 @@ import {
 } from 'modules/testUtils';
 import {MigrateAction} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {tracking} from 'modules/tracking';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter} from 'react-router';
@@ -294,37 +293,6 @@ describe('<MigrateAction />', () => {
       processIds: [PROCESS_DEFINITION_ID],
       running: true,
     });
-  });
-
-  it('should track migrate click', async () => {
-    const trackSpy = vi.spyOn(tracking, 'track');
-
-    const {user} = render(<MigrateAction />, {
-      wrapper: getWrapperWithQueryClient(
-        `/processes?process=eventBasedGatewayProcess&version=1`,
-      ),
-    });
-
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    await fetchProcessInstances(screen, user);
-
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
-    act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
-    });
-    await user.click(screen.getByRole('button', {name: /migrate/i}));
-
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'process-instance-migration-button-clicked',
-    });
-
-    await user.click(screen.getByRole('button', {name: /continue/i}));
-
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'process-instance-migration-mode-entered',
-    });
-
-    trackSpy.mockRestore();
   });
 
   it('should disable migrate action in batch modification mode', async () => {

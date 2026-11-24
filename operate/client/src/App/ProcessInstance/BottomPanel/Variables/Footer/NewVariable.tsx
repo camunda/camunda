@@ -18,7 +18,6 @@ import {
 } from '../validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
-import {tracking} from 'modules/tracking';
 import {TextInputField} from 'modules/components/TextInputField';
 import {IconTextInputField} from 'modules/components/IconTextInputField';
 import {Popup} from '@carbon/react/icons';
@@ -79,10 +78,6 @@ const NewVariable: React.FC = () => {
               tooltipPosition="left"
               onIconClick={() => {
                 setIsModalVisible(true);
-                tracking.track({
-                  eventName: 'json-editor-opened',
-                  variant: 'add-variable',
-                });
               }}
               Icon={Popup}
             />
@@ -103,18 +98,10 @@ const NewVariable: React.FC = () => {
           value={formState.values?.value}
           onClose={() => {
             setIsModalVisible(false);
-            tracking.track({
-              eventName: 'json-editor-closed',
-              variant: 'add-variable',
-            });
           }}
           onApply={(value) => {
             form.change('value', value);
             setIsModalVisible(false);
-            tracking.track({
-              eventName: 'json-editor-saved',
-              variant: 'add-variable',
-            });
           }}
         />
       )}

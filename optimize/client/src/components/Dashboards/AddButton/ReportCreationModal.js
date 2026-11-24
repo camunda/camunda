@@ -25,7 +25,7 @@ export function ReportCreationModal({onClose, existingReport, onConfirm, locatio
     const collectionId = getCollection(location.pathname);
 
     mightFail(
-      createEntity('report/process/single', {...report, collectionId}, 'dashboard'),
+      createEntity('report/process/single', {...report, collectionId}),
       (id) => {
         onConfirm({id, type: 'optimize_report'});
         addNotification({

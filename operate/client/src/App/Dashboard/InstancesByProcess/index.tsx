@@ -12,7 +12,6 @@ import {observer} from 'mobx-react';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {tracking} from 'modules/tracking';
 import {getAccordionTitle} from './utils/getAccordionTitle';
 import {getAccordionLabel} from './utils/getAccordionLabel';
 import {InstancesBar} from 'modules/components/InstancesBar';
@@ -56,22 +55,12 @@ const InstancesByProcess: React.FC = observer(() => {
         link={{
           label: 'Learn more about Operate',
           href: 'https://docs.camunda.io/docs/components/operate/operate-introduction/',
-          onClick: () =>
-            tracking.track({
-              eventName: 'dashboard-link-clicked',
-              link: 'operate-docs',
-            }),
         }}
         button={
           modelerLink !== undefined
             ? {
                 label: 'Go to Modeler',
                 href: modelerLink,
-                onClick: () =>
-                  tracking.track({
-                    eventName: 'dashboard-link-clicked',
-                    link: 'modeler',
-                  }),
               }
             : undefined
         }
@@ -125,10 +114,6 @@ const InstancesByProcess: React.FC = observer(() => {
               })}
               onClick={() => {
                 panelStatesStore.expandFiltersPanel();
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'dashboard-process-instances-by-name-all-versions',
-                });
               }}
               title={getAccordionTitle({
                 processName: name,

@@ -6,14 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 import {ComboBox} from '@carbon/react';
 
 import {DefinitionSelection} from 'components';
 import {createEntity, evaluateReport} from 'services';
 import {NodeSelection} from 'filter';
-import {track} from 'tracking';
 
 import KpiCreationModal from './KpiCreationModal';
 import {automationRate} from './templates';
@@ -41,8 +39,6 @@ jest.mock('hooks', () => ({
     }),
   }),
 }));
-
-jest.mock('tracking', () => ({track: jest.fn()}));
 
 const props = {
   onClose: jest.fn(),
@@ -120,18 +116,6 @@ it('should edit filter ', async () => {
   const nodeWithFilter = shallow(node.prop('steps')[1].content);
 
   expect(nodeWithFilter.find(NodeSelection)).toExist();
-});
-
-it('should invoke mixpanel events', async () => {
-  shallow(<KpiCreationModal {...props} />);
-  runLastEffect();
-
-  expect(track).toHaveBeenCalledWith('openKpiWizzard');
-
-  const {node} = setupKpiModal();
-  await node.prop('steps')[1].actions.primary.onClick();
-
-  expect(track).toHaveBeenCalledWith('createKPIReport', {template: automationRate().name});
 });
 
 function setupKpiModal() {

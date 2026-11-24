@@ -24,7 +24,6 @@ import {
 import {unraw} from './unraw';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useMultiModeTaskFilters} from 'common/tasks/filters/useMultiModeTaskFilters';
-import {encodeTaskOpenedRef} from 'common/tracking/reftags';
 import {AssigneeTag} from 'common/components/AssigneeTag';
 import {DateLabel} from 'common/tasks/available-tasks/DateLabel';
 import {PriorityLabel} from 'common/tasks/available-tasks/PriorityLabel';
@@ -46,7 +45,6 @@ type Props = {
   completionDate: string | null | undefined;
   priority: number | null;
   currentUser: CurrentUser;
-  position: number;
 };
 
 const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
@@ -63,13 +61,12 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
       completionDate: completionDateString,
       priority,
       currentUser,
-      position,
     },
     ref,
   ) => {
     const location = useLocation();
     const isActive = useIsCurrentTaskOpen(taskId);
-    const {filter, sortBy} = useMultiModeTaskFilters();
+    const {sortBy} = useMultiModeTaskFilters();
     const {t} = useTranslation();
 
     const creationDate = formatISODateTime(creationDateString);
@@ -83,20 +80,6 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
       sortBy,
     });
 
-    const searchWithRefTag = useMemo(() => {
-      const params = new URLSearchParams(location.search);
-      params.set(
-        'ref',
-        encodeTaskOpenedRef({
-          by: 'user',
-          position,
-          filter,
-          sorting: sortBy,
-        }),
-      );
-      return params;
-    }, [location, position, filter, sortBy]);
-
     const decodedContext = useMemo(
       () => (context !== null ? unraw(context) : null),
       [context],
@@ -109,7 +92,6 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
           to={{
             ...location,
             pathname: pages.taskDetails(taskId),
-            search: searchWithRefTag.toString(),
           }}
           aria-label={getNavLinkLabel({
             displayName,

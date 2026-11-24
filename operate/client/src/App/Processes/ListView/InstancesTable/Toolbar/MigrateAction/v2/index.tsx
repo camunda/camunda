@@ -18,7 +18,6 @@ import {processesStore} from 'modules/stores/processes/processes.list';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {ListItem} from '../styled';
-import {tracking} from 'modules/tracking';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {HelperModal} from 'modules/components/HelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
@@ -85,10 +84,6 @@ const MigrateAction: React.FC = observer(() => {
       requestFilterParameters,
     );
     processInstanceMigrationStore.enable();
-
-    tracking.track({
-      eventName: 'process-instance-migration-mode-entered',
-    });
   };
 
   return (
@@ -108,9 +103,6 @@ const MigrateAction: React.FC = observer(() => {
               } else {
                 setOpen(true);
               }
-              tracking.track({
-                eventName: 'process-instance-migration-button-clicked',
-              });
             }}
             disabled={isDisabled}
             title={

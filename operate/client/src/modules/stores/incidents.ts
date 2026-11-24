@@ -21,7 +21,6 @@ import {
   type IncidentDto,
 } from 'modules/api/processInstances/fetchProcessInstanceIncidents';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {tracking} from 'modules/tracking';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import type {ProcessInstanceEntity} from 'modules/types/operate';
 
@@ -184,12 +183,6 @@ class Incidents extends NetworkReconnectionHandler {
 
   setIncidentBarOpen = (isOpen: boolean) => {
     this.state.isIncidentBarOpen = isOpen;
-
-    if (isOpen) {
-      tracking.track({
-        eventName: 'flow-node-incident-details-opened',
-      });
-    }
   };
 
   get errorTypes() {
