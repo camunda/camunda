@@ -51,7 +51,7 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 
 /**
  * Verifies that a request traced by a client produces one connected trace through the gateway (gRPC
- * and REST) and broker client.
+ * and REST), broker client, command API, and stream processor until the response is sent.
  */
 @ZeebeIntegration
 final class DistributedTracingIT {
@@ -61,6 +61,8 @@ final class DistributedTracingIT {
   private static final String TRACEPARENT = "00-" + TRACE_ID + "-" + CLIENT_SPAN_ID + "-01";
   private static final String BROKER_CLIENT_SPAN_NAME =
       "zeebe.broker_client PROCESS_INSTANCE_CREATION CREATE";
+  private static final String STREAM_PROCESSOR_SPAN_NAME =
+      "zeebe.stream_processor PROCESS_INSTANCE_CREATION CREATE";
 
   private static final InMemorySpanExporter SPANS = InMemorySpanExporter.create();
 
@@ -100,35 +102,67 @@ final class DistributedTracingIT {
   }
 
   @Test
-  void shouldTraceGrpcRequestThroughGatewayAndBrokerClient() {
+  void shouldTraceGrpcRequestThroughGatewayBrokerClientAndStreamProcessor() {
     // when
     try (final var client =
         BROKER.newClientBuilder().withInterceptors(new TraceparentClientInterceptor()).build()) {
       client.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
     }
 
-    // then - connected chain from broker client -> gRPC gateway -> caller
-    final var chain = awaitChainFromBrokerClientSpan();
+    // then - connected chain from broker -> broker client -> gRPC gateway -> caller
+    final var chain = awaitChainFromBrokerSpan();
     assertThat(chain)
         .extracting(SpanData::getName, SpanData::getKind)
         .containsExactly(
+            tuple(STREAM_PROCESSOR_SPAN_NAME, SpanKind.SERVER),
             tuple(BROKER_CLIENT_SPAN_NAME, SpanKind.CLIENT),
             tuple("gateway_protocol.Gateway/CreateProcessInstance", SpanKind.SERVER));
     assertChainIsConnected(chain);
 
-    final var brokerClient = chain.getFirst();
+    final var brokerClient = chain.get(1);
     assertThat(brokerClient.getAttributes().get(AttributeKey.longKey("zeebe.partition.id")))
         .isEqualTo(1L);
     assertThat(brokerClient.getAttributes().get(AttributeKey.stringKey("zeebe.broker.id")))
         .isNotBlank();
-    assertThat(brokerClient.getAttributes().get(AttributeKey.stringKey("zeebe.value_type")))
+
+    final var brokerRequest = chain.getFirst();
+    assertThat(brokerRequest.getAttributes().get(AttributeKey.longKey("zeebe.log.position")))
+        .isPositive();
+    assertThat(brokerRequest.getAttributes().get(AttributeKey.stringKey("zeebe.value_type")))
         .isEqualTo("PROCESS_INSTANCE_CREATION");
-    assertThat(brokerClient.getAttributes().get(AttributeKey.stringKey("zeebe.intent")))
+    assertThat(brokerRequest.getAttributes().get(AttributeKey.stringKey("zeebe.intent")))
         .isEqualTo("CREATE");
+    assertThat(brokerRequest.getAttributes().get(AttributeKey.longKey("zeebe.queue.wait_ms")))
+        .isNotNegative();
+
+    Awaitility.await("all broker stage spans are exported")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(childrenOf(brokerRequest))
+                    .extracting(SpanData::getName)
+                    .containsExactlyInAnyOrder(
+                        "zeebe.process",
+                        "zeebe.write",
+                        "zeebe.update_state",
+                        "zeebe.await_commit"));
+    final var children = childrenOf(brokerRequest);
+    assertThat(
+            byName(children, "zeebe.process")
+                .getAttributes()
+                .get(AttributeKey.longKey("zeebe.batch.commands")))
+        .isGreaterThan(1L);
+    assertThat(
+            byName(children, "zeebe.write")
+                .getAttributes()
+                .get(AttributeKey.longKey("zeebe.write.records")))
+        .isPositive();
+    assertThat(brokerRequest.getEndEpochNanos())
+        .isGreaterThanOrEqualTo(byName(children, "zeebe.await_commit").getEndEpochNanos());
   }
 
   @Test
-  void shouldConnectRestRequestToBrokerClientSpan() {
+  void shouldConnectRestRequestToBrokerSpan() {
     // when
     try (final var client =
         BROKER
@@ -140,9 +174,9 @@ final class DistributedTracingIT {
     }
 
     // then
-    final var chain = awaitChainFromBrokerClientSpan();
-    assertThat(chain.getFirst().getName()).isEqualTo(BROKER_CLIENT_SPAN_NAME);
-    assertThat(chain.getFirst().getKind()).isEqualTo(SpanKind.CLIENT);
+    final var chain = awaitChainFromBrokerSpan();
+    assertThat(chain.getFirst().getName()).isEqualTo(STREAM_PROCESSOR_SPAN_NAME);
+    assertThat(chain.get(1).getName()).isEqualTo(BROKER_CLIENT_SPAN_NAME);
     assertThat(chain.getLast().getKind()).isEqualTo(SpanKind.SERVER);
     assertThat(chain.getLast().getName()).startsWith("http post");
     assertChainIsConnected(chain);
@@ -158,7 +192,7 @@ final class DistributedTracingIT {
         BROKER.newClientBuilder().withInterceptors(new TraceparentClientInterceptor()).build()) {
       client.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
     }
-    awaitChainFromBrokerClientSpan();
+    awaitChainFromBrokerSpan();
 
     // then
     final var grpcMeterNames =
@@ -202,7 +236,7 @@ final class DistributedTracingIT {
             .build()) {
       client.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
     }
-    awaitChainFromBrokerClientSpan();
+    awaitChainFromBrokerSpan();
 
     // then - non-lazy OTel SpanContext replaced Spring Boot's lazy bean and OpenMetrics scrape
     // includes a trace exemplar linking back to the sampled trace
@@ -220,15 +254,28 @@ final class DistributedTracingIT {
     assertThat(response.body()).contains("trace_id=\"" + TRACE_ID + "\"");
   }
 
-  private static boolean isBrokerClientSpan(final SpanData span) {
-    return BROKER_CLIENT_SPAN_NAME.equals(span.getName()) && span.getKind() == SpanKind.CLIENT;
+  private static List<SpanData> childrenOf(final SpanData parent) {
+    return SPANS.getFinishedSpanItems().stream()
+        .filter(span -> span.getParentSpanId().equals(parent.getSpanId()))
+        .toList();
+  }
+
+  private static boolean isBrokerSpan(final SpanData span) {
+    return STREAM_PROCESSOR_SPAN_NAME.equals(span.getName()) && span.getKind() == SpanKind.SERVER;
+  }
+
+  private static SpanData byName(final List<SpanData> spans, final String name) {
+    return spans.stream()
+        .filter(span -> span.getName().equals(name))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("no span " + name + " in " + spans));
   }
 
   /**
-   * Returns the spans from the broker client span up to the gateway server span whose parent is the
-   * client's span: broker client first, gateway last.
+   * Returns the spans from the broker span up to the gateway server span whose parent is the
+   * client's span: broker first, gateway last.
    */
-  private static List<SpanData> awaitChainFromBrokerClientSpan() {
+  private static List<SpanData> awaitChainFromBrokerSpan() {
     final List<SpanData> chain = new ArrayList<>();
     Awaitility.await("the trace chain is exported")
         .atMost(Duration.ofSeconds(30))
@@ -238,10 +285,9 @@ final class DistributedTracingIT {
               final var finished = SPANS.getFinishedSpanItems();
               var current =
                   finished.stream()
-                      .filter(DistributedTracingIT::isBrokerClientSpan)
+                      .filter(DistributedTracingIT::isBrokerSpan)
                       .findFirst()
-                      .orElseThrow(
-                          () -> new AssertionError("no broker client span in " + finished));
+                      .orElseThrow(() -> new AssertionError("no broker span in " + finished));
               chain.add(current);
               while (!CLIENT_SPAN_ID.equals(current.getParentSpanId())) {
                 final var parentId = current.getParentSpanId();

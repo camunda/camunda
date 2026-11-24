@@ -41,6 +41,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.util.Collection;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -66,6 +67,10 @@ public interface PartitionTransitionContext extends PartitionContext {
   PartitionContext getPartitionContext();
 
   void setStreamProcessor(StreamProcessor streamProcessor);
+
+  default OpenTelemetry getOpenTelemetry() {
+    return OpenTelemetry.noop();
+  }
 
   void setCurrentTerm(long term);
 

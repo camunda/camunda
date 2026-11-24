@@ -100,6 +100,7 @@ public interface PartitionManager {
         jobStreamService.jobStreamer(),
         brokerStartupContext.getClusterConfigurationService(),
         brokerStartupContext.getMeterRegistry(),
+        brokerStartupContext.getOpenTelemetry(),
         brokerStartupContext.getBrokerClient(),
         brokerStartupContext.getRocksDbResources(),
         physicalTenantContext.securityConfig(),

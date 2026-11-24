@@ -109,12 +109,12 @@ final class CommandApiRequestReaderTest {
   }
 
   @Test
-  void shouldReadTraceContextIntoMetadataAndHandleV10Requests() {
+  void shouldReadTraceContextIntoMetadataAndHandleV11Requests() {
     // given
     final var traceparent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01";
     final var tracedBuffer = write(request().setTraceContext(traceparent));
 
-    // when - v11 with traceparent, followed by mutating the buffer
+    // when - v12 with traceparent, followed by mutating the buffer
     reader.wrap(tracedBuffer, 0, tracedBuffer.capacity());
     tracedBuffer.setMemory(0, tracedBuffer.capacity(), (byte) 0);
 
@@ -122,13 +122,13 @@ final class CommandApiRequestReaderTest {
     assertThat(reader.metadata().hasTraceContext()).isTrue();
     assertThat(reader.metadata().getTraceContext()).isEqualTo(traceparent);
 
-    // and when reset and given a v10 message without the trailing traceContext field
+    // and when reset and given a v11 message without the trailing traceContext field
     reader.reset();
-    final var v10Buffer = write(request());
-    final int v10Length =
-        v10Buffer.capacity() - ExecuteCommandRequestDecoder.traceContextHeaderLength();
-    new MessageHeaderEncoder().wrap(v10Buffer, 0).version(10);
-    reader.wrap(v10Buffer, 0, v10Length);
+    final var v11Buffer = write(request());
+    final int v11Length =
+        v11Buffer.capacity() - ExecuteCommandRequestDecoder.traceContextHeaderLength();
+    new MessageHeaderEncoder().wrap(v11Buffer, 0).version(11);
+    reader.wrap(v11Buffer, 0, v11Length);
 
     // then
     assertThat(reader.metadata().hasTraceContext()).isFalse();

@@ -56,6 +56,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -110,6 +111,7 @@ public final class PartitionManagerImpl
       final JobStreamer jobStreamer,
       final ClusterConfigurationService clusterConfigurationService,
       final MeterRegistry meterRegistry,
+      final OpenTelemetry openTelemetry,
       final BrokerClient brokerClient,
       final RocksDbResources rocksDbResources,
       final EngineSecurityConfig securityConfig,
@@ -162,7 +164,8 @@ public final class PartitionManagerImpl
             clusterConfigurationService,
             rocksDbResources,
             secretStoreRegistry,
-            engineFactory);
+            engineFactory,
+            openTelemetry);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

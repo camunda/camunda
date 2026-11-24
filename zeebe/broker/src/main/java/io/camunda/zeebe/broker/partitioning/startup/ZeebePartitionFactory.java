@@ -79,6 +79,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -112,6 +113,7 @@ public final class ZeebePartitionFactory {
   private final ClusterConfigurationService clusterConfigurationService;
   private final RocksDbResources rocksDbResources;
   private final EngineFactory engineFactory;
+  private final OpenTelemetry openTelemetry;
 
   // The tenant's secret store registry, shared across its partitions: the caches are read on job
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
@@ -137,7 +139,9 @@ public final class ZeebePartitionFactory {
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
       final SecretStoreRegistry secretStoreRegistry,
-      final EngineFactory engineFactory) {
+      final EngineFactory engineFactory,
+      final OpenTelemetry openTelemetry) {
+    this.openTelemetry = openTelemetry;
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -216,7 +220,8 @@ public final class ZeebePartitionFactory {
             topologyManager,
             brokerHealthCheckService,
             securityConfig,
-            partitionMeterRegistry);
+            partitionMeterRegistry,
+            openTelemetry);
     context.setDynamicPartitionConfig(initialPartitionConfig);
     context.setClusterConfigurationService(clusterConfigurationService);
 

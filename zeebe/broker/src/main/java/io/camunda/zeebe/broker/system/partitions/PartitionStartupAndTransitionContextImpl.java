@@ -57,6 +57,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -92,6 +93,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final StateController stateController;
   private DynamicPartitionConfig dynamicPartitionConfig;
   private StreamProcessor streamProcessor;
+  private final OpenTelemetry openTelemetry;
   private LogStream logStream;
   private AsyncSnapshotDirector snapshotDirector;
   private HealthMonitor criticalComponentsHealthMonitor;
@@ -150,7 +152,9 @@ public class PartitionStartupAndTransitionContextImpl
       final TopologyManager topologyManager,
       final BrokerHealthCheckService brokerHealthCheckService,
       final EngineSecurityConfig securityConfig,
-      final MeterRegistry startupMeterRegistry) {
+      final MeterRegistry startupMeterRegistry,
+      final OpenTelemetry openTelemetry) {
+    this.openTelemetry = openTelemetry;
     this.memberId = memberId;
     this.partitionCount = partitionCount;
     this.clusterCommunicationService = clusterCommunicationService;
@@ -262,6 +266,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setStreamProcessor(final StreamProcessor streamProcessor) {
     this.streamProcessor = streamProcessor;
+  }
+
+  @Override
+  public OpenTelemetry getOpenTelemetry() {
+    return openTelemetry;
   }
 
   @Override
