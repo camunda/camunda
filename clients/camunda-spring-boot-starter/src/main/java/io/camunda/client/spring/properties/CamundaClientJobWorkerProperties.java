@@ -90,6 +90,11 @@ public class CamundaClientJobWorkerProperties {
    * Opt-in feature flag that enables job streaming. When enabled, the job worker uses both
    * streaming and polling to activate jobs. A long-lived stream eagerly pushes new jobs, and
    * polling retrieves jobs created <em>before</em> any streams were opened.
+   *
+   * <p>Jobs are pushed to a stream in the order they are created, so job priority is not taken into
+   * account for streamed jobs. While a matching stream is open for a job type, new jobs of that
+   * type are pushed to it instead of being activated by priority. To keep job priority in effect
+   * for a job type, leave streaming disabled on all workers of that type.
    */
   private Boolean streamEnabled;
 
