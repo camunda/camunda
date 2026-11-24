@@ -17,6 +17,9 @@ jobs:
       # do not cancel other jobs if one fails
       fail-fast: false
     name: Daily QA
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     uses: ./.github/workflows/zeebe-qa-testbench.yaml
     with:
       branch: ${{ github.event.client_payload.branch }}

@@ -17,9 +17,11 @@ on:
     secrets:
       VAULT_ADDR:
         required: true
-      VAULT_ROLE_ID:
+      VAULT_JWT_ROLE:
         required: true
-      VAULT_SECRET_ID:
+      VAULT_JWT_PATH:
+        required: true
+      VAULT_JWT_AUDIENCE:
         required: true
   workflow_dispatch:
 
@@ -30,6 +32,9 @@ jobs:
   preview-env-clean:
     concurrency:
       group: clean-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -44,9 +49,10 @@ jobs:
         github-app-id-vault-path: secret/data/products/camunda/ci/camunda
         github-app-private-key-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_PRIVATE_KEY
         github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-        vault-auth-method: approle
-        vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-        vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+        vault-auth-method: jwt
+        vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+        vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+        vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         vault-url: ${{ secrets.VAULT_ADDR }}
 
     - uses: camunda/infra-global-github-actions/preview-env/clean@379e8654a5f25f22566f80c2e99a611fca365263 # preview-env-1.0.16
