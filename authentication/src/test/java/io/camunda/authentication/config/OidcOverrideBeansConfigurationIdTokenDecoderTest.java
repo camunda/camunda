@@ -133,6 +133,49 @@ class OidcOverrideBeansConfigurationIdTokenDecoderTest {
     assertThat(decoderFactory.createDecoder(scopedRegistration)).isNotNull();
   }
 
+  /**
+   * CSL drops a provider block whose client type contradicts its other properties: it warns once
+   * and then behaves as if nobody configured that provider. A login-only property of such a block
+   * must not stop the start of the application. See
+   * https://github.com/camunda/camunda/issues/70767.
+   */
+  @Test
+  void shouldIgnoreTheIdTokenAlgorithmOfAProviderThatTheSecurityLibraryDrops() {
+    // given a valid provider, and a provider that CSL drops because the default client type
+    // 'confidential' cannot use the client authentication method 'none'
+    final var valid = new OidcConfiguration();
+    valid.setIdTokenAlgorithm(OidcConfiguration.DEFAULT_ID_TOKEN_ALGORITHM);
+
+    final var dropped = new OidcConfiguration();
+    dropped.setClientAuthenticationMethod("none");
+    dropped.setIdTokenAlgorithm("XX999");
+
+    when(oidcProviderConfigurationPort.getOidcAuthenticationConfigurations())
+        .thenReturn(Map.of("valid", valid, "dropped", dropped));
+
+    final var tokenValidatorFactory =
+        new TokenValidatorFactory(Map.of("valid", valid), Duration.ofSeconds(60), List.of());
+    final var configuration = new OidcOverrideBeansConfiguration(null);
+
+    // when / then the bean is built; before the fix this threw
+    // "Unsupported signature algorithm: XX999" and every broker crash-looped
+    assertThatCode(
+            () ->
+                configuration.idTokenDecoderFactory(
+                    tokenValidatorFactory,
+                    oidcProviderConfigurationPort,
+                    new PhysicalTenantOidcSettingsRegistry(Map.of())))
+        .doesNotThrowAnyException();
+
+    // and the valid provider still resolves its own algorithm
+    final var decoderFactory =
+        configuration.idTokenDecoderFactory(
+            tokenValidatorFactory,
+            oidcProviderConfigurationPort,
+            new PhysicalTenantOidcSettingsRegistry(Map.of()));
+    assertThat(decoderFactory.createDecoder(buildRegistration("valid"))).isNotNull();
+  }
+
   private static ClientRegistration buildRegistration(final String registrationId) {
     return ClientRegistration.withRegistrationId(registrationId)
         .clientId("client-id")
