@@ -41,6 +41,7 @@ jobs:
   check-opensearch-version:
     name: "[PRE] Verify AWS OpenSearch cluster version matches OS ver.${{ inputs.os_version }}"
     permissions:
+      id-token: write # Vault JWT login
       contents: read
     timeout-minutes: 10
     runs-on: aws-core-8-default
@@ -52,6 +53,9 @@ jobs:
         uses: ./.github/actions/setup-aws-opensearch-env
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           opensearch-version: ${{ inputs.os_version }}
@@ -74,14 +78,18 @@ jobs:
         with:
           job_name: "check-opensearch-version/${{ inputs.os_version }}"
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   cleanup-opensearch-indices:
     name: "[PRE] Cleanup old AWS OpenSearch indices. OS ver.${{ inputs.os_version }}"
     needs: check-opensearch-version
     permissions:
+      id-token: write # Vault JWT login
       contents: read
     timeout-minutes: 30
     runs-on: aws-core-8-default
@@ -93,6 +101,9 @@ jobs:
         uses: ./.github/actions/setup-aws-opensearch-env
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           opensearch-version: ${{ inputs.os_version }}
@@ -116,14 +127,18 @@ jobs:
         with:
           job_name: "cleanup-opensearch-indices/${{ inputs.os_version }}"
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   integration-tests:
     name: "[IT] ${{ matrix.name }}. OS ver.${{ inputs.os_version }}"
     needs: cleanup-opensearch-indices
     permissions:
+      id-token: write # Vault JWT login
       contents: read
       actions: write
     timeout-minutes: 360
@@ -203,6 +218,9 @@ jobs:
         uses: ./.github/actions/setup-aws-opensearch-env
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           opensearch-version: ${{ inputs.os_version }}
@@ -210,6 +228,9 @@ jobs:
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}-${{ inputs.os_version }}
           vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
@@ -255,9 +276,12 @@ jobs:
           job_name: "integration-tests/${{ matrix.group }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   send-slack-notificaion:
     name: "Send slack notification on fail. OS ver.${{ inputs.os_version }}"
@@ -266,6 +290,7 @@ jobs:
 
     if: (failure() || cancelled()) && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     permissions:
+      id-token: write # Vault JWT login
       contents: read
       actions: read
     steps:
@@ -289,9 +314,10 @@ jobs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
     - name: Send notification
@@ -315,5 +341,6 @@ jobs:
       with:
         build_status: ${{ job.status }}
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
