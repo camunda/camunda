@@ -103,7 +103,7 @@ const InstanceDiagramOverlays: React.FC<Props> = ({businessObjects}) => {
 				<Text
 					as="span"
 					variant="label-md-strong"
-					className="inline-block rounded-full bg-background px-2 py-0.5 whitespace-nowrap text-primary-action-default shadow-sm"
+					className="inline-block rounded-full border border-accent-action-default bg-background px-2 py-0.5 whitespace-nowrap text-accent-foreground-subtle shadow-sm"
 				>
 					{label}
 					{additionalActiveCount > 0 && (

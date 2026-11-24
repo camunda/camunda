@@ -236,7 +236,7 @@
 }
 
 .instance-agent-shine {
-	background-image: linear-gradient(120deg, transparent, var(--primary-action-default), transparent);
+	background-image: linear-gradient(120deg, transparent, var(--accent-action-default), transparent);
 	background-size: 300% 300%;
 	animation: instance-agent-shine 8s linear infinite;
 	mask:
