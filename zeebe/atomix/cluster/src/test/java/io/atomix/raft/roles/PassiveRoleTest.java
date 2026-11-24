@@ -16,6 +16,7 @@
 package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
@@ -546,6 +547,28 @@ final class PassiveRoleTest {
     role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then - the retry would not truncate again, so the configuration must be dropped now
+    verify(ctx.getCluster()).dropConfigurationsWithoutLogEntry(0);
+  }
+
+  @Test
+  void shouldRollBackConfigurationWhenResettingTheLogFails() throws CheckedJournalException {
+    // given - a reset that fails after deleting the newest entries
+    doThrow(new JournalException("Injected: failed to delete a segment")).when(log).reset(1);
+    when(log.getLastIndex()).thenReturn(0L);
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1])))
+            .withCommitIndex(1)
+            .build();
+
+    // when
+    catchThrowable(() -> role.handleAppend(ProtocolVersionHandler.transform(request)).join());
+
+    // then - a configuration from the deleted entries must not survive
     verify(ctx.getCluster()).dropConfigurationsWithoutLogEntry(0);
   }
 

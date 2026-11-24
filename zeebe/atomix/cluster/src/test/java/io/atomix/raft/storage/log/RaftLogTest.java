@@ -17,6 +17,7 @@ package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -37,8 +38,10 @@ import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
+import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -231,6 +234,40 @@ class RaftLogTest {
     assertThat(raftlog.getLastIndex()).isEqualTo(9);
     assertThat(raftlog.getLastEntry()).isNull();
     assertThat(raftlog.getFirstIndex()).isEqualTo(10);
+  }
+
+  @Test
+  void shouldReadLastEntryFromJournalAfterFailedReset(@TempDir final File directory) {
+    // given - a reset that deletes the newest segments, then fails, leaving a prefix of the log
+    final var journal =
+        spy(
+            SegmentedJournal.builder(meterRegistry)
+                .withDirectory(directory)
+                .withName("reset")
+                .withMetaStore(new InMemory())
+                .build());
+    final var log = new RaftLog(journal, new DirectFlusher(), new RaftLogMetrics(meterRegistry));
+    final var first = log.append(new RaftLogEntry(1, firstApplicationEntry));
+    final var second =
+        log.append(new RaftLogEntry(1, createApplicationEntryAfter(first.getApplicationEntry())));
+    log.append(new RaftLogEntry(1, createApplicationEntryAfter(second.getApplicationEntry())));
+    doAnswer(
+            call -> {
+              journal.deleteAfter(first.index());
+              throw new JournalException("Injected: failed to delete a segment");
+            })
+        .when(journal)
+        .reset(10);
+
+    try {
+      // when
+      assertThatThrownBy(() -> log.reset(10)).isInstanceOf(JournalException.class);
+
+      // then - the last entry is the one the journal still holds, which a new leader continues
+      assertThat(log.getLastEntry().index()).isEqualTo(first.index());
+    } finally {
+      log.close();
+    }
   }
 
   @Test

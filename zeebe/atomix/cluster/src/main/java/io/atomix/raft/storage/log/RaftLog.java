@@ -199,8 +199,12 @@ public final class RaftLog implements Closeable {
                This situation probably requires manual intervention to resume operations""",
               index, commitIndex));
     }
-    journal.reset(index);
-    lastAppendedEntry = null;
+    try {
+      journal.reset(index);
+    } finally {
+      // a failed reset can leave a prefix of the log, without the last entry
+      lastAppendedEntry = null;
+    }
   }
 
   public void deleteAfter(final long index) throws FlushException {
