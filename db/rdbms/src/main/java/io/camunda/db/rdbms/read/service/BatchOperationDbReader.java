@@ -47,7 +47,8 @@ public class BatchOperationDbReader extends AbstractEntityReader<BatchOperationE
       final BatchOperationQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), BatchOperationSearchColumn.BATCH_OPERATION_KEY);
 
-    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+    // batch operations carry no tenant, so only the BATCH permission decides access
+    if (noResourceAccess(resourceAccessChecks)) {
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
     final var authorizedResourceIds =
