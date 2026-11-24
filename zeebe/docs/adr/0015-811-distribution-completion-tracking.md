@@ -207,6 +207,9 @@ is deferred.**
     partition 1 at a position after the scale-up started. A distribution from partition 1 is
     therefore either in the copy (started before) or delivered to the new partition (started
     during), never neither. From another source it could be neither.
+  - The feature declares this on the builder (for example `.writesSharedState()`), and
+    `distribute` throws unless it runs on partition 1. Distribution and tracking state itself is
+    never copied: it is partition-local.
   - A distribution started during the scale-up can reach the new partition although its effect is
     already in the copy. Domain processing must be idempotent against copied state.
   - A distribution started during the scale-up cannot be acknowledged before the new partition is
@@ -237,6 +240,13 @@ is deferred.**
   appliers, so records from older brokers and from replay are handled as before.
 - In a mixed-version cluster, an old receiver ACKs without `completionDeferred`, so its share
   counts as COMPLETED at once. That is today's behavior.
+- Whether a distribution is tracked is decided by the source and carried by command distribution
+  itself: a generic flag sent with every distributed command, absent meaning untracked.
+  Receivers ask `isCompletionTracked(command)`; a feature with an old path (deletion) uses it to
+  choose between `deferCompletion` and its old completion command. A source sets the flag only
+  once tracking is enabled, which needs every broker on 8.11 or later, so every receiver
+  understands it. State inherited without a message (a draining definition copied on scale-up)
+  keeps its mode in the feature's own state.
 - Existing column families are not migrated or reused. A feature's old column family (such as
   `PENDING_PROCESS_DELETIONS_PER_PARTITION`) keeps serving its old path and empties as that work
   finishes; new work does not write it.
