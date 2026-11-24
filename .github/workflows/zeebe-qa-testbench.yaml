@@ -42,6 +42,9 @@ jobs:
   qa:
     needs: prepare
     name: Run testbench process
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     uses: ./.github/workflows/zeebe-testbench.yaml
     with:
       processId: qa-github-trigger
