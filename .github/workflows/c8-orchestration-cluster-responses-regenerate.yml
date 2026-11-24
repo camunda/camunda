@@ -464,6 +464,10 @@ jobs:
             "Please review the schema changes against the upstream REST API spec." \
             "" \
             "_Opened by the C8 Orchestration Cluster responses-regeneration workflow for ${TARGET_REF}._" \
+            "" \
+            "## Related issues" \
+            "" \
+            "- [x] This PR does not need a linked issue" \
             > /tmp/pr-body.md
 
           url=$(gh pr create \
@@ -499,6 +503,10 @@ jobs:
             "Please review the path changes against the upstream REST API spec, paying particular attention to renames/removals: those are otherwise silent (a stale-but-internally-consistent union produces no \`tsc\` error)." \
             "" \
             "_Opened by the C8 Orchestration Cluster responses-regeneration workflow for ${TARGET_REF}._" \
+            "" \
+            "## Related issues" \
+            "" \
+            "- [x] This PR does not need a linked issue" \
             > /tmp/pr-body-paths.md
 
           url=$(gh pr create \
