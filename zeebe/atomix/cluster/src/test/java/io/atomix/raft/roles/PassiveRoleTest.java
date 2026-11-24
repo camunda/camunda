@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -570,6 +572,36 @@ final class PassiveRoleTest {
 
     // then - a configuration from the deleted entries must not survive
     verify(ctx.getCluster()).dropConfigurationsWithoutLogEntry(0);
+  }
+
+  @Test
+  void shouldReloadStoredConfigurationWhenOnlyFinishingTheResetFails()
+      throws CheckedJournalException {
+    // given - a reset that fails after every old entry is gone, so the log is reset anyway
+    doAnswer(
+            reset -> {
+              doReturn(true).when(log).isEmpty();
+              doReturn(1L).when(log).getFirstIndex();
+              throw new JournalException("Injected: failed to flush the directory");
+            })
+        .when(log)
+        .reset(1);
+    when(log.getLastIndex()).thenReturn(0L);
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1])))
+            .withCommitIndex(1)
+            .build();
+
+    // when
+    catchThrowable(() -> role.handleAppend(ProtocolVersionHandler.transform(request)).join());
+
+    // then - as after a successful reset, no configuration from the deleted entries survives
+    verify(ctx.getCluster()).reloadStoredConfiguration();
   }
 
   @Test
