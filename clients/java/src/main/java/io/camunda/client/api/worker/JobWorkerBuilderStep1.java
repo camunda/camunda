@@ -245,7 +245,8 @@ public interface JobWorkerBuilderStep1 {
      *
      * <p>Jobs are pushed to a stream in the order they are created, so job priority is not taken
      * into account for streamed jobs. While a matching stream is open for a job type, new jobs of
-     * that type are pushed to it instead of being activated by priority.
+     * that type are pushed to it instead of being activated by priority. To keep job priority in
+     * effect for a job type, leave streaming disabled on all workers of that type.
      *
      * <p>If not set, the default is used from the {@link CamundaClientConfiguration}, which is
      * {@code false} unless configured.
