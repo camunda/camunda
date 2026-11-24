@@ -858,6 +858,13 @@ public class AuthenticationInterceptorTest {
     return new UserEntity(1L, "demo", "name", "email", "demo");
   }
 
+  private static AuthenticationConfiguration authenticationOf(
+      final OidcAuthenticationConfiguration oidc) {
+    final var authentication = new AuthenticationConfiguration();
+    authentication.setOidc(oidc);
+    return authentication;
+  }
+
   private static final class CloseStatusCapturingServerCall extends NoopServerCall<Object, Object> {
     private final AtomicReference<Status> closeStatus = new AtomicReference<>();
 
@@ -870,12 +877,5 @@ public class AuthenticationInterceptorTest {
     public MethodDescriptor<Object, Object> getMethodDescriptor() {
       return mock(MethodDescriptor.class);
     }
-  }
-
-  private static AuthenticationConfiguration authenticationOf(
-      final OidcAuthenticationConfiguration oidc) {
-    final var authentication = new AuthenticationConfiguration();
-    authentication.setOidc(oidc);
-    return authentication;
   }
 }
