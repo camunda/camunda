@@ -55,19 +55,19 @@ public class ApiFiltersConfiguration {
       "Tenants API is disabled. Enable the API by setting '%s' to true."
           .formatted(API_ENABLED_PROPERTY);
 
-  private static final PathPatternParser PATTERN_PARSER = new PathPatternParser();
-
   // Spring Security's FilterChainProxy registers at SecurityProperties.DEFAULT_FILTER_ORDER (-100);
   // the physical-tenant filter must run just before it so components inside the security chain can
   // read the tenant id. We inline the value rather than depend on spring-boot-security for one
   // constant — and DEFAULT_FILTER_ORDER is a compile-time constant, so a reference would inline the
   // value anyway and leave the dependency flagged as unused by dependency:analyze. See ADR-0003.
-  private static final int PHYSICAL_TENANT_FILTER_ORDER = -101;
+  @VisibleForTesting public static final int PHYSICAL_TENANT_FILTER_ORDER = -101;
 
-  // Camunda-Version must be on the response before Spring Security writes a 401, so this sits
-  // with the other pre-security filters. Order among those filters does not matter: the header
-  // is set before the rest of the chain runs.
-  private static final int CAMUNDA_VERSION_FILTER_ORDER = -101;
+  // Strictly earlier than PHYSICAL_TENANT_FILTER_ORDER: PhysicalTenantStatusScopeFilter writes a
+  // 404 and returns without continuing the chain, so a tied order that places it first would skip
+  // this filter. Spring Security's FilterChainProxy is at -100.
+  @VisibleForTesting public static final int CAMUNDA_VERSION_FILTER_ORDER = -102;
+
+  private static final PathPatternParser PATTERN_PARSER = new PathPatternParser();
 
   private static final int PHYSICAL_TENANT_SWAGGER_FILTER_ORDER = 1;
 

@@ -15,7 +15,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 import java.io.IOException;
+import org.springframework.web.util.UrlPathHelper;
 
 /**
  * Writes the {@code Camunda-Version} response header on every Orchestration Cluster REST ({@code
@@ -31,6 +33,15 @@ import java.io.IOException;
  * carries it. {@code ApiFiltersConfiguration} registers this before Spring Security so 401s from
  * the security chain include the header too.
  *
+ * <p>CSL's {@code JsonProblemDetailAuthFailureHandler} calls {@link HttpServletResponse#reset()}
+ * before writing a 401/403, which would otherwise drop the header. The response is wrapped so
+ * {@code reset()} restores it.
+ *
+ * <p>Path matching uses Spring's decoded path ({@link UrlPathHelper#getPathWithinApplication}), the
+ * same view Spring MVC and Spring Security route against, so a percent-encoded {@code /v2} segment
+ * still advertises the version. Malformed percent-encoding falls back to the raw URI rather than
+ * failing the request.
+ *
  * <p>Tenant-prefixed REST paths ({@code /physical-tenants/{id}/v2/...}) are treated as {@code /v2}
  * after the tenant prefix. Non-REST paths (actuator, swagger, management) are left unchanged.
  */
@@ -45,10 +56,13 @@ public final class CamundaVersionFilter extends HttpFilter {
   protected void doFilter(
       final HttpServletRequest request, final HttpServletResponse response, final FilterChain chain)
       throws IOException, ServletException {
-    if (isOrchestrationClusterRestPath(request)) {
-      response.setHeader(CAMUNDA_VERSION_HEADER, VersionUtil.getVersion());
+    if (!isOrchestrationClusterRestPath(request)) {
+      chain.doFilter(request, response);
+      return;
     }
-    chain.doFilter(request, response);
+    final String version = VersionUtil.getVersion();
+    response.setHeader(CAMUNDA_VERSION_HEADER, version);
+    chain.doFilter(request, new VersionPreservingResponse(response, version));
   }
 
   private static boolean isOrchestrationClusterRestPath(final HttpServletRequest request) {
@@ -75,7 +89,20 @@ public final class CamundaVersionFilter extends HttpFilter {
     return isV2Path(path.substring(slash));
   }
 
+  /**
+   * Context-relative path as Spring MVC / Security see it (decoded, context stripped). Falls back
+   * to the raw request URI when decoding fails so a malformed percent-sequence cannot 500 the
+   * request.
+   */
   private static String contextRelativePath(final HttpServletRequest request) {
+    try {
+      return UrlPathHelper.defaultInstance.getPathWithinApplication(request);
+    } catch (final Exception e) {
+      return rawContextRelativePath(request);
+    }
+  }
+
+  private static String rawContextRelativePath(final HttpServletRequest request) {
     final String uri = request.getRequestURI();
     if (uri == null) {
       return null;
@@ -85,5 +112,25 @@ public final class CamundaVersionFilter extends HttpFilter {
       return uri.substring(contextPath.length());
     }
     return uri;
+  }
+
+  /**
+   * Restores {@code Camunda-Version} after {@link HttpServletResponse#reset()}, which the
+   * authentication-failure handler uses to rebuild a 401/403.
+   */
+  private static final class VersionPreservingResponse extends HttpServletResponseWrapper {
+
+    private final String version;
+
+    private VersionPreservingResponse(final HttpServletResponse response, final String version) {
+      super(response);
+      this.version = version;
+    }
+
+    @Override
+    public void reset() {
+      super.reset();
+      super.setHeader(CAMUNDA_VERSION_HEADER, version);
+    }
   }
 }
