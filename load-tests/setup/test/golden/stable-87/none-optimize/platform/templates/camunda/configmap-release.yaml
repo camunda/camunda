@@ -33,7 +33,7 @@ data:
         metrics: http://identity.c8-golden-stable-87-none-optimize:82/actuator/prometheus
       - name: Zeebe Gateway
         id: zeebeGateway
-        version: 8.7.45
+        version: 8.7.46
         urls:
           grpc: http://localhost:26500
           http: http://localhost:8088
@@ -41,6 +41,6 @@ data:
         metrics: http://zeebe-gateway.c8-golden-stable-87-none-optimize:9600/actuator/prometheus
       - name: Zeebe
         id: zeebe
-        version: 8.7.45
+        version: 8.7.46
         readiness: http://zeebe.c8-golden-stable-87-none-optimize:9600/actuator/health/readiness
         metrics: http://zeebe.c8-golden-stable-87-none-optimize:9600/actuator/prometheus
