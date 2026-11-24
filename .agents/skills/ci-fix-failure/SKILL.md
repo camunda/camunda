@@ -182,7 +182,7 @@ Don't cite reference files in the brief. **Stop.** Apply only after user confirm
 - **No silent reruns.** Recommend `gh run rerun --failed <run-id> --repo camunda/camunda`; don't trigger.
 - **Don't blame the diff blindly** — verify the failing code is reachable from the changeset.
 - **Format/build via repo conventions** (`./mvnw license:format spotless:apply -T1C` + module-scoped command from `AGENTS.md`). Never full-repo builds.
-- **Backports** — for bug fixes that may need `stable/*`, ask the user per `AGENTS.md`.
+- **Backports** — for bug fixes, label affected supported `stable/*` branches per `AGENTS.md`; ask the user only if unclear or risky.
 - **Never disable/skip/@Disabled a flaky test.** File `kind/flake` issue via `create-issue`, assign engineer, leave test enabled.
 
 ## Compose with

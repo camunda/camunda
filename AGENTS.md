@@ -193,9 +193,10 @@ read it. If you can't name both, don't write it.
 - Keep PRs focused on a single concern
 - Describe why the changes are necessary and note alternatives considered
 - Keep descriptions brief and concise
-- For bug fixes: ask the engineer whether the fix needs backporting to stable branches before
-  opening the PR. If yes, add the appropriate `backport stable/X.Y` label(s) when creating it
-  (see "Backporting" below and the `backport` skill).
+- Bug fixes should be backported to all affected stable branches that are still supported: add the
+  matching `backport stable/X.Y` label(s) when creating the PR (see "Backporting" below and the
+  `backport` skill). Only ask the engineer if it is unclear which branches are affected or the
+  backport looks risky or non-trivial.
 
 ### Backporting
 
