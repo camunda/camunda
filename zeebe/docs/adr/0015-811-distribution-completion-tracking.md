@@ -93,25 +93,29 @@ are observable.**
   mints before distributing. Within one processing step the order of `deferCompletion` and
   `distribute` does not matter. Processing order does not change: the source processes the command
   locally first and distributes in the same step, without waiting for its own remaining work.
-  Distribution skips the current partition, so its report is written locally instead of being
-  sent.
+  Distribution skips the current partition, so its `COMPLETE` command is written locally instead
+  of being sent.
 - The source can ask whether work is still open, and push it again:
   - `isCompletionOpen(valueType, completionKey)` answers "is this still in progress somewhere",
     for example to reject a history deletion while another partition still drains;
   - `redistribute(valueType, completionKey)` re-sends the open distribution to the partitions that
     have not completed. Starting a new distribution instead would cancel the open one.
 
-**D4. Receivers report reliably; the ACK says whether completion is deferred.**
+**D4. Receivers tell the source reliably when their work is done; the ACK says whether completion
+is deferred.**
 
 - The ACK carries `completionDeferred`. The framework computes it from its own deferral state for that
   distribution key, not from the domain's processing result. A redelivered command therefore gets
   the correct answer, even when the domain rejects the redelivery as a duplicate.
 - `completionDeferred = false`: the partition is ACKNOWLEDGED and COMPLETED at once.
-- When the domain acknowledges completion, the partition sends a `COMPLETE` report to the source.
-  The report reuses the transport of distribution (send, retry, ACK), but it is not itself a
-  tracked distribution: it has no milestones, no hooks and no summary event of its own. Tracking a
-  report like any other distribution would cost about ten records per report.
-- The source handles reports idempotently. A `COMPLETE` that arrives before the ACK counts as both.
+- When the domain acknowledges completion (`ackCompletion`), the partition sends a
+  `CommandDistribution:COMPLETE` command to the source: "my deferred work for distribution K is
+  done, with this outcome". It replaces per-feature commands such as
+  `ResourceDeletion:DELETE_COMPLETE`.
+- `COMPLETE` reuses the transport of distribution (send, retry, ACK), but it is not itself a
+  tracked distribution: it has no milestones, no hooks and no summary event of its own. Tracking it
+  like any other distribution would cost about ten records per `COMPLETE`.
+- The source handles `COMPLETE` idempotently. A `COMPLETE` that arrives before the ACK counts as both.
 - A rejected command is not a failure. It is ACKNOWLEDGED with the rejection recorded (D5), and
   COMPLETED unless completion is deferred.
 
@@ -126,10 +130,10 @@ are observable.**
   and intent of the distributed command, and carries the overall outcome (`CANCELLED` if any partition cancelled) and the per-partition outcomes. If any partition
   cancelled, `onAllCompleted` is not written.
 - Where the per-partition state is exported is open. There are two options:
-  - **Source only.** The source copies the fields of every ACK and report into its own events
+  - **Source only.** The source copies the fields of every ACK and `COMPLETE` into its own events
     (`ACKNOWLEDGED`, `PARTITION_COMPLETED`, `COMPLETED`). One distribution is one ordered stream
     under one key, and a status read model needs no join across partitions. The drawback is that a
-    partition's state is known only once its report arrives.
+    partition's state is known only once its `COMPLETE` arrives.
   - **Source and receivers.** In addition, each receiver exports its local events (deferring and
     acknowledging completion, with the distribution key and completion key). This shows more detail,
     such as why a partition still defers its completion, but a read model must correlate records
@@ -179,17 +183,17 @@ are observable.**
 ## Consequences
 
 - Deletion, batch operations and suspension keep their substates (`DRAINING`, chunk states,
-  `SUSPENDING`). New work no longer writes their own report commands, pending-partition column
+  `SUSPENDING`). New work no longer writes their own completion commands, pending-partition column
   families and last-one-wins checks; they adopt with two calls. The old code stays only to finish
   work started before the upgrade and to replay old logs (D6).
 - Batch operations report structured errors per partition and decide between COMPLETED and FAILED
   from them. Whether they fit needs a FAILED outcome with a payload; this is explored in a
   separate spike.
 - Every distribution writes one extra event (`COMPLETED`). A distribution with deferred completion
-  writes about three extra records per partition: the report, its distribution, and
+  writes about three extra records per partition: the `COMPLETE` command, its ACK, and
   `PARTITION_COMPLETED`.
-- Source state for a distribution with deferred completion lives until every partition reports. Drains
-  can last years, so a gauge for open deferrals and their age is needed.
+- Source state for a distribution with deferred completion lives until every partition has sent
+  `COMPLETE`. Drains can last years, so a gauge for open deferrals and their age is needed.
 - Issue #23156 can build a user-facing status from the exported milestones. How that status is
   presented is decided separately.
 
