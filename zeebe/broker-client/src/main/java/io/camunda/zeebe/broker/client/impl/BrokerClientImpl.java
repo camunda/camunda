@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
+import io.opentelemetry.api.OpenTelemetry;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -53,6 +54,24 @@ public final class BrokerClientImpl implements BrokerClient {
       final ActorSchedulingService schedulingService,
       final BrokerTopologyManager topologyManager,
       final BrokerClientRequestMetrics metrics) {
+    this(
+        requestTimeout,
+        messagingService,
+        eventService,
+        schedulingService,
+        topologyManager,
+        metrics,
+        OpenTelemetry.noop());
+  }
+
+  public BrokerClientImpl(
+      final Duration requestTimeout,
+      final MessagingService messagingService,
+      final ClusterEventService eventService,
+      final ActorSchedulingService schedulingService,
+      final BrokerTopologyManager topologyManager,
+      final BrokerClientRequestMetrics metrics,
+      final OpenTelemetry openTelemetry) {
     this.eventService = eventService;
     this.schedulingService = schedulingService;
 
@@ -64,7 +83,8 @@ public final class BrokerClientImpl implements BrokerClient {
             topologyManager,
             new RoundRobinDispatchStrategy(),
             requestTimeout,
-            metrics);
+            metrics,
+            openTelemetry);
   }
 
   @Override

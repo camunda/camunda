@@ -16,6 +16,8 @@ dependencies {
   implementation(libs.com.github.ben.manes.caffeine.caffeine)
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-scheduler"))
+  implementation(libs.io.opentelemetry.opentelemetry.api)
+  implementation(libs.io.opentelemetry.opentelemetry.context)
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":camunda-security-protocol"))

@@ -23,11 +23,15 @@ dependencies {
   implementation(project(":zeebe-micrometer"))
   api(libs.io.micrometer.micrometer.commons)
   api(libs.io.micrometer.micrometer.core)
+  api(libs.io.opentelemetry.opentelemetry.api)
+  implementation(libs.io.opentelemetry.opentelemetry.context)
   testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-protocol-test-util"))
   testImplementation(libs.org.awaitility.awaitility)
+  testImplementation(libs.io.opentelemetry.opentelemetry.sdk.testing)
+  testImplementation("io.opentelemetry:opentelemetry-sdk-trace")
   testImplementation(libs.org.hamcrest.hamcrest)
 }
 

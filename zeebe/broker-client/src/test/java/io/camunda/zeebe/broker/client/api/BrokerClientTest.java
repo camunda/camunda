@@ -48,6 +48,15 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.api.trace.TraceState;
+import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -64,9 +73,11 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public final class BrokerClientTest {
 
+  @RegisterExtension private final OpenTelemetryExtension otel = OpenTelemetryExtension.create();
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
   private final StubBroker broker = new StubBroker().start();
   private BrokerClient client;
@@ -127,7 +138,8 @@ public final class BrokerClientTest {
             atomixCluster.getEventService(),
             actorScheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(meterRegistry));
+            new BrokerClientRequestMetrics(meterRegistry),
+            otel.getOpenTelemetry());
     client.start().forEach(ActorFuture::join);
   }
 
@@ -151,6 +163,107 @@ public final class BrokerClientTest {
           assertThat(request.valueType()).isEqualTo(TestCommand.VALUE_TYPE);
           assertThat(request.intent()).isEqualTo(TestCommand.INTENT);
         });
+  }
+
+  @Test
+  void shouldStartClientSpanForSampledParent() {
+    // given
+    registerSuccessResponse(broker);
+    final var request = new TestCommand();
+
+    // when
+    final var parent = withSampledParent(() -> client.sendRequestWithRetry(request).join());
+
+    // then
+    final SpanData clientSpan = singleClientSpan();
+    assertThat(clientSpan.getName())
+        .isEqualTo("zeebe.broker_client " + request.getType().replace('#', ' '));
+    assertThat(clientSpan.getTraceId()).isEqualTo(parent.getSpanContext().getTraceId());
+    assertThat(clientSpan.getParentSpanId()).isEqualTo(parent.getSpanContext().getSpanId());
+    assertThat(clientSpan.getAttributes().get(AttributeKey.longKey("zeebe.partition.id")))
+        .isEqualTo(1L);
+    assertThat(clientSpan.getAttributes().get(AttributeKey.stringKey("zeebe.broker.id")))
+        .isNotBlank();
+    assertThat(clientSpan.getAttributes().get(AttributeKey.stringKey("zeebe.value_type")))
+        .isEqualTo(TestCommand.VALUE_TYPE.name());
+    assertThat(clientSpan.getAttributes().get(AttributeKey.stringKey("zeebe.intent")))
+        .isEqualTo(TestCommand.INTENT.name());
+  }
+
+  @Test
+  void shouldNotCreateClientSpanWhenUnsampled() {
+    // given
+    registerSuccessResponse(broker);
+    final var request = new TestCommand();
+    final var unsampled =
+        Span.wrap(
+            SpanContext.create(
+                "0af7651916cd43dd8448eb211c80319c",
+                "b7ad6b7169203331",
+                TraceFlags.getDefault(),
+                TraceState.getDefault()));
+
+    // when - unsampled parent, then no parent
+    try (final var ignored = unsampled.makeCurrent()) {
+      client.sendRequestWithRetry(request).join();
+    }
+    client.sendRequestWithRetry(request).join();
+
+    // then
+    assertThat(otel.getSpans()).isEmpty();
+  }
+
+  @Test
+  void shouldEndSpanWhenSerializationFails() {
+    // given
+    final var failingRequest =
+        new TestCommand() {
+          @Override
+          public void serializeValue() {
+            throw new IllegalStateException("serialization boom");
+          }
+        };
+
+    // when
+    withSampledParent(
+        () ->
+            assertThatThrownBy(() -> client.sendRequest(failingRequest))
+                .isInstanceOf(IllegalStateException.class));
+
+    // then
+    assertThat(singleClientSpan().getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
+  }
+
+  @Test
+  void shouldMarkClientSpanAsFailedOnErrorResponse() {
+    // given
+    registerError(broker, ErrorCode.INTERNAL_ERROR, "test");
+
+    // when
+    withSampledParent(() -> client.sendRequest(new TestCommand()).join());
+
+    // then
+    final var clientSpan = singleClientSpan();
+    assertThat(clientSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
+    assertThat(clientSpan.getAttributes().get(AttributeKey.stringKey("zeebe.error.code")))
+        .isEqualTo(ErrorCode.INTERNAL_ERROR.name());
+  }
+
+  private Span withSampledParent(final Runnable action) {
+    final var parent = otel.getOpenTelemetry().getTracer("test").spanBuilder("parent").startSpan();
+    try (final var ignored = parent.makeCurrent()) {
+      action.run();
+    } finally {
+      parent.end();
+    }
+    return parent;
+  }
+
+  private SpanData singleClientSpan() {
+    return otel.getSpans().stream()
+        .filter(span -> span.getKind() == SpanKind.CLIENT)
+        .findFirst()
+        .orElseThrow();
   }
 
   @Test

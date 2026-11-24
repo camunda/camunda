@@ -29,6 +29,13 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.transport.ClientTransport;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Set;
@@ -49,23 +56,34 @@ final class BrokerRequestManager extends Actor {
           transport.sendRequestWithRetry(
               nodeAddressSupplier, BrokerRequestManager::responseValidation, request, timeout);
   private static final TransportRequestSender SENDER_WITHOUT_RETRY = ClientTransport::sendRequest;
+  private static final String SPAN_NAME_PREFIX = "zeebe.broker_client ";
+  private static final AttributeKey<Long> PARTITION_ID = AttributeKey.longKey("zeebe.partition.id");
+  private static final AttributeKey<String> BROKER_ID = AttributeKey.stringKey("zeebe.broker.id");
+  private static final AttributeKey<String> VALUE_TYPE = AttributeKey.stringKey("zeebe.value_type");
+  private static final AttributeKey<String> INTENT = AttributeKey.stringKey("zeebe.intent");
+  private static final AttributeKey<String> ERROR_CODE = AttributeKey.stringKey("zeebe.error.code");
+  private static final AttributeKey<String> REJECTION_TYPE =
+      AttributeKey.stringKey("zeebe.rejection.type");
   private final ClientTransport clientTransport;
   private final RequestDispatchStrategy dispatchStrategy;
   private final BrokerTopologyManager topologyManager;
   private final Duration requestTimeout;
   private final BrokerClientRequestMetrics metrics;
+  private final Tracer tracer;
 
   BrokerRequestManager(
       final ClientTransport clientTransport,
       final BrokerTopologyManager topologyManager,
       final RequestDispatchStrategy dispatchStrategy,
       final Duration requestTimeout,
-      final BrokerClientRequestMetrics metrics) {
+      final BrokerClientRequestMetrics metrics,
+      final OpenTelemetry openTelemetry) {
     this.clientTransport = clientTransport;
     this.dispatchStrategy = dispatchStrategy;
     this.topologyManager = topologyManager;
     this.requestTimeout = requestTimeout;
     this.metrics = metrics;
+    tracer = openTelemetry.getTracer("io.camunda.zeebe.broker.client");
   }
 
   private static boolean responseValidation(final DirectBuffer responseContent) {
@@ -115,20 +133,112 @@ final class BrokerRequestManager extends Actor {
       throw missingPartitionGroupException(request);
     }
     final CompletableFuture<BrokerResponse<T>> responseFuture = new CompletableFuture<>();
-    request.serializeValue();
-    actor.run(() -> sendRequestInternal(request, responseFuture, sender, requestTimeout));
+    // The broker client only continues traces and never starts one: requests of untraced callers
+    // create no span.
+    if (!Span.current().getSpanContext().isSampled()) {
+      request.serializeValue();
+      actor.run(() -> sendRequestInternal(request, responseFuture, sender, requestTimeout, null));
+      return responseFuture;
+    }
+
+    final var requestType = request.getType();
+    final int separator = requestType.indexOf('#');
+    final var spanBuilder =
+        tracer
+            .spanBuilder(
+                SPAN_NAME_PREFIX + (separator >= 0 ? requestType.replace('#', ' ') : requestType))
+            .setSpanKind(SpanKind.CLIENT)
+            .setParent(Context.current());
+    if (separator > 0 && separator + 1 < requestType.length()) {
+      spanBuilder
+          .setAttribute(VALUE_TYPE, requestType.substring(0, separator))
+          .setAttribute(INTENT, requestType.substring(separator + 1));
+    }
+    final var span = spanBuilder.startSpan();
+    try {
+      request.serializeValue();
+    } catch (final Throwable e) {
+      span.recordException(e);
+      span.setStatus(StatusCode.ERROR, e.getMessage());
+      span.end();
+      throw e;
+    }
+    actor.run(() -> sendRequestInternal(request, responseFuture, sender, requestTimeout, span));
     return responseFuture;
+  }
+
+  private <T> void completeWithResponse(
+      final CompletableFuture<BrokerResponse<T>> returnFuture,
+      final BrokerResponse<T> response,
+      final BrokerRequest<T> request,
+      final @Nullable BrokerMemberId brokerId,
+      final @Nullable Span span) {
+    if (span != null) {
+      endSpan(span, request, brokerId, response, null);
+    }
+    returnFuture.complete(response);
+  }
+
+  private <T> void completeWithError(
+      final CompletableFuture<BrokerResponse<T>> returnFuture,
+      final Throwable error,
+      final BrokerRequest<T> request,
+      final @Nullable BrokerMemberId brokerId,
+      final @Nullable Span span) {
+    if (span != null) {
+      endSpan(span, request, brokerId, null, error);
+    }
+    returnFuture.completeExceptionally(error);
+  }
+
+  private <T> void endSpan(
+      final Span span,
+      final BrokerRequest<T> request,
+      final @Nullable BrokerMemberId brokerId,
+      final @Nullable BrokerResponse<T> response,
+      final @Nullable Throwable error) {
+    try {
+      final int partitionId = request.getPartitionId();
+      if (partitionId >= Protocol.START_PARTITION_ID
+          && partitionId <= Protocol.MAXIMUM_PARTITIONS) {
+        span.setAttribute(PARTITION_ID, (long) partitionId);
+      }
+      if (brokerId != null) {
+        span.setAttribute(BROKER_ID, brokerId.id());
+      }
+
+      if (error != null) {
+        span.recordException(error);
+        span.setStatus(StatusCode.ERROR, error.getMessage());
+      } else if (response != null && response.isError()) {
+        final var brokerError = response.getError();
+        if (brokerError != null) {
+          span.setAttribute(ERROR_CODE, brokerError.getCode().name());
+          span.setStatus(StatusCode.ERROR, brokerError.getMessage());
+        } else {
+          span.setStatus(StatusCode.ERROR);
+        }
+      } else if (response != null && response.isRejection()) {
+        final var rejection = response.getRejection();
+        if (rejection != null) {
+          span.setAttribute(REJECTION_TYPE, rejection.type().name());
+        }
+      }
+    } finally {
+      span.end();
+    }
   }
 
   private <T> void sendRequestInternal(
       final BrokerRequest<T> request,
       final CompletableFuture<BrokerResponse<T>> returnFuture,
       final TransportRequestSender sender,
-      final Duration requestTimeout) {
+      final Duration requestTimeout,
+      final @Nullable Span span) {
 
     final var partitionGroup = request.getPartitionGroup();
     if (partitionGroup == null) {
-      returnFuture.completeExceptionally(missingPartitionGroupException(request));
+      completeWithError(returnFuture, missingPartitionGroupException(request), request, null, span);
       return;
     }
 
@@ -136,22 +246,22 @@ final class BrokerRequestManager extends Actor {
     try {
       nodeIdProvider = determineBrokerNodeIdProvider(request, partitionGroup);
     } catch (final PartitionNotFoundException e) {
-      returnFuture.completeExceptionally(e);
+      completeWithError(returnFuture, e, request, null, span);
       metrics.registerFailedRequest(
           request.getPartitionId(), request.getType(), AdditionalErrorCodes.PARTITION_NOT_FOUND);
       return;
     } catch (final NoTopologyAvailableException e) {
-      returnFuture.completeExceptionally(e);
+      completeWithError(returnFuture, e, request, null, span);
       metrics.registerFailedRequest(
           request.getPartitionId(), request.getType(), AdditionalErrorCodes.NO_TOPOLOGY);
       return;
     } catch (final PartitionInactiveException e) {
-      returnFuture.completeExceptionally(e);
+      completeWithError(returnFuture, e, request, null, span);
       metrics.registerFailedRequest(
           request.getPartitionId(), request.getType(), AdditionalErrorCodes.PARTITION_INACTIVE);
       return;
     } catch (final PartitionInRecoveryException e) {
-      returnFuture.completeExceptionally(e);
+      completeWithError(returnFuture, e, request, null, span);
       metrics.registerFailedRequest(
           request.getPartitionId(), request.getType(), AdditionalErrorCodes.PARTITION_IN_RECOVERY);
       return;
@@ -164,12 +274,13 @@ final class BrokerRequestManager extends Actor {
     actor.runOnCompletion(
         responseFuture,
         (final DirectBuffer clientResponse, final @Nullable Throwable error) -> {
+          final var brokerId = nodeIdProvider.lastResolvedBrokerId();
           RequestResult result = null;
           try {
             if (error == null) {
               final BrokerResponse<T> response = request.getResponse(clientResponse);
 
-              result = handleResponse(response, returnFuture);
+              result = handleResponse(response, returnFuture, request, brokerId, span);
               if (result.wasProcessed()) {
                 final long elapsedTime = System.currentTimeMillis() - startTime;
                 metrics.registerSuccessfulRequest(
@@ -177,10 +288,11 @@ final class BrokerRequestManager extends Actor {
                 return;
               }
             } else {
-              returnFuture.completeExceptionally(error);
+              completeWithError(returnFuture, error, request, brokerId, span);
             }
           } catch (final RuntimeException e) {
-            returnFuture.completeExceptionally(new BrokerResponseException(e));
+            completeWithError(
+                returnFuture, new BrokerResponseException(e), request, brokerId, span);
           }
 
           registerFailure(request, result, error);
@@ -214,23 +326,27 @@ final class BrokerRequestManager extends Actor {
    * ErrorCode#NULL_VAL} if something unexpected occurred.
    */
   private <T> RequestResult handleResponse(
-      final BrokerResponse<T> response, final CompletableFuture<BrokerResponse<T>> responseFuture) {
+      final BrokerResponse<T> response,
+      final CompletableFuture<BrokerResponse<T>> responseFuture,
+      final BrokerRequest<T> request,
+      final @Nullable BrokerMemberId brokerId,
+      final @Nullable Span span) {
     try {
       if (response.isResponse()) {
-        responseFuture.complete(response);
+        completeWithResponse(responseFuture, response, request, brokerId, span);
         return RequestResult.processed();
       } else if (response.isRejection()) {
-        responseFuture.complete(response);
+        completeWithResponse(responseFuture, response, request, brokerId, span);
         return RequestResult.processed();
       } else if (response.isError()) {
-        responseFuture.complete(response);
+        completeWithResponse(responseFuture, response, request, brokerId, span);
         final var error = response.getError();
         return RequestResult.failed(error == null ? ErrorCode.NULL_VAL : error.getCode());
       } else {
-        responseFuture.completeExceptionally(response.toException());
+        completeWithError(responseFuture, response.toException(), request, brokerId, span);
       }
     } catch (final RuntimeException e) {
-      responseFuture.completeExceptionally(new BrokerResponseException(e));
+      completeWithError(responseFuture, new BrokerResponseException(e), request, brokerId, span);
     }
 
     return RequestResult.failed(ErrorCode.NULL_VAL);
