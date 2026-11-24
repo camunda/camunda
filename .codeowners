@@ -482,6 +482,12 @@ optimize.Dockerfile         @camunda/core-features
 # Optimize frontend: overrides the broad /optimize/ rule above.
 /optimize/client/           @camunda/optimize
 
+# Optimize owns the Elasticsearch and OpenSearch exporters whose records it
+# imports. Overrides the broad /zeebe/exporters/ rule above (Data Layer), which
+# keeps the camunda-exporter and rdbms-exporter.
+/zeebe/exporters/elasticsearch-exporter/ @camunda/optimize
+/zeebe/exporters/opensearch-exporter/    @camunda/optimize
+
 # Unified webapp frontend: overrides the broad /webapp/ rule above, which covers
 # the Java BFF. Pod areas override the frontend default.
 /webapp/client/                                                       @camunda/orchestration-cluster-webapps
