@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.metrics.WorkerMetricsDoc;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusConfig;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -46,5 +48,22 @@ class WorkerResultMetricsTest {
 
     // then
     assertThat(registry.get(name).gauge().value()).isEqualTo(2.0);
+  }
+
+  @Test
+  void shouldScrapeSuccessAndFailureWithAnEmptyErrorTag() {
+    // given
+    final var prometheus = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+    final var prometheusMetrics = new WorkerResultMetrics(prometheus, pending);
+
+    // when
+    prometheusMetrics.recordJobCompletion();
+    prometheusMetrics.recordJobCompletion(new IllegalStateException("failed"));
+
+    // then
+    assertThat(prometheus.scrape())
+        .contains("worker_job_completions_total{error=\"\",outcome=\"success\"} 1.0")
+        .contains(
+            "worker_job_completions_total{error=\"IllegalStateException\",outcome=\"failure\"} 1.0");
   }
 }

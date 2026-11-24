@@ -16,7 +16,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 /** Counts the answers to process instance start requests by outcome and error type. */
 final class StarterResultMetrics {
 
-  private static final String NONE = "none";
+  private static final String NONE = "";
 
   private final MeterRegistry registry;
   private final Counter successCounter;

@@ -45,7 +45,7 @@ class ResponseCheckerTest {
     futures.add(CompletableFuture.completedFuture(null));
 
     // then
-    await().untilAsserted(() -> assertThat(completions("success", "none")).isEqualTo(1.0));
+    await().untilAsserted(() -> assertThat(completions("success", "")).isEqualTo(1.0));
   }
 
   @Test
@@ -56,7 +56,7 @@ class ResponseCheckerTest {
 
     // then
     await().untilAsserted(() -> assertThat(completions("failure", "http_503")).isEqualTo(1.0));
-    assertThat(completions("success", "none")).isZero();
+    assertThat(completions("success", "")).isZero();
   }
 
   private double completions(final String outcome, final String error) {
