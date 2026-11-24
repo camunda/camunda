@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      id-token: write # Vault JWT login
       contents: read
     # A pull_request from a fork gets no secrets, so the Vault step below would
     # fail rather than skip.
@@ -35,7 +36,7 @@ jobs:
     steps:
       # The BASE commit, not the default. A bare checkout on a pull_request
       # event takes the merge commit -- the PR's own code -- and the last step
-      # below runs a local action from it, beside a Vault approle and an App
+      # below runs a local action from it, beside a Vault login and an App
       # token scoped to another repository. Not github.sha either: on this
       # event that is also the merge commit.
       #
@@ -88,9 +89,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda,c8-cross-component-e2e-tests
@@ -128,5 +130,8 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
