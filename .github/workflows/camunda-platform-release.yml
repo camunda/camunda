@@ -36,6 +36,9 @@ env:
 jobs:
   release:
     name: Maven Release
+    permissions:
+      contents: write
+      id-token: write # Vault JWT login
     runs-on: gcp-core-16-release
     outputs:
       releaseTagRevision: ${{ steps.maven-perform-release.outputs.tagRevision }}
@@ -54,9 +57,10 @@ jobs:
         uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE;
             secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_SEC;
@@ -219,11 +223,18 @@ jobs:
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   github:
     needs: release
     name: Github Release
+    permissions:
+      issues: write
+      contents: write
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -340,9 +351,15 @@ jobs:
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   zeebe-docker:
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
     needs: release
     name: Zeebe docker Image Release
     runs-on: ubuntu-latest
@@ -368,9 +385,10 @@ jobs:
         uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
@@ -419,9 +437,15 @@ jobs:
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   operate-docker:
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
     needs: release
     name: Operate Docker Image Release
     runs-on: ubuntu-latest
@@ -447,9 +471,10 @@ jobs:
         uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
@@ -501,9 +526,15 @@ jobs:
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   tasklist-docker:
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
     needs: release
     name: Tasklist Docker Image Release
     runs-on: ubuntu-latest
@@ -529,9 +560,10 @@ jobs:
         uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
@@ -583,6 +615,9 @@ jobs:
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   camunda-docker:
@@ -590,6 +625,8 @@ jobs:
     name: Camunda Docker Image Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      id-token: write # Vault JWT login
     services:
       # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
       # registry. As we want to verify the images first before pushing them to dockerhub though,
@@ -611,9 +648,10 @@ jobs:
         uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
@@ -665,6 +703,9 @@ jobs:
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   snyk:
@@ -675,6 +716,9 @@ jobs:
     concurrency:
       group: release-snyk-${{ inputs.releaseVersion }}
       cancel-in-progress: false
+    permissions:
+      id-token: write # Vault JWT login
+      security-events: write
     uses: ./.github/workflows/zeebe-snyk.yml
     with:
       # Can't reference env.RELEASE_BRANCH directly due to https://github.com/actions/runner/issues/2372

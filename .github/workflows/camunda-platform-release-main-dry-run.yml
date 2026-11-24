@@ -14,6 +14,13 @@ on:
 jobs:
   dry-run-release:
     name: "${{ matrix.version }} from ${{ inputs.branch || 'main' }}"
+    permissions:
+      actions: read
+      contents: write
+      issues: write
+      pull-requests: read
+      id-token: write # Vault JWT login
+      security-events: write
     uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
     strategy:
