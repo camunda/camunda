@@ -231,9 +231,9 @@ jobs:
           # state. Can not be less than Constants.WAIT_MAX_TIME_DEFAULT_VALUE.
           CENTRAL_WAIT_MAX_TIME: "10800"
           # TEMPORARY (INC-9357): Maven Central rejects publishing until 2026-12-01 (monthly file
-          # limit), failing validation. Return right after upload instead of waiting for VALIDATED
-          # (plugin default) so the release continues. Revert to VALIDATED once publishing works.
-          CENTRAL_WAIT_UNTIL: "UPLOADED"
+          # limit), failing validation. Return right after upload instead of waiting for validated
+          # (plugin default) so the release continues. Revert once publishing works.
+          CENTRAL_WAIT_UNTIL: "uploaded"
           # maven-scm discards git's stderr (GitRemoteInfoCommand builds its
           # ScmException from the URL alone), so a failed ls-remote reports nothing
           # but "unbale to execute ls-remote". A file path routes git's own
