@@ -13,7 +13,6 @@ import {DecisionTree, Settings} from '@carbon/icons-react';
 import {addNotification} from 'notifications';
 import {EntityList} from 'components';
 import {isUserSearchAvailable} from 'config';
-import {track} from 'tracking';
 
 import {Processes} from './Processes';
 import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
@@ -42,8 +41,6 @@ jest.mock('./service', () => ({
 jest.mock('config', () => ({
   isUserSearchAvailable: jest.fn().mockReturnValue(true),
 }));
-
-jest.mock('tracking', () => ({track: jest.fn()}));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -135,7 +132,6 @@ it('should show process update notification if digest & email are enabled', asyn
 
   node.find(ConfigureProcessModal).simulate('confirm', testConfig, true, 'testName');
   expect(addNotification).toHaveBeenCalled();
-  expect(track).toHaveBeenCalledWith('emailDigestEnabled', {processDefinitionKey: 'defKey'});
 });
 
 it('should pass loaded tiles to the management dashboard view component', async () => {

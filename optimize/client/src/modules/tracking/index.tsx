@@ -6,4 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {default as Tracking, track} from './Tracking';
+export {default as Tracking} from './Tracking';

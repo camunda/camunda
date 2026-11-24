@@ -25,7 +25,6 @@ import {updateEntity, createEntity, evaluateReport, getCollection} from 'service
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {useErrorHandling, useChangedState} from 'hooks';
-import {track} from 'tracking';
 
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import ConflictModal from './ConflictModal';
@@ -187,7 +186,6 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
   }
 
   function updateDescription(description) {
-    track('editDescription', {entity: 'report', entityId: report.id});
     const newReport = update(report, {description: {$set: description}});
     setReport(newReport);
     dirtyCheck(newReport);
@@ -273,21 +271,8 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
     }
   }
 
-  function handleTableExpand(currentState, newState) {
-    track('changeRawDataView', {
-      from: currentState,
-      to: newState,
-      reportType: report.data?.visualization,
-    });
+  function handleTableExpand(_currentState, newState) {
     setShowReportRenderer(newState !== 'maximized');
-  }
-
-  function handleTableCollapse(currentState, newState) {
-    track('changeRawDataView', {
-      from: currentState,
-      to: newState,
-      reportType: report.data?.visualization,
-    });
   }
 
   useEffect(() => {
@@ -382,7 +367,6 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
               initialState="minimized"
               onTransitionEnd={showTable}
               onExpand={handleTableExpand}
-              onCollapse={handleTableCollapse}
               title={t('report.view.rawData')}
             >
               <InstanceViewTable report={shouldAutoReloadPreview ? report : frozenReport} />

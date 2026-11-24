@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {ComboBox, Stack, Tile, Button, Layer, FormLabel, TextAreaSkeleton} from '@carbon/react';
 import {CheckmarkFilled, CircleDash, Close, Edit} from '@carbon/icons-react';
 import {useHistory, useLocation} from 'react-router-dom';
@@ -20,7 +20,6 @@ import {showError} from 'notifications';
 import {newReport} from 'config';
 import {ProcessFilter, Report, FilterType} from 'types';
 import {DateFilter, NodeSelection, FilterProps} from 'filter';
-import {track} from 'tracking';
 
 import {KpiTemplate, DefaultProcessFilter} from './templates/types';
 import {automationRate, throughput} from './templates';
@@ -52,10 +51,6 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
   const {pathname} = useLocation();
   const kpiTemplates = [automationRate(), throughput()];
   const {mightFail} = useErrorHandling();
-
-  useEffect(() => {
-    track('openKpiWizzard');
-  }, []);
 
   const loadReport = async (reportPayload: ReportEvaluationPayload) => {
     setLoading(true);
@@ -327,7 +322,6 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                 await mightFail(
                   createEntity('report/process/single', evaluatedReport),
                   (id) => {
-                    track('createKPIReport', {template: selectedKpi?.name});
                     history.push(`report/${id}/`);
                   },
                   showError

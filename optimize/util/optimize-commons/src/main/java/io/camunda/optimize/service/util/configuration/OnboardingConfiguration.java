@@ -7,17 +7,17 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.j2objc.annotations.Property;
 import java.util.Objects;
 
+// Removed Appcues integration; keep accepting the key so existing config files still load.
+@JsonIgnoreProperties("appCuesScriptUrl")
 public class OnboardingConfiguration {
 
   @Property("enabled")
   private boolean enabled;
-
-  @Property("appCuesScriptUrl")
-  private String appCuesScriptUrl;
 
   @Property("scheduleProcessOnboardingChecks")
   private boolean scheduleProcessOnboardingChecks;
@@ -39,14 +39,6 @@ public class OnboardingConfiguration {
 
   public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
-  }
-
-  public String getAppCuesScriptUrl() {
-    return appCuesScriptUrl;
-  }
-
-  public void setAppCuesScriptUrl(final String appCuesScriptUrl) {
-    this.appCuesScriptUrl = appCuesScriptUrl;
   }
 
   public boolean isScheduleProcessOnboardingChecks() {
@@ -99,7 +91,6 @@ public class OnboardingConfiguration {
         && enableOnboardingEmails == that.enableOnboardingEmails
         && intervalForCheckingTriggerForOnboardingEmails
             == that.intervalForCheckingTriggerForOnboardingEmails
-        && Objects.equals(appCuesScriptUrl, that.appCuesScriptUrl)
         && Objects.equals(properties, that.properties);
   }
 
@@ -107,7 +98,6 @@ public class OnboardingConfiguration {
   public int hashCode() {
     return Objects.hash(
         enabled,
-        appCuesScriptUrl,
         scheduleProcessOnboardingChecks,
         enableOnboardingEmails,
         intervalForCheckingTriggerForOnboardingEmails,
@@ -118,8 +108,6 @@ public class OnboardingConfiguration {
   public String toString() {
     return "OnboardingConfiguration(enabled="
         + isEnabled()
-        + ", appCuesScriptUrl="
-        + getAppCuesScriptUrl()
         + ", scheduleProcessOnboardingChecks="
         + isScheduleProcessOnboardingChecks()
         + ", enableOnboardingEmails="

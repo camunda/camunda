@@ -7,24 +7,22 @@
  */
 package io.camunda.optimize.service.util.configuration.analytics;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 
+// Removed Mixpanel integration; keep accepting the key so existing config files still load.
+@JsonIgnoreProperties("mixpanel")
 public class AnalyticsConfiguration {
 
   @JsonProperty("enabled")
   private boolean enabled;
 
-  @JsonProperty("mixpanel")
-  private MixpanelConfiguration mixpanel;
-
   @JsonProperty("osano")
   private OsanoConfiguration osano;
 
-  public AnalyticsConfiguration(
-      final boolean enabled, final MixpanelConfiguration mixpanel, final OsanoConfiguration osano) {
+  public AnalyticsConfiguration(final boolean enabled, final OsanoConfiguration osano) {
     this.enabled = enabled;
-    this.mixpanel = mixpanel;
     this.osano = osano;
   }
 
@@ -37,15 +35,6 @@ public class AnalyticsConfiguration {
   @JsonProperty("enabled")
   public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
-  }
-
-  public MixpanelConfiguration getMixpanel() {
-    return mixpanel;
-  }
-
-  @JsonProperty("mixpanel")
-  public void setMixpanel(final MixpanelConfiguration mixpanel) {
-    this.mixpanel = mixpanel;
   }
 
   public OsanoConfiguration getOsano() {
@@ -63,7 +52,7 @@ public class AnalyticsConfiguration {
 
   @Override
   public int hashCode() {
-    return Objects.hash(mixpanel, osano);
+    return Objects.hash(osano);
   }
 
   @Override
@@ -75,17 +64,11 @@ public class AnalyticsConfiguration {
       return false;
     }
     final AnalyticsConfiguration that = (AnalyticsConfiguration) o;
-    return Objects.equals(mixpanel, that.mixpanel) && Objects.equals(osano, that.osano);
+    return Objects.equals(osano, that.osano);
   }
 
   @Override
   public String toString() {
-    return "AnalyticsConfiguration(enabled="
-        + isEnabled()
-        + ", mixpanel="
-        + getMixpanel()
-        + ", osano="
-        + getOsano()
-        + ")";
+    return "AnalyticsConfiguration(enabled=" + isEnabled() + ", osano=" + getOsano() + ")";
   }
 }

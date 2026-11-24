@@ -10,7 +10,6 @@ import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 import {C3Navigation, C3NavigationProps} from '@camunda/camunda-composite-components';
 
-import {track} from 'tracking';
 import {useUiConfig} from 'hooks';
 
 import Header from './Header';
@@ -57,8 +56,6 @@ jest.mock('react-router', () => ({
     return {pathname: '/testroute'};
   }),
 }));
-
-jest.mock('tracking', () => ({track: jest.fn()}));
 
 beforeEach(() => {
   (useUiConfig as jest.Mock).mockReturnValue(defaultUiConfig);
@@ -186,14 +183,6 @@ it('should render sidebar links', async () => {
       },
     },
   ]);
-});
-
-it('should track app clicks from the app switcher', async () => {
-  const node = shallow(<Header />);
-
-  node.find(C3Navigation).prop('appBar').elementClicked('modeler');
-
-  expect(track).toHaveBeenCalledWith('modeler:open');
 });
 
 it('should display the notifications component in cloud mode', async () => {

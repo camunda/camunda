@@ -7,16 +7,18 @@
  */
 package io.camunda.optimize.service.util.configuration.ui;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import java.util.Objects;
 
+// Removed Mixpanel integration; keep accepting the key so existing config files still load.
+@JsonIgnoreProperties("mixpanelToken")
 public class UIConfiguration {
 
   private static final int DATA_SOURCES_LIMIT_FOR_REPORT_MINIMUM_VAL = 1;
   private static final int DATA_SOURCES_LIMIT_FOR_REPORT_MAXIMUM_VAL = 1024;
 
   private boolean logoutHidden;
-  private String mixpanelToken;
   private int maxNumDataSourcesForReport;
   private boolean userTaskAssigneeAnalyticsEnabled;
   private String consoleUrl;
@@ -47,14 +49,6 @@ public class UIConfiguration {
 
   public void setLogoutHidden(final boolean logoutHidden) {
     this.logoutHidden = logoutHidden;
-  }
-
-  public String getMixpanelToken() {
-    return mixpanelToken;
-  }
-
-  public void setMixpanelToken(final String mixpanelToken) {
-    this.mixpanelToken = mixpanelToken;
   }
 
   public int getMaxNumDataSourcesForReport() {
@@ -102,7 +96,6 @@ public class UIConfiguration {
     return logoutHidden == that.logoutHidden
         && maxNumDataSourcesForReport == that.maxNumDataSourcesForReport
         && userTaskAssigneeAnalyticsEnabled == that.userTaskAssigneeAnalyticsEnabled
-        && Objects.equals(mixpanelToken, that.mixpanelToken)
         && Objects.equals(consoleUrl, that.consoleUrl)
         && Objects.equals(modelerUrl, that.modelerUrl);
   }
@@ -111,7 +104,6 @@ public class UIConfiguration {
   public int hashCode() {
     return Objects.hash(
         logoutHidden,
-        mixpanelToken,
         maxNumDataSourcesForReport,
         userTaskAssigneeAnalyticsEnabled,
         consoleUrl,
@@ -122,8 +114,6 @@ public class UIConfiguration {
   public String toString() {
     return "UIConfiguration(logoutHidden="
         + isLogoutHidden()
-        + ", mixpanelToken="
-        + getMixpanelToken()
         + ", maxNumDataSourcesForReport="
         + getMaxNumDataSourcesForReport()
         + ", userTaskAssigneeAnalyticsEnabled="

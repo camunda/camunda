@@ -15,7 +15,6 @@ import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {withDocs, withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
-import {track} from 'tracking';
 
 import DiagramBehavior from './DiagramBehavior';
 import Statistics from './Statistics';
@@ -146,7 +145,6 @@ export class BranchAnalysis extends React.Component {
         loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersions[0], tenantIds[0]),
         (xml) => {
           changes.xml = xml;
-          track('startBranchAnalysis', {processDefinitionKey});
         },
         showError
       );

@@ -15,7 +15,6 @@ import {showError} from 'notifications';
 import {BPMNDiagram, HeatmapOverlay, PageTitle} from 'components';
 import {loadProcessDefinitionXml, getFlowNodeNames, incompatibleFilters} from 'services';
 import {useErrorHandling} from 'hooks';
-import {track} from 'tracking';
 
 import OutlierControlPanel from './OutlierControlPanel';
 import OutlierDetailsModal from './OutlierDetailsModal';
@@ -69,10 +68,7 @@ export default function TaskAnalysis() {
       setIsLoadingXml(true);
       await mightFail(
         loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersions[0], tenantIds[0]),
-        (xml) => {
-          setXml(xml);
-          track('startOutlierAnalysis', {processDefinitionKey});
-        },
+        setXml,
         showError,
         () => setIsLoadingXml(false)
       );

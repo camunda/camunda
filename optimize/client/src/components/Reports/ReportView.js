@@ -27,7 +27,6 @@ import {
 } from 'components';
 import {formatters, checkDeleteConflict} from 'services';
 import {t} from 'translation';
-import {track} from 'tracking';
 import {useUiConfig, useUser} from 'hooks';
 
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
@@ -54,21 +53,8 @@ export default function ReportView({report, error, loadReport}) {
     }
   }
 
-  function handleTableExpand(currentState, newState) {
-    track('changeRawDataView', {
-      from: currentState,
-      to: newState,
-      reportType: report.data?.visualization,
-    });
+  function handleTableExpand(_currentState, newState) {
     setShowReportRenderer(newState !== 'maximized');
-  }
-
-  function handleTableCollapse(currentState, newState) {
-    track('changeRawDataView', {
-      from: currentState,
-      to: newState,
-      reportType: report.data?.visualization,
-    });
   }
 
   const shouldShowCSVDownload = () => {
@@ -182,7 +168,6 @@ export default function ReportView({report, error, loadReport}) {
               initialState="half"
               onTransitionEnd={showTable}
               onExpand={handleTableExpand}
-              onCollapse={handleTableCollapse}
               title={t('report.view.rawData')}
             >
               <InstanceViewTable report={report} />
