@@ -118,6 +118,11 @@ is deferred.**
 - The source handles `COMPLETE` idempotently. A `COMPLETE` that arrives before the ACK counts as both.
 - A rejected command is not a failure. It is ACKNOWLEDGED with the rejection recorded (D5), and
   COMPLETED unless completion is deferred.
+- A command whose work already exists on the partition (redelivered, or inherited through a
+  scaling snapshot) is answered from the local entities, not rejected as a duplicate. If that work
+  is still running, the partition defers completion for the new distribution. Otherwise it would
+  count as COMPLETED while it still works, for example a new partition that inherited a `DRAINING`
+  definition.
 
 **D5. Every partition's outcome is recorded and exported.**
 
@@ -173,6 +178,9 @@ is deferred.**
 - `redistribute` re-sends only to partitions that acknowledged but have not completed, and never
   re-enqueues.
 - Scaling up: the participants of a distribution are fixed when it starts.
+  - The source persists them in `STARTED`: the target partitions plus itself, also when the only
+    target is the source. Completion checks membership in that set, never counts, so a `COMPLETE`
+    from another partition cannot stand in for a missing one.
   - A distribution that started before the scale-up does not wait for the new partition. The new
     partition has no instances to drain anyway: it copies global state from partition 1 (for
     example a `DRAINING` definition, which cannot start new instances) and finishes that state
@@ -184,6 +192,15 @@ is deferred.**
     `COMPLETE` from a partition outside the participants is acknowledged and ignored.
   - A feature whose state must hold on every partition (for example a suspension marker) must keep
     it in state that scaling copies, or a partition added after the distribution would miss it.
+  - Such a feature must use partition 1 as its source. A new partition copies its global state from
+    partition 1 at a position after the scale-up started. A distribution from partition 1 is
+    therefore either in the copy (started before) or delivered to the new partition (started
+    during), never neither. From another source it could be neither.
+  - A distribution started during the scale-up can reach the new partition although its effect is
+    already in the copy. Domain processing must be idempotent against copied state.
+  - A distribution started during the scale-up cannot be acknowledged before the new partition is
+    bootstrapped, and never if the scale-up never finishes. A gauge shows distributions waiting on
+    scaling partitions.
 - Operators cannot change this mechanism: there is no API to cancel, complete or re-send a
   distribution. Work that never ends (for example an instance stuck in an incident) keeps its
   distribution open until the domain resolves it; the open-deferral gauge makes it visible. A
@@ -196,9 +213,12 @@ is deferred.**
   acknowledging and cancelling completion (events).
 - New properties on `CommandDistributionRecord`: `completionDeferred`, `completionKey`, the
   rejection fields, and the outcome and reason. All are small and empty by default.
-- Partition-local column families: deferrals on each partition (D3); on the source, the
-  completion state of each distribution (value type, intent, hook commands, partitions still
-  pending) and an index from (value type, completion key) to the open distribution.
+- Partition-local column families, never global: deferrals, the `COMPLETE` outbox and the
+  highest processed key on each partition; on the source, the completion state of each
+  distribution (value type, intent, hook commands, participants, partitions still pending) and the
+  index from (value type, completion key) to the open distribution. If any were global, a new
+  partition would inherit partition 1's open work and act as its source. A test pins the scope of
+  each.
 - Every new or changed event gets a new applier version. Existing appliers stay unchanged, so
   replay of an existing log behaves as before.
 - No intent is removed. Intents that new code stops writing (`CONTINUATION_*`, and per feature its
