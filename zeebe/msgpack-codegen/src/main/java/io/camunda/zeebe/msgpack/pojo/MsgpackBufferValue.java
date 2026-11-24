@@ -1,0 +1,125 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.msgpack.pojo;
+
+import io.camunda.zeebe.msgpack.Recyclable;
+import io.camunda.zeebe.msgpack.pojo.annotation.Ignore;
+import io.camunda.zeebe.msgpack.pojo.annotation.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.annotation.Sanitized;
+import io.camunda.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+
+/**
+ * Lets a {@link MsgpackPojo} that still has to read and write itself, e.g. as a {@code DbValue},
+ * delegate to its generated codec. The reader and writer are the per-thread instances of {@link
+ * MsgpackScratch}.
+ *
+ * <p>The concrete class returns its generated codec and ops from {@link #codec()} and {@link
+ * #ops()}, which only return static instances: they must not be called from the constructor. {@link
+ * #reset()} is called before every read.
+ *
+ * <p>Temporary: it goes away once the code storing these objects owns the codec call and the
+ * scratch state.
+ *
+ * @param <T> the concrete POJO type
+ */
+public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
+    implements BufferReader, BufferWriter, Recyclable {
+
+  /** The generated {@code <Name>Codec}: return {@code <Name>Codec.INSTANCE}. */
+  protected abstract MsgpackCodec<T> codec();
+
+  /** The generated {@code <Name>Ops}: return {@code <Name>Ops.INSTANCE}. */
+  protected abstract MsgpackOps<T> ops();
+
+  @Override
+  public int getLength() {
+    return codec().getLength(self());
+  }
+
+  @Override
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    try (final var scratch = MsgpackScratch.acquire()) {
+      return codec().write(scratch.writer(buffer, offset), self());
+    }
+  }
+
+  /** Reads the whole buffer, like {@code UnpackedObject#wrap(DirectBuffer)}. */
+  public void wrap(final DirectBuffer buffer) {
+    wrap(buffer, 0, buffer.capacity());
+  }
+
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    reset();
+    try (final var scratch = MsgpackScratch.acquire()) {
+      final var reader = scratch.reader(buffer, offset, length);
+      try {
+        codec().read(reader, self());
+      } catch (final RuntimeException e) {
+        // the same context as UnpackedObject, which this replaces
+        throw new RuntimeException(
+            "Could not deserialize object [%s]. Deserialization stuck at offset %d of length %d"
+                .formatted(getClass().getSimpleName(), reader.getOffset(), length),
+            e);
+      }
+    }
+  }
+
+  /**
+   * Replaces the stored properties by a deep copy of the ones of {@code source}: nothing is shared
+   * with it, so it may be modified or its buffer reused afterwards. Allocates a copy of every
+   * string, binary, raw value and document. State that is not stored ({@link Ignore}) is not
+   * copied: override this method to copy it as well, and call {@code super}.
+   */
+  public void copyFrom(final T source) {
+    ops().copy(source, self());
+  }
+
+  /**
+   * Equal if the other is of the same class and has the same stored properties, compared by
+   * content. State that is not stored ({@link Ignore}) is not compared: override {@code equals} and
+   * {@code hashCode} together to include it.
+   */
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || o.getClass() != getClass()) {
+      return false;
+    }
+    @SuppressWarnings("unchecked")
+    final T other = (T) o;
+    return ops().equals(self(), other);
+  }
+
+  @Override
+  public int hashCode() {
+    return ops().hashCode(self());
+  }
+
+  /** The stored properties as JSON, with {@link Sanitized} ones masked. */
+  @Override
+  public String toString() {
+    return ops().toString(self());
+  }
+
+  /** Restores the field initializers. Override to also reset state that is not stored. */
+  @Override
+  public void reset() {
+    ops().reset(self());
+  }
+
+  @SuppressWarnings("unchecked")
+  private T self() {
+    return (T) this;
+  }
+}

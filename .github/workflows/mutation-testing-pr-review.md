@@ -25,6 +25,7 @@ on:
       - "zeebe/dynamic-node-id-provider/**src/main/**"
       - "zeebe/journal/**src/main/**"
       - "zeebe/logstreams/**src/main/**"
+      - "zeebe/msgpack-codegen/**src/main/**"
       - "zeebe/restore/**src/main/**"
       - "zeebe/restore-standalone/**src/main/**"
       - "zeebe/scheduler/**src/main/**"

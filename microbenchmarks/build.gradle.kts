@@ -7,6 +7,8 @@ dependencies {
   implementation(libs.org.agrona.agrona)
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-msgpack-value"))
+  implementation(project(":zeebe-msgpack-core"))
+  implementation(project(":zeebe-msgpack-codegen"))
   implementation(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-expression-language"))
   implementation(project(":zeebe-workflow-engine"))
@@ -26,6 +28,8 @@ dependencies {
   // annotation processor; mirror both so generated BenchmarkList / BenchmarkProfile classes exist.
   compileOnly(libs.org.openjdk.jmh.jmh.generator.annprocess)
   annotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
+  // generates the codecs of the @MsgpackPojo benchmark values
+  annotationProcessor(project(":zeebe-msgpack-codegen"))
 }
 
 // Mirrors maven-shade-plugin: produces a `benchmarks.jar` uberjar with org.openjdk.jmh.Main
