@@ -148,8 +148,8 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     private static final KeyName[] KEY_NAMES =
         new KeyName[] {
           StarterLatencyMetricKeyNames.QUERY_NAME,
-          StarterMetricKeyNames.OUTCOME,
-          StarterMetricKeyNames.ERROR
+          ResultMetricKeyNames.OUTCOME,
+          ResultMetricKeyNames.ERROR
         };
 
     private static final Duration[] BUCKETS = {

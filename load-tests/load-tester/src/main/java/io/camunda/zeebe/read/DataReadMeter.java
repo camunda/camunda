@@ -11,9 +11,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.metrics.ErrorType;
+import io.camunda.zeebe.metrics.ResultMetricKeyNames;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
-import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.starter.ProcessDeployer;
 import io.camunda.zeebe.starter.ProcessInstanceCreator;
 import io.camunda.zeebe.starter.StarterFinished;
@@ -53,7 +53,7 @@ public class DataReadMeter implements AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(DataReadMeter.class);
   private static final String OUTCOME_SUCCESS = "success";
   private static final String OUTCOME_FAILURE = "failure";
-  private static final String NO_ERROR = "none";
+  private static final String NO_ERROR = "";
   private final ScheduledExecutorService executorService;
   private final MeterRegistry registry;
   private final Map<TimerKey, Timer> timers = new ConcurrentHashMap<>();
@@ -176,8 +176,8 @@ public class DataReadMeter implements AutoCloseable {
         key ->
             MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.READ_BENCHMARK)
                 .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), key.query())
-                .tag(StarterMetricKeyNames.OUTCOME.asString(), key.outcome())
-                .tag(StarterMetricKeyNames.ERROR.asString(), key.error())
+                .tag(ResultMetricKeyNames.OUTCOME.asString(), key.outcome())
+                .tag(ResultMetricKeyNames.ERROR.asString(), key.error())
                 .register(registry));
   }
 
