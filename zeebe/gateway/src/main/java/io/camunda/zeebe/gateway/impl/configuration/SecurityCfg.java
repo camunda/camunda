@@ -18,6 +18,7 @@ public final class SecurityCfg {
   private File certificateChainPath;
   private File privateKeyPath;
   private KeyStoreCfg keyStore = new KeyStoreCfg();
+  private ClientAuthCfg clientAuth = new ClientAuthCfg();
 
   public boolean isEnabled() {
     return enabled;
@@ -54,9 +55,17 @@ public final class SecurityCfg {
     this.keyStore = keyStore;
   }
 
+  public ClientAuthCfg getClientAuth() {
+    return clientAuth;
+  }
+
+  public void setClientAuth(final ClientAuthCfg clientAuth) {
+    this.clientAuth = clientAuth;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, certificateChainPath, privateKeyPath, keyStore);
+    return Objects.hash(enabled, certificateChainPath, privateKeyPath, keyStore, clientAuth);
   }
 
   @Override
@@ -71,7 +80,8 @@ public final class SecurityCfg {
     return enabled == that.enabled
         && Objects.equals(certificateChainPath, that.certificateChainPath)
         && Objects.equals(privateKeyPath, that.privateKeyPath)
-        && Objects.equals(keyStore, that.keyStore);
+        && Objects.equals(keyStore, that.keyStore)
+        && Objects.equals(clientAuth, that.clientAuth);
   }
 
   @Override
@@ -85,6 +95,8 @@ public final class SecurityCfg {
         + privateKeyPath
         + ", keyStore="
         + keyStore
+        + ", clientAuth="
+        + clientAuth
         + '}';
   }
 }
