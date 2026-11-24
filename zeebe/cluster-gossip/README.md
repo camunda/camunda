@@ -11,6 +11,8 @@ writable by any member — or MEMBER — one value per member, written only by t
 |------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `api/`     | `ClusterGossiper`, key descriptors, codecs, merge strategies and listeners. Depends only on `camunda-cluster`.                                                                   |
 | `testkit/` | `InMemoryGossipCluster` (in-memory members with explicit sync, partitions, restarts), `MergeStrategyAssertions`, and the contract tests every implementation runs (`contract/`). |
+| `swim/`    | `SwimClusterGossiper`: MEMBER keys as SWIM member properties. GLOBAL keys are not supported yet.                                                                                 |
 
 Consumers depend on `api/`, and on `testkit/` in test scope. An implementation proves it meets the
-contract by extending `ClusterGossiperContractTest` with its own cluster.
+contract by extending `ClusterGossiperContractTest` with its own cluster. `swim/` supports MEMBER keys
+only; its GLOBAL operations throw `UnsupportedOperationException`.

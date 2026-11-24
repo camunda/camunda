@@ -800,6 +800,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-cluster-gossip-swim</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-cluster-config-impl</artifactId>
         <version>${project.version}</version>
       </dependency>
