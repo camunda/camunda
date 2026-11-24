@@ -51,8 +51,12 @@ import org.jspecify.annotations.Nullable;
  * verification on the client side is left to the delegate, so it still applies when the engine's
  * endpoint identification algorithm is set.
  *
- * <p>When not enforcing, every check still runs and is reported, but failures do not abort the
- * handshake. This backs {@link ClientCertificateMode#OPTIONAL}.
+ * <p>When enforcing, a failed check aborts the handshake. The thrown exception keeps the JDK type
+ * TLS libraries map to a specific alert (e.g. {@link CertificateExpiredException} to {@code
+ * certificate_expired}), so the peer learns the cause, and carries a {@link
+ * PeerCertificateRejectedException} (as cause or suppressed) with the identity and reason, so the
+ * server can log and count it. When not enforcing, failures are only reported to the listener; this
+ * is meant for a permissive rollout mode.
  */
 public final class PeerCertificateTrustManager extends X509ExtendedTrustManager {
 
@@ -66,6 +70,7 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
   private final Set<String> allowedIdentities;
   private final boolean commonNameFallback;
   private final boolean enforce;
+  private final boolean advertiseTrustedIssuers;
   private final PeerVerificationListener listener;
 
   private PeerCertificateTrustManager(
@@ -73,6 +78,7 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
       final Collection<String> allowedIdentities,
       final boolean commonNameFallback,
       final boolean enforce,
+      final boolean advertiseTrustedIssuers,
       final PeerVerificationListener listener) {
     this.delegate = delegate;
     this.allowedIdentities =
@@ -83,17 +89,22 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
             .collect(Collectors.toUnmodifiableSet());
     this.commonNameFallback = commonNameFallback;
     this.enforce = enforce;
+    this.advertiseTrustedIssuers = advertiseTrustedIssuers;
     this.listener = listener;
   }
 
   /**
    * @param trustedCertificates the CAs to trust; a certificate signed by any of them is accepted
+   * @param enforce whether a failed check aborts the handshake, or is only reported
+   * @param advertiseTrustedIssuers whether to name the trusted CAs in the certificate request, see
+   *     {@link #getAcceptedIssuers()}
    */
   public static PeerCertificateTrustManager create(
       final Collection<X509Certificate> trustedCertificates,
       final Collection<String> allowedIdentities,
       final boolean commonNameFallback,
       final boolean enforce,
+      final boolean advertiseTrustedIssuers,
       final PeerVerificationListener listener)
       throws GeneralSecurityException, IOException {
     if (trustedCertificates.isEmpty()) {
@@ -118,7 +129,12 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
             .orElseThrow(() -> new IllegalStateException("No X509 trust manager available"));
 
     return new PeerCertificateTrustManager(
-        delegate, allowedIdentities, commonNameFallback, enforce, listener);
+        delegate,
+        allowedIdentities,
+        commonNameFallback,
+        enforce,
+        advertiseTrustedIssuers,
+        listener);
   }
 
   /** Reads every certificate in a PEM (or DER) file; a bundle may hold several CAs. */
@@ -177,14 +193,22 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
 
   /**
    * The CA names sent in the server's certificate request. Clients only present a certificate
-   * issued by one of them, which lets a client holding several certificates pick the right one,
-   * but also means a client with a certificate from any other CA presents nothing at all, so the
-   * check never sees it. When not enforcing, no names are sent, so every client presents what it
-   * has and the would-be rejections can be observed.
+   * issued by one of them, which lets a client holding several certificates pick the right one, and
+   * lets browsers skip the certificate picker. But a client whose certificate comes from any other
+   * CA then presents nothing, so the server can only say "no certificate" instead of naming the
+   * certificate and why it is not trusted. An empty list makes every client present what it has.
    */
   @Override
   public X509Certificate[] getAcceptedIssuers() {
-    return enforce ? delegate.getAcceptedIssuers() : new X509Certificate[0];
+    return advertiseTrustedIssuers ? delegate.getAcceptedIssuers() : new X509Certificate[0];
+  }
+
+  /**
+   * The allow-list entry the certificate matches, or {@code *} when there is no allow-list; empty
+   * when it is not allowed. Bounded by configuration, so usable as a metric tag.
+   */
+  public Optional<String> matchingIdentity(final PeerIdentity identity) {
+    return matchIdentity(identity);
   }
 
   private void verify(
@@ -204,10 +228,18 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
     try {
       leaf.checkValidity();
     } catch (final CertificateExpiredException e) {
-      reject(identity, RejectionReason.EXPIRED, e.getMessage(), e);
+      reject(
+          identity,
+          RejectionReason.EXPIRED,
+          e.getMessage(),
+          new CertificateExpiredException(e.getMessage()));
       return;
     } catch (final CertificateNotYetValidException e) {
-      reject(identity, RejectionReason.NOT_YET_VALID, e.getMessage(), e);
+      reject(
+          identity,
+          RejectionReason.NOT_YET_VALID,
+          e.getMessage(),
+          new CertificateNotYetValidException(e.getMessage()));
       return;
     }
 
@@ -223,27 +255,35 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
       final var detail =
           "none of the certificate's identities %s are allowed"
               .formatted(candidateIdentities(identity));
-      reject(
-          identity,
-          RejectionReason.IDENTITY_NOT_ALLOWED,
-          detail,
-          new CertificateException("Peer certificate identity is not allowed: " + detail));
+      reject(identity, RejectionReason.IDENTITY_NOT_ALLOWED, detail, null);
       return;
     }
 
     listener.onAccepted(identity, matched.get());
   }
 
+  /**
+   * @param failure the exception to abort the handshake with, typed so the TLS library sends the
+   *     matching alert; null to throw the rejection itself
+   */
   private void reject(
       final PeerIdentity identity,
       final RejectionReason reason,
       final @Nullable String detail,
-      final CertificateException cause)
+      final @Nullable CertificateException failure)
       throws CertificateException {
-    listener.onRejected(identity, reason, String.valueOf(detail), enforce);
-    if (enforce) {
-      throw cause;
+    final var rejection =
+        new PeerCertificateRejectedException(identity, reason, String.valueOf(detail));
+    if (!enforce) {
+      listener.onRejected(identity, reason, rejection.detail(), false);
+      return;
     }
+
+    if (failure == null) {
+      throw rejection;
+    }
+    failure.addSuppressed(rejection);
+    throw failure;
   }
 
   private Optional<String> matchIdentity(final PeerIdentity identity) {
@@ -266,7 +306,7 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
     return identity.subjectAlternativeNames();
   }
 
-  private static PeerIdentity identityOf(
+  public static PeerIdentity identityOf(
       final X509Certificate certificate, final @Nullable String peerAddress) {
     final var subject = certificate.getSubjectX500Principal().getName();
     return new PeerIdentity(

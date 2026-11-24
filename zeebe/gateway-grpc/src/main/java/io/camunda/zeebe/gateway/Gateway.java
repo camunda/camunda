@@ -27,7 +27,8 @@ import io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
-import io.camunda.zeebe.gateway.impl.mtls.MeteredPeerVerificationListener;
+import io.camunda.zeebe.gateway.impl.mtls.HandshakeObserver;
+import io.camunda.zeebe.gateway.impl.mtls.ObservedServerTlsNegotiator;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
@@ -52,6 +53,7 @@ import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.tls.ClientCertificateMode;
 import io.camunda.zeebe.util.tls.PeerCertificateTrustManager;
+import io.camunda.zeebe.util.tls.PeerVerificationListener;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -60,6 +62,7 @@ import io.grpc.ServerInterceptors;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.StatusException;
 import io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.InternalProtocolNegotiators;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -339,20 +342,35 @@ public final class Gateway implements CloseableSilently {
       } else {
         sslContextBuilder = SslContextBuilder.forServer(certificateChainPath, privateKeyPath);
       }
-      configureClientAuth(sslContextBuilder, security.getClientAuth());
+      final var trustManager = configureClientAuth(sslContextBuilder, security.getClientAuth());
       final var sslContext = GrpcSslContexts.configure(sslContextBuilder).build();
-      serverBuilder.sslContext(sslContext);
+      if (trustManager == null) {
+        serverBuilder.sslContext(sslContext);
+      } else {
+        serverBuilder.protocolNegotiator(
+            new ObservedServerTlsNegotiator(
+                InternalProtocolNegotiators.serverTls(sslContext),
+                () ->
+                    new HandshakeObserver(
+                        trustManager,
+                        meterRegistry,
+                        "zeebe.gateway.grpc.client.certificate",
+                        LOG)));
+      }
     } catch (final Exception e) {
       throw new IllegalArgumentException(
           "Failed to start messaging service; invalid server TLS configuration", e);
     }
   }
 
-  private void configureClientAuth(
+  /**
+   * @return the trust manager verifying client certificates, or null when none are requested
+   */
+  private static PeerCertificateTrustManager configureClientAuth(
       final SslContextBuilder sslContextBuilder, final ClientAuthCfg clientAuth) throws Exception {
     final var mode = clientAuth.getMode();
     if (mode == ClientCertificateMode.NONE) {
-      return;
+      return null;
     }
 
     final var trustedCertificatesPath = clientAuth.getTrustedCertificatesPath();
@@ -368,13 +386,17 @@ public final class Gateway implements CloseableSilently {
             PeerCertificateTrustManager.readCertificates(trustedCertificatesPath),
             clientAuth.getAllowedIdentities(),
             clientAuth.isCommonNameFallback(),
-            mode == ClientCertificateMode.REQUIRED,
-            new MeteredPeerVerificationListener(
-                meterRegistry, "zeebe.gateway.grpc.client.certificate", LOG));
+            true,
+            // optional: name the CAs so browsers and multi-certificate clients only offer a
+            // certificate we trust, falling back to none. required: name none, so a client with a
+            // certificate from another CA still presents it and the rejection names it.
+            mode == ClientCertificateMode.OPTIONAL,
+            PeerVerificationListener.NOOP);
     sslContextBuilder
         .trustManager(trustManager)
         .clientAuth(
             mode == ClientCertificateMode.REQUIRED ? ClientAuth.REQUIRE : ClientAuth.OPTIONAL);
+    return trustManager;
   }
 
   @Override

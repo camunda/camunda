@@ -121,6 +121,7 @@ final class ClientCertificateAuthenticationTest {
 
     // then
     assertThat(connects(null)).isFalse();
+    assertThat(rejectedCount("NO_CERTIFICATE")).isEqualTo(1);
   }
 
   @Test
@@ -133,9 +134,9 @@ final class ClientCertificateAuthenticationTest {
     startGateway();
 
     // then
-    // the client is never asked for a certificate from its CA, so it presents none: the
-    // handshake fails without the trust manager seeing, and thus without being counted
+    // no CA names are advertised when required, so the client still presents its certificate
     assertThat(connects(client)).isFalse();
+    assertThat(rejectedCount("UNTRUSTED")).isEqualTo(1);
   }
 
   @Test
@@ -150,7 +151,7 @@ final class ClientCertificateAuthenticationTest {
 
     // then
     assertThat(connects(client)).isFalse();
-    assertThat(rejectedCount("EXPIRED", true)).isEqualTo(1);
+    assertThat(rejectedCount("EXPIRED")).isEqualTo(1);
   }
 
   @Test
@@ -164,7 +165,7 @@ final class ClientCertificateAuthenticationTest {
 
     // then
     assertThat(connects(client)).isFalse();
-    assertThat(rejectedCount("IDENTITY_NOT_ALLOWED", true)).isEqualTo(1);
+    assertThat(rejectedCount("IDENTITY_NOT_ALLOWED")).isEqualTo(1);
   }
 
   @Test
@@ -236,18 +237,33 @@ final class ClientCertificateAuthenticationTest {
   }
 
   @Test
-  void shouldAcceptButReportDisallowedClientWhenOptional() throws Exception {
+  void shouldRejectDisallowedClientWhenOptional() throws Exception {
     // given
     requireClientCertificates(List.of(ALLOWED_SAN), clientCa);
     cfg.getSecurity().getClientAuth().setMode(ClientCertificateMode.OPTIONAL);
-    final var client = TestPki.newLeaf(otherClientCa, "intruder", "intruder.example.com");
+    final var client = TestPki.newLeaf(clientCa, "intruder", "intruder.example.com");
 
     // when
     startGateway();
 
     // then
+    assertThat(connects(client)).isFalse();
+    assertThat(rejectedCount("IDENTITY_NOT_ALLOWED")).isEqualTo(1);
+  }
+
+  @Test
+  void shouldTreatClientWithCertificateOfOtherCaAsAnonymousWhenOptional() throws Exception {
+    // given
+    requireClientCertificates(List.of(ALLOWED_SAN), clientCa);
+    cfg.getSecurity().getClientAuth().setMode(ClientCertificateMode.OPTIONAL);
+    final var client = TestPki.newLeaf(otherClientCa, "worker", ALLOWED_SAN);
+
+    // when
+    startGateway();
+
+    // then - the trusted CAs are advertised, so the client holds back its certificate
     assertThat(connects(client)).isTrue();
-    assertThat(rejectedCount("UNTRUSTED", false)).isEqualTo(1);
+    assertThat(acceptedCount("none")).isEqualTo(1);
   }
 
   @Test
@@ -304,12 +320,11 @@ final class ClientCertificateAuthenticationTest {
     return counter == null ? 0 : counter.count();
   }
 
-  private double rejectedCount(final String reason, final boolean enforced) {
+  private double rejectedCount(final String reason) {
     final var counter =
         meterRegistry
             .find("zeebe.gateway.grpc.client.certificate.rejected")
             .tag("reason", reason)
-            .tag("enforced", String.valueOf(enforced))
             .counter();
     return counter == null ? 0 : counter.count();
   }

@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.util.tls;
 
-/** Observes the outcome of every peer certificate check, for logging and metrics. */
+/**
+ * Observes peer certificate checks from within the trust manager. The trust manager does not know
+ * the peer's address in every setup (e.g. gRPC server engines), so servers that can observe the
+ * handshake themselves should do their reporting there and use {@link #NOOP}.
+ */
 public interface PeerVerificationListener {
 
   PeerVerificationListener NOOP =
@@ -39,6 +43,10 @@ public interface PeerVerificationListener {
     EXPIRED,
     NOT_YET_VALID,
     UNTRUSTED,
-    IDENTITY_NOT_ALLOWED
+    IDENTITY_NOT_ALLOWED,
+    /** The peer presented no certificate although one is required. */
+    NO_CERTIFICATE,
+    /** Any other handshake failure, e.g. a plaintext client or a protocol mismatch. */
+    HANDSHAKE_FAILED
   }
 }
