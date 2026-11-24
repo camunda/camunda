@@ -14,8 +14,10 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.WorkerMetrics;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
@@ -43,17 +45,20 @@ public class Worker {
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
+  private final WorkerMetrics metrics;
 
   public Worker(
       final CamundaClient client,
       final LoadTesterProperties properties,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final ConnectionMonitor connectionMonitor,
+      final MeterRegistry registry) {
     this.client = client;
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
     responseChecker = new ResponseChecker(requestFutures);
     this.connectionMonitor = connectionMonitor;
+    metrics = new WorkerMetrics(registry);
   }
 
   @PostConstruct
@@ -117,7 +122,11 @@ public class Worker {
 
     final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
-    if (!requestFutures.offer(command.send())) {
+    final long completionStart = System.nanoTime();
+    final var completion = command.send();
+    completion.whenComplete((response, error) -> metrics.recordCompletion(completionStart, error));
+    if (!requestFutures.offer(completion)) {
+      metrics.recordCompletionTrackingDropped();
       // Non-blocking: if the response-check queue is saturated, drop tracking for this
       // completion rather than stalling the job handler thread (which would cascade into
       // broker timeouts). We lose visibility into its eventual result — log throttled so
@@ -139,10 +148,13 @@ public class Worker {
             .correlationKey(correlationKey)
             .send();
 
+    final long publishStart = System.nanoTime();
     try {
       messageSendFuture.get(10, TimeUnit.SECONDS);
+      metrics.recordMessagePublish(publishStart, null);
       return true;
     } catch (final Exception ex) {
+      metrics.recordMessagePublish(publishStart, ex);
       THROTTLED_LOGGER.error(
           "Exception on publishing a message with name {} and correlationKey {}",
           messageName,
