@@ -78,7 +78,8 @@ jobs:
   build-operate-frontend:
     name: Build Operate Frontend
     needs: should-run
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -101,12 +102,14 @@ jobs:
           build_status: ${{ job.status }}
           job_name: docker-build-helm-integration-operate-frontend
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
   build-tasklist-frontend:
     name: Build Tasklist Frontend
     needs: should-run
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -129,14 +132,16 @@ jobs:
           build_status: ${{ job.status }}
           job_name: docker-build-helm-integration-tasklist-frontend
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Main build job - waits for all frontends to complete
   build-and-push-images:
     name: Build and Push Docker Images
     needs: [build-operate-frontend, build-tasklist-frontend]
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
     outputs:
@@ -151,8 +156,9 @@ jobs:
           dockerhub-readonly: true
           harbor: true
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
       - name: Get Maven project version
         id: maven-version
@@ -249,8 +255,9 @@ jobs:
           build_status: ${{ job.status }}
           job_name: docker-build-helm-integration-build
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   format-identifier:
     name: Format Identifier
@@ -330,7 +337,8 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@v6
       - run: |
@@ -344,15 +352,17 @@ jobs:
           build_status: ${{ needs.helm-deploy.result }}
           job_name: docker-build-helm-integration-helm-deploy
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   trigger-saas-e2e:
     name: Trigger SaaS E2E tests
     runs-on: ubuntu-latest
     needs: [build-and-push-images, format-identifier]
     timeout-minutes: 30
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -365,9 +375,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda,c8-cross-component-e2e-tests
@@ -510,5 +521,6 @@ jobs:
           build_status: ${{ job.status }}
           job_name: docker-build-helm-integration-trigger-saas-e2e
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
