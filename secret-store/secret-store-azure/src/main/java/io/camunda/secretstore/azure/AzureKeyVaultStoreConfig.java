@@ -66,9 +66,12 @@ public record AzureKeyVaultStoreConfig(
   public static final Duration DEFAULT_ATTEMPT_TIMEOUT = Duration.ofSeconds(2);
 
   /** Longest secret name Key Vault accepts. */
-  private static final int MAX_SECRET_NAME_LENGTH = 127;
+  static final int MAX_SECRET_NAME_LENGTH = 127;
 
-  private static final Pattern SECRET_NAME_CHARS = Pattern.compile("[0-9A-Za-z-]*");
+  /** One character Key Vault accepts in a secret name: a letter, digit or hyphen. */
+  static final String SECRET_NAME_CHAR = "[0-9A-Za-z-]";
+
+  private static final Pattern SECRET_NAME_CHARS = Pattern.compile(SECRET_NAME_CHAR + "*");
 
   /**
    * Validates every setting. Mirrored, with full property names in its messages, by {@code

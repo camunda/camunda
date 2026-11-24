@@ -161,7 +161,9 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
             + secretName
             + "'"
             + prefixed
-            + " must be 1 to 127 letters, digits and hyphens ("
+            + " must be 1 to "
+            + AzureKeyVaultStoreConfig.MAX_SECRET_NAME_LENGTH
+            + " letters, digits and hyphens ("
             + AzureKeyVaultSecretStore.NAME_PATTERN.pattern()
             + "), and names are never rewritten",
         null);

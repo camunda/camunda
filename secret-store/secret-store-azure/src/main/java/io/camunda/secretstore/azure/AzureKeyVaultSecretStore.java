@@ -54,7 +54,12 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
    * part of the "same charset" check across stores: in one-by-one mode a reference outside it, such
    * as {@code API_KEY}, is refused rather than rewritten.
    */
-  static final Pattern NAME_PATTERN = Pattern.compile("[0-9A-Za-z-]{1,127}");
+  static final Pattern NAME_PATTERN =
+      Pattern.compile(
+          AzureKeyVaultStoreConfig.SECRET_NAME_CHAR
+              + "{1,"
+              + AzureKeyVaultStoreConfig.MAX_SECRET_NAME_LENGTH
+              + "}");
 
   private final AzureSecretResolver resolver;
   private final SecretClient client;
