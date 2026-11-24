@@ -7,18 +7,19 @@
  */
 package io.camunda.zeebe.broker.test;
 
-import io.camunda.zeebe.engine.DefaultEngineFactory;
 import io.camunda.zeebe.engine.api.EngineFactory;
+import java.util.ServiceLoader;
 
 /**
- * Creates the engine implementation for broker tests. Production code never sees the engine; the
- * application provides it, and tests provide it through this helper.
+ * Creates the engine implementation for broker tests. The engine is only on the test runtime
+ * classpath, so tests cannot compile against its internals and find the implementation through
+ * {@link ServiceLoader}.
  */
 public final class TestEngineFactory {
 
   private TestEngineFactory() {}
 
   public static EngineFactory create() {
-    return new DefaultEngineFactory();
+    return ServiceLoader.load(EngineFactory.class).findFirst().orElseThrow();
   }
 }

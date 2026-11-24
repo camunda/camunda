@@ -78,7 +78,7 @@ dependencies {
   testImplementation(project(":zeebe-bpmn-model"))
   testImplementation(projectArtifact(":zeebe-logstreams", ArtifactKind.TESTS))
   testImplementation(projectArtifact(":zeebe-util", ArtifactKind.TESTS))
-  testImplementation(project(":zeebe-workflow-engine"))
+  testRuntimeOnly(project(":zeebe-workflow-engine"))
   testImplementation(project(":zeebe-protocol-test-util"))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(project(":zeebe-exporter-test"))
