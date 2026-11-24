@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
@@ -83,6 +85,7 @@ public final class ProcessDefinitionSuspensionBehavior {
   private final TypedResponseWriter responseWriter;
   private final CslAuthorizationCheck cslCheck;
   private final CslTenantCheck tenantCheck;
+  private final CommandDistributionBehavior commandDistributionBehavior;
   private final String verb;
 
   ProcessDefinitionSuspensionBehavior(
@@ -90,6 +93,7 @@ public final class ProcessDefinitionSuspensionBehavior {
       final Writers writers,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
+      final CommandDistributionBehavior commandDistributionBehavior,
       final String verb) {
     processState = processingState.getProcessState();
     tenantState = processingState.getTenantState();
@@ -97,6 +101,7 @@ public final class ProcessDefinitionSuspensionBehavior {
     responseWriter = writers.response();
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
+    this.commandDistributionBehavior = commandDistributionBehavior;
     this.verb = verb;
   }
 
@@ -312,6 +317,47 @@ public final class ProcessDefinitionSuspensionBehavior {
 
   boolean isSuspended(final DeployedProcess process) {
     return processState.isSuspended(process.getKey());
+  }
+
+  /**
+   * Distributes the command with its resolved versions and outcomes in the deployment queue (see
+   * ADR 0015).
+   */
+  void distribute(final long key, final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
+    commandDistributionBehavior
+        .withKey(key)
+        .inQueue(DistributionQueue.DEPLOYMENT)
+        .distribute(command);
+  }
+
+  /** The versions of the command with the given outcome, looked up on this partition. */
+  Iterator<DeployedProcess> findVersionsWithOutcome(
+      final ProcessDefinitionSuspensionRecord value,
+      final ProcessDefinitionSuspensionOutcome outcome) {
+    final String tenantId = value.getTenantId();
+    return value.getResolvedVersions().stream()
+        .filter(version -> version.getOutcome() == outcome)
+        .map(
+            version ->
+                processState.getProcessByKeyAndTenant(version.getProcessDefinitionKey(), tenantId))
+        .filter(Objects::nonNull)
+        .iterator();
+  }
+
+  void acknowledge(final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
+    commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  /**
+   * Acknowledges a distributed copy that was rejected for an expected reason; an unexpected failure
+   * is sent again (see ADR 0015).
+   */
+  void acknowledgeIfDistributedAndExpected(
+      final TypedRecord<ProcessDefinitionSuspensionRecord> command,
+      final ProcessingError processingError) {
+    if (command.isCommandDistributed() && processingError == ProcessingError.EXPECTED_ERROR) {
+      acknowledge(command);
+    }
   }
 
   static ProcessDefinitionSuspensionResolvedVersion resolvedVersion(

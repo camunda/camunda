@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
@@ -21,6 +22,8 @@ public class BrokerSuspendProcessDefinitionRequest
 
   public BrokerSuspendProcessDefinitionRequest() {
     super(ValueType.PROCESS_DEFINITION_SUSPENSION, ProcessDefinitionSuspensionIntent.SUSPEND);
+    // like deployments, so the other partitions apply both in the order they were processed
+    setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
   public BrokerSuspendProcessDefinitionRequest setProcessDefinitionKey(
