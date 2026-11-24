@@ -66,7 +66,7 @@ class WorkerMetricsDocTest {
     assertThat(metric.getName()).isEqualTo("worker.job.completions.pending");
     assertThat(metric.getType()).isEqualTo(Type.GAUGE);
     assertThat(metric.getDescription())
-        .isEqualTo("Number of job completion requests whose answer has not been checked yet.");
+        .isEqualTo("Number of job completion requests queued and not yet awaited.");
     assertThat(metric.getKeyNames()).isEmpty();
   }
 }

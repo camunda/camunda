@@ -16,8 +16,8 @@ public enum WorkerMetricsDoc implements ExtendedMeterDocumentation {
   /**
    * Total number of message publications attempted by the worker before completing a job, by their
    * {@code outcome}: {@code success} or {@code failure}. Failures also carry the {@code error}
-   * type, e.g. {@code http_503} or {@code TimeoutException}; successes use {@code none}. Only
-   * counted when the worker is configured to send a message.
+   * type, e.g. {@code http_503} or {@code TimeoutException}; successes have no {@code error} tag.
+   * Only counted when the worker is configured to send a message.
    */
   MESSAGE_PUBLICATIONS {
     @Override
@@ -44,8 +44,8 @@ public enum WorkerMetricsDoc implements ExtendedMeterDocumentation {
   /**
    * Total number of answered job completion requests by their {@code outcome}: {@code success} or
    * {@code failure}. Failures also carry the {@code error} type, e.g. {@code http_503} or {@code
-   * grpc_unavailable}; successes use {@code none}. Counted when the answer arrives, so requests
-   * without an answer, or dropped because the response queue is full, are not included.
+   * grpc_unavailable}; successes have no {@code error} tag. Counted when the answer arrives, so
+   * requests without an answer, or dropped because the response queue is full, are not included.
    */
   JOB_COMPLETIONS {
     @Override

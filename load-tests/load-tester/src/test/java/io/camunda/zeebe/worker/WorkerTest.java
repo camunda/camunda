@@ -31,6 +31,7 @@ import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.WorkerMetricsDoc;
 import io.camunda.zeebe.util.PayloadReader;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
@@ -102,7 +103,7 @@ class WorkerTest {
 
     // then
     assertThat(publications("failure", "http_503")).isEqualTo(1.0);
-    assertThat(publications("success", "none")).isZero();
+    assertThat(publications("success", null)).isZero();
   }
 
   @Test
@@ -118,7 +119,7 @@ class WorkerTest {
     worker.handleJob(jobClient, mockJob());
 
     // then
-    assertThat(publications("success", "none")).isEqualTo(1.0);
+    assertThat(publications("success", null)).isEqualTo(1.0);
   }
 
   private static long timeHandleJob(
@@ -158,7 +159,7 @@ class WorkerTest {
         registry
             .find(WorkerMetricsDoc.MESSAGE_PUBLICATIONS.getName())
             .tag("outcome", outcome)
-            .tag("error", error)
+            .tags(error == null ? Tags.empty() : Tags.of("error", error))
             .counter();
     return counter == null ? 0.0 : counter.count();
   }

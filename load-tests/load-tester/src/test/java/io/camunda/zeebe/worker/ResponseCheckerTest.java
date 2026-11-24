@@ -13,6 +13,7 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.zeebe.metrics.WorkerMetricsDoc;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -45,7 +46,7 @@ class ResponseCheckerTest {
     futures.add(CompletableFuture.completedFuture(null));
 
     // then
-    await().untilAsserted(() -> assertThat(completions("success", "none")).isEqualTo(1.0));
+    await().untilAsserted(() -> assertThat(completions("success", null)).isEqualTo(1.0));
   }
 
   @Test
@@ -56,7 +57,7 @@ class ResponseCheckerTest {
 
     // then
     await().untilAsserted(() -> assertThat(completions("failure", "http_503")).isEqualTo(1.0));
-    assertThat(completions("success", "none")).isZero();
+    assertThat(completions("success", null)).isZero();
   }
 
   private double completions(final String outcome, final String error) {
@@ -64,7 +65,7 @@ class ResponseCheckerTest {
         registry
             .find(WorkerMetricsDoc.JOB_COMPLETIONS.getName())
             .tag("outcome", outcome)
-            .tag("error", error)
+            .tags(error == null ? Tags.empty() : Tags.of("error", error))
             .counter();
     return counter == null ? 0.0 : counter.count();
   }

@@ -18,8 +18,6 @@ import java.util.Collection;
 /** Counts the results of the requests sent by the worker by outcome and error type. */
 final class WorkerResultMetrics {
 
-  private static final String NONE = "none";
-
   private final MeterRegistry registry;
   private final Counter publicationSuccess;
   private final Counter completionSuccess;
@@ -37,8 +35,8 @@ final class WorkerResultMetrics {
             Collection::size)
         .description(WorkerMetricsDoc.JOB_COMPLETIONS_PENDING.getDescription())
         .register(registry);
-    publicationSuccess = counter(WorkerMetricsDoc.MESSAGE_PUBLICATIONS, "success", NONE);
-    completionSuccess = counter(WorkerMetricsDoc.JOB_COMPLETIONS, "success", NONE);
+    publicationSuccess = successCounter(WorkerMetricsDoc.MESSAGE_PUBLICATIONS);
+    completionSuccess = successCounter(WorkerMetricsDoc.JOB_COMPLETIONS);
   }
 
   void recordMessagePublication() {
@@ -60,6 +58,13 @@ final class WorkerResultMetrics {
   /** Counts a completion whose result will never be recorded because the queue was full. */
   void recordTrackingDropped() {
     trackingDropped.increment();
+  }
+
+  private Counter successCounter(final WorkerMetricsDoc doc) {
+    return Counter.builder(doc.getName())
+        .description(doc.getDescription())
+        .tag(ResultMetricKeyNames.OUTCOME.asString(), "success")
+        .register(registry);
   }
 
   private Counter counter(final WorkerMetricsDoc doc, final String outcome, final String error) {

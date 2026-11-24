@@ -12,18 +12,17 @@ import io.camunda.zeebe.metrics.ResultMetricKeyNames;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 
 /** Counts the answers to process instance start requests by outcome and error type. */
 final class StarterResultMetrics {
-
-  private static final String NONE = "none";
 
   private final MeterRegistry registry;
   private final Counter successCounter;
 
   StarterResultMetrics(final MeterRegistry registry) {
     this.registry = registry;
-    successCounter = counter("success", NONE);
+    successCounter = counter("success", null);
   }
 
   /**
@@ -43,7 +42,7 @@ final class StarterResultMetrics {
     return Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName())
         .description(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getDescription())
         .tag(ResultMetricKeyNames.OUTCOME.asString(), outcome)
-        .tag(ResultMetricKeyNames.ERROR.asString(), error)
+        .tags(error == null ? Tags.empty() : Tags.of(ResultMetricKeyNames.ERROR.asString(), error))
         .register(registry);
   }
 }
