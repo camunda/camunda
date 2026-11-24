@@ -299,6 +299,41 @@ jobs:
           fi
           echo "✅ http->https redirector running on port 80"
 
+      # Fail fast when the preview environment itself is gone before Playwright
+      # burns ~16 minutes per attempt failing in "Create Project Folder". This
+      # happens on "re-run failed jobs": attempt 1 passes some legs, their
+      # teardowns delete those environments, and attempt 2 replays the test
+      # matrix against hosts that no longer exist. The check goes through the
+      # tsh tunnel and the /etc/hosts mapping above, so it must stay after that
+      # step and before the Playwright steps. GET / on a healthy environment
+      # answers with a redirect to the app root (302), which curl -f accepts;
+      # a deleted environment answers 404 from the shared gateway.
+      - name: Pre-flight environment health check
+        env:
+          PREVIEW_HOST: ${{ matrix.deployment.host }}
+        run: |
+          url="https://${PREVIEW_HOST}/"
+          # A slow preview environment may still be warming up behind the
+          # gateway, so give it three bounded attempts (~10s apart, 10s HTTP
+          # timeout each) instead of failing on a single probe.
+          attempts=3
+          for i in $(seq 1 "$attempts"); do
+            echo "Attempt ${i}/${attempts}: checking ${url}"
+            # -f fails on HTTP errors >= 400 and -S prints the error even when
+            # output is discarded; --max-time bounds each attempt.
+            if http_code=$(curl -fsS -m 10 -o /dev/null -w '%{http_code}' "${url}"); then
+              echo "✅ ${PREVIEW_HOST} is reachable (HTTP ${http_code})"
+              exit 0
+            fi
+            last_code="${http_code}"
+            # Retry only before the last attempt, and never on the last probe.
+            if [ "$i" -lt "$attempts" ]; then
+              echo "Not ready yet (HTTP ${last_code:-connection error}); retrying in 10s"
+              sleep 10
+            fi
+          done
+          echo "::error::Preview environment ${PREVIEW_HOST} is not reachable: HTTP ${last_code:-connection error} — it may have been torn down by an earlier attempt of this run (check the teardown jobs of the first attempt, or redeploy it with version=${{ matrix.deployment.version }} before re-running). This failure is an environment-lifecycle problem, not a Playwright spec failure."
+
       - name: Generate GitHub Token
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
@@ -521,12 +556,18 @@ jobs:
         run: |
           # Split failed/cancelled jobs into two buckets so each red pages
           # the team that can act on it:
-          #   test   -> a smoke-test job that FAILED. Specs live in
-          #             camunda/c8-cross-component-e2e-tests and the products under
-          #             test are pinned images.
+          #   test   -> a smoke-test job that FAILED on a Playwright spec. Specs
+          #             live in camunda/c8-cross-component-e2e-tests and the
+          #             products under test are pinned images.
           #   deploy -> everything else (deploy/health failures, any cancellation
           #             incl. a cancelled smoke test, which is infra noise rather
           #             than a spec bug, and any other job).
+          # A smoke-test job whose "Pre-flight environment health check" step
+          # failed is an environment-lifecycle problem (the env is unreachable,
+          # e.g. torn down by an earlier attempt of this run), not a spec bug:
+          # the leg never reached Playwright, so it belongs in the deploy
+          # bucket. The jobs API payload carries steps[] with names and
+          # conclusions, so match the step by its exact display name.
           # The jobs endpoint returns 30 jobs per page by default. Without
           # pagination a run with more matrix jobs than one page would drop the
           # failed jobs on later pages from the classification, causing missed or
@@ -538,10 +579,11 @@ jobs:
             | jq -s '
                 map(select(.conclusion == "failure" or .conclusion == "cancelled"))
                 | map(
+                    ((.steps // []) | map(select(.name == "Pre-flight environment health check" and .conclusion == "failure")) | length > 0) as $preflight_failed |
                     (try (.name | capture("(?<v>8\\.[0-9]+)").v) // .name) as $ver |
                     (if .name | test("Deploy") then "deploy" elif .name | test("Test") then "tests" else "job" end) as $type |
                     {
-                      bucket: (if $type == "tests" and .conclusion == "failure" then "test" else "deploy" end),
+                      bucket: (if $type == "tests" and .conclusion == "failure" and ($preflight_failed | not) then "test" else "deploy" end),
                       line: "• *\($ver)* <\(.html_url)|\($type) \(if .conclusion == "cancelled" then "cancelled" else "failed" end)>"
                     }
                   )
