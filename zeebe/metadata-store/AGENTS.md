@@ -10,7 +10,7 @@ and its subpackages other than `api`. The two never share a package.
 
 - `api/` (`zeebe-metadata-store-api`) — the contract consumers compile against: the
   `ClusterMetadataStore` and `NamespaceApi` interfaces, value types (`Namespace`, `StoreKey`,
-  `KeyValue`, events, `Subscription`), `Write` and `Condition`, the
+  `Value`, `KeyValue`, events, `Subscription`), `Write`, `Batch` and `Condition`, the
   `ClusterMetadataStoreException` hierarchy, and validation that needs no store state (key and
   namespace names, batch rules). Every call returns an `ActorFuture`.
 - `impl/` (`zeebe-metadata-store-impl`) — behavior: the state, the Raft-backed store, and
