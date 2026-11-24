@@ -95,8 +95,9 @@ public class AppendResponse extends AbstractRaftResponse {
   /**
    * The members current configuration index at the time of handling the append request.
    *
-   * <p>If the index is 0, this may indicate that the member is older and does not include the
-   * configuration index in the response.
+   * <p>An index of 0 is the index of the initial configuration. Members since 8.4 always send this
+   * field; the leader treats it like any other index, so a member reporting 0 while the leader's
+   * configuration is newer is sent the current configuration.
    *
    * <p>If the index is -1, the member has no configuration and requires a configuration update from
    * the leader.
