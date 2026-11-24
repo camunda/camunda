@@ -645,6 +645,8 @@ Once `credentials.txt` contains the correct SaaS environment variables, you can 
 make install-load-test
 ```
 
+The load test applications talk to the SaaS cluster over the REST API. To use gRPC instead, add `--set global.preferRest.enabled=false` via `additional_load_test_configuration`.
+
 ### Running specific scenarios
 
 By default, we will run an artificial load against the configured SaaS cluster. If you want to change this to some more realistic or typical workload, you can use the following targets.
