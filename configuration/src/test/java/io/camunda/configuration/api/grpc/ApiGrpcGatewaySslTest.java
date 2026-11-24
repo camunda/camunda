@@ -14,6 +14,7 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beans.GatewayBasedProperties;
+import io.camunda.zeebe.util.tls.ClientCertificateMode;
 import java.io.File;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -159,6 +160,32 @@ public class ApiGrpcGatewaySslTest {
     void shouldSetPrivateKeyPathFromNew() {
       assertThat(gatewayCfg.getSecurity().getPrivateKeyPath())
           .isEqualTo(new File("certificatePrivateKeyNew"));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.api.grpc.ssl.enabled=true",
+        "camunda.api.grpc.ssl.client-auth.mode=required",
+        "camunda.api.grpc.ssl.client-auth.trusted-certificates=client-cas.pem",
+        "camunda.api.grpc.ssl.client-auth.allowed-identities=a.example.com,10.0.0.1",
+        "camunda.api.grpc.ssl.client-auth.common-name-fallback=true",
+      })
+  class WithClientAuthSet {
+    final GatewayBasedProperties gatewayCfg;
+
+    WithClientAuthSet(@Autowired final GatewayBasedProperties gatewayCfg) {
+      this.gatewayCfg = gatewayCfg;
+    }
+
+    @Test
+    void shouldSetClientAuth() {
+      final var clientAuth = gatewayCfg.getSecurity().getClientAuth();
+      assertThat(clientAuth.getMode()).isEqualTo(ClientCertificateMode.REQUIRED);
+      assertThat(clientAuth.getTrustedCertificatesPath()).isEqualTo(new File("client-cas.pem"));
+      assertThat(clientAuth.getAllowedIdentities()).containsExactly("a.example.com", "10.0.0.1");
+      assertThat(clientAuth.isCommonNameFallback()).isTrue();
     }
   }
 }
