@@ -37,6 +37,7 @@ jobs:
   run-aws-opensearch-tests:
     name: "AWS OpenSearch ${{ matrix.os_version }}"
     permissions:
+      id-token: write # Vault JWT login
       contents: read
       actions: write
     strategy:
