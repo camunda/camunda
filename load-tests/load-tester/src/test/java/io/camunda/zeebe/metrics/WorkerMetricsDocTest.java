@@ -9,6 +9,8 @@ package io.camunda.zeebe.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc.WorkerMetricKeyNames;
 import io.micrometer.core.instrument.Meter.Type;
 import org.junit.jupiter.api.Test;
 
@@ -68,5 +70,21 @@ class WorkerMetricsDocTest {
     assertThat(metric.getDescription())
         .isEqualTo("Number of job completion requests queued and not yet awaited.");
     assertThat(metric.getKeyNames()).isEmpty();
+  }
+
+  @Test
+  void shouldDefineClientInfoGauge() {
+    // given
+    final var metric = WorkerMetricsDoc.CLIENT_INFO;
+
+    // when / then
+    assertThat(metric.getName()).isEqualTo("client.info");
+    assertThat(metric.getType()).isEqualTo(Type.GAUGE);
+    assertThat(metric.getDescription()).isEqualTo("The information about the client.");
+    assertThat(metric.getKeyNames())
+        .containsExactly(
+            StarterMetricKeyNames.NAME,
+            WorkerMetricKeyNames.COMPLETION_DELAY,
+            WorkerMetricKeyNames.SEND_MESSAGE);
   }
 }
