@@ -40,6 +40,8 @@ import org.junit.jupiter.api.Test;
 
 class WorkerTest {
 
+  private static final String JOB_TYPE = "test-task";
+
   private static final String CORRELATION_KEY_VAR = "correlationKey-var";
   private static final String CORRELATION_KEY_VALUE = "abc";
   private static final String MESSAGE_NAME = "messageName";
@@ -135,6 +137,7 @@ class WorkerTest {
         registry
             .get(WorkerMetricsDoc.CLIENT_INFO.getName())
             .tag("name", "worker")
+            .tag("job_type", JOB_TYPE)
             .tag("completion_delay", COMPLETION_DELAY.toString())
             .tag("send_message", "true")
             .gauge();
@@ -170,7 +173,7 @@ class WorkerTest {
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(anyString())).thenReturn("{}");
     final var connectionMonitor = mock(ConnectionMonitor.class);
-    return new Worker(client, properties, payloadReader, connectionMonitor, registry);
+    return new Worker(client, properties, payloadReader, connectionMonitor, registry, JOB_TYPE);
   }
 
   private double publications(final String outcome, final String error) {
