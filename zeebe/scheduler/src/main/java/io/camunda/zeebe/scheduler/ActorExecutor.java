@@ -42,6 +42,12 @@ public final class ActorExecutor {
     if (task.getLifecyclePhase() != ActorLifecyclePhase.CLOSED) {
       throw new IllegalStateException("ActorTask was already submitted!");
     }
+    if (threadGroup.numOfThreads == 0) {
+      throw new IllegalStateException(
+          ("Expected to submit actor '%s' to thread group '%s' of scheduler '%s', but the group"
+                  + " has no threads")
+              .formatted(task.getName(), threadGroup.groupName, threadGroup.getSchedulerName()));
+    }
     final ActorFuture<Void> startingFuture = task.onTaskScheduled(threadGroup);
 
     threadGroup.submit(task);

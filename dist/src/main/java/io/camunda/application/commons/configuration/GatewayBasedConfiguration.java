@@ -110,7 +110,10 @@ public final class GatewayBasedConfiguration {
     final var ioThreads = 0;
     final var metricsEnabled = false;
     final var nodeId = properties.getCluster().getMemberId();
-    return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Gateway", nodeId);
+    // the gateway is the only component of the process, so it needs no separate scheduler
+    final var gatewayCpuThreads = 0;
+    return new SchedulerConfiguration(
+        cpuThreads, ioThreads, gatewayCpuThreads, metricsEnabled, "Gateway", nodeId);
   }
 
   @Bean

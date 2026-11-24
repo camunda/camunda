@@ -83,5 +83,26 @@ final class ActorSchedulerTest {
         .isInstanceOf(IllegalStateException.class);
   }
 
+  @Test
+  void shouldRejectIoBoundActorWhenSchedulerHasNoIoBoundThreads() throws Exception {
+    // given
+    try (final var sut =
+        ActorScheduler.newActorScheduler()
+            .setSchedulerName("no-io")
+            .setIoBoundActorThreadCount(0)
+            .build()) {
+      sut.start();
+      final var testActor = new TestActor();
+
+      // when + then
+      assertThatThrownBy(() -> sut.submitActor(testActor, SchedulingHints.ioBound()))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("TestActor")
+          .hasMessageContaining("no-io");
+      assertThat(sut.submitActor(testActor, SchedulingHints.cpuBound()))
+          .succeedsWithin(Duration.ofSeconds(5));
+    }
+  }
+
   private static final class TestActor extends Actor {}
 }

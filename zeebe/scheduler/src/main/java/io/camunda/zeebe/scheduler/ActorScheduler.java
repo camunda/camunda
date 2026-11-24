@@ -136,7 +136,8 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     private final boolean enableMetrics = false;
     private Supplier<IdleStrategy> idleStrategySupplier =
         ActorSchedulerBuilder::defaultIdleStrategySupplier;
-    private ActorMetrics actorMetrics = ActorMetrics.disabled();
+    private MeterRegistry meterRegistry;
+    private ActorMetrics actorMetrics;
 
     public static IdleStrategy defaultIdleStrategySupplier() {
       return new BackoffIdleStrategy(
@@ -224,11 +225,14 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
 
     ActorMetrics getActorMetrics() {
+      if (actorMetrics == null) {
+        actorMetrics = ActorMetrics.ofNullable(meterRegistry, schedulerName);
+      }
       return actorMetrics;
     }
 
     public ActorSchedulerBuilder setMeterRegistry(final MeterRegistry meterRegistry) {
-      actorMetrics = ActorMetrics.ofNullable(meterRegistry);
+      this.meterRegistry = meterRegistry;
       return this;
     }
 

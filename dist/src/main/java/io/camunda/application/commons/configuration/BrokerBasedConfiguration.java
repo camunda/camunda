@@ -94,7 +94,14 @@ public class BrokerBasedConfiguration {
     final var nodeId =
         MemberId.memberIdString(
             properties.getCluster().getZone(), properties.getCluster().getNodeId());
-    return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Broker", nodeId);
+    // with the gateway next to the broker, the gateway side gets its own actor threads, so that
+    // it does not compete with the partitions for the broker threads
+    final var gatewayCpuThreads =
+        properties.getGateway().isEnable()
+            ? properties.getGateway().getThreads().getManagementThreads()
+            : 0;
+    return new SchedulerConfiguration(
+        cpuThreads, ioThreads, gatewayCpuThreads, metricsEnabled, "Broker", nodeId);
   }
 
   /**

@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.job;
 
+import io.camunda.application.commons.actor.GatewayActorScheduler;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
@@ -43,11 +44,11 @@ public class HttpJobHandlerConfiguration {
   public HttpJobHandlerConfiguration(
       final ActivateJobHandlerConfiguration config,
       final BrokerClient brokerClient,
-      final ActorScheduler scheduler,
+      final GatewayActorScheduler scheduler,
       final MeterRegistry meterRegistry) {
     this.config = config;
     this.brokerClient = brokerClient;
-    this.scheduler = scheduler;
+    this.scheduler = scheduler.scheduler();
     this.meterRegistry = meterRegistry;
   }
 

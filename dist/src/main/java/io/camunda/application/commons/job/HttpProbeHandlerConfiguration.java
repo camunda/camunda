@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.job;
 
+import io.camunda.application.commons.actor.GatewayActorScheduler;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.job.HttpJobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
@@ -14,7 +15,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.gateway.impl.probe.LongPollingActivateProbesHandler;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.ActorScheduler;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,7 +35,7 @@ public class HttpProbeHandlerConfiguration {
   public LongPollingActivateProbesHandler activateProbesHandler(
       final ActivateJobHandlerConfiguration config,
       final BrokerClient brokerClient,
-      final ActorScheduler scheduler) {
+      final GatewayActorScheduler scheduler) {
     final var handler =
         new LongPollingActivateProbesHandler(
             brokerClient,
@@ -53,7 +53,9 @@ public class HttpProbeHandlerConfiguration {
                 handler.onClusterIncarnationChanged();
               }
             });
-    scheduler.submitActor(Actor.newActor().name(ACTOR_NAME).actorStartedHandler(handler).build());
+    scheduler
+        .scheduler()
+        .submitActor(Actor.newActor().name(ACTOR_NAME).actorStartedHandler(handler).build());
     return handler;
   }
 }
