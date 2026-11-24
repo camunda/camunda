@@ -17,6 +17,7 @@ import io.camunda.authentication.pt.PhysicalTenantCamundaGroups;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import io.camunda.zeebe.gateway.rest.controller.CamundaVersionFilter;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantStatusScopeFilter;
@@ -63,10 +64,28 @@ public class ApiFiltersConfiguration {
   // value anyway and leave the dependency flagged as unused by dependency:analyze. See ADR-0003.
   private static final int PHYSICAL_TENANT_FILTER_ORDER = -101;
 
+  // Camunda-Version must be on the response before Spring Security writes a 401, so this sits
+  // with the other pre-security filters. Order among those filters does not matter: the header
+  // is set before the rest of the chain runs.
+  private static final int CAMUNDA_VERSION_FILTER_ORDER = -101;
+
   private static final int PHYSICAL_TENANT_SWAGGER_FILTER_ORDER = 1;
 
   private static List<PathPattern> patterns(final String... patterns) {
     return Arrays.stream(patterns).map(PATTERN_PARSER::parse).toList();
+  }
+
+  /**
+   * Writes {@code Camunda-Version} on every Orchestration Cluster REST response, including 401s
+   * from Spring Security. See {@link CamundaVersionFilter}.
+   */
+  @Bean
+  public FilterRegistrationBean<CamundaVersionFilter> camundaVersionFilter() {
+    final FilterRegistrationBean<CamundaVersionFilter> registration =
+        new FilterRegistrationBean<>(new CamundaVersionFilter());
+    registration.addUrlPatterns("/*");
+    registration.setOrder(CAMUNDA_VERSION_FILTER_ORDER);
+    return registration;
   }
 
   /**

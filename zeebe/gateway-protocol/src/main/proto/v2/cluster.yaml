@@ -16,6 +16,9 @@ paths:
       responses:
         "200":
           description: Obtains the current topology of the cluster the gateway is part of.
+          headers:
+            Camunda-Version:
+              $ref: 'common-responses.yaml#/components/headers/CamundaVersion'
           content:
             application/json:
               schema:
