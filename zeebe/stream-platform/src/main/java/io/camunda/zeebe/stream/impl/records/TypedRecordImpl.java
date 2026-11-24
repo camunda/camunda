@@ -137,6 +137,16 @@ public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
   }
 
   @Override
+  public long getInternalOperationReference() {
+    return requireNonNull(metadata).getInternalOperationReference();
+  }
+
+  @Override
+  public int getInternalOperationType() {
+    return requireNonNull(metadata).getInternalOperationTypeCode();
+  }
+
+  @Override
   public Record copyOf() {
     return CopiedRecords.createCopiedRecord(getPartitionId(), requireNonNull(rawEvent));
   }

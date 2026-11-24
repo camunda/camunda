@@ -23,6 +23,7 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
+import io.camunda.zeebe.protocol.record.InternalOperationType;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
@@ -84,6 +85,37 @@ class StreamProcessorErrorHandlingTest {
     verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.COMMAND_REJECTION);
     verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.ERROR);
     verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
+  }
+
+  @Test
+  void shouldWriteInternalOperationReferenceOfCommandToErrorRecord() {
+    // given
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenThrow(new RuntimeException());
+    when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
+        .thenThrow(new RuntimeException());
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.userCommand()
+            .internalOperation(InternalOperationType.POLICY_UPDATE, 123L)
+            .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
+    logStreamReader.seekToFirstEvent();
+    logStreamReader.next(); // command
+
+    await("should write error record to log")
+        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
+    final var recordMetadata = new RecordMetadata();
+    logStreamReader.next().readMetadata(recordMetadata);
+    assertThat(recordMetadata.getIntent()).isEqualTo(ErrorIntent.CREATED);
+    assertThat(recordMetadata.getInternalOperation().type())
+        .isEqualTo(InternalOperationType.POLICY_UPDATE);
+    assertThat(recordMetadata.getInternalOperationReference()).isEqualTo(123L);
   }
 
   @Test

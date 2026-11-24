@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.protocol.record"
-  id="0" version="10"
+  id="0" version="11"
   description="Zeebe Protocol" byteOrder="littleEndian">
 
   <xi:include href="common-types.xml"/>
@@ -152,6 +152,11 @@
       <type name="minorVersion" primitiveType="int32"/>
       <type name="patchVersion" primitiveType="int32"/>
     </composite>
+
+    <!-- an open set of codes, see io.camunda.zeebe.protocol.record.InternalOperationType; 0 means
+         unspecified, so records written before the field existed decode as unspecified -->
+    <type name="InternalOperationTypeCode" primitiveType="uint8" presence="optional"
+      nullValue="0"/>
   </types>
 
   <!-- L1 General Messages 0 - 99 -->
@@ -221,6 +226,10 @@
     <field name="batchOperationReference" id="13" type="uint64" presence="optional" sinceVersion="6"/>
     <!-- populated when set in a gateway for API requests -->
     <field name="requestChannelType" id="16" type="ChannelType" presence="optional" sinceVersion="10"/>
+    <!-- populated when the record was created as part of an internal operation, e.g. a policy update;
+         the type tells what kind of operation the reference points to -->
+    <field name="internalOperationReference" id="17" type="uint64" presence="optional" sinceVersion="11"/>
+    <field name="internalOperationType" id="18" type="InternalOperationTypeCode" sinceVersion="11"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->

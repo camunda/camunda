@@ -42,6 +42,8 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   private final int recordVersion;
   private final long operationReference;
   private final long batchOperationReference;
+  private final long internalOperationReference;
+  private final int internalOperationType;
 
   public CopiedRecord(
       final T recordValue,
@@ -68,6 +70,8 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     recordVersion = metadata.getRecordVersion();
     operationReference = metadata.getOperationReference();
     batchOperationReference = metadata.getBatchOperationReference();
+    internalOperationReference = metadata.getInternalOperationReference();
+    internalOperationType = metadata.getInternalOperationTypeCode();
     agent = AgentInfo.of(metadata.getAgent());
     requestChannelType = metadata.getRequestChannelType();
     requestToolName = metadata.getRequestToolName();
@@ -107,6 +111,8 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     recordVersion = copiedRecord.recordVersion;
     operationReference = copiedRecord.operationReference;
     batchOperationReference = copiedRecord.batchOperationReference;
+    internalOperationReference = copiedRecord.internalOperationReference;
+    internalOperationType = copiedRecord.internalOperationType;
     agent = AgentInfo.of(copiedRecord.agent);
     requestChannelType = copiedRecord.requestChannelType;
     requestToolName = copiedRecord.requestToolName;
@@ -164,7 +170,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
 
   @Override
   public Map<String, Object> getAuthorizations() {
-    return authorization.toDecodedMap();
+    return authorization.toClaimsMap();
   }
 
   @Override
@@ -205,6 +211,16 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   @Override
   public long getBatchOperationReference() {
     return batchOperationReference;
+  }
+
+  @Override
+  public long getInternalOperationReference() {
+    return internalOperationReference;
+  }
+
+  @Override
+  public int getInternalOperationType() {
+    return internalOperationType;
   }
 
   @Override

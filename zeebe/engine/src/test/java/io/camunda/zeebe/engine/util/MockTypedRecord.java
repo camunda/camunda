@@ -163,6 +163,16 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   }
 
   @Override
+  public long getInternalOperationReference() {
+    return metadata.getInternalOperationReference();
+  }
+
+  @Override
+  public int getInternalOperationType() {
+    return metadata.getInternalOperationTypeCode();
+  }
+
+  @Override
   public Record<T> copyOf() {
     throw new UnsupportedOperationException("not yet implemented");
   }

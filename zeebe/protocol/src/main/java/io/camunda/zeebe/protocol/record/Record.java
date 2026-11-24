@@ -183,6 +183,33 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
   }
 
   /**
+   * The key of the internal operation this record was produced by, e.g. the key of a policy update.
+   * Only the broker sets it; clients cannot. Use {@link #getInternalOperationType()} to tell what
+   * kind of operation the key belongs to.
+   *
+   * @return the internal operation key, or {@link
+   *     RecordMetadataDecoder#internalOperationReferenceNullValue()} if the record was not produced
+   *     by an internal operation
+   */
+  @Value.Default
+  default long getInternalOperationReference() {
+    return RecordMetadataDecoder.internalOperationReferenceNullValue();
+  }
+
+  /**
+   * The code of the kind of internal operation {@link #getInternalOperationReference()} belongs to.
+   * Use {@link InternalOperationType#fromCode(int)} to interpret it. The codes are an open set: a
+   * reader may see a code it does not know yet, written by a newer broker.
+   *
+   * @return the internal operation type code, or the code of {@link
+   *     InternalOperationType#UNSPECIFIED}
+   */
+  @Value.Default
+  default int getInternalOperationType() {
+    return InternalOperationType.UNSPECIFIED.code();
+  }
+
+  /**
    * Creates a deep copy of the current record. Can be used to collect records.
    *
    * @return a deep copy of this record

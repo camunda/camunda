@@ -12,11 +12,13 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationRe
 
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.RecordType;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 public interface ProcessingSession {
@@ -40,6 +42,24 @@ public interface ProcessingSession {
       appendMetadataToFollowUps(
           metadata -> metadata.batchOperationReference(batchOperationReference));
     }
+  }
+
+  /**
+   * Marks the follow-ups as part of the internal operation of the command being processed when they
+   * are appended. A follow-up that already names an internal operation keeps it.
+   *
+   * @param processedCommandInternalOperation the internal operation of the command being processed;
+   *     a supplier because one session can process several commands of a batch
+   */
+  default void appendInternalOperationReferenceToFollowUps(
+      final Supplier<InternalOperationReference> processedCommandInternalOperation) {
+    appendMetadataToFollowUps(
+        metadata -> {
+          final var internalOperation = processedCommandInternalOperation.get();
+          if (internalOperation.isPresent() && !metadata.getInternalOperation().isPresent()) {
+            metadata.internalOperation(internalOperation);
+          }
+        });
   }
 
   default void appendAuthInfoToFollowUps(final @Nullable AuthInfo authInfo) {

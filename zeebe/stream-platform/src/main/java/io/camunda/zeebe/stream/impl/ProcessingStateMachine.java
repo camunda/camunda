@@ -18,6 +18,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -168,6 +169,8 @@ public final class ProcessingStateMachine implements CloseableSilently {
   private final StreamProcessorContext context;
   private final List<RecordProcessor> recordProcessors;
   private @Nullable ProcessingResult currentProcessingResult;
+  private InternalOperationReference processedCommandInternalOperation =
+      InternalOperationReference.NONE;
   private @Nullable List<LogAppendEntry> pendingWrites;
   private @Nullable Collection<ProcessingResponse> pendingResponses;
   private @Nullable RecordProcessor currentProcessor;
@@ -436,6 +439,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
     while (!pendingCommands.isEmpty() && processedCommandsCount < currentProcessingBatchLimit) {
 
       final var command = pendingCommands.removeFirst();
+      processedCommandInternalOperation = InternalOperationReference.of(command);
       if (LOG.isTraceEnabled()) {
         if (command instanceof final UnwrittenRecord unwrittenRecord) {
           LOG.trace("Processing batched command {}: {}", processedCommandsCount, unwrittenRecord);
@@ -866,6 +870,8 @@ public final class ProcessingStateMachine implements CloseableSilently {
 
     builder.appendOperationReferenceToFollowUps(command.getOperationReference());
     builder.appendBatchOperationReferenceToFollowUps(command.getBatchOperationReference());
+    processedCommandInternalOperation = InternalOperationReference.of(command);
+    builder.appendInternalOperationReferenceToFollowUps(() -> processedCommandInternalOperation);
 
     // Ensure auth information is forwarded also to all follow-up commands & events
     // e.g. to attribute changes to the right actor in the audit log
