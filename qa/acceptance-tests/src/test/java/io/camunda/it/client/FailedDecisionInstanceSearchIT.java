@@ -12,6 +12,7 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -72,5 +73,45 @@ class FailedDecisionInstanceSearchIT {
                       .join();
               assertThat(failed.items()).hasSize(1);
             });
+  }
+
+  @Test
+  void shouldFilterFailedDecisionInstanceByEvaluationFailure() {
+    // given - a standalone evaluation that fails because the input variables are missing; the
+    // response carries the failure message that is stored with the failed decision instance
+    deployResource(camundaClient, "decisions/drg-force-user-with-assertions.dmn");
+    final var evaluation =
+        camundaClient.newEvaluateDecisionCommand().decisionId("force_user").send().join();
+    final long evaluationKey = evaluation.getDecisionEvaluationKey();
+    final String failureMessage = evaluation.getFailureMessage();
+    assertThat(failureMessage).isNotBlank();
+
+    // when - then
+    Awaitility.await("should find the failed decision instance by its failure message")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var failed =
+                  camundaClient
+                      .newDecisionInstanceSearchRequest()
+                      .filter(
+                          f ->
+                              f.decisionInstanceKey(evaluationKey)
+                                  .evaluationFailure(failureMessage))
+                      .send()
+                      .join();
+              assertThat(failed.items())
+                  .extracting(DecisionInstance::getState)
+                  .containsExactly(DecisionInstanceState.FAILED);
+            });
+
+    final var otherFailure =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.decisionInstanceKey(evaluationKey).evaluationFailure("other failure"))
+            .send()
+            .join();
+    assertThat(otherFailure.items()).isEmpty();
   }
 }
