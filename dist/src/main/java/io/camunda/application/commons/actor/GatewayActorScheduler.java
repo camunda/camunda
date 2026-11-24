@@ -15,12 +15,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The actor scheduler of the gateway side: the broker client, its topology manager and the gateway
- * actors (gRPC and REST).
+ * The actor scheduler of the gateway side: the broker client and its topology manager, the job
+ * stream client, and the gateway actors (gRPC and REST).
  *
- * <p>When the gateway runs next to the broker, this is a separate scheduler. Thus the gateway
- * request path does not compete with the partitions for the actor threads of the broker. In all
- * other cases, it is the only scheduler of the process.
+ * <p>Which scheduler this is depends on the deployment:
+ *
+ * <ul>
+ *   <li>Gateway next to the broker ({@code api.enabled} on a broker): a dedicated scheduler, so
+ *       that the gateway request path does not compete with the partitions for the actor threads of
+ *       the broker. Its CPU thread count is {@code camunda.api.grpc.management-threads}. The broker
+ *       uses the same broker client for its own requests (checkpoints, rebalancing, scaling), so
+ *       these requests also run on this scheduler.
+ *   <li>All other cases (standalone gateway, broker without gateway): the only {@link
+ *       ActorScheduler} of the process, shared with everything else.
+ * </ul>
+ *
+ * <h2>Why a holder and not a second {@link ActorScheduler} bean</h2>
+ *
+ * The broker and the gateway live in one Spring context, so a second {@link ActorScheduler} bean
+ * would make every injection by type ambiguous.
+ *
+ * <p>Gateway-side components inject this type and use {@link #scheduler()}. Broker-side components
+ * inject {@link ActorScheduler} directly.
+ *
+ * @param scheduler the scheduler to submit gateway-side actors to
+ * @param ownsScheduler true for a dedicated scheduler, which closing this holder also closes
  */
 @NullMarked
 public final class GatewayActorScheduler implements CloseableSilently {

@@ -388,21 +388,16 @@ public class ClusteringRule extends ExternalResource {
                 meterRegistry)
             .scheduler();
 
-    final var dynamicClusterServices =
-        new DynamicClusterServices(
-            GatewayActorScheduler.shared(scheduler), atomixCluster, meterRegistry);
-    final var topologyManager =
-        dynamicClusterServices.brokerTopologyManagerForEmbeddedBrokerClient();
-
     final var brokerClientConfig = brokerSpringConfig.brokerClientConfig();
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
             brokerClientConfig,
             atomixCluster,
             GatewayActorScheduler.shared(scheduler),
-            topologyManager,
             meterRegistry);
-    final var brokerClient = brokerClientConfiguration.brokerClient();
+    final var topologyManager =
+        brokerClientConfiguration.brokerTopologyManagerForEmbeddedBrokerClient();
+    final var brokerClient = brokerClientConfiguration.brokerClient(topologyManager);
 
     final var systemContext =
         SystemContextTestFactory.singleTenant(
@@ -557,13 +552,10 @@ public class ClusteringRule extends ExternalResource {
     atomixCluster.start().join();
 
     final var dynamicClusterServices =
-        new DynamicClusterServices(
-            GatewayActorScheduler.shared(actorScheduler), atomixCluster, meterRegistry);
+        new DynamicClusterServices(actorScheduler, atomixCluster, meterRegistry);
     final var clusterTopologyService =
         dynamicClusterServices.gatewayClusterTopologyService(
             gatewayCfg.getCluster().getConfigManager().gossip());
-    final var topologyManager =
-        dynamicClusterServices.brokerTopologyManager(clusterTopologyService);
 
     final var brokerClientConfig = config.brokerClientConfig();
     final var brokerClientConfiguration =
@@ -571,9 +563,10 @@ public class ClusteringRule extends ExternalResource {
             brokerClientConfig,
             atomixCluster,
             GatewayActorScheduler.shared(actorScheduler),
-            topologyManager,
             meterRegistry);
-    final var brokerClient = brokerClientConfiguration.brokerClient();
+    final var topologyManager =
+        brokerClientConfiguration.brokerTopologyManager(clusterTopologyService);
+    final var brokerClient = brokerClientConfiguration.brokerClient(topologyManager);
     final var jobStreamClient =
         new JobStreamComponent()
             .jobStreamClient(

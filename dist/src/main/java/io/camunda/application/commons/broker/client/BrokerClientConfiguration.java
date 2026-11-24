@@ -11,8 +11,11 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.actor.GatewayActorScheduler;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
+import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
+import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -20,6 +23,7 @@ import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration(proxyBeanMethods = false)
 public final class BrokerClientConfiguration {
@@ -27,25 +31,39 @@ public final class BrokerClientConfiguration {
   private final BrokerClientCfg config;
   private final AtomixCluster cluster;
   private final ActorScheduler scheduler;
-  private final BrokerTopologyManager topologyManager;
   private final BrokerClientRequestMetrics metrics;
+  private final BrokerClientTopologyMetrics topologyMetrics;
 
   @Autowired
   public BrokerClientConfiguration(
       final BrokerClientCfg config,
       final AtomixCluster cluster,
       final GatewayActorScheduler scheduler,
-      final BrokerTopologyManager topologyManager,
       final MeterRegistry meterRegistry) {
     this.config = config;
     this.cluster = cluster;
     this.scheduler = scheduler.scheduler();
-    this.topologyManager = topologyManager;
     metrics = new BrokerClientRequestMetrics(meterRegistry);
+    topologyMetrics = new BrokerClientTopologyMetrics(meterRegistry);
+  }
+
+  @Bean
+  @Profile("broker")
+  public BrokerTopologyManager brokerTopologyManagerForEmbeddedBrokerClient() {
+    return startTopologyManager();
+  }
+
+  @Bean
+  @Profile("!broker")
+  public BrokerTopologyManager brokerTopologyManager(
+      final GatewayClusterConfigurationService gatewayClusterConfigurationService) {
+    final var brokerTopologyManager = startTopologyManager();
+    gatewayClusterConfigurationService.addUpdateListener(brokerTopologyManager);
+    return brokerTopologyManager;
   }
 
   @Bean(destroyMethod = "close")
-  public BrokerClient brokerClient() {
+  public BrokerClient brokerClient(final BrokerTopologyManager topologyManager) {
     final var brokerClient =
         new BrokerClientImpl(
             config.requestTimeout(),
@@ -56,6 +74,18 @@ public final class BrokerClientConfiguration {
             metrics);
     brokerClient.start().forEach(ActorFuture::join);
     return brokerClient;
+  }
+
+  private BrokerTopologyManagerImpl startTopologyManager() {
+    final var membershipService = cluster.getMembershipService();
+    final var brokerTopologyManager =
+        new BrokerTopologyManagerImpl(membershipService::getMembers, topologyMetrics);
+    scheduler.submitActor(brokerTopologyManager).join();
+    membershipService.addListener(brokerTopologyManager);
+    // Re-seed after the listener is attached: closes the race where a MEMBER_ADDED
+    // event fires between the actor's initial snapshot and listener registration.
+    brokerTopologyManager.initializeTopologyFromMembership();
+    return brokerTopologyManager;
   }
 
   public record BrokerClientCfg(Duration requestTimeout) {}
