@@ -14,9 +14,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
+import io.camunda.zeebe.metrics.ResultMetricKeyNames;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
-import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
@@ -96,7 +96,7 @@ public class ProcessInstanceCreator implements AutoCloseable {
   private Counter registerSubmissionCounter(final String outcome) {
     return Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_SUBMISSIONS.getName())
         .description(StarterMetricsDoc.PROCESS_INSTANCES_SUBMISSIONS.getDescription())
-        .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
+        .tag(ResultMetricKeyNames.OUTCOME.asString(), outcome)
         .register(registry);
   }
 

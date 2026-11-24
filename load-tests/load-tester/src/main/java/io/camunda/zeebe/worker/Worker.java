@@ -16,6 +16,7 @@ import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
@@ -43,16 +44,19 @@ public class Worker {
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
+  private final WorkerResultMetrics resultMetrics;
 
   public Worker(
       final CamundaClient client,
       final LoadTesterProperties properties,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final ConnectionMonitor connectionMonitor,
+      final MeterRegistry registry) {
     this.client = client;
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
-    responseChecker = new ResponseChecker(requestFutures);
+    resultMetrics = new WorkerResultMetrics(registry, requestFutures);
+    responseChecker = new ResponseChecker(requestFutures, resultMetrics);
     this.connectionMonitor = connectionMonitor;
   }
 
@@ -122,6 +126,7 @@ public class Worker {
       // completion rather than stalling the job handler thread (which would cascade into
       // broker timeouts). We lose visibility into its eventual result — log throttled so
       // the operator can notice sustained backpressure without flooding the log.
+      resultMetrics.recordTrackingDropped();
       THROTTLED_LOGGER.warn(
           "Completion-response queue full (capacity: {}); dropping future tracking",
           REQUEST_FUTURES_CAPACITY);
@@ -141,8 +146,10 @@ public class Worker {
 
     try {
       messageSendFuture.get(10, TimeUnit.SECONDS);
+      resultMetrics.recordMessagePublication();
       return true;
     } catch (final Exception ex) {
+      resultMetrics.recordMessagePublication(ex);
       THROTTLED_LOGGER.error(
           "Exception on publishing a message with name {} and correlationKey {}",
           messageName,
