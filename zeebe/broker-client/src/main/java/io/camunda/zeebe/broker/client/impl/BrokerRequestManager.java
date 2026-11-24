@@ -35,7 +35,9 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Set;
@@ -64,6 +66,14 @@ final class BrokerRequestManager extends Actor {
   private static final AttributeKey<String> ERROR_CODE = AttributeKey.stringKey("zeebe.error.code");
   private static final AttributeKey<String> REJECTION_TYPE =
       AttributeKey.stringKey("zeebe.rejection.type");
+  // Only the traceparent crosses the internal hop; the tracestate carries vendor data that the
+  // broker does not need, and a field for it would cost every untraced request.
+  private static final TextMapSetter<BrokerRequest<?>> TRACEPARENT_SETTER =
+      (request, key, value) -> {
+        if (request != null && "traceparent".equals(key)) {
+          request.setTraceContext(value);
+        }
+      };
   private final ClientTransport clientTransport;
   private final RequestDispatchStrategy dispatchStrategy;
   private final BrokerTopologyManager topologyManager;
@@ -134,8 +144,9 @@ final class BrokerRequestManager extends Actor {
     }
     final CompletableFuture<BrokerResponse<T>> responseFuture = new CompletableFuture<>();
     // The broker client only continues traces and never starts one: requests of untraced callers
-    // create no span.
+    // create no span, and clear any trace context from an earlier attempt on a reused request.
     if (!Span.current().getSpanContext().isSampled()) {
+      request.setTraceContext(null);
       request.serializeValue();
       actor.run(() -> sendRequestInternal(request, responseFuture, sender, requestTimeout, null));
       return responseFuture;
@@ -156,6 +167,13 @@ final class BrokerRequestManager extends Actor {
     }
     final var span = spanBuilder.startSpan();
     try {
+      // the context is lost when hopping to the actor, so it has to be captured on this thread
+      if (span.getSpanContext().isSampled()) {
+        W3CTraceContextPropagator.getInstance()
+            .inject(Context.current().with(span), request, TRACEPARENT_SETTER);
+      } else {
+        request.setTraceContext(null);
+      }
       request.serializeValue();
     } catch (final Throwable e) {
       span.recordException(e);

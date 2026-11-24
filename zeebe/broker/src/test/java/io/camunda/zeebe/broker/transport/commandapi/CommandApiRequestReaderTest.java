@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -105,6 +106,33 @@ final class CommandApiRequestReaderTest {
 
     // then
     assertThat(reader.metadata().getAuthorization()).isEqualTo(AuthInfo.EMPTY);
+  }
+
+  @Test
+  void shouldReadTraceContextIntoMetadataAndHandleV10Requests() {
+    // given
+    final var traceparent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01";
+    final var tracedBuffer = write(request().setTraceContext(traceparent));
+
+    // when - v11 with traceparent, followed by mutating the buffer
+    reader.wrap(tracedBuffer, 0, tracedBuffer.capacity());
+    tracedBuffer.setMemory(0, tracedBuffer.capacity(), (byte) 0);
+
+    // then - cloned safely into RecordMetadata
+    assertThat(reader.metadata().hasTraceContext()).isTrue();
+    assertThat(reader.metadata().getTraceContext()).isEqualTo(traceparent);
+
+    // and when reset and given a v10 message without the trailing traceContext field
+    reader.reset();
+    final var v10Buffer = write(request());
+    final int v10Length =
+        v10Buffer.capacity() - ExecuteCommandRequestDecoder.traceContextHeaderLength();
+    new MessageHeaderEncoder().wrap(v10Buffer, 0).version(10);
+    reader.wrap(v10Buffer, 0, v10Length);
+
+    // then
+    assertThat(reader.metadata().hasTraceContext()).isFalse();
+    assertThat(reader.metadata().getTraceContext()).isEmpty();
   }
 
   private static ExecuteCommandRequest request() {

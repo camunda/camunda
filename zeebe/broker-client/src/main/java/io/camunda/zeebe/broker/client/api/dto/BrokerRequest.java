@@ -76,6 +76,15 @@ public abstract class BrokerRequest<T> implements ClientRequest {
     // Unsupported by default
   }
 
+  /**
+   * Sets the W3C {@code traceparent} to send along with the request, or clears it when {@code
+   * null}. Unsupported by default for request types that do not carry trace context across the
+   * transport.
+   */
+  public void setTraceContext(final @Nullable String traceparent) {
+    // Unsupported by default
+  }
+
   public abstract boolean addressesSpecificPartition();
 
   public abstract boolean requiresPartitionId();

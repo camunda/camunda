@@ -174,6 +174,32 @@ final class RecordMetadataTest {
     assertThatThrownBy(() -> metadata.authorization(null)).isInstanceOf(NullPointerException.class);
   }
 
+  @Test
+  void shouldRoundTripTraceContextAndIgnoreMissingFieldInV11() {
+    // given
+    final var traceparent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01";
+    final var metadata = new RecordMetadata().traceContext(traceparent);
+
+    // when - v12 round-trip
+    encodeDecode(metadata);
+
+    // then
+    assertThat(metadata.hasTraceContext()).isTrue();
+    assertThat(metadata.getTraceContext()).isEqualTo(traceparent);
+
+    // and when decoding a v11 message without trailing traceContext
+    final var v11 = new RecordMetadata();
+    final var v12Buffer = write(v11);
+    final int v11Length = v12Buffer.capacity() - RecordMetadataDecoder.traceContextHeaderLength();
+    new MessageHeaderEncoder().wrap(v12Buffer, 0).version(11);
+    final var decoded = new RecordMetadata();
+    decoded.wrap(v12Buffer, 0, v11Length);
+
+    // then
+    assertThat(decoded.hasTraceContext()).isFalse();
+    assertThat(decoded.getTraceContext()).isEmpty();
+  }
+
   private static UnsafeBuffer write(final RecordMetadata metadata) {
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[metadata.getLength()]);
     metadata.write(buffer, 0);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.protocol.record"
-  id="0" version="11"
+  id="0" version="12"
   description="Zeebe Protocol" byteOrder="littleEndian">
 
   <xi:include href="common-types.xml"/>
@@ -180,6 +180,8 @@
     <data name="authorization" id="8" type="varDataEncoding" sinceVersion="4"/>
     <!-- populated when set in a gateway for API requests; carries an optional tool name -->
     <data name="toolName" id="10" type="varDataEncoding" sinceVersion="10"/>
+    <!-- W3C traceparent of the request span; empty unless the request is sampled -->
+    <data name="traceContext" id="12" type="varDataEncoding" sinceVersion="12"/>
   </sbe:message>
 
   <sbe:message name="ExecuteCommandResponse" id="21">
@@ -237,6 +239,8 @@
     <data name="agent" id="14" type="varDataEncoding" sinceVersion="7"/>
     <!-- populated when set in a gateway for API requests; carries an optional tool name -->
     <data name="requestToolName" id="15" type="varDataEncoding" sinceVersion="10"/>
+    <!-- W3C traceparent of a sampled command; empty unless traced -->
+    <data name="traceContext" id="19" type="varDataEncoding" sinceVersion="12"/>
   </sbe:message>
 
   <sbe:message name="BrokerInfo" id="201" description="Broker topology information">

@@ -25,6 +25,7 @@ public final class ExecuteCommandRequest implements BufferReader {
   protected final MsgPackHelper msgPackHelper;
 
   protected Map<String, Object> command;
+  protected String traceContext = "";
 
   public ExecuteCommandRequest(final MsgPackHelper msgPackHelper) {
     this.msgPackHelper = msgPackHelper;
@@ -44,6 +45,11 @@ public final class ExecuteCommandRequest implements BufferReader {
 
   public Intent intent() {
     return Intent.fromProtocolValue(valueType(), bodyDecoder.intent());
+  }
+
+  /** The W3C traceparent sent with the request, empty if none was sent. */
+  public String traceContext() {
+    return traceContext;
   }
 
   public Map<String, Object> getCommand() {
@@ -67,5 +73,10 @@ public final class ExecuteCommandRequest implements BufferReader {
     command =
         msgPackHelper.readMsgPack(
             new DirectBufferInputStream(buffer, commandOffset, commandLength));
+
+    bodyDecoder.skipValue();
+    bodyDecoder.skipAuthorization();
+    bodyDecoder.skipToolName();
+    traceContext = bodyDecoder.traceContext();
   }
 }
