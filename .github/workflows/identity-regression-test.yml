@@ -51,6 +51,12 @@ jobs:
         uses: ./.github/actions/read-db-versions
 
   build-and-package:
+    permissions:
+      actions: write
+      checks: write
+      contents: read
+      statuses: write
+      id-token: write
     name: Build and Package Camunda
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -67,6 +73,9 @@ jobs:
         with:
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
@@ -82,6 +91,12 @@ jobs:
           retention-days: 2
 
   run-http-regression-tests:
+    permissions:
+      actions: write
+      checks: write
+      contents: read
+      statuses: write
+      id-token: write
     name: Run Regression Tests
     needs: [ build-and-package, read-versions ]
     runs-on: ubuntu-latest
@@ -165,9 +180,10 @@ jobs:
         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/qa/ci/github.com/apps/camunda/entra-credentials CLIENT_ID;
@@ -290,5 +306,8 @@ jobs:
           job_name: "Run Regression Tests - ${{ matrix.case }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
