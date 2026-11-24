@@ -231,6 +231,8 @@ registerProject(":zeebe-cluster-config-rest", "zeebe/dynamic-config/rest")
 
 registerProject(":zeebe-metadata-store-api", "zeebe/metadata-store/api")
 registerProject(":zeebe-metadata-store-impl", "zeebe/metadata-store/impl")
+registerProject(":zeebe-metadata-store-in-memory", "zeebe/metadata-store/metadata-stores/in-memory")
+registerProject(":zeebe-metadata-store-testkit", "zeebe/metadata-store/metadata-stores/testkit")
 
 registerProject(":zeebe-qa-integration-tests", "zeebe/qa/integration-tests")
 

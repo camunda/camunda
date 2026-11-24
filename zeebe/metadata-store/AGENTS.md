@@ -6,8 +6,9 @@ A namespaced key-value store for cluster metadata, backed by the system partitio
 ## Modules
 
 Each module owns one package and its subpackages, and no two modules share one: `api` owns
-`io.camunda.zeebe.metadata.store.api` and `impl` owns `io.camunda.zeebe.metadata.store.impl`. PIT
-mutates each module's own package only.
+`io.camunda.zeebe.metadata.store.api`, `impl` owns `io.camunda.zeebe.metadata.store.impl`,
+`in-memory` owns `io.camunda.zeebe.metadata.store.memory` and `testkit` owns
+`io.camunda.zeebe.metadata.store.testkit`. PIT mutates each module's own package only.
 
 - `api/` (`zeebe-metadata-store-api`) — the contract consumers compile against: the
   `ClusterMetadataStore` and `NamespaceApi` interfaces, value types (`Namespace`,
@@ -24,7 +25,18 @@ mutates each module's own package only.
   - `write` — `WriteEvaluator`, which turns a batch into an entry, or no entry, or an error.
   - `watch` — `WatchRegistry` and the per-subscription delivery queue.
 
+The stores themselves live in `metadata-stores/`, one module each, as the backup stores do in
+`zeebe/backup-stores/`:
+
+- `metadata-stores/in-memory/` (`zeebe-metadata-store-in-memory`) — `InMemoryClusterMetadataStore`:
+  the shared parts on one actor, with no log, for consumers' tests and until the Raft store
+  exists. Its tests run the contract suite and a property test against a model of the store.
+- `metadata-stores/testkit/` (`zeebe-metadata-store-testkit`) — `ClusterMetadataStoreContractTest`,
+  the suite every store passes, published as a test-jar; a store's test extends it and supplies a
+  running store.
+
 A new type belongs in `api/` when code outside the module must reference it; otherwise it goes in
 `impl/` if every store uses it, or in the module of the one store that does. Keep `api/` free of
 Raft, broker, and `impl/` dependencies so consumers can build against it alone. Consumers depend on
-`api/`; only composition roots (the broker, tests) depend on a store module and construct the store.
+`api/`; only composition roots (the broker, tests) depend on a store module such as
+`metadata-stores/in-memory/` and construct the store.

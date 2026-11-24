@@ -794,6 +794,21 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-metadata-store-testkit</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-metadata-store-in-memory</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-cluster-config-api</artifactId>
         <version>${project.version}</version>
       </dependency>

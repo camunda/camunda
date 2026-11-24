@@ -19,9 +19,9 @@ survivor means, and prove every claimed kill. Human-facing overview and property
   `restore`, `restore-standalone`, `scheduler`, `snapshot`, `stream-platform`, `transport`). Find
   the project path in `settings.gradle.kts` (`registerProject`); `zeebe/dynamic-config/impl` is
   `:zeebe-cluster-config-impl`. A project without a `pitest` task is not set up, so say so.
-- Only `:zeebe-cluster-config-api`, `:zeebe-cluster-config-impl`, `:zeebe-metadata-store-api`
-  and `:zeebe-metadata-store-impl` default to a whole-module run, each on its own package. Every
-  other project fails fast without `-Ppit.targetClasses`.
+- Only `:zeebe-cluster-config-api`, `:zeebe-cluster-config-impl`, `:zeebe-metadata-store-api`,
+  `:zeebe-metadata-store-impl` and `:zeebe-metadata-store-in-memory` default to a whole-module
+  run, each on its own package. Every other project fails fast without `-Ppit.targetClasses`.
 - PIT is never bound to `check` or `verify`. Only the `main` branch has it; stable branches do not.
 
 ## Run it
