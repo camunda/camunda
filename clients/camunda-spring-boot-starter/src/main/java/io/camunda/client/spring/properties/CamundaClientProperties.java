@@ -22,6 +22,7 @@ import io.camunda.client.api.command.CommandWithTenantStep;
 import java.net.URI;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.unit.DataSize;
 
@@ -124,6 +125,13 @@ public class CamundaClientProperties {
 
   /** The maximum number of concurrent HTTP connections the client can open. */
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
+
+  /**
+   * If true, the default Camunda JSON mapper is used where earlier 8.9 and 8.10 patches used it,
+   * instead of the application's Spring-managed Jackson 2 ObjectMapper. An own ObjectMapper or
+   * JsonMapper bean is still used.
+   */
+  private boolean useBareObjectMapper = false;
 
   public CamundaClientCloudProperties getCloud() {
     return cloud;
@@ -303,6 +311,21 @@ public class CamundaClientProperties {
     this.maxHttpConnections = maxHttpConnections;
   }
 
+  @Deprecated(since = "8.9", forRemoval = true)
+  @DeprecatedConfigurationProperty(
+      reason =
+          "Only keeps the JSON format of earlier 8.9 and 8.10 patches. Removed in 8.11, which always"
+              + " uses the application's ObjectMapper.",
+      since = "8.9")
+  public boolean isUseBareObjectMapper() {
+    return useBareObjectMapper;
+  }
+
+  @Deprecated(since = "8.9", forRemoval = true)
+  public void setUseBareObjectMapper(final boolean useBareObjectMapper) {
+    this.useBareObjectMapper = useBareObjectMapper;
+  }
+
   @Override
   public String toString() {
     return "CamundaClientProperties{"
@@ -336,6 +359,8 @@ public class CamundaClientProperties {
         + preferRestOverGrpc
         + ", maxHttpConnections="
         + maxHttpConnections
+        + ", useBareObjectMapper="
+        + useBareObjectMapper
         + ", grpcAddress="
         + grpcAddress
         + ", restAddress="
