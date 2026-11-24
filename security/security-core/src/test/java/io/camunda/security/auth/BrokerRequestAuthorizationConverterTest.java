@@ -290,6 +290,7 @@ public class BrokerRequestAuthorizationConverterTest {
   private static SecurityConfiguration mixedProvidersConfiguration() {
     final var defaultOidc = new OidcAuthenticationConfiguration();
     defaultOidc.setIssuerUri("https://default.example.com");
+    defaultOidc.setClientId("default-client");
     final var partnerOidc = new OidcAuthenticationConfiguration();
     partnerOidc.setIssuerUri("https://partner.example.com");
     partnerOidc.setGroupsClaim("groups");

@@ -111,18 +111,16 @@ public sealed interface AuthenticationHandler {
       context = context.withValue(IS_CAMUNDA_USERS_ENABLED, false);
       // With several providers, only some may have a groups claim: use the one of the provider
       // that issued the token.
-      final var groupsConfiguration =
-          authenticationConfiguration.oidcForIssuer(TokenIssuer.of(claims));
+      final var groupsClaim = authenticationConfiguration.getGroupsClaim(TokenIssuer.of(claims));
       // The groups of an IdP's groups claim exist only in the IdP, so Camunda can't require them to
       // exist as soon as one provider has a groups claim.
       context =
           context.withValue(
               IS_CAMUNDA_GROUPS_ENABLED, !authenticationConfiguration.isExternalGroupsEnabled());
-      if (groupsConfiguration.isGroupsClaimConfigured()) {
+      if (groupsClaim != null) {
         try {
           final var oidcGroupsLoader =
-              oidcGroupsLoaders.computeIfAbsent(
-                  groupsConfiguration.getGroupsClaim(), OidcGroupsLoader::new);
+              oidcGroupsLoaders.computeIfAbsent(groupsClaim, OidcGroupsLoader::new);
           context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(claims));
         } catch (final Exception e) {
           LOG.warn("Rejecting bearer token: OIDC groups loader failed", e);

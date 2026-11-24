@@ -28,6 +28,6 @@ public final class CamundaGroupsMode {
         Binder.get(environment)
             .bind(AUTHENTICATION_PROPERTY, AuthenticationConfiguration.class)
             .orElseGet(AuthenticationConfiguration::new);
-    return !authentication.isEveryProviderGroupsClaimConfigured();
+    return authentication.isCamundaGroupsEnabled();
   }
 }

@@ -64,31 +64,41 @@ public class AuthenticationConfiguration {
   }
 
   /**
+   * The groups claim to read the groups of a token of {@code issuer} from: the one of the first
+   * provider with that {@code issuer-uri}, trailing slash ignored. With a single provider, that
+   * provider verifies every token whatever its issuer, so its claim applies even without an {@code
+   * issuer-uri}. A provider without its own {@code groups-claim}, and a token of no known issuer,
+   * use the one of the {@code oidc} block.
+   *
    * @param issuer the {@code iss} of a token, or {@code null}
-   * @return the configuration of the OIDC provider that issued the token, or the default one when
-   *     no provider has this issuer. Issuers that differ only by a trailing slash are the same.
+   * @return the groups claim, or {@code null} when the groups of the token's user come from Camunda
    */
-  public OidcAuthenticationConfiguration oidcForIssuer(final String issuer) {
-    if (issuer == null) {
-      return oidcAuthenticationConfiguration;
+  public String getGroupsClaim(final String issuer) {
+    final var providers = oidcProviders();
+    if (providers.size() == 1) {
+      return groupsClaimOf(providers.get(0));
     }
-    if (hasIssuer(oidcAuthenticationConfiguration, issuer)) {
-      return oidcAuthenticationConfiguration;
+    return providers.stream()
+        .filter(provider -> hasIssuer(provider, issuer))
+        .findFirst()
+        .map(this::groupsClaimOf)
+        .orElseGet(() -> groupsClaimOf(oidcAuthenticationConfiguration));
+  }
+
+  private String groupsClaimOf(final OidcAuthenticationConfiguration provider) {
+    if (provider.isGroupsClaimConfigured()) {
+      return provider.getGroupsClaim();
     }
-    if (providers != null && providers.getOidc() != null) {
-      for (final var provider : providers.getOidc().values()) {
-        if (hasIssuer(provider, issuer)) {
-          return provider;
-        }
-      }
-    }
-    return oidcAuthenticationConfiguration;
+    return oidcAuthenticationConfiguration.isGroupsClaimConfigured()
+        ? oidcAuthenticationConfiguration.getGroupsClaim()
+        : null;
   }
 
   private static boolean hasIssuer(
       final OidcAuthenticationConfiguration configuration, final String issuer) {
     final var issuerUri = configuration.getIssuerUri();
-    return issuerUri != null
+    return issuer != null
+        && issuerUri != null
         && withoutTrailingSlash(issuerUri).equals(withoutTrailingSlash(issuer));
   }
 
@@ -98,10 +108,12 @@ public class AuthenticationConfiguration {
 
   /**
    * @return whether at least one OIDC provider gives the groups of its users in a groups claim.
-   *     Such groups exist only in the identity provider, so Camunda can't require them to exist.
+   *     Such groups exist only in the identity provider, so Camunda can't require them to exist. A
+   *     provider without its own groups claim uses the one of the default provider.
    */
   public boolean isExternalGroupsEnabled() {
-    return method == AuthenticationMethod.OIDC && isAnyProviderGroupsClaimConfigured();
+    return method == AuthenticationMethod.OIDC
+        && oidcProviders().stream().anyMatch(provider -> groupsClaimOf(provider) != null);
   }
 
   /**
@@ -109,19 +121,8 @@ public class AuthenticationConfiguration {
    *     when that provider has no groups claim. Without OIDC, Camunda manages all groups.
    */
   public boolean isCamundaGroupsEnabled() {
-    return !(method == AuthenticationMethod.OIDC && isEveryProviderGroupsClaimConfigured());
-  }
-
-  /** Whether at least one OIDC provider has a groups claim, whatever the authentication method. */
-  public boolean isAnyProviderGroupsClaimConfigured() {
-    return oidcProviders().stream()
-        .anyMatch(OidcAuthenticationConfiguration::isGroupsClaimConfigured);
-  }
-
-  /** Whether every OIDC provider has a groups claim, whatever the authentication method. */
-  public boolean isEveryProviderGroupsClaimConfigured() {
-    return oidcProviders().stream()
-        .allMatch(OidcAuthenticationConfiguration::isGroupsClaimConfigured);
+    return method != AuthenticationMethod.OIDC
+        || oidcProviders().stream().anyMatch(provider -> groupsClaimOf(provider) == null);
   }
 
   /**

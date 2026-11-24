@@ -41,9 +41,7 @@ public class BrokerRequestAuthorizationConverter {
    */
   private boolean readsGroupsFromClaim(final Map<String, Object> tokenClaims) {
     return authenticationConfiguration.getMethod() == OIDC
-        && authenticationConfiguration
-            .oidcForIssuer(TokenIssuer.of(tokenClaims))
-            .isGroupsClaimConfigured();
+        && authenticationConfiguration.getGroupsClaim(TokenIssuer.of(tokenClaims)) != null;
   }
 
   protected boolean isCamundaUsersEnabled(final SecurityConfiguration securityConfiguration) {

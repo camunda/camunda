@@ -57,7 +57,11 @@ public class GroupControllerTest {
   @Nested
   @WebMvcTest(GroupController.class)
   @Import(ApiFiltersConfiguration.class)
-  @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=g1")
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.oidc.groupsClaim=g1"
+      })
   public class CamundaGroupsDisabledTest extends RestControllerTest {
 
     public static final String FORBIDDEN_MESSAGE =
@@ -210,7 +214,11 @@ public class GroupControllerTest {
   @Nested
   @WebMvcTest(GroupController.class)
   @Import(ApiFiltersConfiguration.class)
-  @TestPropertySource(properties = "camunda.security.authentication.oidc.groups-claim=g1")
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.oidc.groups-claim=g1"
+      })
   public class CamundaGroupsDisabledViaKebabCasePropertyTest extends RestControllerTest {
 
     private static final String FORBIDDEN_MESSAGE =

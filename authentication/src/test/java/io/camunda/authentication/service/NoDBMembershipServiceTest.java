@@ -30,6 +30,7 @@ class NoDBMembershipServiceTest {
     // given — only the additional provider has a groups claim
     final var defaultOidc = new OidcAuthenticationConfiguration();
     defaultOidc.setIssuerUri(DEFAULT_ISSUER);
+    defaultOidc.setClientId("default-client");
     final var partnerOidc = new OidcAuthenticationConfiguration();
     partnerOidc.setIssuerUri(PARTNER_ISSUER);
     partnerOidc.setGroupsClaim("groups");

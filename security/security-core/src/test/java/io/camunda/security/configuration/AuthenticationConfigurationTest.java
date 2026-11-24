@@ -32,60 +32,100 @@ class AuthenticationConfigurationTest {
   }
 
   @Test
-  void shouldFindTheDefaultProviderByIssuer() {
-    // when
-    final var found = authentication.oidcForIssuer(DEFAULT_ISSUER);
+  void shouldReadTheGroupsClaimOfTheDefaultProviderByIssuer() {
+    // given
+    defaultOidc.setClientId("client");
+    defaultOidc.setGroupsClaim("default-groups");
+    partnerOidc.setGroupsClaim("partner-groups");
 
     // then
-    assertThat(found).isSameAs(defaultOidc);
+    assertThat(authentication.getGroupsClaim(DEFAULT_ISSUER)).isEqualTo("default-groups");
   }
 
   @Test
-  void shouldFindAnAdditionalProviderByIssuer() {
-    // when
-    final var found = authentication.oidcForIssuer(PARTNER_ISSUER);
+  void shouldReadTheGroupsClaimOfAnAdditionalProviderByIssuer() {
+    // given
+    defaultOidc.setClientId("client");
+    defaultOidc.setGroupsClaim("default-groups");
+    partnerOidc.setGroupsClaim("partner-groups");
 
     // then
-    assertThat(found).isSameAs(partnerOidc);
+    assertThat(authentication.getGroupsClaim(PARTNER_ISSUER)).isEqualTo("partner-groups");
   }
 
   @Test
   void shouldIgnoreATrailingSlashOfTheIssuer() {
-    // when
-    final var found = authentication.oidcForIssuer("https://partner.example.com");
+    // given
+    defaultOidc.setClientId("client");
+    partnerOidc.setGroupsClaim("partner-groups");
 
     // then
-    assertThat(found).isSameAs(partnerOidc);
+    assertThat(authentication.getGroupsClaim("https://partner.example.com"))
+        .isEqualTo("partner-groups");
   }
 
   @Test
-  void shouldFallBackToTheDefaultProviderForAnUnknownIssuer() {
-    // when
-    final var found = authentication.oidcForIssuer("https://unknown.example.com");
+  void shouldInheritTheGroupsClaimOfTheDefaultProvider() {
+    // given an additional provider without a groups claim of its own
+    defaultOidc.setClientId("client");
+    defaultOidc.setGroupsClaim("default-groups");
 
     // then
-    assertThat(found).isSameAs(defaultOidc);
+    assertThat(authentication.getGroupsClaim(PARTNER_ISSUER)).isEqualTo("default-groups");
   }
 
   @Test
-  void shouldFallBackToTheDefaultProviderWithoutAnIssuer() {
-    // when
-    final var found = authentication.oidcForIssuer(null);
+  void shouldHaveNoGroupsClaimWhenNeitherTheProviderNorTheDefaultHasOne() {
+    // given
+    defaultOidc.setClientId("client");
 
     // then
-    assertThat(found).isSameAs(defaultOidc);
+    assertThat(authentication.getGroupsClaim(PARTNER_ISSUER)).isNull();
   }
 
   @Test
-  void shouldFallBackToTheDefaultProviderWithoutAdditionalProviders() {
+  void shouldFallBackToTheGroupsClaimOfTheDefaultProviderForAnUnknownIssuer() {
+    // given
+    defaultOidc.setClientId("client");
+    defaultOidc.setGroupsClaim("default-groups");
+    partnerOidc.setGroupsClaim("partner-groups");
+
+    // then
+    assertThat(authentication.getGroupsClaim("https://unknown.example.com"))
+        .isEqualTo("default-groups");
+  }
+
+  @Test
+  void shouldFallBackToTheGroupsClaimOfTheDefaultProviderWithoutAnIssuer() {
+    // given
+    defaultOidc.setClientId("client");
+    defaultOidc.setGroupsClaim("default-groups");
+    partnerOidc.setGroupsClaim("partner-groups");
+
+    // then
+    assertThat(authentication.getGroupsClaim(null)).isEqualTo("default-groups");
+  }
+
+  @Test
+  void shouldReadTheGroupsClaimOfTheOnlyProviderWhateverTheIssuer() {
+    // given a single additional provider that has no issuer URI: it verifies every token
+    partnerOidc.setIssuerUri(null);
+    partnerOidc.setGroupsClaim("partner-groups");
+
+    // then
+    assertThat(authentication.getGroupsClaim("https://idp.example.com"))
+        .isEqualTo("partner-groups");
+    assertThat(authentication.getGroupsClaim(null)).isEqualTo("partner-groups");
+  }
+
+  @Test
+  void shouldReadTheGroupsClaimOfTheDefaultProviderWhenItIsTheOnlyOne() {
     // given
     authentication.setProviders(null);
-
-    // when
-    final var found = authentication.oidcForIssuer(PARTNER_ISSUER);
+    defaultOidc.setGroupsClaim("default-groups");
 
     // then
-    assertThat(found).isSameAs(defaultOidc);
+    assertThat(authentication.getGroupsClaim(PARTNER_ISSUER)).isEqualTo("default-groups");
   }
 
   private static OidcAuthenticationConfiguration oidc(final String issuerUri) {
@@ -147,6 +187,30 @@ class AuthenticationConfigurationTest {
     // given
     authentication.setMethod(AuthenticationMethod.BASIC);
     defaultOidc.setGroupsClaim("groups");
+
+    // then
+    assertThat(authentication.isExternalGroupsEnabled()).isFalse();
+    assertThat(authentication.isCamundaGroupsEnabled()).isTrue();
+  }
+
+  @Test
+  void shouldNeedNoGroupToExistWhenAProviderInheritsAGroupsClaim() {
+    // given
+    authentication.setMethod(AuthenticationMethod.OIDC);
+    defaultOidc.setClientId("client");
+    defaultOidc.setGroupsClaim("groups");
+
+    // then both providers read the claim, so Camunda manages no groups
+    assertThat(authentication.isExternalGroupsEnabled()).isTrue();
+    assertThat(authentication.isCamundaGroupsEnabled()).isFalse();
+  }
+
+  @Test
+  void
+      shouldManageAllGroupsInCamundaWithBasicAuthenticationAndAGroupsClaimOfAnAdditionalProvider() {
+    // given
+    authentication.setMethod(AuthenticationMethod.BASIC);
+    partnerOidc.setGroupsClaim("groups");
 
     // then
     assertThat(authentication.isExternalGroupsEnabled()).isFalse();

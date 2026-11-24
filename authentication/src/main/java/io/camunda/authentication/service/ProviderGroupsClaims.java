@@ -36,11 +36,11 @@ final class ProviderGroupsClaims {
    *     user's groups come from Camunda
    */
   Optional<List<String>> groupIds(final Map<String, Object> tokenClaims) {
-    final var oidc = authentication.oidcForIssuer(TokenIssuer.of(tokenClaims));
-    if (!oidc.isGroupsClaimConfigured()) {
+    final var groupsClaim = authentication.getGroupsClaim(TokenIssuer.of(tokenClaims));
+    if (groupsClaim == null) {
       return Optional.empty();
     }
-    final var loader = loaders.computeIfAbsent(oidc.getGroupsClaim(), OidcGroupsLoader::new);
+    final var loader = loaders.computeIfAbsent(groupsClaim, OidcGroupsLoader::new);
     return Optional.of(List.copyOf(loader.load(tokenClaims)));
   }
 }

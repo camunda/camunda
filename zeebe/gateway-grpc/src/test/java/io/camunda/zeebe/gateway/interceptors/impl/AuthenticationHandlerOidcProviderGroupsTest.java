@@ -40,6 +40,7 @@ class AuthenticationHandlerOidcProviderGroupsTest {
   @BeforeEach
   void setUp() {
     final var defaultOidc = new OidcAuthenticationConfiguration();
+    defaultOidc.setClientId("default-client");
     defaultOidc.setIssuerUri(DEFAULT_ISSUER);
     defaultOidc.setUsernameClaim("sub");
     final var partnerOidc = new OidcAuthenticationConfiguration();
@@ -94,6 +95,57 @@ class AuthenticationHandlerOidcProviderGroupsTest {
 
     // then
     assertThat(context.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get())).isNull();
+  }
+
+  @Test
+  void shouldInheritTheGroupsClaimOfTheDefaultProvider() throws Exception {
+    // given an additional provider without a groups claim of its own
+    final var defaultOidc = new OidcAuthenticationConfiguration();
+    defaultOidc.setClientId("default-client");
+    defaultOidc.setIssuerUri(DEFAULT_ISSUER);
+    defaultOidc.setUsernameClaim("sub");
+    defaultOidc.setGroupsClaim("default-groups");
+    final var partnerOidc = new OidcAuthenticationConfiguration();
+    partnerOidc.setIssuerUri(PARTNER_ISSUER);
+    handler = handlerOf(defaultOidc, partnerOidc);
+
+    // when
+    final var context =
+        authenticate(
+            Map.of("sub", "alice", "iss", PARTNER_ISSUER, "default-groups", List.of("g1")));
+
+    // then
+    assertThat(context.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get())).containsExactly("g1");
+    assertThat(context.call(() -> AuthenticationHandler.IS_CAMUNDA_GROUPS_ENABLED.get())).isFalse();
+  }
+
+  @Test
+  void shouldReadGroupsFromTheOnlyProviderWithoutAnIssuerUri() throws Exception {
+    // given an unregistered default provider and one additional provider without an issuer URI
+    final var defaultOidc = new OidcAuthenticationConfiguration();
+    defaultOidc.setUsernameClaim("sub");
+    final var partnerOidc = new OidcAuthenticationConfiguration();
+    partnerOidc.setGroupsClaim("groups");
+    handler = handlerOf(defaultOidc, partnerOidc);
+
+    // when
+    final var context =
+        authenticate(Map.of("sub", "alice", "iss", PARTNER_ISSUER, "groups", List.of("g1")));
+
+    // then
+    assertThat(context.call(() -> AuthenticationHandler.GROUPS_CLAIMS.get())).containsExactly("g1");
+  }
+
+  private Oidc handlerOf(
+      final OidcAuthenticationConfiguration defaultOidc,
+      final OidcAuthenticationConfiguration partnerOidc) {
+    final var providers = new ProvidersConfiguration();
+    providers.setOidc(Map.of("partner", partnerOidc));
+    final var authentication = new AuthenticationConfiguration();
+    authentication.setMethod(AuthenticationMethod.OIDC);
+    authentication.setOidc(defaultOidc);
+    authentication.setProviders(providers);
+    return new Oidc(jwtDecoder, claimsProvider, authentication);
   }
 
   private Context authenticate(final Map<String, Object> claims) {
