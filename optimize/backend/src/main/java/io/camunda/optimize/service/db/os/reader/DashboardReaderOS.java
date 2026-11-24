@@ -51,7 +51,8 @@ public class DashboardReaderOS implements DashboardReader {
         QueryDSL.and(
             QueryDSL.term(DashboardIndex.MANAGEMENT_DASHBOARD, false),
             QueryDSL.not(QueryDSL.term(DashboardIndex.AGENTIC_CONTROL_DASHBOARD, true)),
-            QueryDSL.not(QueryDSL.term(DashboardIndex.BUSINESS_VALUE_DASHBOARD, true))),
+            QueryDSL.not(QueryDSL.term(DashboardIndex.BUSINESS_VALUE_DASHBOARD, true)),
+            QueryDSL.not(QueryDSL.term(DashboardIndex.AGENT_INSIGHTS_DASHBOARD, true))),
         errorMessage);
   }
 

@@ -37,6 +37,7 @@ import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
+import io.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
@@ -45,6 +46,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.DatabaseClient;
+import io.camunda.optimize.service.db.reader.DashboardReader;
+import io.camunda.optimize.service.db.reader.EntitiesReader;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.report.ReportEvaluationService;
@@ -97,6 +100,24 @@ class AgentInsightsDashboardIT extends AbstractBrokerlessZeebeCCSMIT {
                 PROCESS_DURATION_REPORT_ID,
                 Map.of("section", "summary", "tile", "processDuration")),
             tuple(INCIDENT_RATE_REPORT_ID, Map.of("section", "summary", "tile", "incidentRate")));
+  }
+
+  @Test
+  void shouldKeepSeededDashboardOutOfUserDashboardCountAndEntityList() {
+    // given the dashboard seeded in setUp
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final long dashboardCount =
+        embeddedOptimizeExtension.getBean(DashboardReader.class).getDashboardCount();
+    final List<CollectionEntity> entities =
+        embeddedOptimizeExtension.getBean(EntitiesReader.class).getAllPrivateEntities();
+
+    // then
+    assertThat(dashboardCount).isZero();
+    assertThat(entities)
+        .extracting(CollectionEntity::getId)
+        .doesNotContain(AGENT_INSIGHTS_DASHBOARD_ID);
   }
 
   @Test
