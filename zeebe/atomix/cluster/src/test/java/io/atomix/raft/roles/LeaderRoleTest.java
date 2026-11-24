@@ -229,6 +229,29 @@ public class LeaderRoleTest {
   }
 
   @Test
+  public void shouldNotRetryAppendEntryAfterFailedSync() throws InterruptedException {
+    // given
+    when(log.append(any(RaftLogEntry.class)))
+        .thenThrow(new JournalException.SyncFailed("Failed to sync", new IOException()));
+
+    final CountDownLatch latch = new CountDownLatch(1);
+    final AppendListener listener =
+        new AppendListener() {
+          @Override
+          public void onWriteError(final Throwable error) {
+            latch.countDown();
+          }
+        };
+
+    // when
+    leaderRole.appendEntry(0, 1, ByteBuffer.allocate(Integer.BYTES).putInt(0, 1), listener);
+
+    // then - the journal rejects every write after a failed sync, so a retry would only fail too
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    verify(log, times(1)).append(any(RaftLogEntry.class));
+  }
+
+  @Test
   public void shouldStopAppendEntryOnOutOfDisk() throws InterruptedException {
     // given - fail once with OOD then accept the next entry
     when(log.append(any(RaftLogEntry.class)))
