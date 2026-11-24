@@ -1348,8 +1348,6 @@ camunda: # Type: io.camunda.configuration.Camunda
     cloud: # Type: io.camunda.tasklist.property.CloudProperties  
       cluster-id: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_CLUSTERID
       console-url: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_CONSOLEURL
-      mixpanel-a-p-i-host: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST
-      mixpanel-token: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_MIXPANELTOKEN
       organization-id: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID
       permission-audience: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_PERMISSIONAUDIENCE
       permission-url: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_PERMISSIONURL

@@ -52,7 +52,6 @@ describe('<Task />', () => {
         completionDate={null}
         priority={50}
         currentUser={userMocks.currentUser}
-        position={0}
       />,
       {
         wrapper: createWrapper(),
@@ -84,7 +83,6 @@ describe('<Task />', () => {
         completionDate={null}
         priority={50}
         currentUser={userMocks.currentUser}
-        position={0}
       />,
       {
         wrapper: createWrapper(),
@@ -108,7 +106,6 @@ describe('<Task />', () => {
         completionDate={null}
         priority={50}
         currentUser={userMocks.currentUser}
-        position={0}
       />,
       {
         wrapper: createWrapper(),
@@ -132,7 +129,6 @@ describe('<Task />', () => {
         completionDate={null}
         priority={50}
         currentUser={userMocks.currentUser}
-        position={0}
       />,
       {
         wrapper: createWrapper(),
@@ -157,7 +153,6 @@ describe('<Task />', () => {
         completionDate={null}
         priority={50}
         currentUser={userMocks.currentUser}
-        position={0}
       />,
       {
         wrapper: createWrapper(['/?filter=all-open']),
@@ -168,7 +163,6 @@ describe('<Task />', () => {
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/1');
     expect(screen.getByTestId('search')).toHaveTextContent('filter=all-open');
-    expect(screen.getByTestId('search')).toHaveTextContent('ref=');
   });
 
   it('should render a task with due date', async () => {
@@ -185,7 +179,6 @@ describe('<Task />', () => {
         completionDate={null}
         priority={50}
         currentUser={userMocks.currentUser}
-        position={0}
       />,
       {
         wrapper: createWrapper(),
@@ -209,7 +202,6 @@ describe('<Task />', () => {
         completionDate={null}
         priority={50}
         currentUser={userMocks.currentUser}
-        position={0}
       />,
       {
         wrapper: createWrapper(['/?sortBy=due']),
@@ -235,7 +227,6 @@ describe('<Task />', () => {
         completionDate={null}
         priority={50}
         currentUser={userMocks.currentUser}
-        position={0}
       />,
       {
         wrapper: createWrapper(['/?sortBy=follow-up']),
@@ -263,7 +254,6 @@ describe('<Task />', () => {
         completionDate="2025-05-28T14:00:00.000Z"
         priority={50}
         currentUser={userMocks.currentUser}
-        position={0}
       />,
       {
         wrapper: createWrapper(),
@@ -290,7 +280,6 @@ describe('<Task />', () => {
         completionDate={null}
         priority={50}
         currentUser={userMocks.currentUser}
-        position={0}
       />,
       {
         wrapper: createWrapper(),

@@ -30,12 +30,9 @@ public class ClientConfig {
   public String clientMode;
   public String databaseType;
 
-  // Cloud related properties for mixpanel events
   public String organizationId;
   public String clusterId;
   public String stage;
-  public String mixpanelToken;
-  public String mixpanelAPIHost;
 
   public long maxRequestSize;
 
@@ -66,7 +63,5 @@ public class ClientConfig {
     organizationId = tasklistProperties.getCloud().getOrganizationId();
     clusterId = tasklistProperties.getCloud().getClusterId();
     stage = tasklistProperties.getCloud().getStage();
-    mixpanelToken = tasklistProperties.getCloud().getMixpanelToken();
-    mixpanelAPIHost = tasklistProperties.getCloud().getMixpanelAPIHost();
   }
 }

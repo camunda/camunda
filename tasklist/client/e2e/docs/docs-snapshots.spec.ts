@@ -277,8 +277,6 @@ async function mockClientConfig(page: Page) {
         "organizationId":null,
         "clusterId":null,
         "stage":null,
-        "mixpanelToken":null,
-        "mixpanelAPIHost":null,
         "isMultiTenancyEnabled": false
       };`,
     }),

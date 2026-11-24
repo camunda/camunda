@@ -89,8 +89,6 @@ const test = base.extend<PlaywrightFixtures>({
                 organizationId: null,
                 clusterId: null,
                 stage: null,
-                mixpanelToken: null,
-                mixpanelAPIHost: null,
                 clientMode: 'v1',
               };
             `,

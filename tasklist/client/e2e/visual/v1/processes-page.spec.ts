@@ -117,8 +117,6 @@ test.describe('processes page', () => {
       organizationId: null,
       clusterId: null,
       stage: null,
-      mixpanelToken: null,
-      mixpanelAPIHost: null,
       isMultiTenancyEnabled: true,
       clientMode: 'v1',
     });

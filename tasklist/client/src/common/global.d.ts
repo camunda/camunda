@@ -6,21 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Mixpanel} from 'mixpanel-browser';
-
-type Appcues = {
-  debug: () => void;
-  page: () => void;
-  identify: (
-    username: string,
-    properties?: {[property: string]: unknown},
-  ) => void;
-  track: (
-    eventName: string,
-    properties?: {[eventProperty: string]: unknown},
-  ) => void;
-};
-
 export declare global {
   interface Window {
     clientConfig?: {
@@ -31,8 +16,6 @@ export declare global {
       isLoginDelegated?: boolean;
       organizationId?: null | string;
       clusterId?: null | string;
-      mixpanelToken?: null | string;
-      mixpanelAPIHost?: null | string;
       isMultiTenancyEnabled?: boolean;
       maxRequestSize?: number;
       clientMode?: 'v1' | 'v2';
@@ -47,8 +30,6 @@ export declare global {
         ) => void;
       };
     };
-    Appcues?: Appcues;
-    mixpanel?: Mixpanel;
     toggleDevtools?: () => void;
   }
 
@@ -60,8 +41,6 @@ export declare global {
       VITE_OSANO_DEV_ENV_URL: string;
       VITE_OSANO_INT_ENV_URL: string;
       VITE_OSANO_PROD_ENV_URL: string;
-      VITE_MIXPANEL_TOKEN: string;
-      VITE_CUES_HOST: string;
     }
   }
 }

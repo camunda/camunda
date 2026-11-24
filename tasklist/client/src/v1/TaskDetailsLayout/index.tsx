@@ -24,9 +24,6 @@ import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {AssignButton} from './AssignButton';
-import {tracking} from 'common/tracking';
-import {decodeTaskOpenedRef} from 'common/tracking/reftags';
-import {removeRefParam} from 'common/tasks/removeRefParam';
 
 type OutletContext = {
   task: Task;
@@ -66,7 +63,7 @@ const TaskDetailsLayout: React.FC = () => {
       enabled: task !== undefined && !isTaskCompleted,
     },
   );
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const navigate = useNavigate();
   useEffect(() => {
@@ -79,7 +76,7 @@ const TaskDetailsLayout: React.FC = () => {
       });
       navigate({
         pathname: pages.initial,
-        search: removeRefParam(searchParams),
+        search: searchParams.toString(),
       });
     }
   }, [
@@ -90,19 +87,6 @@ const TaskDetailsLayout: React.FC = () => {
     taskState,
     t,
   ]);
-
-  useEffect(() => {
-    const ref = searchParams.get('ref');
-    if (searchParams.has('ref')) {
-      setSearchParams(removeRefParam(searchParams), {replace: true});
-    }
-
-    const taskOpenedRef = decodeTaskOpenedRef(ref);
-    tracking.track({
-      eventName: 'task-opened',
-      ...(taskOpenedRef ?? {}),
-    });
-  }, [searchParams, setSearchParams, id]);
 
   const tabs = [
     {
