@@ -205,6 +205,18 @@ class ProcessDefinitionSuspendedStateSearchIT {
             tuple(v1.getProcessDefinitionKey(), Outcome.DRAINING),
             tuple(v2.getProcessDefinitionKey(), Outcome.SUSPENDED));
     awaitState(v2, ProcessDefinitionState.SUSPENDED);
+    // v1 was already DRAINING before the suspend, so only a search for SUSPENDED proves that the
+    // exporter did not overwrite it
+    assertThat(
+            camundaClient
+                .newProcessDefinitionSearchRequest()
+                .filter(
+                    f -> f.processDefinitionId(processId).state(ProcessDefinitionState.SUSPENDED))
+                .send()
+                .join()
+                .items())
+        .extracting(ProcessDefinition::getProcessDefinitionKey)
+        .containsExactly(v2.getProcessDefinitionKey());
     awaitState(v1, ProcessDefinitionState.DRAINING);
   }
 
