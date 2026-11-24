@@ -333,6 +333,10 @@ jobs:
             fi
           done
           echo "::error::Preview environment ${PREVIEW_HOST} is not reachable: HTTP ${last_code:-connection error} — it may have been torn down by an earlier attempt of this run (check the teardown jobs of the first attempt, or redeploy it with version=${{ matrix.deployment.version }} before re-running). This failure is an environment-lifecycle problem, not a Playwright spec failure."
+          # The annotation alone does not fail the step; exit nonzero so the job
+          # stops here, Playwright never runs against the dead environment, and
+          # the pre-flight step failure routes this leg to the deploy bucket.
+          exit 1
 
       - name: Generate GitHub Token
         id: github-token
