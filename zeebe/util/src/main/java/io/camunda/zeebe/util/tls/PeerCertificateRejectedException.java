@@ -24,10 +24,13 @@ public final class PeerCertificateRejectedException extends CertificateException
 
   public PeerCertificateRejectedException(
       final PeerIdentity identity, final RejectionReason reason, final String detail) {
-    super("Rejected peer certificate %s: %s (%s)".formatted(identity, reason, detail));
+    super(
+        "Rejected peer certificate %s: %s (%s)"
+            .formatted(identity, reason, PeerIdentity.sanitize(detail)));
     this.identity = identity;
     this.reason = reason;
-    this.detail = detail;
+    // may embed presented identities, so it is sanitized like them
+    this.detail = PeerIdentity.sanitize(detail);
   }
 
   public PeerIdentity identity() {

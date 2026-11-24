@@ -30,7 +30,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.naming.InvalidNameException;
+import javax.naming.NamingException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.net.ssl.SSLEngine;
@@ -65,6 +65,7 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
   private static final int SAN_URI = 6;
   private static final int SAN_IP = 7;
   private static final String ANY_IDENTITY = "*";
+  private static final String SAN_EXTENSION_OID = "2.5.29.17";
 
   private final X509ExtendedTrustManager delegate;
   private final Set<String> allowedIdentities;
@@ -83,9 +84,7 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
     this.delegate = delegate;
     this.allowedIdentities =
         allowedIdentities.stream()
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .map(s -> s.toLowerCase(Locale.ROOT))
+            .map(PeerCertificateTrustManager::normalizeAllowedIdentity)
             .collect(Collectors.toUnmodifiableSet());
     this.commonNameFallback = commonNameFallback;
     this.enforce = enforce;
@@ -224,6 +223,14 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
 
     final var leaf = chain[0];
     final var identity = identityOf(leaf, peerAddress);
+    if (identity.malformed()) {
+      reject(
+          identity,
+          RejectionReason.MALFORMED_CERTIFICATE,
+          "the subject alternative name extension could not be parsed",
+          null);
+      return;
+    }
 
     try {
       leaf.checkValidity();
@@ -292,33 +299,66 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
     }
 
     return candidateIdentities(identity).stream()
+        // fold ASCII case only: Unicode folding maps look-alikes (e.g. KELVIN SIGN) onto ASCII
+        .filter(PeerCertificateTrustManager::isAscii)
         .map(s -> s.toLowerCase(Locale.ROOT))
         .filter(allowedIdentities::contains)
         .findFirst();
   }
 
+  /**
+   * The SANs, or the CN when fallback is enabled and the certificate has no SAN extension at all;
+   * as in RFC 6125/9525, a CN is never considered next to SANs, which are the vetted field.
+   */
   private List<String> candidateIdentities(final PeerIdentity identity) {
-    if (commonNameFallback && identity.commonName() != null) {
-      final var candidates = new ArrayList<>(identity.subjectAlternativeNames());
-      candidates.add(identity.commonName());
-      return candidates;
+    if (commonNameFallback
+        && !identity.hasSubjectAlternativeNameExtension()
+        && identity.commonName() != null) {
+      return List.of(identity.commonName());
     }
     return identity.subjectAlternativeNames();
+  }
+
+  private static String normalizeAllowedIdentity(final String identity) {
+    final var trimmed = identity == null ? "" : identity.trim();
+    if (trimmed.isEmpty() || !isAscii(trimmed) || ANY_IDENTITY.equals(trimmed)) {
+      throw new IllegalArgumentException(
+          "Expected allowed identities to be non-blank ASCII SAN values (DNS name, IP, URI or"
+              + " email), but got '%s'; leave the list empty to allow any trusted certificate"
+                  .formatted(identity));
+    }
+    return trimmed.toLowerCase(Locale.ROOT);
+  }
+
+  private static boolean isAscii(final String value) {
+    return value.chars().allMatch(c -> c < 0x80);
   }
 
   public static PeerIdentity identityOf(
       final X509Certificate certificate, final @Nullable String peerAddress) {
     final var subject = certificate.getSubjectX500Principal().getName();
+    final var hasSanExtension = certificate.getExtensionValue(SAN_EXTENSION_OID) != null;
+    final var sans = subjectAlternativeNames(certificate);
+    final var commonNames = commonNames(subject);
+    // an unparseable SAN extension could hide the identities it holds; an ambiguous CN (several,
+    // or an unparseable subject) only means the CN fallback cannot match
+    final var malformed = hasSanExtension && sans == null;
     return new PeerIdentity(
-        subject, subjectAlternativeNames(certificate), commonName(subject), peerAddress);
+        subject,
+        sans == null ? List.of() : sans,
+        hasSanExtension,
+        commonNames != null && commonNames.size() == 1 ? commonNames.getFirst() : null,
+        malformed,
+        peerAddress);
   }
 
-  private static List<String> subjectAlternativeNames(final X509Certificate certificate) {
+  /** Null when the extension cannot be parsed: dropping it would hide identities. */
+  private static @Nullable List<String> subjectAlternativeNames(final X509Certificate certificate) {
     final Collection<List<?>> entries;
     try {
       entries = certificate.getSubjectAlternativeNames();
     } catch (final CertificateParsingException e) {
-      return List.of();
+      return null;
     }
     if (entries == null) {
       return List.of();
@@ -335,17 +375,25 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
     return List.copyOf(names);
   }
 
-  private static @Nullable String commonName(final String subject) {
+  /**
+   * All CN values, including those in multi-valued RDNs; null when the subject cannot be parsed.
+   * Several CNs are ambiguous (tools disagree on which one is the identity), so none is used.
+   */
+  private static @Nullable List<String> commonNames(final String subject) {
     try {
+      final var names = new ArrayList<String>();
       for (final Rdn rdn : new LdapName(subject).getRdns()) {
-        if ("CN".equalsIgnoreCase(rdn.getType())) {
-          return String.valueOf(rdn.getValue());
+        final var attributes = rdn.toAttributes().get("CN");
+        if (attributes != null) {
+          for (var i = 0; i < attributes.size(); i++) {
+            names.add(String.valueOf(attributes.get(i)));
+          }
         }
       }
-    } catch (final InvalidNameException e) {
+      return names;
+    } catch (final NamingException e) {
       return null;
     }
-    return null;
   }
 
   private static @Nullable String peerOf(final @Nullable SSLEngine engine) {

@@ -15,7 +15,9 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.ssl.NotSslRecordException;
 import io.netty.handler.ssl.SslHandler;
+import java.nio.channels.ClosedChannelException;
 import java.security.cert.X509Certificate;
 import java.util.Locale;
 import javax.net.ssl.SSLPeerUnverifiedException;
@@ -104,13 +106,7 @@ public final class HandshakeObserver extends ChannelInboundHandlerAdapter {
   private void onFailure(final Throwable cause, final String peer) {
     final var rejection = PeerCertificateRejectedException.find(cause);
     if (rejection != null) {
-      final var presented = rejection.identity();
-      final var identity =
-          new PeerIdentity(
-              presented.subject(),
-              presented.subjectAlternativeNames(),
-              presented.commonName(),
-              peer);
+      final var identity = rejection.identity().withPeerAddress(peer);
       logger.warn(
           "Rejected client certificate {}: {} ({})",
           identity,
@@ -120,10 +116,28 @@ public final class HandshakeObserver extends ChannelInboundHandlerAdapter {
     } else if (isMissingCertificate(cause)) {
       logger.warn("Rejected connection from {}: no client certificate presented", peer);
       countRejected(RejectionReason.NO_CERTIFICATE);
+    } else if (hasCause(cause, ClosedChannelException.class)) {
+      // TCP health probes and port scans connect and close; not worth a warning each
+      logger.debug("Connection from {} closed before completing the TLS handshake", peer);
+      countRejected(RejectionReason.CONNECTION_CLOSED);
+    } else if (hasCause(cause, NotSslRecordException.class)) {
+      // the exception message dumps the client's bytes, so it is not logged
+      logger.debug("Connection from {} did not speak TLS", peer);
+      countRejected(RejectionReason.NOT_TLS);
     } else {
-      logger.warn("TLS handshake with {} failed: {}", peer, cause.toString());
+      logger.warn(
+          "TLS handshake with {} failed: {}", peer, PeerIdentity.sanitize(cause.toString()));
       countRejected(RejectionReason.HANDSHAKE_FAILED);
     }
+  }
+
+  private static boolean hasCause(final Throwable failure, final Class<? extends Throwable> type) {
+    for (Throwable t = failure; t != null; t = t.getCause()) {
+      if (type.isInstance(t)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

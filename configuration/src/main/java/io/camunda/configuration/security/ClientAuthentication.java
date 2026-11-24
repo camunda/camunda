@@ -20,8 +20,9 @@ import java.util.List;
 public class ClientAuthentication {
 
   /**
-   * Whether peers must present a certificate: {@code none} (default), {@code optional} (verify and
-   * log, but do not reject) or {@code required}.
+   * Whether peers must present a certificate: {@code none} (default, none is requested), {@code
+   * optional} (a presented certificate must be valid and allowed, a peer without one is let
+   * through) or {@code required}.
    */
   private ClientCertificateMode mode = ClientCertificateMode.NONE;
 
@@ -32,13 +33,16 @@ public class ClientAuthentication {
   private File trustedCertificates;
 
   /**
-   * Identities allowed to connect, matched exactly (ignoring case) against the Subject Alternative
-   * Names of the peer certificate: DNS names, IP addresses, URIs or emails. When empty, any
-   * certificate signed by a trusted CA is allowed.
+   * Identities allowed to connect, matched exactly (ignoring ASCII case) against the Subject
+   * Alternative Names of the peer certificate: DNS names, IP addresses, URIs or emails. When empty,
+   * any certificate signed by a trusted CA is allowed. Blank entries are rejected at startup.
    */
   private List<String> allowedIdentities = new ArrayList<>();
 
-  /** Also match the certificate subject's Common Name (CN) against the allowed identities. */
+  /**
+   * Match the certificate subject's Common Name (CN) against the allowed identities when the
+   * certificate has no Subject Alternative Names at all.
+   */
   private boolean commonNameFallback = false;
 
   public ClientCertificateMode getMode() {

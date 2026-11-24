@@ -44,9 +44,15 @@ public interface PeerVerificationListener {
     NOT_YET_VALID,
     UNTRUSTED,
     IDENTITY_NOT_ALLOWED,
+    /** The SAN extension or subject could not be parsed unambiguously. */
+    MALFORMED_CERTIFICATE,
     /** The peer presented no certificate although one is required. */
     NO_CERTIFICATE,
-    /** Any other handshake failure, e.g. a plaintext client or a protocol mismatch. */
+    /** The connection closed before the handshake completed, e.g. a TCP health probe. */
+    CONNECTION_CLOSED,
+    /** The client did not speak TLS. */
+    NOT_TLS,
+    /** Any other handshake failure, e.g. a protocol or cipher mismatch. */
     HANDSHAKE_FAILED
   }
 }

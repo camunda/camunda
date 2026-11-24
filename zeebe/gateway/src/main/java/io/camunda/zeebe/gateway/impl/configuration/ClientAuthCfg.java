@@ -32,7 +32,7 @@ public final class ClientAuthCfg {
   }
 
   public ClientAuthCfg setMode(final ClientCertificateMode mode) {
-    this.mode = mode;
+    this.mode = mode == null ? ClientCertificateMode.NONE : mode;
     return this;
   }
 

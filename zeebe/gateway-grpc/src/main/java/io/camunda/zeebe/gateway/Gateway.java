@@ -262,6 +262,11 @@ public final class Gateway implements CloseableSilently {
     final SecurityCfg securityCfg = gatewayCfg.getSecurity();
     if (securityCfg.isEnabled()) {
       setSecurityConfig(serverBuilder, securityCfg);
+    } else if (securityCfg.getClientAuth().getMode() != ClientCertificateMode.NONE) {
+      // fail closed: starting in plaintext would silently drop the client certificate check
+      throw new IllegalArgumentException(
+          "Expected TLS to be enabled when the client certificate mode is %s, but it is disabled"
+              .formatted(securityCfg.getClientAuth().getMode()));
     }
   }
 

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
@@ -41,12 +42,14 @@ import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.net.Socket;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.agrona.CloseHelper;
+import org.awaitility.Awaitility;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -108,7 +111,7 @@ final class ClientCertificateAuthenticationTest {
 
     // then
     assertThat(connects(client)).isTrue();
-    assertThat(acceptedCount(ALLOWED_SAN)).isEqualTo(1);
+    awaitAccepted(ALLOWED_SAN);
   }
 
   @Test
@@ -121,7 +124,7 @@ final class ClientCertificateAuthenticationTest {
 
     // then
     assertThat(connects(null)).isFalse();
-    assertThat(rejectedCount("NO_CERTIFICATE")).isEqualTo(1);
+    awaitRejected("NO_CERTIFICATE");
   }
 
   @Test
@@ -136,7 +139,7 @@ final class ClientCertificateAuthenticationTest {
     // then
     // no CA names are advertised when required, so the client still presents its certificate
     assertThat(connects(client)).isFalse();
-    assertThat(rejectedCount("UNTRUSTED")).isEqualTo(1);
+    awaitRejected("UNTRUSTED");
   }
 
   @Test
@@ -151,7 +154,7 @@ final class ClientCertificateAuthenticationTest {
 
     // then
     assertThat(connects(client)).isFalse();
-    assertThat(rejectedCount("EXPIRED")).isEqualTo(1);
+    awaitRejected("EXPIRED");
   }
 
   @Test
@@ -165,7 +168,7 @@ final class ClientCertificateAuthenticationTest {
 
     // then
     assertThat(connects(client)).isFalse();
-    assertThat(rejectedCount("IDENTITY_NOT_ALLOWED")).isEqualTo(1);
+    awaitRejected("IDENTITY_NOT_ALLOWED");
   }
 
   @Test
@@ -179,6 +182,63 @@ final class ClientCertificateAuthenticationTest {
 
     // then
     assertThat(connects(client)).isFalse();
+    awaitRejected("IDENTITY_NOT_ALLOWED");
+  }
+
+  @Test
+  void shouldIgnoreCommonNameOfClientWithSansEvenWithFallback() throws Exception {
+    // given - the CN is only a fallback for certificates without any SAN
+    requireClientCertificates(List.of(ALLOWED_SAN), clientCa);
+    cfg.getSecurity().getClientAuth().setCommonNameFallback(true);
+    final var client = TestPki.newLeaf(clientCa, ALLOWED_SAN, "intruder.example.com");
+
+    // when
+    startGateway();
+
+    // then
+    assertThat(connects(client)).isFalse();
+    awaitRejected("IDENTITY_NOT_ALLOWED");
+  }
+
+  @Test
+  void shouldNotStartWithBlankAllowedIdentity() throws Exception {
+    // given - e.g. an empty Helm value; silently dropping it would allow every trusted client
+    requireClientCertificates(List.of(ALLOWED_SAN, " "), clientCa);
+
+    // when - then
+    assertThatThrownBy(this::startGateway)
+        .rootCause()
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("non-blank");
+  }
+
+  @Test
+  void shouldNotStartWithClientAuthButTlsDisabled() throws Exception {
+    // given
+    requireClientCertificates(List.of(ALLOWED_SAN), clientCa);
+    cfg.getSecurity().setEnabled(false);
+
+    // when - then
+    assertThatThrownBy(this::startGateway)
+        .rootCause()
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Expected TLS to be enabled");
+  }
+
+  @Test
+  void shouldCountTcpProbeAsClosedConnection() throws Exception {
+    // given
+    requireClientCertificates(List.of(ALLOWED_SAN), clientCa);
+    startGateway();
+
+    // when - connect and close without a handshake, as a TCP health probe does
+    final var address = cfg.getNetwork().toSocketAddress();
+    try (final var socket = new Socket(address.getHostString(), address.getPort())) {
+      assertThat(socket.isConnected()).isTrue();
+    }
+
+    // then
+    awaitRejected("CONNECTION_CLOSED");
   }
 
   @Test
@@ -248,7 +308,7 @@ final class ClientCertificateAuthenticationTest {
 
     // then
     assertThat(connects(client)).isFalse();
-    assertThat(rejectedCount("IDENTITY_NOT_ALLOWED")).isEqualTo(1);
+    awaitRejected("IDENTITY_NOT_ALLOWED");
   }
 
   @Test
@@ -263,7 +323,7 @@ final class ClientCertificateAuthenticationTest {
 
     // then - the trusted CAs are advertised, so the client holds back its certificate
     assertThat(connects(client)).isTrue();
-    assertThat(acceptedCount("none")).isEqualTo(1);
+    awaitAccepted("none");
   }
 
   @Test
@@ -309,6 +369,17 @@ final class ClientCertificateAuthenticationTest {
     } finally {
       channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
     }
+  }
+
+  /** The server counts after the handshake completes on its side, possibly after the client. */
+  private void awaitRejected(final String reason) {
+    Awaitility.await("rejection counted as " + reason)
+        .untilAsserted(() -> assertThat(rejectedCount(reason)).isEqualTo(1));
+  }
+
+  private void awaitAccepted(final String identity) {
+    Awaitility.await("acceptance counted for " + identity)
+        .untilAsserted(() -> assertThat(acceptedCount(identity)).isEqualTo(1));
   }
 
   private double acceptedCount(final String identity) {
