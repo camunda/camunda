@@ -67,6 +67,59 @@ public enum WorkerMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.COUNTER;
     }
+  },
+
+  /**
+   * Total number of job completions whose result is no longer tracked because the response queue
+   * was full. Their outcome is missing from {@code worker.job.completions}, so a growing value
+   * means that counter understates the real number of completions.
+   */
+  JOB_COMPLETION_TRACKING_DROPPED {
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[0];
+    }
+
+    @Override
+    public String getDescription() {
+      return "Total number of job completions dropped from result tracking because the queue was full.";
+    }
+
+    @Override
+    public String getName() {
+      return "worker.job.completion.tracking.dropped";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+  },
+
+  /**
+   * Number of job completion requests queued and not yet awaited. Close to the queue capacity means
+   * the worker cannot keep up with checking the answers.
+   */
+  JOB_COMPLETIONS_PENDING {
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[0];
+    }
+
+    @Override
+    public String getDescription() {
+      return "Number of job completion requests queued and not yet awaited.";
+    }
+
+    @Override
+    public String getName() {
+      return "worker.job.completions.pending";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
   };
 
   private static final KeyName[] OUTCOME_KEY_NAMES =
