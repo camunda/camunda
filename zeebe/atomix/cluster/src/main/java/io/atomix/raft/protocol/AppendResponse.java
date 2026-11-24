@@ -93,14 +93,19 @@ public class AppendResponse extends AbstractRaftResponse {
   }
 
   /**
-   * The members current configuration index at the time of handling the append request.
+   * The configuration index of the member at the time it handled the append request. The leader
+   * compares it with the index of its own configuration and sends the current configuration when
+   * they differ.
    *
-   * <p>An index of 0 is the index of the initial configuration. Members since 8.4 always send this
-   * field; the leader treats it like any other index, so a member reporting 0 while the leader's
-   * configuration is newer is sent the current configuration.
+   * <ul>
+   *   <li>-1: the member has no configuration.
+   *   <li>0: the member has the initial configuration. This is a real value, not "unknown".
+   *   <li>above 0: the log index of the member's configuration entry.
+   * </ul>
    *
-   * <p>If the index is -1, the member has no configuration and requires a configuration update from
-   * the leader.
+   * <p>A member that does not set this field is read as 0. This happens in older versions when a
+   * leader rejects an append request because of a stale term. It is harmless there: the leader that
+   * receives the response steps down because of the higher term, and discards the value.
    */
   public long configurationIndex() {
     return configurationIndex;
