@@ -13,9 +13,10 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
 import {createPortal} from 'react-dom';
-import {Check, CircleAlert, Scan, ZoomIn, ZoomOut} from '@camunda/design-system/icons';
+import {Scan, ZoomIn, ZoomOut} from '@camunda/design-system/icons';
 import {IconButton} from '@camunda/design-system';
 import {DrdJS, type DecisionStateOverlay} from '#/operate/shared/DecisionViewer/DrdJS';
+import {StateIcon} from '#/operate/shared/StateIcon/shadcn.components/StateIcon';
 import type {DrdData} from '../drdData.queries';
 
 type Props = {
@@ -34,19 +35,24 @@ const DRD_COLORS = {
 	defaultLabelColor: 'var(--neutral-foreground-subtle)',
 };
 
-function DecisionStateBadge({state, container, title}: {state: string; container: HTMLElement; title: string}) {
+function DecisionStateBadge({
+	state,
+	container,
+	title,
+}: {
+	state: DrdData[string]['state'];
+	container: HTMLElement;
+	title: string;
+}) {
 	return createPortal(
 		<span
 			data-testid={`state-overlay-${state}`}
 			role="img"
 			aria-label={title}
 			title={title}
-			className={cn(
-				'inline-flex size-6 items-center justify-center rounded-full text-[var(--background)]',
-				state === 'FAILED' ? 'bg-[var(--danger-foreground-strong)]' : 'bg-[var(--neutral-foreground-subtle)]',
-			)}
+			className={cn('inline-flex size-6 items-center justify-center rounded-full bg-[var(--viewer-layer)]')}
 		>
-			{state === 'FAILED' ? <CircleAlert className="size-4" /> : <Check className="size-4" />}
+			<StateIcon state={state} size={16} />
 		</span>,
 		container,
 	);
