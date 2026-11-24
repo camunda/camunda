@@ -1093,6 +1093,39 @@ public class BatchOperationIT {
   }
 
   @TestTemplate
+  public void shouldReturnBatchOperationsWithBatchReadAccessWithoutTenantAccess(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final var batchOperation =
+        createAndSaveRandomBatchOperations(rdbmsService.createWriter(0), b -> b).getLast();
+
+    // when - batch operations carry no tenant, so a caller without tenants keeps access
+    final var result =
+        rdbmsService
+            .getBatchOperationReader()
+            .search(
+                new BatchOperationQuery(
+                    new BatchOperationFilter.Builder()
+                        .batchOperationKeys(batchOperation.batchOperationKey())
+                        .build(),
+                    BatchOperationSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))),
+                ResourceAccessChecks.of(
+                    AuthorizationCheck.enabled(
+                        RequiredAuthorization.of(
+                            b ->
+                                b.resourceType(AuthorizationResourceType.BATCH)
+                                    .resourceIds(List.of(batchOperation.batchOperationKey())))),
+                    TenantCheck.enabled(List.of())));
+
+    // then
+    assertThat(result.total()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
+  }
+
+  @TestTemplate
   public void shouldReturnBatchItemsWithBatchReadAccessWithoutTenantAccess(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
