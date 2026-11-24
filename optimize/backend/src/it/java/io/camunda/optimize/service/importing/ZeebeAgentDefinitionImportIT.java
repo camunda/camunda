@@ -14,14 +14,18 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
 import io.camunda.optimize.dto.optimize.query.agent.AgentDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
+import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.dto.zeebe.agentdefinition.ZeebeAgentDefinitionDataDto;
 import io.camunda.optimize.dto.zeebe.agentdefinition.ZeebeAgentDefinitionRecordDto;
+import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +39,9 @@ class ZeebeAgentDefinitionImportIT extends AbstractBrokerlessZeebeCCSMIT {
   private final AtomicLong positionCounter = new AtomicLong(1);
   private final AtomicLong keyCounter = new AtomicLong(500);
   private final String processId = "agentProcess-" + UUID.randomUUID();
+  // The deletion filter matches the engine's process definition key, so each test needs its own.
+  private final long processDefinitionKeyBase =
+      ThreadLocalRandom.current().nextLong(1_000_000L, Long.MAX_VALUE / 2);
 
   private String agentDefinitionRecordIndex;
 
@@ -135,6 +142,30 @@ class ZeebeAgentDefinitionImportIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
+  void shouldNotImportVersionsOfDeletedProcessDefinitions() {
+    // given a user removed version 1, and Optimize reads its record again, as on a replay
+    seedCreated("review", 1, "Review", AgentDefinitionType.AI_AGENT_TASK, null);
+    seedCreated("review", 2, "Review v2", AgentDefinitionType.AI_AGENT_TASK, null);
+    seedCreated("risk", 1, "Risk", AgentDefinitionType.AI_AGENT_TASK, null);
+    embeddedOptimizeExtension
+        .getBean(JobRegistryWriter.class)
+        .createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, processDefinitionKeyOf(1));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then the agent keeps only the remaining version, and an agent only in version 1 is skipped
+    assertThat(getAllAgentDefinitions())
+        .singleElement()
+        .satisfies(
+            agent -> {
+              assertThat(agent.getFlowNodeId()).isEqualTo("review");
+              assertThat(agent.getProcessDefinitionVersions()).containsExactly("2");
+            });
+  }
+
+  @Test
   void shouldNotImportAgentDefinitionsWhenAgenticPhase2IsDisabled() {
     // given
     setAgenticPhase2Enabled(false);
@@ -167,6 +198,10 @@ class ZeebeAgentDefinitionImportIT extends AbstractBrokerlessZeebeCCSMIT {
         .orElseThrow();
   }
 
+  private String processDefinitionKeyOf(final int processVersion) {
+    return String.valueOf(processDefinitionKeyBase + processVersion);
+  }
+
   private void seedCreated(
       final String elementId,
       final int processVersion,
@@ -180,7 +215,7 @@ class ZeebeAgentDefinitionImportIT extends AbstractBrokerlessZeebeCCSMIT {
     value.setName(name);
     value.setElementId(elementId);
     value.setBpmnProcessId(processId);
-    value.setProcessDefinitionKey(1000L + processVersion);
+    value.setProcessDefinitionKey(processDefinitionKeyBase + processVersion);
     value.setProcessDefinitionVersion(processVersion);
     value.setProcessDefinitionVersionTag("");
     value.setTenantId(tenantId);

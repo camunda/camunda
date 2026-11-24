@@ -13,6 +13,7 @@ import io.camunda.optimize.dto.zeebe.agentdefinition.ZeebeAgentDefinitionDataDto
 import io.camunda.optimize.dto.zeebe.agentdefinition.ZeebeAgentDefinitionRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
+import io.camunda.optimize.service.db.writer.DeletedProcessDefinitionFilter;
 import io.camunda.optimize.service.importing.DatabaseImportJob;
 import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.engine.service.ImportService;
@@ -42,18 +43,21 @@ public class ZeebeAgentDefinitionImportService
   private final ConfigurationService configurationService;
   private final int partitionId;
   private final DatabaseClient databaseClient;
+  private final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter;
 
   public ZeebeAgentDefinitionImportService(
       final ConfigurationService configurationService,
       final AgentDefinitionWriter agentDefinitionWriter,
       final int partitionId,
-      final DatabaseClient databaseClient) {
+      final DatabaseClient databaseClient,
+      final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter) {
     databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.agentDefinitionWriter = agentDefinitionWriter;
     this.configurationService = configurationService;
     this.partitionId = partitionId;
     this.databaseClient = databaseClient;
+    this.deletedProcessDefinitionFilter = deletedProcessDefinitionFilter;
   }
 
   @Override
@@ -64,8 +68,14 @@ public class ZeebeAgentDefinitionImportService
 
     final boolean newDataIsAvailable = !pageOfAgentDefinitions.isEmpty();
     if (newDataIsAvailable) {
+      // Skip the versions a user removed, so that a replay of their records does not add them
+      // back. Optimize uses C7 naming: the engine's process definition key is its definition ID.
+      final List<ZeebeAgentDefinitionRecordDto> recordsOfKeptDefinitions =
+          deletedProcessDefinitionFilter.filterOutSuppressed(
+              pageOfAgentDefinitions,
+              zeebeRecord -> String.valueOf(zeebeRecord.getValue().getProcessDefinitionKey()));
       final List<AgentDefinitionDto> newOptimizeEntities =
-          filterAndMapZeebeRecordsToOptimizeEntities(pageOfAgentDefinitions);
+          filterAndMapZeebeRecordsToOptimizeEntities(recordsOfKeptDefinitions);
       final DatabaseImportJob<AgentDefinitionDto> databaseImportJob =
           createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
       addDatabaseImportJobToQueue(databaseImportJob);

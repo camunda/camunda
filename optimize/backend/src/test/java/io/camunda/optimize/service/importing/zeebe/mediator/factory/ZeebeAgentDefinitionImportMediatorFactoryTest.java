@@ -27,7 +27,7 @@ class ZeebeAgentDefinitionImportMediatorFactoryTest {
     // when
     final ZeebeAgentDefinitionImportMediatorFactory factory =
         new ZeebeAgentDefinitionImportMediatorFactory(
-            null, null, configurationService, null, null, null);
+            null, null, configurationService, null, null, null, null);
 
     // then
     assertThat(factory.isEnabled()).isEqualTo(phase2Enabled);

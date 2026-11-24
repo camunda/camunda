@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
+import io.camunda.optimize.service.db.writer.DeletedProcessDefinitionFilter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeAgentDefinitionImportService;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Component;
 public class ZeebeAgentDefinitionImportMediatorFactory extends AbstractZeebeImportMediatorFactory {
 
   private final AgentDefinitionWriter agentDefinitionWriter;
+  private final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter;
 
   public ZeebeAgentDefinitionImportMediatorFactory(
       final BeanFactory beanFactory,
@@ -34,7 +36,8 @@ public class ZeebeAgentDefinitionImportMediatorFactory extends AbstractZeebeImpo
       final ConfigurationService configurationService,
       final AgentDefinitionWriter agentDefinitionWriter,
       final ObjectMapper objectMapper,
-      final DatabaseClient databaseClient) {
+      final DatabaseClient databaseClient,
+      final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter) {
     super(
         beanFactory,
         importIndexHandlerRegistry,
@@ -42,6 +45,7 @@ public class ZeebeAgentDefinitionImportMediatorFactory extends AbstractZeebeImpo
         objectMapper,
         databaseClient);
     this.agentDefinitionWriter = agentDefinitionWriter;
+    this.deletedProcessDefinitionFilter = deletedProcessDefinitionFilter;
   }
 
   @Override
@@ -65,7 +69,8 @@ public class ZeebeAgentDefinitionImportMediatorFactory extends AbstractZeebeImpo
                 configurationService,
                 agentDefinitionWriter,
                 zeebeDataSourceDto.getPartitionId(),
-                databaseClient),
+                databaseClient,
+                deletedProcessDefinitionFilter),
             configurationService,
             new BackoffCalculator(configurationService)));
   }
