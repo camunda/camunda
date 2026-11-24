@@ -342,6 +342,7 @@ func TestNormalize(t *testing.T) {
 		"    deadline-date: \"2025-12-31\"\n" +
 		"  annotations:\n" +
 		"    checksum/config: abc123def456\n" +
+		"    configchecksum: 71293a5155b0c5399ca56ba09dc8c7cd\n" +
 		"spec:\n" +
 		"  containers:\n" +
 		"  - image: registry.example.com/camunda/zeebe:8.6.0\n"
@@ -350,6 +351,7 @@ func TestNormalize(t *testing.T) {
 
 	require.NotContains(t, got, "helm.sh/chart")
 	require.NotContains(t, got, "checksum/config")
+	require.NotContains(t, got, "configchecksum")
 	require.NotContains(t, got, "app.kubernetes.io/version")
 	require.NotContains(t, got, "2025-12-31")            // date value normalized away
 	require.Contains(t, got, "deadline-date: TEST_DATE") // label kept, value normalized
@@ -394,6 +396,16 @@ func TestShouldExcludeK6ManifestsUnlessPathFilterSelectsThem(t *testing.T) {
 	// when / then
 	require.Equal(t, []string{"templates/namespace.yaml"}, sortedKeys(collectManifests(t, root, nil)))
 	require.Equal(t, []string{"templates/k6/testrun.yaml"}, sortedKeys(collectManifests(t, root, []string{"templates/k6"})))
+}
+
+func TestShouldExcludeReleaseConfigMap(t *testing.T) {
+	// given
+	root := t.TempDir()
+	writeTestManifest(t, root, "templates/common/configmap-release.yaml", "kind: ConfigMap\n")
+	writeTestManifest(t, root, "templates/common/configmap.yaml", "kind: ConfigMap\n")
+
+	// when / then
+	require.Equal(t, []string{"templates/common/configmap.yaml"}, sortedKeys(collectManifests(t, root, nil)))
 }
 
 func TestShouldReturnNoManifestsWhenPathFilterMatchesNothing(t *testing.T) {

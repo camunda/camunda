@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -34,6 +35,8 @@ var normalizePatterns = []struct {
 	// checksum/config is derived from ConfigMap content; its diff is captured
 	// by the ConfigMap's own golden file.
 	{regexp.MustCompile(`(?m)^\s*checksum/config:.*$`), ""},
+	// configchecksum is the same kind of ConfigMap hash on the OpenSearch StatefulSet.
+	{regexp.MustCompile(`(?m)^\s*configchecksum:.*$`), ""},
 }
 
 // normalize strips non-deterministic fields from raw helm template output.
@@ -52,6 +55,13 @@ func normalize(input string) string {
 // selects them explicitly.
 const k6Path = "templates/k6"
 
+// excludedManifests lists the file names that are never compared.
+// configmap-release.yaml is the release ConfigMap of the platform chart. It changes on
+// every chart bump and doesn't contain really useful information.
+var excludedManifests = []string{
+	"configmap-release.yaml",
+}
+
 // collectManifests walks a helm --output-dir tree and returns each matching
 // file's normalized content keyed by its path relative to the tree root.
 func collectManifests(t *testing.T, root string, pathFilter []string) map[string]string {
@@ -66,6 +76,9 @@ func collectManifests(t *testing.T, root string, pathFilter []string) map[string
 			return err
 		}
 		rel = filepath.ToSlash(rel)
+		if slices.Contains(excludedManifests, filepath.Base(rel)) {
+			return nil
+		}
 		if !matchesPathFilter(rel, pathFilter) {
 			return nil
 		}
