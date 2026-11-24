@@ -95,4 +95,4 @@ It does not cover REST API compatibility, which the C8 API governance team owns 
 
 ## Questions
 
-The team that makes the change applies this policy. If you're unsure whether a change breaks user space or is allowed, ask in [#top-c8-engine-governance](https://camunda.slack.com/archives/C0BPZFRT19N). The reasoning and sources behind the policy are in [camunda/pdp-3782-engine-governance](https://github.com/camunda/pdp-3782-engine-governance/blob/main/docs/policies/backward-compatibility.md), for Camunda staff.
+The team that makes the change applies this policy. If you're unsure whether a change breaks user space or is allowed, ask in [#top-c8-engine-governance](https://camunda.slack.com/archives/C0BPZFRT19N).
