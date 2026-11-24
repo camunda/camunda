@@ -36,6 +36,7 @@ import java.util.Random;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @CompatibilityTest
@@ -857,6 +858,10 @@ class UserTaskSearchTest {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = "camunda.compatibility.test.version",
+      matches = "8\\.9\\.([0-9]|[12][0-9])|8\\.10\\.([0-9]|10)",
+      disabledReason = "Date-time $in filter fix is not in any release up to 8.9.29 and 8.10.10")
   void shouldReturnUserTaskByCreationDateIn() {
     // given two user tasks and their exact creation dates
     final var userTasks =
