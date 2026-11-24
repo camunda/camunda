@@ -14,7 +14,6 @@ import ReportEdit from './ReportEdit';
 import ReportView from './ReportView';
 
 import {loadEntity, evaluateReport} from 'services';
-import {track} from 'tracking';
 
 jest.mock('config', () => ({
   newReport: {new: {data: {configuration: {data: 'rest of configuration'}}}},
@@ -28,8 +27,6 @@ jest.mock('services', () => {
     loadEntity: jest.fn(),
   };
 });
-
-jest.mock('tracking', () => ({track: jest.fn()}));
 
 const props = {
   match: {params: {id: '1'}},
@@ -89,7 +86,6 @@ it('should initially evaluate the report', () => {
   shallow(<Report {...props} />);
 
   expect(evaluateReport).toHaveBeenCalled();
-  expect(track).toHaveBeenCalledWith('viewReport', {entityId: 'reportID'});
 });
 
 it('should not evaluate the report if it is new', () => {

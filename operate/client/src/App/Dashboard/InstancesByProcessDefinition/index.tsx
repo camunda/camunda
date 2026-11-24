@@ -10,7 +10,6 @@ import React, {useMemo} from 'react';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {tracking} from 'modules/tracking';
 import {getAccordionTitle} from './utils/getAccordionTitle';
 import {getAccordionLabel} from './utils/getAccordionLabel';
 import {InstancesBar} from 'modules/components/InstancesBar';
@@ -98,10 +97,6 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
               })}
               onClick={() => {
                 panelStatesStore.expandFiltersPanel();
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'dashboard-process-instances-by-name-all-versions',
-                });
               }}
               title={getAccordionTitle({
                 processName: name,

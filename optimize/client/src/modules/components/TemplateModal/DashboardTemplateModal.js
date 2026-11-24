@@ -22,12 +22,7 @@ import {
   productivityDashboardTemplate,
 } from './templates/dashboard';
 
-export default function DashboardTemplateModal({
-  onClose,
-  onConfirm,
-  initialDefinitions,
-  trackingEventName,
-}) {
+export default function DashboardTemplateModal({onClose, onConfirm, initialDefinitions}) {
   const [optimizeProfileLoaded, setOptimizeProfileLoaded] = useState(false);
   const [reportDataSourceLimit, setReportDataSourceLimit] = useState(100);
   const {generateDocsLink} = useDocs();
@@ -70,7 +65,6 @@ export default function DashboardTemplateModal({
       onClose={onClose}
       templateGroups={templateGroups}
       entity="dashboard"
-      trackingEventName={trackingEventName}
       blankSlate={
         <ol>
           <li>

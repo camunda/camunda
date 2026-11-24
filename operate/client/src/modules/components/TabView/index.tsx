@@ -8,7 +8,6 @@
 
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container, Tab, Content, TabPanel, TabList} from './styled';
-import {tracking} from 'modules/tracking';
 import {Tabs, TabPanels, Stack} from '@carbon/react';
 
 type TabType<TabId extends string = string> = {
@@ -23,14 +22,12 @@ type TabType<TabId extends string = string> = {
 
 type Props<TabId extends string = string> = {
   tabs: TabType<TabId>[];
-  eventName?: 'variables-panel-used';
   dataTestId?: string;
   onTabChange?: (id: TabId) => void;
 };
 
 function TabView<TabId extends string = string>({
   tabs = [],
-  eventName,
   dataTestId,
   onTabChange,
 }: Props<TabId>) {
@@ -51,12 +48,6 @@ function TabView<TabId extends string = string>({
                 onClick={() => {
                   onClick?.();
                   onTabChange?.(id);
-                  if (eventName !== undefined) {
-                    tracking.track({
-                      eventName,
-                      toTab: id,
-                    });
-                  }
                 }}
               >
                 <Stack orientation="horizontal" gap={3}>

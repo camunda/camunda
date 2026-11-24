@@ -22,11 +22,8 @@ import {useTask} from 'v2/api/useTask.query';
 import {useEffect} from 'react';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {TaskDetailsHeader} from 'common/tasks/details/TaskDetailsHeader';
-import {tracking} from 'common/tracking';
-import {decodeTaskOpenedRef} from 'common/tracking/reftags';
 import {AssignButton} from './AssignButton';
 import {removeSortParam} from 'common/tasks/removeSortParam';
-import {removeRefParam} from 'common/tasks/removeRefParam';
 
 type OutletContext = {
   task: UserTask;
@@ -64,7 +61,7 @@ const TaskDetailsLayout: React.FC = () => {
     },
   );
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (task?.state === 'CANCELED') {
@@ -76,7 +73,7 @@ const TaskDetailsLayout: React.FC = () => {
       });
       navigate({
         pathname: pages.initial,
-        search: removeRefParam(searchParams),
+        search: searchParams.toString(),
       });
     }
   }, [
@@ -88,19 +85,6 @@ const TaskDetailsLayout: React.FC = () => {
     task?.processDefinitionId,
     t,
   ]);
-
-  useEffect(() => {
-    const ref = searchParams.get('ref');
-    if (searchParams.has('ref')) {
-      setSearchParams(removeRefParam(searchParams), {replace: true});
-    }
-
-    const taskOpenedRef = decodeTaskOpenedRef(ref);
-    tracking.track({
-      eventName: 'task-opened',
-      ...(taskOpenedRef ?? {}),
-    });
-  }, [searchParams, setSearchParams, id]);
 
   const tabs = [
     {

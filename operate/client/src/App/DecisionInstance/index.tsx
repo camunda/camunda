@@ -10,7 +10,6 @@ import {useEffect} from 'react';
 import {useNavigate, useParams} from 'react-router';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {PAGE_TITLE} from 'modules/constants';
-import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
 import {InstanceDetail} from '../Layout/InstanceDetail';
@@ -28,8 +27,7 @@ const DecisionInstance: React.FC = () => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
   const navigate = useNavigate();
   const [drdPanelState, setDrdPanelState] = useDrdPanelState();
-  const {data, error, isFetchedAfterMount} =
-    useDecisionInstance(decisionInstanceId);
+  const {data, error} = useDecisionInstance(decisionInstanceId);
 
   useEffect(() => {
     if (
@@ -42,15 +40,6 @@ const DecisionInstance: React.FC = () => {
       );
     }
   }, [decisionInstanceId, data?.decisionDefinitionName]);
-
-  useEffect(() => {
-    if (isFetchedAfterMount && data?.state !== undefined) {
-      tracking.track({
-        eventName: 'decision-instance-details-loaded',
-        state: data.state,
-      });
-    }
-  }, [isFetchedAfterMount, data?.state]);
 
   useEffect(() => {
     if (error?.variant === 'not-found-error' && decisionInstanceId) {

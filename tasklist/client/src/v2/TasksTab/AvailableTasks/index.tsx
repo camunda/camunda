@@ -85,7 +85,7 @@ const AvailableTasks: React.FC<Props> = ({
               }}
               tabIndex={-1}
             >
-              {tasks.map((task, i) => {
+              {tasks.map((task) => {
                 return (
                   <AvailableTaskItem
                     ref={taskRef}
@@ -102,7 +102,6 @@ const AvailableTasks: React.FC<Props> = ({
                     completionDate={task.completionDate}
                     priority={task.priority}
                     currentUser={data!}
-                    position={i}
                   />
                 );
               })}

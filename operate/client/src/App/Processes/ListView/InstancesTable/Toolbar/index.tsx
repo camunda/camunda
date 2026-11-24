@@ -17,7 +17,6 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {observer} from 'mobx-react';
 import {useCancelProcessInstancesBatchOperation} from 'modules/mutations/processes/useCancelProcessInstancesBatchOperation';
 import {useResolveProcessInstancesIncidentsBatchOperation} from 'modules/mutations/processes/useResolveProcessInstancesIncidentsBatchOperation';
-import {tracking} from 'modules/tracking';
 import {handleOperationError} from 'modules/utils/notifications';
 import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
@@ -51,10 +50,6 @@ const Toolbar: React.FC<Props> = observer(
     const cancelMutation = useCancelProcessInstancesBatchOperation({
       onSuccess: ({batchOperationKey, batchOperationType}) => {
         displaySuccessNotification(batchOperationType, batchOperationKey);
-        tracking.track({
-          eventName: 'batch-operation',
-          operationType: 'CANCEL_PROCESS_INSTANCE',
-        });
         processInstancesSelectionStore.reset();
       },
       onError: (error) => {
@@ -65,10 +60,6 @@ const Toolbar: React.FC<Props> = observer(
     const resolveMutation = useResolveProcessInstancesIncidentsBatchOperation({
       onSuccess: ({batchOperationKey, batchOperationType}) => {
         displaySuccessNotification(batchOperationType, batchOperationKey);
-        tracking.track({
-          eventName: 'batch-operation',
-          operationType: 'RESOLVE_INCIDENT',
-        });
         processInstancesSelectionStore.reset();
       },
       onError: (error) => {

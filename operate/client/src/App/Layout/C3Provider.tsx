@@ -10,7 +10,7 @@ import {C3UserConfigurationProvider} from '@camunda/camunda-composite-components
 import {C3ThemePersister} from './C3ThemePersister';
 import {useEffect, useState} from 'react';
 import {logger} from 'modules/logger';
-import {getStage} from 'modules/tracking/getStage';
+import {getStage} from 'modules/utils/getStage';
 import {getSaasUserToken} from 'modules/api/v2/authentication/token';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 

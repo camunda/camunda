@@ -35,7 +35,6 @@ type Props = {
   sortKey: string;
   isDefault?: boolean;
   isDisabled?: boolean;
-  onSort?: (sortKey: string) => void;
 } & React.ComponentProps<typeof Header>;
 
 const ColumnHeader: React.FC<Props> = ({
@@ -43,7 +42,6 @@ const ColumnHeader: React.FC<Props> = ({
   label,
   isDefault = false,
   isDisabled = false,
-  onSort,
   ...rest
 }) => {
   const navigate = useNavigate();
@@ -67,7 +65,6 @@ const ColumnHeader: React.FC<Props> = ({
     <TableHeader
       {...rest}
       onClick={() => {
-        onSort?.(sortKey);
         navigate({
           search: toggleSorting(location.search, sortKey, currentSortOrder),
         });

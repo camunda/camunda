@@ -12,7 +12,6 @@ import {flip, offset} from '@floating-ui/react-dom';
 import {Add, ArrowRight, Error} from '@carbon/react/icons';
 import isNil from 'lodash/isNil';
 import {modificationsStore} from 'modules/stores/modifications';
-import {tracking} from 'modules/tracking';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {Popover} from 'modules/components/Popover';
 import {
@@ -184,10 +183,6 @@ const ModificationDropdown: React.FC<Props> = observer(
                                 selectedElementId,
                               );
                             } else {
-                              tracking.track({
-                                eventName: 'add-token',
-                              });
-
                               modificationsStore.addModification({
                                 type: 'token',
                                 payload: {
@@ -227,10 +222,6 @@ const ModificationDropdown: React.FC<Props> = observer(
                           size="sm"
                           renderIcon={Error}
                           onClick={() => {
-                            tracking.track({
-                              eventName: 'cancel-token',
-                            });
-
                             modificationsStore.cancelToken(
                               selectedElementId,
                               resolvedElementInstanceKey,
@@ -252,10 +243,6 @@ const ModificationDropdown: React.FC<Props> = observer(
                           size="sm"
                           renderIcon={Error}
                           onClick={() => {
-                            tracking.track({
-                              eventName: 'cancel-token',
-                            });
-
                             cancelAllTokens(
                               selectedElementId,
                               selectedElementRunningInstancesCount ?? 0,

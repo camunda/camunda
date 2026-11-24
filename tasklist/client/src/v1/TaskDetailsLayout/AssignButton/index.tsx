@@ -12,7 +12,6 @@ import {useTranslation} from 'react-i18next';
 import type {Task} from 'v1/api/types';
 import {AsyncActionButton} from 'common/components/AsyncActionButton';
 import {notificationsStore} from 'common/notifications/notifications.store';
-import {tracking} from 'common/tracking';
 import {useAssignTask} from 'v1/api/useAssignTask.mutation';
 import {useUnassignTask} from 'v1/api/useUnassignTask.mutation';
 import {usePollForAssignmentResult} from 'v1/api/usePollForAssignmentResult.mutation';
@@ -79,7 +78,6 @@ const AssignButton: React.FC<Props> = ({id, assignee, taskState}) => {
       });
 
       setAssignmentStatus('assignmentSuccessful');
-      tracking.track({eventName: 'task-assigned'});
     } catch (error) {
       const {data: parsedError, success} = requestErrorSchema.safeParse(error);
 
@@ -116,7 +114,6 @@ const AssignButton: React.FC<Props> = ({id, assignee, taskState}) => {
         wasAssigned: true,
       });
       setAssignmentStatus('unassignmentSuccessful');
-      tracking.track({eventName: 'task-unassigned'});
     } catch (error) {
       const {data: parsedError, success} = requestErrorSchema.safeParse(error);
 

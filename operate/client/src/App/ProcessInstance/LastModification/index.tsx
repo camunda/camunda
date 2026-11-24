@@ -10,7 +10,6 @@ import {Button} from '@carbon/react';
 import {Container, ModificationDetail} from './styled';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
-import {tracking} from 'modules/tracking';
 
 const TOKEN_TEMPLATES = {
   ADD_TOKEN: (element: string) => `Add "${element}"`,
@@ -57,11 +56,6 @@ const LastModification: React.FC = observer(() => {
         kind="secondary"
         size="sm"
         onClick={() => {
-          tracking.track({
-            eventName: 'undo-modification',
-            modificationType: lastModification.payload.operation,
-          });
-
           modificationsStore.removeLastModification();
         }}
       >

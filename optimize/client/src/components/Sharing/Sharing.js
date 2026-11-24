@@ -27,7 +27,6 @@ import {
 import {CamundaLogo} from 'icons';
 import {useErrorHandling} from 'hooks';
 import {t} from 'translation';
-import {track} from 'tracking';
 
 import {evaluateEntity, createLoadReportCallback} from './service';
 
@@ -95,8 +94,7 @@ export function Sharing() {
 
   useEffect(() => {
     performEvaluation();
-    trackSharedEntity(type, id);
-  }, [performEvaluation, id, type]);
+  }, [performEvaluation]);
 
   if (loading) {
     return <Loading />;
@@ -163,11 +161,3 @@ export function Sharing() {
 }
 
 export default Sharing;
-
-function trackSharedEntity(entityType, entityId) {
-  track(createEventName(entityType), {entityId});
-}
-
-function createEventName(entityType) {
-  return 'viewShared' + entityType.charAt(0).toUpperCase() + entityType.slice(1);
-}

@@ -9,7 +9,6 @@
 import {useQuery, type UseQueryOptions} from '@tanstack/react-query';
 import {api} from 'v1/api';
 import {request, type RequestError} from 'common/api/request';
-import {tracking} from 'common/tracking';
 import type {Process} from 'v1/api/types';
 
 type Data = {
@@ -40,11 +39,6 @@ function useProcesses(
 
       if (response !== null) {
         const processes = await response.json();
-        tracking.track({
-          eventName: 'processes-loaded',
-          filter: query ?? '',
-          count: processes.length,
-        });
         return {
           processes,
           query,

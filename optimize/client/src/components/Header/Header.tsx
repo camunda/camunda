@@ -18,7 +18,6 @@ import {
 
 import {showError} from 'notifications';
 import {t} from 'translation';
-import {track} from 'tracking';
 import {useDocs, useErrorHandling, useUiConfig} from 'hooks';
 import {UiConfig} from 'config';
 
@@ -64,9 +63,6 @@ export default function Header({noActions}: {noActions?: boolean}) {
       isOpen: isAppBarOpen,
       appTeaserRouteProps: isCloud ? {} : undefined,
       elements: isCloud ? undefined : createWebappLinks(webappsLinks),
-      elementClicked: (app) => {
-        track(app + ':open');
-      },
     },
     navbar: {elements: []},
     forwardRef: Link as React.ForwardRefExoticComponent<ComponentProps<Link>>,

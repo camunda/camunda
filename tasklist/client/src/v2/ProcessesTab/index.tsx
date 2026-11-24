@@ -33,7 +33,6 @@ import {FirstTimeModal} from 'common/processes/FirstTimeModal';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {logger} from 'common/utils/logger';
 import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
-import {tracking} from 'common/tracking';
 import {useProcessDefinitions} from 'v2/api/useProcessDefinitions.query';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import styles from './styles.module.scss';
@@ -189,9 +188,6 @@ const ProcessesTab: React.FC = observer(() => {
   );
   const {mutateAsync: createProcessInstance} = useCreateProcessInstance({
     onSuccess(data) {
-      tracking.track({
-        eventName: 'process-started',
-      });
       setStartProcessStatus('active-tasks');
 
       newProcessInstance.setInstance({
@@ -311,9 +307,6 @@ const ProcessesTab: React.FC = observer(() => {
 
   useEffect(() => {
     if (error !== null) {
-      tracking.track({
-        eventName: 'processes-fetch-failed',
-      });
       notificationsStore.displayNotification({
         isDismissable: false,
         kind: 'error',
@@ -421,11 +414,6 @@ const ProcessesTab: React.FC = observer(() => {
                           target="_blank"
                           rel="noopener noreferrer"
                           inline
-                          onClick={() => {
-                            tracking.track({
-                              eventName: 'processes-empty-message-link-clicked',
-                            });
-                          }}
                         >
                           {t('processesErrorBodyLinkLabel')}
                         </Link>
@@ -472,9 +460,6 @@ const ProcessesTab: React.FC = observer(() => {
                               const {processDefinitionKey} = process;
                               if (!process.hasStartForm) {
                                 setStartProcessStatus('active');
-                                tracking.track({
-                                  eventName: 'process-start-clicked',
-                                });
                                 try {
                                   await createProcessInstance({
                                     processDefinitionKey,
@@ -498,9 +483,6 @@ const ProcessesTab: React.FC = observer(() => {
                               setSelectedProcess(null);
                               const displayName =
                                 getMultiModeProcessDisplayName(process);
-                              tracking.track({
-                                eventName: 'process-start-failed',
-                              });
                               setStartProcessStatus('inactive');
                               if (
                                 getClientConfig().isMultiTenancyEnabled &&

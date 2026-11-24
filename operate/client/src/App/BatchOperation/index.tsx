@@ -20,7 +20,6 @@ import {useBatchOperation} from 'modules/queries/batch-operations/useBatchOperat
 import {BatchItemsCount} from 'App/BatchOperations/BatchItemsCount';
 import {formatOperationType} from 'modules/utils/formatOperationType';
 import {BatchStateIndicator} from 'App/BatchOperations/BatchStateIndicator';
-import {tracking} from 'modules/tracking';
 import {
   PageContainer,
   ContentContainer,
@@ -62,19 +61,6 @@ const BatchOperation: React.FC = () => {
   useEffect(() => {
     document.title = PAGE_TITLE.BATCH_OPERATION(operationType);
   }, [operationType]);
-
-  useEffect(() => {
-    if (batchOperationData) {
-      const {batchOperationType, state, operationsTotalCount} =
-        batchOperationData;
-      tracking.track({
-        eventName: 'batch-operation-details-loaded',
-        batchOperationType,
-        batchOperationState: state,
-        operationsTotalCount,
-      });
-    }
-  }, [batchOperationData]);
 
   useEffect(() => {
     if (error?.response?.status === 404 && batchOperationKey) {
@@ -143,7 +129,6 @@ const BatchOperation: React.FC = () => {
               <OperationsActions
                 batchOperationKey={batchOperationKey}
                 batchOperationState={batchOperationData.state}
-                batchOperationType={batchOperationData.batchOperationType}
               />
             )}
           </Header>,

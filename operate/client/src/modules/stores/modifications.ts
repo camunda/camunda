@@ -11,7 +11,6 @@ import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {type ModifyProcessInstanceRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {modifyProcessInstance} from 'modules/api/v2/processInstances/modifyProcessInstance';
 import {logger} from 'modules/logger';
-import {tracking} from 'modules/tracking';
 import {getElementName} from 'modules/utils/elements';
 import {getElementsInBetween} from 'modules/utils/processInstanceDetailsDiagram';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
@@ -237,9 +236,6 @@ class Modifications {
   };
 
   enableModificationMode = () => {
-    tracking.track({
-      eventName: 'enable-modification-mode',
-    });
     this.setStatus('enabled');
   };
 

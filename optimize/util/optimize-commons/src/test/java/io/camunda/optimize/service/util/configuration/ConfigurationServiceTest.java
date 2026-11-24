@@ -183,6 +183,22 @@ public class ConfigurationServiceTest {
   }
 
   @Test
+  public void shouldStillLoadConfigContainingRemovedTrackingKeys() {
+    // given
+    final String[] locations = {
+      defaultConfigFile(), "config-samples/config-removed-tracking-keys.yaml"
+    };
+
+    // when
+    final ConfigurationService underTest = createConfiguration(locations);
+
+    // then
+    assertThat(underTest.getOnboarding().isEnabled()).isTrue();
+    assertThat(underTest.getUiConfiguration().isLogoutHidden()).isTrue();
+    assertThat(underTest.getAnalytics().isEnabled()).isTrue();
+  }
+
+  @Test
   public void resolvePropertiesFromEnvironmentVariables() {
     // when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};

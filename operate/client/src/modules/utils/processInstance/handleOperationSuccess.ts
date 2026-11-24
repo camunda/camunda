@@ -9,7 +9,6 @@
 import {useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from 'react-router';
 import {notificationsStore} from 'modules/stores/notifications';
-import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
 import {queryKeys} from 'modules/queries/queryKeys';
 import type {OperationEntityType} from 'modules/types/operate';
@@ -36,12 +35,6 @@ function useHandleOperationSuccess() {
         queryKey: queryKeys.processInstances.base(),
       });
     }
-
-    tracking.track({
-      eventName: 'single-operation',
-      operationType,
-      source,
-    });
 
     if (operationType === 'DELETE_PROCESS_INSTANCE') {
       if (source === 'instance-header') {

@@ -12,7 +12,6 @@ import {useTranslation} from 'react-i18next';
 import {Modal} from 'common/components/Modal';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
 import {pages} from 'common/routing';
-import {tracking} from 'common/tracking';
 import Placeholder from './placeholder.svg';
 import styles from './styles.module.scss';
 
@@ -24,9 +23,6 @@ const FirstTimeModal: React.FC = () => {
     !(getStateLocally('hasConsentedToStartProcess') ?? false),
   );
   const goToInitialPage = () => {
-    tracking.track({
-      eventName: 'processes-consent-refused',
-    });
     navigate(
       {
         ...location,
@@ -51,9 +47,6 @@ const FirstTimeModal: React.FC = () => {
       onRequestSubmit={() => {
         setIsOpen(false);
         storeStateLocally('hasConsentedToStartProcess', true);
-        tracking.track({
-          eventName: 'processes-consent-accepted',
-        });
       }}
       onSecondarySubmit={() => {
         goToInitialPage();

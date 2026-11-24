@@ -9,7 +9,6 @@
 import React from 'react';
 import {OperationItems} from 'modules/components/OperationItems';
 import {OperationItem} from 'modules/components/OperationItem';
-import {tracking} from 'modules/tracking';
 import {InlineLoading} from '@carbon/react';
 import {Container} from './styled';
 import {handleOperationError} from 'modules/utils/notifications';
@@ -26,13 +25,6 @@ const IncidentOperation: React.FC<IncidentOperationProps> = (props) => {
     jobKey: props.jobKey,
     onError: (error) => {
       handleOperationError(error.status);
-    },
-    onSuccess: () => {
-      tracking.track({
-        eventName: 'single-operation',
-        operationType: 'RESOLVE_INCIDENT',
-        source: 'incident-table',
-      });
     },
   });
 

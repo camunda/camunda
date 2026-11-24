@@ -21,12 +21,6 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
-vi.mock('modules/tracking', () => ({
-  tracking: {
-    track: vi.fn(),
-  },
-}));
-
 const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => {
   return (
     <QueryClientProvider client={getMockQueryClient()}>

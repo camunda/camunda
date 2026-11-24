@@ -6,22 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLayoutEffect} from 'react';
 import {Content} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
-import {tracking} from 'common/tracking';
 import ErrorRobotImage from 'common/images/error-robot.svg';
 import {StartProcessFromFormMessage} from 'common/public-start-form/StartProcessFromFormMessage';
 import styles from 'common/public-start-form/startProcessFromForm.module.scss';
 
 const StartProcessFromForm: React.FC = () => {
   const {t} = useTranslation();
-
-  useLayoutEffect(() => {
-    tracking.track({
-      eventName: 'public-start-form-v2-api-not-supported',
-    });
-  }, []);
 
   return (
     <>

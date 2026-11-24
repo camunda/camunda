@@ -13,7 +13,6 @@ import {useHistory, useLocation} from 'react-router-dom';
 import {updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {EntityNameForm, InstanceCount, ReportRenderer} from 'components';
-import {track} from 'tracking';
 
 import {ReportEdit} from './ReportEdit';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
@@ -38,7 +37,6 @@ jest.mock('services', () => {
 
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
-jest.mock('tracking', () => ({track: jest.fn()}));
 jest.mock('hooks', () => ({
   useChangedState: jest.requireActual('react-18').useState,
   useErrorHandling: jest.fn(() => ({
@@ -397,7 +395,6 @@ it('should update description', async () => {
   node.find('EntityNameForm').simulate('save');
 
   expect(node.find('EntityNameForm').prop('description')).toEqual('some description');
-  expect(track).toHaveBeenCalledWith('editDescription', {entity: 'report', entityId: '1'});
   expect(updateEntity).toHaveBeenCalledWith(
     'report/process/single',
     '1',

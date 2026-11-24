@@ -53,8 +53,6 @@ import org.springframework.web.context.WebApplicationContext;
       // TasklistProperties.PREFIX + ".cloud.clusterId=clusterId" -- leave out to test for null
       // values
       TasklistProperties.PREFIX + ".cloud.stage=stage",
-      TasklistProperties.PREFIX + ".cloud.mixpanelToken=i-am-a-token",
-      TasklistProperties.PREFIX + ".cloud.mixpanelAPIHost=https://fake.mixpanel.com",
       "management.endpoint.health.group.readiness.include=readinessState"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -104,8 +102,6 @@ public class ClientConfigRestServiceIT {
                 + "\"organizationId\":\"organizationId\","
                 + "\"clusterId\":null,"
                 + "\"stage\":\"stage\","
-                + "\"mixpanelToken\":\"i-am-a-token\","
-                + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
                 + "\"maxRequestSize\":10485760};");
   }
 

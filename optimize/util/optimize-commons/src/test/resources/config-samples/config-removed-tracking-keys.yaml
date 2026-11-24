@@ -1,0 +1,12 @@
+ui:
+  logoutHidden: true
+  mixpanelToken: 'some-token'
+
+analytics:
+  enabled: true
+  mixpanel:
+    token: 'some-token'
+
+onboarding:
+  enabled: true
+  appCuesScriptUrl: '//example.com/appcues.js'

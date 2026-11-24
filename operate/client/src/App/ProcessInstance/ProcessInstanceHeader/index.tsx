@@ -13,7 +13,6 @@ import {getProcessDefinitionName} from 'modules/utils/instance';
 import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
 import {VersionTag, DrainingTag} from './styled';
@@ -151,12 +150,6 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
               })}
               title={versionColumnTitle}
               aria-label={versionColumnTitle}
-              onClick={() => {
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'process-details-version',
-                });
-              }}
             >
               {processDefinitionVersion}
             </Link>
@@ -206,10 +199,6 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                   })}
                   onClick={() => {
                     panelStatesStore.expandFiltersPanel();
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'process-details-called-instances',
-                    });
                   }}
                   title="View all called instances"
                   aria-label="View all called instances"

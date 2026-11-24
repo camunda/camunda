@@ -12,7 +12,6 @@ import {useTranslation} from 'react-i18next';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.9';
 import {AsyncActionButton} from 'common/components/AsyncActionButton';
 import {notificationsStore} from 'common/notifications/notifications.store';
-import {tracking} from 'common/tracking';
 import {useAssignTask} from 'v2/api/useAssignTask.mutation';
 import {useUnassignTask} from 'v2/api/useUnassignTask.mutation';
 import {usePollForAssignmentResult} from 'v2/api/usePollForAssignmentResult.mutation';
@@ -92,7 +91,6 @@ const AssignButton: React.FC<Props> = ({
       }
 
       setAssignmentStatus('assignmentSuccessful');
-      tracking.track({eventName: 'task-assigned'});
     } catch (error) {
       const {data: parsedError, success} = requestErrorSchema.safeParse(error);
 
@@ -138,7 +136,6 @@ const AssignButton: React.FC<Props> = ({
         wasAssigned: true,
       });
       setAssignmentStatus('unassignmentSuccessful');
-      tracking.track({eventName: 'task-unassigned'});
     } catch (error) {
       const {data: parsedError, success} = requestErrorSchema.safeParse(error);
 

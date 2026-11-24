@@ -22,10 +22,6 @@ public class CloudProperties {
 
   private String stage;
 
-  private String mixpanelToken;
-
-  private String mixpanelAPIHost;
-
   public String getOrganizationId() {
     return organizationId;
   }
@@ -78,35 +74,10 @@ public class CloudProperties {
     return this;
   }
 
-  public String getMixpanelToken() {
-    return mixpanelToken;
-  }
-
-  public CloudProperties setMixpanelToken(final String mixpanelToken) {
-    this.mixpanelToken = mixpanelToken;
-    return this;
-  }
-
-  public String getMixpanelAPIHost() {
-    return mixpanelAPIHost;
-  }
-
-  public CloudProperties setMixpanelAPIHost(final String mixpanelAPIHost) {
-    this.mixpanelAPIHost = mixpanelAPIHost;
-    return this;
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(
-        organizationId,
-        permissionUrl,
-        permissionAudience,
-        clusterId,
-        consoleUrl,
-        stage,
-        mixpanelToken,
-        mixpanelAPIHost);
+        organizationId, permissionUrl, permissionAudience, clusterId, consoleUrl, stage);
   }
 
   @Override
@@ -123,8 +94,6 @@ public class CloudProperties {
         && Objects.equals(permissionAudience, that.permissionAudience)
         && Objects.equals(clusterId, that.clusterId)
         && Objects.equals(consoleUrl, that.consoleUrl)
-        && Objects.equals(stage, that.stage)
-        && Objects.equals(mixpanelToken, that.mixpanelToken)
-        && Objects.equals(mixpanelAPIHost, that.mixpanelAPIHost);
+        && Objects.equals(stage, that.stage);
   }
 }

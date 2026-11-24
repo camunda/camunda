@@ -15,7 +15,6 @@ import {Skeleton} from './FormJS/Skeleton';
 import {useStartExternalProcess} from 'v1/api/useStartExternalProcess.mutation';
 import {useTranslation} from 'react-i18next';
 import {logger} from 'common/utils/logger';
-import {tracking} from 'common/tracking';
 import CheckImage from 'common/images/orange-check-mark.svg';
 import ErrorRobotImage from 'common/images/error-robot.svg';
 import {StartProcessFromFormMessage as Message} from 'common/public-start-form/StartProcessFromFormMessage';
@@ -45,37 +44,17 @@ const StartProcessFromForm: React.FC = () => {
   const {mutateAsync: startExternalProcess, reset} = useStartExternalProcess({
     onError: (error) => {
       logger.error(error);
-      tracking.track({
-        eventName: 'public-start-form-submission-failed',
-      });
-    },
-    onMutate: () => {
-      tracking.track({
-        eventName: 'public-start-form-submitted',
-      });
     },
   });
 
   useLayoutEffect(() => {
     if (error !== null) {
-      tracking.track({
-        eventName: 'public-start-form-load-failed',
-      });
       setPageView('form-not-found');
     }
   }, [error]);
 
   useLayoutEffect(() => {
-    tracking.track({
-      eventName: 'public-start-form-opened',
-    });
-  }, []);
-
-  useLayoutEffect(() => {
     if (data !== undefined) {
-      tracking.track({
-        eventName: 'public-start-form-loaded',
-      });
       setPageView('form');
     }
   }, [data]);
@@ -83,9 +62,6 @@ const StartProcessFromForm: React.FC = () => {
   useLayoutEffect(() => {
     const parsedSchema = parseValidJSON(data?.schema ?? '');
     if (parsedSchema !== null && hasFileComponents(parsedSchema)) {
-      tracking.track({
-        eventName: 'public-start-form-schema-with-file-components',
-      });
       setPageView('schema-with-file-components');
     }
   }, [data?.schema]);

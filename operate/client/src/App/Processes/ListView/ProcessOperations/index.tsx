@@ -17,7 +17,6 @@ import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';
 import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError} from 'modules/utils/notifications';
-import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
 import {useRunningInstancesCount} from 'modules/queries/processInstance/useRunningInstancesCount';
 import {useDeleteResource} from 'modules/mutations/resource/useDeleteResource';
@@ -98,12 +97,6 @@ const ProcessOperations: React.FC<Props> = observer(
                     isOperationRunning || (runningInstancesCount ?? 0) !== 0
                   }
                   onClick={() => {
-                    tracking.track({
-                      eventName: 'definition-deletion-button',
-                      resource: 'process',
-                      version: processVersion.toString(),
-                    });
-
                     setIsDeleteModalVisible(true);
                   }}
                 />
@@ -175,12 +168,6 @@ const ProcessOperations: React.FC<Props> = observer(
           onClose={() => setIsDeleteModalVisible(false)}
           onDelete={() => {
             setIsDeleteModalVisible(false);
-
-            tracking.track({
-              eventName: 'definition-deletion-confirmation',
-              resource: 'process',
-              version: processVersion.toString(),
-            });
 
             deleteResourceMutation.mutate();
           }}
