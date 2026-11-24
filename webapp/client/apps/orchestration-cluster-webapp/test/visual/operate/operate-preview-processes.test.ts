@@ -276,11 +276,17 @@ test.describe('batch move mode', () => {
 		await expect(dialog).toHaveScreenshot();
 	});
 
-	test('should match the batch modification mode snapshot with a target selected', async ({page}) => {
+	test('should match the batch modification mode snapshot with a target selected', async ({
+		operatePreviewProcessesPage,
+		page,
+	}) => {
 		await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
 		await page.locator('[data-element-id="end_event"]').click();
 
 		await expect(page.getByRole('button', {name: 'Review Modification'})).toBeEnabled();
+		await expect(
+			operatePreviewProcessesPage.diagramPanel.getByRole('img', {name: 'end_event, 1 added', exact: true}),
+		).toBeVisible();
 		await expect(page).toHaveScreenshot();
 	});
 
