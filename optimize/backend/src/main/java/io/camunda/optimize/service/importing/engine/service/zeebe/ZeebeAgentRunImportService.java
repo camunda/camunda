@@ -231,9 +231,9 @@ public class ZeebeAgentRunImportService implements ImportService<ZeebeAgentInsta
     return limitsHit;
   }
 
-  // A limit of -1 means no limit.
+  // Only -1 means no limit. A limit of 0 is one the user set, so a run reaches it at once.
   private static boolean reached(final Long usage, final Long limit) {
-    return usage != null && limit != null && limit > 0 && usage >= limit;
+    return usage != null && limit != null && limit >= 0 && usage >= limit;
   }
 
   /**

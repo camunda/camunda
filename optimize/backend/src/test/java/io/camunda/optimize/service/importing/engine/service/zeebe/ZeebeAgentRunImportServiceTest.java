@@ -158,6 +158,27 @@ class ZeebeAgentRunImportServiceTest {
   }
 
   @Test
+  void shouldReportALimitOfZeroAsReached() {
+    // given the user set no tool calls at all; only -1 means no limit
+    final var completed =
+        record(RUN_KEY, AgentInstanceIntent.COMPLETED, 30, 3, AgentInstanceStatus.COMPLETED);
+    usage(completed, 800, 200, 0, 0, 0, 5, 0);
+    limits(completed, -1, -1, 0);
+
+    // when
+    final List<AgentRunDto> runs =
+        ZeebeAgentRunImportService.filterAndMapZeebeRecordsToOptimizeEntities(List.of(completed));
+
+    // then
+    assertThat(runs)
+        .singleElement()
+        .satisfies(
+            run ->
+                assertThat(run.getLimitHit())
+                    .containsExactly(ZeebeAgentRunImportService.LIMIT_TOOL_CALLS));
+  }
+
+  @Test
   void shouldNotReportLimitsThatAreNotSet() {
     // given limits of -1, which mean no limit
     final var completed =
