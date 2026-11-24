@@ -15,12 +15,18 @@ permissions:
 
 jobs:
   nightly-api-tests-es:
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-api-tests.yml
     with:
       branch: stable/8.9
     secrets: inherit
 
   nightly-api-tests-es-all-in-one:
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-api-tests.yml
     with:
       branch: stable/8.9
