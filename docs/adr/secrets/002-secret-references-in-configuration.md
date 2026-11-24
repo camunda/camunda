@@ -2,7 +2,7 @@
 
 **DRI**: Matthew Kavanagh
 
-**Status**: Proposed (8.11)
+**Status**: Accepted (8.11)
 
 **Deciders**
 
