@@ -7,12 +7,15 @@
  */
 package io.camunda.secretstore.azure;
 
+import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import com.azure.core.http.HttpClient;
 import com.azure.core.util.Configuration;
-import io.camunda.secretstore.SecretErrorCode;
+import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
+import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStoreMetricsDoc;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -58,9 +61,9 @@ class AzureKeyVaultSecretStoreTest {
   }
 
   @Test
-  void shouldReportEveryNameAsNotFoundUntilResolutionIsImplemented() {
+  void shouldReportEveryNameAsNotFoundInContainerModeUntilItIsImplemented() {
     // given
-    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), signedIn())) {
+    try (final var store = store(containerConfig(), signedIn())) {
 
       // when
       final var results = store.resolve(Set.of("a", "b"));
@@ -68,14 +71,132 @@ class AzureKeyVaultSecretStoreTest {
       // then
       assertThat(results).containsOnlyKeys("a", "b");
       assertThat(results.values())
-          .allSatisfy(
-              result ->
-                  assertThat(result)
-                      .isInstanceOfSatisfying(
-                          Failed.class,
-                          failed ->
-                              assertThat(failed.code()).isEqualTo(SecretErrorCode.NOT_FOUND)));
+          .allSatisfy(result -> assertThat(failure(result).code()).isEqualTo(NOT_FOUND));
       assertThat(store.list()).isEmpty();
+    }
+  }
+
+  @Test
+  void shouldReadTheLatestVersionOfThePrefixedSecret() {
+    // given
+    final var http = signedIn().putSecret("camunda-api-key", "the-key");
+    try (final var store = store(prefixed("camunda-"), http)) {
+
+      // when
+      final var results = store.resolve(Set.of("api-key"));
+
+      // then — no version in the path means Key Vault's latest
+      assertThat(results).containsExactly(entry("api-key", new Resolved("the-key")));
+      assertThat(secretPathsRead(http)).containsExactly("/secrets/camunda-api-key/");
+    }
+  }
+
+  @Test
+  void shouldReadTheBareNameWithoutAPrefix() {
+    // given
+    final var http = signedIn().putSecret("api-key", "the-key");
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+
+      // when
+      final var results = store.resolve(Set.of("api-key"));
+
+      // then
+      assertThat(results).containsExactly(entry("api-key", new Resolved("the-key")));
+      assertThat(secretPathsRead(http)).containsExactly("/secrets/api-key/");
+    }
+  }
+
+  @Test
+  void shouldReturnANewVersionWithoutARestart() {
+    // given
+    final var http = signedIn().putSecret("api-key", "first");
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+      assertThat(store.resolve(Set.of("api-key"))).containsValue(new Resolved("first"));
+
+      // when — the store keeps no cache: the cache TTL is the wrapping CachingSecretStore's
+      http.putSecret("api-key", "second");
+
+      // then
+      assertThat(store.resolve(Set.of("api-key"))).containsValue(new Resolved("second"));
+    }
+  }
+
+  @Test
+  void shouldPassTheNameAsWrittenAndLetTheVaultIgnoreItsCase() {
+    // given
+    final var http = signedIn().putSecret("db-password", "the-password");
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+
+      // when
+      final var results = store.resolve(Set.of("Db-Password", "db-password"));
+
+      // then
+      assertThat(results)
+          .containsOnly(
+              entry("Db-Password", new Resolved("the-password")),
+              entry("db-password", new Resolved("the-password")));
+      assertThat(secretPathsRead(http))
+          .containsExactlyInAnyOrder("/secrets/Db-Password/", "/secrets/db-password/");
+    }
+  }
+
+  @Test
+  void shouldReturnTheValueByteForByte() {
+    // given
+    final var pem =
+        "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC\n-----END PRIVATE KEY-----\n";
+    final var json = "{\"user\": \"admin\", \"pass\": \"p\\\\a\\\"ss\"}";
+    final var unicode = "tokén-密码-🔑";
+    final var http =
+        signedIn().putSecret("pem", pem).putSecret("json", json).putSecret("unicode", unicode);
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+
+      // when
+      final var results = store.resolve(Set.of("pem", "json", "unicode"));
+
+      // then
+      assertThat(results)
+          .containsOnly(
+              entry("pem", new Resolved(pem)),
+              entry("json", new Resolved(json)),
+              entry("unicode", new Resolved(unicode)));
+    }
+  }
+
+  @Test
+  void shouldReportAnEmptyValueAsNotFound() {
+    // given
+    final var http = signedIn().putSecret("api-key", "");
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+
+      // when
+      final var result = store.resolve(Set.of("api-key")).get("api-key");
+
+      // then
+      assertThat(failure(result).code()).isEqualTo(NOT_FOUND);
+      assertThat(failure(result).message()).contains("api-key", "empty");
+    }
+  }
+
+  @Test
+  void shouldResolveEveryNameOnItsOwnWithoutLeakingAValue() {
+    // given
+    final var http = signedIn().putSecret("user", "the-user").putSecret("password", "the-password");
+    try (final var log = LogCapturer.capturing(OneByOneSecretResolver.class, Level.TRACE);
+        final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+
+      // when
+      final var results = store.resolve(Set.of("user", "password", "missing"));
+
+      // then — the missing name fails alone
+      assertThat(results)
+          .containsEntry("user", new Resolved("the-user"))
+          .containsEntry("password", new Resolved("the-password"));
+      final var missing = failure(results.get("missing"));
+      assertThat(missing.code()).isEqualTo(NOT_FOUND);
+      assertThat(missing.message()).isEqualTo("Secret not found: missing");
+      assertThat(String.valueOf(missing) + log.messages())
+          .doesNotContain("the-user", "the-password");
     }
   }
 
@@ -353,6 +474,31 @@ class AzureKeyVaultSecretStoreTest {
 
   private static StubAzureHttpClient signedIn() {
     return StubAzureHttpClient.signingIn(3600);
+  }
+
+  private static Failed failure(final @Nullable SecretResolutionResult result) {
+    assertThat(result).isInstanceOf(Failed.class);
+    return (Failed) result;
+  }
+
+  private static List<String> secretPathsRead(final StubAzureHttpClient http) {
+    return http.requests().stream()
+        .filter(request -> request.secretName() != null)
+        .filter(request -> request.authorization() != null)
+        .map(request -> request.original().getUrl().getPath())
+        .toList();
+  }
+
+  private static AzureKeyVaultStoreConfig prefixed(final String pathPrefix) {
+    return new AzureKeyVaultStoreConfig(
+        VAULT_URL,
+        pathPrefix,
+        null,
+        null,
+        null,
+        AzureKeyVaultStoreConfig.DEFAULT_MAX_RETRIES,
+        AzureKeyVaultStoreConfig.DEFAULT_CALL_TIMEOUT,
+        AzureKeyVaultStoreConfig.DEFAULT_ATTEMPT_TIMEOUT);
   }
 
   private static AzureKeyVaultStoreConfig containerConfig() {

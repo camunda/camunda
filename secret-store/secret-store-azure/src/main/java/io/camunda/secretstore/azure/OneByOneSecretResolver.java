@@ -7,29 +7,76 @@
  */
 package io.camunda.secretstore.azure;
 
+import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
+
+import com.azure.core.exception.ResourceNotFoundException;
 import com.azure.security.keyvault.secrets.SecretClient;
 import io.camunda.secretstore.SecretResolutionResult;
+import io.camunda.secretstore.SecretResolutionResult.Failed;
+import io.camunda.secretstore.SecretResolutionResult.Resolved;
+import io.camunda.secretstore.SecretStoreUnavailableException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Resolves every reference as its own Key Vault secret, named {@code pathPrefix + name}.
+ * Resolves every reference as its own Key Vault secret, named {@code pathPrefix + name}, reading
+ * its latest version with one {@code getSecret} request per name.
  *
- * <p>Reading the vault is not implemented yet (camunda/camunda#67226): until then every name is
- * reported as not found and no names are listed.
+ * <p>The name is passed as written: its case is kept and {@code _} is not mapped to {@code -}. Key
+ * Vault compares names case-insensitively, so two spellings of one name read the same secret. The
+ * value is returned unchanged; an empty value is reported as not found, as the environment-variable
+ * store does.
+ *
+ * <p>A secret the vault does not hold is reported as {@link
+ * io.camunda.secretstore.SecretErrorCode#NOT_FOUND NOT_FOUND}; every other failure makes the vault
+ * unavailable for the whole call. Listing is not implemented yet: no names are listed.
  */
 final class OneByOneSecretResolver implements AzureSecretResolver {
 
-  private final SecretClient client;
+  private static final Logger LOG = LoggerFactory.getLogger(OneByOneSecretResolver.class);
 
-  OneByOneSecretResolver(final SecretClient client) {
+  private final SecretClient client;
+  private final String pathPrefix;
+
+  OneByOneSecretResolver(final SecretClient client, final String pathPrefix) {
     this.client = client;
+    this.pathPrefix = pathPrefix;
   }
 
   @Override
   public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
-    return AzureSecretResolver.notFound(names);
+    LOG.debug("Resolving {} secret references from Azure Key Vault", names.size());
+    final Map<String, SecretResolutionResult> results = new LinkedHashMap<>(names.size());
+    for (final var name : names) {
+      results.put(name, resolveSingle(name));
+    }
+    return results;
+  }
+
+  private SecretResolutionResult resolveSingle(final String name) {
+    final var secretName = pathPrefix + name;
+    final String value;
+    try {
+      value = client.getSecret(secretName).getValue();
+    } catch (final ResourceNotFoundException e) {
+      return notFound(secretName, e);
+    } catch (final RuntimeException e) {
+      throw new SecretStoreUnavailableException(
+          "Azure Key Vault is unavailable: " + e.getMessage(), e);
+    }
+    if (value == null || value.isEmpty()) {
+      return new Failed(
+          NOT_FOUND, "Secret not found: " + secretName + " (its value is empty)", null);
+    }
+    return new Resolved(value);
+  }
+
+  private static Failed notFound(final String secretName, final Exception cause) {
+    return new Failed(NOT_FOUND, "Secret not found: " + secretName, cause);
   }
 
   @Override
