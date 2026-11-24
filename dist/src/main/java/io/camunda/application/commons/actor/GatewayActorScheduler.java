@@ -9,7 +9,6 @@ package io.camunda.application.commons.actor;
 
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.VisibleForTesting;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +54,6 @@ public final class GatewayActorScheduler implements CloseableSilently {
   }
 
   /** Uses the scheduler of the process. Closing this instance does not close the scheduler. */
-  @VisibleForTesting
   public static GatewayActorScheduler shared(final ActorScheduler scheduler) {
     return new GatewayActorScheduler(scheduler, false);
   }
