@@ -11,9 +11,11 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -26,7 +28,9 @@ public final class PolicyUpdateProcessors {
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
+      final HubPolicyClient hubPolicyClient) {
     final var policyUpdateState = processingState.getPolicyUpdateState();
     final var commandMapper = new PolicyUpdateCommandMapper(processingState);
     typedRecordProcessors
@@ -43,5 +47,9 @@ public final class PolicyUpdateProcessors {
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.COMMIT_VERSION,
             new PolicyUpdateCommitVersionProcessor(keyGenerator, distributionBehavior, writers));
+    if (hubPolicyClient != HubPolicyClient.DISABLED) {
+      typedRecordProcessors.withListener(
+          new HubPolicyUpdateScheduler(scheduledTaskStateFactory, hubPolicyClient));
+    }
   }
 }
