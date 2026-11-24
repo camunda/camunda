@@ -323,15 +323,25 @@ final class SegmentsManager implements AutoCloseable {
       firstSegment.flushDescriptor();
       deleteAllSegments();
     } catch (final RuntimeException e) {
-      discardSegment(firstSegment, e);
-      currentSegment = getLastSegment();
+      if (segments.isEmpty()) {
+        // every old segment is gone, only finishing the deletion of the last one failed: the
+        // journal is reset
+        useFirstSegment(firstSegment, index);
+      } else {
+        discardSegment(firstSegment, e);
+        currentSegment = getLastSegment();
+      }
       throw e;
     }
 
+    useFirstSegment(firstSegment, index);
+    return firstSegment;
+  }
+
+  private void useFirstSegment(final Segment firstSegment, final long index) {
     currentSegment = firstSegment;
     segments.put(index, firstSegment);
     journalMetrics.incSegmentCount();
-    return firstSegment;
   }
 
   /**
@@ -346,9 +356,15 @@ final class SegmentsManager implements AutoCloseable {
       // underlying buffer
       //noinspection resource
       final var segment = it.next();
-      segment.delete();
-      it.remove();
-      journalMetrics.decSegmentCount();
+      try {
+        segment.delete();
+      } finally {
+        // a segment renamed for deletion is gone, even if the deletion failed after the rename
+        if (segment.isMarkedForDeletion()) {
+          it.remove();
+          journalMetrics.decSegmentCount();
+        }
+      }
     }
   }
 

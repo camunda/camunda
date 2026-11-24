@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,6 +24,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
@@ -56,6 +58,29 @@ class SegmentsManagerTest {
 
     // then - nothing was deleted, so readers can still use it
     assertThat(segment.isOpen()).isTrue();
+  }
+
+  @Test
+  void shouldFreeRenamedSegmentWhenFlushingTheRenameFails() {
+    // given - a segment that no reader holds, and a directory flush that fails
+    segments = journalFactory.segmentsManager(directory);
+    segments.open();
+    final var segment = Objects.requireNonNull(segments.getFirstSegment());
+    final var renamedFile = segment.file().getFileMarkedForDeletion();
+    final var flushFailure = new IOException("Injected: failed to flush the directory");
+
+    // when - the segment file is renamed for deletion, but flushing the rename fails
+    final Throwable error;
+    try (final var fileUtil = Mockito.mockStatic(FileUtil.class, Mockito.CALLS_REAL_METHODS)) {
+      fileUtil.when(() -> FileUtil.flushDirectory(Mockito.any())).thenThrow(flushFailure);
+      error = catchThrowable(segment::delete);
+    }
+
+    // then - the segment is gone, and its file does not wait for a restart to free its space
+    assertThat(error).isInstanceOf(JournalException.class).hasCauseReference(flushFailure);
+    assertThat(segment.isMarkedForDeletion()).isTrue();
+    assertThat(segment.file().file()).doesNotExist();
+    assertThat(renamedFile).doesNotExist();
   }
 
   @Test
@@ -318,7 +343,11 @@ class SegmentsManagerTest {
       inOrder.verify(metaStore).resetLastFlushedIndex();
 
       Collections.reverse(loadedSegments);
-      loadedSegments.forEach(s -> inOrder.verify(s).delete());
+      loadedSegments.forEach(
+          s -> {
+            inOrder.verify(s).delete();
+            inOrder.verify(s).isMarkedForDeletion();
+          });
       inOrder.verifyNoMoreInteractions();
     }
   }
@@ -466,6 +495,88 @@ class SegmentsManagerTest {
 
     // then
     assertThat(second.id()).isGreaterThan(first.id());
+  }
+
+  @Test
+  void shouldNotUseSegmentRenamedForDeletionWhenResetFailsAfterTheRename() {
+    // given - entries 1-3 in three segments, and the first deletion fails after renaming the file,
+    // e.g. because flushing the directory fails
+    try (final var journal = openJournal()) {
+      journal.append(journalFactory.entry());
+      journal.append(journalFactory.entry());
+      journal.append(journalFactory.entry());
+    }
+    final var renameThenFail = new JournalException("Injected: failed to flush the directory");
+    segments =
+        journalFactory.segmentsManager(
+            directory, loaderFailingFirstDeleteAfterRename(renameThenFail));
+    try (final var journal = journalFactory.journal(segments)) {
+
+      // when
+      final var error = catchThrowable(() -> journal.reset(10));
+
+      // then - the renamed segment is gone, so the journal continues after the older ones
+      assertThat(error).isSameAs(renameThenFail);
+      assertThat(journal.getLastIndex()).isEqualTo(2);
+      assertThat(journal.append(journalFactory.entry()).index()).isEqualTo(3);
+    }
+
+    // and a restart, which deletes files renamed for deletion, still finds the appended entry
+    final var restartFactory = new TestJournalFactory();
+    JournalCrash.copyLastFlushedIndex(journalFactory.metaStore(), restartFactory.metaStore());
+    try (final var restarted = restartFactory.journal(restartFactory.segmentsManager(directory))) {
+      assertThat(JournalEntry.readAll(restarted))
+          .extracting(JournalEntry::index)
+          .containsExactly(1L, 2L, 3L);
+    }
+  }
+
+  @Test
+  void shouldBeResetWhenOnlyFinishingTheLastDeletionFails() {
+    // given - a single segment, whose deletion fails after renaming the file
+    try (final var journal = openJournal()) {
+      journal.append(journalFactory.entry());
+    }
+    final var renameThenFail = new JournalException("Injected: failed to flush the directory");
+    segments =
+        journalFactory.segmentsManager(
+            directory, loaderFailingFirstDeleteAfterRename(renameThenFail));
+    try (final var journal = journalFactory.journal(segments)) {
+
+      // when
+      final var error = catchThrowable(() -> journal.reset(10));
+
+      // then - no old segment is left, so the journal is reset
+      assertThat(error).isSameAs(renameThenFail);
+      assertThat(journal.getFirstIndex()).isEqualTo(10);
+      assertThat(journal.getLastIndex()).isEqualTo(9);
+      assertThat(journal.append(journalFactory.entry()).index()).isEqualTo(10);
+    }
+  }
+
+  /** A loader whose segments fail their first deletion after the file was renamed. */
+  private SegmentLoader loaderFailingFirstDeleteAfterRename(final JournalException failure) {
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    final var failed = new AtomicBoolean();
+    //noinspection resource
+    Mockito.doAnswer(
+            call -> {
+              final var spy = Mockito.spy((Segment) call.callRealMethod());
+              Mockito.doAnswer(
+                      delete -> {
+                        delete.callRealMethod();
+                        if (failed.compareAndSet(false, true)) {
+                          throw failure;
+                        }
+                        return null;
+                      })
+                  .when(spy)
+                  .delete();
+              return spy;
+            })
+        .when(loader)
+        .loadExistingSegment(Mockito.any(), Mockito.anyLong(), Mockito.any());
+    return loader;
   }
 
   private SegmentedJournal openJournal() {

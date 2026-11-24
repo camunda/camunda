@@ -258,12 +258,17 @@ final class Segment implements AutoCloseable, FlushableSegment {
     try {
       markForDeletion();
     } catch (final RuntimeException e) {
-      // nothing was deleted, so the segment stays in use
-      open = wasOpen;
+      if (!markedForDeletion) {
+        // the rename failed, so nothing was deleted and the segment stays in use
+        open = wasOpen;
+      }
       throw e;
-    }
-    if (readers.isEmpty()) {
-      safeDelete();
+    } finally {
+      // once renamed, the segment is gone even if flushing the rename failed, so its space is freed
+      // now; a reader that still holds it frees it when it closes
+      if (markedForDeletion && readers.isEmpty()) {
+        safeDelete();
+      }
     }
   }
 
@@ -298,11 +303,23 @@ final class Segment implements AutoCloseable, FlushableSegment {
 
     final var target = file.getFileMarkedForDeletion();
     try {
-      FileUtil.moveDurably(file.file(), target);
+      Files.move(file.file(), target);
     } catch (final IOException e) {
       throw new JournalException(e);
     }
+    // once renamed, a restart deletes the file, so the segment must not be used again even if
+    // flushing the rename fails
     markedForDeletion = true;
+    try {
+      FileUtil.flushDirectory(FileUtil.requireParent(target));
+    } catch (final IOException e) {
+      throw new JournalException(e);
+    }
+  }
+
+  /** Whether the segment file was renamed for deletion; the segment is then no longer usable. */
+  boolean isMarkedForDeletion() {
+    return markedForDeletion;
   }
 
   void updateDescriptor() {
