@@ -21,6 +21,8 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceDedupS
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.PolicyState;
+import io.camunda.zeebe.engine.state.immutable.PolicyUpdateState;
 import io.camunda.zeebe.engine.state.immutable.ProbeState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
@@ -36,6 +38,8 @@ import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.state.policy.DbPolicyState;
+import io.camunda.zeebe.engine.state.policy.DbPolicyUpdateState;
 import io.camunda.zeebe.engine.state.probe.DbProbeState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 import io.camunda.zeebe.engine.state.secretreference.DbSecretReferenceState;
@@ -59,6 +63,8 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   private final DbRoutingState routingState;
   private final SecretReferenceState secretReferenceState;
   private final ProbeState probeState;
+  private final PolicyState policyState;
+  private final PolicyUpdateState policyUpdateState;
 
   public ScheduledTaskDbState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -88,6 +94,8 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
     routingState = new DbRoutingState(zeebeDb, transactionContext);
     secretReferenceState = new DbSecretReferenceState(zeebeDb, transactionContext);
     probeState = new DbProbeState(zeebeDb, transactionContext);
+    policyState = new DbPolicyState(zeebeDb, transactionContext);
+    policyUpdateState = new DbPolicyUpdateState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -158,5 +166,15 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   @Override
   public DbRoutingState getRoutingState() {
     return routingState;
+  }
+
+  @Override
+  public PolicyState getPolicyState() {
+    return policyState;
+  }
+
+  @Override
+  public PolicyUpdateState getPolicyUpdateState() {
+    return policyUpdateState;
   }
 }

@@ -38,4 +38,8 @@ public interface ScheduledTaskState {
   BatchOperationState getBatchOperationState();
 
   DbRoutingState getRoutingState();
+
+  PolicyState getPolicyState();
+
+  PolicyUpdateState getPolicyUpdateState();
 }
