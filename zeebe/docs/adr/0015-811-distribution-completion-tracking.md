@@ -183,6 +183,9 @@ is deferred.**
   The receiver records the failure as a `CommandDistribution` event (distribution key, command,
   error), written on the first failure and when the error changes, so it is exported and visible
   while the distribution stays open (#54132).
+- A command that always fails keeps its distribution open forever, by design: there is no retry
+  limit and no FAILED outcome. It heals once the cause is fixed, for example by an upgrade. The
+  failure event, a metric, an ERROR log and the age gauge make it visible.
 - `redistribute` re-sends only to partitions that acknowledged but have not completed, and never
   re-enqueues.
 - Scaling up: the participants of a distribution are fixed when it starts.
