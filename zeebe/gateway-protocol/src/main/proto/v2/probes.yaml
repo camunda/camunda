@@ -280,14 +280,11 @@ components:
       additionalProperties: false
       properties:
         probeId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProbeId'
           description: |
             The probe ID, as the worker registered it: 1 to 256 characters, without whitespace, and
             not `*`. The engine matches it to the probe IDs of polling workers by exact equality.
-          type: string
-          minLength: 1
-          maxLength: 256
-          pattern: ^\S+$
-          example: validate-configuration/io.camunda:aws-credential:1
         input:
           description: |
             A FEEL expression that evaluates to a context: the question for the worker, whose shape
@@ -405,10 +402,7 @@ components:
           minItems: 1
           maxItems: 100
           items:
-            type: string
-            minLength: 1
-            maxLength: 256
-            pattern: ^\S+$
+            $ref: 'identifiers.yaml#/components/schemas/ProbeId'
           example:
             - validate-configuration/io.camunda:aws-credential:1
             - validate-configuration/io.camunda:slack:1
@@ -423,11 +417,10 @@ components:
           minimum: 1
           example: 10
         requestTimeout:
-          description: >
-            The request is completed when at least one probe is collected or after the
-            requestTimeout (in ms). If the requestTimeout = 0, a default timeout is used.
-            If the requestTimeout < 0, long polling is disabled and the request is completed
-            immediately, even when no probe is collected.
+          description: |
+            How long to hold the request until a probe is collected, in milliseconds. With `0` or
+            absent, the cluster's long polling timeout is used. With a value below `0`, long
+            polling is off and the request returns at once, also when it collected no probe.
           type: integer
           format: int64
           example: 60000
@@ -478,9 +471,9 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProbeKey'
           description: The key to answer the probe with.
         probeId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProbeId'
           description: The probe ID, to pick the handler when the worker polls several probe IDs.
-          type: string
-          example: validate-configuration/io.camunda:aws-credential:1
         worker:
           description: The name of the worker that collected the probe.
           type: string
