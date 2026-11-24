@@ -328,8 +328,8 @@ public record AuditLogEntity(
     ANONYMOUS,
     UNKNOWN,
     /**
-     * The engine itself, for a change whose value it computes, such as a mapping result. Only the
-     * audit log check uses it. Exporters must not store it.
+     * The engine itself, for a change whose value it computes, such as a mapping result. An audit
+     * log entry must never carry it: its actor comes from the identity on the record.
      */
     ENGINE
   }
