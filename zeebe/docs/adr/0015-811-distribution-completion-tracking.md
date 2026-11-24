@@ -62,18 +62,22 @@ are observable.**
   (d4e45a7d575d).
 - A hook re-reads current state when it runs, because a lot may have changed since the distribution
   started.
-- `onAllAcknowledged` replaces `afterQueue(...).continueWith(...)` and the `CONTINUATION_*`
-  intents. These are deprecated.
+- The hook commands are stored once, in the source's state for the distribution. They are not
+  copied onto the per-partition records (`DISTRIBUTING`, `ACKNOWLEDGE`, ...), so tracking never
+  changes how large a distributed command can be.
+- New code uses `onAllAcknowledged` instead of `afterQueue(...).continueWith(...)`. The
+  `CONTINUATION_*` intents, their processor and their appliers stay: older brokers and replay of
+  an existing log can still produce them (D6).
 
 **D3. A partition defers its completion under a key the domain chooses, and acknowledges it later.**
 
 - While processing the command, a processor that starts further work calls
-  `distribution.deferCompletion(command, completionKey)`. Without that call, the partition is
-  COMPLETED when it acknowledges.
+  `distribution.deferCompletion(command, completionKey)`. The value type is taken from the command.
+  Without that call, the partition is COMPLETED when it acknowledges.
 - When the domain decides the work is done, it calls
-  `distribution.ackCompletion(completionKey)`. It may pass an outcome and a reason: `COMPLETED`,
-  or `CANCELLED` when a later command made the work obsolete (for example a resume during a
-  suspend).
+  `distribution.ackCompletion(valueType, completionKey)`. It may pass an outcome and a reason:
+  `COMPLETED`, or `CANCELLED` when a later command made the work obsolete (for example a resume
+  during a suspend).
 - The framework stores the deferral in its own column family, `[valueType | completionKey] →
   distributionKey`. The domain persists nothing and never handles distribution keys.
 - The completion key is opaque and chosen by the domain: the process definition key for deletion
@@ -85,8 +89,15 @@ are observable.**
     distribution as the reason.
 - The framework does not know about entities, counts or substates. What is involved, and when it is
   done, is up to the domain.
-- The source partition works the same way for its own share. Distribution skips the current
-  partition, so its report is written locally instead of being sent.
+- The source partition defers its own share on the builder,
+  `...deferCompletion(completionKey).distribute(command)`, because the distribution key does not
+  exist before `distribute`. Distribution skips the current partition, so its report is written
+  locally instead of being sent.
+- The source can ask whether work is still open, and push it again:
+  - `isCompletionOpen(valueType, completionKey)` answers "is this still in progress somewhere",
+    for example to reject a history deletion while another partition still drains;
+  - `redistribute(valueType, completionKey)` re-sends the open distribution to the partitions that
+    have not completed. Starting a new distribution instead would cancel the open one.
 
 **D4. Receivers report reliably; the ACK says whether completion is deferred.**
 
@@ -94,9 +105,10 @@ are observable.**
   distribution key, not from the domain's processing result. A redelivered command therefore gets
   the correct answer, even when the domain rejects the redelivery as a duplicate.
 - `completionDeferred = false`: the partition is ACKNOWLEDGED and COMPLETED at once.
-- When the domain acknowledges completion, the partition sends a `COMPLETE` report to the source. The report goes
-  out as a normal unordered distribution to the source partition, so it reuses the existing retries
-  and ACK.
+- When the domain acknowledges completion, the partition sends a `COMPLETE` report to the source.
+  The report reuses the transport of distribution (send, retry, ACK), but it is not itself a
+  tracked distribution: it has no milestones, no hooks and no summary event of its own. Tracking a
+  report like any other distribution would cost about ten records per report.
 - The source handles reports idempotently. A `COMPLETE` that arrives before the ACK counts as both.
 - A rejected command is not a failure. It is ACKNOWLEDGED with the rejection recorded (D5), and
   COMPLETED unless completion is deferred.
@@ -108,8 +120,8 @@ are observable.**
   - whether completion was deferred, and the completion key;
   - the outcome and reason from `ackCompletion`;
   - timestamps.
-- The source ends every distribution with one summary event, `COMPLETED`. It carries the overall
-  outcome (`CANCELLED` if any partition cancelled) and the per-partition outcomes. If any partition
+- The source ends every distribution with one summary event, `COMPLETED`. It names the value type
+  and intent of the distributed command, and carries the overall outcome (`CANCELLED` if any partition cancelled) and the per-partition outcomes. If any partition
   cancelled, `onAllCompleted` is not written.
 - Where the per-partition state is exported is open. There are two options:
   - **Source only.** The source copies the fields of every ACK and report into its own events
@@ -125,15 +137,21 @@ are observable.**
 
 - New intents on `CommandDistribution`: `COMPLETE` (command) and `PARTITION_COMPLETED` and
   `COMPLETED` (events).
-- New properties on `CommandDistributionRecord`: `completionDeferred`, `completionKey`, the rejection
-  fields, the outcome and reason, and the hook commands.
-- Partition-local column families: deferrals on each partition (D3), and partitions still pending
-  completion on the source.
+- New properties on `CommandDistributionRecord`: `completionDeferred`, `completionKey`, the
+  rejection fields, and the outcome and reason. All are small and empty by default.
+- Partition-local column families: deferrals on each partition (D3); on the source, the
+  completion state of each distribution (value type, intent, hook commands, partitions still
+  pending) and an index from (value type, completion key) to the open distribution.
+- Every new or changed event gets a new applier version. Existing appliers stay unchanged, so
+  replay of an existing log behaves as before.
+- No intent is removed. Intents that new code stops writing (`CONTINUATION_*`, and per feature its
+  old report commands such as `ResourceDeletion:DELETE_COMPLETE`) keep their processors and
+  appliers, so records from older brokers and from replay are handled as before.
+- In a mixed-version cluster, an old receiver ACKs without `completionDeferred`, so its share
+  counts as COMPLETED at once. That is today's behavior.
+- A feature moving onto `onAllCompleted` runs both paths: work started on the old path finishes
+  on it, and new work uses the new path only once every broker is upgraded.
 - Exporter templates and golden files change. This needs approval from the protocol owners.
-- In a mixed-version cluster, an old receiver ACKs without `completionDeferred`, so its share counts as
-  COMPLETED at once. That is today's behavior.
-- A feature that relies on `onAllCompleted` (for example deletion moving off its hand-rolled path)
-  must keep its old path until every broker is upgraded.
 
 ## Alternatives considered
 
@@ -156,8 +174,12 @@ are observable.**
 ## Consequences
 
 - Deletion, batch operations and suspension keep their substates (`DRAINING`, chunk states,
-  `SUSPENDING`). They drop their own report commands, pending-partition column families and
-  last-one-wins checks, and adopt with two calls.
+  `SUSPENDING`). New work no longer writes their own report commands, pending-partition column
+  families and last-one-wins checks; they adopt with two calls. The old code stays only to finish
+  work started before the upgrade and to replay old logs (D6).
+- Batch operations report structured errors per partition and decide between COMPLETED and FAILED
+  from them. Whether they fit needs a FAILED outcome with a payload; this is explored in a
+  separate spike.
 - Every distribution writes one extra event (`COMPLETED`). A distribution with deferred completion
   writes about three extra records per partition: the report, its distribution, and
   `PARTITION_COMPLETED`.
