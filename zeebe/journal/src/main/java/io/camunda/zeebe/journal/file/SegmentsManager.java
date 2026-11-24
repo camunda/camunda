@@ -59,7 +59,7 @@ final class SegmentsManager implements AutoCloseable {
   // never has a gap
   private final Queue<Segment> segmentsToDelete = new ConcurrentLinkedQueue<>();
   private CompletableFuture<Void> pendingDeletion = CompletableFuture.completedFuture(null);
-  // set by the background deletion, see onDeletionFailed
+  // set when deleting a segment failed to sync, see deleteQueuedSegments
   private volatile @Nullable SyncFailed deletionSyncFailure;
 
   private final JournalMetrics journalMetrics;
@@ -305,24 +305,42 @@ final class SegmentsManager implements AutoCloseable {
 
   private @Nullable Void onDeletionFailed(final Throwable error) {
     final var cause = error instanceof CompletionException ? error.getCause() : error;
-    if (cause instanceof final SyncFailed syncFailed) {
-      // deleting the segment again would sync the same directory again, which may succeed without
-      // persisting the rename that failed to sync
-      deletionSyncFailure = syncFailed;
+    if (cause instanceof SyncFailed) {
+      LOG.error(
+          "{} - Failed to delete segment {}. No segment is deleted anymore.",
+          name,
+          segmentsToDelete.peek(),
+          cause);
+    } else {
+      LOG.error(
+          "{} - Failed to delete segment {}. The next compaction tries again.",
+          name,
+          segmentsToDelete.peek(),
+          cause);
     }
-    LOG.error(
-        "{} - Failed to delete segment {}. The next compaction tries again.",
-        name,
-        segmentsToDelete.peek(),
-        error);
     return null;
   }
 
   private void deleteQueuedSegments() {
+    final var previousFailure = deletionSyncFailure;
+    if (previousFailure != null) {
+      // deleting another segment would sync the same directory again, which may succeed without
+      // persisting the rename that failed to sync; this also stops compactions queued before the
+      // failure, and the deletion when closing
+      throw new SyncFailed(
+          "Expected to delete compacted segments, but deleting one failed to sync",
+          previousFailure);
+    }
+
     Segment segment;
     while ((segment = segmentsToDelete.peek()) != null) {
       LOG.trace("{} - Deleting segment: {}", name, segment);
-      journalMetrics.observeSegmentDeletion(segment::delete);
+      try {
+        journalMetrics.observeSegmentDeletion(segment::delete);
+      } catch (final SyncFailed e) {
+        deletionSyncFailure = e;
+        throw e;
+      }
       segmentsToDelete.remove();
       journalMetrics.decPendingSegmentDeletions();
     }
@@ -484,6 +502,10 @@ final class SegmentsManager implements AutoCloseable {
       // callers compact on out of disk space and retry at once, before the deletion frees space
       try {
         deleteQueuedSegmentsNow();
+      } catch (final SyncFailed deletionFailure) {
+        // the journal must fail, which callers would miss if it hid behind out of disk space
+        deletionFailure.addSuppressed(e);
+        throw deletionFailure;
       } catch (final RuntimeException deletionError) {
         // callers handle out of disk space in a special way, so the type must not change
         e.addSuppressed(deletionError);

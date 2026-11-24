@@ -130,6 +130,11 @@ final class TestJournalFactory {
     return segmentsManager(directory, loader, metaStore, name, ForkJoinPool.commonPool());
   }
 
+  SegmentsManager segmentsManager(
+      final Path directory, final SegmentLoader loader, final Executor deletionExecutor) {
+    return segmentsManager(directory, loader, metaStore, "journal", deletionExecutor);
+  }
+
   private SegmentsManager segmentsManager(
       final Path directory,
       final SegmentLoader loader,

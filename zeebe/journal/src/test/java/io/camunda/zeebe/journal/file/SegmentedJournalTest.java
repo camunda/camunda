@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 
@@ -323,6 +324,49 @@ class SegmentedJournalTest {
     // then
     assertThat(appendFailure).isInstanceOf(SyncFailed.class);
     assertThat(journal.getLastIndex()).isEqualTo(4);
+  }
+
+  @Test
+  void shouldFailWhenDeletingSegmentsToFreeDiskSpaceFailsToSync() throws Exception {
+    // given - every segment is created when needed, the first time out of disk space
+    journalFactory = new TestJournalFactory(1);
+    final var outOfDiskSpace = new AtomicBoolean();
+    final var loader = spy(journalFactory.segmentLoader());
+    doThrow(new OutOfDiskSpace("No space left on device"))
+        .when(loader)
+        .createUninitializedSegment(any(), any(), any());
+    doAnswer(
+            call -> {
+              if (outOfDiskSpace.getAndSet(false)) {
+                throw new OutOfDiskSpace("No space left on device");
+              }
+              return call.callRealMethod();
+            })
+        .when(loader)
+        .createSegment(any(), any(), anyLong(), any());
+    final var segments = journalFactory.segmentsManager(directory, loader, Runnable::run);
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    // a compaction fails to rename the first segment, which stays queued for deletion
+    final var deletedFirstSegment =
+        Files.createFile(segments.getFirstSegment().file().getFileMarkedForDeletion());
+    journal.deleteUntil(2);
+    Files.delete(deletedFirstSegment);
+    outOfDiskSpace.set(true);
+
+    // when - running out of disk space deletes the queued segment at once, which fails to sync
+    final Throwable appendFailure;
+    try (final var fileUtil = mockStatic(FileUtil.class, CALLS_REAL_METHODS)) {
+      fileUtil
+          .when(() -> FileUtil.flushDirectory(any()))
+          .thenThrow(new IOException("Input/output error"));
+      appendFailure = catchThrowable(() -> journal.append(journalFactory.entry()));
+    }
+
+    // then
+    assertThat(appendFailure).isInstanceOf(SyncFailed.class);
+    assertThatThrownBy(() -> journal.append(journalFactory.entry())).isInstanceOf(SyncFailed.class);
   }
 
   /** Leaves {@link #journal} with entries 1 to 4, after compacting it failed to sync. */

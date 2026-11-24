@@ -96,6 +96,56 @@ class SegmentsManagerTest {
   }
 
   @Test
+  void shouldNotRunQueuedCompactionAfterDeletingSegmentsFailedToSync() {
+    // given - two compactions queued, of one segment each, and the first fails to sync
+    final var deletions = new ArrayList<Runnable>();
+    segments = journalFactory.segmentsManager(directory, deletions::add);
+    final var journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    final var secondSegment = segments.getSegment(2).file().file();
+    journal.deleteUntil(2);
+    journal.deleteUntil(3);
+    try (final var fileUtil = mockStatic(FileUtil.class, CALLS_REAL_METHODS)) {
+      fileUtil
+          .when(() -> FileUtil.flushDirectory(any()))
+          .thenThrow(new IOException("Input/output error"));
+      deletions.removeFirst().run();
+    }
+
+    // when
+    deletions.removeFirst().run();
+
+    // then - deleting the second segment would sync the directory that failed to sync again
+    assertThat(secondSegment).exists();
+  }
+
+  @Test
+  void shouldNotDeleteQueuedSegmentsOnCloseAfterDeletingSegmentsFailedToSync() {
+    // given - one compaction of two segments, deleted in the calling thread, fails to sync the
+    // first one
+    segments = journalFactory.segmentsManager(directory, Runnable::run);
+    final var journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    final var secondSegment = segments.getSegment(2).file().file();
+    try (final var fileUtil = mockStatic(FileUtil.class, CALLS_REAL_METHODS)) {
+      fileUtil
+          .when(() -> FileUtil.flushDirectory(any()))
+          .thenThrow(new IOException("Input/output error"));
+      journal.deleteUntil(3);
+    }
+
+    // when
+    journal.close();
+
+    // then - the next start loads the second segment again
+    assertThat(secondSegment).exists();
+  }
+
+  @Test
   void shouldDetectCorruptionAtDescriptorWithAckedEntries() throws Exception {
     // given
     try (final var journal = openJournal()) {
