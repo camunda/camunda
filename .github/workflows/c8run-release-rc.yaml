@@ -77,6 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
+      id-token: write # Vault JWT login
       contents: read
     steps:
       - name: ℹ️ Print workflow inputs ℹ️
@@ -109,9 +110,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
@@ -332,6 +334,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
@@ -341,6 +346,7 @@ jobs:
     runs-on: ${{ matrix.os.id }}
     timeout-minutes: 60
     permissions:
+      id-token: write # Vault JWT login
       contents: read
     strategy:
       fail-fast: false
@@ -393,9 +399,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci/nexus USER | NEXUS_USERNAME;
             secret/data/products/distribution/ci/nexus PASSWORD | NEXUS_PASSWORD;
@@ -581,6 +588,9 @@ jobs:
           job_name: "c8run-rc-build/${{ matrix.os.name }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
@@ -629,7 +639,8 @@ jobs:
     continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Generate GitHub token
         id: github-token
@@ -639,9 +650,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
           github-app-private-key-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -706,5 +718,8 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

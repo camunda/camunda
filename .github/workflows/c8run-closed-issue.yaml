@@ -10,22 +10,22 @@ on:
 
 permissions:
   actions: write
-  attestations: none
   checks: write
   contents: read
-  deployments: none
-  id-token: none
   issues: write
-  discussions: none
-  packages: none
-  pages: none
-  pull-requests: none
   repository-projects: write
-  security-events: none
   statuses: write
 
 jobs:
   update-closed-at-field:
+    permissions:
+      actions: write
+      checks: write
+      contents: read
+      issues: write
+      repository-projects: write
+      statuses: write
+      id-token: write
     name: Update closed at field
     runs-on: ubuntu-latest
     steps:
@@ -45,9 +45,10 @@ jobs:
           uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
           with:
             url: ${{ secrets.VAULT_ADDR }}
-            method: approle
-            roleId: ${{ secrets.VAULT_ROLE_ID }}
-            secretId: ${{ secrets.VAULT_SECRET_ID }}
+            method: jwt
+            role: ${{ secrets.VAULT_JWT_ROLE }}
+            path: ${{ secrets.VAULT_JWT_PATH }}
+            jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
             secrets: |
               secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
               secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
