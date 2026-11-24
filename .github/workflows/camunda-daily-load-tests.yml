@@ -39,7 +39,8 @@ jobs:
     name: Collect benchmark data
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     outputs:
       benchmark: ${{ steps.data.outputs.benchmark }}
     steps:
@@ -69,8 +70,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
 
   setup-max-load-test:
@@ -238,7 +240,8 @@ jobs:
     # Run if at least one side collected metrics; a skipped side just yields an empty file.
     if: always() && (needs.collect-metrics-grpc.result == 'success' || needs.collect-metrics-rest.result == 'success')
     timeout-minutes: 5
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Write metrics JSON files
         env:
@@ -266,8 +269,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Post a side-by-side gRPC vs REST metrics table to Slack.
   notify-results:
@@ -280,6 +284,7 @@ jobs:
     if: always() && (needs.collect-metrics-grpc.result == 'success' || needs.collect-metrics-rest.result == 'success')
     timeout-minutes: 5
     permissions:
+      id-token: write # Vault JWT login
       actions: read
       contents: read
     steps:
@@ -310,9 +315,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
@@ -339,8 +345,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Delete namespaces immediately after metrics are collected to reduce cluster cost.
   # Runs regardless of whether metrics collection succeeded or was skipped, as long
@@ -375,7 +382,8 @@ jobs:
     needs: [ setup-max-load-test, setup-max-rest-load-test, soak-grpc, soak-rest, collect-metrics-grpc, collect-metrics-rest, upload-metrics, notify-results ]
     if: failure()
     timeout-minutes: 5
-    permissions: { }
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -385,9 +393,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
@@ -422,5 +431,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}

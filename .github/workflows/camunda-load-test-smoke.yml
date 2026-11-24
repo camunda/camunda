@@ -51,7 +51,8 @@ jobs:
     name: Sanitize Branch Name
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     outputs:
       sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
     steps:
@@ -75,12 +76,16 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   smoke-install:
     name: Smoke Install
     needs: [ sanitize-branch-name, utils-get-snapshot-docker-tag ]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
