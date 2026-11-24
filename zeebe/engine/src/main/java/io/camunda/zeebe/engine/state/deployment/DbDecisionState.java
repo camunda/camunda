@@ -29,7 +29,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -288,20 +287,6 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
-  public Optional<DeployedDrg> findLatestDecisionRequirementsByTenantAndId(
-      final String tenantId, final DirectBuffer decisionRequirementsId) {
-    tenantIdKey.wrapString(tenantId);
-    dbDecisionRequirementsId.wrapBuffer(decisionRequirementsId);
-
-    return Optional.ofNullable(
-            latestDecisionRequirementsKeysById.get(tenantAwareDecisionRequirementsId))
-        .map((requirementsKey) -> requirementsKey.inner().wrappedKey().getValue())
-        .flatMap(
-            decisionRequirementsKey ->
-                findDecisionRequirementsByTenantAndKey(tenantId, decisionRequirementsKey));
-  }
-
-  @Override
   public Optional<DeployedDrg> findDecisionRequirementsByTenantAndKey(
       final String tenantId, final long decisionRequirementsKey) {
     return findDeployedDrg(decisionRequirementsKey, tenantId);
@@ -370,11 +355,6 @@ public final class DbDecisionState implements MutableDecisionState {
   @Override
   public void clearCache() {
     drgCache.invalidateAll();
-  }
-
-  @VisibleForTesting
-  boolean isDrgCached(final String tenantId, final long drgKey) {
-    return drgCache.asMap().containsKey(new TenantIdAndDrgKey(tenantId, drgKey));
   }
 
   /**
