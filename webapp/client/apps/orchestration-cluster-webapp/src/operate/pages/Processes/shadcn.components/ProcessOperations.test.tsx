@@ -6,10 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
 import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
+import {render} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
+import {TooltipProvider} from '@camunda/design-system';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {
 	deleteResourceRequestBodySchema,
 	queryProcessInstancesRequestBodySchema,
@@ -197,20 +199,20 @@ describe('<ProcessOperations /> (design system)', () => {
 		'should require a new confirmation when the definition $change while confirming',
 		async ({nextDefinition, confirmation}, {worker}) => {
 			worker.use(mockDrainingDefinitions(), mockRunningInstancesCount(0));
-			let changeDefinition = () => {};
-			const OperationsWithChangingDefinition = () => {
-				const [definition, setDefinition] = useState(DEFINITION);
-				useEffect(() => {
-					changeDefinition = () => setDefinition(nextDefinition);
-				}, []);
-				return <ProcessOperations definition={definition} />;
-			};
-			const screen = await renderWithRouter(OperationsWithChangingDefinition, {path: '/operate-preview/processes'});
+			const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+			const renderTree = (definition: ProcessDefinition) => (
+				<TooltipProvider>
+					<QueryClientProvider client={queryClient}>
+						<ProcessOperations definition={definition} />
+					</QueryClientProvider>
+				</TooltipProvider>
+			);
+			const screen = await render(renderTree(DEFINITION));
 
 			await userEvent.click(screen.getByRole('button', {name: ACTION_NAME}));
 			await userEvent.click(screen.getByText(CONFIRMATION));
 			await expect.element(screen.getByRole('button', {name: 'Delete', exact: true})).toBeEnabled();
-			changeDefinition();
+			await screen.rerender(renderTree(nextDefinition));
 
 			const dialog = screen.getByRole('dialog');
 			await expect.element(dialog.getByRole('checkbox', {name: confirmation})).not.toBeChecked();
