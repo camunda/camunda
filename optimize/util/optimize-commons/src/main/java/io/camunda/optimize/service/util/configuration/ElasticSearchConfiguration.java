@@ -84,6 +84,11 @@ public class ElasticSearchConfiguration {
   }
 
   @JsonIgnore
+  public Integer getAgentInstanceNumberOfShards() {
+    return settings.getIndex().getAgentInstanceNumberOfShards();
+  }
+
+  @JsonIgnore
   public Integer getNumberOfReplicas() {
     return settings.getIndex().getNumberOfReplicas();
   }
