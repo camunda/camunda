@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.mock;
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.mock.MockDmnDecisionBuilder;
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -96,10 +97,12 @@ public class MockDmnDecisionBuilderImpl implements MockDmnDecisionBuilder {
         decisionOutput);
 
     final String resourceName = decisionId + ".dmn";
+    // UTF-8 to match the XML declaration, not the JVM's default charset (which isn't UTF-8 on
+    // JDK 17 and older with a non-UTF-8 locale)
+    final byte[] dmnXml = Dmn.convertToString(modelInstance).getBytes(StandardCharsets.UTF_8);
     client
         .newDeployResourceCommand()
-        .addResourceStream(
-            new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()), resourceName)
+        .addResourceStream(new ByteArrayInputStream(dmnXml), resourceName)
         .send()
         .join();
   }
