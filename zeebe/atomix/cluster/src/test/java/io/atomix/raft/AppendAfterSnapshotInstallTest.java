@@ -12,10 +12,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.protocol.AppendResponse;
+import io.atomix.raft.protocol.ProtocolVersionHandler;
+import io.atomix.raft.protocol.VersionedAppendRequest;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,6 +76,75 @@ final class AppendAfterSnapshotInstallTest {
     assertThat(context(FOLLOWER).getCommitIndex())
         .isEqualTo(context(LEADER).getLog().getLastIndex());
     raft.assertAllLogsEqual();
+  }
+
+  @Test
+  void shouldRejectPreviousEntryBeforeSnapshotWithSnapshotIndexAsLastLogIndex() {
+    // given - the follower's log starts right after its snapshot
+    final long snapshotIndex = followerWithLogAfterSnapshot();
+    final long snapshotTerm = context(FOLLOWER).getCurrentSnapshot().getTerm();
+
+    // when - the previous entry is covered by the snapshot, but is not the snapshot itself
+    final var response = appendOnFollower(snapshotIndex - 1, snapshotTerm);
+
+    // then - the leader continues after the snapshot, and the log is kept
+    assertThat(response.succeeded()).isFalse();
+    assertThat(response.lastLogIndex()).isEqualTo(snapshotIndex);
+    assertThat(context(FOLLOWER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
+    assertThat(context(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex + 1);
+  }
+
+  @Test
+  void shouldRejectPreviousEntryAtSnapshotIndexWithAnotherTerm() {
+    // given - the follower's log starts right after its snapshot
+    final long snapshotIndex = followerWithLogAfterSnapshot();
+    final long snapshotTerm = context(FOLLOWER).getCurrentSnapshot().getTerm();
+
+    // when
+    final var response = appendOnFollower(snapshotIndex, snapshotTerm + 1);
+
+    // then - the leader probes the entry before, and the log is kept
+    assertThat(response.succeeded()).isFalse();
+    assertThat(response.lastLogIndex()).isEqualTo(snapshotIndex - 1);
+    assertThat(context(FOLLOWER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
+    assertThat(context(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex + 1);
+  }
+
+  /**
+   * Builds the scenario of {@link #installSnapshotOfOlderTermOnFollower()}, and lets the follower
+   * append the entry after the snapshot.
+   *
+   * @return the index of the snapshot
+   */
+  private long followerWithLogAfterSnapshot() {
+    final long snapshotIndex = installSnapshotOfOlderTermOnFollower();
+    deliverAll(FOLLOWER);
+    assertThat(context(FOLLOWER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
+    assertThat(context(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex + 1);
+    return snapshotIndex;
+  }
+
+  /** Sends an empty append with the given previous entry to the follower, as the leader. */
+  private AppendResponse appendOnFollower(final long prevLogIndex, final long prevLogTerm) {
+    final var follower = context(FOLLOWER);
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(follower.getTerm())
+            .withLeader(LEADER)
+            .withPrevLogIndex(prevLogIndex)
+            .withPrevLogTerm(prevLogTerm)
+            .withEntries(List.of())
+            .withCommitIndex(follower.getCommitIndex())
+            .build();
+    final var response = new AtomicReference<CompletableFuture<AppendResponse>>();
+    follower
+        .getThreadContext()
+        .execute(
+            () ->
+                response.set(
+                    follower.getRaftRole().onAppend(ProtocolVersionHandler.transform(request))));
+    raft.runUntilDone(FOLLOWER);
+    return response.get().join();
   }
 
   /**
