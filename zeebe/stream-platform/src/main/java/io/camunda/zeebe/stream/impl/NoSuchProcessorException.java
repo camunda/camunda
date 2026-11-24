@@ -7,41 +7,40 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 
 /**
- * Exception type thrown by the {@link ProcessingStateMachine} and {@link ReplayStateMachine} when
- * encountering a record that is not accepted by any of the registered processors, or whose value
- * type this broker does not know.
+ * Exception type for a record that is not accepted by any of the registered processors, or whose
+ * value type this broker does not know. It carries the {@link UnprocessableRecord} so that {@link
+ * StreamProcessor} can decide from the record's data how to react.
  */
 final class NoSuchProcessorException extends UnrecoverableException {
 
-  private NoSuchProcessorException(final String message) {
+  private final UnprocessableRecord record;
+
+  private NoSuchProcessorException(final String message, final UnprocessableRecord record) {
     super(message);
+    this.record = record;
   }
 
-  public static NoSuchProcessorException forRecord(final TypedRecord<?> record) {
-    final var message =
-        switch (record.getRecordType()) {
-          case EVENT ->
-              "No processor registered for event type %s".formatted(record.getValueType());
-          case COMMAND ->
-              "No processor registered for command type %s".formatted(record.getValueType());
-          case COMMAND_REJECTION, SBE_UNKNOWN, NULL_VAL ->
-              ("No processor registered for record type %s").formatted(record.getRecordType());
-        };
-    return new NoSuchProcessorException(message);
+  UnprocessableRecord unprocessableRecord() {
+    return record;
   }
 
-  /**
-   * For a record whose value type is unknown to this broker, so its value could not be read and no
-   * {@link TypedRecord} exists yet.
-   */
-  public static NoSuchProcessorException forUnknownValueType(final RecordMetadata metadata) {
+  public static NoSuchProcessorException forRecord(final UnprocessableRecord record) {
+    final var valueType = record.valueType();
+    final var valueTypeDescription =
+        valueType == ValueType.NULL_VAL || valueType == ValueType.SBE_UNKNOWN
+            ? "unknown value type"
+            : "value type " + valueType;
     return new NoSuchProcessorException(
-        "No processor registered for %s record of unknown value type (broker version %s)"
-            .formatted(metadata.getRecordType(), metadata.getBrokerVersion()));
+        "No processor registered for %s record at position %d of %s (broker version %s)"
+            .formatted(
+                record.recordType(),
+                record.position(),
+                valueTypeDescription,
+                record.brokerVersion()),
+        record);
   }
 }

@@ -338,6 +338,12 @@ public final class ProcessingStateMachine implements CloseableSilently {
         metadata.getValueType());
 
     try {
+      final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
+      if (value == null) {
+        // only unknown value types have no value, and no processor accepts those
+        throw NoSuchProcessorException.forRecord(UnprocessableRecord.of(loggedEvent, metadata));
+      }
+
       // Here we need to get the current time, since we want to calculate
       // how long it took between writing to the dispatcher and processing.
       // In all other cases we should prefer to use the Prometheus Timer API.
@@ -346,10 +352,6 @@ public final class ProcessingStateMachine implements CloseableSilently {
           processingMetrics.startProcessingDurationTimer(
               metadata.getValueType(), metadata.getIntent());
 
-      final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
-      if (value == null) {
-        throw NoSuchProcessorException.forUnknownValueType(metadata);
-      }
       typedCommand.wrap(loggedEvent, metadata, value);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
@@ -369,6 +371,9 @@ public final class ProcessingStateMachine implements CloseableSilently {
           recoverableException);
       actor.schedule(
           PROCESSING_RETRY_DELAY, () -> processCommand(requireNonNull(this.currentRecord)));
+    } catch (final NoSuchProcessorException noProcessor) {
+      // it identifies the record itself and is classified by StreamProcessor from its data
+      throw noProcessor;
     } catch (final UnrecoverableException unrecoverableException) {
       // StreamProcessor#onFailure logs the failure, so carry the record along for it to report.
       throw new UnrecoverableException(
@@ -401,6 +406,10 @@ public final class ProcessingStateMachine implements CloseableSilently {
             writeRecords();
           });
     }
+  }
+
+  private @Nullable RecordProcessor findProcessor(final ValueType valueType) {
+    return recordProcessors.stream().filter(p -> p.accepts(valueType)).findFirst().orElse(null);
   }
 
   /**
@@ -448,11 +457,11 @@ public final class ProcessingStateMachine implements CloseableSilently {
         }
       }
 
-      currentProcessor =
-          recordProcessors.stream()
-              .filter(p -> p.accepts(command.getValueType()))
-              .findFirst()
-              .orElseThrow(() -> NoSuchProcessorException.forRecord(command));
+      final var processor = findProcessor(command.getValueType());
+      if (processor == null) {
+        throw NoSuchProcessorException.forRecord(UnprocessableRecord.of(command));
+      }
+      currentProcessor = processor;
 
       currentProcessingResult = currentProcessor.process(command, processingResultBuilder);
 

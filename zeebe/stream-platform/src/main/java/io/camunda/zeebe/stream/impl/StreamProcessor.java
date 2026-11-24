@@ -464,6 +464,24 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onFailure(final Throwable throwable) {
+    if (throwable instanceof NoSuchProcessorException) {
+      // it identifies the record itself, and fails the same way in replay as the replay wrapper did
+      onFailure(throwable, streamProcessorContext.getProcessorMode() == StreamProcessorMode.REPLAY);
+      return;
+    }
+    onFailure(
+        throwable,
+        streamProcessorContext.getProcessorMode() == StreamProcessorMode.REPLAY
+            && !(throwable instanceof UnrecoverableException));
+  }
+
+  /**
+   * Logs the failure and fails the actor.
+   *
+   * @param reportUnhealthy whether to report this processor as unhealthy, which is not critical, or
+   *     as dead, which stops the partition on this broker
+   */
+  private void onFailure(final Throwable throwable, final boolean reportUnhealthy) {
     LOG.error("Actor {} failed in phase {}.", getName(), actor.getLifecyclePhase(), throwable);
 
     // The context does not exist yet if we fail while recovering from the snapshot; there are no
@@ -483,8 +501,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             future.completeExceptionally(throwable);
           }
 
-          if (streamProcessorContext.getProcessorMode().equals(StreamProcessorMode.REPLAY)
-              && !(throwable instanceof UnrecoverableException)) {
+          if (reportUnhealthy) {
             // If the stream processor is in replay mode, we do not want to report it as dead
             // because it is not critical. The leaders are still active and able to process
             // requests.

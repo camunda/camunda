@@ -8,11 +8,14 @@
 package io.camunda.zeebe.stream.impl;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.logging.RecordingAppender;
@@ -104,7 +107,7 @@ final class StreamProcessorUnknownRecordTest {
     Awaitility.await("replay fails").until(() -> !reports.isEmpty());
     final var issue = reports.get(0).getIssue();
     assertThat(issue).isNotNull();
-    assertThat(issue.throwable()).hasRootCauseInstanceOf(NoSuchProcessorException.class);
+    assertThat(issue.throwable()).isInstanceOf(NoSuchProcessorException.class);
   }
 
   @Test
@@ -118,15 +121,10 @@ final class StreamProcessorUnknownRecordTest {
 
     // then
     Awaitility.await("processing fails").until(() -> !reports.isEmpty());
+    assertThat(reports).allMatch(HealthReport::isDead);
     assertThat(failureErrors())
         .singleElement()
-        .satisfies(
-            e -> {
-              assertThat(e.getThrown()).as("stack trace is logged").isNotNull();
-              assertThat(e.getThrown().getMessage())
-                  .as("the failed record is reported")
-                  .contains("Expected to process record");
-            });
+        .satisfies(e -> assertThat(e.getThrown()).as("stack trace is logged").isNotNull());
   }
 
   @Test
@@ -142,6 +140,7 @@ final class StreamProcessorUnknownRecordTest {
 
     // then
     Awaitility.await("replay fails").until(() -> !reports.isEmpty());
+    assertThat(reports).allMatch(HealthReport::isUnhealthy);
     assertThat(failureErrors())
         .singleElement()
         .satisfies(e -> assertThat(e.getThrown()).as("stack trace is logged").isNotNull());
@@ -160,35 +159,72 @@ final class StreamProcessorUnknownRecordTest {
 
     // then
     Awaitility.await("replay fails").until(() -> !reports.isEmpty());
+    assertThat(reports).allMatch(HealthReport::isDead);
     assertThat(failureErrors())
         .singleElement()
         .satisfies(e -> assertThat(e.getThrown()).as("stack trace is logged").isNotNull());
   }
 
+  @Test
+  void shouldNotCommitAnyEventOfBatchWhenLaterEventHasUnknownValueType() {
+    // given
+    final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
+    final var reports = captureReports(streamProcessor);
+    final var knownEventKey = Protocol.encodePartitionId(1, 19);
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .key(knownEventKey)
+            .causedBy(0),
+        RecordToWrite.event().unknownValueType().causedBy(0));
+
+    // then
+    Awaitility.await("replay fails").until(() -> !reports.isEmpty());
+    verify(streamPlatform.getDefaultMockedRecordProcessor(), times(1)).replay(any());
+    assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
+        .as("the key of the known event is not committed")
+        .isZero();
+    assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition())
+        .as("the batch is not marked as processed")
+        .isNotPositive();
+  }
+
+  @Test
+  void shouldKeepReplayingWhenReplaySkipsCommandOfUnknownValueType() {
+    // given
+    final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0),
+        RecordToWrite.command().unknownValueType().causedBy(0));
+
+    // then
+    Awaitility.await("the whole batch is replayed")
+        .untilAsserted(
+            () -> assertThat(streamProcessor.getLastProcessedPositionAsync().join()).isEqualTo(1L));
+    assertThat(streamProcessor.isFailed()).isFalse();
+  }
+
   /**
    * The ERROR events that report the failure of the unknown record. The loggers are shared with
    * every other test in the same JVM, which may fail stream processors for other reasons, so only
-   * events that carry this failure are considered: a {@link NoSuchProcessorException} for an
-   * unknown value type, or a message that names the record's unknown value type.
+   * events that carry this failure are considered.
    */
   private List<LogEvent> failureErrors() {
     return recorder.getAppendedEvents().stream()
         .filter(e -> e.getLevel() == Level.ERROR)
         .filter(
             e ->
-                isUnknownValueTypeFailure(e.getThrown())
-                    || e.getMessage().getFormattedMessage().contains("NULL_VAL"))
+                e.getThrown() instanceof final NoSuchProcessorException exception
+                    && String.valueOf(exception.getMessage()).contains("unknown value type"))
         .toList();
-  }
-
-  private static boolean isUnknownValueTypeFailure(final Throwable thrown) {
-    for (Throwable cause = thrown; cause != null; cause = cause.getCause()) {
-      if (cause instanceof NoSuchProcessorException
-          && String.valueOf(cause.getMessage()).contains("unknown value type")) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private static List<HealthReport> captureReports(final StreamProcessor streamProcessor) {
