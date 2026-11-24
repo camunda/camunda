@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.health.impl.GatewayHealthManagerImpl;
+import io.camunda.zeebe.gateway.impl.configuration.ClientAuthCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.mtls.MeteredPeerVerificationListener;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
@@ -48,6 +50,8 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.tls.ClientCertificateMode;
+import io.camunda.zeebe.util.tls.PeerCertificateTrustManager;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -60,6 +64,7 @@ import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingServerInterceptor;
+import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -334,12 +339,42 @@ public final class Gateway implements CloseableSilently {
       } else {
         sslContextBuilder = SslContextBuilder.forServer(certificateChainPath, privateKeyPath);
       }
+      configureClientAuth(sslContextBuilder, security.getClientAuth());
       final var sslContext = GrpcSslContexts.configure(sslContextBuilder).build();
       serverBuilder.sslContext(sslContext);
     } catch (final Exception e) {
       throw new IllegalArgumentException(
           "Failed to start messaging service; invalid server TLS configuration", e);
     }
+  }
+
+  private void configureClientAuth(
+      final SslContextBuilder sslContextBuilder, final ClientAuthCfg clientAuth) throws Exception {
+    final var mode = clientAuth.getMode();
+    if (mode == ClientCertificateMode.NONE) {
+      return;
+    }
+
+    final var trustedCertificatesPath = clientAuth.getTrustedCertificatesPath();
+    if (trustedCertificatesPath == null || !trustedCertificatesPath.canRead()) {
+      throw new IllegalArgumentException(
+          "Expected a readable trusted certificates bundle to verify client certificates with when"
+              + " the client certificate mode is %s, but got '%s'"
+                  .formatted(mode, trustedCertificatesPath));
+    }
+
+    final var trustManager =
+        PeerCertificateTrustManager.create(
+            PeerCertificateTrustManager.readCertificates(trustedCertificatesPath),
+            clientAuth.getAllowedIdentities(),
+            clientAuth.isCommonNameFallback(),
+            mode == ClientCertificateMode.REQUIRED,
+            new MeteredPeerVerificationListener(
+                meterRegistry, "zeebe.gateway.grpc.client.certificate", LOG));
+    sslContextBuilder
+        .trustManager(trustManager)
+        .clientAuth(
+            mode == ClientCertificateMode.REQUIRED ? ClientAuth.REQUIRE : ClientAuth.OPTIONAL);
   }
 
   @Override
