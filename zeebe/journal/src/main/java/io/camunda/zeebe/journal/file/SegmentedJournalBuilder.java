@@ -169,6 +169,11 @@ public class SegmentedJournalBuilder {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var journalMetrics = new JournalMetrics(meterRegistry);
     final var segmentLoader = new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator);
+<<<<<<< HEAD
+=======
+    final var metaStore = requireNonNull(journalMetaStore, "must specify a journal meta store");
+    final var journalName = name;
+>>>>>>> 9e14e4af (refactor: inject how the journal creates its segment preparation executor)
     final var segmentsManager =
         new SegmentsManager(
             journalIndex,
@@ -177,8 +182,14 @@ public class SegmentedJournalBuilder {
             name,
             segmentLoader,
             journalMetrics,
+<<<<<<< HEAD
             journalMetaStore);
     final var segmentsFlusher = new SegmentsFlusher(journalMetaStore);
+=======
+            metaStore,
+            SEGMENT_DELETION_EXECUTOR,
+            () -> SegmentsManager.newBackgroundIoExecutor(journalName));
+>>>>>>> 9e14e4af (refactor: inject how the journal creates its segment preparation executor)
 
     return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, segmentsFlusher);
   }
