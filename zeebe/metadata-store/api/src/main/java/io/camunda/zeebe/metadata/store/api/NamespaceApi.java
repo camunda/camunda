@@ -10,7 +10,6 @@ package io.camunda.zeebe.metadata.store.api;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
 
 /**
  * Creates, deletes, lists and follows namespaces. Handed to the components that manage namespaces
@@ -28,36 +27,21 @@ public interface NamespaceApi {
   ActorFuture<Boolean> exists(Namespace namespace);
 
   /** Every namespace of the scope, for example one per physical tenant. */
-  ActorFuture<List<Namespace>> list(NamespaceScope scope);
+  ActorFuture<List<Namespace>> list(Namespace.Scope scope);
 
   /** Deletes the namespace with all its keys, unconditionally. */
   ActorFuture<Void> deleteNamespace(Namespace namespace);
 
   /**
    * Registers a listener for namespaces of the scope being created or deleted. It reports
-   * namespaces only, never their keys. Registration does not report existing namespaces: register
-   * first, then call {@link #list(NamespaceScope)}. The listener is called on the given executor,
-   * one event at a time and in commit order.
+   * namespaces only, never their keys. Registration does not report existing namespaces: once the
+   * future completes, call {@link #list(Namespace.Scope)}.
    *
-   * @throws ClusterMetadataStoreException.ViewStalledException if this broker's view can no longer
-   *     follow the store; nothing is registered
-   * @throws ClusterMetadataStoreException.StoreClosedException if the store is closed; nothing is
-   *     registered
+   * <p>Fails, with nothing registered, with {@link
+   * ClusterMetadataStoreException.ViewStalledException} if this broker's view can no longer follow
+   * the store, or {@link ClusterMetadataStoreException.StoreClosedException} if the store is
+   * closed.
    */
-  Subscription watchNamespace(
-      NamespaceScope scope, BiConsumer<Namespace, NamespaceEvent> listener, Executor executor);
-
-  /** Whose data a namespace holds. */
-  enum NamespaceScope {
-    /** The whole cluster; the namespace name is a fixed name chosen by its consumer. */
-    CLUSTER,
-    /** One physical tenant; the namespace name is the physical tenant id. */
-    PHYSICAL_TENANT
-  }
-
-  /** What happened to a namespace, as {@link #watchNamespace} delivers it. */
-  enum NamespaceEvent {
-    CREATED,
-    DELETED
-  }
+  ActorFuture<Subscription> watchNamespace(
+      Namespace.Scope scope, Subscription.Listener<NamespaceEvent> listener, Executor executor);
 }

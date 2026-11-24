@@ -12,7 +12,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -94,25 +93,23 @@ public interface ClusterMetadataStore {
 
   /**
    * Registers a listener for every change of the key or of a key underneath it, on this broker's
-   * view. The key does not have to exist. Registration delivers nothing for the current state:
-   * register first, then use {@link #get} or {@link #list} for the starting state.
+   * view. The key does not have to exist. Registration delivers nothing for the current state: once
+   * the future completes, use {@link #get} or {@link #list} for the starting state.
    *
-   * <p>The listener is called on the given executor, one event at a time and in commit order. A
-   * listener that throws is not called again for that event; delivery goes on with the next one.
-   * When the namespace is deleted, the listener receives {@link KeyEvent.ChangeType#REMOVE} for
-   * each matching key, then the subscription closes with {@link
+   * <p>A listener that throws is not called again for that event; delivery goes on with the next
+   * one. When the namespace is deleted, the listener receives {@link KeyEvent.ChangeType#REMOVE}
+   * for each matching key, then {@link Subscription.Listener#onClosed} with {@link
    * Subscription.CloseReason#NAMESPACE_DELETED}.
    *
-   * @throws ClusterMetadataStoreException.NamespaceNotFoundException if the namespace of the key
-   *     does not exist; nothing is registered
-   * @throws ClusterMetadataStoreException.ViewStalledException if this broker's view can no longer
-   *     follow the store; nothing is registered
-   * @throws ClusterMetadataStoreException.InvalidArgumentException if the key is empty or not in
-   *     canonical form; nothing is registered
-   * @throws ClusterMetadataStoreException.StoreClosedException if the store is closed; nothing is
-   *     registered
+   * <p>Fails, with nothing registered, with {@link
+   * ClusterMetadataStoreException.NamespaceNotFoundException} if the namespace of the key does not
+   * exist, {@link ClusterMetadataStoreException.InvalidArgumentException} if the key is empty,
+   * {@link ClusterMetadataStoreException.ViewStalledException} if this broker's view can no longer
+   * follow the store, or {@link ClusterMetadataStoreException.StoreClosedException} if the store is
+   * closed.
    */
-  Subscription watch(StoreKey key, Consumer<KeyEvent> listener, Executor executor);
+  ActorFuture<Subscription> watch(
+      StoreKey key, Subscription.Listener<KeyEvent> listener, Executor executor);
 
   /** Fails the future, rather than throwing, if the write breaks a rule, as every call does. */
   private ActorFuture<Void> batchOfOne(final Supplier<Write> write) {

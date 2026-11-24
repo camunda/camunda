@@ -8,17 +8,15 @@
 package io.camunda.zeebe.metadata.store.api;
 
 import io.camunda.zeebe.metadata.store.api.ClusterMetadataStoreException.InvalidArgumentException;
-import io.camunda.zeebe.metadata.store.api.NamespaceApi.NamespaceScope;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
  * An isolated key space, identified by its scope and its name, written {@code SCOPE/NAME}. The name
- * is the physical tenant id in {@link NamespaceScope#PHYSICAL_TENANT} scope and a fixed name in
- * {@link NamespaceScope#CLUSTER} scope. A name holds only Latin letters, digits, {@code -} and
- * {@code _}.
+ * is the physical tenant id in {@link Scope#PHYSICAL_TENANT} scope and a fixed name in {@link
+ * Scope#CLUSTER} scope. A name holds only Latin letters, digits, {@code -} and {@code _}.
  */
-public record Namespace(NamespaceScope scope, String name) {
+public record Namespace(Scope scope, String name) {
 
   private static final Pattern NAMESPACE_REGEX = Pattern.compile("[A-Za-z0-9_-]+");
 
@@ -37,16 +35,24 @@ public record Namespace(NamespaceScope scope, String name) {
 
   /** Returns the namespace {@code CLUSTER/name}. */
   public static Namespace cluster(final String name) {
-    return new Namespace(NamespaceScope.CLUSTER, name);
+    return new Namespace(Scope.CLUSTER, name);
   }
 
   /** Returns the namespace {@code PHYSICAL_TENANT/tenantId}. */
   public static Namespace tenant(final String tenantId) {
-    return new Namespace(NamespaceScope.PHYSICAL_TENANT, tenantId);
+    return new Namespace(Scope.PHYSICAL_TENANT, tenantId);
   }
 
   @Override
   public String toString() {
     return scope + "/" + name;
+  }
+
+  /** Whose data a namespace holds. */
+  public enum Scope {
+    /** The whole cluster; the namespace name is a fixed name chosen by its consumer. */
+    CLUSTER,
+    /** One physical tenant; the namespace name is the physical tenant id. */
+    PHYSICAL_TENANT
   }
 }
