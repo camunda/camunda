@@ -20,6 +20,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.util.List;
 import java.util.UUID;
@@ -237,7 +238,7 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  public void shouldIgnoreAuthorizationCheckEventWhenEnabled() {
+  public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
         Authorization.of(a -> a.batchOperation().read().resourceIds(List.of("1", "2")));
@@ -250,7 +251,14 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
         transformQuery(FilterBuilders.batchOperationItem(b -> b), resourceAccessChecks);
 
     // then
-    assertThat(searchQuery).isNull();
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchTermsQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo(OperationTemplate.BATCH_OPERATION_ID);
+              assertThat(t.values().stream().map(TypedValue::stringValue).toList())
+                  .containsExactlyInAnyOrder("1", "2");
+            });
   }
 
   @Test

@@ -23,7 +23,6 @@ import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.net.URI;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -350,13 +349,11 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   private void whenNoAdminUserExists() {
-    when(roleServices.hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER))
-        .thenReturn(false);
+    when(roleServices.hasMembers(DefaultRole.ADMIN.getId())).thenReturn(false);
   }
 
   private void whenAdminUserExists() {
-    when(roleServices.hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER))
-        .thenReturn(true);
+    when(roleServices.hasMembers(DefaultRole.ADMIN.getId())).thenReturn(true);
   }
 
   private UserDTO validCreateUserRequest(final String username) {
