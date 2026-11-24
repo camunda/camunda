@@ -47,7 +47,7 @@ A change may break user space only as an exception, when all of these hold:
 
 Making the engine match the documentation or the original design is never an exception.
 
-The exceptions in this policy never allow breaking the [public API](https://docs.camunda.io/docs/reference/public-api/), because that is a contractual promise. The C8 API governance team owns what happens there.
+The exceptions in this policy never allow breaking the [public API](https://docs.camunda.io/docs/reference/public-api/). The C8 API governance team owns what happens there.
 
 ### Weighing the harms
 
