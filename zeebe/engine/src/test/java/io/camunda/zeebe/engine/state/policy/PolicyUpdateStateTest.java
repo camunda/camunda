@@ -54,6 +54,18 @@ final class PolicyUpdateStateTest {
   }
 
   @Test
+  void shouldKeepTheKeyOfTheFirstChunk() {
+    // given
+    state.bufferChunk(1L, chunk("update-1", 0, 2));
+
+    // when
+    state.bufferChunk(2L, chunk("update-1", 1, 2));
+
+    // then
+    assertThat(state.getOpenUpdate().orElseThrow().getUpdateKey()).isEqualTo(1L);
+  }
+
+  @Test
   void shouldCompleteTheUpdateWhenEveryChunkIsBuffered() {
     // given
     state.bufferChunk(1L, chunk("update-1", 2, 3));
