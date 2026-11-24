@@ -243,9 +243,10 @@ is deferred.**
 - Whether a distribution is tracked is decided by the source and carried by command distribution
   itself: a generic flag sent with every distributed command, absent meaning untracked.
   Receivers ask `isCompletionTracked(command)`; a feature with an old path (deletion) uses it to
-  choose between `deferCompletion` and its old completion command. A source sets the flag only
-  once tracking is enabled, which needs every broker on 8.11 or later, so every receiver
-  understands it. State inherited without a message (a draining definition copied on scale-up)
+  choose between `deferCompletion` and its old completion command. The flag is an optional byte
+  in the record metadata and in the inter-partition message (both protocol versions bumped); older
+  readers skip it, and a missing flag reads as untracked. A source sets the flag only once tracking
+  is enabled, so every receiver understands it. State inherited without a message (a draining definition copied on scale-up)
   keeps its mode in the feature's own state.
 - Existing column families are not migrated or reused. A feature's old column family (such as
   `PENDING_PROCESS_DELETIONS_PER_PARTITION`) keeps serving its old path and empties as that work
@@ -259,10 +260,14 @@ is deferred.**
   seed its old state on the source. The adapter also owns the old processors and column families.
   Removing the old path later means deleting the adapter's processors and wiring; appliers of old
   events stay for replay.
-- "Every broker is upgraded" needs an explicit cluster-wide signal (a dynamic-config feature flag
-  or a minimum broker version); the engine has none today. Until it is set, no broker writes the
-  new intents and no feature switches paths, so no `COMPLETE` reaches a broker that cannot
-  process it, and a new source never finishes while an old receiver still works on the old path.
+- "Every broker is upgraded" is an explicit cluster-wide signal: each broker advertises a
+  completion-tracking capability through gossip, and a partition's leader enables tracking once
+  every broker of the cluster advertises it (an unknown broker counts as not supporting it). A
+  version comparison is not used, because pre-releases of the same minor version would pass it.
+  The leader records the decision as an event, so followers and replay agree and it never turns
+  off again. Until then no broker writes the new intents and no feature switches paths, so no
+  `COMPLETE` reaches a broker that cannot process it, and a new source never finishes while an old
+  receiver still works on the old path. Operators cannot change this decision.
 - Exporter templates and golden files change. This needs approval from the protocol owners.
 
 ## Alternatives considered
