@@ -14,8 +14,12 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc.WorkerMetricKeyNames;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -56,6 +60,17 @@ public class Worker {
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
     resultMetrics = new WorkerResultMetrics(registry, requestFutures);
+
+    // Static values, registered early so they are available even if the client never connects.
+    Gauge.builder(WorkerMetricsDoc.CLIENT_INFO.getName(), () -> 1)
+        .description(WorkerMetricsDoc.CLIENT_INFO.getDescription())
+        .tag(StarterMetricKeyNames.NAME.asString(), "worker")
+        .tag(
+            WorkerMetricKeyNames.COMPLETION_DELAY.asString(),
+            workerCfg.getCompletionDelay().toString())
+        .tag(
+            WorkerMetricKeyNames.SEND_MESSAGE.asString(), String.valueOf(workerCfg.isSendMessage()))
+        .register(registry);
     responseChecker = new ResponseChecker(requestFutures, resultMetrics);
     this.connectionMonitor = connectionMonitor;
   }
