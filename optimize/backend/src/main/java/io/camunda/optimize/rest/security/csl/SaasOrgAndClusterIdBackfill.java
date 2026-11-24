@@ -22,11 +22,10 @@ import org.springframework.stereotype.Component;
  * CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID} / {@code CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION} pair as well
  * (camunda/camunda#61604).
  *
- * <p>Three blocks of {@code service-config.yaml} read the legacy pair: {@code security.auth.cloud},
- * {@code analytics.mixpanel.properties} and {@code onboarding.properties}. Without the legacy keys
- * the first resolves to an empty string, which fails startup in {@link
- * OptimizeCloudSecurityConfiguration}, while the other two fall back to their {@code dev} defaults
- * and report a wrong organization and cluster id to the UI.
+ * <p>Two blocks of {@code service-config.yaml} read the legacy pair: {@code security.auth.cloud}
+ * and {@code onboarding.properties}. Without the legacy keys the first resolves to an empty string,
+ * which fails startup in {@link OptimizeCloudSecurityConfiguration}, while the second falls back to
+ * its {@code dev} defaults and reports a wrong organization and cluster id to the UI.
  *
  * <p>The fallback cannot live in {@code service-config.yaml}: its {@code ${...}} placeholders are
  * resolved by Optimize's own {@code ConfigurationParser} against system properties and environment
@@ -99,7 +98,6 @@ public class SaasOrgAndClusterIdBackfill implements BeanPostProcessor {
   private static void setClusterId(
       final ConfigurationService configurationService, final String clusterId) {
     configurationService.getAuthConfiguration().getCloudAuthConfiguration().setClusterId(clusterId);
-    configurationService.getAnalytics().getMixpanel().getProperties().setClusterId(clusterId);
     configurationService.getOnboarding().getProperties().setClusterId(clusterId);
   }
 
@@ -108,11 +106,6 @@ public class SaasOrgAndClusterIdBackfill implements BeanPostProcessor {
     configurationService
         .getAuthConfiguration()
         .getCloudAuthConfiguration()
-        .setOrganizationId(organizationId);
-    configurationService
-        .getAnalytics()
-        .getMixpanel()
-        .getProperties()
         .setOrganizationId(organizationId);
     configurationService.getOnboarding().getProperties().setOrganizationId(organizationId);
   }

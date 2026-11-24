@@ -10,7 +10,6 @@ import {Checkbox, FormGroup, Stack, Toggle} from '@carbon/react';
 
 import {TargetSelection} from 'components';
 import {t} from 'translation';
-import {track} from 'tracking';
 
 export default function NumberConfig({report, onChange}) {
   const {configuration, view, definitions} = report.data;
@@ -54,7 +53,6 @@ export default function NumberConfig({report, onChange}) {
             checked={!targetValue.active || targetValue.isKpi}
             onChange={(_evt, {checked}) => {
               onChange({targetValue: {isKpi: {$set: checked}}});
-              trackKpiState(checked, report.id);
             }}
             helperText={t('report.config.goal.kpiDescription')}
           />
@@ -62,10 +60,4 @@ export default function NumberConfig({report, onChange}) {
       </Stack>
     </FormGroup>
   );
-}
-
-function trackKpiState(isEnabled, reportId) {
-  track('displayAsProcessKpi' + (isEnabled ? 'Enabled' : 'Disabled'), {
-    entityId: reportId,
-  });
 }

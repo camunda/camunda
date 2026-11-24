@@ -69,10 +69,6 @@ class SaasOrgAndClusterIdBackfillTest {
     // then
     assertThat(cloudAuth(configuration).getClusterId()).isEqualTo(CLUSTER_ID);
     assertThat(cloudAuth(configuration).getOrganizationId()).isEqualTo(ORGANIZATION_ID);
-    assertThat(configuration.getAnalytics().getMixpanel().getProperties().getClusterId())
-        .isEqualTo(CLUSTER_ID);
-    assertThat(configuration.getAnalytics().getMixpanel().getProperties().getOrganizationId())
-        .isEqualTo(ORGANIZATION_ID);
     assertThat(configuration.getOnboarding().getProperties().getClusterId()).isEqualTo(CLUSTER_ID);
     assertThat(configuration.getOnboarding().getProperties().getOrganizationId())
         .isEqualTo(ORGANIZATION_ID);
@@ -116,7 +112,7 @@ class SaasOrgAndClusterIdBackfillTest {
     // then
     assertThat(cloudAuth(configuration).getClusterId()).isEqualTo("cluster-from-legacy");
     assertThat(cloudAuth(configuration).getOrganizationId()).isEqualTo("org-from-legacy");
-    assertThat(configuration.getAnalytics().getMixpanel().getProperties().getClusterId())
+    assertThat(configuration.getOnboarding().getProperties().getClusterId())
         .isEqualTo("cluster-from-legacy");
     assertThat(configuration.getOnboarding().getProperties().getOrganizationId())
         .isEqualTo("org-from-legacy");
@@ -134,8 +130,7 @@ class SaasOrgAndClusterIdBackfillTest {
     // then
     assertThat(cloudAuth(configuration).getClusterId()).isEmpty();
     assertThat(cloudAuth(configuration).getOrganizationId()).isEmpty();
-    assertThat(configuration.getAnalytics().getMixpanel().getProperties().getClusterId())
-        .isEqualTo(DEV_DEFAULT);
+    assertThat(configuration.getOnboarding().getProperties().getClusterId()).isEqualTo(DEV_DEFAULT);
     assertThat(configuration.getOnboarding().getProperties().getOrganizationId())
         .isEqualTo(DEV_DEFAULT);
   }

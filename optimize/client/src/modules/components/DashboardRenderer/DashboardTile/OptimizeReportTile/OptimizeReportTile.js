@@ -21,7 +21,6 @@ import {
   Popover,
 } from 'components';
 import {useErrorHandling} from 'hooks';
-import {track} from 'tracking';
 import {t} from 'translation';
 
 import KpiDeltaBadge from './KpiDeltaBadge';
@@ -131,7 +130,6 @@ export default function OptimizeReportTile({
           !evt.target.closest('button') &&
           !(evt.target.closest('.visualization') && canOnlyClickTitle)
         ) {
-          track('drillDownToReport');
           history.push(tileLink);
         }
       },
@@ -145,9 +143,6 @@ export default function OptimizeReportTile({
           <EntityName
             linkTo={!disableNameLink && tileLink}
             details={<ReportDetails report={data} />}
-            onClick={() => {
-              track('drillDownToReport');
-            }}
             name={data.name}
           />
           <InstanceCount

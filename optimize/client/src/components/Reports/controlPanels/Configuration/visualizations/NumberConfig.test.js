@@ -9,11 +9,7 @@
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
-import {track} from 'tracking';
-
 import NumberConfig from './NumberConfig';
-
-jest.mock('tracking', () => ({track: jest.fn()}));
 
 const props = {
   report: {
@@ -61,7 +57,6 @@ it('should set the report as kpi report', () => {
   node.find({labelText: 'Display as a process KPI'}).simulate('change', undefined, {checked: true});
 
   expect(spy).toHaveBeenCalledWith({targetValue: {isKpi: {$set: true}}});
-  expect(track).toHaveBeenCalledWith('displayAsProcessKpiEnabled', {entityId: 'reportID'});
 });
 
 it('should not show kpi config for reports with variable view', () => {

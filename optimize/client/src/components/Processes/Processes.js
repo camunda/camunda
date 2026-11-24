@@ -15,7 +15,6 @@ import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
 import {isUserSearchAvailable} from 'config';
-import {track} from 'tracking';
 
 import {DashboardView} from '../Dashboards/DashboardView';
 import KpiSummary from './KpiSummary';
@@ -158,10 +157,6 @@ export function Processes({mightFail, user}) {
                         text: t('processes.digestConfigured', {name: ownerName}),
                       });
                     }
-                    trackEmailDigestState(
-                      newConfig.processDigest.enabled,
-                      editProcessConfig.processDefinitionKey
-                    );
                   }
                   loadProcessesList();
                 },
@@ -176,9 +171,3 @@ export function Processes({mightFail, user}) {
 }
 
 export default withUser(withErrorHandling(Processes));
-
-function trackEmailDigestState(isEnabled, processDefinitionKey) {
-  track('emailDigest' + (isEnabled ? 'Enabled' : 'Disabled'), {
-    processDefinitionKey,
-  });
-}

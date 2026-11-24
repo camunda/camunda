@@ -11,7 +11,7 @@ import static io.camunda.optimize.service.util.configuration.OptimizeProfile.CCS
 import static io.camunda.optimize.service.util.configuration.OptimizeProfile.CLOUD;
 
 import io.camunda.identity.sdk.Identity;
-import io.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigResponseDto;
+import io.camunda.optimize.dto.optimize.query.ui_configuration.AnalyticsConfigResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import io.camunda.optimize.license.LicenseType;
@@ -95,21 +95,13 @@ public class UIConfigurationService {
     uiConfigurationDto.setExpiresAt(
         expirationDate == null ? null : DATE_TIME_FORMATTER.format(getCamundaLicenseExpiresAt()));
 
-    final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
-    mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());
-    mixpanel.setApiHost(configurationService.getAnalytics().getMixpanel().getApiHost());
-    mixpanel.setToken(configurationService.getAnalytics().getMixpanel().getToken());
-    mixpanel.setOrganizationId(
-        configurationService.getAnalytics().getMixpanel().getProperties().getOrganizationId());
-    mixpanel.setOsanoScriptUrl(
+    final AnalyticsConfigResponseDto analytics = uiConfigurationDto.getAnalytics();
+    analytics.setEnabled(configurationService.getAnalytics().isEnabled());
+    analytics.setOsanoScriptUrl(
         configurationService.getAnalytics().getOsano().getScriptUrl().orElse(null));
-    mixpanel.setStage(configurationService.getAnalytics().getMixpanel().getProperties().getStage());
-    mixpanel.setClusterId(
-        configurationService.getAnalytics().getMixpanel().getProperties().getClusterId());
 
     final OnboardingResponseDto onboarding = uiConfigurationDto.getOnboarding();
     onboarding.setEnabled(configurationService.getOnboarding().isEnabled());
-    onboarding.setAppCuesScriptUrl(configurationService.getOnboarding().getAppCuesScriptUrl());
     onboarding.setOrgId(configurationService.getOnboarding().getProperties().getOrganizationId());
     onboarding.setClusterId(configurationService.getOnboarding().getProperties().getClusterId());
 
