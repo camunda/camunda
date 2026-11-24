@@ -252,6 +252,13 @@ is deferred.**
   finishes; new work does not write it.
 - A feature moving onto `onAllCompleted` runs both paths: work started on the old path finishes
   on it, and new work uses the new path only once every broker is upgraded.
+- The old path is hidden behind a legacy adapter that the feature registers per value type. Feature
+  code always calls `deferCompletion` and `ackCompletion`. For an untracked distribution,
+  `deferCompletion` writes nothing, `ackCompletion` hands over to the adapter (for deletion: send
+  `DELETE_COMPLETE` if the drain is a legacy one), and an untracked `distribute` lets the adapter
+  seed its old state on the source. The adapter also owns the old processors and column families.
+  Removing the old path later means deleting the adapter's processors and wiring; appliers of old
+  events stay for replay.
 - "Every broker is upgraded" needs an explicit cluster-wide signal (a dynamic-config feature flag
   or a minimum broker version); the engine has none today. Until it is set, no broker writes the
   new intents and no feature switches paths, so no `COMPLETE` reaches a broker that cannot
