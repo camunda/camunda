@@ -16,11 +16,12 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.metrics.ResultMetricKeyNames;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
-import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.read.DataReadMeter.ReadQuery;
 import io.camunda.zeebe.read.DataReadMeter.ReadQueryContext;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -376,7 +377,7 @@ final class DataReadMeterTest {
   }
 
   private Timer timer(final String queryName) {
-    return timer(queryName, "success", "none");
+    return timer(queryName, "success", null);
   }
 
   private Timer failureTimer(final String queryName, final String error) {
@@ -387,8 +388,8 @@ final class DataReadMeterTest {
     return meterRegistry
         .get(StarterLatencyMetricsDoc.READ_BENCHMARK.getName())
         .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), queryName)
-        .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
-        .tag(StarterMetricKeyNames.ERROR.asString(), error)
+        .tag(ResultMetricKeyNames.OUTCOME.asString(), outcome)
+        .tags(error == null ? Tags.empty() : Tags.of(ResultMetricKeyNames.ERROR.asString(), error))
         .timer();
   }
 

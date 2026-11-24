@@ -14,6 +14,7 @@ import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.grpc.Status;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,7 @@ class StarterResultMetricsTest {
     metrics.record(null);
 
     // then
-    assertThat(count("success", "none")).isEqualTo(1.0);
+    assertThat(count("success", null)).isEqualTo(1.0);
   }
 
   @Test
@@ -40,7 +41,7 @@ class StarterResultMetricsTest {
 
     // then
     assertThat(count("failure", "grpc_resource_exhausted")).isEqualTo(1.0);
-    assertThat(count("success", "none")).isZero();
+    assertThat(count("success", null)).isZero();
   }
 
   @Test
@@ -50,7 +51,7 @@ class StarterResultMetricsTest {
 
     // then
     assertThat(count("failure", "http_503")).isEqualTo(1.0);
-    assertThat(count("success", "none")).isZero();
+    assertThat(count("success", null)).isZero();
   }
 
   @Test
@@ -76,7 +77,7 @@ class StarterResultMetricsTest {
         registry
             .find(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName())
             .tag("outcome", outcome)
-            .tag("error", error)
+            .tags(error == null ? Tags.empty() : Tags.of("error", error))
             .counter();
     return counter == null ? 0.0 : counter.count();
   }
