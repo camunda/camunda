@@ -108,6 +108,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private boolean idle;
   private final InstantSource clock;
   private final RecordMetadataBlock skipRecordDecoder = new RecordMetadataBlock();
+  private final boolean exportOnlyBackedUpRecords;
+  // Highest log position covered by a confirmed backup; only read when exportOnlyBackedUpRecords
+  private long backedUpPosition = -1;
 
   public ExporterDirector(
       final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
@@ -163,9 +166,29 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     distributionInterval = context.getDistributionInterval();
     migrationStatusScanMaxRecords = context.getMigrationStatusScanMaxRecords();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
+    exportOnlyBackedUpRecords = context.isExportOnlyBackedUpRecords();
 
     // needs name to be initialized
     healthReport = HealthReport.healthy(this);
+  }
+
+  /**
+   * Notifies the director that the log up to and including {@code position} is contained in a
+   * confirmed backup. When {@code exportOnlyBackedUpRecords} is enabled, the director never exports
+   * (or skips past) a record beyond the highest position it was notified about.
+   */
+  public void onBackupConfirmed(final long position) {
+    if (!exportOnlyBackedUpRecords || actor.isClosed()) {
+      return;
+    }
+    actor.run(
+        () -> {
+          if (position > backedUpPosition) {
+            LOG.debug("Records up to position {} are backed up and may be exported", position);
+            backedUpPosition = position;
+            readNextEvent();
+          }
+        });
   }
 
   public ActorFuture<Void> startAsync(final ActorSchedulingService actorSchedulingService) {
@@ -757,7 +780,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         && !idle
         && logStreamReader.hasNext()
         && !inExportingPhase
-        && !exporterPhase.equals(ExporterPhase.PAUSED);
+        && !exporterPhase.equals(ExporterPhase.PAUSED)
+        && isNextRecordBackedUp();
+  }
+
+  private boolean isNextRecordBackedUp() {
+    return !exportOnlyBackedUpRecords
+        || logStreamReader.peekNext().getPosition() <= backedUpPosition;
   }
 
   private void exportEvent(final LoggedEvent event) {

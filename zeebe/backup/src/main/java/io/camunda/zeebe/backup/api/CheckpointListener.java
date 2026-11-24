@@ -22,4 +22,16 @@ public interface CheckpointListener {
    * <li>If there is a valid checkpoint, when the listener is registered
    */
   void onNewCheckpointCreated(long checkpointId, CheckpointType checkpointType);
+
+  /**
+   * Called whenever a backup is confirmed, i.e. the log up to and including {@code
+   * checkpointPosition} is stored in the backup store.
+   *
+   * <p>This will be called
+   * <li>When the processor is initialized and a confirmed backup exists
+   * <li>When CHECKPOINT:CONFIRM_BACKUP is processed and confirms a newer backup
+   * <li>When CHECKPOINT:CONFIRMED_BACKUP is replayed
+   * <li>If there is a confirmed backup, when the listener is registered
+   */
+  default void onBackupConfirmed(final long checkpointId, final long checkpointPosition) {}
 }

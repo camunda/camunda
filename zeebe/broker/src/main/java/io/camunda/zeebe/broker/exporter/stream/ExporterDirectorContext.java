@@ -41,6 +41,7 @@ public final class ExporterDirectorContext {
   private @Nullable String licenseKey;
   private String tenantName;
   private boolean receiveOnLegacySubject = true;
+  private boolean exportOnlyBackedUpRecords;
 
   public int getId() {
     return id;
@@ -147,6 +148,16 @@ public final class ExporterDirectorContext {
   public ExporterDirectorContext migrationStatusScanMaxRecords(
       final int migrationStatusScanMaxRecords) {
     this.migrationStatusScanMaxRecords = migrationStatusScanMaxRecords;
+    return this;
+  }
+
+  public boolean isExportOnlyBackedUpRecords() {
+    return exportOnlyBackedUpRecords;
+  }
+
+  public ExporterDirectorContext exportOnlyBackedUpRecords(
+      final boolean exportOnlyBackedUpRecords) {
+    this.exportOnlyBackedUpRecords = exportOnlyBackedUpRecords;
     return this;
   }
 
