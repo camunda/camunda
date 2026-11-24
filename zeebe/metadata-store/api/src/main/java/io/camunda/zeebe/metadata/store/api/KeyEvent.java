@@ -22,9 +22,41 @@ import org.jspecify.annotations.Nullable;
 public record KeyEvent(
     ChangeType type, StoreKey key, @Nullable Value current, @Nullable Value previous) {
 
+  /**
+   * @throws IllegalArgumentException if current or previous is set or absent against the rule of
+   *     the change type
+   */
   public KeyEvent {
     Objects.requireNonNull(type, "type");
     Objects.requireNonNull(key, "key");
+    final boolean expectsCurrent = type != ChangeType.REMOVE;
+    final boolean expectsPrevious = type != ChangeType.ADD;
+    if ((current != null) != expectsCurrent || (previous != null) != expectsPrevious) {
+      throw new IllegalArgumentException(
+          "Expected a %s event to have current %s and previous %s, but got current=%s, previous=%s"
+              .formatted(
+                  type,
+                  expectsCurrent ? "set" : "absent",
+                  expectsPrevious ? "set" : "absent",
+                  current,
+                  previous));
+    }
+  }
+
+  public static KeyEvent added(final StoreKey key, final Value current) {
+    return new KeyEvent(ChangeType.ADD, key, Objects.requireNonNull(current, "current"), null);
+  }
+
+  public static KeyEvent replaced(final StoreKey key, final Value current, final Value previous) {
+    return new KeyEvent(
+        ChangeType.REPLACE,
+        key,
+        Objects.requireNonNull(current, "current"),
+        Objects.requireNonNull(previous, "previous"));
+  }
+
+  public static KeyEvent removed(final StoreKey key, final Value previous) {
+    return new KeyEvent(ChangeType.REMOVE, key, null, Objects.requireNonNull(previous, "previous"));
   }
 
   /**
