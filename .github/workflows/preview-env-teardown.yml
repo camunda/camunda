@@ -36,6 +36,7 @@ jobs:
     permissions:
       contents: read
       id-token: write # Vault JWT login
+      deployments: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
