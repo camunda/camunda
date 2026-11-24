@@ -52,6 +52,14 @@ public class Export {
    */
   private int migrationStatusScanMaxRecords = DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS;
 
+  /**
+   * When enabled, exporters only receive records that are already contained in a confirmed backup.
+   * The exporter reader never advances past the checkpoint position of the latest confirmed backup,
+   * so no record reaches secondary storage before it can be restored from primary storage backups.
+   * Requires backups to be taken regularly, otherwise exporting stalls.
+   */
+  private boolean exportOnlyBackedUpRecords = false;
+
   public Duration getDistributionInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".distribution-interval",
@@ -80,6 +88,14 @@ public class Export {
         Integer.class,
         BackwardsCompatibilityMode.NOT_SUPPORTED,
         Set.of());
+  }
+
+  public boolean isExportOnlyBackedUpRecords() {
+    return exportOnlyBackedUpRecords;
+  }
+
+  public void setExportOnlyBackedUpRecords(final boolean exportOnlyBackedUpRecords) {
+    this.exportOnlyBackedUpRecords = exportOnlyBackedUpRecords;
   }
 
   public void setMigrationStatusScanMaxRecords(final int migrationStatusScanMaxRecords) {

@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.BlockingExporter;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -22,6 +24,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
@@ -32,13 +35,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ExporterDirectorPartitionTransitionStep.class);
   private static final int EXPORTER_PROCESSOR_ID = 1003;
 
   private final BiFunction<ExporterDirectorContext, ExporterPhase, ExporterDirector>
       exporterDirectorBuilder;
+
+  private @Nullable CheckpointRecordsProcessor backupConfirmationSource;
+  private @Nullable CheckpointListener backupConfirmationListener;
 
   public ExporterDirectorPartitionTransitionStep() {
     this(ExporterDirector::new);
@@ -65,6 +76,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final var director = context.getExporterDirector();
     if (director != null && shouldCloseOnTransition(targetRole, context.getCurrentRole())) {
       context.getComponentHealthMonitor().removeComponent(director);
+      unregisterBackupConfirmationListener();
       final ActorFuture<Void> future = director.closeAsync();
       future.onComplete(
           (success, error) -> {
@@ -129,6 +141,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .partitionMessagingService(context.getMessagingService())
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)
+            .exportOnlyBackedUpRecords(exportingCfg.exportOnlyBackedUpRecords())
             .positionsToSkipFilter(exporterFilter)
             .meterRegistry(context.getPartitionTransitionMeterRegistry())
             .clusterId(
@@ -146,6 +159,9 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
         exporterDirectorBuilder.apply(exporterCtx, exporterPhase(context));
 
     context.getComponentHealthMonitor().registerComponent(director);
+    if (exportingCfg.exportOnlyBackedUpRecords()) {
+      registerBackupConfirmationListener(context, director);
+    }
 
     final var startFuture = director.startAsync(context.getActorSchedulingService());
     startFuture.onComplete(
@@ -170,6 +186,41 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           }
         });
     return startFuture;
+  }
+
+  private void registerBackupConfirmationListener(
+      final PartitionTransitionContext context, final ExporterDirector director) {
+    final var checkpointProcessor = context.getCheckpointProcessor();
+    if (checkpointProcessor == null) {
+      LOG.warn(
+          "Exporting is restricted to backed up records, but no checkpoint processor is installed"
+              + " for partition {}. No records will be exported until a backup is confirmed.",
+          context.getPartitionId());
+      return;
+    }
+
+    final CheckpointListener listener =
+        new CheckpointListener() {
+          @Override
+          public void onNewCheckpointCreated(
+              final long checkpointId, final CheckpointType checkpointType) {}
+
+          @Override
+          public void onBackupConfirmed(final long checkpointId, final long checkpointPosition) {
+            director.onBackupConfirmed(checkpointPosition);
+          }
+        };
+    checkpointProcessor.addCheckpointListener(listener);
+    backupConfirmationSource = checkpointProcessor;
+    backupConfirmationListener = listener;
+  }
+
+  private void unregisterBackupConfirmationListener() {
+    if (backupConfirmationSource != null && backupConfirmationListener != null) {
+      backupConfirmationSource.removeCheckpointListener(backupConfirmationListener);
+    }
+    backupConfirmationSource = null;
+    backupConfirmationListener = null;
   }
 
   /**

@@ -489,6 +489,44 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldOnlyExportRecordsCoveredByConfirmedBackup() {
+    // given
+    rule.withExporterDirectorContextConfigurator(ctx -> ctx.exportOnlyBackedUpRecords(true));
+    startExporterDirector(exporterDescriptors);
+    final long first = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    final long second = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    final long third = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+
+    // when
+    rule.getDirector().onBackupConfirmed(second);
+
+    // then
+    Awaitility.await("exporter has exported records up to the confirmed backup")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(0).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(first, second));
+    Awaitility.await("exporter does not export beyond the confirmed backup")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(exporters.get(0).getExportedRecords()).hasSize(2));
+
+    // when
+    rule.getDirector().onBackupConfirmed(third);
+
+    // then
+    Awaitility.await("exporter continues once the next backup is confirmed")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(0).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(first, second, third));
+  }
+
+  @Test
   public void shouldRetryExportingOnException() {
     // given
     final AtomicLong failCount = new AtomicLong(3);

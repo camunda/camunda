@@ -804,7 +804,8 @@ public class BrokerBasedPropertiesOverride {
         new ExportingCfg(
             export.getSkipRecords(),
             export.getDistributionInterval(),
-            export.getMigrationStatusScanMaxRecords());
+            export.getMigrationStatusScanMaxRecords(),
+            export.isExportOnlyBackedUpRecords());
     override.setExporting(exportingCfg);
   }
 
