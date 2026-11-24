@@ -13,11 +13,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
+import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto;
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto.AgentDefinitionValueDto;
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto.AgentLimitsValueDto;
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto.AgentMetricsValueDto;
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceRecordDto;
+import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
@@ -27,6 +30,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +44,9 @@ class ZeebeAgentRunImportIT extends AbstractBrokerlessZeebeCCSMIT {
   private final AtomicLong keyCounter = new AtomicLong(700);
   private final String processId = "agentProcess-" + UUID.randomUUID();
   private final long processInstanceKey = keyCounter.getAndIncrement();
+  // The deletion filter matches the engine's process definition key, so each test needs its own.
+  private final long processDefinitionKey =
+      ThreadLocalRandom.current().nextLong(1_000_000L, Long.MAX_VALUE / 2);
 
   private String agentInstanceRecordIndex;
 
@@ -179,6 +186,37 @@ class ZeebeAgentRunImportIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
+  void shouldNotImportRunsOfDeletedProcessDefinitions() {
+    // given a user removed the version of one run, and Optimize reads its records again, as on a
+    // replay
+    final long deletedDefinitionKey = processDefinitionKey + 1;
+    final long runOfDeletedDefinition = keyCounter.getAndIncrement();
+    final long keptRun = keyCounter.getAndIncrement();
+    seed(
+        deletedDefinitionKey,
+        runOfDeletedDefinition,
+        AgentInstanceIntent.COMPLETED,
+        AgentInstanceStatus.COMPLETED,
+        900,
+        300,
+        2);
+    seed(keptRun, AgentInstanceIntent.COMPLETED, AgentInstanceStatus.COMPLETED, 900, 300, 2);
+    embeddedOptimizeExtension
+        .getBean(JobRegistryWriter.class)
+        .createJobEntry(
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, String.valueOf(deletedDefinitionKey));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(getAllAgentRuns())
+        .extracting(AgentRunDto::getAgentInstanceId)
+        .containsExactly(String.valueOf(keptRun));
+  }
+
+  @Test
   void shouldNotImportRunsWhenAgenticPhase2IsDisabled() {
     // given
     setAgenticPhase2Enabled(false);
@@ -212,13 +250,25 @@ class ZeebeAgentRunImportIT extends AbstractBrokerlessZeebeCCSMIT {
       final long inputTokens,
       final long outputTokens,
       final int modelCalls) {
+    return seed(
+        processDefinitionKey, runKey, intent, status, inputTokens, outputTokens, modelCalls);
+  }
+
+  private long seed(
+      final long definitionKey,
+      final long runKey,
+      final AgentInstanceIntent intent,
+      final AgentInstanceStatus status,
+      final long inputTokens,
+      final long outputTokens,
+      final int modelCalls) {
     final ZeebeAgentInstanceDataDto value = new ZeebeAgentInstanceDataDto();
     value.setAgentInstanceKey(runKey);
     value.setElementId("agent");
     value.setElementInstanceKey(runKey + 1);
     value.setElementInstanceKeys(List.of(runKey + 1));
     value.setBpmnProcessId(processId);
-    value.setProcessDefinitionKey(1001L);
+    value.setProcessDefinitionKey(definitionKey);
     value.setProcessDefinitionVersion(1);
     value.setProcessInstanceKey(processInstanceKey);
     value.setRootProcessInstanceKey(processInstanceKey);

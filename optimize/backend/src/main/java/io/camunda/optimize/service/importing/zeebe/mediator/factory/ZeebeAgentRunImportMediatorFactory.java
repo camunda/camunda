@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
+import io.camunda.optimize.service.db.writer.DeletedProcessDefinitionFilter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeAgentRunImportService;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Component;
 public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMediatorFactory {
 
   private final AgentRunWriter agentRunWriter;
+  private final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter;
 
   public ZeebeAgentRunImportMediatorFactory(
       final BeanFactory beanFactory,
@@ -34,7 +36,8 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
       final ConfigurationService configurationService,
       final AgentRunWriter agentRunWriter,
       final ObjectMapper objectMapper,
-      final DatabaseClient databaseClient) {
+      final DatabaseClient databaseClient,
+      final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter) {
     super(
         beanFactory,
         importIndexHandlerRegistry,
@@ -42,6 +45,7 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
         objectMapper,
         databaseClient);
     this.agentRunWriter = agentRunWriter;
+    this.deletedProcessDefinitionFilter = deletedProcessDefinitionFilter;
   }
 
   @Override
@@ -65,7 +69,8 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
                 configurationService,
                 agentRunWriter,
                 zeebeDataSourceDto.getPartitionId(),
-                databaseClient),
+                databaseClient,
+                deletedProcessDefinitionFilter),
             configurationService,
             new BackoffCalculator(configurationService)));
   }

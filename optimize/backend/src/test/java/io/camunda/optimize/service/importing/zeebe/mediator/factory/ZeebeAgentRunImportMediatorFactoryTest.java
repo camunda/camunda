@@ -26,7 +26,8 @@ class ZeebeAgentRunImportMediatorFactoryTest {
 
     // when
     final ZeebeAgentRunImportMediatorFactory factory =
-        new ZeebeAgentRunImportMediatorFactory(null, null, configurationService, null, null, null);
+        new ZeebeAgentRunImportMediatorFactory(
+            null, null, configurationService, null, null, null, null);
 
     // then
     assertThat(factory.isEnabled()).isEqualTo(phase2Enabled);

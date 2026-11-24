@@ -15,6 +15,7 @@ import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto.Age
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
+import io.camunda.optimize.service.db.writer.DeletedProcessDefinitionFilter;
 import io.camunda.optimize.service.importing.DatabaseImportJob;
 import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.engine.service.ImportService;
@@ -56,18 +57,21 @@ public class ZeebeAgentRunImportService implements ImportService<ZeebeAgentInsta
   private final ConfigurationService configurationService;
   private final int partitionId;
   private final DatabaseClient databaseClient;
+  private final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter;
 
   public ZeebeAgentRunImportService(
       final ConfigurationService configurationService,
       final AgentRunWriter agentRunWriter,
       final int partitionId,
-      final DatabaseClient databaseClient) {
+      final DatabaseClient databaseClient,
+      final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter) {
     databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.agentRunWriter = agentRunWriter;
     this.configurationService = configurationService;
     this.partitionId = partitionId;
     this.databaseClient = databaseClient;
+    this.deletedProcessDefinitionFilter = deletedProcessDefinitionFilter;
   }
 
   @Override
@@ -78,8 +82,15 @@ public class ZeebeAgentRunImportService implements ImportService<ZeebeAgentInsta
 
     final boolean newDataIsAvailable = !pageOfAgentInstances.isEmpty();
     if (newDataIsAvailable) {
+      // Skip the runs of versions a user removed, so that a replay of their records does not add
+      // them back. Optimize uses C7 naming: the engine's process definition key is its definition
+      // ID.
+      final List<ZeebeAgentInstanceRecordDto> recordsOfKeptDefinitions =
+          deletedProcessDefinitionFilter.filterOutSuppressed(
+              pageOfAgentInstances,
+              zeebeRecord -> String.valueOf(zeebeRecord.getValue().getProcessDefinitionKey()));
       final List<AgentRunDto> agentRuns =
-          filterAndMapZeebeRecordsToOptimizeEntities(pageOfAgentInstances);
+          filterAndMapZeebeRecordsToOptimizeEntities(recordsOfKeptDefinitions);
       final AgentRunDatabaseImportJob databaseImportJob =
           new AgentRunDatabaseImportJob(
               agentRunWriter,
