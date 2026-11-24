@@ -12,6 +12,7 @@ import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
+import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,6 +61,7 @@ public class DeleteProcessInstanceHistoryIT {
               });
 
   private static final Duration DELETION_TIMEOUT = Duration.ofSeconds(30);
+  private static final String END_EVENT_ID = "end";
   private static CamundaClient camundaClient;
 
   @Test
@@ -238,10 +240,10 @@ public class DeleteProcessInstanceHistoryIT {
     final var processId = Strings.newRandomValidBpmnId();
     deployProcessAndWaitForIt(
         camundaClient,
-        Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+        Bpmn.createExecutableProcess(processId).startEvent().endEvent(END_EVENT_ID).done(),
         processId + ".bpmn");
     final long piKey = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
-    waitForProcessInstances(camundaClient, f -> f.processInstanceKey(piKey), 1);
+    waitForCompletedProcessInstanceData(camundaClient, piKey);
 
     // when - delete using singular deletion
     final DeleteProcessInstanceResponse result =
@@ -258,11 +260,12 @@ public class DeleteProcessInstanceHistoryIT {
     final var processId = Strings.newRandomValidBpmnId();
     deployProcessAndWaitForIt(
         camundaClient,
-        Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+        Bpmn.createExecutableProcess(processId).startEvent().endEvent(END_EVENT_ID).done(),
         processId + ".bpmn");
     final long piKey1 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
     final long piKey2 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
-    waitForProcessInstances(camundaClient, f -> f.processDefinitionId(processId), 2);
+    waitForCompletedProcessInstanceData(camundaClient, piKey1);
+    waitForCompletedProcessInstanceData(camundaClient, piKey2);
 
     // when - delete only one by key
     final DeleteProcessInstanceResponse result =
@@ -436,6 +439,19 @@ public class DeleteProcessInstanceHistoryIT {
                       .items();
               assertThat(elementInstances).isNotEmpty();
             });
+  }
+
+  /**
+   * Waits until a completed start-to-end process instance and all of its element instances can be
+   * found in secondary storage. The history deletion deletes the documents it can find when it
+   * runs, so an element instance that becomes searchable only after that would be left behind.
+   * The end event is the last element instance to be exported.
+   */
+  private static void waitForCompletedProcessInstanceData(
+      final CamundaClient client, final long processInstanceKey) {
+    waitForProcessInstancesToBeCompleted(client, f -> f.processInstanceKey(processInstanceKey), 1);
+    waitForElementInstances(
+        client, f -> f.processInstanceKey(processInstanceKey).elementId(END_EVENT_ID), 1);
   }
 
   /**
