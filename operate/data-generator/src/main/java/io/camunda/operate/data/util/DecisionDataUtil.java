@@ -141,7 +141,7 @@ public class DecisionDataUtil {
             1,
             DECISION_ID_2,
             35467,
-            random.nextInt(1000),
+            random.nextLong(Long.MAX_VALUE),
             TENANT2));
     result.add(
         createDecisionInstance(
@@ -153,7 +153,7 @@ public class DecisionDataUtil {
             2,
             DECISION_ID_2,
             35467,
-            random.nextInt(1000),
+            random.nextLong(Long.MAX_VALUE),
             TENANT1));
     // 2 FAILED
     result.add(
@@ -178,7 +178,7 @@ public class DecisionDataUtil {
             2,
             DECISION_ID_2,
             35467,
-            random.nextInt(1000),
+            random.nextLong(Long.MAX_VALUE),
             TENANT1));
 
     return result;
@@ -192,8 +192,8 @@ public class DecisionDataUtil {
         random.nextInt(1) == 0 ? DECISION_DEFINITION_ID_1 : DECISION_DEFINITION_ID_2,
         1,
         UUID.randomUUID().toString(),
-        random.nextInt(1000),
-        random.nextInt(1000));
+        random.nextLong(Long.MAX_VALUE),
+        random.nextLong(Long.MAX_VALUE));
   }
 
   public DecisionInstanceEntity createDecisionInstance(
@@ -206,7 +206,7 @@ public class DecisionDataUtil {
       final long processDefinitionKey,
       final long processInstanceKey) {
     return createDecisionInstance(
-        String.valueOf(random.nextInt(1000)) + "-1",
+        random.nextLong(Long.MAX_VALUE) + "-1",
         state,
         decisionName,
         evaluationDate,
