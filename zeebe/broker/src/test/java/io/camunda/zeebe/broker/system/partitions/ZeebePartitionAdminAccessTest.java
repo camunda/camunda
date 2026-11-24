@@ -8,6 +8,11 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,6 +22,10 @@ import io.camunda.zeebe.broker.test.MigratedVersionWriter;
 import io.camunda.zeebe.broker.test.TestEngineFactory;
 import io.camunda.zeebe.broker.test.TestZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
 import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
@@ -24,6 +33,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.File;
 import java.io.IOException;
@@ -62,6 +72,47 @@ final class ZeebePartitionAdminAccessTest {
 
     // then
     assertThat(resumed).succeedsWithin(Duration.ofSeconds(5));
+  }
+
+  @Nested
+  final class BanInstance {
+
+    @TempDir private File dbDirectory;
+    private ZeebeDb<ZbColumnFamilies> zeebeDb;
+
+    @BeforeEach
+    void openDb() throws Exception {
+      zeebeDb = TestZeebeDbFactory.defaultFactory().createDb(dbDirectory);
+      when(adminControl.getZeebeDb()).thenReturn(zeebeDb);
+    }
+
+    @AfterEach
+    void closeDb() throws Exception {
+      zeebeDb.close();
+    }
+
+    @Test
+    void shouldBanTheInstanceInState() {
+      // given
+      final long processInstanceKey = 2251799813685251L;
+      final var writer = mock(LogStreamWriter.class, CALLS_REAL_METHODS);
+      doReturn(Either.right(1L)).when(writer).tryWrite(any(), anyList(), anyLong());
+      final var logStream = mock(LogStream.class);
+      when(logStream.newLogStreamWriter()).thenReturn(writer);
+      when(adminControl.getLogStream()).thenReturn(logStream);
+
+      // when
+      final var banned = sut.banInstance(processInstanceKey);
+
+      // then
+      assertThat(banned).succeedsWithin(Duration.ofSeconds(5));
+      final var key = new DbLong();
+      key.wrapLong(processInstanceKey);
+      final var bannedInstances =
+          zeebeDb.createColumnFamily(
+              ZbColumnFamilies.BANNED_INSTANCE, zeebeDb.createContext(), key, DbNil.INSTANCE);
+      assertThat(bannedInstances.exists(key)).isTrue();
+    }
   }
 
   /**
