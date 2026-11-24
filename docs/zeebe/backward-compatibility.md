@@ -68,6 +68,17 @@ Every opt-in costs development effort, API surface and code complexity, and both
 
 A fix behind an opt-in that is off by default doesn't break user space, so it is not an exception. It can reach users before the next minor as a backport. But it adds new functionality to a patch, so the release notes must call that out. Whether to backport it, and who decides, follows Camunda's backporting policy. Until that policy exists, the team decides, weighing the costs of the opt-in above against the harm the change prevents.
 
+### Asking for an exception
+
+Document the case on the issue, so the decision and its reasons stay easy to find. Cover each condition:
+
+- **Ways without a break**: the alternatives you considered, such as an opt-in, with their pros and cons, and why none of them works.
+- **The kind of fix**: which kind of fix it is, and in which releases it ships.
+- **The harms**: your weighing of both sides, as in [weighing the harms](#weighing-the-harms).
+- **The announcement**: a draft that tells users how to find out whether they are affected, and what to change.
+
+The team's EM approves on the issue. Add the `BREAKING CHANGE` label to the PR that makes the change. The release notes then show it as a breaking change, and searching for the label lists all exceptions. Before the release, also post the announcement in [#ask-customer-success](https://camunda.slack.com/archives/C06FTUZ6430), so customer success can prepare affected customers before they upgrade.
+
 ## Examples
 
 - **Not breaking**: [#64500](https://github.com/camunda/camunda/pull/64500). Canceling a process instance that is already terminating was rejected with NOT_FOUND. Users could not tell a terminating instance from a terminated one, so they could not depend on it ([review](https://github.com/camunda/camunda/pull/64500#pullrequestreview-5376090525)).
