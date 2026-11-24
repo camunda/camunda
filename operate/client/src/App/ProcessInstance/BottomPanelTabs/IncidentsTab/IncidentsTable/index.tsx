@@ -20,7 +20,6 @@ import {
 import {Link} from 'modules/components/Link';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {Paths} from 'modules/Routes';
-import {tracking} from 'modules/tracking';
 import {Button, Stack} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';
 import {useState, useMemo} from 'react';
@@ -153,11 +152,6 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                       onClick={(event) => {
                         event.stopPropagation();
 
-                        tracking.track({
-                          eventName:
-                            'incidents-panel-full-error-message-opened',
-                        });
-
                         handleMoreButtonClick(
                           incident.errorMessage,
                           incident.elementName,
@@ -234,12 +228,6 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
               return false;
             }
             return incident.isSelected;
-          }}
-          onSort={(sortKey: string) => {
-            tracking.track({
-              eventName: 'incidents-sorted',
-              column: sortKey,
-            });
           }}
           onVerticalScrollStartReach={onVerticalScrollStartReach}
           onVerticalScrollEndReach={onVerticalScrollEndReach}

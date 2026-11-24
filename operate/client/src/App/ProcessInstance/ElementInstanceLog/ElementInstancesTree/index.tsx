@@ -42,7 +42,6 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {instanceHistorySortOrderStore} from 'modules/stores/instanceHistorySortOrder';
 import {VirtualBar} from './Bar/VirtualBar';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
-import {tracking} from 'modules/tracking';
 import {TreeView} from '@carbon/react';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
@@ -171,7 +170,6 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
           return;
         }
 
-        tracking.track({eventName: 'instance-history-item-clicked'});
         selectElementInstance({elementId, elementInstanceKey: scopeKey});
       };
 
@@ -259,7 +257,6 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
           return;
         }
 
-        tracking.track({eventName: 'instance-history-item-clicked'});
         selectElementInstance({
           elementId,
           elementInstanceKey: scopeKey,
@@ -397,7 +394,6 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
           return;
         }
 
-        tracking.track({eventName: 'instance-history-item-clicked'});
         selectElementInstance({
           elementId,
           elementInstanceKey: scopeKey,
@@ -560,8 +556,6 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
           );
           return;
         }
-
-        tracking.track({eventName: 'instance-history-item-clicked'});
 
         if (elementType !== 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
           selectElementInstance({

@@ -25,10 +25,6 @@ import {AuthenticationCheck} from '../modules/auth/AuthenticationCheck';
 import {AuthorizationCheck} from '../modules/auth/AuthorizationCheck';
 import {SessionHeartbeat} from '../modules/auth/SessionHeartbeat';
 import {SessionWatcher} from '../modules/auth/SessionWatcher';
-import {TrackPagination} from 'modules/tracking/TrackPagination';
-import {useEffect} from 'react';
-import {tracking} from 'modules/tracking';
-import {currentTheme} from 'modules/stores/currentTheme';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
@@ -72,7 +68,6 @@ const Wrapper: React.FC = () => {
     <>
       <RedirectDeprecatedRoutes />
       <SessionWatcher />
-      <TrackPagination />
       <Outlet />
     </>
   );
@@ -244,13 +239,6 @@ const router = createBrowserRouter(routes, {
 });
 
 const App: React.FC = () => {
-  useEffect(() => {
-    tracking.track({
-      eventName: 'operate-loaded',
-      theme: currentTheme.state.selectedTheme,
-    });
-  }, []);
-
   return (
     <ErrorBoundary FallbackComponent={ForbiddenPage}>
       <ThemeProvider>

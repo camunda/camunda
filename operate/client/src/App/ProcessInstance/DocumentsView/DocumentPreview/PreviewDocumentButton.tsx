@@ -12,7 +12,6 @@ import {ModalStateManager} from 'modules/components/ModalStateManager';
 import type {DocumentInfo} from '../documentInfo';
 import {DocumentPreviewModal} from './DocumentPreviewModal';
 import {TooltipTrigger} from './styled';
-import {tracking} from 'modules/tracking';
 
 function getDisabledTooltipText(document: DocumentInfo): string {
   switch (true) {
@@ -48,12 +47,6 @@ const PreviewDocumentButton: React.FC<Props> = ({document, labelSuffix}) => {
             aria-label={`Preview document for ${labelSuffix}`}
             disabled={isDisabled}
             onClick={() => {
-              tracking.track({
-                eventName: 'document-previewed',
-                documentType: document.type,
-                contentType: document.contentType,
-                size: document.size,
-              });
               setOpen(true);
             }}
           />

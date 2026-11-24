@@ -51,13 +51,7 @@ const VariablesPanel: React.FC<VariablesPanelProps> = ({
     return tabs;
   }, [decisionDefinitionType, decisionEvaluationInstanceKey]);
 
-  return (
-    <TabView
-      dataTestId="decision-instance-variables-panel"
-      tabs={tabs}
-      eventName="variables-panel-used"
-    />
-  );
+  return <TabView dataTestId="decision-instance-variables-panel" tabs={tabs} />;
 };
 
 export {VariablesPanel};

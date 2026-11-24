@@ -8,7 +8,6 @@
 
 import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {observer} from 'mobx-react';
-import {tracking} from 'modules/tracking';
 import {Toggle} from '@carbon/react';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
@@ -30,7 +29,6 @@ const TimeStampPill: React.FC = observer(() => {
       labelB="End date"
       onClick={() => {
         toggleTimeStampVisibility();
-        tracking.track({eventName: 'instance-history-end-time-toggled'});
       }}
       disabled={!isSuccess}
       size="sm"

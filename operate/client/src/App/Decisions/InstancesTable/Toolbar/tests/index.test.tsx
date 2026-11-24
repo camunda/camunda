@@ -15,17 +15,10 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockDeleteDecisionInstancesBatchOperation} from 'modules/mocks/api/v2/decisionInstances/deleteDecisionInstancesBatchOperation';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
-import {tracking} from 'modules/tracking';
 
 type Props = {
   children?: React.ReactNode;
 };
-
-vi.mock('modules/tracking', () => ({
-  tracking: {
-    track: vi.fn(),
-  },
-}));
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -127,8 +120,6 @@ describe('<Toolbar />', () => {
   it('should perform delete batch operation successfully', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const trackSpy = vi.spyOn(tracking, 'track');
-
     const {user} = render(<Toolbar selectedCount={2} />, {wrapper: Wrapper});
 
     const toolbar = screen.getByRole('group', {name: 'data table toolbar'});
@@ -144,11 +135,6 @@ describe('<Toolbar />', () => {
     await user.click(within(modal).getByRole('button', {name: /delete/i}));
 
     vi.runOnlyPendingTimers();
-
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'batch-operation',
-      operationType: 'DELETE_DECISION_INSTANCE',
-    });
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
       expect.objectContaining({

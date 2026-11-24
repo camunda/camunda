@@ -23,7 +23,6 @@ import {Bar} from '../ElementInstancesTree/Bar';
 import {ElementInstanceIcon} from '../ElementInstancesTree/styled';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
-import {tracking} from 'modules/tracking';
 import {
   useElementInstancesSearchPaginated,
   PAGE_LIMIT,
@@ -96,7 +95,6 @@ const Row: React.FC<RowProps> = observer(({item, businessObjects}) => {
       active={isElementSelected ? item.elementInstanceKey : undefined}
       isExpanded={false}
       onSelect={() => {
-        tracking.track({eventName: 'instance-history-item-clicked'});
         selectElementInstance({
           elementId: item.elementId,
           elementInstanceKey: item.elementInstanceKey,

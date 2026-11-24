@@ -13,7 +13,6 @@ import {processInstancesSelectionStore} from 'modules/stores/instancesSelection'
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {MigrationHelperModal} from 'modules/components/HelperModal/MigrationHelperModal';
-import {tracking} from 'modules/tracking';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
@@ -83,10 +82,6 @@ const MigrateAction: React.FC<Props> = observer(({isRunningSelection}) => {
       excludeIds: selectionMode === 'EXCLUDE' ? excludedIds : [],
     });
     processInstanceMigrationStore.enable();
-
-    tracking.track({
-      eventName: 'process-instance-migration-mode-entered',
-    });
   };
 
   return (
@@ -100,9 +95,6 @@ const MigrateAction: React.FC<Props> = observer(({isRunningSelection}) => {
             } else {
               setOpen(true);
             }
-            tracking.track({
-              eventName: 'process-instance-migration-button-clicked',
-            });
           }}
           disabled={isDisabled}
           title={

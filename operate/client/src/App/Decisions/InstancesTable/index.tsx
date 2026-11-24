@@ -13,7 +13,6 @@ import {formatDate} from 'modules/utils/date';
 import {Container, DecisionName} from './styled';
 import {observer} from 'mobx-react';
 import {Paths} from 'modules/Routes';
-import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Link';
 import {useDecisionInstancesSearchPaginated} from 'modules/queries/decisionInstances/useDecisionInstancesSearchPaginated';
 import {
@@ -43,11 +42,6 @@ const InstancesTable: React.FC = observer(() => {
     payload: {filter, sort},
     enabled: filter !== undefined,
     select: (data) => {
-      tracking.track({
-        eventName: 'decisions-loaded',
-        filters: Object.keys(filter ?? {}),
-        sort,
-      });
       return {
         decisionInstances: data.pages.flatMap((page) => page.items),
         totalCount: data.pages.at(0)?.page.totalItems ?? 0,
@@ -156,12 +150,6 @@ const InstancesTable: React.FC = observer(() => {
               decisionEvaluationInstanceKey: (
                 <Link
                   to={Paths.decisionInstance(decisionEvaluationInstanceKey)}
-                  onClick={() => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'decision-instances-parent-process-details',
-                    });
-                  }}
                   title={`View decision instance ${decisionEvaluationInstanceKey}`}
                   aria-label={`View decision instance ${decisionEvaluationInstanceKey}`}
                 >
@@ -177,12 +165,6 @@ const InstancesTable: React.FC = observer(() => {
                   to={Paths.processInstance(processInstanceKey)}
                   title={`View process instance ${processInstanceKey}`}
                   aria-label={`View process instance ${processInstanceKey}`}
-                  onClick={() => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'decision-instances-parent-process-details',
-                    });
-                  }}
                 >
                   {processInstanceKey}
                 </Link>

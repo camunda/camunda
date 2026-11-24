@@ -7,7 +7,6 @@
  */
 
 import {Button} from '@carbon/react';
-import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
 import {Link} from 'modules/components/Link';
@@ -123,12 +122,6 @@ const Header: React.FC<HeaderProps> = ({
                 })}
                 title={versionColumnTitle}
                 aria-label={versionColumnTitle}
-                onClick={() => {
-                  tracking.track({
-                    eventName: 'navigation',
-                    link: 'decision-details-version',
-                  });
-                }}
               >
                 {decisionInstance.decisionDefinitionVersion}
               </Link>
@@ -160,12 +153,6 @@ const Header: React.FC<HeaderProps> = ({
                     )}
                     title={`View process instance ${decisionInstance.processInstanceKey}`}
                     aria-label={`View process instance ${decisionInstance.processInstanceKey}`}
-                    onClick={() => {
-                      tracking.track({
-                        eventName: 'navigation',
-                        link: 'decision-details-parent-process-details',
-                      });
-                    }}
                   >
                     {decisionInstance.processInstanceKey}
                   </Link>
@@ -184,10 +171,6 @@ const Header: React.FC<HeaderProps> = ({
             aria-label="Open Decision Requirements Diagram"
             onClick={() => {
               onChangeDrdPanelState('minimized');
-              tracking.track({
-                eventName: 'drd-panel-interaction',
-                action: 'open',
-              });
             }}
           >
             Open DRD

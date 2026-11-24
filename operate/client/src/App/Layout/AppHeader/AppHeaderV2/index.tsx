@@ -8,7 +8,7 @@
 
 import '@camunda/design-system/styles.css';
 import './c4-ui.css';
-import {useEffect, useLayoutEffect, useMemo} from 'react';
+import {useLayoutEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {
   preview_C3ToolsArea as C3ToolsArea,
@@ -36,7 +36,6 @@ import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {notificationsStore} from 'modules/stores/notifications';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {getClientConfig} from 'modules/utils/getClientConfig';
-import {tracking} from 'modules/tracking';
 import {ForwardRefLink} from './ForwardRefLink';
 import {HeaderBadges} from './HeaderBadges';
 import {InfoMenu} from './InfoMenu';
@@ -118,10 +117,6 @@ const USER_MENU_ITEMS: UserMenuItem[] = [
     key: 'terms',
     label: 'Terms of use',
     onClick: () => {
-      tracking.track({
-        eventName: 'user-side-bar',
-        link: 'terms-conditions',
-      });
       window.open(
         'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
         '_blank',
@@ -132,10 +127,6 @@ const USER_MENU_ITEMS: UserMenuItem[] = [
     key: 'privacy',
     label: 'Privacy policy',
     onClick: () => {
-      tracking.track({
-        eventName: 'user-side-bar',
-        link: 'privacy-policy',
-      });
       window.open('https://camunda.com/legal/privacy/', '_blank');
     },
   },
@@ -143,10 +134,6 @@ const USER_MENU_ITEMS: UserMenuItem[] = [
     key: 'imprint',
     label: 'Imprint',
     onClick: () => {
-      tracking.track({
-        eventName: 'user-side-bar',
-        link: 'imprint',
-      });
       window.open('https://camunda.com/legal/imprint/', '_blank');
     },
   },
@@ -175,17 +162,6 @@ const AppHeaderV2: React.FC<{hideNavLinks?: boolean}> = observer(
       typeof currentUser?.salesPlanType === 'string' &&
       ['paid-cc', 'enterprise'].includes(currentUser.salesPlanType);
 
-    useEffect(() => {
-      // Newer schemas allow a null username, which only an anonymous caller gets.
-      if (currentUser !== undefined && currentUser.username !== null) {
-        tracking.identifyUser({
-          username: currentUser.username,
-          salesPlanType: currentUser.salesPlanType,
-          roles: currentUser.roles,
-        });
-      }
-    }, [currentUser]);
-
     return (
       <ToolsProvider>
         <C4Provider theme={currentTheme.theme}>
@@ -199,12 +175,6 @@ const AppHeaderV2: React.FC<{hideNavLinks?: boolean}> = observer(
                   <ForwardRefLink
                     to={Paths.dashboard()}
                     aria-label="Camunda Operate"
-                    onClick={() => {
-                      tracking.track({
-                        eventName: 'navigation',
-                        link: 'header-logo',
-                      });
-                    }}
                   >
                     <CamundaLogo className="operate-nav-v2-logo block" />
                   </ForwardRefLink>
@@ -249,10 +219,6 @@ const AppHeaderV2: React.FC<{hideNavLinks?: boolean}> = observer(
                                 key: 'cookie',
                                 label: 'Cookie preferences',
                                 onClick: () => {
-                                  tracking.track({
-                                    eventName: 'user-side-bar',
-                                    link: 'cookies',
-                                  });
                                   window.Osano?.cm?.showDrawer(
                                     'osano-cm-dom-info-dialog-open',
                                   );

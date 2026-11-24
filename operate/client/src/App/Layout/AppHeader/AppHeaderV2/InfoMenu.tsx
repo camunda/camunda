@@ -16,19 +16,16 @@ import {
   DropdownMenuTrigger,
 } from '@camunda/design-system';
 import {useMemo} from 'react';
-import {tracking} from 'modules/tracking';
 
 const INFO_ITEMS = [
   {
     key: 'docs',
     label: 'Documentation',
-    trackingLink: 'documentation',
     href: 'https://docs.camunda.io/',
   },
   {
     key: 'academy',
     label: 'Camunda Academy',
-    trackingLink: 'academy',
     href: 'https://academy.camunda.com/',
   },
 ] as const;
@@ -36,14 +33,12 @@ const INFO_ITEMS = [
 const FEEDBACK_AND_SUPPORT_ITEM = {
   key: 'feedbackAndSupport',
   label: 'Feedback and Support',
-  trackingLink: 'feedback',
   href: 'https://jira.camunda.com/projects/SUPPORT/queues',
 } as const;
 
 const COMMUNITY_FORUM_ITEM = {
   key: 'communityForum',
   label: 'Community Forum',
-  trackingLink: 'forum',
   href: 'https://forum.camunda.io',
 } as const;
 
@@ -65,11 +60,10 @@ const InfoMenu: React.FC<{isPaidPlan: boolean}> = ({isPaidPlan}) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel>Info</DropdownMenuLabel>
-        {items.map(({key, label, trackingLink, href}) => (
+        {items.map(({key, label, href}) => (
           <DropdownMenuItem
             key={key}
             onClick={() => {
-              tracking.track({eventName: 'info-bar', link: trackingLink});
               window.open(href, '_blank');
             }}
           >

@@ -23,7 +23,6 @@ import {Information} from '@carbon/react/icons';
 import {Button} from '@carbon/react';
 import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/logger';
-import {tracking} from 'modules/tracking';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {
   DetailsModal,
@@ -157,11 +156,6 @@ const OperationsLogTab: React.FC = observer(() => {
   } = useAuditLogs(request, {
     enabled: !isFetchingElement && !hasMultipleInstances,
     select: (data) => {
-      tracking.track({
-        eventName: 'audit-logs-loaded',
-        filters: Object.keys(request.filter ?? {}),
-        sort: request.sort,
-      });
       return {
         auditLogs: data.pages.flatMap((page) => page.items),
         totalCount: data.pages.at(0)?.page.totalItems ?? 0,
@@ -175,9 +169,6 @@ const OperationsLogTab: React.FC = observer(() => {
 
   useEffect(() => {
     if (error !== null) {
-      tracking.track({
-        eventName: 'audit-logs-fetch-failed',
-      });
       notificationsStore.displayNotification({
         isDismissable: true,
         kind: 'error',

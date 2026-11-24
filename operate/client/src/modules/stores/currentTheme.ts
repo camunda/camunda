@@ -7,7 +7,6 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import {tracking} from 'modules/tracking';
 import {getStateLocally} from 'modules/utils/localStorage';
 
 type ThemeType = 'light' | 'dark' | 'system';
@@ -54,11 +53,6 @@ class CurrentTheme {
   }
 
   changeTheme = (theme: ThemeType) => {
-    tracking.track({
-      eventName: 'theme-toggle',
-      toggledTo: theme,
-    });
-
     this.state.selectedTheme = theme;
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(theme));
@@ -73,11 +67,6 @@ class CurrentTheme {
       this.state.selectedTheme === THEME_NAME.LIGHT
         ? THEME_NAME.DARK
         : THEME_NAME.LIGHT;
-
-    tracking.track({
-      eventName: 'theme-toggle',
-      toggledTo: nextTheme,
-    });
 
     this.state.selectedTheme = nextTheme;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTheme));

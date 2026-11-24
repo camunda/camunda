@@ -11,7 +11,6 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {MigrateAction} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {tracking} from 'modules/tracking';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
@@ -238,37 +237,6 @@ describe('<MigrateAction />', () => {
       processIds: [PROCESS_DEFINITION_KEY],
       running: true,
     });
-  });
-
-  it('should track migrate click', async () => {
-    const trackSpy = vi.spyOn(tracking, 'track');
-
-    const {user} = render(<MigrateAction />, {
-      wrapper: createWrapper({
-        initialPath: `/processes?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`,
-        withTestButtons: true,
-      }),
-    });
-
-    setupSelectionStoreWithInstances(mockProcessInstancesV2);
-    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
-
-    act(() => {
-      processInstancesSelectionStore.select(instance.processInstanceKey);
-    });
-    await user.click(screen.getByRole('button', {name: /migrate/i}));
-
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'process-instance-migration-button-clicked',
-    });
-
-    await user.click(screen.getByRole('button', {name: /continue/i}));
-
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'process-instance-migration-mode-entered',
-    });
-
-    trackSpy.mockRestore();
   });
 
   it('should capture the truncated selection count when entering migration mode', async () => {

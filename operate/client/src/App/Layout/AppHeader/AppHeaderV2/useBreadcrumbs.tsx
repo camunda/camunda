@@ -17,7 +17,6 @@ import {
   type NavBreadcrumbDescriptor,
 } from '@camunda/design-system';
 import {ForwardRefLink} from './ForwardRefLink';
-import {tracking} from 'modules/tracking';
 import {Paths} from 'modules/Routes';
 
 type BreadcrumbOptions = {
@@ -45,16 +44,7 @@ function mapBreadcrumb(
       label: item.label,
       icon: item.icon,
       isSelected: item.isSelected,
-      onClick:
-        breadcrumb.key === 'app'
-          ? () => {
-              tracking.track({
-                eventName: 'app-switcher-item-clicked',
-                app: item.key,
-              });
-              item.onClick?.();
-            }
-          : item.onClick,
+      onClick: item.onClick,
       linkProps: item.linkProps,
       trailingElement: item.trailingElement,
     })),

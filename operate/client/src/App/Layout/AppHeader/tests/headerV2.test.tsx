@@ -18,7 +18,6 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Paths} from 'modules/Routes';
 import * as compositeComponents from '@camunda/camunda-composite-components';
-import {tracking} from 'modules/tracking';
 
 vi.mock('modules/feature-flags', async (importActual) => ({
   ...(await importActual()),
@@ -149,7 +148,7 @@ describe('AppHeader (nav V2)', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
   });
 
-  it('should track app switches from the breadcrumb', async () => {
+  it('should call the app switcher handler from the breadcrumb', async () => {
     const onClick = vi.fn();
     vi.spyOn(
       compositeComponents,
@@ -167,17 +166,12 @@ describe('AppHeader (nav V2)', () => {
         ],
       },
     ]);
-    const track = vi.spyOn(tracking, 'track');
     const {user} = render(<AppHeader />, {wrapper: Wrapper});
 
     await screen.findByRole('link', {name: 'Operate'});
     await user.click(screen.getByRole('button', {name: 'Switch context'}));
     await user.click(screen.getByRole('menuitemradio', {name: 'Tasklist'}));
 
-    expect(track).toHaveBeenCalledWith({
-      eventName: 'app-switcher-item-clicked',
-      app: 'tasklist',
-    });
     expect(onClick).toHaveBeenCalled();
   });
 

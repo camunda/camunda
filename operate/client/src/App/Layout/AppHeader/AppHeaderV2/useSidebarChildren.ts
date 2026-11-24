@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import type {SidebarNode} from '@camunda/design-system';
 import {Locations, Paths} from 'modules/Routes';
-import {tracking} from 'modules/tracking';
 import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {isForbidden} from 'modules/auth/isForbidden';
@@ -54,13 +53,6 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
         label: 'Dashboard',
         icon: LayoutDashboard,
         linkProps: {to: Paths.dashboard()},
-        onClick: () => {
-          tracking.track({
-            eventName: 'navigation',
-            link: 'header-dashboard',
-            currentPage,
-          });
-        },
       },
       {
         type: 'item',
@@ -73,13 +65,6 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
           to: locationToString(Locations.processes()),
           state: {refreshContent: true, hideOptionalFilters: true},
         },
-        onClick: () => {
-          tracking.track({
-            eventName: 'navigation',
-            link: 'header-processes',
-            currentPage,
-          });
-        },
       },
       {
         type: 'item',
@@ -91,13 +76,6 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
         linkProps: {
           to: locationToString(Locations.decisions()),
           state: {refreshContent: true, hideOptionalFilters: true},
-        },
-        onClick: () => {
-          tracking.track({
-            eventName: 'navigation',
-            link: 'header-decisions',
-            currentPage,
-          });
         },
       },
       {
@@ -116,13 +94,6 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
             label: 'Batch operations',
             icon: Table2,
             linkProps: {to: Paths.batchOperations()},
-            onClick: () => {
-              tracking.track({
-                eventName: 'navigation',
-                link: 'header-batch-operations',
-                currentPage,
-              });
-            },
           },
           {
             type: 'item',
@@ -130,13 +101,6 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
             label: 'Operations log',
             icon: ListChecks,
             linkProps: {to: Paths.operationsLog()},
-            onClick: () => {
-              tracking.track({
-                eventName: 'navigation',
-                link: 'header-operations-log',
-                currentPage,
-              });
-            },
           },
         ],
       },

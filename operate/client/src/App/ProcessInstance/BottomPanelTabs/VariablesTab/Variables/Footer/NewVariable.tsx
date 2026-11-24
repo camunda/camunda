@@ -20,7 +20,6 @@ import {
 } from '../validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
-import {tracking} from 'modules/tracking';
 import {TextInputField} from 'modules/components/TextInputField';
 import {Operations} from '../Operations';
 import {EditButtons} from '../EditButtons';
@@ -83,10 +82,6 @@ const NewVariable: React.FC = () => {
           <MaximizeButton
             onClick={() => {
               setIsModalVisible(true);
-              tracking.track({
-                eventName: 'json-editor-opened',
-                variant: 'add-variable',
-              });
             }}
           />
           <EditButtons />
@@ -103,19 +98,11 @@ const NewVariable: React.FC = () => {
           value={formState.values?.value ?? ''}
           onClose={() => {
             setIsModalVisible(false);
-            tracking.track({
-              eventName: 'json-editor-closed',
-              variant: 'add-variable',
-            });
           }}
           onApply={(value) => {
             form.change('value', value);
             form.submit();
             setIsModalVisible(false);
-            tracking.track({
-              eventName: 'json-editor-saved',
-              variant: 'add-variable',
-            });
           }}
         />
       )}

@@ -13,7 +13,6 @@ import {processInstancesSelectionStore} from 'modules/stores/instancesSelection'
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {BatchModificationSummaryModal} from './BatchModificationSummaryModal';
 import {Stack} from './styled';
-import {tracking} from 'modules/tracking';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {type Location} from 'react-router-dom';
 import {useState} from 'react';
@@ -65,9 +64,6 @@ const BatchModificationFooter: React.FC = observer(() => {
           kind="secondary"
           size="sm"
           onClick={() => {
-            tracking.track({
-              eventName: 'batch-move-modification-exit-button-clicked',
-            });
             setIsModalVisible(true);
           }}
         >

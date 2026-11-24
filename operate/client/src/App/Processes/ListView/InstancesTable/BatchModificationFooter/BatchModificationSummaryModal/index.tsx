@@ -14,7 +14,6 @@ import {type StateProps} from 'modules/components/ModalStateManager';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Title, DataTable} from './styled';
-import {tracking} from 'modules/tracking';
 import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getElementName} from 'modules/utils/elements';
@@ -68,10 +67,6 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
         onSuccess: ({batchOperationKey, batchOperationType}) => {
           displaySuccessNotification(batchOperationType, batchOperationKey);
           batchModificationStore.reset();
-          tracking.track({
-            eventName: 'batch-operation',
-            operationType: 'MODIFY_PROCESS_INSTANCE',
-          });
         },
         onError: (error) => {
           handleOperationError(error.response?.status);
@@ -108,9 +103,6 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
             return;
           }
 
-          tracking.track({
-            eventName: 'batch-move-modification-apply-button-clicked',
-          });
           setOpen(false);
           batchModificationStore.reset();
 

@@ -9,7 +9,6 @@
 import {useState} from 'react';
 import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
 import {useVariable} from 'modules/queries/variables/useVariable';
-import {tracking} from 'modules/tracking';
 import {useExistingVariableEditor} from 'modules/hooks/useExistingVariableEditor';
 import {useForm} from 'react-final-form';
 import type {ViewFullVariableButtonShowProps} from '../types';
@@ -67,10 +66,6 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
               form.submit();
             }
             setIsModalVisible(false);
-            tracking.track({
-              eventName: 'json-editor-saved',
-              variant: 'edit-variable',
-            });
 
             const initialValue = variableEditor.getInitialValue(data);
             variableEditor.createModification({

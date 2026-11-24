@@ -20,18 +20,11 @@ import {mockCancelProcessInstancesBatchOperation} from 'modules/mocks/api/v2/pro
 import {mockResolveProcessInstancesIncidentsBatchOperation} from 'modules/mocks/api/v2/processes/resolveProcessInstancesIncidentsBatchOperation';
 import {mockDeleteProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/deleteProcessInstancesBatchOperation';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
-import {tracking} from 'modules/tracking';
 
 type Props = {
   children?: React.ReactNode;
   initialEntries?: string[];
 };
-
-vi.mock('modules/tracking', () => ({
-  tracking: {
-    track: vi.fn(),
-  },
-}));
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -431,8 +424,6 @@ describe('<ProcessOperations />', () => {
   it('should perform cancel batch operation successfully', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const trackSpy = vi.spyOn(tracking, 'track');
-
     const {user} = render(<Toolbar selectedInstancesCount={2} />, {
       wrapper: Wrapper,
     });
@@ -441,11 +432,6 @@ describe('<ProcessOperations />', () => {
     await user.click(screen.getByRole('button', {name: /apply/i}));
 
     vi.runOnlyPendingTimers();
-
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'batch-operation',
-      operationType: 'CANCEL_PROCESS_INSTANCE',
-    });
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -462,8 +448,6 @@ describe('<ProcessOperations />', () => {
   it('should perform resolve batch operation successfully', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const trackSpy = vi.spyOn(tracking, 'track');
-
     const {user} = render(<Toolbar selectedInstancesCount={2} />, {
       wrapper: Wrapper,
     });
@@ -472,11 +456,6 @@ describe('<ProcessOperations />', () => {
     await user.click(screen.getByRole('button', {name: /apply/i}));
 
     vi.runOnlyPendingTimers();
-
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'batch-operation',
-      operationType: 'RESOLVE_INCIDENT',
-    });
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -492,8 +471,6 @@ describe('<ProcessOperations />', () => {
 
   it('should perform delete batch operation successfully', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
-
-    const trackSpy = vi.spyOn(tracking, 'track');
 
     processInstancesSelectionStore.setRuntime({
       totalCount: 2,
@@ -512,11 +489,6 @@ describe('<ProcessOperations />', () => {
     await user.click(within(modal).getByRole('button', {name: /delete/i}));
 
     vi.runOnlyPendingTimers();
-
-    expect(trackSpy).toHaveBeenCalledWith({
-      eventName: 'batch-operation',
-      operationType: 'DELETE_PROCESS_INSTANCE',
-    });
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
       expect.objectContaining({

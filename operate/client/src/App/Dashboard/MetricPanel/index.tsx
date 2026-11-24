@@ -10,7 +10,6 @@ import {observer} from 'mobx-react';
 import {Title, LabelContainer, Label, ErrorMessage} from './styled';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {tracking} from 'modules/tracking';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {SkeletonText} from '@carbon/react';
 import {useRunningInstancesCountStatistics} from 'modules/queries/processDefinitionStatistics/useRunningInstancesCountStatistics';
@@ -32,10 +31,6 @@ const MetricPanel = observer(() => {
         data-testid="total-instances-link"
         onClick={() => {
           panelStatesStore.expandFiltersPanel();
-          tracking.track({
-            eventName: 'navigation',
-            link: 'dashboard-running-processes',
-          });
         }}
         to={Locations.processes(
           !count || count.total === 0
@@ -67,10 +62,6 @@ const MetricPanel = observer(() => {
           data-testid="incident-instances-link"
           onClick={() => {
             panelStatesStore.expandFiltersPanel();
-            tracking.track({
-              eventName: 'navigation',
-              link: 'dashboard-processes-with-incidents',
-            });
           }}
           to={Locations.processes({
             incidents: true,
@@ -82,10 +73,6 @@ const MetricPanel = observer(() => {
           data-testid="active-instances-link"
           onClick={() => {
             panelStatesStore.expandFiltersPanel();
-            tracking.track({
-              eventName: 'navigation',
-              link: 'dashboard-active-processes',
-            });
           }}
           to={Locations.processes({
             active: true,

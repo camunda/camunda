@@ -6,22 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Mixpanel} from 'mixpanel-browser';
-
 /* istanbul ignore file */
-
-type Appcues = {
-  debug: () => void;
-  page: () => void;
-  identify: (
-    username: string,
-    properties?: {[property: string]: unknown},
-  ) => void;
-  track: (
-    eventName: string,
-    properties?: {[eventProperty: string]: unknown},
-  ) => void;
-};
 
 export declare global {
   interface Window {
@@ -33,8 +18,6 @@ export declare global {
       clusterId?: null | string;
       canLogout?: null | boolean;
       isLoginDelegated?: null | boolean;
-      mixpanelToken?: null | string;
-      mixpanelAPIHost?: null | string;
       tasklistUrl?: null | string;
       /**
        * @deprecated The C8 API does not expose permissions with resources.
@@ -56,8 +39,6 @@ export declare global {
         ) => void;
       };
     };
-    Appcues?: Appcues;
-    mixpanel?: Mixpanel;
   }
 
   namespace NodeJS {
@@ -67,8 +48,6 @@ export declare global {
       REACT_APP_PROD_ENV_URL: string;
       REACT_APP_OSANO_INT_ENV_URL: string;
       REACT_APP_OSANO_PROD_ENV_URL: string;
-      REACT_APP_MIXPANEL_TOKEN: string;
-      REACT_APP_CUES_HOST: string;
     }
   }
 }
