@@ -161,6 +161,12 @@
       <artifactId>zeebe-workflow-engine-api</artifactId>
     </dependency>
 
+    <!--
+      Only needed at test runtime, to create the engine via ServiceLoader (see TestEngineFactory).
+      Gradle declares it testRuntimeOnly, so broker tests cannot compile against engine classes.
+      Maven has no test-runtime-only scope, so this does not enforce that here. Do not import engine
+      classes from broker tests; the Gradle build fails on it.
+    -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-workflow-engine</artifactId>
