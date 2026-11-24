@@ -332,7 +332,11 @@ jobs:
               sleep 10
             fi
           done
-          echo "::error::Preview environment ${PREVIEW_HOST} is not reachable: HTTP ${last_code:-connection error}. It was most likely torn down by an earlier attempt of this run. To recover, use 'Re-run all jobs' from the run page: app names derive from the run number, so this re-creates every environment, including this one; 'Re-run failed jobs' only works while the environment still exists. This failure is an environment-lifecycle problem, not a Playwright spec failure."
+          if [ -n "${{ inputs.existing-host }}" ]; then
+            echo "::error::Preview environment ${PREVIEW_HOST} is not reachable: HTTP ${last_code:-connection error}. This run reuses an existing environment via the existing-host input, so no rerun of this run can re-create it. Restore the supplied environment (e.g. redeploy it, or wait for its ArgoCD app to be recreated), or dispatch a new run without the existing-host input so the workflow builds and deploys a fresh environment. This failure is an environment-lifecycle problem, not a Playwright spec failure."
+          else
+            echo "::error::Preview environment ${PREVIEW_HOST} is not reachable: HTTP ${last_code:-connection error}. It was most likely torn down by an earlier attempt of this run. To recover, use 'Re-run all jobs' from the run page: app names derive from the run number, so this re-creates every environment, including this one; 'Re-run failed jobs' only works while the environment still exists. This failure is an environment-lifecycle problem, not a Playwright spec failure."
+          fi
           # The annotation alone does not fail the step; exit nonzero so the job
           # stops here, Playwright never runs against the dead environment, and
           # the pre-flight step failure routes this leg to the deploy bucket.
