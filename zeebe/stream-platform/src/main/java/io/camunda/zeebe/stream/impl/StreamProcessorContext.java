@@ -27,6 +27,7 @@ import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import org.jspecify.annotations.Nullable;
@@ -73,6 +74,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private @Nullable ControllableStreamClock clock;
   private @Nullable MeterRegistry meterRegistry;
   private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
+  private @Nullable OpenTelemetry openTelemetry;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -304,6 +306,15 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public StreamProcessorContext processingFilter(final EventFilter processingFilter) {
     this.processingFilter = processingFilter;
     return this;
+  }
+
+  public StreamProcessorContext openTelemetry(final @Nullable OpenTelemetry openTelemetry) {
+    this.openTelemetry = openTelemetry;
+    return this;
+  }
+
+  public @Nullable OpenTelemetry getOpenTelemetry() {
+    return openTelemetry;
   }
 
   public StreamProcessorContext meterRegistry(final MeterRegistry meterRegistry) {

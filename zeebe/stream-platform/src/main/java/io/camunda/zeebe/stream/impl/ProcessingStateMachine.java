@@ -52,6 +52,8 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Tracer;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -185,6 +187,11 @@ public final class ProcessingStateMachine implements CloseableSilently {
   private volatile ErrorHandlingPhase errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
   private final ControllableStreamClock clock;
   private final EventDescription currentStateDescription = new EventDescription("idle");
+  private final int partitionId;
+  private final EventFilter commandFilter;
+  private final @Nullable Tracer tracer;
+  // Only set while a command is processed whose metadata carries a sampled trace context
+  private @Nullable ProcessingTrace trace;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -220,7 +227,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
             actor, context.getMaxRecoverableRetries(), RETRY_OPERATION_UPDATE_STATE);
     this.shouldProcessNext = shouldProcessNext;
 
-    final int partitionId = context.getLogStream().getPartitionId();
+    partitionId = context.getLogStream().getPartitionId();
     typedCommand = new TypedRecordImpl(partitionId);
 
     streamProcessorListener = context.getStreamProcessorListener();
@@ -234,7 +241,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
             maxPendingSideEffects,
             readNextRecordTask);
     context.getLogStream().registerCommittedPositionListener(sideEffectRunner);
-    final EventFilter commandFilter =
+    commandFilter =
         event -> {
           recordTypeDecoder.wrap(event.getMetadata(), event.getMetadataOffset());
           return recordTypeDecoder.recordType() == RecordType.COMMAND;
@@ -242,6 +249,11 @@ public final class ProcessingStateMachine implements CloseableSilently {
     processingFilter =
         commandFilter.and(record -> !record.shouldSkipProcessing()).and(context.processingFilter());
     clock = context.getClock();
+    final var openTelemetry = context.getOpenTelemetry();
+    tracer =
+        openTelemetry == null || openTelemetry == OpenTelemetry.noop()
+            ? null
+            : openTelemetry.getTracer("io.camunda.zeebe.broker");
   }
 
   String describeCurrentState() {
@@ -253,7 +265,21 @@ public final class ProcessingStateMachine implements CloseableSilently {
   }
 
   private void skipRecord() {
-    notifySkippedListener(requireNonNull(currentRecord));
+    final var skipped = requireNonNull(currentRecord);
+    if (tracer != null && commandFilter.applies(skipped) && !skipped.shouldSkipProcessing()) {
+      metadata.reset();
+      skipped.readMetadata(metadata);
+      if (metadata.hasTraceContext()) {
+        ProcessingTrace.recordSkipped(
+            tracer,
+            partitionId,
+            metadata,
+            skipped.getPosition(),
+            skipped.getKey(),
+            clock.millis() - skipped.getTimestamp());
+      }
+    }
+    notifySkippedListener(skipped);
     markProcessingCompleted();
     actor.submit(readNextRecordTask);
     processingMetrics.eventSkipped();
@@ -266,6 +292,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
         "finished processing", position, metadata.getIntent(), metadata.getValueType());
     previousRecord.set(position, isEventOrRejection.applies(currentRecord));
     this.currentRecord = null;
+    trace = null;
     inProcessing = false;
     if (onErrorRetries > 0) {
       onErrorRetries = 0;
@@ -340,11 +367,23 @@ public final class ProcessingStateMachine implements CloseableSilently {
         metadata.getIntent(),
         metadata.getValueType());
 
+    final long now = clock.millis();
+    if (trace == null && tracer != null && metadata.hasTraceContext()) {
+      trace =
+          ProcessingTrace.tryStart(
+              tracer,
+              partitionId,
+              metadata,
+              loggedEvent.getPosition(),
+              loggedEvent.getKey(),
+              now - loggedEvent.getTimestamp());
+    }
+
     try {
       // Here we need to get the current time, since we want to calculate
       // how long it took between writing to the dispatcher and processing.
       // In all other cases we should prefer to use the Prometheus Timer API.
-      processingMetrics.processingLatency(loggedEvent.getTimestamp(), clock.millis());
+      processingMetrics.processingLatency(loggedEvent.getTimestamp(), now);
       processingTimer =
           processingMetrics.startProcessingDurationTimer(
               metadata.getValueType(), metadata.getIntent());
@@ -354,9 +393,15 @@ public final class ProcessingStateMachine implements CloseableSilently {
       typedCommand.wrap(loggedEvent, metadata, value);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
+      if (trace != null) {
+        trace.startBatch();
+      }
       try (final var timer = processingMetrics.startBatchProcessingDurationTimer()) {
         requireNonNull(zeebeDbTransaction).run(() -> batchProcessing(typedCommand));
         processingMetrics.observeCommandCount(processedCommandsCount);
+        if (trace != null) {
+          trace.batchProcessed(processedCommandsCount);
+        }
       }
 
       finalizeCommandProcessing();
@@ -368,10 +413,17 @@ public final class ProcessingStateMachine implements CloseableSilently {
           loggedEvent,
           metadata,
           recoverableException);
+      if (trace != null) {
+        trace.retry("recoverable exception", recoverableException);
+      }
       actor.schedule(
           PROCESSING_RETRY_DELAY, () -> processCommand(requireNonNull(this.currentRecord)));
     } catch (final UnrecoverableException unrecoverableException) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE, loggedEvent, metadata);
+      if (trace != null) {
+        trace.abort(ProcessingTrace.EVENT_PROCESSING_ABORTED, "unrecoverable processing error");
+        trace = null;
+      }
       throw unrecoverableException;
     } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
       if (processedCommandsCount > 0) {
@@ -381,8 +433,14 @@ public final class ProcessingStateMachine implements CloseableSilently {
             maxCommandsInBatch,
             exceededBatchRecordSizeException);
         processingMetrics.countRetry();
+        if (trace != null) {
+          trace.retry("exceeded batch record size", exceededBatchRecordSizeException);
+        }
         onError(exceededBatchRecordSizeException, () -> processCommand(loggedEvent));
       } else {
+        if (trace != null) {
+          trace.processingFailed(exceededBatchRecordSizeException);
+        }
         onError(
             exceededBatchRecordSizeException,
             () -> {
@@ -393,6 +451,9 @@ public final class ProcessingStateMachine implements CloseableSilently {
     } catch (final Exception | StackOverflowError e) {
       // the command caused the overflow, so left uncaught it would halt every broker that leads
       // the partition
+      if (trace != null) {
+        trace.processingFailed(e);
+      }
       onError(
           e,
           () -> {
@@ -694,6 +755,9 @@ public final class ProcessingStateMachine implements CloseableSilently {
     } else {
       final var currentRecord = requireNonNull(this.currentRecord);
       final var pendingWrites = requireNonNull(this.pendingWrites);
+      if (trace != null) {
+        trace.startWrite();
+      }
       writeFuture =
           writeRetryStrategy.runWithRetry(
               () -> {
@@ -707,6 +771,9 @@ public final class ProcessingStateMachine implements CloseableSilently {
                   return true;
                 }
                 final var failure = writeResult.getLeft();
+                if (trace != null) {
+                  trace.writeRetried(failure);
+                }
                 if (failure == WriteFailure.INVALID_ARGUMENT) {
                   // deterministic failure, retrying would never succeed - escalate to onError
                   // instead so the regular error handling can reject the command
@@ -728,6 +795,10 @@ public final class ProcessingStateMachine implements CloseableSilently {
         (bool, t) -> {
           if (t != null) {
             LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
+            if (trace != null) {
+              trace.endWrite(0, t);
+              trace.processingFailed(t);
+            }
             onError(
                 t,
                 () -> {
@@ -740,6 +811,15 @@ public final class ProcessingStateMachine implements CloseableSilently {
             // of written records via the lastWritten and now written position.
             final var amount = writtenPosition - lastWrittenPosition;
             processingMetrics.recordsWritten(amount);
+            if (trace != null) {
+              if (Boolean.TRUE.equals(bool)) {
+                trace.endWrite(requireNonNull(pendingWrites).size(), null);
+              } else {
+                trace.abort(
+                    ProcessingTrace.EVENT_LEADER_CHANGED, "write aborted before completion");
+                trace = null;
+              }
+            }
             updateState();
           }
         });
@@ -748,6 +828,9 @@ public final class ProcessingStateMachine implements CloseableSilently {
   private void updateState() {
     final var zeebeDbTransaction = requireNonNull(this.zeebeDbTransaction);
     final var currentRecord = requireNonNull(this.currentRecord);
+    if (trace != null) {
+      trace.startUpdateState();
+    }
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
@@ -762,6 +845,19 @@ public final class ProcessingStateMachine implements CloseableSilently {
     actor.runOnCompletion(
         retryFuture,
         (bool, throwable) -> {
+          if (trace != null) {
+            if (throwable != null) {
+              trace.endUpdateState(throwable);
+              trace.abort(ProcessingTrace.EVENT_PROCESSING_ABORTED, "failed to commit state");
+              trace = null;
+            } else if (!Boolean.TRUE.equals(bool)) {
+              trace.abort(
+                  ProcessingTrace.EVENT_LEADER_CHANGED, "state commit aborted before completion");
+              trace = null;
+            } else {
+              trace.endUpdateState(null);
+            }
+          }
           if (throwable != null) {
             // Log entries were written already, but committing state changes failed with an
             // unexpected error not handled by `updateStateRetryStrategy`. At this point,
@@ -780,13 +876,24 @@ public final class ProcessingStateMachine implements CloseableSilently {
 
   private void registerSideEffects() {
     final var processedPosition = requireNonNull(currentRecord).getPosition();
+    final var result = requireNonNull(currentProcessingResult);
+    var processingTrace = trace;
+    if (processingTrace != null) {
+      if (result.isEmpty()) {
+        processingTrace.finishSkipped();
+        processingTrace = null;
+      } else {
+        processingTrace.awaitCommit();
+      }
+    }
     final var sideEffectPosition =
         requireNonNull(pendingWrites).isEmpty() ? processedPosition : writtenPosition;
     sideEffectRunner.addSideEffects(
         sideEffectPosition,
         requireNonNull(pendingResponses),
-        requireNonNull(currentProcessingResult).getPostCommitTasks(),
-        () -> notifyProcessedListener(processedPosition));
+        result.getPostCommitTasks(),
+        () -> notifyProcessedListener(processedPosition),
+        processingTrace);
     requireNonNull(processingTimer).close();
   }
 
@@ -850,6 +957,11 @@ public final class ProcessingStateMachine implements CloseableSilently {
   @Override
   public void close() {
     context.getLogStream().removeCommittedPositionListener(sideEffectRunner);
+    if (trace != null) {
+      trace.abort(ProcessingTrace.EVENT_LEADER_CHANGED, "leader changed before response");
+      trace = null;
+    }
+    sideEffectRunner.close();
   }
 
   private void updateErrorHandlingPhase(final ErrorHandlingPhase errorHandlingPhase) {

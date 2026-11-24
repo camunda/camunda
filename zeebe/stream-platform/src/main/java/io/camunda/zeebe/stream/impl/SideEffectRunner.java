@@ -20,6 +20,7 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,13 +119,15 @@ final class SideEffectRunner implements CommittedPositionListener {
       final long position,
       final Collection<ProcessingResponse> responses,
       final List<PostCommitTask> postCommitTasks,
-      final Runnable completionCallback) {
+      final Runnable completionCallback,
+      final @Nullable ProcessingTrace trace) {
     sideEffects.add(
         new SideEffects(
             position,
             responses,
             new AggregatePostCommitTask(partitionId, position, postCommitTasks),
-            completionCallback));
+            completionCallback,
+            trace));
     processingMetrics.setPendingSideEffects(sideEffects.size());
     if (!capacityExhausted && !hasCapacity()) {
       // Ordered before the flag write below: a reader that observes capacityExhausted == true is
@@ -148,8 +151,18 @@ final class SideEffectRunner implements CommittedPositionListener {
   }
 
   private void executeSideEffects(final SideEffects sideEffects) {
+    final var trace = sideEffects.trace();
+    if (trace != null) {
+      trace.committed();
+    }
     try {
-      sendResponses(sideEffects.responses());
+      try {
+        sendResponses(sideEffects.responses());
+      } finally {
+        if (trace != null) {
+          trace.finishAfterResponses(sideEffects.responses());
+        }
+      }
       try (final var timer = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
         sideEffects.postCommitTask().flush();
       }
@@ -165,6 +178,19 @@ final class SideEffectRunner implements CommittedPositionListener {
           e);
     }
     completeSideEffects(sideEffects);
+  }
+
+  /**
+   * Ends traces of queued side effects that will never commit/run because the leader stepped down.
+   */
+  void close() {
+    SideEffects pending;
+    while ((pending = sideEffects.poll()) != null) {
+      final var trace = pending.trace();
+      if (trace != null) {
+        trace.abort(ProcessingTrace.EVENT_LEADER_CHANGED, "leader changed before response");
+      }
+    }
   }
 
   private void completeSideEffects(final SideEffects completedSideEffects) {
@@ -218,7 +244,8 @@ final class SideEffectRunner implements CommittedPositionListener {
       long position,
       Collection<ProcessingResponse> responses,
       PostCommitTask postCommitTask,
-      Runnable completionCallback) {}
+      Runnable completionCallback,
+      @Nullable ProcessingTrace trace) {}
 
   /**
    * A holder for many {@link PostCommitTask} that runs all provided tasks together.
