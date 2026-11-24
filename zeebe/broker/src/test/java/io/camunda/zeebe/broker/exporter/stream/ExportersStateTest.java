@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.groups.Tuple.tuple;
 
+import io.camunda.zeebe.broker.test.TestZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -45,7 +45,7 @@ public final class ExportersStateTest {
   public void setup() throws Exception {
     final File dbDirectory = temporaryFolder.newFolder();
 
-    db = DefaultZeebeDbFactory.defaultFactory().createDb(dbDirectory);
+    db = TestZeebeDbFactory.defaultFactory().createDb(dbDirectory);
     state = new ExportersState(db, db.createContext());
   }
 

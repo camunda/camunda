@@ -82,7 +82,7 @@ dependencies {
   testImplementation(project(":zeebe-protocol-test-util"))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(project(":zeebe-exporter-test"))
-  testImplementation(projectArtifact(":zeebe-workflow-engine", ArtifactKind.TESTS))
+  testImplementation(projectArtifact(":zeebe-db", ArtifactKind.TESTS))
   testImplementation(libs.junit.junit)
   testImplementation(libs.net.bytebuddy.byte.buddy)
   testImplementation(libs.org.awaitility.awaitility)

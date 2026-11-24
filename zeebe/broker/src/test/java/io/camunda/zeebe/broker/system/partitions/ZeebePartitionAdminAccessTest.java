@@ -13,9 +13,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.test.MigratedVersionWriter;
+import io.camunda.zeebe.broker.test.TestZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
 import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
@@ -75,7 +75,7 @@ final class ZeebePartitionAdminAccessTest {
 
     @BeforeEach
     void openDb() throws Exception {
-      zeebeDb = DefaultZeebeDbFactory.<ZbColumnFamilies>defaultFactory().createDb(dbDirectory);
+      zeebeDb = TestZeebeDbFactory.defaultFactory().createDb(dbDirectory);
       when(adminControl.getZeebeDb()).thenReturn(zeebeDb);
     }
 
@@ -151,7 +151,7 @@ final class ZeebePartitionAdminAccessTest {
     }
 
     private void writeMigratedByVersion(final String version) {
-      new DbMigrationState(zeebeDb, zeebeDb.createContext()).setMigratedByVersion(version);
+      MigratedVersionWriter.writeMigratedByVersion(zeebeDb, version);
     }
   }
 
