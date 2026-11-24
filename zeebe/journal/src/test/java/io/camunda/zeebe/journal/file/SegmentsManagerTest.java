@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -39,6 +40,21 @@ class SegmentsManagerTest {
   @AfterEach
   void afterEach() {
     CloseHelper.quietClose(segments);
+  }
+
+  @Test
+  void shouldKeepSegmentOpenWhenDeletingItFails() throws IOException {
+    // given - a segment whose file cannot be renamed for deletion, because it is gone
+    segments = journalFactory.segmentsManager(directory);
+    segments.open();
+    final var segment = Objects.requireNonNull(segments.getFirstSegment());
+    Files.delete(segment.file().file());
+
+    // when
+    assertThatThrownBy(segment::delete).isInstanceOf(JournalException.class);
+
+    // then - nothing was deleted, so readers can still use it
+    assertThat(segment.isOpen()).isTrue();
   }
 
   @Test
@@ -289,7 +305,7 @@ class SegmentsManagerTest {
 
     // when
     segments = journalFactory.segmentsManager(directory, loader, metaStore);
-    try (final var journal = journalFactory.journal(segments)) {
+    try (final var journal = journalFactory.journal(segments, metaStore)) {
       // grab all segments and copy them to avoid the map getting cleared
       final var loadedSegments = new ArrayList<>(segments.getTailSegments(0).values());
       journal.reset(10);

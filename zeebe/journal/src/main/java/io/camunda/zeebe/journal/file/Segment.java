@@ -253,8 +253,15 @@ final class Segment implements AutoCloseable, FlushableSegment {
 
   /** Deletes the segment. */
   void delete() {
+    final var wasOpen = open;
     open = false;
-    markForDeletion();
+    try {
+      markForDeletion();
+    } catch (final RuntimeException e) {
+      // nothing was deleted, so the segment stays in use
+      open = wasOpen;
+      throw e;
+    }
     if (readers.isEmpty()) {
       safeDelete();
     }
@@ -308,6 +315,11 @@ final class Segment implements AutoCloseable, FlushableSegment {
     descriptor = descriptor.reset();
     descriptorSerializer.writeTo(descriptor, buffer);
     // flush immediately to prevent inconsistencies between descriptor and actual last written entry
+    flushDescriptor();
+  }
+
+  /** Forces the descriptor to disk, without the records after it. */
+  void flushDescriptor() {
     buffer.force(0, descriptor.encodingLength());
   }
 }

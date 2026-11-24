@@ -299,22 +299,46 @@ final class SegmentsManager implements AutoCloseable {
   /**
    * Resets and returns the first segment in the journal.
    *
+   * <p>The new first segment exists before any old segment is deleted. If creating it fails, e.g.
+   * because the disk is full, the journal stays as it was. If deleting an old segment fails, the
+   * older segments are kept, as a crash at that point would keep them, and the last of them is the
+   * current segment again.
+   *
+   * <p>The caller must reset the last flushed index first, so that a restart after a crash in the
+   * middle of the reset discards the new segment if it does not continue the old segments left.
+   *
    * @param index the starting index of the journal
    * @return the first segment
    */
   Segment resetSegments(final long index) {
-    // reset the last flushed index before deleting data to avoid data corruption on start up in
-    // case of node crash
-    // setting the last flushed index to a semantic-null value will let us know on start up that
-    // there is "nothing" written, even if we cannot read the descriptor (e.g. if we crash after
-    // creating the segment but before writing its descriptor)
-    metaStore.resetLastFlushedIndex();
-
-    // the new first segment can use the ID of a segment that waits for deletion
+    // compacted segments that wait for deletion must not survive the reset: a restart would find
+    // them before the new first segment
     deleteQueuedSegmentsNow();
 
-    // delete the segments in reverse order, such that if the operation is interrupted (e.g. crash)
-    // in the middle, there are no gaps in the log (or between the log and snapshot)
+    // the pre-created segment already holds the space the new segment needs; either way, the new
+    // segment's ID is higher than the old ones, so that a restart reads it after them
+    final var firstSegment = takeNextSegment(index, INITIAL_ASQN);
+    try {
+      // once the old segments are gone, the reset must survive a power loss
+      firstSegment.flushDescriptor();
+      deleteAllSegments();
+    } catch (final RuntimeException e) {
+      discardSegment(firstSegment, e);
+      currentSegment = getLastSegment();
+      throw e;
+    }
+
+    currentSegment = firstSegment;
+    segments.put(index, firstSegment);
+    journalMetrics.incSegmentCount();
+    return firstSegment;
+  }
+
+  /**
+   * Deletes the segments in reverse order, such that if the operation is interrupted (e.g. crash)
+   * in the middle, there are no gaps in the log (or between the log and snapshot).
+   */
+  private void deleteAllSegments() {
     final Iterator<Segment> it = segments.descendingMap().values().iterator();
     while (it.hasNext()) {
       // we explicitly do not want to close the segment, as we may be only soft deleting it here to
@@ -326,17 +350,18 @@ final class SegmentsManager implements AutoCloseable {
       it.remove();
       journalMetrics.decSegmentCount();
     }
+  }
 
-    final SegmentDescriptor descriptor =
-        SegmentDescriptor.builder()
-            .withId(1)
-            .withIndex(index)
-            .withMaxSegmentSize(maxSegmentSize)
-            .build();
-    currentSegment = createSegment(descriptor, INITIAL_ASQN);
-    segments.put(index, currentSegment);
-    journalMetrics.incSegmentCount();
-    return currentSegment;
+  /** Deletes the first segment of a reset that failed. */
+  private void discardSegment(final Segment segment, final RuntimeException resetError) {
+    try {
+      segment.delete();
+    } catch (final RuntimeException e) {
+      // left on disk, a restart discards it, as nothing after the segments that are left is
+      // flushed, or reads it as an empty segment right after them
+      resetError.addSuppressed(e);
+      segment.close();
+    }
   }
 
   /**

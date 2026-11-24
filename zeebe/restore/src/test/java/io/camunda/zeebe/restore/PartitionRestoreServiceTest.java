@@ -37,6 +37,7 @@ import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -46,6 +47,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -170,10 +172,11 @@ class PartitionRestoreServiceTest {
     // then
     assertThat(dataDirectoryToRestore).isNotEmptyDirectory();
 
-    final Set<String> restoredSegmentFiles = getRegularFiles(dataDirectoryToRestore);
-    assertThat(restoredSegmentFiles)
-        .describedAs("All segment files has been restored")
-        .containsExactlyInAnyOrderElementsOf(backup.segments().names());
+    // restore copies the records into a new journal, so its segment files can be named differently
+    assertThat(restoredRecords())
+        .describedAs("All records up to the checkpoint have been restored")
+        .containsExactlyElementsOf(
+            records(journal).stream().filter(record -> record.asqn() <= 4).toList());
 
     final Path snapshotsDirectory = dataDirectoryToRestore.resolve("snapshots");
     assertThat(snapshotsDirectory.toFile())
@@ -310,6 +313,30 @@ class PartitionRestoreServiceTest {
     }
   }
 
+  private List<RestoredRecord> restoredRecords() {
+    try (final var restoredJournal =
+        SegmentedJournal.builder(meterRegistry)
+            .withDirectory(dataDirectoryToRestore.toFile())
+            .withName(raftPartition.name())
+            .withMetaStore(mock(JournalMetaStore.class))
+            .build()) {
+      return records(restoredJournal);
+    }
+  }
+
+  private static List<RestoredRecord> records(final SegmentedJournal journal) {
+    final var records = new ArrayList<RestoredRecord>();
+    try (final var reader = journal.openReader()) {
+      while (reader.hasNext()) {
+        final var record = reader.next();
+        records.add(
+            new RestoredRecord(
+                record.index(), record.asqn(), BufferUtil.bufferAsString(record.data())));
+      }
+    }
+    return records;
+  }
+
   private Set<String> getRegularFiles(final Path directory) throws IOException {
     final Set<String> restoredSegmentFiles;
     try (final var stream = Files.list(directory)) {
@@ -363,4 +390,6 @@ class PartitionRestoreServiceTest {
         .persist()
         .join();
   }
+
+  private record RestoredRecord(long index, long asqn, String data) {}
 }

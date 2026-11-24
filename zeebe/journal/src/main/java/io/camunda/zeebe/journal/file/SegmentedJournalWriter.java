@@ -107,10 +107,25 @@ final class SegmentedJournalWriter {
   }
 
   void reset(final long index) {
-    lastFlushedIndex = index - 1;
-    metaStore.storeLastFlushedIndex(index - 1);
-    currentSegment = segments.resetSegments(index);
-    currentWriter = currentSegment.writer();
+    // reset the last flushed index before writing anything, so that a restart after a crash in the
+    // middle of the reset treats every segment as not flushed: it then discards the new first
+    // segment if it does not continue the old segments left, instead of refusing to open the
+    // journal
+    metaStore.resetLastFlushedIndex();
+    try {
+      segments.resetSegments(index);
+      // the new segment is empty; the next flush stores this
+      lastFlushedIndex = index - 1;
+    } catch (final RuntimeException e) {
+      // the old segments are left, or the oldest of them; the next flush must not store an index
+      // after them. Until then, no index is stored: the reset was to delete these entries anyway
+      final var lastSegment = requireNonNull(segments.getCurrentSegment(), "journal not open");
+      lastFlushedIndex = Math.min(lastFlushedIndex, lastSegment.lastIndex());
+      throw e;
+    } finally {
+      currentSegment = requireNonNull(segments.getCurrentSegment(), "journal not open");
+      currentWriter = currentSegment.writer();
+    }
   }
 
   /**
