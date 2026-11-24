@@ -28,7 +28,7 @@ public class ClientConfig {
   public String baseName;
   public String clientMode;
 
-  // Cloud related properties for mixpanel events
+  // Cloud related properties
   @Value("${CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID:#{null}}")
   public String organizationId;
 
@@ -37,12 +37,6 @@ public class ClientConfig {
 
   @Value("${CAMUNDA_TASKLIST_CLOUD_STAGE:#{null}}")
   public String stage;
-
-  @Value("${CAMUNDA_TASKLIST_CLOUD_MIXPANELTOKEN:#{null}}")
-  public String mixpanelToken;
-
-  @Value("${CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST:#{null}}")
-  public String mixpanelAPIHost;
 
   @Value("${CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED:#{false}}")
   public boolean isResourcePermissionsEnabled;

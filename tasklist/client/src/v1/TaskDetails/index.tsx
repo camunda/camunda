@@ -15,9 +15,8 @@ import {
 import {useTranslation} from 'react-i18next';
 import {pages, useTaskDetailsParams} from 'common/routing';
 import type {Task as TaskType, Variable} from 'v1/api/types';
-import {tracking} from 'common/tracking';
 import {notificationsStore} from 'common/notifications/notifications.store';
-import {getStateLocally, storeStateLocally} from 'common/local-storage';
+import {storeStateLocally} from 'common/local-storage';
 import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import {useTasks} from 'v1/api/useTasks.query';
 import {useAutoSelectNextTask} from 'common/tasks/next-task/useAutoSelectNextTask';
@@ -31,10 +30,6 @@ import {ERRORS_THAT_SHOULD_FETCH_MORE} from './constants';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
-function isCamundaForms(formKey: NonNullable<TaskType['formKey']>): boolean {
-  return formKey.startsWith(CAMUNDA_FORMS_PREFIX);
-}
-
 function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
   return formKey.replace(CAMUNDA_FORMS_PREFIX, '');
 }
@@ -47,10 +42,8 @@ const TaskDetails: React.FC = observer(() => {
   } = useOutletContext<OutletContext>();
 
   const filters = useTaskFilters();
-  const {data, refetch: refetchAllTasks} = useTasks(filters);
+  const {refetch: refetchAllTasks} = useTasks(filters);
   const {t} = useTranslation();
-  const tasks = data?.pages.flat() ?? [];
-  const hasRemainingTasks = tasks.length > 0;
   const {id} = useTaskDetailsParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,19 +64,6 @@ const TaskDetails: React.FC = observer(() => {
     if (completedTask.taskState !== 'COMPLETED') {
       return;
     }
-
-    const filter = new URLSearchParams(window.location.search).get('filter');
-    const customFilters =
-      filter === null ? null : getStateLocally('customFilters')?.[filter];
-
-    tracking.track({
-      eventName: 'task-completed',
-      isCamundaForm: formKey ? isCamundaForms(formKey) : false,
-      hasRemainingTasks,
-      filter: filters.filter,
-      customFilters: Object.keys(customFilters ?? {}),
-      customFilterVariableCount: customFilters?.variables?.length ?? 0,
-    });
 
     notificationsStore.displayNotification({
       kind: 'success',
@@ -131,7 +111,6 @@ const TaskDetails: React.FC = observer(() => {
 
   function handleSubmissionFailure(error: Error) {
     if (error.name === completionErrorMap.taskProcessingTimeout) {
-      tracking.track({eventName: 'task-completion-delayed-notification'});
       notificationsStore.displayNotification({
         kind: 'info',
         title: t('taskCompletionDelayedInfoTitle'),
@@ -142,7 +121,6 @@ const TaskDetails: React.FC = observer(() => {
     }
 
     if (error.name === completionErrorMap.invalidState) {
-      tracking.track({eventName: 'task-completion-rejected-notification'});
       notificationsStore.displayNotification({
         kind: 'error',
         title: t('taskCouldNotBeCompletedNotification'),

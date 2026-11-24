@@ -9,11 +9,7 @@
 import {Column, Grid, Link} from '@carbon/react';
 import CheckImage from 'common/images/orange-check-mark.svg';
 import {getStateLocally} from 'common/local-storage';
-import {useEffect} from 'react';
 import {useTranslation, Trans} from 'react-i18next';
-import {decodeTaskEmptyPageRef} from 'common/tracking/reftags';
-import {useSearchParams} from 'react-router';
-import {tracking} from 'common/tracking';
 import styles from './styles.module.scss';
 import {useMultiModeTasks} from './useMultiModeTasks';
 
@@ -22,23 +18,8 @@ const EmptyPage: React.FC = () => {
   const tasks = data?.pages.flat() ?? [];
   const hasNoTasks = tasks.length === 0;
   const isOldUser = getStateLocally('hasCompletedTask') === true;
-  const [searchParams, setSearchParams] = useSearchParams();
 
   const {t} = useTranslation();
-
-  useEffect(() => {
-    const ref = searchParams.get('ref');
-    if (ref !== null) {
-      searchParams.delete('ref');
-      setSearchParams(searchParams, {replace: true});
-    }
-
-    const taskEmptyPageOpenedRef = decodeTaskEmptyPageRef(ref);
-    tracking.track({
-      eventName: 'task-empty-page-opened',
-      ...(taskEmptyPageOpenedRef ?? {}),
-    });
-  }, [searchParams, setSearchParams]);
 
   if (isPending) {
     return <span data-testid="loading-state" />;

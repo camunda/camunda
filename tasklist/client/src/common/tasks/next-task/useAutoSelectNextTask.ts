@@ -8,34 +8,20 @@
 
 import {useNavigate, useLocation} from 'react-router';
 import {pages} from 'common/routing';
-import {encodeTaskOpenedRef} from 'common/tracking/reftags';
-import {useMultiModeTaskFilters} from 'common/tasks/filters/useMultiModeTaskFilters';
 
 function useAutoSelectNextTask() {
-  const {filter, sortBy} = useMultiModeTaskFilters();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const navigateToTaskDetailsWithRef = (taskId: string) => {
-    const search = new URLSearchParams(location.search);
-    search.set(
-      'ref',
-      encodeTaskOpenedRef({
-        by: 'auto-select',
-        position: 0,
-        filter,
-        sorting: sortBy,
-      }),
-    );
+  const navigateToTaskDetails = (taskId: string) => {
     navigate({
       ...location,
       pathname: pages.taskDetails(taskId),
-      search: search.toString(),
     });
   };
 
   return {
-    goToTask: navigateToTaskDetailsWithRef,
+    goToTask: navigateToTaskDetails,
   };
 }
 

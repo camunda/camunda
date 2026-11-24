@@ -507,8 +507,6 @@ test.describe('tasks page', () => {
       organizationId: null,
       clusterId: null,
       stage: null,
-      mixpanelToken: null,
-      mixpanelAPIHost: null,
       isMultiTenancyEnabled: true,
       clientMode: 'v1',
     });

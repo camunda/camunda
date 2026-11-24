@@ -6,19 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {tracking} from 'common/tracking';
-
 async function requestPermission() {
   if (!('Notification' in window)) {
     return;
   }
 
   const permission = await Notification.requestPermission();
-
-  tracking.track({
-    eventName: 'os-notification-permission-requested',
-    outcome: permission,
-  });
 
   return permission;
 }

@@ -10,7 +10,6 @@ import {useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {FormManager} from 'common/form-js/formManager';
 import {type InlineLoadingProps, Layer} from '@carbon/react';
-import {tracking} from 'common/tracking';
 import {PoweredBy} from 'common/components/PoweredBy';
 import {AsyncActionButton} from 'common/components/AsyncActionButton';
 import {FormJSRenderer} from 'common/form-js/FormJSRenderer';
@@ -63,9 +62,6 @@ const FormJS: React.FC<Props> = ({
               onImportError={() => {
                 setIsSchemaValid(false);
                 onImportError();
-                tracking.track({
-                  eventName: 'public-start-form-invalid-form-schema',
-                });
               }}
               onRender={() => {
                 setIsSchemaValid(true);
