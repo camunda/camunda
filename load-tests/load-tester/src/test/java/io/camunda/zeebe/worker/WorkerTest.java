@@ -28,6 +28,7 @@ import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.PayloadReader;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -113,7 +114,8 @@ class WorkerTest {
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(anyString())).thenReturn("{}");
     final var connectionMonitor = mock(ConnectionMonitor.class);
-    return new Worker(client, properties, payloadReader, connectionMonitor);
+    return new Worker(
+        client, properties, payloadReader, connectionMonitor, new SimpleMeterRegistry());
   }
 
   @SuppressWarnings("unchecked")

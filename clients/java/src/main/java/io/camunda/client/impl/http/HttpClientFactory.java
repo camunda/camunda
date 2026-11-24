@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.metrics.ClientMetrics;
 import io.camunda.client.impl.search.filter.StringFilterPropertyModule;
 import io.camunda.client.impl.tls.TlsContexts;
 import io.camunda.client.impl.util.AddressUtil;
@@ -57,6 +58,7 @@ import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
@@ -94,9 +96,19 @@ public class HttpClientFactory {
   private final CamundaClientConfiguration config;
   private final Duration responseDeadlineMargin;
   private final TimeValue connectionTimeToLive;
+  private final ClientMetrics clientMetrics;
 
   public HttpClientFactory(final CamundaClientConfiguration config) {
-    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN, DEFAULT_CONNECTION_TIME_TO_LIVE);
+    this(config, ClientMetrics.noop());
+  }
+
+  public HttpClientFactory(
+      final CamundaClientConfiguration config, final ClientMetrics clientMetrics) {
+    this(
+        config,
+        ResponseDeadlineChainHandler.DEFAULT_MARGIN,
+        DEFAULT_CONNECTION_TIME_TO_LIVE,
+        clientMetrics);
   }
 
   /** Lets tests shorten the margin of the response deadline and the connection lifetime. */
@@ -104,9 +116,18 @@ public class HttpClientFactory {
       final CamundaClientConfiguration config,
       final Duration responseDeadlineMargin,
       final TimeValue connectionTimeToLive) {
+    this(config, responseDeadlineMargin, connectionTimeToLive, ClientMetrics.noop());
+  }
+
+  private HttpClientFactory(
+      final CamundaClientConfiguration config,
+      final Duration responseDeadlineMargin,
+      final TimeValue connectionTimeToLive,
+      final ClientMetrics clientMetrics) {
     this.config = config;
     this.responseDeadlineMargin = responseDeadlineMargin;
     this.connectionTimeToLive = connectionTimeToLive;
+    this.clientMetrics = clientMetrics;
   }
 
   public HttpClient createClient() {
@@ -241,6 +262,12 @@ public class HttpClientFactory {
             .setRetryStrategy(new HttpRetryStrategy())
             .useSystemProperties(); // allow users to customize via system properties
 
+    // the HttpClient default of one I/O thread per available processor, set explicitly so that it
+    // can be reported
+    final int ioThreadCount = IOReactorConfig.DEFAULT.getIoThreadCount();
+    builder.setIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(ioThreadCount).build());
+    clientMetrics.ioThreadCount(ioThreadCount);
+
     // Register a request-level interceptor that injects the Authorization header at the
     // latest possible point — inside httpProcessor.process(), which runs AFTER connection
     // acquisition in AsyncMainClientExec.produceRequest(). This is critical under load:
@@ -273,6 +300,8 @@ public class HttpClientFactory {
         ResponseDeadlineChainHandler.NAME,
         ExchangeAbortChainHandler.NAME,
         new ExchangeAbortChainHandler());
+
+    clientMetrics.instrumentHttpClient(builder);
 
     return builder;
   }

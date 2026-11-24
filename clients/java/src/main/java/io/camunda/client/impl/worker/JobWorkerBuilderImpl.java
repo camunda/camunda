@@ -32,6 +32,7 @@ import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.impl.Loggers;
+import io.camunda.client.impl.metrics.ClientMetrics;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -59,6 +60,7 @@ public final class JobWorkerBuilderImpl
   private final ScheduledExecutorService scheduledExecutor;
   private final ExecutorService jobHandlingExecutor;
   private final List<Closeable> closeables;
+  private final ClientMetrics clientMetrics;
   private String jobType;
   private JobHandler handler;
   private Duration timeout;
@@ -76,7 +78,8 @@ public final class JobWorkerBuilderImpl
   private boolean enableStreaming;
   private Duration streamTimeout;
   private Duration streamInactivityTimeout;
-  private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
+  // null until set explicitly, to fall back to the client-wide metrics
+  private JobWorkerMetrics metrics;
   private JobExceptionHandler jobExceptionHandler;
 
   public JobWorkerBuilderImpl(
@@ -84,7 +87,9 @@ public final class JobWorkerBuilderImpl
       final JobClient jobClient,
       final ScheduledExecutorService scheduledExecutor,
       final ExecutorService jobHandlingExecutor,
-      final List<Closeable> closeables) {
+      final List<Closeable> closeables,
+      final ClientMetrics clientMetrics) {
+    this.clientMetrics = clientMetrics;
     this.jobClient = jobClient;
     this.scheduledExecutor = scheduledExecutor;
     this.jobHandlingExecutor = jobHandlingExecutor;
@@ -226,6 +231,9 @@ public final class JobWorkerBuilderImpl
     ensurePositive("timeout", timeout);
     ensureNotNullNorEmpty("workerName", workerName);
     ensureGreaterThan("maxJobsActive", maxJobsActive, 0);
+
+    final JobWorkerMetrics metrics =
+        this.metrics != null ? this.metrics : clientMetrics.jobWorkerMetrics(jobType);
 
     final JobStreamer jobStreamer;
     final JobRunnableFactory jobRunnableFactory =
