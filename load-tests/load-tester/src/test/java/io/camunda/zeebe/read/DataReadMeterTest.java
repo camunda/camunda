@@ -21,6 +21,7 @@ import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
 import io.camunda.zeebe.read.DataReadMeter.ReadQuery;
 import io.camunda.zeebe.read.DataReadMeter.ReadQueryContext;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -376,7 +377,7 @@ final class DataReadMeterTest {
   }
 
   private Timer timer(final String queryName) {
-    return timer(queryName, "success", "none");
+    return timer(queryName, "success", null);
   }
 
   private Timer failureTimer(final String queryName, final String error) {
@@ -388,7 +389,7 @@ final class DataReadMeterTest {
         .get(StarterLatencyMetricsDoc.READ_BENCHMARK.getName())
         .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), queryName)
         .tag(ResultMetricKeyNames.OUTCOME.asString(), outcome)
-        .tag(ResultMetricKeyNames.ERROR.asString(), error)
+        .tags(error == null ? Tags.empty() : Tags.of(ResultMetricKeyNames.ERROR.asString(), error))
         .timer();
   }
 

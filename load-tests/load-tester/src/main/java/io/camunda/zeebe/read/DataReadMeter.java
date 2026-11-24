@@ -19,6 +19,7 @@ import io.camunda.zeebe.starter.ProcessInstanceCreator;
 import io.camunda.zeebe.starter.StarterFinished;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
@@ -53,7 +54,6 @@ public class DataReadMeter implements AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(DataReadMeter.class);
   private static final String OUTCOME_SUCCESS = "success";
   private static final String OUTCOME_FAILURE = "failure";
-  private static final String NO_ERROR = "none";
   private final ScheduledExecutorService executorService;
   private final MeterRegistry registry;
   private final Map<TimerKey, Timer> timers = new ConcurrentHashMap<>();
@@ -111,7 +111,7 @@ public class DataReadMeter implements AutoCloseable {
   @EventListener(ApplicationReadyEvent.class)
   public void start() {
     for (final ReadQuery query : queries) {
-      timer(query, OUTCOME_SUCCESS, NO_ERROR);
+      timer(query, OUTCOME_SUCCESS, null);
       scheduleNext(query);
     }
     LOG.info("Started {} read benchmark queries", queries.size());
@@ -158,7 +158,7 @@ public class DataReadMeter implements AutoCloseable {
 
   private void record(final ReadQuery query, final long durationNanos, final Throwable error) {
     if (error == null) {
-      timer(query, OUTCOME_SUCCESS, NO_ERROR).record(durationNanos, TimeUnit.NANOSECONDS);
+      timer(query, OUTCOME_SUCCESS, null).record(durationNanos, TimeUnit.NANOSECONDS);
       LOG.debug(
           "Read query '{}' executed in {} ms",
           query.name(),
@@ -177,7 +177,10 @@ public class DataReadMeter implements AutoCloseable {
             MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.READ_BENCHMARK)
                 .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), key.query())
                 .tag(ResultMetricKeyNames.OUTCOME.asString(), key.outcome())
-                .tag(ResultMetricKeyNames.ERROR.asString(), key.error())
+                .tags(
+                    key.error() == null
+                        ? Tags.empty()
+                        : Tags.of(ResultMetricKeyNames.ERROR.asString(), key.error()))
                 .register(registry));
   }
 
