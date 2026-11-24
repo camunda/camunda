@@ -13,7 +13,6 @@ import {formatDate} from 'modules/utils/date';
 import {Container, ProcessName} from './styled';
 import {observer} from 'mobx-react';
 import {Paths} from 'modules/Routes';
-import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Link';
 import {useFilters} from 'modules/hooks/useFilters';
 import type {
@@ -180,12 +179,6 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                   to={Paths.processInstance(instance.processInstanceKey)}
                   title={`View instance ${instance.processInstanceKey}`}
                   aria-label={`View instance ${instance.processInstanceKey}`}
-                  onClick={() => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'processes-instance-details',
-                    });
-                  }}
                 >
                   {instance.processInstanceKey}
                 </Link>
@@ -211,12 +204,6 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                       )}
                       title={`View parent instance ${instance.parentProcessInstanceKey}`}
                       aria-label={`View parent instance ${instance.parentProcessInstanceKey}`}
-                      onClick={() => {
-                        tracking.track({
-                          eventName: 'navigation',
-                          link: 'processes-parent-instance-details',
-                        });
-                      }}
                     >
                       {instance.parentProcessInstanceKey}
                     </Link>

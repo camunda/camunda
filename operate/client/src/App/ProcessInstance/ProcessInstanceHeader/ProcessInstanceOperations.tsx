@@ -22,7 +22,6 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError as handleOperationErrorUtil} from 'modules/utils/notifications';
 import {useHandleOperationSuccess} from 'modules/utils/processInstance/handleOperationSuccess';
-import {tracking} from 'modules/tracking';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
 import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
@@ -114,11 +113,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({
 
   const enterModificationMode = () => {
     modificationsStore.enableModificationMode();
-    tracking.track({
-      eventName: 'single-operation',
-      operationType: 'MODIFY_PROCESS_INSTANCE',
-      source: 'instance-header',
-    });
   };
 
   const handleOpenMigrationHelper = () => {
@@ -146,8 +140,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({
       ids: [processInstance.processInstanceKey],
     });
     processInstanceMigrationStore.enable();
-    tracking.track({eventName: 'process-instance-migration-button-clicked'});
-    tracking.track({eventName: 'process-instance-migration-mode-entered'});
     navigate(
       Locations.processes({
         active: true,

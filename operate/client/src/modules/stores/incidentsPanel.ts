@@ -8,7 +8,6 @@
 
 import type {IncidentErrorType} from '@camunda/camunda-api-zod-schemas/8.9';
 import {makeAutoObservable} from 'mobx';
-import {tracking} from 'modules/tracking';
 
 type State = {
   selectedElementInstance: {
@@ -64,12 +63,6 @@ class IncidentsPanel {
 
   setPanelOpen(isOpen: boolean) {
     this.state.isPanelVisible = isOpen;
-
-    if (isOpen) {
-      tracking.track({
-        eventName: 'flow-node-incident-details-opened',
-      });
-    }
   }
 
   setErrorTypeSelection(errorTypes: IncidentErrorType[]) {

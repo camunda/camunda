@@ -16,7 +16,6 @@ import {
   type QueryAuditLogsRequestBody,
   queryAuditLogsRequestBodySchema,
 } from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/logger';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
@@ -183,11 +182,6 @@ const InstancesTable: React.FC = observer(() => {
   } = useAuditLogs(request, {
     enabled: true,
     select: (data) => {
-      tracking.track({
-        eventName: 'audit-logs-loaded',
-        filters: Object.keys(request.filter ?? {}),
-        sort: request.sort,
-      });
       return {
         auditLogs: data.pages.flatMap((page) => page.items),
         totalCount: data.pages.at(0)?.page.totalItems ?? 0,
@@ -210,9 +204,6 @@ const InstancesTable: React.FC = observer(() => {
 
   useEffect(() => {
     if (error !== null) {
-      tracking.track({
-        eventName: 'audit-logs-fetch-failed',
-      });
       notificationsStore.displayNotification({
         isDismissable: true,
         kind: 'error',

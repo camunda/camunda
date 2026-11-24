@@ -14,7 +14,6 @@ import {
 import {Field, useField, useForm, useFormState} from 'react-final-form';
 import {useEffect, useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
-import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {createVariableFieldName} from './createVariableFieldName';
@@ -178,10 +177,6 @@ const ExistingVariableValue: React.FC<Props> = observer(
                 }
 
                 setIsModalVisible(true);
-                tracking.track({
-                  eventName: 'json-editor-opened',
-                  variant: 'edit-variable',
-                });
               }}
               Icon={Maximize}
               autoFocus={!isModificationModeEnabled || meta.active}
@@ -214,18 +209,10 @@ const ExistingVariableValue: React.FC<Props> = observer(
             value={formState.values?.[fieldName]}
             onClose={() => {
               setIsModalVisible(false);
-              tracking.track({
-                eventName: 'json-editor-closed',
-                variant: 'edit-variable',
-              });
             }}
             onApply={(value) => {
               form.change(fieldName, value);
               setIsModalVisible(false);
-              tracking.track({
-                eventName: 'json-editor-saved',
-                variant: 'edit-variable',
-              });
 
               createModification({
                 scopeId: variableScopeKey,

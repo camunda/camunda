@@ -28,7 +28,6 @@ import {
 } from './styled';
 import {ElementInstanceLog} from './ElementInstanceLog';
 import {Button, Modal} from '@carbon/react';
-import {tracking} from 'modules/tracking';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {ModificationSummaryModal} from './ModificationSummaryModal';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
@@ -240,10 +239,6 @@ const ProcessInstance: React.FC = observer(() => {
                           kind="secondary"
                           size="sm"
                           onClick={() => {
-                            tracking.track({
-                              eventName: 'discard-all-summary',
-                              hasPendingModifications,
-                            });
                             setOpen(true);
                           }}
                           data-testid="discard-all-button"
@@ -262,10 +257,6 @@ const ProcessInstance: React.FC = observer(() => {
                           open={open}
                           onRequestClose={() => setOpen(false)}
                           onRequestSubmit={() => {
-                            tracking.track({
-                              eventName: 'discard-modifications',
-                              hasPendingModifications,
-                            });
                             modificationsStore.reset();
                             setOpen(false);
                           }}
@@ -284,10 +275,6 @@ const ProcessInstance: React.FC = observer(() => {
                           kind="primary"
                           size="sm"
                           onClick={() => {
-                            tracking.track({
-                              eventName: 'apply-modifications-summary',
-                              hasPendingModifications,
-                            });
                             setOpen(true);
                           }}
                           data-testid="review-modifications-button"
@@ -321,7 +308,6 @@ const ProcessInstance: React.FC = observer(() => {
           secondaryButtonText="Stay"
           primaryButtonText="Leave"
           onRequestSubmit={() => {
-            tracking.track({eventName: 'leave-modification-mode'});
             confirmNavigation();
           }}
         >

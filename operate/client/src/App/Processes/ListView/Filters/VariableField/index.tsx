@@ -18,7 +18,6 @@ import {
 import {Field, useForm, useFormState} from 'react-final-form';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {tracking} from 'modules/tracking';
 import {Title} from 'modules/components/FiltersPanel/styled';
 import {Maximize} from '@carbon/react/icons';
 import {TextInputField} from 'modules/components/TextInputField';
@@ -90,10 +89,6 @@ const Variable: React.FC = observer(() => {
                     buttonLabel="Open editor modal"
                     onIconClick={() => {
                       setIsModalVisible(true);
-                      tracking.track({
-                        eventName: 'json-editor-opened',
-                        variant: 'search-multiple-variables',
-                      });
                     }}
                     Icon={Maximize}
                   />
@@ -110,10 +105,6 @@ const Variable: React.FC = observer(() => {
                     buttonLabel="Open JSON editor"
                     onIconClick={() => {
                       setIsModalVisible(true);
-                      tracking.track({
-                        eventName: 'json-editor-opened',
-                        variant: 'search-variable',
-                      });
                     }}
                     Icon={Maximize}
                   />
@@ -142,18 +133,10 @@ const Variable: React.FC = observer(() => {
               initialValue={formState.values?.variableValues}
               onClose={() => {
                 setIsModalVisible(false);
-                tracking.track({
-                  eventName: 'json-editor-closed',
-                  variant: 'search-multiple-variables',
-                });
               }}
               onApply={(value) => {
                 form.change('variableValues', value);
                 setIsModalVisible(false);
-                tracking.track({
-                  eventName: 'json-editor-saved',
-                  variant: 'search-multiple-variables',
-                });
               }}
             />,
             document.body,
@@ -165,18 +148,10 @@ const Variable: React.FC = observer(() => {
               value={formState.values?.variableValues}
               onClose={() => {
                 setIsModalVisible(false);
-                tracking.track({
-                  eventName: 'json-editor-closed',
-                  variant: 'search-variable',
-                });
               }}
               onApply={(value) => {
                 form.change('variableValues', value);
                 setIsModalVisible(false);
-                tracking.track({
-                  eventName: 'json-editor-saved',
-                  variant: 'search-variable',
-                });
               }}
             />,
             document.body,

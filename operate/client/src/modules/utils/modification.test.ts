@@ -9,7 +9,6 @@
 import {cancelAllTokens, finishMovingToken} from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
-import {tracking} from 'modules/tracking';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 vi.mock('modules/stores/modifications', () => ({
@@ -31,12 +30,6 @@ const mockedIsMultiInstance = vi.mocked(isMultiInstance);
 
 vi.mock('modules/bpmn-js/utils/isMultiInstance', () => ({
   isMultiInstance: vi.fn(),
-}));
-
-vi.mock('modules/tracking', () => ({
-  tracking: {
-    track: vi.fn(),
-  },
 }));
 
 describe('cancelAllTokens', () => {
@@ -88,14 +81,6 @@ describe('finishMovingToken', () => {
   beforeEach(() => {
     modificationsStore.state.sourceElementIdForMoveOperation = 'sourceNode';
     modificationsStore.state.sourceElementInstanceKeyForMoveOperation = null;
-  });
-
-  it('should track the move-token event', () => {
-    finishMovingToken(5, 3, businessObjects, 'targetNode');
-
-    expect(tracking.track).toHaveBeenCalledWith({
-      eventName: 'move-token',
-    });
   });
 
   it('should add a move modification when targetElementId is provided', () => {

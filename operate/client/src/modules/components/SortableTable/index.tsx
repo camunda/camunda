@@ -54,7 +54,6 @@ interface Props<_ extends Record<string, unknown>, ColTypes extends unknown[]> {
   rowOperationError?: (rowId: string) => React.ReactNode | null; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   checkIsAllSelected?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
-  onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
   batchOperationId?: string;
   isExpandable?: boolean;
@@ -92,7 +91,6 @@ const SortableTable = <
   isExpandable = false,
   expandedContent,
   stickyHeader = false,
-  onSort,
 }: Props<RowType, ColTypes>) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -180,7 +178,6 @@ const SortableTable = <
                         sortKey={headerColumns[index].sortKey ?? header.key}
                         isDefault={headerColumns[index].isDefault}
                         isDisabled={headerColumns[index].isDisabled}
-                        onSort={onSort}
                       />
                     );
                   })}

@@ -12,7 +12,6 @@ import {
   modificationsStore,
   type AncestorScopeType,
 } from 'modules/stores/modifications';
-import {tracking} from 'modules/tracking';
 import {generateUniqueID} from './generateUniqueID';
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import {getElementParents} from './processInstanceDetailsDiagram';
@@ -39,10 +38,6 @@ const finishMovingToken = (
   targetElementId?: string,
   ancestorScopeType?: AncestorScopeType,
 ) => {
-  tracking.track({
-    eventName: 'move-token',
-  });
-
   let newScopeCount = 1;
 
   const {

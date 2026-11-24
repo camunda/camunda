@@ -14,40 +14,36 @@ type Props = {
   type: 'from' | 'to';
   id: string;
   labelText: string;
-  onChange?: () => void;
   autoFocus?: boolean;
 };
 
-const DateInput = forwardRef<HTMLDivElement, Props>(
-  ({type, onChange, ...props}, ref) => {
-    return (
-      <Field name={`${type}Date`}>
-        {({
-          input,
-        }: {
-          input: {value: string; onChange: (value: string) => void};
-        }) => {
-          return (
-            <DatePickerInput
-              {...props}
-              size="sm"
-              onChange={(event) => {
-                input.onChange(event.target.value);
-                onChange?.();
-              }}
-              ref={ref}
-              placeholder="YYYY-MM-DD"
-              // @ts-expect-error - Carbon types are wrong
-              pattern="\\d{4}-\\d{1,2}-\\d{1,2}"
-              value={input.value}
-              maxLength={10}
-              autoComplete="off"
-            />
-          );
-        }}
-      </Field>
-    );
-  },
-);
+const DateInput = forwardRef<HTMLDivElement, Props>(({type, ...props}, ref) => {
+  return (
+    <Field name={`${type}Date`}>
+      {({
+        input,
+      }: {
+        input: {value: string; onChange: (value: string) => void};
+      }) => {
+        return (
+          <DatePickerInput
+            {...props}
+            size="sm"
+            onChange={(event) => {
+              input.onChange(event.target.value);
+            }}
+            ref={ref}
+            placeholder="YYYY-MM-DD"
+            // @ts-expect-error - Carbon types are wrong
+            pattern="\\d{4}-\\d{1,2}-\\d{1,2}"
+            value={input.value}
+            maxLength={10}
+            autoComplete="off"
+          />
+        );
+      }}
+    </Field>
+  );
+});
 
 export {DateInput};

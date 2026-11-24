@@ -16,7 +16,6 @@ import {
 import {IncidentOperation} from '.';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockResolveIncident} from 'modules/mocks/api/v2/incidents/resolveIncident';
-import {tracking} from 'modules/tracking';
 import {mockUpdateJob} from 'modules/mocks/api/v2/jobs/updateJob';
 import {mockGetIncident} from 'modules/mocks/api/v2/incidents/getIncident';
 import {createIncident} from 'modules/testUtils';
@@ -61,26 +60,6 @@ describe('IncidentOperation', () => {
       kind: 'error',
       title: 'Operation could not be created',
       isDismissable: true,
-    });
-  });
-
-  it('should track successful retry operations', async () => {
-    mockResolveIncident().withSuccess(null);
-    const spy = vi.spyOn(tracking, 'track').mockReturnValue();
-    const {user} = render(
-      <IncidentOperation incidentKey="123" jobKey={null} />,
-      {
-        wrapper: Wrapper,
-      },
-    );
-
-    await user.click(retryButton());
-
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith({
-      eventName: 'single-operation',
-      operationType: 'RESOLVE_INCIDENT',
-      source: 'incident-table',
     });
   });
 

@@ -21,12 +21,6 @@ import {
   searchResult,
 } from 'modules/testUtils';
 
-vi.mock('modules/tracking', () => ({
-  tracking: {
-    track: vi.fn(),
-  },
-}));
-
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
     <QueryClientProvider client={getMockQueryClient()}>
