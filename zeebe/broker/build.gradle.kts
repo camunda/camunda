@@ -45,6 +45,7 @@ dependencies {
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-scheduler"))
+  implementation(project(":zeebe-workflow-engine-api"))
   implementation(project(":zeebe-workflow-engine"))
   implementation(project(":zeebe-backup"))
   implementation(project(":zeebe-backup-store-s3"))
