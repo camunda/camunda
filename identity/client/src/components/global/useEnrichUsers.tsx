@@ -7,7 +7,11 @@
  */
 
 import { useMemo } from "react";
-import { useQuery, type QueryObserverBaseResult } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQuery,
+  type QueryObserverBaseResult,
+} from "@tanstack/react-query";
 import type {
   User,
   QueryUsersResponseBody,
@@ -60,6 +64,7 @@ export function useEnrichedUsers<P>(
 
   const membersQuery = useQuery({
     queryKey: ["enrichedMembers", parentType, mergedParams],
+    placeholderData: keepPreviousData,
     queryFn: () => unwrap(apiDefinition(mergedParams)(getApiBaseUrl())),
   });
 

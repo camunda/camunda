@@ -330,6 +330,51 @@ class SecretAuthorizationIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = PHYSICAL_TENANT_PROPERTY,
+      matches = ".+",
+      disabledReason = PHYSICAL_TENANT_DISABLED_REASON)
+  void shouldListOnlyAuthorizedReferenceWhenFilteringByStatus(
+      @Authenticated(READ_USER) final CamundaClient client) throws Exception {
+    // when a user granted SECRET:READ on GRANTED_REFERENCE only lists the active references. The
+    // file store reports no states, so every secret it holds counts as active.
+    final var response = list(client, READ_USER, "{\"filter\":{\"status\":\"ACTIVE\"}}");
+
+    // then the filter does not widen access: only the granted reference is returned
+    assertThat(response.statusCode()).isEqualTo(200);
+    final var body = read(response.body());
+    assertThat(referenceNames(body.get("references"))).containsExactly(GRANTED_REFERENCE);
+  }
+
+  @Test
+  @DisabledIfSystemProperty(
+      named = PHYSICAL_TENANT_PROPERTY,
+      matches = ".+",
+      disabledReason = PHYSICAL_TENANT_DISABLED_REASON)
+  void shouldListNothingFromStoreWithoutStatesWhenFilteringByExpired(
+      @Authenticated(WILDCARD_READ_USER) final CamundaClient client) throws Exception {
+    // when a user who may read every secret lists the expired ones
+    final var response = list(client, WILDCARD_READ_USER, "{\"filter\":{\"status\":\"EXPIRED\"}}");
+
+    // then nothing is returned: the file store reports every secret as active
+    assertThat(response.statusCode()).isEqualTo(200);
+    final var body = read(response.body());
+    assertThat(body.get("references")).isEmpty();
+  }
+
+  @Test
+  void shouldRejectListRequestWithUnknownStatus(
+      @Authenticated(WILDCARD_READ_USER) final CamundaClient client) throws Exception {
+    // when a user lists secrets with a status the API does not define
+    final var response = list(client, WILDCARD_READ_USER, "{\"filter\":{\"status\":\"BROKEN\"}}");
+
+    // then the request is rejected, naming the allowed values
+    assertThat(response.statusCode()).isEqualTo(400);
+    assertThat(read(response.body()).get("detail").asText())
+        .contains("'BROKEN'", "'status'", "ACTIVE", "DISABLED", "EXPIRED", "NOT_YET_ACTIVE");
+  }
+
+  @Test
   void shouldReturnEmptyListWhenNoReadGrant(
       @Authenticated(NO_PERMISSION_USER) final CamundaClient client) throws Exception {
     // when an authenticated user without any SECRET grant lists references
@@ -415,12 +460,17 @@ class SecretAuthorizationIT {
    */
   private static HttpResponse<String> list(final CamundaClient client, final String username)
       throws Exception {
+    return list(client, username, "{}");
+  }
+
+  private static HttpResponse<String> list(
+      final CamundaClient client, final String username, final String body) throws Exception {
     final var request =
         HttpRequest.newBuilder()
             .uri(createUri(client, "v2/secrets/list"))
             .header("Content-Type", "application/json")
             .header("Authorization", basicAuthentication(username))
-            .POST(BodyPublishers.ofString("{}"))
+            .POST(BodyPublishers.ofString(body))
             .build();
     return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
   }

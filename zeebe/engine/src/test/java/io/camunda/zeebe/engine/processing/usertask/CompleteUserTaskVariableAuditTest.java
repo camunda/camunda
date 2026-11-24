@@ -66,6 +66,26 @@ public final class CompleteUserTaskVariableAuditTest {
   }
 
   @Test
+  public void shouldNotNameCausingElementOnVariableOfUserTaskCompletion() {
+    // given
+    final long processInstanceKey = createInstance(userTaskProcess());
+
+    // when
+    ENGINE.userTask().ofInstance(processInstanceKey).withVariable("foo", "bar").complete();
+
+    // then
+    final var source =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("foo")
+            .getFirst()
+            .getValue()
+            .getSource();
+    assertThat(source.getElementInstanceKey()).isEqualTo(-1L);
+    assertThat(source.getElementId()).isEmpty();
+  }
+
+  @Test
   public void shouldNotWriteVariableRecordForUnchangedValue() {
     // given
     ENGINE.deployment().withXmlResource(userTaskProcess()).deploy();

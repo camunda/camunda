@@ -115,23 +115,32 @@ final class TestJournalFactory {
 
   SegmentsManager segmentsManager(
       final Path directory, final SegmentLoader loader, final JournalMetaStore metaStore) {
-    return segmentsManager(directory, loader, metaStore, ForkJoinPool.commonPool());
+    return segmentsManager(directory, loader, metaStore, "journal");
   }
 
   SegmentsManager segmentsManager(final Path directory, final Executor deletionExecutor) {
-    return segmentsManager(directory, segmentLoader(), metaStore, deletionExecutor);
+    return segmentsManager(directory, segmentLoader(), metaStore, "journal", deletionExecutor);
+  }
+
+  SegmentsManager segmentsManager(
+      final Path directory,
+      final SegmentLoader loader,
+      final JournalMetaStore metaStore,
+      final String name) {
+    return segmentsManager(directory, loader, metaStore, name, ForkJoinPool.commonPool());
   }
 
   private SegmentsManager segmentsManager(
       final Path directory,
       final SegmentLoader loader,
       final JournalMetaStore metaStore,
+      final String name,
       final Executor deletionExecutor) {
     return new SegmentsManager(
         index,
         maxSegmentSize(),
         directory.resolve("data"),
-        "journal",
+        name,
         loader,
         metrics,
         metaStore,

@@ -191,6 +191,12 @@ final class SlowJoinerPartitionJoinTest {
           final var internalApi = cfg.getCluster().getNetwork().getInternalApi();
           internalApi.setAdvertisedHost(toxiproxy.getHost());
           internalApi.setAdvertisedPort(toxiproxy.getMappedPort(internalApiProxy.internalPort()));
+          // The gateway probes the joiner through the same proxy, so it must not declare the slow
+          // joiner dead and propagate that removal to the brokers, which would stop addressing it.
+          // The test is about a member that is slow, not one that is gone.
+          final var membership = cfg.getCluster().getMembership();
+          membership.setProbeTimeout(MESSAGE_DELAY.multipliedBy(2));
+          membership.setFailureTimeout(Duration.ofMinutes(1));
         });
   }
 

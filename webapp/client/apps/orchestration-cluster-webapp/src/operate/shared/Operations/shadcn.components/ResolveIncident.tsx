@@ -23,7 +23,7 @@ const ResolveIncident: React.FC<Props> = ({processInstanceKey, onExecute, disabl
 		<OperationItem
 			type="RESOLVE_INCIDENT"
 			onClick={onExecute}
-			title={t('operate.shared.operations.retryTitle', {processInstanceKey})}
+			title={t('operate.shared.ds.operations.retryTitle', {processInstanceKey})}
 			disabled={disabled}
 			size="sm"
 		/>

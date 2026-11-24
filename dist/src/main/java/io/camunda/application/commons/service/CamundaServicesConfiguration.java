@@ -74,6 +74,7 @@ import io.camunda.service.TopologyServices;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.VariableHistoryServices;
 import io.camunda.service.VariableServices;
 import io.camunda.service.backup.HistoryBackupApi;
 import io.camunda.service.cache.ProcessCache;
@@ -226,6 +227,9 @@ public class CamundaServicesConfiguration {
                       tenantId, brokerClient, securityContextProvider, search, executor, converter);
               final var variable =
                   new VariableServices(
+                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
+              final var variableHistory =
+                  new VariableHistoryServices(
                       tenantId, brokerClient, securityContextProvider, search, executor, converter);
               final var auditLog =
                   new AuditLogServices(
@@ -552,7 +556,8 @@ public class CamundaServicesConfiguration {
                           executor,
                           converter))
                   .userTaskServices(tenantId, userTask)
-                  .variableServices(tenantId, variable);
+                  .variableServices(tenantId, variable)
+                  .variableHistoryServices(tenantId, variableHistory);
 
               historyBackupApi.ifAvailable(
                   historyBackup ->

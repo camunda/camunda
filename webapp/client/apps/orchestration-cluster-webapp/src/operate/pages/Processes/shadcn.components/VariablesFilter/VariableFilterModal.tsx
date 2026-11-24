@@ -46,8 +46,7 @@ import {
 import {setVariableConditions, useVariableConditions} from '../../VariablesFilter/variableFilterStore';
 import {truncate} from '../../VariablesFilter/truncate';
 import {VariableFilterRow} from './VariableFilterRow';
-
-const SOFT_WARNING_THRESHOLD = 8;
+import {VariableFilterWarnings} from './VariableFilterWarnings';
 
 type Tab = 'fields' | 'json';
 
@@ -79,13 +78,8 @@ const VariableFilterModal: React.FC = () => {
 	const router = useRouter();
 	const isOpenedFromList = useLocation({select: ({state}) => state.operateVariableFilterOpenedFromList === true});
 	const storedConditions = useVariableConditions();
-	const inlineDraft = useLocation({select: ({state}) => state.operateVariableFilterDraft});
 	const [conditions, setConditions] = useState<VariableCondition[]>(() =>
-		inlineDraft !== undefined
-			? [{...inlineDraft, operator: 'equals'}]
-			: storedConditions.length > 0
-				? storedConditions
-				: [createDraft()],
+		storedConditions.length > 0 ? storedConditions : [createDraft()],
 	);
 	const [rowIds, setRowIds] = useState(() => createRowIds(conditions.length));
 	const [failedSubmit, setFailedSubmit] = useState<FailedSubmit | null>(null);
@@ -97,7 +91,6 @@ const VariableFilterModal: React.FC = () => {
 	const [tab, setTab] = useState<Tab>('fields');
 	const [jsonDraft, setJsonDraft] = useState('');
 	const [jsonError, setJsonError] = useState<string | null>(null);
-	const [hasJsonParseWarning, setHasJsonParseWarning] = useState(false);
 
 	useEffect(() => {
 		if (isEditorValid) {
@@ -143,16 +136,15 @@ const VariableFilterModal: React.FC = () => {
 
 	const handleTabChange = (nextTab: Tab) => {
 		if (nextTab === 'json') {
-			if (!hasJsonParseWarning) {
-				setJsonDraft(serializeConditions(conditions));
-			}
-			setHasJsonParseWarning(false);
+			setJsonDraft(serializeConditions(conditions));
 		} else {
 			const result = parseConditionsJson(jsonDraft);
-			if (result.ok) {
-				replaceConditions(result.conditions.length > 0 ? result.conditions : [createDraft()]);
+			if (!result.ok) {
+				jsonEditorRef.current?.showMarkers();
+				setJsonError(result.error);
+				return;
 			}
-			setHasJsonParseWarning(!result.ok);
+			replaceConditions(result.conditions.length > 0 ? result.conditions : [createDraft()]);
 		}
 		setJsonError(null);
 		setTab(nextTab);
@@ -263,13 +255,6 @@ const VariableFilterModal: React.FC = () => {
 							</TabsList>
 							<TabsContent value="fields" className="flex flex-col gap-5">
 								<>
-									{hasJsonParseWarning && (
-										<Alert
-											variant="warning"
-											role="status"
-											description={t('operate.processes.variableFilter.jsonWarning')}
-										/>
-									)}
 									<div className="flex max-h-[clamp(7.5rem,calc(84vh-22rem),24rem)] min-h-0 flex-col gap-4 overflow-x-hidden overflow-y-auto">
 										{conditions.map((condition, index) => (
 											<VariableFilterRow
@@ -288,20 +273,7 @@ const VariableFilterModal: React.FC = () => {
 											/>
 										))}
 									</div>
-									{conditions.some(({operator}) => operator === 'contains') && (
-										<Alert
-											variant="warning"
-											role="status"
-											description={t('operate.processes.variableFilter.containsWarning')}
-										/>
-									)}
-									{conditions.length >= SOFT_WARNING_THRESHOLD && (
-										<Alert
-											variant="info"
-											role="status"
-											description={t('operate.processes.variableFilter.manyConditionsWarning')}
-										/>
-									)}
+									<VariableFilterWarnings conditions={conditions} />
 									<Button variant="ghost" size="sm" className="self-start" onClick={addCondition}>
 										<Plus aria-hidden />
 										{t('operate.processes.variableFilter.addCondition')}

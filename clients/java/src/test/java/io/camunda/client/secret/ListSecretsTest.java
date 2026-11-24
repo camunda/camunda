@@ -22,12 +22,23 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ListSecretsResponse;
+import io.camunda.client.api.search.enums.SecretStatus;
+import io.camunda.client.api.search.filter.SecretListFilter;
+import io.camunda.client.api.search.filter.builder.SecretStatusProperty;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.SecretListResult;
+import io.camunda.client.protocol.rest.SecretStatusEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
+import java.util.Collections;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ListSecretsTest extends ClientRestTest {
 
@@ -58,6 +69,120 @@ public class ListSecretsTest extends ClientRestTest {
 
     // then
     assertThat(RestGatewayService.getLastRequest().getBodyAsString()).isEqualTo("{}");
+  }
+
+  @ParameterizedTest
+  @EnumSource(SecretStatus.class)
+  void shouldSendStatusFilter(final SecretStatus status) {
+    // given
+    gatewayService.onSecretsListRequest(new SecretListResult());
+
+    // when
+    client.newListSecretsCommand().filter(f -> f.status(status)).send().join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest().getBodyAsString())
+        .isEqualTo(
+            "{\"filter\":{\"status\":{\"$eq\":\""
+                + status.name()
+                + "\",\"$in\":[],\"$notIn\":[]}}}");
+  }
+
+  @ParameterizedTest(name = "{1}")
+  @MethodSource("advancedStatusFilters")
+  void shouldSendAdvancedStatusFilter(
+      final Consumer<SecretStatusProperty> fn, final String expectedStatus) {
+    // given
+    gatewayService.onSecretsListRequest(new SecretListResult());
+
+    // when
+    client.newListSecretsCommand().filter(f -> f.status(fn)).send().join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest().getBodyAsString())
+        .isEqualTo("{\"filter\":{\"status\":" + expectedStatus + "}}");
+  }
+
+  /**
+   * Drives every status the generated protocol enum knows, excluding only the generator's unknown
+   * default. Deliberately not an explicit name list: a status the API contract gains is picked up
+   * by the enum source, and {@code SecretStatus.valueOf(status.name())} then fails until {@link
+   * SecretStatus} mirrors it, so the client cannot silently lag behind the contract.
+   */
+  @ParameterizedTest
+  @EnumSource(
+      value = SecretStatusEnum.class,
+      mode = EnumSource.Mode.EXCLUDE,
+      names = {"UNKNOWN_DEFAULT_OPEN_API"})
+  void shouldOfferEveryProtocolStatus(final SecretStatusEnum status) {
+    // given
+    gatewayService.onSecretsListRequest(new SecretListResult());
+
+    // when
+    client
+        .newListSecretsCommand()
+        .filter(f -> f.status(SecretStatus.valueOf(status.name())))
+        .send()
+        .join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest().getBodyAsString())
+        .isEqualTo(
+            "{\"filter\":{\"status\":{\"$eq\":\""
+                + status.getValue()
+                + "\",\"$in\":[],\"$notIn\":[]}}}");
+  }
+
+  @ParameterizedTest
+  @MethodSource("filtersWithoutCriteria")
+  void shouldOmitFilterWithoutCriteria(final Consumer<SecretListFilter> fn) {
+    // given
+    gatewayService.onSecretsListRequest(new SecretListResult());
+
+    // when
+    client.newListSecretsCommand().filter(fn).send().join();
+
+    // then the body is the one every cluster accepts, also those before 8.11
+    assertThat(RestGatewayService.getLastRequest().getBodyAsString()).isEqualTo("{}");
+  }
+
+  @Test
+  void shouldReplaceFilterOfPreviousCall() {
+    // given
+    gatewayService.onSecretsListRequest(new SecretListResult());
+
+    // when
+    client
+        .newListSecretsCommand()
+        .filter(f -> f.status(SecretStatus.EXPIRED))
+        .filter(f -> f.status(SecretStatus.DISABLED))
+        .send()
+        .join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest().getBodyAsString())
+        .isEqualTo("{\"filter\":{\"status\":{\"$eq\":\"DISABLED\",\"$in\":[],\"$notIn\":[]}}}");
+  }
+
+  @Test
+  void shouldReturnReferencesOfFilteredList() {
+    // given
+    gatewayService.onSecretsListRequest(new SecretListResult().addReferencesItem(REFERENCE));
+
+    // when
+    final ListSecretsResponse response =
+        client.newListSecretsCommand().filter(f -> f.status(SecretStatus.EXPIRED)).send().join();
+
+    // then
+    assertThat(response.getReferences()).containsExactly(REFERENCE);
+  }
+
+  @Test
+  void shouldRejectNullFilterConsumer() {
+    // when / then
+    assertThatThrownBy(() -> client.newListSecretsCommand().filter(null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("fn");
   }
 
   @Test
@@ -148,5 +273,28 @@ public class ListSecretsTest extends ClientRestTest {
     assertThatThrownBy(() -> client.newListSecretsCommand().send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
+  }
+
+  private static Stream<Arguments> advancedStatusFilters() {
+    return Stream.of(
+        statusFilter(
+            s -> s.neq(SecretStatus.ACTIVE), "{\"$neq\":\"ACTIVE\",\"$in\":[],\"$notIn\":[]}"),
+        statusFilter(
+            s -> s.in(SecretStatus.DISABLED, SecretStatus.EXPIRED),
+            "{\"$in\":[\"DISABLED\",\"EXPIRED\"],\"$notIn\":[]}"),
+        statusFilter(
+            s -> s.notIn(Collections.singletonList(SecretStatus.ACTIVE)),
+            "{\"$in\":[],\"$notIn\":[\"ACTIVE\"]}"),
+        statusFilter(s -> s.exists(true), "{\"$exists\":true,\"$in\":[],\"$notIn\":[]}"),
+        statusFilter(s -> s.like("*ACTIVE"), "{\"$in\":[],\"$notIn\":[],\"$like\":\"*ACTIVE\"}"));
+  }
+
+  private static Arguments statusFilter(
+      final Consumer<SecretStatusProperty> fn, final String expectedStatus) {
+    return Arguments.of(fn, expectedStatus);
+  }
+
+  private static Stream<Consumer<SecretListFilter>> filtersWithoutCriteria() {
+    return Stream.of(f -> f.status((SecretStatus) null), f -> f.status(s -> {}));
   }
 }

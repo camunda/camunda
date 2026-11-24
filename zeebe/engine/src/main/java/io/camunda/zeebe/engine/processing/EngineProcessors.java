@@ -80,6 +80,8 @@ import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
 import io.camunda.zeebe.engine.processing.policy.PolicyUpdateProcessors;
 import io.camunda.zeebe.engine.processing.probe.ProbeBehavior;
 import io.camunda.zeebe.engine.processing.probe.ProbeProcessors;
+import io.camunda.zeebe.engine.processing.processdefinition.ProcessDefinitionSuspensionResumeProcessor;
+import io.camunda.zeebe.engine.processing.processdefinition.ProcessDefinitionSuspensionSuspendProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreContinueProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreTrigger;
@@ -120,6 +122,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -444,6 +447,8 @@ public final class EngineProcessors {
         tenantCheck,
         processDefinitionMetrics,
         routingInfo);
+    addProcessDefinitionSuspensionProcessors(
+        typedRecordProcessors, writers, processingState, cslCheck, tenantCheck);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -960,6 +965,25 @@ public final class EngineProcessors {
             partitionId, writers, processingState, commandDistributionBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS, ProcessIntent.DELETE_COMPLETE, deleteCompleteProcessor);
+  }
+
+  private static void addProcessDefinitionSuspensionProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final Writers writers,
+      final MutableProcessingState processingState,
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
+    final var keyGenerator = processingState.getKeyGenerator();
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_DEFINITION_SUSPENSION,
+        ProcessDefinitionSuspensionIntent.SUSPEND,
+        new ProcessDefinitionSuspensionSuspendProcessor(
+            processingState, keyGenerator, writers, cslCheck, tenantCheck));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_DEFINITION_SUSPENSION,
+        ProcessDefinitionSuspensionIntent.RESUME,
+        new ProcessDefinitionSuspensionResumeProcessor(
+            processingState, keyGenerator, writers, cslCheck, tenantCheck));
   }
 
   private static void addResourceFetchProcessors(

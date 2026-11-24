@@ -210,7 +210,7 @@ const ProcessFilters: React.FC<Props> = ({
 			</div>
 			<section className="flex flex-col gap-3">
 				<Heading as="h3" variant="heading-xs">
-					{t('operate.processes.filters.instancesStates')}
+					{t('operate.processes.ds.filters.instancesStates')}
 				</Heading>
 				<div className="flex flex-col gap-2">
 					<Label htmlFor="filter-running-instances" className="cursor-pointer font-normal">
@@ -229,7 +229,7 @@ const ProcessFilters: React.FC<Props> = ({
 								});
 							}}
 						/>
-						{t('operate.processes.filters.runningInstances')}
+						{t('operate.processes.ds.filters.runningInstances')}
 					</Label>
 					<div className="ml-6 flex flex-col gap-2">
 						<StateCheckbox
@@ -265,7 +265,7 @@ const ProcessFilters: React.FC<Props> = ({
 								});
 							}}
 						/>
-						{t('operate.processes.filters.finishedInstances')}
+						{t('operate.processes.ds.filters.finishedInstances')}
 					</Label>
 					<div className="ml-6 flex flex-col gap-2">
 						<StateCheckbox

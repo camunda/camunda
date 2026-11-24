@@ -16,7 +16,6 @@ import io.camunda.application.commons.configuration.WorkingDirectoryConfiguratio
 import io.camunda.application.commons.job.HttpJobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
@@ -42,7 +41,7 @@ public class BrokerBasedConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(BrokerBasedConfiguration.class);
 
   private final WorkingDirectory workingDirectory;
-  private final BrokerCfg properties;
+  private final BrokerBasedProperties properties;
   private final LifecycleProperties lifecycle;
 
   @Autowired
@@ -62,7 +61,7 @@ public class BrokerBasedConfiguration {
     properties.init(workingDirectory.path().toAbsolutePath().toString());
   }
 
-  public BrokerCfg config() {
+  public BrokerBasedProperties config() {
     return properties;
   }
 

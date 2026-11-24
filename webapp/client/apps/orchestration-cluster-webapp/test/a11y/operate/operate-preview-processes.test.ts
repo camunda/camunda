@@ -114,7 +114,7 @@ test('should have no accessibility violations on the processes page with the bul
 	await operatePreviewProcessesPage.instancesTable
 		.getByRole('checkbox', {name: 'Select instance 2251799813700001'})
 		.click({force: true});
-	await expect(operatePreviewProcessesPage.instancesTable.getByText('1 item selected')).toBeVisible();
+	await expect(operatePreviewProcessesPage.instancesTable.getByText('1 instance selected')).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);

@@ -595,7 +595,8 @@ jobs:
           constraints (no test.skip()/test.fixme() EXCEPT the gated product-bug skip described
           below and in Product-Bug Escalation), PR conventions, and the /tmp/fix-meta.json
           schema. It is main's copy of the suite AGENTS.md — authoritative even when
-          ${TARGET_REF} carries an older or missing AGENTS.md.
+          ${TARGET_REF} carries an older or missing AGENTS.md. Any code comment you add follows
+          its "## Code Comments" section.
 
           TIME BUDGET: your deadline is unix epoch ${deadline_epoch} -- this is YOUR voluntary
           stop point, not the job's actual hard cutoff (which lands later; the gap between the
@@ -1195,7 +1196,8 @@ jobs:
           the result next cycle.
 
           Read "## Review-Response Agent" in /tmp/nightly-fix-agent-manual.md before you start. It
-          is the contract for this step; everything below is the dispatch-specific part.
+          is the contract for this step; everything below is the dispatch-specific part. Any code
+          comment you add or keep follows its "## Code Comments" section.
 
           The ${THREAD_COUNT} unresolved threads Copilot opened, as JSON (thread id, file, line,
           url, whether the line has since moved, and the comment bodies):

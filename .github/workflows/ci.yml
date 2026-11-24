@@ -410,7 +410,7 @@ jobs:
       # Installed before the Maven build so an apt outage fails the job before
       # spending minutes on the build; the composite below then skips its own install.
       - name: Install xmllint
-        uses: ./.github/actions/apt-install
+        uses: camunda/infra-global-github-actions/apt-install@35bad6aafa9872fbbe53725eab8e5365f2691897 # apt-install-1.0.0
         with:
           packages: libxml2-utils
       - uses: ./.github/actions/setup-build
@@ -493,6 +493,9 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: java-checks
+          # A healthy restore takes seconds; the 3-minute default plus a cold Maven resolve
+          # overruns this job's 20-minute budget (INC-9257).
+          maven-cache-download-timeout-mins: 1
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -1922,7 +1925,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -2942,7 +2945,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=npm depName=renovate
-      RENOVATE_VERSION: '44.256.0'
+      RENOVATE_VERSION: '44.257.5'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2995,7 +2998,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install bats and xmllint
-        uses: ./.github/actions/apt-install
+        uses: camunda/infra-global-github-actions/apt-install@35bad6aafa9872fbbe53725eab8e5365f2691897 # apt-install-1.0.0
         with:
           packages: bats libxml2-utils
       - name: Run ci-relevance tests
@@ -3067,7 +3070,7 @@ jobs:
         run: python3 -m pip install --quiet pytest -r .github/actions/read-db-versions/requirements.txt -r .github/scripts/oc-api-design-review/requirements.txt
       - name: Install load-test script test dependencies
         if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
       - name: Run repository script unit tests
         if: needs.detect-changes.outputs.scripts-changes == 'true'
         run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis .github/actions/read-db-versions

@@ -340,7 +340,7 @@ describe('<ProcessInstance />', () => {
 	it('should redirect to processes and notify when the process instance is not found', async ({worker}) => {
 		worker.use(
 			mockGetProcessInstanceEndpoint({
-				successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
+				successResponse: HttpResponse.json(createProblemDetails({status: 400}), {status: 400}),
 			}),
 		);
 

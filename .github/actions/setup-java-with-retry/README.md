@@ -34,13 +34,12 @@ nested composite action exactly as it does for a top-level step.
 
 ## Notes
 
-- **Three attempts, 10s apart, hard-coded.** Retry-by-repetition cannot be parameterised: a
+- **Three attempts, 30s then 60s apart, hard-coded.** Retry-by-repetition cannot be parameterised: a
   composite action has no loop, so `max_attempts` would have to change the number of steps in the
   file. Change the count by adding or removing an attempt block.
-- **The whole retry window is ~39 seconds.** Measured in
-  [run 34333710709](https://github.com/camunda/camunda/actions/runs/34333710709): a failing
-  `setup-java` takes ~6.2s per attempt, so three attempts plus two 10s gaps give up 39s after the
-  step started. This protects against a blip, **not an outage.** The throttling window behind
+- **The whole retry window is ~2 minutes**: three attempts of ~5-10s each plus the 30s and 60s
+  gaps. With 10s gaps (~40s), a DNS blip on `api.adoptium.net` outlasted all retries (INC-9252).
+  This protects against a blip, **not an outage.** The throttling window behind
   INC-7723 lasted 30 minutes; neither this configuration nor the `Wandalen/wretry.action` one it
   replaced (identical `attempt_limit: 3` / `attempt_delay: 10000`) would have saved a single one of
   those jobs. What fixes that failure mode is that nothing is fetched at runtime any more — see
@@ -60,8 +59,8 @@ nested composite action exactly as it does for a top-level step.
   annotations, so a job that recovered produces no PR comment. The residual effect: if the job later
   fails for an unrelated reason, that comment will list these already-retried errors alongside the
   real one.
-- No failure classification: a genuine error (a bad `java-version`, say) costs all three attempts
-  before the job reports red.
+- No failure classification: a genuine error (a bad `java-version`, say) costs all three attempts,
+  and the 90s of gaps, before the job reports red.
 
 This replaced `Wandalen/wretry.action`, which fetched the action it wrapped with an anonymous runtime
 `git clone` — outside its own retry loop, and the single point of failure behind INC-7723. See

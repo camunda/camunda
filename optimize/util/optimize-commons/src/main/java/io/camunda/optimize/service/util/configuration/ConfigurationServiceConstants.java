@@ -164,6 +164,8 @@ public final class ConfigurationServiceConstants {
 
   public static final String BUSINESS_VALUE_CONFIGURATION = "$.businessValue";
 
+  public static final String AGENTIC_PHASE2_CONFIGURATION = "$.agentic.phase2";
+
   public static final String CSV_CONFIGURATION = "$.export.csv";
 
   public static final String HISTORY_CLEANUP = "$.historyCleanup";

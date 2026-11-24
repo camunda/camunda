@@ -45,7 +45,6 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -416,7 +415,7 @@ public class ResourceDeletionDeleteProcessor
     // and the resources are left out to prevent exceeding the maximum batch size.
     final var processIdBuffer = process.getBpmnProcessId();
     final var tenantId = process.getTenantId();
-    final var processRecord = toProcessRecord(process);
+    final var processRecord = process.toProcessRecord();
     final String processId = processRecord.getBpmnProcessId();
     final var latestVersion = processState.getLatestProcessVersion(processId, tenantId);
 
@@ -444,17 +443,6 @@ public class ResourceDeletionDeleteProcessor
     } else {
       processDefinitionMetrics.processDefinitionDraining(process.getKey());
     }
-  }
-
-  private ProcessRecord toProcessRecord(final DeployedProcess process) {
-    return new ProcessRecord()
-        .setBpmnProcessId(process.getBpmnProcessId())
-        .setVersion(process.getVersion())
-        .setVersionTag(process.getVersionTag())
-        .setKey(process.getKey())
-        .setResourceName(process.getResourceName())
-        .setTenantId(process.getTenantId())
-        .setDeploymentKey(process.getDeploymentKey());
   }
 
   private void deleteHistory(final TypedRecord<ResourceDeletionRecord> command) {

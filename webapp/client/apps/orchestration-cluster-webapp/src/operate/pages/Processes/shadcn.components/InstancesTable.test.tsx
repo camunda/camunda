@@ -121,7 +121,7 @@ describe('<InstancesTable /> (design system)', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByRole('button', {name: 'Start Date'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Start date'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Business ID'})).not.toBeInTheDocument();
 	});
 
@@ -148,7 +148,7 @@ describe('<InstancesTable /> (design system)', () => {
 
 		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-1'});
 
-		await expect.element(screen.getByRole('cell', {name: 'Operation State'})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'Operation state'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'COMPLETED'})).toBeVisible();
 	});
 
@@ -205,7 +205,7 @@ describe('<InstancesTable /> (design system)', () => {
 
 		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-1'});
 
-		await expect.element(screen.getByRole('status').first()).toHaveTextContent('Loading...');
+		await expect.element(screen.getByRole('status').first()).toHaveTextContent('Loading operation states');
 	});
 
 	it('should show the empty message with a hint when no state filter is selected', async ({worker}) => {
@@ -213,8 +213,8 @@ describe('<InstancesTable /> (design system)', () => {
 
 		const screen = await renderInstancesTable({...BASE_SEARCH, active: false, incidents: false, suspended: false});
 
-		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
-		await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
+		await expect.element(screen.getByText('No instances match these filters')).toBeVisible();
+		await expect.element(screen.getByText('To see results, select at least one instance state')).toBeVisible();
 	});
 
 	it('should not show the empty message while the first page is loading', async ({worker}) => {
@@ -227,8 +227,8 @@ describe('<InstancesTable /> (design system)', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByRole('region', {name: 'Process Instances Panel'})).toBeVisible();
-		await expect.element(screen.getByText('There are no Instances matching this filter set')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('region', {name: 'Process instances panel'})).toBeVisible();
+		await expect.element(screen.getByText('No instances match these filters')).not.toBeInTheDocument();
 	});
 
 	it('should show the error message when the search fails', async ({worker}) => {

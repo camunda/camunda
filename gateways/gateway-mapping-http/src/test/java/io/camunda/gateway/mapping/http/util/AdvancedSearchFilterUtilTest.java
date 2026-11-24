@@ -18,6 +18,7 @@ import io.camunda.gateway.protocol.model.AdvancedIntegerFilter;
 import io.camunda.gateway.protocol.model.AdvancedMetadataValueFilter;
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.BasicStringFilter;
+import io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import java.time.OffsetDateTime;
@@ -503,6 +504,65 @@ class AdvancedSearchFilterUtilTest {
     // then
     assertThat(exists).containsExactly(Operation.exists(true));
     assertThat(notExists).containsExactly(Operation.exists(false));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideEmptyFilters")
+  void shouldTreatFilterWithoutUsableValueAsEmpty(final String name, final Object filter) {
+    // when / then
+    assertThat(AdvancedSearchFilterUtil.isEmptyAdvancedFilter(filter)).isTrue();
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideNonEmptyValues")
+  void shouldNotTreatFilterWithUsableValueOrPlainValueAsEmpty(
+      final String name, final Object value) {
+    // when / then
+    assertThat(AdvancedSearchFilterUtil.isEmptyAdvancedFilter(value)).isFalse();
+  }
+
+  private static Stream<Arguments> provideEmptyFilters() {
+    final var onlyEmptyIn = BasicStringFilter.Builder.create().build();
+    onlyEmptyIn.set$In(List.of());
+
+    final var emptyInAndNotIn = BasicStringFilter.Builder.create().build();
+    emptyInAndNotIn.set$In(List.of());
+    emptyInAndNotIn.set$NotIn(List.of());
+
+    final var onlyNullIn = BasicStringFilter.Builder.create().build();
+    onlyNullIn.set$In(nullableList((String) null));
+
+    return Stream.of(
+        Arguments.of("{\"$in\": []}", onlyEmptyIn),
+        Arguments.of("{\"$in\": [], \"$notIn\": []}", emptyInAndNotIn),
+        Arguments.of("{\"$in\": [null]}", onlyNullIn),
+        Arguments.of("{}", BasicStringFilter.Builder.create().build()));
+  }
+
+  private static Stream<Arguments> provideNonEmptyValues() {
+    final var eq = BasicStringFilter.Builder.create().build();
+    eq.set$Eq("123");
+
+    final var nonEmptyIn = BasicStringFilter.Builder.create().build();
+    nonEmptyIn.set$In(List.of("1", "2"));
+
+    final var existsFalse = BasicStringFilter.Builder.create().build();
+    existsFalse.set$Exists(false);
+
+    // the empty $in is dropped but $neq remains, so it cannot be told from {"$neq": "1"}
+    final var neqWithEmptyIn = BasicStringFilter.Builder.create().build();
+    neqWithEmptyIn.set$Neq("1");
+    neqWithEmptyIn.set$In(List.of());
+
+    return Stream.of(
+        Arguments.of("{\"$eq\": \"123\"}", eq),
+        Arguments.of("{\"$in\": [\"1\", \"2\"]}", nonEmptyIn),
+        Arguments.of("{\"$exists\": false}", existsFalse),
+        Arguments.of("{\"$neq\": \"1\", \"$in\": []}", neqWithEmptyIn),
+        Arguments.of("plain string", "ACTIVE"),
+        Arguments.of("plain boolean", true),
+        Arguments.of("plain list", List.of()),
+        Arguments.of("enum", DecisionDefinitionTypeEnum.DECISION_TABLE));
   }
 
   /** Creates an ArrayList that allows null elements (unlike List.of). */

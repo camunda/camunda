@@ -87,6 +87,7 @@ public final class AuditLogTransformerRegistry {
         GroupEntityAuditLogTransformer::new,
         MappingRuleAuditLogTransformer::new,
         ProcessAuditLogTransformer::new,
+        ProcessDefinitionSuspensionAuditLogTransformer::new,
         ResourceAuditLogTransformer::new,
         RoleAuditLogTransformer::new,
         RoleEntityAuditLogTransformer::new,

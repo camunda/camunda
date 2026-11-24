@@ -90,7 +90,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 			{
 				id: 'processInstanceKey',
 				keys: ['processInstanceKey'],
-				label: t('operate.processes.filters.processInstanceKey'),
+				label: t('operate.processes.ds.filters.processInstanceKey'),
 				type: 'multiline',
 				placeholder: t('operate.processes.filters.processInstanceKeyPlaceholder'),
 				rows: 1,
@@ -106,14 +106,14 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 			{
 				id: 'batchOperationKey',
 				keys: ['batchOperationKey'],
-				label: t('operate.processes.filters.batchOperationKey'),
+				label: t('operate.processes.ds.filters.batchOperationKey'),
 				type: 'text',
 				validate: mergeValidators(validateBatchOperationKeyCharacters, validateBatchOperationKeyComplete),
 			},
 			{
 				id: 'parentProcessInstanceKey',
 				keys: ['parentProcessInstanceKey'],
-				label: t('operate.processes.filters.parentProcessInstanceKey'),
+				label: t('operate.processes.ds.filters.parentProcessInstanceKey'),
 				type: 'text',
 				validate: mergeValidators(
 					validateParentInstanceIdComplete,
@@ -124,7 +124,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 			{
 				id: 'errorMessage',
 				keys: ['errorMessage', 'incidentErrorHashCode'],
-				label: t('operate.processes.filters.errorMessage'),
+				label: t('operate.processes.ds.filters.errorMessage'),
 				type: 'text',
 			},
 			{
@@ -135,7 +135,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 			},
 			{
 				id: 'variable',
-				keys: ['variableName', 'variableValues'],
+				keys: [],
 				label: t('operate.processes.variableFilter.title'),
 				type: 'custom',
 				onRemove: () => setVariableConditions([]),
@@ -147,11 +147,11 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 			},
 			dateRangeDefinition(
 				'startDateRange',
-				t('operate.processes.filters.startDateRange'),
+				t('operate.processes.ds.filters.startDateRange'),
 				'startDateFrom',
 				'startDateTo',
 			),
-			dateRangeDefinition('endDateRange', t('operate.processes.filters.endDateRange'), 'endDateFrom', 'endDateTo'),
+			dateRangeDefinition('endDateRange', t('operate.processes.ds.filters.endDateRange'), 'endDateFrom', 'endDateTo'),
 		];
 	}, [t]);
 
@@ -183,7 +183,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 			visibleFilters={visibleFilters}
 			onVisibleFilterChange={onVisibleFilterChange}
 			onFilterClear={onFilterClear}
-			getRemoveFilterLabel={(label) => t('operate.processes.filters.removeFilter', {label})}
+			getRemoveFilterLabel={(label) => t('operate.processes.ds.filters.removeFilter', {label})}
 		/>
 	);
 };

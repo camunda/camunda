@@ -8,7 +8,12 @@
 package io.camunda.zeebe.util.logging;
 
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicLong;
+import java.time.InstantSource;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import net.jcip.annotations.GuardedBy;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 
@@ -27,17 +32,53 @@ import org.slf4j.Marker;
  * in every configured interval.
  *
  * <p>The throttle is shared by all log levels and all threads that use the same instance: when
- * several threads log at the same time, exactly one of them wins the interval.
+ * several threads log at the same time, exactly one of them wins the interval. Use a separate
+ * instance for each use case, so that unrelated messages do not hide each other.
+ *
+ * <p>To show that something is still going on, a message that is logged after other calls were
+ * suppressed gets a suffix such as {@code [3 suppressed since last log, ongoing for 1m 5s]}. The
+ * count covers all calls to this instance that were suppressed since the last logged message, even
+ * across a quiet period. A streak timer starts with the first logged message and is only reset when
+ * more than two intervals pass without a logged message; once the streak lasted at least a second,
+ * its duration is shown next to the count. A message logged without any suppressed call is left
+ * unchanged.
+ *
+ * <p>Suppressed calls do not take a lock, so that callers which are throttled most of the time do
+ * not contend with each other. Deciding to log a message takes a lock without ever waiting for it:
+ * if another thread holds it, that thread is deciding for the same interval, and the call counts as
+ * suppressed. The lock is never held while logging.
  */
 public class ThrottledLogger implements Logger {
 
-  private final AtomicLong lastLogTime = new AtomicLong();
+  private final LongAdder suppressedCalls = new LongAdder();
+  private final Lock lock;
+
+  // written while holding the lock, read without it to suppress calls
+  private volatile long lastLogTime;
+
+  @GuardedBy("lock")
+  private long streakStartTime;
+
   private final Logger log;
   private final long intervalMillis;
+  private final long streakGapMillis;
+  private final InstantSource clock;
 
   public ThrottledLogger(final Logger log, final Duration interval) {
+    this(log, interval, InstantSource.system());
+  }
+
+  ThrottledLogger(final Logger log, final Duration interval, final InstantSource clock) {
+    this(log, interval, clock, new ReentrantLock());
+  }
+
+  ThrottledLogger(
+      final Logger log, final Duration interval, final InstantSource clock, final Lock lock) {
     this.log = log;
+    this.clock = clock;
+    this.lock = lock;
     intervalMillis = interval.toMillis();
+    streakGapMillis = 2 * intervalMillis;
   }
 
   @Override
@@ -52,27 +93,27 @@ public class ThrottledLogger implements Logger {
 
   @Override
   public void trace(final String s) {
-    checkAndLog(() -> log.trace(s));
+    checkAndLog(suffix -> log.trace(s + suffix));
   }
 
   @Override
   public void trace(final String s, final Object o) {
-    checkAndLog(() -> log.trace(s, o));
+    checkAndLog(suffix -> log.trace(s + suffix, o));
   }
 
   @Override
   public void trace(final String s, final Object o, final Object o1) {
-    checkAndLog(() -> log.trace(s, o, o1));
+    checkAndLog(suffix -> log.trace(s + suffix, o, o1));
   }
 
   @Override
   public void trace(final String s, final Object... objects) {
-    checkAndLog(() -> log.trace(s, objects));
+    checkAndLog(suffix -> log.trace(s + suffix, objects));
   }
 
   @Override
   public void trace(final String s, final Throwable throwable) {
-    checkAndLog(() -> log.trace(s, throwable));
+    checkAndLog(suffix -> log.trace(s + suffix, throwable));
   }
 
   @Override
@@ -82,27 +123,27 @@ public class ThrottledLogger implements Logger {
 
   @Override
   public void trace(final Marker marker, final String s) {
-    checkAndLog(() -> log.trace(marker, s));
+    checkAndLog(suffix -> log.trace(marker, s + suffix));
   }
 
   @Override
   public void trace(final Marker marker, final String s, final Object o) {
-    checkAndLog(() -> log.trace(marker, s, o));
+    checkAndLog(suffix -> log.trace(marker, s + suffix, o));
   }
 
   @Override
   public void trace(final Marker marker, final String s, final Object o, final Object o1) {
-    checkAndLog(() -> log.trace(marker, s, o, o1));
+    checkAndLog(suffix -> log.trace(marker, s + suffix, o, o1));
   }
 
   @Override
   public void trace(final Marker marker, final String s, final Object... objects) {
-    checkAndLog(() -> log.trace(marker, s, objects));
+    checkAndLog(suffix -> log.trace(marker, s + suffix, objects));
   }
 
   @Override
   public void trace(final Marker marker, final String s, final Throwable throwable) {
-    checkAndLog(() -> log.trace(marker, s, throwable));
+    checkAndLog(suffix -> log.trace(marker, s + suffix, throwable));
   }
 
   @Override
@@ -112,27 +153,27 @@ public class ThrottledLogger implements Logger {
 
   @Override
   public void debug(final String s) {
-    checkAndLog(() -> log.debug(s));
+    checkAndLog(suffix -> log.debug(s + suffix));
   }
 
   @Override
   public void debug(final String s, final Object o) {
-    checkAndLog(() -> log.debug(s, o));
+    checkAndLog(suffix -> log.debug(s + suffix, o));
   }
 
   @Override
   public void debug(final String s, final Object o, final Object o1) {
-    checkAndLog(() -> log.debug(s, o, o1));
+    checkAndLog(suffix -> log.debug(s + suffix, o, o1));
   }
 
   @Override
   public void debug(final String s, final Object... objects) {
-    checkAndLog(() -> log.debug(s, objects));
+    checkAndLog(suffix -> log.debug(s + suffix, objects));
   }
 
   @Override
   public void debug(final String s, final Throwable throwable) {
-    checkAndLog(() -> log.debug(s, throwable));
+    checkAndLog(suffix -> log.debug(s + suffix, throwable));
   }
 
   @Override
@@ -142,27 +183,27 @@ public class ThrottledLogger implements Logger {
 
   @Override
   public void debug(final Marker marker, final String s) {
-    checkAndLog(() -> log.debug(marker, s));
+    checkAndLog(suffix -> log.debug(marker, s + suffix));
   }
 
   @Override
   public void debug(final Marker marker, final String s, final Object o) {
-    checkAndLog(() -> log.debug(marker, s, o));
+    checkAndLog(suffix -> log.debug(marker, s + suffix, o));
   }
 
   @Override
   public void debug(final Marker marker, final String s, final Object o, final Object o1) {
-    checkAndLog(() -> log.debug(marker, s, o, o1));
+    checkAndLog(suffix -> log.debug(marker, s + suffix, o, o1));
   }
 
   @Override
   public void debug(final Marker marker, final String s, final Object... objects) {
-    checkAndLog(() -> log.debug(marker, s, objects));
+    checkAndLog(suffix -> log.debug(marker, s + suffix, objects));
   }
 
   @Override
   public void debug(final Marker marker, final String s, final Throwable throwable) {
-    checkAndLog(() -> log.debug(marker, s, throwable));
+    checkAndLog(suffix -> log.debug(marker, s + suffix, throwable));
   }
 
   @Override
@@ -172,27 +213,27 @@ public class ThrottledLogger implements Logger {
 
   @Override
   public void info(final String s) {
-    checkAndLog(() -> log.info(s));
+    checkAndLog(suffix -> log.info(s + suffix));
   }
 
   @Override
   public void info(final String s, final Object o) {
-    checkAndLog(() -> log.info(s, o));
+    checkAndLog(suffix -> log.info(s + suffix, o));
   }
 
   @Override
   public void info(final String s, final Object o, final Object o1) {
-    checkAndLog(() -> log.info(s, o, o1));
+    checkAndLog(suffix -> log.info(s + suffix, o, o1));
   }
 
   @Override
   public void info(final String s, final Object... objects) {
-    checkAndLog(() -> log.info(s, objects));
+    checkAndLog(suffix -> log.info(s + suffix, objects));
   }
 
   @Override
   public void info(final String s, final Throwable throwable) {
-    checkAndLog(() -> log.info(s, throwable));
+    checkAndLog(suffix -> log.info(s + suffix, throwable));
   }
 
   @Override
@@ -202,27 +243,27 @@ public class ThrottledLogger implements Logger {
 
   @Override
   public void info(final Marker marker, final String s) {
-    checkAndLog(() -> log.info(marker, s));
+    checkAndLog(suffix -> log.info(marker, s + suffix));
   }
 
   @Override
   public void info(final Marker marker, final String s, final Object o) {
-    checkAndLog(() -> log.info(marker, s, o));
+    checkAndLog(suffix -> log.info(marker, s + suffix, o));
   }
 
   @Override
   public void info(final Marker marker, final String s, final Object o, final Object o1) {
-    checkAndLog(() -> log.info(marker, s, o, o1));
+    checkAndLog(suffix -> log.info(marker, s + suffix, o, o1));
   }
 
   @Override
   public void info(final Marker marker, final String s, final Object... objects) {
-    checkAndLog(() -> log.info(marker, s, objects));
+    checkAndLog(suffix -> log.info(marker, s + suffix, objects));
   }
 
   @Override
   public void info(final Marker marker, final String s, final Throwable throwable) {
-    checkAndLog(() -> log.info(marker, s, throwable));
+    checkAndLog(suffix -> log.info(marker, s + suffix, throwable));
   }
 
   @Override
@@ -232,27 +273,27 @@ public class ThrottledLogger implements Logger {
 
   @Override
   public void warn(final String s) {
-    checkAndLog(() -> log.warn(s));
+    checkAndLog(suffix -> log.warn(s + suffix));
   }
 
   @Override
   public void warn(final String s, final Object o) {
-    checkAndLog(() -> log.warn(s, o));
+    checkAndLog(suffix -> log.warn(s + suffix, o));
   }
 
   @Override
   public void warn(final String s, final Object... objects) {
-    checkAndLog(() -> log.warn(s, objects));
+    checkAndLog(suffix -> log.warn(s + suffix, objects));
   }
 
   @Override
   public void warn(final String s, final Object o, final Object o1) {
-    checkAndLog(() -> log.warn(s, o, o1));
+    checkAndLog(suffix -> log.warn(s + suffix, o, o1));
   }
 
   @Override
   public void warn(final String s, final Throwable throwable) {
-    checkAndLog(() -> log.warn(s, throwable));
+    checkAndLog(suffix -> log.warn(s + suffix, throwable));
   }
 
   @Override
@@ -262,27 +303,27 @@ public class ThrottledLogger implements Logger {
 
   @Override
   public void warn(final Marker marker, final String s) {
-    checkAndLog(() -> log.warn(marker, s));
+    checkAndLog(suffix -> log.warn(marker, s + suffix));
   }
 
   @Override
   public void warn(final Marker marker, final String s, final Object o) {
-    checkAndLog(() -> log.warn(marker, s, o));
+    checkAndLog(suffix -> log.warn(marker, s + suffix, o));
   }
 
   @Override
   public void warn(final Marker marker, final String s, final Object o, final Object o1) {
-    checkAndLog(() -> log.warn(marker, s, o, o1));
+    checkAndLog(suffix -> log.warn(marker, s + suffix, o, o1));
   }
 
   @Override
   public void warn(final Marker marker, final String s, final Object... objects) {
-    checkAndLog(() -> log.warn(marker, s, objects));
+    checkAndLog(suffix -> log.warn(marker, s + suffix, objects));
   }
 
   @Override
   public void warn(final Marker marker, final String s, final Throwable throwable) {
-    checkAndLog(() -> log.warn(marker, s, throwable));
+    checkAndLog(suffix -> log.warn(marker, s + suffix, throwable));
   }
 
   @Override
@@ -292,27 +333,27 @@ public class ThrottledLogger implements Logger {
 
   @Override
   public void error(final String s) {
-    checkAndLog(() -> log.error(s));
+    checkAndLog(suffix -> log.error(s + suffix));
   }
 
   @Override
   public void error(final String s, final Object o) {
-    checkAndLog(() -> log.error(s, o));
+    checkAndLog(suffix -> log.error(s + suffix, o));
   }
 
   @Override
   public void error(final String s, final Object o, final Object o1) {
-    checkAndLog(() -> log.error(s, o, o1));
+    checkAndLog(suffix -> log.error(s + suffix, o, o1));
   }
 
   @Override
   public void error(final String s, final Object... objects) {
-    checkAndLog(() -> log.error(s, objects));
+    checkAndLog(suffix -> log.error(s + suffix, objects));
   }
 
   @Override
   public void error(final String s, final Throwable throwable) {
-    checkAndLog(() -> log.error(s, throwable));
+    checkAndLog(suffix -> log.error(s + suffix, throwable));
   }
 
   @Override
@@ -322,35 +363,95 @@ public class ThrottledLogger implements Logger {
 
   @Override
   public void error(final Marker marker, final String s) {
-    checkAndLog(() -> log.error(marker, s));
+    checkAndLog(suffix -> log.error(marker, s + suffix));
   }
 
   @Override
   public void error(final Marker marker, final String s, final Object o) {
-    checkAndLog(() -> log.error(marker, s, o));
+    checkAndLog(suffix -> log.error(marker, s + suffix, o));
   }
 
   @Override
   public void error(final Marker marker, final String s, final Object o, final Object o1) {
-    checkAndLog(() -> log.error(marker, s, o, o1));
+    checkAndLog(suffix -> log.error(marker, s + suffix, o, o1));
   }
 
   @Override
   public void error(final Marker marker, final String s, final Object... objects) {
-    checkAndLog(() -> log.error(marker, s, objects));
+    checkAndLog(suffix -> log.error(marker, s + suffix, objects));
   }
 
   @Override
   public void error(final Marker marker, final String s, final Throwable throwable) {
-    checkAndLog(() -> log.error(marker, s, throwable));
+    checkAndLog(suffix -> log.error(marker, s + suffix, throwable));
   }
 
-  private void checkAndLog(final Runnable logger) {
-    final var currentTime = System.currentTimeMillis();
-    final var lastTime = lastLogTime.get();
-    if (currentTime - lastTime >= intervalMillis
-        && lastLogTime.compareAndSet(lastTime, currentTime)) {
-      logger.run();
+  private void checkAndLog(final Consumer<String> logger) {
+    final var decision = nextDecision();
+    if (decision.log()) {
+      logger.accept(decision.suffix());
     }
+  }
+
+  private Decision nextDecision() {
+    final var currentTime = clock.millis();
+    if (currentTime - lastLogTime < intervalMillis) {
+      suppressedCalls.increment();
+      return Decision.SUPPRESS;
+    }
+
+    if (!lock.tryLock()) {
+      suppressedCalls.increment();
+      return Decision.SUPPRESS;
+    }
+
+    try {
+      final var lastTime = lastLogTime;
+      if (currentTime - lastTime < intervalMillis) {
+        // another thread logged while this one was waiting for the lock
+        suppressedCalls.increment();
+        return Decision.SUPPRESS;
+      }
+
+      if (lastTime == 0 || currentTime - lastTime > streakGapMillis) {
+        streakStartTime = currentTime;
+      }
+      // drain the count before publishing the new log time: calls suppressed by this message
+      // belong to the next one
+      final var suppressed = suppressedCalls.sumThenReset();
+      lastLogTime = currentTime;
+      return suppressed > 0 ? new Decision(true, suffix(suppressed, currentTime)) : Decision.LOG;
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  private String suffix(final long suppressed, final long currentTime) {
+    // the wall clock can jump backwards, never report a negative duration
+    final var streakMillis = Math.max(0, currentTime - streakStartTime);
+    final var streak = streakMillis < 1000 ? "" : ", ongoing for " + formatDuration(streakMillis);
+    return " [" + suppressed + " suppressed since last log" + streak + "]";
+  }
+
+  private static String formatDuration(final long millis) {
+    final var seconds = millis / 1000;
+    if (seconds < 60) {
+      return seconds + "s";
+    }
+    final var minutes = seconds / 60;
+    if (minutes < 60) {
+      return minutes + "m " + seconds % 60 + "s";
+    }
+    return minutes / 60 + "h " + minutes % 60 + "m";
+  }
+
+  /**
+   * Whether to log a call and what to append to its message. The common outcomes are shared
+   * constants, so that suppressed calls, which can be frequent, do not allocate. Only a message
+   * with a suffix needs a new instance, next to the suffix string itself.
+   */
+  private record Decision(boolean log, String suffix) {
+    static final Decision SUPPRESS = new Decision(false, "");
+    static final Decision LOG = new Decision(true, "");
   }
 }

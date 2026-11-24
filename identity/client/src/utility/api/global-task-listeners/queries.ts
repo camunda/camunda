@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { queryOptions } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import type { QueryGlobalTaskListenersRequestBody } from "@camunda/camunda-api-zod-schemas/8.10";
 import { getApiBaseUrl } from "src/configuration/urlConfig";
 import { unwrap } from "../request";
@@ -19,6 +19,7 @@ export const globalTaskListenerQueries = {
   ) =>
     queryOptions({
       queryKey: queryKeys.globalTaskListeners.search(params),
+      placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           searchGlobalTaskListeners(

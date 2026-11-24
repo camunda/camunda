@@ -103,9 +103,16 @@ repository code with a stable GitHub permalink pinned to a pushed commit SHA. Ne
 
 ### Build pipeline
 
-All builds use the Maven wrapper (`./mvnw`). Use `-T1C` (one thread per CPU core) for standalone
-builds. Use `-T2` (two threads total) when running builds alongside other resource-intensive
-processes (e.g., an IDE, Docker containers, or other concurrent builds).
+Two build tools exist. Maven (`./mvnw`) is authoritative and the default; Gradle (`./gradlew`) is
+experimental. Use Gradle when the user expresses a preference for it, in the prompt or in their
+memory or settings. Load the matching skill for commands instead of improvising them:
+
+- `maven-run-build` — compile, test, format, and package with `./mvnw`
+- `gradle-run-build` — compile, test, and package with `./gradlew`
+
+Always scope work to the relevant module(s). Never run full-repo builds for single-module work.
+Before every commit, format the code, build the changed module, and run its tests with zero
+failures. Skipping formatting reliably breaks the `Java checks` CI job.
 
 #### Always-green policy
 
@@ -160,39 +167,6 @@ be on the target branch — stop and inform the engineer.
 If it is flaky (non-deterministic), it does not block the session: treat the baseline as passed and
 proceed. Never disable the test. Track the flake as described in
 `.agents/skills/ci-fix-failure/references/flaky-tests.md`.
-
-#### Module-scoped builds (preferred)
-
-```bash
-# Build a module and its dependencies (recommended for monorepo work)
-./mvnw install -pl <module> -am -Dquickly -T1C
-
-# Build only a single module (requires dependencies to be already installed and unchanged)
-./mvnw install -pl <module> -Dquickly -T1C
-
-# Run a single test class in a module
-./mvnw verify -pl <module> -Dtest=<TestClassName> -DskipTests=false -DskipITs -Dquickly
-
-# Run a single integration test in a module
-./mvnw verify -pl <module> -Dit.test=<IntegrationTestClassName> -DskipTests=false -DskipUTs -Dquickly
-```
-
-Note: `-Dquickly` skips tests, formatting checks, and Optimize — use it for fast iteration only. Add `-DskipTests=false` to run tests while still skipping checks. Before committing, always run the full pipeline in the "Before submitting" section instead.
-
-Note: some modules are split into sub-modules where tests live (e.g. `zeebe/engine`, `zeebe/broker`). If running tests against a top-level module produces no results, target the specific sub-module instead.
-
-Never use `-am` with `verify` — it runs tests in all dependency modules. Use `-am` only with `install -Dquickly` when rebuilding dependencies.
-
-#### Before submitting
-
-Always run these steps before every commit — never skip them, even for "obvious" or single-line
-changes. Skipping formatting reliably breaks the `Java checks` CI job.
-
-1. Format code: `./mvnw license:format spotless:apply -T1C` — **mandatory** before every commit
-   that touches Java sources, markdown or `pom.xml` files. Run it again after any subsequent edit.
-2. Build the changed module (see "Module-scoped builds" above for commands)
-3. Run module tests and verify zero failures
-4. Verify the full repo still compiles: `./mvnw install -Dquickly -T1C`
 
 ### Scoped instructions
 

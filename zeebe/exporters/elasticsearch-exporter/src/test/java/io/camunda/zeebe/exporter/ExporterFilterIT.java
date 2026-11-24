@@ -17,6 +17,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -287,12 +288,18 @@ final class ExporterFilterIT {
     // AgentInstanceIntent.CREATED is in the Optimize-allowed set
     final var agentInstanceCreated = agentInstanceRecord(AgentInstanceIntent.CREATED);
 
+    // AgentDefinitionIntent.CREATED is in the Optimize-allowed set, DELETED is not
+    final var agentDefinitionCreated = agentDefinitionRecord(AgentDefinitionIntent.CREATED);
+    final var agentDefinitionDeleted = agentDefinitionRecord(AgentDefinitionIntent.DELETED);
+
     // when
     exportFiltered(variableCreated);
     exportFiltered(variableMigrated);
     exportFiltered(piCompleted);
     exportFiltered(piSequenceFlow);
     exportFiltered(agentInstanceCreated);
+    exportFiltered(agentDefinitionCreated);
+    exportFiltered(agentDefinitionDeleted);
 
     // then
     assertIndexed(variableCreated);
@@ -300,6 +307,8 @@ final class ExporterFilterIT {
     assertIndexed(piCompleted);
     assertNotIndexed(piSequenceFlow);
     assertIndexed(agentInstanceCreated);
+    assertIndexed(agentDefinitionCreated);
+    assertNotIndexed(agentDefinitionDeleted);
 
     // and: disabling optimize mode again restores full export for the same records
     config.index.setOptimizeModeEnabled(false);
@@ -692,6 +701,15 @@ final class ExporterFilterIT {
   private Record<?> agentInstanceRecord(final AgentInstanceIntent intent) {
     return factory.generateRecord(
         ValueType.AGENT_INSTANCE,
+        r ->
+            r.withBrokerVersion(BROKER_VERSION)
+                .withRecordType(RecordType.EVENT)
+                .withIntent(intent));
+  }
+
+  private Record<?> agentDefinitionRecord(final AgentDefinitionIntent intent) {
+    return factory.generateRecord(
+        ValueType.AGENT_DEFINITION,
         r ->
             r.withBrokerVersion(BROKER_VERSION)
                 .withRecordType(RecordType.EVENT)

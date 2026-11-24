@@ -30,6 +30,7 @@ dependencies {
   api(libs.org.assertj.assertj.core)
   api(libs.org.agrona.agrona)
   implementation(project(":zeebe-broker"))
+  implementation(project(":zeebe-gateway"))
   implementation(project(":zeebe-protocol"))
   api(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-util"))

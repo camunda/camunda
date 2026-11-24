@@ -55,7 +55,7 @@ runs:
       with:
         url: ${{ inputs.vault-addr }}
         method: ${{ inputs.vault-jwt-role != '' && 'jwt' || 'approle' }}
-        path: ${{ inputs.vault-jwt-path }}
+        path: ${{ inputs.vault-jwt-role != '' && inputs.vault-jwt-path || '' }}
         role: ${{ inputs.vault-jwt-role }}
         jwtGithubAudience: ${{ inputs.vault-jwt-audience }}
         roleId: ${{ inputs.vault-jwt-role == '' && inputs.vault-role-id || '' }}

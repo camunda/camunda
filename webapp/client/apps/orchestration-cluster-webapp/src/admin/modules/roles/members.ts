@@ -34,7 +34,7 @@ type MembersResponse =
 	| QueryMappingRulesByRoleResponseBody
 	| QueryClientsByRoleResponseBody;
 
-type MemberPage = {page: {from: number; limit: number}};
+type MemberPage = {page: {from: number; limit: number}; filter?: {username: {$like: string}}};
 
 const MEMBER_KIND_CONFIG = {
 	users: {

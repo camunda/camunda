@@ -60,12 +60,16 @@ describe('<DecisionViewer />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
-		await vi.waitFor(() => {
-			expect(document.querySelectorAll('tbody tr[data-highlighted]')).toHaveLength(1);
-		});
-		expect(document.querySelector('tbody tr:nth-child(1)')).toHaveAttribute('data-highlighted');
-		expect(document.querySelector('tbody tr:nth-child(1)')).toHaveAttribute('aria-current', 'true');
+		const dayToDayRule = screen.getByRole('row').filter({hasText: '"day-to-day expense"'});
+		const managerApprovalRule = screen.getByRole('row').filter({hasText: '"manager approval"'});
+		const boardApprovalRule = screen.getByRole('row').filter({hasText: '"board approval"'});
+
+		await expect.element(dayToDayRule).toHaveAttribute('aria-current', 'true');
+		await expect.element(dayToDayRule).toHaveAttribute('data-highlighted');
+		await expect.element(managerApprovalRule).not.toHaveAttribute('aria-current');
+		await expect.element(managerApprovalRule).not.toHaveAttribute('data-highlighted');
+		await expect.element(boardApprovalRule).not.toHaveAttribute('aria-current');
+		await expect.element(boardApprovalRule).not.toHaveAttribute('data-highlighted');
 	});
 
 	it('should update highlighted rows when the rules change', async () => {
@@ -76,9 +80,8 @@ describe('<DecisionViewer />', () => {
 				highlightableRules={[1]}
 			/>,
 		);
-		await vi.waitFor(() => {
-			expect(document.querySelectorAll('tbody tr[data-highlighted]')).toHaveLength(1);
-		});
+		const dayToDayRule = screen.getByRole('row').filter({hasText: '"day-to-day expense"'});
+		await expect.element(dayToDayRule).toHaveAttribute('aria-current', 'true');
 
 		await screen.rerender(
 			<DecisionViewer
@@ -88,9 +91,8 @@ describe('<DecisionViewer />', () => {
 			/>,
 		);
 
-		await vi.waitFor(() => {
-			expect(document.querySelectorAll('tbody tr[data-highlighted]')).toHaveLength(0);
-		});
+		await expect.element(dayToDayRule).not.toHaveAttribute('aria-current');
+		await expect.element(dayToDayRule).not.toHaveAttribute('data-highlighted');
 	});
 
 	it('should report the imported definitions', async () => {

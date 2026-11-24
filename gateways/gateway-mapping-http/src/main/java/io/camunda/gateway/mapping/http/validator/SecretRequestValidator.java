@@ -10,10 +10,13 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
+import io.camunda.gateway.protocol.model.AdvancedSecretStatusFilter;
 import io.camunda.gateway.protocol.model.SecretListRequest;
 import io.camunda.gateway.protocol.model.SecretResolveRequest;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
 
 public final class SecretRequestValidator {
@@ -52,10 +55,27 @@ public final class SecretRequestValidator {
         });
   }
 
-  public static Optional<ProblemDetail> validateSecretListRequest(final SecretListRequest request) {
-    // The list request body is optional: a missing or null body (and the empty object) means "no
-    // filters", so there is nothing to reject here yet. Kept as the extension point for validating
-    // the filtering options this request is reserved to carry in the future.
-    return validate(violations -> {});
+  public static Optional<ProblemDetail> validateSecretListRequest(
+      final @Nullable SecretListRequest request) {
+    // The body, its filter and the filter's status are all optional, and an unknown status never
+    // gets here, since deserializing the request already fails on it and
+    // GlobalControllerExceptionHandler answers 400 with the allowed values. A null list entry
+    // does deserialize, so it is rejected here.
+    return validate(
+        violations -> {
+          final var filter = request == null ? null : request.getFilter();
+          if (filter != null
+              && filter.getStatus() instanceof final AdvancedSecretStatusFilter status) {
+            rejectNullEntries(status.get$In(), "filter.status.$in", violations);
+            rejectNullEntries(status.get$NotIn(), "filter.status.$notIn", violations);
+          }
+        });
+  }
+
+  private static void rejectNullEntries(
+      final @Nullable List<?> values, final String field, final List<String> violations) {
+    if (values != null && values.stream().anyMatch(Objects::isNull)) {
+      violations.add("The %s list must not contain null entries.".formatted(field));
+    }
   }
 }

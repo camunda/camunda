@@ -1590,7 +1590,8 @@ jobs:
           flaky test \`${SPEC}\` on ${VERSION}. Copilot has reviewed it. Answer that review now, in
           this run -- this is the ONLY automated round, and the human reviewer sees the result next.
 
-          Read "## Review-Response Agent" in /tmp/flaky-agent-manual.md before you start. It is the
+          Read "## Review-Response Agent" in /tmp/flaky-agent-manual.md before you start, and follow
+          its "## Code Comments" section for any code comment you add or keep. It is the
           contract for this step, with two differences that OVERRIDE it here, because this workflow
           keeps you credential-free:
 

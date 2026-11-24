@@ -30,7 +30,7 @@ const Cancel: React.FC<Props> = ({processInstanceKey, onExecute, disabled = fals
 			<OperationItem
 				type="CANCEL_PROCESS_INSTANCE"
 				onClick={() => setIsCancellationModalVisible(true)}
-				title={t('operate.shared.operations.cancelTitle', {processInstanceKey})}
+				title={t('operate.shared.ds.operations.cancelTitle', {processInstanceKey})}
 				disabled={disabled}
 				size="sm"
 			/>

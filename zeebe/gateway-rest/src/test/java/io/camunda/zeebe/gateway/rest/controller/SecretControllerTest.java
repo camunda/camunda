@@ -11,11 +11,13 @@ import static io.camunda.gateway.mapping.http.validator.SecretRequestValidator.M
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.SecretStatus;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.SecretServices;
@@ -25,13 +27,21 @@ import io.camunda.service.SecretServices.SecretResolution;
 import io.camunda.service.SecretServices.SecretResolutionError;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -272,7 +282,7 @@ public class SecretControllerTest extends RestControllerTest {
   @Test
   void shouldReturnAuthorizedReferences() {
     // given
-    when(secretServices.list(any()))
+    when(secretServices.list(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(List.of("camunda.secrets.a")));
 
     // when / then only reference names are returned; the schema has no value field to leak
@@ -295,7 +305,8 @@ public class SecretControllerTest extends RestControllerTest {
   @Test
   void shouldReturnEmptyReferencesWhenNoneAuthorized() {
     // given
-    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when / then
     webClient
@@ -317,7 +328,8 @@ public class SecretControllerTest extends RestControllerTest {
   @Test
   void shouldTreatNullListRequestBodyAsNoFilters() {
     // given a literal JSON null body (deserialized as a null request)
-    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when / then the body is optional, so a null body applies no filters and still reaches the
     // service rather than being rejected
@@ -330,13 +342,14 @@ public class SecretControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isOk();
-    verify(secretServices).list(any());
+    verify(secretServices).list(any(), isNull());
   }
 
   @Test
   void shouldTreatMissingListRequestBodyAsNoFilters() {
     // given no request body at all
-    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when / then the body is optional, so omitting it applies no filters and still reaches the
     // service — clients need not send an empty object
@@ -347,13 +360,14 @@ public class SecretControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isOk();
-    verify(secretServices).list(any());
+    verify(secretServices).list(any(), isNull());
   }
 
   @Test
   void shouldForwardAuthenticationToServiceOnList() {
     // given
-    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
     webClient
@@ -367,7 +381,182 @@ public class SecretControllerTest extends RestControllerTest {
         .isOk();
 
     // then
-    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT));
+    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), isNull());
+  }
+
+  @ParameterizedTest
+  @EnumSource(SecretStatus.class)
+  void shouldListSecretsInRequestedStatus(final SecretStatus status) {
+    // given
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of("camunda.secrets.a")));
+
+    // when / then the response keeps the shape of an unfiltered listing
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": { \"status\": \"%s\" } }".formatted(status.name()))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            { "references": ["camunda.secrets.a"] }""",
+            JsonCompareMode.STRICT);
+
+    // then the requested status reaches the service
+    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), eq(Set.of(status)));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("advancedStatusFilters")
+  void shouldListSecretsMatchingAdvancedStatusFilter(
+      final String statusFilter, final Set<SecretStatus> expected) {
+    // given
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": { \"status\": %s } }".formatted(statusFilter))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then the operators resolve to the statuses they match
+    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), eq(expected));
+  }
+
+  static Stream<Arguments> advancedStatusFilters() {
+    final var all = EnumSet.allOf(SecretStatus.class);
+    return Stream.of(
+        Arguments.of("{ \"$eq\": \"EXPIRED\" }", EnumSet.of(SecretStatus.EXPIRED)),
+        Arguments.of(
+            "{ \"$neq\": \"ACTIVE\" }", EnumSet.complementOf(EnumSet.of(SecretStatus.ACTIVE))),
+        Arguments.of(
+            "{ \"$in\": [\"DISABLED\", \"EXPIRED\"] }",
+            EnumSet.of(SecretStatus.DISABLED, SecretStatus.EXPIRED)),
+        Arguments.of(
+            "{ \"$notIn\": [\"ACTIVE\", \"DISABLED\"] }",
+            EnumSet.of(SecretStatus.EXPIRED, SecretStatus.NOT_YET_ACTIVE)),
+        Arguments.of("{ \"$exists\": true }", all),
+        Arguments.of("{ \"$exists\": false }", EnumSet.noneOf(SecretStatus.class)),
+        Arguments.of(
+            "{ \"$like\": \"*ACTIVE\" }",
+            EnumSet.of(SecretStatus.ACTIVE, SecretStatus.NOT_YET_ACTIVE)),
+        Arguments.of("{ \"$like\": \"EXP?RED\" }", EnumSet.of(SecretStatus.EXPIRED)),
+        Arguments.of(
+            "{ \"$in\": [\"ACTIVE\", \"EXPIRED\"], \"$neq\": \"ACTIVE\" }",
+            EnumSet.of(SecretStatus.EXPIRED)),
+        Arguments.of("{ \"$in\": [] }", all),
+        Arguments.of("{}", all));
+  }
+
+  @Test
+  void shouldRejectUnknownStatusInAdvancedFilter() {
+    // when / then
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": { \"status\": { \"$in\": [\"BROKEN\"] } } }")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+    verifyNoInteractions(secretServices);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"$in", "$notIn"})
+  void shouldRejectNullEntryInAdvancedStatusFilter(final String operator) {
+    // when / then the 400 names the offending list, and the service is never asked
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            "{ \"filter\": { \"status\": { \"%s\": [\"ACTIVE\", null] } } }".formatted(operator))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("The filter.status.%s list must not contain null entries.".formatted(operator));
+    verifyNoInteractions(secretServices);
+  }
+
+  @Test
+  void shouldListSecretsInEveryStatusWhenFilterIsEmpty() {
+    // given
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": {} }")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then a filter without a status narrows nothing
+    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), isNull());
+  }
+
+  @Test
+  void shouldRejectUnknownStatus() {
+    // when / then the 400 names the allowed values, and the service is never asked
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": { \"status\": \"BROKEN\" } }")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "Unexpected value 'BROKEN' for enum field 'status'. Use any of the following values: [ACTIVE, DISABLED, EXPIRED, NOT_YET_ACTIVE]",
+              "instance": "%s"
+            }"""
+                .formatted(LIST_URL),
+            JsonCompareMode.STRICT);
+    verifyNoInteractions(secretServices);
+  }
+
+  @Test
+  void shouldRejectUnknownFilterProperty() {
+    // when / then the filter takes only the properties the spec declares
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{ \"filter\": { \"name\": \"camunda.secrets.a\" } }")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+    verifyNoInteractions(secretServices);
   }
 
   private static String referencesJson(final int count) {

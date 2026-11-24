@@ -409,24 +409,6 @@ public final class BrokerCfgTest {
   }
 
   @Test
-  public void shouldReadDefaultEmbedGateway() {
-    assertDefaultEmbeddedGatewayEnabled(true);
-  }
-
-  @Test
-  public void shouldReadEmbedGateway() {
-    assertEmbeddedGatewayEnabled("disabled-gateway", false);
-  }
-
-  @Test
-  public void shouldSetEmbedGatewayViaEnvironment() {
-    // given
-    environment.put("zeebe.broker.gateway.enable", "true");
-    // then
-    assertEmbeddedGatewayEnabled("disabled-gateway", true);
-  }
-
-  @Test
   public void shouldSetBackpressureConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("backpressure-cfg", environment);
@@ -618,7 +600,6 @@ public final class BrokerCfgTest {
     final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getHost()).isEqualTo(host);
-    assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
     assertThat(networkCfg.getCommandApi().getAddress().getHostString()).isEqualTo(command);
     assertThat(networkCfg.getInternalApi().getHost()).isEqualTo(internal);
   }
@@ -635,17 +616,6 @@ public final class BrokerCfgTest {
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getHostName()).isEqualTo(host);
     assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getPort()).isEqualTo(port);
-  }
-
-  private void assertDefaultEmbeddedGatewayEnabled(final boolean enabled) {
-    assertEmbeddedGatewayEnabled("default", enabled);
-    assertEmbeddedGatewayEnabled("empty", enabled);
-  }
-
-  private void assertEmbeddedGatewayEnabled(final String configFileName, final boolean enabled) {
-    final EmbeddedGatewayCfg gatewayCfg =
-        TestConfigReader.readConfig(configFileName, environment).getGateway();
-    assertThat(gatewayCfg.isEnable()).isEqualTo(enabled);
   }
 
   private void assertMetricsExporter() {

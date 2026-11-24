@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
@@ -558,6 +559,76 @@ public class AuditLogResourceOperationsIT {
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
   }
 
+  @Test
+  void shouldTrackProcessDefinitionSuspension(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - deploy two versions of a process
+    final var processId = "process-definition-suspend-test";
+    final var firstVersion = deployProcessVersion(client, processId, "first");
+    final var secondVersion = deployProcessVersion(client, processId, "second");
+
+    // when - suspend all versions of the process
+    client
+        .newSuspendProcessDefinitionCommand()
+        .processDefinitionId(processId)
+        .tenantId(TENANT_A)
+        .send()
+        .join();
+
+    // then - one audit log entry per suspended version
+    for (final var version : List.of(firstVersion, secondVersion)) {
+      final var processDefinitionKey = String.valueOf(version.getProcessDefinitionKey());
+      final var auditLogItems =
+          awaitAuditLogEntry(
+              client,
+              AuditLogEntityTypeEnum.RESOURCE,
+              AuditLogOperationTypeEnum.SUSPEND,
+              processDefinitionKey);
+
+      assertThat(auditLogItems).hasSize(1);
+      assertResourceAuditLog(
+          auditLogItems.getFirst(),
+          AuditLogOperationTypeEnum.SUSPEND,
+          processDefinitionKey,
+          version.getResourceName());
+    }
+  }
+
+  @Test
+  void shouldTrackProcessDefinitionResumption(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - deploy and suspend a process
+    final var process = deployProcessVersion(client, "process-definition-resume-test", "suspended");
+    final var processDefinitionKey = process.getProcessDefinitionKey();
+    client
+        .newSuspendProcessDefinitionCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .send()
+        .join();
+
+    // when - resume the process
+    client
+        .newResumeProcessDefinitionCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .send()
+        .join();
+
+    // then - wait for audit log entry and verify
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.RESOURCE,
+            AuditLogOperationTypeEnum.RESUME,
+            String.valueOf(processDefinitionKey));
+
+    assertThat(auditLogItems).hasSize(1);
+    assertResourceAuditLog(
+        auditLogItems.getFirst(),
+        AuditLogOperationTypeEnum.RESUME,
+        String.valueOf(processDefinitionKey),
+        process.getResourceName());
+  }
+
   // ========================================================================================
   // Helper Methods
   // ========================================================================================
@@ -660,6 +731,24 @@ public class AuditLogResourceOperationsIT {
               }
             },
             Objects::nonNull);
+  }
+
+  private Process deployProcessVersion(
+      final CamundaClient client, final String processId, final String taskId) {
+    return client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(taskId, t -> t.zeebeJobType("testTask"))
+                .endEvent()
+                .done(),
+            processId + ".bpmn")
+        .tenantId(TENANT_A)
+        .send()
+        .join()
+        .getProcesses()
+        .getFirst();
   }
 
   private AuditLogResult findByEntityKey(

@@ -33,7 +33,6 @@ dependencies {
   api(project(":zeebe-exporter-api"))
   implementation(project(":zeebe-exporter-config-support"))
   implementation(project(":zeebe-stream-platform"))
-  implementation(project(":zeebe-gateway"))
   implementation(project(":zeebe-expression-language"))
   implementation(project(":zeebe-logstreams"))
   implementation(project(":zeebe-msgpack-value"))

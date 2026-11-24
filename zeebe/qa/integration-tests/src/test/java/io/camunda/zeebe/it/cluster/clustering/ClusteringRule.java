@@ -9,7 +9,6 @@ package io.camunda.zeebe.it.cluster.clustering;
 
 import static io.camunda.zeebe.broker.Broker.LOG;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
-import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.DISABLE_EMBEDDED_GATEWAY;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setCluster;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInitialContactPoints;
@@ -69,6 +68,7 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.qa.util.cluster.TestMembership;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -451,7 +451,6 @@ public class ClusteringRule extends ExternalResource {
     TEST_RECORDER.accept(brokerCfg);
 
     // disable embedded gateway
-    DISABLE_EMBEDDED_GATEWAY.accept(brokerCfg);
 
     // configure cluster
     setCluster(nodeId, partitionCount, replicationFactor, clusterSize, clusterName)
@@ -522,6 +521,9 @@ public class ClusteringRule extends ExternalResource {
     gatewayCfg.getCluster().setPort(SocketUtil.getNextAddress().getPort());
     // temporarily increase request time out, but we should make this configurable per test
     gatewayCfg.getCluster().setRequestTimeout(Duration.ofSeconds(45));
+    // every stopBroker call waits until the gateway drops the member from its topology, so the
+    // gateway must not use the 10s production failure timeout
+    TestMembership.configureFastMembership(gatewayCfg.getCluster().getMembership());
     gatewayCfg.init();
 
     gatewayConfigurator.accept(gatewayCfg);

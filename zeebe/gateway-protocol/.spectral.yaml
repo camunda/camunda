@@ -26,6 +26,9 @@ rules:
   # Tag validation
   operation-tag-defined: error
 
+  # SDK method names come from operationId; adding one later renames the method.
+  operation-operationId: error
+
   # Schema example validation — @camunda8/spectral-cli supports unicodeRegExp,
   # so false-positive pattern failures are resolved.
   # oas3-valid-schema-example remains at warn because ScopeKey uses oneOf with
@@ -168,7 +171,7 @@ rules:
 
   operation-key-properties-must-be-strings:
     description: "`...Key` parameters must be of type `string`."
-    severity: warn
+    severity: error
     given: $.paths[*][*].parameters[*]
     then:
       function: verifyKeyTypesPaths
@@ -176,7 +179,7 @@ rules:
 
   schema-key-properties-must-be-strings:
     description: "`...Key` properties must be of type `string`."
-    severity: warn
+    severity: error
     given: $.components.schemas[*].properties
     then:
       function: verifyKeyTypesSchemas

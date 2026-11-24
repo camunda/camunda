@@ -67,6 +67,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     final Either<Rejection, DeployedProcess> persistedProcess = helper.findRelevantProcess(record);
     persistedProcess
         .flatMap(process -> helper.isAuthorized(command, process))
+        .flatMap(helper::rejectIfCannotCreateNewInstances)
         .flatMap(process -> helper.validateCommand(command.getValue(), process))
         .ifRightOrLeft(
             process -> {

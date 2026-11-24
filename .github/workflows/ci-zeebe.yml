@@ -293,7 +293,7 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Install strace
-        uses: ./.github/actions/apt-install
+        uses: camunda/infra-global-github-actions/apt-install@35bad6aafa9872fbbe53725eab8e5365f2691897 # apt-install-1.0.0
         with:
           packages: strace
           no-install-recommends: "false"
@@ -382,7 +382,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build

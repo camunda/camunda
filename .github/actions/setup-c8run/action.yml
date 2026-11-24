@@ -93,7 +93,7 @@ runs:
       with:
         url: ${{ inputs.vault-address }}
         method: ${{ inputs.vault-jwt-role != '' && 'jwt' || 'approle' }}
-        path: ${{ inputs.vault-jwt-path }}
+        path: ${{ inputs.vault-jwt-role != '' && inputs.vault-jwt-path || '' }}
         role: ${{ inputs.vault-jwt-role }}
         jwtGithubAudience: ${{ inputs.vault-jwt-audience }}
         roleId: ${{ inputs.vault-jwt-role == '' && inputs.vault-role-id || '' }}
@@ -109,7 +109,36 @@ runs:
     - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
       with:
         go-version-file: c8run/go.mod
-        cache: false # disabling since not working anyways without a cache-dependency-path specified
+        cache: false
+
+    - name: Check if cache is enabled
+      id: is-cache-enabled
+      uses: camunda/infra-global-github-actions/is-cache-enabled@main
+
+    - name: Locate Go module cache
+      id: go-mod-cache
+      shell: bash
+      run: echo "path=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Go modules
+      if: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: 3
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.go-mod-cache.outputs.path }}
+        key: c8run-go-mod-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('c8run/go.sum') }}
+        restore-keys: c8run-go-mod-${{ runner.os }}-${{ runner.arch }}-
+
+    - name: Restore Go modules
+      if: ${{ !startsWith(github.ref_name, 'stable/') && github.ref_name != 'main' && steps.is-cache-enabled.outputs.is-cache-enabled == 'true' }}
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: 3
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.go-mod-cache.outputs.path }}
+        key: c8run-go-mod-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('c8run/go.sum') }}
+        restore-keys: c8run-go-mod-${{ runner.os }}-${{ runner.arch }}-
 
     - name: Setup Java 21
       uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0

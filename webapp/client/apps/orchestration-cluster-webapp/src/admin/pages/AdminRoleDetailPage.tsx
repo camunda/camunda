@@ -101,7 +101,9 @@ const AdminRoleDetailPage: React.FC<AdminRoleDetailPageProps> = ({
 
 				<Tabs
 					value={selectedTab}
-					onValueChange={(value) => onSearchChange({tab: value as MemberKind, page: undefined, pageSize: undefined})}
+					onValueChange={(value) =>
+						onSearchChange({tab: value as MemberKind, search: undefined, page: undefined, pageSize: undefined})
+					}
 				>
 					<TabsList aria-label={t('admin.roles.members.tabsLabel')}>
 						{visibleKinds.map((kind) => (

@@ -133,6 +133,7 @@ public final class ZeebeDesignTimeValidators {
                 ZeebeSubscription::getCorrelationKey, ZeebeConstants.ATTRIBUTE_CORRELATION_KEY));
     validators.add(new ZeebeFormDefinitionValidator());
     validators.add(new ZeebeCaseValidator());
+    validators.add(new ZeebeStageValidator());
     validators.add(new ZeebeUserTaskFormValidator());
     validators.add(
         ZeebeElementValidator.verifyThat(ZeebeCalledDecision.class)

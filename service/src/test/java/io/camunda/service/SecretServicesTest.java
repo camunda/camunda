@@ -764,7 +764,7 @@ public class SecretServicesTest {
     grantReadWildcard();
 
     // when
-    final var references = services.list(authentication, SecretStatus.ACTIVE).join();
+    final var references = services.list(authentication, Set.of(SecretStatus.ACTIVE)).join();
 
     // then
     assertThat(references)
@@ -780,7 +780,7 @@ public class SecretServicesTest {
     grantReadWildcard();
 
     // when
-    final var references = services.list(authentication, status).join();
+    final var references = services.list(authentication, Set.of(status)).join();
 
     // then
     assertThat(references).isEmpty();
@@ -794,16 +794,45 @@ public class SecretServicesTest {
     store.reportsStatus("a", SecretStatus.DISABLED).reportsStatus("b", SecretStatus.EXPIRED);
 
     // when
-    final var disabled = services.list(authentication, SecretStatus.DISABLED).join();
-    final var active = services.list(authentication, SecretStatus.ACTIVE).join();
-    final var expired = services.list(authentication, SecretStatus.EXPIRED).join();
-    final var notYetActive = services.list(authentication, SecretStatus.NOT_YET_ACTIVE).join();
+    final var disabled = services.list(authentication, Set.of(SecretStatus.DISABLED)).join();
+    final var active = services.list(authentication, Set.of(SecretStatus.ACTIVE)).join();
+    final var expired = services.list(authentication, Set.of(SecretStatus.EXPIRED)).join();
+    final var notYetActive =
+        services.list(authentication, Set.of(SecretStatus.NOT_YET_ACTIVE)).join();
 
     // then
     assertThat(disabled).containsExactly("camunda.secrets.a");
     assertThat(expired).containsExactly("camunda.secrets.b");
     assertThat(active).containsExactly("camunda.secrets.token");
     assertThat(notYetActive).isEmpty();
+  }
+
+  @Test
+  void shouldListSecretsInAnyOfTheRequestedStatuses() {
+    // given a store reporting a different state for each secret
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    store.reportsStatus("a", SecretStatus.DISABLED).reportsStatus("b", SecretStatus.EXPIRED);
+
+    // when
+    final var references =
+        services.list(authentication, Set.of(SecretStatus.DISABLED, SecretStatus.EXPIRED)).join();
+
+    // then
+    assertThat(references).containsExactly("camunda.secrets.a", "camunda.secrets.b");
+  }
+
+  @Test
+  void shouldListNothingWhenNoStatusMatches() {
+    // given
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+
+    // when a filter matches no status, e.g. {"$exists": false}
+    final var references = services.list(authentication, Set.of()).join();
+
+    // then
+    assertThat(references).isEmpty();
   }
 
   @Test
@@ -835,8 +864,8 @@ public class SecretServicesTest {
     final var multiStore = newSecretServices(PHYSICAL_TENANT_ID, new SecretStoreRegistry(stores));
 
     // when
-    final var disabledList = multiStore.list(authentication, SecretStatus.DISABLED).join();
-    final var activeList = multiStore.list(authentication, SecretStatus.ACTIVE).join();
+    final var disabledList = multiStore.list(authentication, Set.of(SecretStatus.DISABLED)).join();
+    final var activeList = multiStore.list(authentication, Set.of(SecretStatus.ACTIVE)).join();
     final var all = multiStore.list(authentication, null).join();
 
     // then each filter matches the store that reports that state, and an unfiltered list holds
@@ -856,8 +885,8 @@ public class SecretServicesTest {
     store.reportsStatus("a", SecretStatus.DISABLED);
 
     // when
-    final var active = services.list(authentication, SecretStatus.ACTIVE).join();
-    final var disabled = services.list(authentication, SecretStatus.DISABLED).join();
+    final var active = services.list(authentication, Set.of(SecretStatus.ACTIVE)).join();
+    final var disabled = services.list(authentication, Set.of(SecretStatus.DISABLED)).join();
 
     // then only the readable secret is listed, and only under its own status
     assertThat(active).isEmpty();
@@ -944,7 +973,7 @@ public class SecretServicesTest {
     store.listsNullEntry();
 
     // when
-    final var references = services.list(authentication, SecretStatus.ACTIVE).join();
+    final var references = services.list(authentication, Set.of(SecretStatus.ACTIVE)).join();
 
     // then the listing costs that one entry rather than failing as an internal error
     assertThat(references)
@@ -960,8 +989,8 @@ public class SecretServicesTest {
     store.reportsStatus("a", null);
 
     // when
-    final var active = services.list(authentication, SecretStatus.ACTIVE).join();
-    final var disabled = services.list(authentication, SecretStatus.DISABLED).join();
+    final var active = services.list(authentication, Set.of(SecretStatus.ACTIVE)).join();
+    final var disabled = services.list(authentication, Set.of(SecretStatus.DISABLED)).join();
 
     // then it is listed like any ACTIVE secret, and as in the unfiltered list
     assertThat(active)

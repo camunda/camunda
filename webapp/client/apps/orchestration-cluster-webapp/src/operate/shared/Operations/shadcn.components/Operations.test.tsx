@@ -50,16 +50,16 @@ describe('<Operations />', () => {
 		);
 
 		await expect
-			.element(screen.getByRole('button', {name: `Retry Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Retry instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 		await expect
-			.element(screen.getByRole('button', {name: `Cancel Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Cancel instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 		await expect
-			.element(screen.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Modify instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 		await expect
-			.element(screen.getByRole('button', {name: `Delete Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Delete instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 	});
 
@@ -73,7 +73,7 @@ describe('<Operations />', () => {
 		);
 
 		await expect
-			.element(screen.getByRole('button', {name: `Suspend Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Suspend instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 	});
 
@@ -87,7 +87,7 @@ describe('<Operations />', () => {
 		);
 
 		await expect
-			.element(screen.getByRole('button', {name: `Resume Instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
+			.element(screen.getByRole('button', {name: `Resume instance ${PROCESS_INSTANCE_KEY}`, exact: true}))
 			.toBeVisible();
 	});
 
@@ -97,22 +97,22 @@ describe('<Operations />', () => {
 		});
 
 		expect(
-			screen.getByRole('button', {name: `Retry Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
+			screen.getByRole('button', {name: `Retry instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
 		).toHaveLength(0);
 		expect(
-			screen.getByRole('button', {name: `Cancel Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
+			screen.getByRole('button', {name: `Cancel instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
 		).toHaveLength(0);
 		expect(
-			screen.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
+			screen.getByRole('button', {name: `Modify instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
 		).toHaveLength(0);
 		expect(
-			screen.getByRole('button', {name: `Delete Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
+			screen.getByRole('button', {name: `Delete instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
 		).toHaveLength(0);
 		expect(
-			screen.getByRole('button', {name: `Suspend Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
+			screen.getByRole('button', {name: `Suspend instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
 		).toHaveLength(0);
 		expect(
-			screen.getByRole('button', {name: `Resume Instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
+			screen.getByRole('button', {name: `Resume instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
 		).toHaveLength(0);
 	});
 
@@ -403,9 +403,7 @@ describe('<Operations />', () => {
 		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
 		await expect.element(screen.getByTestId('passive-cancellation-modal')).toBeVisible();
 
-		await userEvent.click(document.querySelector<HTMLElement>('[data-slot="dialog-overlay"]')!, {
-			position: {x: 5, y: 5},
-		});
+		await userEvent.click(screen.baseElement, {position: {x: 5, y: 5}});
 
 		await expect.element(screen.getByTestId('passive-cancellation-modal')).toBeVisible();
 	});

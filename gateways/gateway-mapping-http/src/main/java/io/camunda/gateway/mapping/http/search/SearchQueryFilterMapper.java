@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.search;
 
+import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.isEmptyAdvancedFilter;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToIntegerOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToKeyOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOffsetDateTimeOperations;
@@ -14,6 +15,7 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_FILTER_PROPERTY;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
@@ -29,6 +31,9 @@ import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
 import io.camunda.gateway.mapping.http.converters.BatchOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter;
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
+import io.camunda.gateway.mapping.http.converters.VariableHistoryItemActorTypeConverter;
+import io.camunda.gateway.mapping.http.converters.VariableHistoryItemOperationTypeConverter;
+import io.camunda.gateway.mapping.http.converters.VariableHistoryItemVariableOperationTypeConverter;
 import io.camunda.gateway.mapping.http.mapper.ClusterVariableMapper;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
@@ -92,12 +97,17 @@ import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
+import io.camunda.search.filter.VariableHistoryItemFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -648,6 +658,10 @@ public class SearchQueryFilterMapper {
     if (filter.equals(SearchQueryRequestMapper.EMPTY_PROCESS_INSTANCE_FILTER)) {
       return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
     }
+    final var emptyPropertyViolations = emptyProcessInstanceFilterViolations(filter);
+    if (!emptyPropertyViolations.isEmpty()) {
+      return Either.left(emptyPropertyViolations);
+    }
     return toProcessInstanceFilter(filter);
   }
 
@@ -658,6 +672,10 @@ public class SearchQueryFilterMapper {
     }
     if (filter.equals(SearchQueryRequestMapper.EMPTY_DECISION_INSTANCE_FILTER)) {
       return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
+    }
+    final var emptyPropertyViolations = emptyFilterPropertyViolations(filter);
+    if (!emptyPropertyViolations.isEmpty()) {
+      return Either.left(emptyPropertyViolations);
     }
     return toDecisionInstanceFilter(filter);
   }
@@ -670,7 +688,65 @@ public class SearchQueryFilterMapper {
     if (filter.equals(SearchQueryRequestMapper.EMPTY_JOB_FILTER)) {
       return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
     }
+    final var emptyPropertyViolations = emptyFilterPropertyViolations(filter);
+    if (!emptyPropertyViolations.isEmpty()) {
+      return Either.left(emptyPropertyViolations);
+    }
     return toJobFilter(filter);
+  }
+
+  /** Like {@link #emptyFilterPropertyViolations}, also covering the {@code $or} branches. */
+  private static List<String> emptyProcessInstanceFilterViolations(
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter filter) {
+    final var violations = new ArrayList<>(emptyFilterPropertyViolations(filter));
+    if (filter.get$Or() != null) {
+      for (final var or : filter.get$Or()) {
+        if (or != null) {
+          violations.addAll(emptyFilterPropertyViolations(or));
+        }
+      }
+    }
+    return violations.stream().distinct().toList();
+  }
+
+  /**
+   * One violation per property of the filter that is an empty filter object, such as {@code {"$in":
+   * []}}. The mapping drops these, which would widen a batch operation to everything the remaining
+   * criteria match. The model cannot tell an explicit empty {@code $in} from an absent one, so the
+   * empty object is what we reject.
+   */
+  private static List<String> emptyFilterPropertyViolations(final Object filter) {
+    return Arrays.stream(propertyDescriptors(filter.getClass()))
+        .filter(property -> isEmptyFilterProperty(property, filter))
+        .map(property -> ERROR_MESSAGE_EMPTY_FILTER_PROPERTY.formatted(property.getName()))
+        .toList();
+  }
+
+  private static boolean isEmptyFilterProperty(
+      final PropertyDescriptor property, final Object filter) {
+    final var value = readProperty(property, filter);
+    return value != null && isEmptyAdvancedFilter(value);
+  }
+
+  private static PropertyDescriptor[] propertyDescriptors(final Class<?> type) {
+    try {
+      return Introspector.getBeanInfo(type, Object.class).getPropertyDescriptors();
+    } catch (final IntrospectionException e) {
+      throw new IllegalStateException("Failed to introspect " + type.getName(), e);
+    }
+  }
+
+  private static @Nullable Object readProperty(
+      final PropertyDescriptor property, final Object filter) {
+    final var getter = property.getReadMethod();
+    if (getter == null) {
+      return null;
+    }
+    try {
+      return getter.invoke(filter);
+    } catch (final ReflectiveOperationException e) {
+      throw new IllegalStateException("Failed to read filter property " + property.getName(), e);
+    }
   }
 
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
@@ -1457,6 +1533,73 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getInboundChannelToolName())
         .map(mapToStringOperations())
         .ifPresent(builder::inboundChannelToolNameOperations);
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, VariableHistoryItemFilter> toVariableHistoryItemFilter(
+      final io.camunda.gateway.protocol.model.@Nullable VariableHistoryItemFilter filter) {
+    if (filter == null) {
+      return Either.right(FilterBuilders.variableHistoryItem().build());
+    }
+
+    final var builder = FilterBuilders.variableHistoryItem();
+    final List<String> validationErrors = new ArrayList<>();
+    ofNullable(filter.getVariableKey())
+        .map(mapToKeyOperations("variableKey", validationErrors))
+        .ifPresent(builder::variableKeyOperations);
+    ofNullable(filter.getProcessInstanceKey())
+        .map(mapToKeyOperations("processInstanceKey", validationErrors))
+        .ifPresent(builder::processInstanceKeyOperations);
+    ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+    ofNullable(filter.getScopeKey())
+        .map(mapToKeyOperations("scopeKey", validationErrors))
+        .ifPresent(builder::scopeKeyOperations);
+    ofNullable(filter.getElementId())
+        .map(mapToStringOperations())
+        .ifPresent(builder::elementIdOperations);
+    ofNullable(filter.getElementInstanceKey())
+        .map(mapToKeyOperations("elementInstanceKey", validationErrors))
+        .ifPresent(builder::elementInstanceKeyOperations);
+    ofNullable(filter.getVariableHistoryItemKey())
+        .map(mapToKeyOperations("variableHistoryItemKey", validationErrors))
+        .ifPresent(builder::variableHistoryItemKeyOperations);
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+        .ifPresent(builder::processDefinitionKeyOperations);
+    ofNullable(filter.getProcessDefinitionId())
+        .map(mapToStringOperations())
+        .ifPresent(builder::processDefinitionIdOperations);
+    ofNullable(filter.getTenantId())
+        .map(mapToStringOperations())
+        .ifPresent(builder::tenantIdOperations);
+    ofNullable(filter.getTimestamp())
+        .map(mapToOffsetDateTimeOperations("timestamp", validationErrors))
+        .ifPresent(builder::timestampOperations);
+    ofNullable(filter.getOperationType())
+        .map(
+            mapToStringOperations(
+                "operationType", validationErrors, new VariableHistoryItemOperationTypeConverter()))
+        .ifPresent(builder::operationTypeOperations);
+    ofNullable(filter.getVariableOperationType())
+        .map(
+            mapToStringOperations(
+                "variableOperationType",
+                validationErrors,
+                new VariableHistoryItemVariableOperationTypeConverter()))
+        .ifPresent(builder::variableOperationTypeOperations);
+    ofNullable(filter.getActorType())
+        .map(
+            mapToStringOperations(
+                "actorType", validationErrors, new VariableHistoryItemActorTypeConverter()))
+        .ifPresent(builder::actorTypeOperations);
+    ofNullable(filter.getActorId())
+        .map(mapToStringOperations())
+        .ifPresent(builder::actorIdOperations);
+    ofNullable(filter.getAgentElementId())
+        .map(mapToStringOperations())
+        .ifPresent(builder::agentElementIdOperations);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

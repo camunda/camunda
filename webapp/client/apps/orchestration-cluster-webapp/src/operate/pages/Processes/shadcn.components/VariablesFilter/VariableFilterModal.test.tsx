@@ -21,8 +21,19 @@ async function renderModal() {
 }
 
 describe('<VariableFilterModal /> (design system)', () => {
-	afterEach(() => {
+	afterEach(async () => {
 		sessionStorage.clear();
+		const monaco = await import('monaco-editor');
+		const models = monaco.editor.getModels().filter((model) => model.getLanguageId() === 'json');
+		if (models.length > 0) {
+			const getWorker = await monaco.json.getWorker();
+			await Promise.all(
+				models.map(async (model) => {
+					const worker = await getWorker(model.uri);
+					await worker.parseJSONDocument(model.uri.toString());
+				}),
+			);
+		}
 	});
 
 	it('should expose the Fields content as a labelled tab panel', async () => {
@@ -93,5 +104,25 @@ describe('<VariableFilterModal /> (design system)', () => {
 		await expect.element(dialog.getByRole('textbox', {name: 'Name'}).last()).toHaveValue('third');
 		await expect.element(dialog.getByRole('textbox', {name: 'Value'}).last()).toHaveValue('3');
 		await expect.element(dialog.getByRole('textbox', {name: 'Name'}).nth(2)).not.toBeInTheDocument();
+	});
+
+	it('should stay on the JSON tab with an error until the JSON is valid, then fill the Fields rows', async () => {
+		setVariableConditions([{name: 'status', operator: 'equals', value: '"open"'}]);
+		const {dialog} = await renderModal();
+		await userEvent.click(dialog.getByRole('tab', {name: 'JSON'}));
+		await userEvent.click(dialog.getByText('"status"', {exact: true}));
+
+		await userEvent.keyboard('{End}x');
+		await userEvent.click(dialog.getByRole('tab', {name: 'Fields'}));
+
+		await expect.element(dialog.getByRole('tab', {name: 'JSON'})).toHaveAttribute('aria-selected', 'true');
+		await expect.element(dialog.getByText('Could not apply JSON')).toBeVisible();
+
+		await userEvent.click(dialog.getByText('"status"', {exact: true}));
+		await userEvent.keyboard('{End}{Backspace}');
+		await userEvent.click(dialog.getByRole('tab', {name: 'Fields'}));
+
+		await expect.element(dialog.getByRole('textbox', {name: 'Name'})).toHaveValue('status');
+		await expect.element(dialog.getByText('Could not apply JSON')).not.toBeInTheDocument();
 	});
 });
