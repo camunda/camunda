@@ -67,7 +67,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -241,7 +241,8 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
     // when
     final List<MeasureDto<?>> measures =
         withUserAuthorizedFor(
-            List.of(tenantA, tenantB), () -> evaluateMeasures(reportId, noExtraFilters()));
+            List.of(tenantA, tenantB),
+            userId -> evaluateMeasures(userId, reportId, noExtraFilters()));
 
     // then only the run on tenant A, where the agent has a definition, is counted
     assertThat(measures)
@@ -341,8 +342,15 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
 
   private List<MeasureDto<?>> evaluateMeasures(
       final String reportId, final AdditionalProcessReportEvaluationFilterDto filters) {
+    return evaluateMeasures(USER_ID, reportId, filters);
+  }
+
+  private List<MeasureDto<?>> evaluateMeasures(
+      final String userId,
+      final String reportId,
+      final AdditionalProcessReportEvaluationFilterDto filters) {
     final List<MeasureDto<?>> measures = new ArrayList<>();
-    evaluate(reportId, filters)
+    evaluate(userId, reportId, filters)
         .getCommandEvaluationResults()
         .forEach(result -> measures.addAll(result.getMeasures()));
     return measures;
@@ -350,11 +358,18 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
 
   private SingleReportEvaluationResult<?> evaluate(
       final String reportId, final AdditionalProcessReportEvaluationFilterDto filters) {
+    return evaluate(USER_ID, reportId, filters);
+  }
+
+  private SingleReportEvaluationResult<?> evaluate(
+      final String userId,
+      final String reportId,
+      final AdditionalProcessReportEvaluationFilterDto filters) {
     return (SingleReportEvaluationResult<?>)
         embeddedOptimizeExtension
             .getBean(ReportEvaluationService.class)
             .evaluateSavedReportWithAdditionalFilters(
-                USER_ID, ZoneId.of("UTC"), reportId, filters, null)
+                userId, ZoneId.of("UTC"), reportId, filters, null)
             .getEvaluationResult();
   }
 
@@ -473,14 +488,17 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
    * shared authorization service for the call instead of replaced as a bean, which would start a
    * second Spring context.
    */
-  private <T> T withUserAuthorizedFor(final List<String> tenantIds, final Supplier<T> call) {
+  private <T> T withUserAuthorizedFor(
+      final List<String> tenantIds, final Function<String, T> callAsUser) {
     final CamundaCCSMTenantAuthorizationService tenantAuthorizationService =
         embeddedOptimizeExtension.getBean(CamundaCCSMTenantAuthorizationService.class);
     final Object originalTokenService =
         ReflectionTestUtils.getField(tenantAuthorizationService, "ccsmTokenService");
-    final String token = "token-" + USER_ID;
+    // a new user per call, because authorized tenants are cached per user
+    final String userId = "user-" + UUID.randomUUID();
+    final String token = "token-" + userId;
     final CCSMTokenService tokenService = mock(CCSMTokenService.class);
-    when(tokenService.getCurrentUserIdFromAuthToken()).thenReturn(Optional.of(USER_ID));
+    when(tokenService.getCurrentUserIdFromAuthToken()).thenReturn(Optional.of(userId));
     when(tokenService.getCurrentUserAuthToken()).thenReturn(Optional.of(token));
     when(tokenService.getAuthorizedTenantsFromToken(token))
         .thenReturn(
@@ -490,7 +508,7 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
     embeddedOptimizeExtension.getConfigurationService().setMultiTenancyEnabled(true);
     ReflectionTestUtils.setField(tenantAuthorizationService, "ccsmTokenService", tokenService);
     try {
-      return call.get();
+      return callAsUser.apply(userId);
     } finally {
       ReflectionTestUtils.setField(
           tenantAuthorizationService, "ccsmTokenService", originalTokenService);
