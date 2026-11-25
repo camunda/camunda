@@ -78,8 +78,20 @@ public final class TimerSuspensionGateTest {
 
   @Test
   public void shouldNotFireTwiceWhenDuplicateTriggerIsBufferedWhileSuspended() {
-    // given
-    final long processInstanceKey = deployAndStartProcessWithTimer(Strings.newRandomValidBpmnId());
+    // given - a task after the timer keeps the instance active once the timer fires, so the
+    // duplicate TRIGGER is still drained instead of cleared with the buffer
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1S"))
+                .serviceTask("task", t -> t.zeebeJobType(processId))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
     final var created =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -111,16 +123,16 @@ public final class TimerSuspensionGateTest {
     ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
 
     // then - only the first drained TRIGGER fires; the duplicate is NOT_FOUND
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementType(BpmnElementType.PROCESS)
-        .await();
+    final var resumed =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUMED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .limit(r -> r.getPosition() >= resumed.getPosition())
                 .timerRecords()
                 .withIntent(TimerIntent.TRIGGERED)
-                .filter(r -> r.getValue().getProcessInstanceKey() == processInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .count())
         .isEqualTo(1);
     final var duplicateRejection =
@@ -129,6 +141,7 @@ public final class TimerSuspensionGateTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     assertThat(duplicateRejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(duplicateRejection.getPosition()).isLessThan(resumed.getPosition());
   }
 
   @Test
