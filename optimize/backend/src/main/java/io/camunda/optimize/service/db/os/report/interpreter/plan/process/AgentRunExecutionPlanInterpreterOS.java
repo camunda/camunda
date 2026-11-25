@@ -12,14 +12,25 @@ import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_INSTANCE_IN
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.ProcessGroupByInterpreterFacadeOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
+import io.camunda.optimize.service.db.os.util.DefinitionQueryUtilOS;
+import io.camunda.optimize.service.db.reader.AgentDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.plan.process.AgentRunExecutionPlanInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
+import io.camunda.optimize.service.db.schema.index.AgentRunIndex;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -33,18 +44,52 @@ public class AgentRunExecutionPlanInterpreterOS extends AbstractProcessExecution
   private final ProcessQueryFilterEnhancerOS queryFilterEnhancer;
   private final ProcessGroupByInterpreterFacadeOS groupByInterpreter;
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
+  private final AgentDefinitionReader agentDefinitionReader;
 
   public AgentRunExecutionPlanInterpreterOS(
       final ProcessDefinitionReader processDefinitionReader,
       final OptimizeOpenSearchClient osClient,
       final ProcessQueryFilterEnhancerOS queryFilterEnhancer,
       final ProcessGroupByInterpreterFacadeOS groupByInterpreter,
-      final ProcessViewInterpreterFacadeOS viewInterpreter) {
+      final ProcessViewInterpreterFacadeOS viewInterpreter,
+      final AgentDefinitionReader agentDefinitionReader) {
     this.processDefinitionReader = processDefinitionReader;
     this.osClient = osClient;
     this.queryFilterEnhancer = queryFilterEnhancer;
     this.groupByInterpreter = groupByInterpreter;
     this.viewInterpreter = viewInterpreter;
+    this.agentDefinitionReader = agentDefinitionReader;
+  }
+
+  @Override
+  public BoolQuery.Builder baseQueryBuilder(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return super.baseQueryBuilder(context).filter(definedAgentsQuery(context));
+  }
+
+  @Override
+  protected BoolQuery.Builder unfilteredBaseQueryBuilder(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return super.unfilteredBaseQueryBuilder(context).filter(definedAgentsQuery(context));
+  }
+
+  private Query definedAgentsQuery(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    final Map<String, Set<String>> agentIdsByTenant =
+        AgentRunExecutionPlanInterpreter.definedAgentIdsByTenant(
+            agentDefinitionReader, context.getReportData());
+    if (agentIdsByTenant.isEmpty()) {
+      return QueryDSL.not(QueryDSL.matchAll());
+    }
+    final List<Query> tenantQueries = new ArrayList<>();
+    agentIdsByTenant.forEach(
+        (tenantId, agentIds) ->
+            tenantQueries.add(
+                QueryDSL.and(
+                    DefinitionQueryUtilOS.createTenantIdQuery(
+                        AgentRunIndex.TENANT_ID, Collections.singletonList(tenantId)),
+                    QueryDSL.stringTerms(AgentRunIndex.AGENT_ID, agentIds))));
+    return QueryDSL.or("1", tenantQueries.toArray(Query[]::new));
   }
 
   @Override

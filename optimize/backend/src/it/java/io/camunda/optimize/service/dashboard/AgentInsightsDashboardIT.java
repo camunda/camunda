@@ -36,6 +36,7 @@ import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import io.camunda.optimize.dto.optimize.query.agent.AgentDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
@@ -48,6 +49,7 @@ import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.reader.EntitiesReader;
+import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.report.ReportEvaluationService;
@@ -122,14 +124,19 @@ class AgentInsightsDashboardIT extends AbstractBrokerlessZeebeCCSMIT {
 
   @Test
   void shouldSumTokensOfCompletedRunsInTheRange() {
-    // given two completed runs in the range, one completed before it and one still running
+    // given two completed runs in the range, one completed before it, one still running, and one
+    // of an agent whose definition is not imported yet
     final String processKey = uniqueKey();
     persistProcessDefinition(processKey);
+    persistAgentDefinition(processKey);
+    final AgentRunDto runOfUndefinedAgent = completedRun(processKey, 10_000L, 1);
+    runOfUndefinedAgent.setAgentId(processKey + ":agent-without-definition");
     persistAgentRuns(
         completedRun(processKey, 1L, 1),
         completedRun(processKey, 3L, 1),
         completedRun(processKey, 100L, 40),
-        runningRun(processKey, 1000L));
+        runningRun(processKey, 1000L),
+        runOfUndefinedAgent);
 
     // when
     final List<MeasureDto<?>> measures =
@@ -240,6 +247,27 @@ class AgentInsightsDashboardIT extends AbstractBrokerlessZeebeCCSMIT {
                     .tenantId(ZEEBE_DEFAULT_TENANT_ID)
                     .bpmn20Xml("<definitions/>")
                     .build()));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  /** The agent {@code <key>:agent}, the agent id of the test runs. */
+  private void persistAgentDefinition(final String key) {
+    final AgentDefinitionDto agentDefinition = new AgentDefinitionDto();
+    agentDefinition.setAgentId(key + ":agent");
+    agentDefinition.setTenantId(ZEEBE_DEFAULT_TENANT_ID);
+    agentDefinition.setProcessDefinitionKey(key);
+    agentDefinition.setFlowNodeId("agent");
+    agentDefinition.setName("Agent");
+    agentDefinition.setAgentType("AI_AGENT_TASK");
+    agentDefinition.setProcessDefinitionVersions(List.of("1"));
+    embeddedOptimizeExtension
+        .getBean(DatabaseClient.class)
+        .executeImportRequestsAsBulk(
+            "test agent definitions",
+            embeddedOptimizeExtension
+                .getBean(AgentDefinitionWriter.class)
+                .generateAgentDefinitionImports(List.of(agentDefinition)),
+            false);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
