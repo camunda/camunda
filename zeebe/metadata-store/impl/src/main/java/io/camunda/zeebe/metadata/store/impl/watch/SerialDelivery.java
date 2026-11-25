@@ -20,9 +20,9 @@ import org.slf4j.LoggerFactory;
  * A FIFO queue of calls on the executor of one subscription, with at most one drain running at a
  * time. The executor itself need not be single-threaded or FIFO: the calls still run one at a time
  * and in the order they were queued. A call that throws an exception is logged and does not stop
- * the ones after it; an error propagates to the executor, and the remaining calls run with the next
- * one queued. An executor that rejects a drain, for example because its consumer shut it down, gets
- * no further drains: the queued calls are dropped and the rejection is handed to the owner, so the
+ * the ones after it; an error propagates to the executor, and the remaining calls run in a new
+ * drain. An executor that rejects a drain, for example because its consumer shut it down, gets no
+ * further drains: the queued calls are dropped and the rejection is handed to the owner, so the
  * store never fails because of a consumer's executor.
  */
 final class SerialDelivery {
@@ -42,6 +42,11 @@ final class SerialDelivery {
   void enqueue(final Runnable call) {
     queue.add(call);
     scheduleDrain();
+  }
+
+  /** Drops the queued calls; a call that is running finishes. */
+  void clear() {
+    queue.clear();
   }
 
   private void scheduleDrain() {
@@ -68,10 +73,11 @@ final class SerialDelivery {
       }
     } finally {
       draining.set(false);
-    }
-    // a call queued after the last poll but before the flag was cleared found the drain running
-    if (!queue.isEmpty()) {
-      scheduleDrain();
+      // calls left by an error, or queued after the last poll while the flag was still set, would
+      // otherwise wait for the next call, which may never come
+      if (!queue.isEmpty()) {
+        scheduleDrain();
+      }
     }
   }
 }

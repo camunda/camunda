@@ -297,6 +297,40 @@ final class WatchRegistryTest {
   }
 
   @Test
+  void shouldDeliverCallsQueuedBehindListenerError() {
+    // given - an executor that runs its tasks only later, so events and the end queue up
+    final var tasks = new ArrayDeque<Runnable>();
+    final var log = new CopyOnWriteArrayList<String>();
+    registry.watch(
+        StoreKey.of(CONFIG, "a"),
+        listener(
+            event -> {
+              log.add(event.key().key());
+              if (event.key().key().equals("a.x")) {
+                throw new AssertionError("listener error");
+              }
+            },
+            reason -> log.add("closed " + reason)),
+        tasks::add);
+    apply(put("a.x"));
+    apply(put("a.y"));
+    registry.closeAll(CloseReason.STORE_CLOSED);
+
+    // when - each task runs as on a pool thread that survives the error
+    Runnable task;
+    while ((task = tasks.poll()) != null) {
+      try {
+        task.run();
+      } catch (final AssertionError ignored) {
+        // the executor carries on with its next task
+      }
+    }
+
+    // then
+    assertThat(log).containsExactly("a.x", "a.y", "closed " + CloseReason.STORE_CLOSED);
+  }
+
+  @Test
   void shouldEndOtherSubscriptionsWhenListenerExecutorRejects() {
     // given - a consumer that shut its executor down before the store closed
     final var shutDown = Executors.newSingleThreadExecutor();

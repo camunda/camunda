@@ -49,6 +49,8 @@ final class StoreSubscription<E> implements Subscription {
   @Override
   public void close() {
     if (closedByConsumer.compareAndSet(false, true)) {
+      // the queued calls would be skipped anyway; dropping them frees them behind a slow listener
+      delivery.clear();
       unregister.accept(this);
     }
   }
@@ -67,8 +69,14 @@ final class StoreSubscription<E> implements Subscription {
     }
   }
 
-  /** Queues a call to the listener, which is skipped if the consumer closed the subscription. */
+  /**
+   * Queues a call to the listener, unless the consumer closed the subscription. The call checks
+   * again when it runs, since the consumer may close it while the call waits.
+   */
   private void deliver(final Runnable call) {
+    if (closedByConsumer.get()) {
+      return;
+    }
     delivery.enqueue(
         () -> {
           if (!closedByConsumer.get()) {
