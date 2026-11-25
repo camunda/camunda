@@ -15,11 +15,13 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.ResolvableType;
 import org.springframework.mock.env.MockEnvironment;
 
 class UnifiedConfigurationHelperTest {
@@ -210,6 +212,30 @@ class UnifiedConfigurationHelperTest {
   }
 
   @Test
+  void testErrorForDefaultedMapPropertyDoesNotSuggestKeyValueLine() {
+    // given
+    final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
+    final Map<String, Integer> defaultValue = Map.of("my-index", 1);
+
+    // when
+    setPropertyValues("legacy.prop1.my-index", "2");
+
+    // then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () ->
+                UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+                    NEW_PROPERTY,
+                    defaultValue,
+                    ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
+                    mode,
+                    Set.of("legacy.prop1")))
+        .withMessageContaining("is not set")
+        .withMessageContaining(NEW_PROPERTY + " to the value of the legacy properties")
+        .withMessageNotContaining(NEW_PROPERTY + "=");
+  }
+
+  @Test
   void testErrorForDefaultedNewPropertyDoesNotShowSensitiveValues() {
     // given
     final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
@@ -224,6 +250,8 @@ class UnifiedConfigurationHelperTest {
                 UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
                     NEW_PROPERTY, "defaultSecret", String.class, mode, SINGLE_LEGACY_PROPERTY))
         .withMessageContaining("is not set")
+        .withMessageContaining(NEW_PROPERTY + " to the value of the legacy properties")
+        .withMessageNotContaining(NEW_PROPERTY + "=")
         .withMessageNotContaining("legacySecret")
         .withMessageNotContaining("defaultSecret");
   }

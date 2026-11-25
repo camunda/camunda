@@ -582,17 +582,23 @@ public class UnifiedConfigurationHelper {
                   displayValue(legacyValue, isSensitiveData),
                   String.join(", ", legacyProperties))
               : String.format(
-                  "Ambiguous configuration. The legacy properties %s set '%s', which conflicts with the default '%s' of '%s'. '%s' is not set, so its default was used. Set %s=%s, or remove the legacy properties %s.",
+                  "Ambiguous configuration. The legacy properties %s set '%s', which conflicts with the default '%s' of '%s'. '%s' is not set, so its default was used. Set %s, or remove the legacy properties %s.",
                   String.join(", ", legacyProperties),
                   displayValue(legacyValue, isSensitiveData),
                   displayValue(newValue, isSensitiveData),
                   newProperty,
                   newProperty,
-                  newProperty,
-                  displayValue(legacyValue, isSensitiveData),
+                  isSensitiveData || isStructured(legacyValue)
+                      ? newProperty + " to the value of the legacy properties"
+                      : newProperty + "=" + legacyValue,
                   String.join(", ", legacyProperties));
       throw new UnifiedConfigurationException(errorMessage);
     }
+  }
+
+  /** Maps and collections have no single-line {@code key=value} form to suggest to the operator. */
+  private static boolean isStructured(final Object value) {
+    return value instanceof Map || value instanceof Collection;
   }
 
   private static <T> T backwardsCompatibilitySupported(

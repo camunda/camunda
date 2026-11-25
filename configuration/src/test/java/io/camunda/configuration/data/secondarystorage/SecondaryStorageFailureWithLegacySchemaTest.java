@@ -104,7 +104,9 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               .rootCause()
               .hasMessageContaining("Ambiguous configuration")
               .hasMessageContaining("conflicts")
-              .hasMessageContaining("is not set");
+              .hasMessageContaining("is not set")
+              .hasMessageContaining(
+                  "camunda.data.secondary-storage.elasticsearch.url=http://some-legacy-url:/1234");
         });
   }
 }
