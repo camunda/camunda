@@ -93,6 +93,7 @@ final class PhysicalTenantOverridePolicyValidation {
               "system.cpu-thread-count",
               "system.io-thread-count",
               "system.actor",
+              "system.physical-tenants",
               "system.upgrade",
               "system.restore",
               // camunda.license.* — one license per installation

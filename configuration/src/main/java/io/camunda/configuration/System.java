@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.configuration.system.Actor;
 import io.camunda.configuration.system.LegacyQueryApi;
+import io.camunda.configuration.system.PhysicalTenants;
 import io.camunda.configuration.system.Restore;
 import io.camunda.configuration.system.Upgrade;
 import java.util.Set;
@@ -47,6 +48,7 @@ public class System {
 
   @NestedConfigurationProperty private Actor actor = new Actor();
   @NestedConfigurationProperty private Upgrade upgrade = new Upgrade();
+  @NestedConfigurationProperty private PhysicalTenants physicalTenants = new PhysicalTenants();
   @NestedConfigurationProperty private Restore restore = new Restore();
   @NestedConfigurationProperty private LegacyQueryApi legacyQueryApi = new LegacyQueryApi();
 
@@ -95,6 +97,14 @@ public class System {
 
   public void setActor(final Actor actor) {
     this.actor = actor;
+  }
+
+  public PhysicalTenants getPhysicalTenants() {
+    return physicalTenants;
+  }
+
+  public void setPhysicalTenants(final PhysicalTenants physicalTenants) {
+    this.physicalTenants = physicalTenants;
   }
 
   public Upgrade getUpgrade() {

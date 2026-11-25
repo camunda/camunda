@@ -2038,6 +2038,19 @@ camunda: # Type: io.camunda.configuration.Camunda
       # Enables the broker's internal legacy query API.
       enabled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_LEGACYQUERYAPI_ENABLED
     
+    physical-tenants: # Type: io.camunda.configuration.system.PhysicalTenants  
+      actor-pool: # Type: io.camunda.configuration.system.ActorPool  
+        # The number of CPU-bound actor threads of the pool of each physical tenant with partitions on this
+        # broker. Only used when the pool is enabled. Experimental.
+        cpu-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_PHYSICALTENANTS_ACTORPOOL_CPUTHREADCOUNT
+        # Whether each physical tenant with partitions on this broker gets its own actor thread pool, in
+        # addition to the shared pool sized by cpu-thread-count and io-thread-count of the system.
+        # Experimental.
+        enabled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_PHYSICALTENANTS_ACTORPOOL_ENABLED
+        # The number of IO-bound actor threads of the pool of each physical tenant with partitions on this
+        # broker. Only used when the pool is enabled. Experimental.
+        io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_PHYSICALTENANTS_ACTORPOOL_IOTHREADCOUNT
+    
     restore: # Type: io.camunda.configuration.system.Restore  
       ignore-files-in-target: null # Type: List<String>, Env: CAMUNDA_SYSTEM_RESTORE_IGNOREFILESINTARGET
       validate-config: true # Type: Boolean, Env: CAMUNDA_SYSTEM_RESTORE_VALIDATECONFIG

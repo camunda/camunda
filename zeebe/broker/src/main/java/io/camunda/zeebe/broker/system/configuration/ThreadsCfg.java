@@ -10,6 +10,9 @@ package io.camunda.zeebe.broker.system.configuration;
 public final class ThreadsCfg implements ConfigurationEntry {
   private int cpuThreadCount = 2;
   private int ioThreadCount = 2;
+  private boolean physicalTenantPoolEnabled = false;
+  private int physicalTenantCpuThreadCount = 2;
+  private int physicalTenantIoThreadCount = 2;
 
   public int getCpuThreadCount() {
     return cpuThreadCount;
@@ -27,6 +30,30 @@ public final class ThreadsCfg implements ConfigurationEntry {
     ioThreadCount = ioThreads;
   }
 
+  public boolean isPhysicalTenantPoolEnabled() {
+    return physicalTenantPoolEnabled;
+  }
+
+  public void setPhysicalTenantPoolEnabled(final boolean physicalTenantPoolEnabled) {
+    this.physicalTenantPoolEnabled = physicalTenantPoolEnabled;
+  }
+
+  public int getPhysicalTenantCpuThreadCount() {
+    return physicalTenantCpuThreadCount;
+  }
+
+  public void setPhysicalTenantCpuThreadCount(final int physicalTenantCpuThreadCount) {
+    this.physicalTenantCpuThreadCount = physicalTenantCpuThreadCount;
+  }
+
+  public int getPhysicalTenantIoThreadCount() {
+    return physicalTenantIoThreadCount;
+  }
+
+  public void setPhysicalTenantIoThreadCount(final int physicalTenantIoThreadCount) {
+    this.physicalTenantIoThreadCount = physicalTenantIoThreadCount;
+  }
+
   @Override
   public String toString() {
     return "ThreadsCfg{"
@@ -34,6 +61,12 @@ public final class ThreadsCfg implements ConfigurationEntry {
         + cpuThreadCount
         + ", ioThreadCount="
         + ioThreadCount
+        + ", physicalTenantPoolEnabled="
+        + physicalTenantPoolEnabled
+        + ", physicalTenantCpuThreadCount="
+        + physicalTenantCpuThreadCount
+        + ", physicalTenantIoThreadCount="
+        + physicalTenantIoThreadCount
         + '}';
   }
 }

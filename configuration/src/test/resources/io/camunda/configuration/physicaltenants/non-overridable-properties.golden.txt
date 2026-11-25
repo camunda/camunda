@@ -157,6 +157,9 @@ system.actor.idle.max-yields
 system.actor.idle.min-park-period
 system.cpu-thread-count
 system.io-thread-count
+system.physical-tenants.actor-pool.cpu-thread-count
+system.physical-tenants.actor-pool.enabled
+system.physical-tenants.actor-pool.io-thread-count
 system.restore.ignore-files-in-target
 system.restore.validate-config
 system.upgrade.enable-version-check
