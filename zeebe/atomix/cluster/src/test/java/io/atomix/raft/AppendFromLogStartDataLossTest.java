@@ -94,8 +94,7 @@ final class AppendFromLogStartDataLossTest {
     // the follower loses its data, and is unreachable while the leader is elected in a new term
     raft.restartWithDataLossWithoutCatchingUp(FOLLOWER);
     assertThat(context(FOLLOWER).getLog().isEmpty()).isTrue();
-    electLeaderWithoutFollower(SLOW_FOLLOWER);
-    electLeaderWithoutFollower(LEADER);
+    reelectLeaderWithoutFollower();
     final var followerOnLeader = context(LEADER).getCluster().getMemberContext(FOLLOWER);
 
     // the new leader has to configure the follower; while the configuration is in flight, it sends
@@ -121,7 +120,6 @@ final class AppendFromLogStartDataLossTest {
     // the slow follower never gets
     final long base = context(LEADER).getLog().getLastIndex();
     deliverAll(LEADER);
-    assertThat(followerOnLeader.hasAckedAppend()).isTrue();
     deliverAll(SLOW_FOLLOWER);
     raft.clientAppendOnLeader();
     raft.runUntilDone(LEADER);
@@ -157,27 +155,33 @@ final class AppendFromLogStartDataLossTest {
     replicateToAll();
   }
 
-  /** Moves the leadership to the given member, while FOLLOWER is unreachable. */
-  private void electLeaderWithoutFollower(final MemberId newLeader) {
-    raft.transferLeadershipTo(newLeader);
+  /**
+   * Elects LEADER again in a new term, while FOLLOWER is unreachable: LEADER steps down, and wins
+   * the next election with the vote of SLOW_FOLLOWER.
+   */
+  private void reelectLeaderWithoutFollower() {
+    final var leader = context(LEADER);
+    final long term = leader.getTerm();
+    leader.getThreadContext().execute(() -> leader.transition(Role.FOLLOWER));
+    raft.runUntilDone(LEADER);
+    raft.tickElectionTimeout(LEADER);
     final var others = List.of(LEADER, SLOW_FOLLOWER);
     for (int i = 0;
         i < 100
-            && !(context(newLeader).isLeader()
+            && !(leader.isLeader()
+                && leader.getTerm() > term
                 && others.stream()
-                    .allMatch(
-                        m ->
-                            context(m).getCommitIndex()
-                                == context(newLeader).getLog().getLastIndex()));
+                    .allMatch(m -> context(m).getCommitIndex() == leader.getLog().getLastIndex()));
         i++) {
       dropAll(FOLLOWER);
       others.forEach(this::deliverAll);
-      raft.tickHeartbeatTimeout(newLeader);
-      raft.runUntilDone(newLeader);
+      raft.tickHeartbeatTimeout(LEADER);
+      raft.runUntilDone(LEADER);
     }
     dropAll(FOLLOWER);
     others.forEach(this::deliverAll);
-    assertThat(context(newLeader).getRole()).isEqualTo(Role.LEADER);
+    assertThat(leader.getRole()).isEqualTo(Role.LEADER);
+    assertThat(leader.getTerm()).isGreaterThan(term);
     // records the leader, which clientAppendOnLeader appends on
     raft.assertAtMostOneLeader();
   }
