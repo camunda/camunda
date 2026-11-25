@@ -19,8 +19,10 @@ import {createAnonymousCurrentUser, createCurrentUser} from '#/shared-test-modul
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createQueryUsersResponse} from '#/shared-test-modules/api-mocks/users';
+import {mockAdminClientConfig} from '#/pages/admin/mockAdminClientConfig';
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, page}) => {
+	await mockAdminClientConfig(page);
 	network.use(
 		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
 		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 200})}),

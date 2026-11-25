@@ -7,8 +7,13 @@
  */
 
 import {BasePage} from './BasePage';
+import {mockAdminClientConfig} from './admin/mockAdminClientConfig';
 
 class AdminUsersPage extends BasePage {
+	async mockClientConfig(script?: string) {
+		await mockAdminClientConfig(this.page, script);
+	}
+
 	async goto() {
 		return this.page.goto('/admin/users');
 	}
