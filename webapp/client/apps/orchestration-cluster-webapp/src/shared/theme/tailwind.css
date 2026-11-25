@@ -289,7 +289,7 @@
 		vector-effect: non-scaling-stroke;
 	}
 
-	.op-selectable:hover:not(.op-selected-frame) .djs-outline {
+	.op-selectable:hover:not(.op-selected-frame, :focus-visible) .djs-outline {
 		stroke-width: 1px;
 		stroke: var(--info-action-default);
 	}
