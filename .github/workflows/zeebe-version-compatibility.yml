@@ -13,6 +13,10 @@ permissions:
 
 jobs:
   released-versions:
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
     name: Released Versions
     runs-on: ubuntu-latest
     strategy:
@@ -40,8 +44,9 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -PskipFrontendBuild
@@ -68,6 +73,10 @@ jobs:
           name: zeebe-version-compatibility-${{ strategy.job-index }}
           path: ${{ github.workspace }}/zeebe-version-compatibility
   current-snapshot:
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
     name: Current Snapshot
     runs-on: ubuntu-latest
     if: always()
@@ -77,8 +86,9 @@ jobs:
         with:
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -PskipFrontendBuild
