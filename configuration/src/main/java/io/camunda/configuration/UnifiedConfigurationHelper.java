@@ -596,7 +596,10 @@ public class UnifiedConfigurationHelper {
     }
   }
 
-  /** Maps and collections have no single-line {@code key=value} form to suggest to the operator. */
+  /**
+   * True for a map or a list. The error message then says "Set x to the value of the legacy
+   * properties" instead of "Set x={a=1}", since {@code {a=1}} is not a valid property value.
+   */
   private static boolean isStructured(final Object value) {
     return value instanceof Map || value instanceof Collection;
   }
