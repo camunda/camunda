@@ -113,6 +113,7 @@ public final class S3BackupStore implements BackupStore {
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
+  private final ReplicationAwaiter replicationAwaiter;
 
   S3BackupStore(final S3BackupConfig config) {
     this(config, buildClient(config));
@@ -122,6 +123,8 @@ public final class S3BackupStore implements BackupStore {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
+    replicationAwaiter =
+        config.waitForReplication() ? new ReplicationAwaiter(client, config) : null;
     final var basePath = config.basePath();
     final var basePrefix = basePath.map(base -> base + "/").map(Pattern::quote).orElse("");
     final var identifierSuffix =
@@ -229,6 +232,14 @@ public final class S3BackupStore implements BackupStore {
     buildClient(config).close();
   }
 
+  /**
+   * Saves the backup and marks it as completed. When {@link S3BackupConfig#waitForReplication()} is
+   * enabled, the returned future only completes once all objects of the backup were replicated by
+   * the bucket's replication: the contents are replicated before the manifest is marked as
+   * completed, so that the replica site never sees a completed manifest without its contents. Then
+   * the completed manifest itself must be replicated. If replication fails or times out, the backup
+   * is marked as failed like any other failed save.
+   */
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
     return updateManifestObject(
@@ -247,7 +258,26 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<ValidBackupManifest> saveContents(final Backup backup) {
-    return uploadContents(backup).thenComposeAsync(this::markCompleted);
+    if (replicationAwaiter == null) {
+      return uploadContents(backup).thenComposeAsync(this::markCompleted);
+    }
+
+    final var awaiter = replicationAwaiter;
+    return awaiter
+        .verifyReplicationConfigured()
+        .thenComposeAsync(ignored -> uploadContents(backup))
+        .thenComposeAsync(
+            contents -> {
+              final var deadline = awaiter.deadline();
+              return awaiter
+                  .awaitReplication(contents.objectKeys(), deadline)
+                  .thenComposeAsync(ignored -> markCompleted(contents))
+                  .thenComposeAsync(
+                      completed ->
+                          awaiter
+                              .awaitReplication(List.of(manifestKey(completed)), deadline)
+                              .thenApply(ignored -> completed));
+            });
   }
 
   private CompletableFuture<UploadedContents> uploadContents(final Backup backup) {
@@ -256,7 +286,11 @@ public final class S3BackupStore implements BackupStore {
     return snapshot.thenCombine(
         segments,
         (snapshotFiles, segmentFiles) ->
-            new UploadedContents(backup.id(), snapshotFiles, segmentFiles));
+            new UploadedContents(
+                backup.id(),
+                derivePath(backup.descriptor(), backup.id(), Directory.CONTENTS),
+                snapshotFiles,
+                segmentFiles));
   }
 
   private CompletableFuture<ValidBackupManifest> markCompleted(final UploadedContents contents) {
@@ -400,15 +434,21 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> verifyConnection() {
-    return client
-        .headBucket(HeadBucketRequest.builder().bucket(config.bucketName()).build())
-        .whenCompleteAsync(
-            (ignore, err) -> {
-              if (err != null) {
-                throw new ConfigurationException("Failed to connect to S3", err);
-              }
-            })
-        .thenApply(ignore -> null);
+    final CompletableFuture<Void> connected =
+        client
+            .headBucket(HeadBucketRequest.builder().bucket(config.bucketName()).build())
+            .whenCompleteAsync(
+                (ignore, err) -> {
+                  if (err != null) {
+                    throw new ConfigurationException("Failed to connect to S3", err);
+                  }
+                })
+            .thenApply(ignore -> null);
+    if (replicationAwaiter == null) {
+      return connected;
+    }
+    final var awaiter = replicationAwaiter;
+    return connected.thenCompose(ignored -> awaiter.verifyReplicationConfigured());
   }
 
   private String backupMetadataKey(final int partitionId) {
@@ -911,7 +951,15 @@ public final class S3BackupStore implements BackupStore {
 
   /** The uploaded contents of a backup, before its manifest is marked as completed. */
   private record UploadedContents(
-      BackupIdentifier id, FileSet snapshotFiles, FileSet segmentFiles) {}
+      BackupIdentifier id, String contentsPrefix, FileSet snapshotFiles, FileSet segmentFiles) {
+    List<String> objectKeys() {
+      return Stream.concat(
+              snapshotFiles.names().stream().map(name -> SNAPSHOT_PREFIX + name),
+              segmentFiles.names().stream().map(name -> SEGMENTS_PREFIX + name))
+          .map(name -> contentsPrefix + name)
+          .toList();
+    }
+  }
 
   public enum Directory {
     MANIFESTS("manifests"),

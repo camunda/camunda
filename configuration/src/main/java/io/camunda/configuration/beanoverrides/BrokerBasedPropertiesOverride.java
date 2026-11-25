@@ -696,6 +696,9 @@ public class BrokerBasedPropertiesOverride {
     s3BackupStoreConfig.setBasePath(s3.getBasePath());
     s3BackupStoreConfig.setSupportLegacyMd5(s3.isSupportLegacyMd5());
     s3BackupStoreConfig.setSsecKey(s3.getSsecKey());
+    s3BackupStoreConfig.setWaitForReplication(s3.isWaitForReplication());
+    s3BackupStoreConfig.setReplicationPollInterval(s3.getReplicationPollInterval());
+    s3BackupStoreConfig.setReplicationTimeout(s3.getReplicationTimeout());
 
     override.getData().getBackup().setS3(s3BackupStoreConfig);
   }

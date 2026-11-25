@@ -39,6 +39,14 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
  *     same retry semantics as {@code readTimeout}. If empty, the AWS SDK default of 30s is used.
  * @param ssecKey Optional base64-encoded 32-byte AES-256 key. When present, all objects are written
  *     and read using server-side encryption with a caller-provided key (SSE-C).
+ * @param waitForReplication When enabled, a backup is only saved once every one of its objects has
+ *     been replicated by the bucket's own replication to the replica site, as reported by the
+ *     {@code x-amz-replication-status} of each object. Requires replication to be configured on the
+ *     bucket.
+ * @param replicationPollInterval How often to check the replication status of objects that are
+ *     still pending replication. Only used when {@code waitForReplication} is enabled.
+ * @param replicationTimeout How long to wait for all objects of a backup to be replicated before
+ *     the backup fails. Only used when {@code waitForReplication} is enabled.
  * @see <a
  *     href=https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment>
  *     Automatically determine the Region from the environment</a>
@@ -61,7 +69,13 @@ public record S3BackupConfig(
     boolean supportLegacyMd5,
     Optional<String> ssecKey,
     Optional<Duration> readTimeout,
-    Optional<Duration> writeTimeout) {
+    Optional<Duration> writeTimeout,
+    boolean waitForReplication,
+    Duration replicationPollInterval,
+    Duration replicationTimeout) {
+
+  public static final Duration DEFAULT_REPLICATION_POLL_INTERVAL = Duration.ofSeconds(5);
+  public static final Duration DEFAULT_REPLICATION_TIMEOUT = Duration.ofMinutes(15);
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -93,6 +107,17 @@ public record S3BackupConfig(
       }
     }
     ssecKey.ifPresent(SseCKey::decodeAndValidate);
+    if (replicationPollInterval == null
+        || replicationPollInterval.isNegative()
+        || replicationPollInterval.isZero()) {
+      throw new IllegalArgumentException(
+          "Replication poll interval must be positive, but was %s."
+              .formatted(replicationPollInterval));
+    }
+    if (replicationTimeout == null || replicationTimeout.isNegative()) {
+      throw new IllegalArgumentException(
+          "Replication timeout must not be negative, but was %s.".formatted(replicationTimeout));
+    }
   }
 
   @Override
@@ -127,6 +152,12 @@ public record S3BackupConfig(
         + readTimeout
         + ", writeTimeout="
         + writeTimeout
+        + ", waitForReplication="
+        + waitForReplication
+        + ", replicationPollInterval="
+        + replicationPollInterval
+        + ", replicationTimeout="
+        + replicationTimeout
         + '}';
   }
 
@@ -144,6 +175,9 @@ public record S3BackupConfig(
     private String ssecKey;
     private Duration readTimeout;
     private Duration writeTimeout;
+    private boolean waitForReplication = false;
+    private Duration replicationPollInterval = DEFAULT_REPLICATION_POLL_INTERVAL;
+    private Duration replicationTimeout = DEFAULT_REPLICATION_TIMEOUT;
 
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
@@ -221,6 +255,21 @@ public record S3BackupConfig(
       return this;
     }
 
+    public Builder withWaitForReplication(final boolean waitForReplication) {
+      this.waitForReplication = waitForReplication;
+      return this;
+    }
+
+    public Builder withReplicationPollInterval(final Duration replicationPollInterval) {
+      this.replicationPollInterval = replicationPollInterval;
+      return this;
+    }
+
+    public Builder withReplicationTimeout(final Duration replicationTimeout) {
+      this.replicationTimeout = replicationTimeout;
+      return this;
+    }
+
     public S3BackupConfig build() {
       return new S3BackupConfig(
           bucketName,
@@ -236,7 +285,10 @@ public record S3BackupConfig(
           supportLegacyMd5,
           Optional.ofNullable(ssecKey),
           Optional.ofNullable(readTimeout),
-          Optional.ofNullable(writeTimeout));
+          Optional.ofNullable(writeTimeout),
+          waitForReplication,
+          replicationPollInterval,
+          replicationTimeout);
     }
   }
 
