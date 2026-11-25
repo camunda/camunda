@@ -4,6 +4,10 @@
 
 **Status**: Proposed
 
+**Update (8.11)**: `ClusterChangePlan`, the `ChangePlan` interface and the legacy projection
+(`toLegacyDefault()`, `ClusterChangePlan.flatten`) were removed in 8.11. `DependencyChangePlan` is
+the only change plan type. The text below describes the model at the time of the decision.
+
 **Purpose**: Defines how a partition-group configuration change's operations are ordered, and why
 that model is scoped to a single partition group rather than the whole plan.
 
