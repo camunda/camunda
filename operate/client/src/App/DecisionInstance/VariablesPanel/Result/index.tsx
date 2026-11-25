@@ -15,7 +15,13 @@ import {Loading} from '@carbon/react';
 import {lazy, Suspense} from 'react';
 
 const JSONViewer = lazy(async () => {
-  const {JSONViewer} = await import('./JSONViewer');
+  const [{loadMonaco}, {JSONViewer}] = await Promise.all([
+    import('modules/loadMonaco'),
+    import('./JSONViewer'),
+  ]);
+
+  loadMonaco();
+
   return {default: JSONViewer};
 });
 
