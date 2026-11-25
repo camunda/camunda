@@ -42,17 +42,8 @@ jobs:
   build_and_test_c8run:
     permissions:
       actions: write
-      attestations: none
       checks: write
       contents: read
-      deployments: none
-      issues: none
-      discussions: none
-      packages: none
-      pages: none
-      pull-requests: none
-      repository-projects: none
-      security-events: none
       statuses: write
       id-token: write
     runs-on: ubuntu-latest
