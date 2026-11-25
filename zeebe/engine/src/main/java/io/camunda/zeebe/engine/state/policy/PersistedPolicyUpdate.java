@@ -53,7 +53,7 @@ public final class PersistedPolicyUpdate extends UnpackedObject implements DbVal
 
   /**
    * The key of the update, from its first buffered chunk. The identity commands of the update carry
-   * it as batch operation reference, so a rejection of one of them can be traced back to the
+   * it as internal operation reference, so a rejection of one of them can be traced back to the
    * update.
    */
   public long getUpdateKey() {
