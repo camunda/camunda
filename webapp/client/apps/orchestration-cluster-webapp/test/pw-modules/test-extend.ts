@@ -52,6 +52,7 @@ import {TasklistLoginPage} from '#/pages/tasklist/TasklistLogin.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
+	isProcessInstanceHelperHidden: boolean;
 	network: NetworkFixture;
 	makeAxeBuilder: () => AxeBuilder;
 	loginPage: LoginPage;
@@ -95,8 +96,10 @@ type Fixtures = {
 };
 
 const test = base.extend<Fixtures>({
-	page: async ({page}, use) => {
-		await page.addInitScript(() => localStorage.setItem('operate.hideProcessInstanceHelperModal', 'true'));
+	page: async ({page, isProcessInstanceHelperHidden}, use) => {
+		if (isProcessInstanceHelperHidden) {
+			await page.addInitScript(() => localStorage.setItem('operate.hideProcessInstanceHelperModal', 'true'));
+		}
 		await use(page);
 	},
 	makeAxeBuilder: async ({page}, use) => {
@@ -218,6 +221,7 @@ const test = base.extend<Fixtures>({
 		await use(new ComponentAccessDeniedPage(page));
 	},
 	handlers: [[], {option: true}],
+	isProcessInstanceHelperHidden: [true, {option: true}],
 	network: [
 		async ({context, handlers, baseURL}, use) => {
 			const appOrigin = baseURL === undefined ? undefined : new URL(baseURL).origin;
