@@ -32,6 +32,7 @@ import io.camunda.exporter.handlers.EmbeddedFormHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceIncidentFlagHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceNameFromAdHocActivityHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.GlobalListenerCreatedUpdatedHandler;
@@ -47,16 +48,17 @@ import io.camunda.exporter.handlers.JobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeIncidentFlagHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewProcessInstanceIncidentFlagHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MappingRuleCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.MappingRuleDeletedHandler;
 import io.camunda.exporter.handlers.MessageSubscriptionFromMessageStartEventSubscriptionHandler;
 import io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
-import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessCreatedHandler;
 import io.camunda.exporter.handlers.ProcessFullyDeletedHandler;
 import io.camunda.exporter.handlers.ProcessStateHandler;
@@ -137,7 +139,6 @@ import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
-import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
@@ -270,6 +271,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromIncidentHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
+            new ListViewProcessInstanceIncidentFlagHandler(
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
+            new ListViewFlowNodeIncidentFlagHandler(
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewFlowNodeFromJobHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewFlowNodeFromProcessInstanceHandler(
@@ -288,9 +293,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionRequirementsHandler(
                 indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName(),
                 decisionRequirementsCache),
-            new PostImporterQueueFromIncidentHandler(
-                indexDescriptors.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
             new FlowNodeInstanceFromIncidentHandler(
+                indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
+            new FlowNodeInstanceIncidentFlagHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new FlowNodeInstanceFromProcessInstanceHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName(),
