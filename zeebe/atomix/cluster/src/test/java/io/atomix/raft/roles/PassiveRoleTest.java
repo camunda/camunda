@@ -428,6 +428,32 @@ final class PassiveRoleTest {
     // then - the leader continues after the snapshot, instead of going further back
     assertThat(response.succeeded()).isFalse();
     assertThat(response.lastLogIndex()).isEqualTo(9);
+    verify(log, never()).append(any(ReplicatableJournalRecord.class));
+  }
+
+  @Test
+  void shouldRejectAppendWhosePreviousEntryIsTheSnapshotWithAnotherTerm()
+      throws CheckedJournalException {
+    // given
+    givenLogAfterSnapshot();
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(5)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(3)
+            .withPrevLogIndex(9)
+            .withEntries(List.of(new ReplicatableJournalRecord(5, 10, 1, new byte[1])))
+            .withCommitIndex(10)
+            .build();
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the append is not processed any further
+    assertThat(response.succeeded()).isFalse();
+    verify(log, never()).append(any(ReplicatableJournalRecord.class));
+    verify(log, never()).flush();
   }
 
   /** A snapshot at index 9 of term 4, and a log with the entries 10 to 12 of term 5. */
