@@ -32,6 +32,14 @@ public interface ProcessState {
   DeployedProcess getLatestActiveProcessVersionByProcessId(
       DirectBuffer processId, final String tenantId);
 
+  /**
+   * Latest active version (see {@link DeployedProcess#isActive()}) strictly below {@code version}.
+   * Skips draining versions. Unlike {@link #getLatestActiveProcessVersionByProcessId}, suspended
+   * versions are not skipped.
+   */
+  Optional<DeployedProcess> findLatestActiveProcessVersionBefore(
+      DirectBuffer processId, int version, String tenantId);
+
   DeployedProcess getProcessByProcessIdAndVersion(
       DirectBuffer processId, int version, final String tenantId);
 

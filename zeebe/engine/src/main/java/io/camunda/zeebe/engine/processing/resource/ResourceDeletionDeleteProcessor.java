@@ -63,11 +63,9 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import org.agrona.DirectBuffer;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
@@ -429,7 +427,8 @@ public class ResourceDeletionDeleteProcessor
 
       // Hand the start subscription down to the latest ACTIVE version; DRAINING/deleted versions
       // reject new instances so must stay unsubscribed.
-      findLatestActiveVersionBelow(processIdBuffer, processId, latestVersion, tenantId)
+      processState
+          .findLatestActiveProcessVersionBefore(processIdBuffer, latestVersion, tenantId)
           .ifPresent(startEventSubscriptions::resubscribeToStartEvents);
     }
 
@@ -496,33 +495,6 @@ public class ResourceDeletionDeleteProcessor
 
     resourceDeletionRecord.setBatchOperationKey(batchOperationKey);
     resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
-  }
-
-  /**
-   * Latest active version (see {@link DeployedProcess#isActive()}) strictly below {@code version}.
-   * Skips draining versions so they do not hold start-event subscriptions.
-   *
-   * <p>Loads known versions once and scans newest-first. {@code version >=} the deleted latest is
-   * skipped because that version is already draining.
-   */
-  private Optional<DeployedProcess> findLatestActiveVersionBelow(
-      final DirectBuffer processIdBuffer,
-      final String processId,
-      final int version,
-      final String tenantId) {
-    final var knownVersions = processState.getKnownProcessVersions(processId, tenantId);
-    for (int i = knownVersions.size() - 1; i >= 0; i--) {
-      final int candidateVersion = knownVersions.get(i).intValue();
-      if (candidateVersion >= version) {
-        continue;
-      }
-      final var process =
-          processState.getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
-      if (process != null && process.isActive()) {
-        return Optional.of(process);
-      }
-    }
-    return Optional.empty();
   }
 
   private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {

@@ -671,6 +671,29 @@ public final class DbProcessState implements MutableProcessState {
     return null;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Loads known versions once and scans newest-first.
+   */
+  @Override
+  public Optional<DeployedProcess> findLatestActiveProcessVersionBefore(
+      final DirectBuffer processIdBuffer, final int version, final String tenantId) {
+    final var knownVersions = getKnownProcessVersions(bufferAsString(processIdBuffer), tenantId);
+    for (int i = knownVersions.size() - 1; i >= 0; i--) {
+      final int candidateVersion = knownVersions.get(i).intValue();
+      if (candidateVersion >= version) {
+        continue;
+      }
+      final var process =
+          getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
+      if (process != null && process.isActive()) {
+        return Optional.of(process);
+      }
+    }
+    return Optional.empty();
+  }
+
   @Override
   public DeployedProcess getProcessByProcessIdAndVersion(
       final DirectBuffer processId, final int version, final String tenantId) {
