@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.policy;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.appliedRecord;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.apply;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.uid;
+import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommitVersionTest.versionCommitted;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -182,6 +183,9 @@ public final class PolicyUpdateMultiChunkTest {
     apply(ENGINE, chunk(openUpdateId, 1, 2));
     assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withRoleId(roleId).exists())
         .isTrue();
+    // the update is committed only after the identity commands of its chunks, so the marker update
+    // waits for it; otherwise it might find the update still open
+    versionCommitted(openUpdateId);
     assertThat(recordsUntilAMarkerUpdateIsApplied())
         .noneMatch(record -> isPolicyUpdate(record, PolicyUpdateIntent.FAILED, openUpdateId))
         .noneMatch(record -> isPolicyUpdate(record, PolicyUpdateIntent.FAILED, otherUpdateId))
@@ -271,12 +275,12 @@ public final class PolicyUpdateMultiChunkTest {
   }
 
   @Test
-  public void shouldAcceptTheNextUpdateOnceTheOpenOneIsApplied() {
+  public void shouldAcceptTheNextUpdateOnceTheOpenOneIsCommitted() {
     // given
     final var firstUpdateId = "update-" + uid();
     apply(ENGINE, chunk(firstUpdateId, 0, 2));
     apply(ENGINE, chunk(firstUpdateId, 1, 2));
-    appliedRecord(firstUpdateId);
+    versionCommitted(firstUpdateId);
 
     // when
     final var secondUpdateId = "update-" + uid();

@@ -122,8 +122,7 @@ public final class PolicyUpdateRejectedCommandTest {
                 .getFirst()
                 .getRejectionType())
         .isEqualTo(RejectionType.NOT_FOUND);
-    versionCommitted(update.getUpdateId());
-    final var records = recordsUntilAMarkerUpdateIsCommitted();
+    final var records = recordsUntilAMarkerUpdateIsCommitted(update.getUpdateId());
     assertThat(records)
         .anyMatch(
             record ->
@@ -147,7 +146,7 @@ public final class PolicyUpdateRejectedCommandTest {
             .filter(record -> record.getValue().getUpdateId().equals(update.getUpdateId()))
             .getFirst();
     assertThat(commitRejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
-    assertThat(recordsUntilAMarkerUpdateIsCommitted())
+    assertThat(recordsUntilAMarkerUpdateIsCommitted(update.getUpdateId()))
         .noneMatch(
             record -> isPolicyUpdateEvent(record, PolicyUpdateIntent.VERSION_COMMITTED, update));
   }
@@ -182,7 +181,7 @@ public final class PolicyUpdateRejectedCommandTest {
     assertThat(groupRejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
     assertThat(groupRejection.getRejectionReason()).contains("failed or no longer exists");
 
-    final var records = recordsUntilAMarkerUpdateIsCommitted();
+    final var records = recordsUntilAMarkerUpdateIsCommitted(update.getUpdateId());
     assertThat(records)
         .noneMatch(
             record ->
@@ -239,7 +238,7 @@ public final class PolicyUpdateRejectedCommandTest {
     // then
     // the records from the update on, as the rejections don't carry its reference
     final var records =
-        recordsUntilAMarkerUpdateIsCommitted().stream()
+        recordsUntilAMarkerUpdateIsCommitted(update.getUpdateId()).stream()
             .dropWhile(
                 record -> !isPolicyUpdateEvent(record, PolicyUpdateIntent.CHUNK_APPLIED, update))
             .toList();
@@ -289,7 +288,7 @@ public final class PolicyUpdateRejectedCommandTest {
     assertThat(applyRejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
 
     // and the next update applies, as the failed one was removed
-    assertThat(recordsUntilAMarkerUpdateIsCommitted())
+    assertThat(recordsUntilAMarkerUpdateIsCommitted(updateId))
         .noneMatch(
             record ->
                 record.getIntent() == RoleIntent.CREATED
@@ -328,10 +327,23 @@ public final class PolicyUpdateRejectedCommandTest {
   }
 
   /**
-   * Applies an update of one chunk and returns all records up to its commit. Since commands are
-   * processed in order, the records contain everything that the earlier commands caused.
+   * Waits until the update is committed or failed, then applies an update of one chunk and returns
+   * all records up to its commit. Since commands are processed in order, the records contain
+   * everything that the earlier commands caused.
+   *
+   * <p>The identity commands of an update are processed in their own batches, after the command
+   * that appended its last chunk. A marker written before the update ends could be processed while
+   * the update is still open, and be rejected.
    */
-  private static List<Record<?>> recordsUntilAMarkerUpdateIsCommitted() {
+  private static List<Record<?>> recordsUntilAMarkerUpdateIsCommitted(final String afterUpdateId) {
+    RecordingExporter.policyUpdateRecords()
+        .onlyEvents()
+        .filter(record -> record.getValue().getUpdateId().equals(afterUpdateId))
+        .filter(
+            record ->
+                record.getIntent() == PolicyUpdateIntent.VERSION_COMMITTED
+                    || record.getIntent() == PolicyUpdateIntent.FAILED)
+        .await();
     final var marker = chunk();
     apply(ENGINE, marker);
     return RecordingExporter.records()
