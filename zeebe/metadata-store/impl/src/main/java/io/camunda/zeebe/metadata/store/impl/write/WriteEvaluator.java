@@ -16,71 +16,63 @@ import io.camunda.zeebe.metadata.store.api.Condition;
 import io.camunda.zeebe.metadata.store.api.KeyValue;
 import io.camunda.zeebe.metadata.store.api.Namespace;
 import io.camunda.zeebe.metadata.store.api.StoreKey;
-import io.camunda.zeebe.metadata.store.api.StoreValue;
 import io.camunda.zeebe.metadata.store.api.Write;
 import io.camunda.zeebe.metadata.store.impl.state.Entry.NamespaceEntry;
 import io.camunda.zeebe.metadata.store.impl.state.Entry.Operation;
-import io.camunda.zeebe.metadata.store.impl.state.NamespaceState;
 import io.camunda.zeebe.metadata.store.impl.state.StoreState;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Decides what a write does, on the single writer: the namespace operations of an entry, or none if
- * nothing changes, or an error. A batch is evaluated in order against a candidate on top of the
- * state, so each check sees the writes before it in the same batch; the state itself is never
- * changed. Only changes reach the result: a put of the bytes a key holds, a delete that finds
- * nothing and a {@link Write.Check} add nothing to it.
+ * nothing changes, or an error. {@link Batch} addresses each key at most once and keeps every other
+ * write out of the range of a {@link Write.DeletePrefix}, so every write is checked against the
+ * published value; only a namespace created earlier in the batch is visible to the writes after it.
+ * The state itself is never changed. Only changes reach the result: a put of the bytes a key holds,
+ * a delete that finds nothing and a {@link Write.Check} add nothing to it.
+ *
+ * <p>Namespace errors and failed conditions are reported differently: a namespace that does not
+ * exist, or exists when the batch creates it, ends the evaluation at the write that addresses it,
+ * since retrying cannot fix it. Failed conditions are collected over the whole batch, so that a
+ * {@link ConditionFailedException} lists the current value of every failed key for a retry. A
+ * namespace error therefore wins over failed conditions earlier in the batch.
+ *
+ * <p>Deleting a namespace is not a {@link Write}, so {@link #evaluateDeleteNamespace} decides it
+ * here too: every store, in memory or on Raft, takes all its write decisions from this class.
  */
 public final class WriteEvaluator {
 
   private static final Comparator<Namespace> NAMESPACE_ORDER =
       Comparator.comparing(Namespace::scope).thenComparing(Namespace::name);
 
-  private WriteEvaluator() {}
+  private final StoreState state;
+  private final Set<Namespace> created = new HashSet<>();
+  private final TreeMap<Namespace, TreeMap<String, Operation>> operations =
+      new TreeMap<>(NAMESPACE_ORDER);
+  private final List<FailedCondition> failed = new ArrayList<>();
+
+  private WriteEvaluator(final StoreState state) {
+    this.state = state;
+  }
 
   /**
    * Evaluates a batch against the state.
    *
-   * @return the changes per namespace, sorted by scope and name; empty if the batch changes nothing
+   * @return the changes per namespace, sorted by scope and name, each with its operations in key
+   *     order; empty if the batch changes nothing
    * @throws NamespaceNotFoundException if a write addresses a namespace that does not exist
    * @throws NamespaceAlreadyExistsException if the batch creates a namespace that exists
    * @throws ConditionFailedException if a condition does not hold; nothing is applied
    */
   public static List<NamespaceEntry> evaluate(final StoreState state, final Batch batch) {
-    final var candidate = new Candidate(state);
-    final var failed = new ArrayList<FailedCondition>();
-
-    for (final var write : batch.writes()) {
-      switch (write) {
-        case final Write.CreateNamespace create -> candidate.create(create.namespace());
-        case final Write.Put put -> {
-          if (holds(candidate, put.key(), put.condition(), failed)) {
-            candidate.put(put.key(), put.value());
-          }
-        }
-        case final Write.Delete delete -> {
-          if (holds(candidate, delete.key(), delete.condition(), failed)) {
-            candidate.delete(delete.key());
-          }
-        }
-        case final Write.DeletePrefix deletePrefix -> candidate.deletePrefix(deletePrefix.prefix());
-        case final Write.Check check -> holds(candidate, check.key(), check.condition(), failed);
-      }
-    }
-
-    if (!failed.isEmpty()) {
-      throw new ConditionFailedException(
-          "Expected every condition of the batch to hold, but it failed for %s"
-              .formatted(failed.stream().map(FailedCondition::key).toList()),
-          failed);
-    }
-    return candidate.changes();
+    final var evaluator = new WriteEvaluator(state);
+    batch.writes().forEach(evaluator::evaluate);
+    return evaluator.result();
   }
 
   /**
@@ -94,138 +86,90 @@ public final class WriteEvaluator {
     return new NamespaceEntry.Deleted(namespace);
   }
 
-  private static boolean holds(
-      final Candidate candidate,
-      final StoreKey key,
-      final Condition condition,
-      final List<FailedCondition> failed) {
-    if (matches(condition, candidate.current(key))) {
-      return true;
+  private void evaluate(final Write write) {
+    switch (write) {
+      case final Write.CreateNamespace create -> create(create.namespace());
+      case final Write.Put put -> {
+        final var current = current(put.key());
+        if (holds(put.key(), put.condition(), current)
+            && (current == null || !current.current().equals(put.value()))) {
+          add(put.key().namespace(), new Operation.Put(put.key().key(), put.value()));
+        }
+      }
+      case final Write.Delete delete -> {
+        final var current = current(delete.key());
+        if (holds(delete.key(), delete.condition(), current) && current != null) {
+          add(delete.key().namespace(), new Operation.Delete(delete.key().key()));
+        }
+      }
+      case final Write.DeletePrefix deletePrefix -> {
+        final var prefix = deletePrefix.prefix();
+        if (!created.contains(prefix.namespace())) {
+          state
+              .list(prefix)
+              .forEach(pair -> add(prefix.namespace(), new Operation.Delete(pair.key().key())));
+        }
+      }
+      case final Write.Check check -> holds(check.key(), check.condition(), current(check.key()));
     }
-    failed.add(new FailedCondition(key, candidate.published(key)));
-    return false;
   }
 
-  private static boolean matches(final Condition condition, final @Nullable StoreValue current) {
-    return switch (condition) {
-      case final Condition.None ignored -> true;
-      case final Condition.Absent ignored -> current == null;
-      case final Condition.Exists ignored -> current != null;
-      case final Condition.ValueEquals equals ->
-          current != null && equals.expected().equals(current);
-    };
-  }
-
-  /** The state with the writes of the batch so far on top, per namespace. */
-  private static final class Candidate {
-
-    private final StoreState state;
-    private final Map<Namespace, PendingNamespace> pending = new TreeMap<>(NAMESPACE_ORDER);
-
-    private Candidate(final StoreState state) {
-      this.state = state;
+  private void create(final Namespace namespace) {
+    if (state.exists(namespace)) {
+      throw new NamespaceAlreadyExistsException(
+          "Expected namespace '%s' not to exist, but it does".formatted(namespace));
     }
-
-    void create(final Namespace namespace) {
-      if (state.exists(namespace) || pending.containsKey(namespace)) {
-        throw new NamespaceAlreadyExistsException(
-            "Expected namespace '%s' not to exist, but it does".formatted(namespace));
-      }
-      pending.put(namespace, new PendingNamespace(null));
-    }
-
-    @Nullable StoreValue current(final StoreKey key) {
-      return namespace(key.namespace()).current(key.key());
-    }
-
-    /** The key as the published state holds it, as get returns it now; null if it holds none. */
-    @Nullable KeyValue published(final StoreKey key) {
-      return state.exists(key.namespace()) ? state.get(key).orElse(null) : null;
-    }
-
-    void put(final StoreKey key, final StoreValue value) {
-      namespace(key.namespace()).writes.put(key.key(), value);
-    }
-
-    void delete(final StoreKey key) {
-      namespace(key.namespace()).writes.put(key.key(), null);
-    }
-
-    void deletePrefix(final StoreKey prefix) {
-      final var namespace = namespace(prefix.namespace());
-      namespace.currentKeys(prefix.key()).forEach(key -> namespace.writes.put(key, null));
-    }
-
-    private PendingNamespace namespace(final Namespace namespace) {
-      final var existing = pending.get(namespace);
-      if (existing != null) {
-        return existing;
-      }
-      final var namespaceState = state.requireNamespace(namespace);
-      final var created = new PendingNamespace(namespaceState);
-      pending.put(namespace, created);
-      return created;
-    }
-
-    List<NamespaceEntry> changes() {
-      final var changes = new ArrayList<NamespaceEntry>();
-      pending.forEach(
-          (namespace, writes) -> {
-            final var operations = writes.operations();
-            if (writes.base == null) {
-              changes.add(new NamespaceEntry.Created(namespace, operations));
-            } else if (!operations.isEmpty()) {
-              changes.add(new NamespaceEntry.KeysChanged(namespace, operations));
-            }
-          });
-      return changes;
-    }
+    created.add(namespace);
+    operations.put(namespace, new TreeMap<>());
   }
 
   /**
-   * The writes of the batch to one namespace, by key: a value for a put, null for a delete. The
-   * base is null for a namespace that the batch creates.
+   * The pair the key holds when the batch starts; null in a namespace the batch created.
+   *
+   * @throws NamespaceNotFoundException if the namespace neither exists nor was created earlier
    */
-  private static final class PendingNamespace {
+  private @Nullable KeyValue current(final StoreKey key) {
+    return created.contains(key.namespace()) ? null : state.get(key).orElse(null);
+  }
 
-    private final @Nullable NamespaceState base;
-    private final TreeMap<String, @Nullable StoreValue> writes = new TreeMap<>();
-
-    private PendingNamespace(final @Nullable NamespaceState base) {
-      this.base = base;
+  private boolean holds(
+      final StoreKey key, final Condition condition, final @Nullable KeyValue current) {
+    final var value = current == null ? null : current.current();
+    final var holds =
+        switch (condition) {
+          case final Condition.None ignored -> true;
+          case final Condition.Absent ignored -> value == null;
+          case final Condition.Exists ignored -> value != null;
+          case final Condition.ValueEquals equals ->
+              value != null && equals.expected().equals(value);
+        };
+    if (!holds) {
+      failed.add(new FailedCondition(key, current));
     }
+    return holds;
+  }
 
-    @Nullable StoreValue current(final String key) {
-      if (writes.containsKey(key)) {
-        return writes.get(key);
-      }
-      final var value = base == null ? null : base.get(key);
-      return value == null ? null : value.current();
-    }
+  private void add(final Namespace namespace, final Operation operation) {
+    operations
+        .computeIfAbsent(namespace, ignored -> new TreeMap<>())
+        .put(operation.key(), operation);
+  }
 
-    /**
-     * The keys that hold a value at or under the prefix. The batch rules keep every other write out
-     * of the range of a {@link Write.DeletePrefix}, so these are the base's keys.
-     */
-    Set<String> currentKeys(final String prefix) {
-      return base == null ? Set.of() : base.atOrUnder(prefix).keySet();
+  private List<NamespaceEntry> result() {
+    if (!failed.isEmpty()) {
+      throw new ConditionFailedException(
+          "Expected every condition of the batch to hold, but it failed for %s"
+              .formatted(failed.stream().map(FailedCondition::key).toList()),
+          failed);
     }
-
-    /** The writes that change the base, in key order. */
-    List<Operation> operations() {
-      final var operations = new ArrayList<Operation>();
-      writes.forEach(
-          (key, value) -> {
-            final var existing = base == null ? null : base.get(key);
-            if (value == null) {
-              if (existing != null) {
-                operations.add(new Operation.Delete(key));
-              }
-            } else if (existing == null || !existing.current().equals(value)) {
-              operations.add(new Operation.Put(key, value));
-            }
-          });
-      return operations;
-    }
+    return operations.entrySet().stream()
+        .map(
+            entry -> {
+              final var namespaceOperations = List.copyOf(entry.getValue().values());
+              return created.contains(entry.getKey())
+                  ? (NamespaceEntry) new NamespaceEntry.Created(entry.getKey(), namespaceOperations)
+                  : new NamespaceEntry.KeysChanged(entry.getKey(), namespaceOperations);
+            })
+        .toList();
   }
 }

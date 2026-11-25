@@ -56,32 +56,74 @@ final class WriteEvaluatorTest {
                   new Operation.Put("a.b.c", V1))));
 
   @ParameterizedTest(name = "{0} on {1}")
-  @MethodSource("conditions")
-  void shouldEvaluateCondition(
-      final String condition, final String key, final Condition value, final boolean holds) {
-    // given
-    final var write = new Write.Put(key(key), V2, value);
+  @MethodSource("holdingConditions")
+  void shouldApplyWriteWhenConditionHolds(
+      final String name, final String key, final Condition condition) {
+    // when
+    final var entry =
+        WriteEvaluator.evaluate(state, Batch.of(new Write.Put(key(key), V2, condition)));
 
-    // when - then
-    if (holds) {
-      assertThat(WriteEvaluator.evaluate(state, Batch.of(write)))
-          .containsExactly(changed(CONFIG, new Operation.Put(key, V2)));
-    } else {
-      assertThatThrownBy(() -> WriteEvaluator.evaluate(state, Batch.of(write)))
-          .isInstanceOf(ConditionFailedException.class);
-    }
+    // then
+    assertThat(entry).containsExactly(changed(CONFIG, new Operation.Put(key, V2)));
   }
 
-  static Stream<Arguments> conditions() {
+  static Stream<Arguments> holdingConditions() {
     return Stream.of(
-        Arguments.of("absent", "x", Condition.absent(), true),
-        Arguments.of("absent", "a", Condition.absent(), false),
-        Arguments.of("exists", "a", Condition.exists(), true),
-        Arguments.of("exists", "x", Condition.exists(), false),
-        Arguments.of(
-            "valueEquals", "a", Condition.valueEquals(StoreValue.of(new byte[] {1})), true),
-        Arguments.of("valueEquals", "a", Condition.valueEquals(V2), false),
-        Arguments.of("valueEquals", "x", Condition.valueEquals(V1), false));
+        Arguments.of("none", "a", Condition.none()),
+        Arguments.of("absent", "x", Condition.absent()),
+        Arguments.of("exists", "a", Condition.exists()),
+        Arguments.of("valueEquals", "a", Condition.valueEquals(StoreValue.of(new byte[] {1}))));
+  }
+
+  @ParameterizedTest(name = "{0} on {1}")
+  @MethodSource("failingConditions")
+  void shouldRejectBatchWhenConditionFails(
+      final String name, final String key, final Condition condition) {
+    // given
+    final var batch = Batch.of(new Write.Put(key(key), V2, condition));
+
+    // when - then
+    assertThatThrownBy(() -> WriteEvaluator.evaluate(state, batch))
+        .isInstanceOfSatisfying(
+            ConditionFailedException.class,
+            e ->
+                assertThat(e.failed())
+                    .containsExactly(
+                        new FailedCondition(key(key), state.get(key(key)).orElse(null))));
+  }
+
+  static Stream<Arguments> failingConditions() {
+    return Stream.of(
+        Arguments.of("absent", "a", Condition.absent()),
+        Arguments.of("exists", "x", Condition.exists()),
+        Arguments.of("valueEquals", "a", Condition.valueEquals(V2)),
+        Arguments.of("valueEquals", "x", Condition.valueEquals(V1)));
+  }
+
+  @Test
+  void shouldDeleteKeyWhenConditionHolds() {
+    // when
+    final var entry =
+        WriteEvaluator.evaluate(
+            state, Batch.of(new Write.Delete(key("a"), Condition.valueEquals(V1))));
+
+    // then
+    assertThat(entry).containsExactly(changed(CONFIG, new Operation.Delete("a")));
+  }
+
+  @Test
+  void shouldRejectBatchWhenConditionOfDeleteFails() {
+    // given
+    final var batch = Batch.of(new Write.Delete(key("a"), Condition.valueEquals(V2)));
+
+    // when - then
+    assertThatThrownBy(() -> WriteEvaluator.evaluate(state, batch))
+        .isInstanceOfSatisfying(
+            ConditionFailedException.class,
+            e ->
+                assertThat(e.failed())
+                    .containsExactly(
+                        new FailedCondition(key("a"), new KeyValue(key("a"), V1, null))));
   }
 
   @Test
@@ -164,6 +206,31 @@ final class WriteEvaluatorTest {
 
     // when - then
     assertThat(WriteEvaluator.evaluate(state, batch)).isEmpty();
+  }
+
+  @Test
+  void shouldDeleteNothingUnderPrefixInNamespaceCreatedInSameBatch() {
+    // given
+    final var batch =
+        Batch.of(
+            new Write.CreateNamespace(TENANT), new Write.DeletePrefix(StoreKey.of(TENANT, "a")));
+
+    // when - then
+    assertThat(WriteEvaluator.evaluate(state, batch))
+        .containsExactly(new NamespaceEntry.Created(TENANT, List.of()));
+  }
+
+  @Test
+  void shouldReportUnknownNamespaceOverEarlierFailedCondition() {
+    // given
+    final var batch =
+        Batch.of(
+            new Write.Check(key("a"), Condition.absent()),
+            new Write.Put(StoreKey.of(TENANT, "a"), V1));
+
+    // when - then: retrying cannot fix the namespace, so its error wins
+    assertThatThrownBy(() -> WriteEvaluator.evaluate(state, batch))
+        .isInstanceOf(NamespaceNotFoundException.class);
   }
 
   @Test
