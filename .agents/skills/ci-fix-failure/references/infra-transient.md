@@ -45,7 +45,8 @@ conventions and `ci-security-compliance` for action pinning.
 ### Looser-bar branches: `pull_request` (feature branches)
 
 The PR author can re-trigger and the cost of one flaky failure is bounded to their PR. Rerun is
-acceptable for a one-off transient:
+acceptable for a one-off transient. Follow the "Reruns" guardrail in `SKILL.md`
+to decide whether to trigger it or recommend it:
 
 ```
 gh run rerun --failed <run-id> --repo camunda/camunda

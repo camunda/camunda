@@ -179,7 +179,9 @@ Don't cite reference files in the brief. **Stop.** Apply only after user confirm
 ## Guardrails
 
 - **Stop after brief.** No edits without user go-ahead.
-- **No silent reruns.** Recommend `gh run rerun --failed <run-id> --repo camunda/camunda`; don't trigger.
+- **Reruns.** Rerun tests locally freely. For CI, on `pull_request` rerun failed jobs yourself
+  (`gh run rerun --failed <run-id> --repo camunda/camunda`). On `main`, `stable/*`, `merge_group`
+  or `schedule`, recommend only; don't trigger.
 - **Don't blame the diff blindly** — verify the failing code is reachable from the changeset.
 - **Format/build via repo conventions** (`./mvnw license:format spotless:apply -T1C` + module-scoped command from `AGENTS.md`). Never full-repo builds.
 - **Backports** — for bug fixes that may need `stable/*`, ask the user per `AGENTS.md`.
