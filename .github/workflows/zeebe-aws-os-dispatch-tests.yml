@@ -27,6 +27,9 @@ env:
 
 jobs:
   integration-tests:
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
     name: "[IT] ${{ matrix.name }}. OS ver.${{ matrix.os_version }}"
     timeout-minutes: 30
     runs-on: ${{ matrix.runs-on }}
@@ -75,9 +78,10 @@ jobs:
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_17_URL;
             secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_19_URL;
@@ -115,8 +119,9 @@ jobs:
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -158,9 +163,10 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ matrix.owner }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   send-slack-notificaion:
     name: "Send slack notification on fail"
@@ -168,6 +174,7 @@ jobs:
     needs: integration-tests
     if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     permissions:
+      id-token: write # Vault JWT login
       contents: read
       actions: write
     steps:
@@ -176,9 +183,10 @@ jobs:
       uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
     - name: Send notification

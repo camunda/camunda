@@ -69,8 +69,9 @@ jobs:
         with:
           maven-cache-key-modifier: ut-be-${{inputs.componentName}}
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       # Authenticate gcloud when consuming the shared distball (see restore step below).
       # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
       # of silently eating the whole job timeout-minutes budget -- see INC-6820.
@@ -80,8 +81,9 @@ jobs:
         uses: ./.github/actions/gcs-build-cache-auth
         with:
           vault-addr: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       # When called from ci.yml (use-shared-distball=true) restore the io.camunda SNAPSHOTs
       # build-distball archived to GCS instead of re-running the ~2 min reactor in each of the
       # operate/tasklist/optimize back-end UT entries. github.run_id is stable across nested
@@ -129,6 +131,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}

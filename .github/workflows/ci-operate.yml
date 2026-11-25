@@ -85,7 +85,8 @@ jobs:
     name: "Build Back End"
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
       TEST_TYPE: Build
@@ -104,8 +105,9 @@ jobs:
           maven-cache-key-modifier: operate
           minimus: true
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Build Maven
         run: |
           ./mvnw clean install -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks
@@ -122,16 +124,18 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   fe-unit-tests:
     if: inputs.runFeTests
     name: "Unit - Front End [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 18
-    permissions: { } # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     strategy:
       fail-fast: false
       matrix:
@@ -179,9 +183,10 @@ jobs:
           job_name: "operate-ci/fe-unit-tests-${{ matrix.shardIndex }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   fe-unit-tests-merge:
     if: ${{ !cancelled() && inputs.runFeTests }}
@@ -189,7 +194,8 @@ jobs:
     name: "Unit - Front End - Merge Reports"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 14
-    permissions: { } # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: Unit
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -225,9 +231,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Typescript Checker
   operate-fe-type-check:
@@ -235,7 +242,8 @@ jobs:
     name: "Tool / Front End - TypeScript Type Check"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -267,9 +275,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Front End Code linting
   operate-fe-eslint:
@@ -277,7 +286,8 @@ jobs:
     name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -309,9 +319,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # description: This workflow runs a11y accessibility tests on Operate
   operate-fe-a11y-tests:
@@ -319,7 +330,8 @@ jobs:
     name: "Tool / Front End - a11y"
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -364,16 +376,18 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   operate-fe-visual-regression-tests:
     if: inputs.runFeTests
     name: "Unit / Front End - Visual Regression"
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: visual-regression
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -418,16 +432,18 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   operate-update-screenshots:
     if: inputs.runFeTests
     name: "Tool / Front End - Update Screenshots"
     runs-on: ubuntu-latest
     timeout-minutes: 16
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: screenshot-update
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -469,9 +485,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   run-importer-tests:
     if: inputs.runBeTests
@@ -481,7 +498,8 @@ jobs:
     env:
       TEST_TYPE: Integration
       TEST_OWNER: '@camunda/data-layer'
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -493,8 +511,9 @@ jobs:
         with:
           maven-cache-key-modifier: operate-importer
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Build Operate
         run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
       - name: Run Tests
@@ -506,16 +525,18 @@ jobs:
         with:
           job_name: "operate-importer-test"
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   run-backup-restore-tests:
     if: inputs.runBeTests
     name: "Integration / Backup Restore ITs"
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       DOCKER_IMAGE_TAG: current-test
       TEST_OWNER: '@camunda/data-layer'
@@ -537,8 +558,9 @@ jobs:
         with:
           minimus: true
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -576,6 +598,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
