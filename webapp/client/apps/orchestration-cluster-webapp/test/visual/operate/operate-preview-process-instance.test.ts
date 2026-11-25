@@ -385,3 +385,22 @@ test('should match the process instance output mappings tab snapshot', async ({
 	await expect(page.getByRole('cell', {name: 'processResult'})).toBeVisible();
 	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
 });
+
+test.describe('helper modal', () => {
+	test.use({isProcessInstanceHelperHidden: false});
+
+	test(
+		'should match the what moved helper modal snapshot',
+		{tag: '@desktop'},
+		async ({page, operatePreviewProcessInstancePage}) => {
+			await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+			const helper = page.getByRole('dialog', {name: "Here's what moved in Operate"});
+			await expect(helper).toBeVisible();
+			await expect(
+				helper.getByRole('img', {name: 'Process instance details page with incidents tab and diagram'}),
+			).toHaveJSProperty('complete', true);
+			await expect(helper).toHaveScreenshot();
+		},
+	);
+});

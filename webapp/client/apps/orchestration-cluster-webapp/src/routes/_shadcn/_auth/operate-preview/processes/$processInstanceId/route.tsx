@@ -33,6 +33,7 @@ import {ProcessInstanceHeaderSkeleton} from '#/operate/pages/ProcessInstance/sha
 import {ProcessInstanceOperations} from '#/operate/pages/ProcessInstance/ProcessInstanceOperations/shadcn.components/ProcessInstanceOperations';
 import {ProcessInstanceModificationFooter} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceModificationFooter';
 import {ModificationLeaveDialog} from '#/operate/pages/ProcessInstance/shadcn.components/ModificationLeaveDialog';
+import {ProcessInstanceHelperModal} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHelperModal';
 import {useModificationController} from '#/operate/pages/ProcessInstance/useProcessInstanceModification';
 import {useModificationLeaveBlocker} from '#/operate/pages/ProcessInstance/useModificationLeaveBlocker';
 import {ProcessInstancePageProvider} from '#/operate/pages/ProcessInstance/ProcessInstancePageProvider';
@@ -196,6 +197,7 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 					onStay={() => blocker.reset?.()}
 					onLeave={() => blocker.proceed?.()}
 				/>
+				<ProcessInstanceHelperModal />
 			</ProcessInstancePageProvider>
 		);
 	},
