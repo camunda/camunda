@@ -67,8 +67,9 @@ of entries puts a map inside one value.
 **D5. Keys are registered on first use; conflicting descriptors fail fast.**
 The gossiper starts early in the broker, before its consumers, so there is no registration phase
 before start. A key is registered the first time it is used. Using the same name with an
-incompatible descriptor (different scope, value type or merge kind) throws
-`IllegalStateException`.
+incompatible descriptor (different scope or merge kind) throws `IllegalStateException`. The value
+type is not checked, because keys carry no runtime type token; a codec for a different type
+surfaces as values that cannot be decoded (D6).
 
 **D6. Codecs must be deterministic; format evolution is the consumer's concern.**
 Equal values must encode to identical bytes. The gossiper detects changes by comparing encoded bytes,
