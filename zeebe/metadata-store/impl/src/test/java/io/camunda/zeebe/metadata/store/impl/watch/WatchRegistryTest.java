@@ -28,13 +28,16 @@ import io.camunda.zeebe.metadata.store.impl.state.Entry.Operation;
 import io.camunda.zeebe.metadata.store.impl.state.EntryApplier;
 import io.camunda.zeebe.metadata.store.impl.state.StoreState;
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -57,7 +60,8 @@ final class WatchRegistryTest {
               1,
               new Entry("8.11.0", 0, List.of(new NamespaceEntry.Created(CONFIG, List.of()))))
           .state();
-  private final WatchRegistry registry = new WatchRegistry(Runnable::run, () -> state);
+  private final TestActor actor = new TestActor();
+  private final WatchRegistry registry = new WatchRegistry(actor::run, () -> state);
 
   @Test
   void shouldNotifyWatchesOnKeyAndAncestorsOnWholeSegments() {
@@ -179,6 +183,117 @@ final class WatchRegistryTest {
     // then
     assertThat(first.log).containsExactly("closed " + CloseReason.STORE_CLOSED);
     assertThat(second.log).containsExactly("closed " + CloseReason.STORE_CLOSED);
+  }
+
+  @Test
+  void shouldEndWatchWhoseRegistrationActorDropsOnClose() {
+    // given - the actor closes before it runs the registration, and so drops it
+    final var actorTasks = new ArrayList<Runnable>();
+    final var deferred = new WatchRegistry(actorTasks::add, () -> state);
+    final var keyReasons = new CopyOnWriteArrayList<CloseReason>();
+    final var namespaceReasons = new CopyOnWriteArrayList<CloseReason>();
+    deferred.watch(StoreKey.of(CONFIG, "a"), listener(event -> {}, keyReasons::add), DIRECT);
+    deferred.watchNamespace(
+        NamespaceScope.CLUSTER, namespaceListener(namespaceReasons::add), DIRECT);
+
+    // when
+    deferred.closeAll(CloseReason.STORE_CLOSED);
+
+    // then
+    assertThat(keyReasons).containsExactly(CloseReason.STORE_CLOSED);
+    assertThat(namespaceReasons).containsExactly(CloseReason.STORE_CLOSED);
+  }
+
+  @Test
+  void shouldNotRegisterWatchEndedBeforeItsRegistrationRan() {
+    // given
+    final var actorTasks = new ArrayList<Runnable>();
+    final var deferred = new WatchRegistry(actorTasks::add, () -> state);
+    final var log = new CopyOnWriteArrayList<String>();
+    deferred.watch(
+        StoreKey.of(CONFIG, "a"),
+        listener(event -> log.add(event.key().key()), reason -> log.add("closed " + reason)),
+        DIRECT);
+    deferred.closeAll(CloseReason.STORE_CLOSED);
+
+    // when - the actor runs the registration after all
+    actorTasks.forEach(Runnable::run);
+    final var applied =
+        EntryApplier.apply(
+            state,
+            state.appliedPosition() + 1,
+            new Entry(
+                "8.11.0", 0, List.of(new NamespaceEntry.KeysChanged(CONFIG, List.of(put("a"))))));
+    deferred.dispatch(applied.changes());
+
+    // then
+    assertThat(log).containsExactly("closed " + CloseReason.STORE_CLOSED);
+  }
+
+  @Test
+  void shouldEndWatchRegisteredAfterClose() {
+    // given
+    registry.closeAll(CloseReason.STORE_CLOSED);
+
+    // when
+    final var watch = watch("a");
+    final var namespaceReasons = new CopyOnWriteArrayList<CloseReason>();
+    registry.watchNamespace(
+        NamespaceScope.CLUSTER, namespaceListener(namespaceReasons::add), DIRECT);
+    apply(put("a"));
+
+    // then
+    assertThat(watch.log).containsExactly("closed " + CloseReason.STORE_CLOSED);
+    assertThat(namespaceReasons).containsExactly(CloseReason.STORE_CLOSED);
+  }
+
+  @Test
+  void shouldStopUsingExecutorOnceItRejects() {
+    // given
+    final var attempts = new AtomicInteger();
+    registry.watch(
+        StoreKey.of(CONFIG, "a"),
+        event -> {},
+        task -> {
+          attempts.incrementAndGet();
+          throw new RejectedExecutionException("shut down");
+        });
+
+    // when
+    apply(put("a.x"));
+    apply(put("a.y"));
+    registry.closeAll(CloseReason.STORE_CLOSED);
+
+    // then
+    assertThat(attempts).hasValue(1);
+  }
+
+  @Test
+  void shouldKeepDeliveringAfterListenerThrowsError() {
+    // given - an executor whose thread survives the error, as a pool's would
+    final Executor survivesErrors =
+        task -> {
+          try {
+            task.run();
+          } catch (final AssertionError ignored) {
+            // the next task runs as if on a fresh thread
+          }
+        };
+    final var received = new CopyOnWriteArrayList<String>();
+    registry.watch(
+        StoreKey.of(CONFIG, "a"),
+        event -> {
+          received.add(event.key().key());
+          throw new AssertionError("listener error");
+        },
+        survivesErrors);
+
+    // when
+    apply(put("a.x"));
+    apply(put("a.y"));
+
+    // then
+    assertThat(received).containsExactly("a.x", "a.y");
   }
 
   @Test
@@ -350,6 +465,19 @@ final class WatchRegistryTest {
     };
   }
 
+  private static WatchListener<NamespaceChange> namespaceListener(
+      final Consumer<CloseReason> onClosed) {
+    return new WatchListener<>() {
+      @Override
+      public void onEvent(final NamespaceChange change) {}
+
+      @Override
+      public void onClosed(final CloseReason reason) {
+        onClosed.accept(reason);
+      }
+    };
+  }
+
   private static void awaitRelease(final CountDownLatch latch) {
     try {
       latch.await();
@@ -382,11 +510,38 @@ final class WatchRegistryTest {
         EntryApplier.apply(
             state, state.appliedPosition() + 1, new Entry("8.11.0", 0, List.of(namespace)));
     state = applied.state();
-    registry.dispatch(applied.changes());
+    actor.run(() -> registry.dispatch(applied.changes()));
   }
 
   private static Operation put(final String key) {
     return new Operation.Put(key, V1);
+  }
+
+  /**
+   * Runs one task at a time. A task submitted from within a running task runs after it, as on the
+   * store's actor, so a removal requested during dispatch does not change the watches dispatch is
+   * iterating.
+   */
+  private static final class TestActor {
+    private final Deque<Runnable> queued = new ArrayDeque<>();
+    private boolean running;
+
+    synchronized void run(final Runnable task) {
+      if (running) {
+        queued.add(task);
+        return;
+      }
+      running = true;
+      try {
+        task.run();
+        Runnable next;
+        while ((next = queued.poll()) != null) {
+          next.run();
+        }
+      } finally {
+        running = false;
+      }
+    }
   }
 
   private static final class Watch {

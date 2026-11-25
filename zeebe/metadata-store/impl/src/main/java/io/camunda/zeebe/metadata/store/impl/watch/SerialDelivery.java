@@ -12,15 +12,18 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * A FIFO queue of calls on the executor of one subscription, with at most one drain running at a
  * time. The executor itself need not be single-threaded or FIFO: the calls still run one at a time
- * and in the order they were queued. A call that throws is logged and does not stop the ones after
- * it. An executor that rejects a drain, for example because its consumer shut it down, gets no
- * further calls: they are dropped, so the store never fails because of a consumer's executor.
+ * and in the order they were queued. A call that throws an exception is logged and does not stop
+ * the ones after it; an error propagates to the executor, and the remaining calls run with the next
+ * one queued. An executor that rejects a drain, for example because its consumer shut it down, gets
+ * no further drains: the queued calls are dropped and the rejection is handed to the owner, so the
+ * store never fails because of a consumer's executor.
  */
 final class SerialDelivery {
 
@@ -28,17 +31,15 @@ final class SerialDelivery {
 
   private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
   private final AtomicBoolean draining = new AtomicBoolean();
-  private final AtomicBoolean rejected = new AtomicBoolean();
   private final Executor executor;
+  private final Consumer<RejectedExecutionException> onRejected;
 
-  SerialDelivery(final Executor executor) {
+  SerialDelivery(final Executor executor, final Consumer<RejectedExecutionException> onRejected) {
     this.executor = executor;
+    this.onRejected = onRejected;
   }
 
   void enqueue(final Runnable call) {
-    if (rejected.get()) {
-      return;
-    }
     queue.add(call);
     scheduleDrain();
   }
@@ -48,26 +49,26 @@ final class SerialDelivery {
       try {
         executor.execute(this::drain);
       } catch (final RejectedExecutionException e) {
-        rejected.set(true);
+        // draining stays set, so no later call schedules a drain on this executor again
         queue.clear();
-        LOG.warn(
-            "The executor of a cluster metadata store listener rejected its events; dropping them"
-                + " and every later one",
-            e);
+        onRejected.accept(e);
       }
     }
   }
 
   private void drain() {
-    Runnable call;
-    while ((call = queue.poll()) != null) {
-      try {
-        call.run();
-      } catch (final Exception e) {
-        LOG.warn("A cluster metadata store listener failed; continuing with the next event", e);
+    try {
+      Runnable call;
+      while ((call = queue.poll()) != null) {
+        try {
+          call.run();
+        } catch (final Exception e) {
+          LOG.warn("A cluster metadata store listener failed; continuing with the next event", e);
+        }
       }
+    } finally {
+      draining.set(false);
     }
-    draining.set(false);
     // a call queued after the last poll but before the flag was cleared found the drain running
     if (!queue.isEmpty()) {
       scheduleDrain();

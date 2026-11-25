@@ -29,16 +29,21 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /**
- * The registered watches, by namespace and key path, and the dispatch of changes to them. Confined
- * to the actor that applies entries: registration, dispatch and removal run on it, so a
- * subscription receives every change applied after its registration and none before. A change
- * reaches the watches on the changed key and on each of its ancestor paths, so the cost of a change
- * depends on the depth of its key, not on the number of watches.
+ * The registered watches, by namespace and key path, and the dispatch of changes to them. The
+ * watches are confined to the actor that applies entries: registration, dispatch and removal run on
+ * it, so a subscription receives every change applied after its registration and none before. A
+ * change reaches the watches on the changed key and on each of its ancestor paths, so the cost of a
+ * change depends on the depth of its key, not on the number of watches.
+ *
+ * <p>Once {@link #closeAll} ran, every subscription ends with its reason, including those whose
+ * registration the actor drops because it closes.
  */
 public final class WatchRegistry {
 
@@ -46,12 +51,21 @@ public final class WatchRegistry {
       new HashMap<>();
   private final Map<NamespaceScope, Set<StoreSubscription<NamespaceChange>>> namespaceWatches =
       new EnumMap<>(NamespaceScope.class);
+
+  /** Subscriptions handed to the actor but not registered yet; shared with the callers' threads. */
+  private final Set<StoreSubscription<?>> pending = ConcurrentHashMap.newKeySet();
+
   private final Consumer<Runnable> onActor;
   private final Supplier<StoreState> state;
+  private volatile @Nullable CloseReason closeReason;
 
   /**
-   * @param onActor runs a task on the actor that owns the registry
-   * @param state the store's current published state, read on that actor
+   * @param onActor runs a task on the actor that owns the registry. Called from the actor, it runs
+   *     the task after the current one, as {@code ActorControl#run} does, because a subscription
+   *     may unregister during dispatch. The actor may drop the task once it closes.
+   * @param state the store's current published state. It is read on the actor and, to check the
+   *     namespace of a new watch, on the caller's thread, so it must be safe to read from any
+   *     thread, for example from a volatile field.
    */
   public WatchRegistry(final Consumer<Runnable> onActor, final Supplier<StoreState> state) {
     this.onActor = onActor;
@@ -77,7 +91,7 @@ public final class WatchRegistry {
     final var subscription =
         new StoreSubscription<>(
             listener, executor, s -> onActor.accept(() -> removeKeyWatch(key, s)));
-    onActor.accept(() -> registerKeyWatch(key, subscription));
+    register(subscription, () -> registerKeyWatch(key, subscription));
     return subscription;
   }
 
@@ -89,7 +103,7 @@ public final class WatchRegistry {
     final var subscription =
         new StoreSubscription<>(
             listener, executor, s -> onActor.accept(() -> namespaceWatchesOf(scope).remove(s)));
-    onActor.accept(() -> namespaceWatchesOf(scope).add(subscription));
+    register(subscription, () -> namespaceWatchesOf(scope).add(subscription));
     return subscription;
   }
 
@@ -103,14 +117,45 @@ public final class WatchRegistry {
     }
   }
 
-  /** Ends every subscription with the reason and removes it. */
+  /**
+   * Ends every subscription with the reason and removes it. Registrations that have not run yet, or
+   * that start later, end with the same reason.
+   */
   public void closeAll(final CloseReason reason) {
+    closeReason = reason;
+    pending.forEach(subscription -> endPending(subscription, reason));
     final var subscriptions = new ArrayList<StoreSubscription<?>>();
     keyWatches.values().forEach(paths -> paths.values().forEach(subscriptions::addAll));
     namespaceWatches.values().forEach(subscriptions::addAll);
     keyWatches.clear();
     namespaceWatches.clear();
     subscriptions.forEach(subscription -> subscription.end(reason));
+  }
+
+  /**
+   * Hands the registration to the actor. Whichever of the registration and {@link #closeAll}
+   * removes the subscription from the pending ones first decides whether it is registered or ended,
+   * so it is never both and, even if the actor drops the registration, never neither.
+   */
+  private void register(final StoreSubscription<?> subscription, final Runnable registration) {
+    pending.add(subscription);
+    final var reason = closeReason;
+    if (reason != null) {
+      endPending(subscription, reason);
+      return;
+    }
+    onActor.accept(
+        () -> {
+          if (pending.remove(subscription)) {
+            registration.run();
+          }
+        });
+  }
+
+  private void endPending(final StoreSubscription<?> subscription, final CloseReason reason) {
+    if (pending.remove(subscription)) {
+      subscription.end(reason);
+    }
   }
 
   private void dispatch(final KeyEvent event) {
