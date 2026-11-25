@@ -234,27 +234,36 @@ public final class S3BackupStore implements BackupStore {
     return updateManifestObject(
             backup.id(), Manifest::expectNoBackup, manifest -> manifest.asInProgress(backup))
         .thenComposeAsync(
-            status -> {
-              final var snapshot = saveSnapshotFiles(backup);
-              final var segments = saveSegmentFiles(backup);
-
-              return CompletableFuture.allOf(snapshot, segments)
-                  .thenComposeAsync(
-                      ignored ->
-                          updateManifestObject(
-                              backup.id(),
-                              Manifest::expectInProgress,
-                              inProgress ->
-                                  inProgress.asCompleted(snapshot.join(), segments.join())))
-                  .exceptionallyComposeAsync(
-                      throwable ->
-                          updateManifestObject(
-                                  backup.id(), manifest -> manifest.asFailed(throwable))
-                              // Mark the returned future as failed.
-                              .thenCompose(ignore -> CompletableFuture.failedStage(throwable)));
-            })
+            status ->
+                saveContents(backup)
+                    .exceptionallyComposeAsync(
+                        throwable ->
+                            updateManifestObject(
+                                    backup.id(), manifest -> manifest.asFailed(throwable))
+                                // Mark the returned future as failed.
+                                .thenCompose(ignore -> CompletableFuture.failedStage(throwable))))
         // Discard status, it's either COMPLETED or the future is completed exceptionally
         .thenApply(ignored -> null);
+  }
+
+  private CompletableFuture<ValidBackupManifest> saveContents(final Backup backup) {
+    return uploadContents(backup).thenComposeAsync(this::markCompleted);
+  }
+
+  private CompletableFuture<UploadedContents> uploadContents(final Backup backup) {
+    final var snapshot = saveSnapshotFiles(backup);
+    final var segments = saveSegmentFiles(backup);
+    return snapshot.thenCombine(
+        segments,
+        (snapshotFiles, segmentFiles) ->
+            new UploadedContents(backup.id(), snapshotFiles, segmentFiles));
+  }
+
+  private CompletableFuture<ValidBackupManifest> markCompleted(final UploadedContents contents) {
+    return updateManifestObject(
+        contents.id(),
+        Manifest::expectInProgress,
+        inProgress -> inProgress.asCompleted(contents.snapshotFiles(), contents.segmentFiles()));
   }
 
   @Override
@@ -801,20 +810,16 @@ public final class S3BackupStore implements BackupStore {
 
     return client
         .putObject(
-            request ->
-                request
-                    .bucket(config.bucketName())
-                    .key(
-                        manifest
-                                .backupDescriptor()
-                                .map(
-                                    descriptor ->
-                                        derivePath(descriptor, manifest.id(), Directory.MANIFESTS))
-                                .orElseGet(() -> objectPrefix(manifest.id(), Directory.MANIFESTS))
-                            + MANIFEST_OBJECT_KEY)
-                    .build(),
-            body)
+            request -> request.bucket(config.bucketName()).key(manifestKey(manifest)).build(), body)
         .thenApply(resp -> manifest);
+  }
+
+  private String manifestKey(final ValidBackupManifest manifest) {
+    return manifest
+            .backupDescriptor()
+            .map(descriptor -> derivePath(descriptor, manifest.id(), Directory.MANIFESTS))
+            .orElseGet(() -> objectPrefix(manifest.id(), Directory.MANIFESTS))
+        + MANIFEST_OBJECT_KEY;
   }
 
   private CompletableFuture<FileSet> saveSnapshotFiles(final Backup backup) {
@@ -903,6 +908,10 @@ public final class S3BackupStore implements BackupStore {
       return checkpointIds;
     }
   }
+
+  /** The uploaded contents of a backup, before its manifest is marked as completed. */
+  private record UploadedContents(
+      BackupIdentifier id, FileSet snapshotFiles, FileSet segmentFiles) {}
 
   public enum Directory {
     MANIFESTS("manifests"),
