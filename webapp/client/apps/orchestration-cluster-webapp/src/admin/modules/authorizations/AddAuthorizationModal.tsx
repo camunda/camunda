@@ -34,6 +34,7 @@ import {
 	AUTHORIZATION_WILDCARD,
 	SECRET_NAME_PATTERN,
 	SECRET_REFERENCE_PREFIX,
+	isValidProbeResourceId,
 	isValidResourceId,
 	isValidSecretResourceId,
 } from './authorizationValidation';
@@ -129,6 +130,12 @@ const AddAuthorizationModal: React.FC<Props> = ({
 									: isValidSecretResourceId(resourceId)
 										? undefined
 										: t('admin.authorizations.secretResourceIdInvalidError', {pattern: SECRET_NAME_PATTERN.toString()});
+							} else if (resourceType === 'PROBE') {
+								resourceIdError = !resourceId
+									? t('admin.authorizations.resourceIdRequiredError')
+									: isValidProbeResourceId(resourceId)
+										? undefined
+										: t('admin.authorizations.probeResourceIdInvalidError');
 							} else if (resourceType !== 'USER_TASK') {
 								resourceIdError = !resourceId
 									? t('admin.authorizations.resourceIdRequiredError')
