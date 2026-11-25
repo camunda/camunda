@@ -236,7 +236,7 @@
 }
 
 .instance-agent-shine {
-	background-image: linear-gradient(120deg, transparent, var(--accent-action-default), transparent);
+	background-image: linear-gradient(120deg, transparent, var(--primary-action-default), transparent);
 	background-size: 300% 300%;
 	animation: instance-agent-shine 8s linear infinite;
 	mask:
@@ -300,9 +300,8 @@
 	}
 
 	.op-selectable:focus-visible .djs-outline {
-		stroke-width: 2px;
+		stroke-width: 3px;
 		stroke: var(--ring);
-		stroke-dasharray: 4 3;
 	}
 
 	@media (forced-colors: active) {
