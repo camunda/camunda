@@ -7,11 +7,48 @@
  */
 package io.camunda.zeebe.metrics;
 
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
 public enum WorkerMetricsDoc implements ExtendedMeterDocumentation {
+
+  /**
+   * Constant gauge (always 1) exposing the static configuration of the worker as tags: the {@code
+   * name} of the component, the {@code job_type} it works on, the {@code completion_delay} and
+   * whether it {@code send_message}s before completing a job. Lets dashboards surface how a load
+   * test is configured, e.g. {@code avg(client_info) by (completion_delay)}.
+   */
+  CLIENT_INFO {
+    private static final KeyName[] KEY_NAMES =
+        new KeyName[] {
+          StarterMetricKeyNames.NAME,
+          WorkerMetricKeyNames.JOB_TYPE,
+          WorkerMetricKeyNames.COMPLETION_DELAY,
+          WorkerMetricKeyNames.SEND_MESSAGE
+        };
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public String getDescription() {
+      return "The information about the client.";
+    }
+
+    @Override
+    public String getName() {
+      return "client.info";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+  },
 
   /**
    * Total number of message publications attempted by the worker before completing a job, by their
@@ -77,7 +114,7 @@ public enum WorkerMetricsDoc implements ExtendedMeterDocumentation {
   JOB_COMPLETION_TRACKING_DROPPED {
     @Override
     public KeyName[] getKeyNames() {
-      return new KeyName[0];
+      return JOB_TYPE_KEY_NAMES;
     }
 
     @Override
@@ -103,7 +140,7 @@ public enum WorkerMetricsDoc implements ExtendedMeterDocumentation {
   JOB_COMPLETIONS_PENDING {
     @Override
     public KeyName[] getKeyNames() {
-      return new KeyName[0];
+      return JOB_TYPE_KEY_NAMES;
     }
 
     @Override
@@ -123,5 +160,35 @@ public enum WorkerMetricsDoc implements ExtendedMeterDocumentation {
   };
 
   private static final KeyName[] OUTCOME_KEY_NAMES =
-      new KeyName[] {ResultMetricKeyNames.OUTCOME, ResultMetricKeyNames.ERROR};
+      new KeyName[] {
+        WorkerMetricKeyNames.JOB_TYPE, ResultMetricKeyNames.OUTCOME, ResultMetricKeyNames.ERROR
+      };
+  private static final KeyName[] JOB_TYPE_KEY_NAMES = new KeyName[] {WorkerMetricKeyNames.JOB_TYPE};
+
+  public enum WorkerMetricKeyNames implements KeyName {
+
+    /** The job type the worker activates. */
+    JOB_TYPE {
+      @Override
+      public String asString() {
+        return "job_type";
+      }
+    },
+
+    /** The configured completion delay of the worker, as an ISO-8601 duration. */
+    COMPLETION_DELAY {
+      @Override
+      public String asString() {
+        return "completion_delay";
+      }
+    },
+
+    /** Whether the worker publishes a message before completing a job. */
+    SEND_MESSAGE {
+      @Override
+      public String asString() {
+        return "send_message";
+      }
+    }
+  }
 }
