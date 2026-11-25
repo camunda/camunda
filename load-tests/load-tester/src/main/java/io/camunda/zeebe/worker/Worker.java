@@ -21,9 +21,13 @@ import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc.WorkerMetricKeyNames;
 import io.camunda.zeebe.spring.client.annotation.JobWorker;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
@@ -33,6 +37,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -51,16 +56,32 @@ public class Worker {
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
+  private final WorkerResultMetrics resultMetrics;
 
   public Worker(
       final ZeebeClient client,
       final LoadTesterProperties properties,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final ConnectionMonitor connectionMonitor,
+      final MeterRegistry registry,
+      @Value("${camunda.client.zeebe.defaults.type}") final String jobType) {
     this.client = client;
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
-    responseChecker = new ResponseChecker(requestFutures);
+    resultMetrics = new WorkerResultMetrics(registry, jobType, requestFutures);
+
+    // Static values, registered early so they are available even if the client never connects.
+    Gauge.builder(WorkerMetricsDoc.CLIENT_INFO.getName(), () -> 1)
+        .description(WorkerMetricsDoc.CLIENT_INFO.getDescription())
+        .tag(WorkerMetricKeyNames.NAME.asString(), "worker")
+        .tag(WorkerMetricKeyNames.JOB_TYPE.asString(), jobType)
+        .tag(
+            WorkerMetricKeyNames.COMPLETION_DELAY.asString(),
+            workerCfg.getCompletionDelay().toString())
+        .tag(
+            WorkerMetricKeyNames.SEND_MESSAGE.asString(), String.valueOf(workerCfg.isSendMessage()))
+        .register(registry);
+    responseChecker = new ResponseChecker(requestFutures, resultMetrics);
     this.connectionMonitor = connectionMonitor;
   }
 
@@ -130,6 +151,7 @@ public class Worker {
       // completion rather than stalling the job handler thread (which would cascade into
       // broker timeouts). We lose visibility into its eventual result — log throttled so
       // the operator can notice sustained backpressure without flooding the log.
+      resultMetrics.recordTrackingDropped();
       THROTTLED_LOGGER.warn(
           "Completion-response queue full (capacity: {}); dropping future tracking",
           REQUEST_FUTURES_CAPACITY);
@@ -149,8 +171,10 @@ public class Worker {
 
     try {
       messageSendFuture.get(10, TimeUnit.SECONDS);
+      resultMetrics.recordMessagePublication();
       return true;
     } catch (final Exception ex) {
+      resultMetrics.recordMessagePublication(ex);
       THROTTLED_LOGGER.error(
           "Exception on publishing a message with name {} and correlationKey {}",
           messageName,

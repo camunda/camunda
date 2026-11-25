@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.ClientHttpException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2;
@@ -35,7 +36,11 @@ import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc;
 import io.camunda.zeebe.util.PayloadReader;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -43,10 +48,13 @@ import org.junit.jupiter.api.Test;
 
 class WorkerTest {
 
+  private static final String JOB_TYPE = "test-task";
   private static final String CORRELATION_KEY_VAR = "correlationKey-var";
   private static final String CORRELATION_KEY_VALUE = "abc";
   private static final String MESSAGE_NAME = "messageName";
   private static final Duration COMPLETION_DELAY = Duration.ofMillis(250);
+
+  private final MeterRegistry registry = new SimpleMeterRegistry();
 
   @Test
   void shouldApplyCompletionDelayWhenPublishMessageFails() throws Exception {
@@ -115,17 +123,83 @@ class WorkerTest {
     return props;
   }
 
-  private static Worker newWorker(final ZeebeClient client, final WorkerProperties workerProps) {
+  @Test
+  void shouldCountFailedMessagePublication() throws Exception {
+    // given - a publish that fails with an HTTP 503
+    final var client = mock(ZeebeClient.class);
+    mockFailingPublish(client, new ClientHttpException(503, "Service Unavailable"));
+    final var worker = newWorker(client, sendMessageProperties());
+
+    // when
+    worker.handleJob(mock(JobClient.class), mockJob());
+
+    // then
+    assertThat(publications("failure", "http_503")).isEqualTo(1.0);
+    assertThat(publications("success", null)).isZero();
+  }
+
+  @Test
+  void shouldCountSuccessfulMessagePublication() throws Exception {
+    // given
+    final var jobClient = mock(JobClient.class);
+    final var client = mock(ZeebeClient.class);
+    mockSuccessfulPublish(client);
+    mockCompleteJob(jobClient);
+    final var worker = newWorker(client, sendMessageProperties());
+
+    // when
+    worker.handleJob(jobClient, mockJob());
+
+    // then
+    assertThat(publications("success", null)).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldExposeClientInfoWithStaticConfiguration() {
+    // given
+    final var client = mock(ZeebeClient.class);
+
+    // when
+    newWorker(client, sendMessageProperties());
+
+    // then
+    final var gauge =
+        registry
+            .get(WorkerMetricsDoc.CLIENT_INFO.getName())
+            .tag("name", "worker")
+            .tag("job_type", JOB_TYPE)
+            .tag("completion_delay", COMPLETION_DELAY.toString())
+            .tag("send_message", "true")
+            .gauge();
+    assertThat(gauge.value()).isEqualTo(1.0);
+  }
+
+  private Worker newWorker(final ZeebeClient client, final WorkerProperties workerProps) {
     final var properties = new LoadTesterProperties();
     properties.setWorker(workerProps);
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(anyString())).thenReturn("{}");
     final var connectionMonitor = mock(ConnectionMonitor.class);
-    return new Worker(client, properties, payloadReader, connectionMonitor);
+    return new Worker(client, properties, payloadReader, connectionMonitor, registry, JOB_TYPE);
+  }
+
+  private double publications(final String outcome, final String error) {
+    final var counter =
+        registry
+            .find(WorkerMetricsDoc.MESSAGE_PUBLICATIONS.getName())
+            .tag("outcome", outcome)
+            .tags(error == null ? Tags.empty() : Tags.of("error", error))
+            .counter();
+    return counter == null ? 0.0 : counter.count();
+  }
+
+  private static void mockFailingPublish(final ZeebeClient client) throws Exception {
+    mockFailingPublish(client, new RuntimeException());
   }
 
   @SuppressWarnings("unchecked")
-  private static void mockFailingPublish(final ZeebeClient client) throws Exception {
+  private static void mockFailingPublish(final ZeebeClient client, final Throwable cause)
+      throws Exception {
     final var step1 = mock(PublishMessageCommandStep1.class);
     final var step2 = mock(PublishMessageCommandStep2.class);
     final var step3 = mock(PublishMessageCommandStep3.class);
@@ -135,7 +209,7 @@ class WorkerTest {
     when(step2.correlationKey(CORRELATION_KEY_VALUE)).thenReturn(step3);
     when(step3.send()).thenReturn(future);
     when(future.get(anyLong(), org.mockito.ArgumentMatchers.any(TimeUnit.class)))
-        .thenThrow(new ExecutionException("simulated publish failure", new RuntimeException()));
+        .thenThrow(new ExecutionException("simulated publish failure", cause));
   }
 
   @SuppressWarnings("unchecked")
