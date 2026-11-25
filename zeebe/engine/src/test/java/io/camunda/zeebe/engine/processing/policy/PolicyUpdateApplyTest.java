@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.policy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -195,6 +197,132 @@ public final class PolicyUpdateApplyTest {
   }
 
   @Test
+  public void shouldApplyNothingOfAnUpdateWithAnInvalidAuthorization() {
+    // given a valid role and an authorization of a role that neither the state nor the update has
+    final var validRoleId = "role-" + uid();
+    final var missingRoleId = "role-" + uid();
+    final var invalid =
+        chunk()
+            .setRoles(
+                List.<RoleRecordValue>of(
+                    new RoleRecord().setRoleId(validRoleId).setName(validRoleId)))
+            .setAuthorizations(
+                List.<AuthorizationRecordValue>of(
+                    authorization(missingRoleId, PermissionType.READ_PROCESS_DEFINITION)));
+
+    // when
+    apply(invalid);
+
+    // then
+    final var rejection = rejectionOf(invalid.getUpdateId());
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            AuthorizationEntityValidator.ROLE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(
+                missingRoleId));
+    assertThat(
+            RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.FAILED)
+                .filter(record -> record.getValue().getUpdateId().equals(invalid.getUpdateId()))
+                .exists())
+        .isTrue();
+
+    // a later update marks the end of everything the invalid one could have caused
+    final var later = chunk();
+    apply(later);
+    final var laterUpdateId = later.getUpdateId();
+    assertThat(
+            RecordingExporter.records()
+                .limit(
+                    record ->
+                        record.getIntent() == PolicyUpdateIntent.CHUNK_APPLIED
+                            && ((PolicyUpdateRecordValue) record.getValue())
+                                .getUpdateId()
+                                .equals(laterUpdateId))
+                .roleRecords()
+                .withRoleId(validRoleId)
+                .exists())
+        .isFalse();
+  }
+
+  @Test
+  public void shouldNameOnlyTheFirstReasonsOfAnUpdateWithManyInvalidEntries() {
+    // given authorizations of roles that neither the state nor the update has
+    final int invalidEntries = PolicyUpdateAppendChunkProcessor.MAX_REPORTED_ERRORS + 15;
+    final var missingRoleIds =
+        IntStream.range(0, invalidEntries).mapToObj(i -> "role-" + i + "-" + uid()).toList();
+    final var chunk =
+        chunk()
+            .setAuthorizations(
+                missingRoleIds.stream()
+                    .<AuthorizationRecordValue>map(
+                        roleId -> authorization(roleId, PermissionType.READ_PROCESS_DEFINITION))
+                    .toList());
+
+    // when
+    apply(chunk);
+
+    // then
+    final var rejection = rejectionOf(chunk.getUpdateId());
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(missingRoleIds.get(PolicyUpdateAppendChunkProcessor.MAX_REPORTED_ERRORS - 1))
+        .doesNotContain(missingRoleIds.get(PolicyUpdateAppendChunkProcessor.MAX_REPORTED_ERRORS))
+        .endsWith("and 15 more");
+    assertThat(
+            RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.FAILED)
+                .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
+                .getFirst()
+                .getValue()
+                .getErrorMessage())
+        .isEqualTo(rejection.getRejectionReason());
+  }
+
+  @Test
+  public void shouldRejectAnUpdateThatUpsertsARoleTwice() {
+    // given
+    final var roleId = "role-" + uid();
+    final var chunk =
+        chunk()
+            .setRoles(
+                List.<RoleRecordValue>of(
+                    new RoleRecord().setRoleId(roleId).setName("first"),
+                    new RoleRecord().setRoleId(roleId).setName("second")));
+
+    // when
+    apply(chunk);
+
+    // then
+    final var rejection = rejectionOf(chunk.getUpdateId());
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains("role with ID '%s' appears more than once".formatted(roleId));
+  }
+
+  @Test
+  public void shouldRejectAnUpdateThatUpsertsAnAuthorizationTwice() {
+    // given two authorizations of the same owner and resource
+    final var roleId = "role-" + uid();
+    final var chunk =
+        chunk()
+            .setRoles(List.<RoleRecordValue>of(new RoleRecord().setRoleId(roleId).setName(roleId)))
+            .setAuthorizations(
+                List.<AuthorizationRecordValue>of(
+                    authorization(roleId, PermissionType.READ_PROCESS_DEFINITION),
+                    authorization(roleId, PermissionType.UPDATE_PROCESS_INSTANCE)));
+
+    // when
+    apply(chunk);
+
+    // then
+    final var rejection = rejectionOf(chunk.getUpdateId());
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            "authorization of ROLE '%s' on PROCESS_DEFINITION 'process-%s' appears more than once"
+                .formatted(roleId, roleId));
+  }
+
+  @Test
   public void shouldRejectAnAppendedChunkSentAsClientRequest() {
     assertRejectedAsClientRequest(PolicyUpdateIntent.APPEND_CHUNK);
   }
@@ -253,6 +381,13 @@ public final class PolicyUpdateApplyTest {
     assertThat(rejection.getRejectionReason()).contains("client request");
   }
 
+  static Record<PolicyUpdateRecordValue> rejectionOf(final String updateId) {
+    return RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPEND_CHUNK)
+        .onlyCommandRejections()
+        .filter(record -> record.getValue().getUpdateId().equals(updateId))
+        .getFirst();
+  }
+
   private static PolicyMembershipEntry membership(
       final PolicyUpdateEntityType targetType,
       final String targetId,
@@ -265,8 +400,7 @@ public final class PolicyUpdateApplyTest {
         .setMemberId(memberId);
   }
 
-  private static AuthorizationRecord authorization(
-      final String roleId, final PermissionType permission) {
+  static AuthorizationRecord authorization(final String roleId, final PermissionType permission) {
     return new AuthorizationRecord()
         .setOwnerType(AuthorizationOwnerType.ROLE)
         .setOwnerId(roleId)

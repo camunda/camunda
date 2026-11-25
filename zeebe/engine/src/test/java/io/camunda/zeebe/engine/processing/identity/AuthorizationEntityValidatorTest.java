@@ -13,7 +13,6 @@ import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityVal
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.USER_DOES_NOT_EXIST_ERROR_MESSAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
@@ -21,23 +20,12 @@ import io.camunda.security.api.model.config.initialization.InitializationConfigu
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
-import io.camunda.zeebe.engine.state.authorization.PersistedRole;
-import io.camunda.zeebe.engine.state.group.PersistedGroup;
-import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
-import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,13 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AuthorizationEntityValidatorTest {
 
-  @Mock private ProcessingState processingState;
-  @Mock private UserState userState;
-  @Mock private MappingRuleState mappingRuleState;
-  @Mock private GroupState groupState;
-  @Mock private RoleState roleState;
-
-  @Mock private TypedRecord<AuthorizationRecord> command;
+  @Mock private IdentityView identityView;
 
   @Mock private AuthenticationConfiguration authConfig;
 
@@ -64,11 +46,6 @@ class AuthorizationEntityValidatorTest {
 
   @BeforeEach
   void setUp() {
-    when(processingState.getUserState()).thenReturn(userState);
-    when(processingState.getMappingRuleState()).thenReturn(mappingRuleState);
-    when(processingState.getGroupState()).thenReturn(groupState);
-    when(processingState.getRoleState()).thenReturn(roleState);
-
     final EngineSecurityConfig securityConfig =
         new EngineSecurityConfig(
             authConfig,
@@ -77,13 +54,11 @@ class AuthorizationEntityValidatorTest {
             new InitializationConfiguration(),
             EngineSecurityConfigurations.ID_VALIDATION_PATTERN,
             EngineSecurityConfigurations.GROUP_ID_VALIDATION_PATTERN);
-    checker = new AuthorizationEntityValidator(processingState, securityConfig);
-    lenient().when(userState.getUser("user1")).thenReturn(Optional.of(mock(PersistedUser.class)));
-    lenient().when(roleState.getRole("role1")).thenReturn(Optional.of(mock(PersistedRole.class)));
-    lenient().when(groupState.get("group1")).thenReturn(Optional.of(mock(PersistedGroup.class)));
-    lenient()
-        .when(mappingRuleState.get("mapping-rule1"))
-        .thenReturn(Optional.of(mock(PersistedMappingRule.class)));
+    checker = new AuthorizationEntityValidator(identityView, securityConfig);
+    lenient().when(identityView.userExists("user1")).thenReturn(true);
+    lenient().when(identityView.roleExists("role1")).thenReturn(true);
+    lenient().when(identityView.groupExists("group1")).thenReturn(true);
+    lenient().when(identityView.mappingRuleExists("mapping-rule1")).thenReturn(true);
   }
 
   @ParameterizedTest
@@ -101,12 +76,10 @@ class AuthorizationEntityValidatorTest {
     final AuthorizationRecord record =
         createAuthorizationRecord(ownerType, ownerId, resourceType, resourceId);
 
-    when(command.getValue()).thenReturn(record);
-
     when(authConfig.isExternalGroupsEnabled()).thenReturn(!groupMustExist);
     when(authConfig.isCamundaUsersEnabled()).thenReturn(localUserEnabled);
     // when
-    final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(command);
+    final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(record);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -142,13 +115,11 @@ class AuthorizationEntityValidatorTest {
     final AuthorizationRecord record =
         createAuthorizationRecord(ownerType, ownerId, resourceType, resourceId);
 
-    when(command.getValue()).thenReturn(record);
-
     when(authConfig.isExternalGroupsEnabled()).thenReturn(!groupMustExist);
     when(authConfig.isCamundaUsersEnabled()).thenReturn(localUserEnabled);
 
     // when
-    final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(command);
+    final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(record);
 
     // then
     assertThat(result.isLeft()).isTrue();

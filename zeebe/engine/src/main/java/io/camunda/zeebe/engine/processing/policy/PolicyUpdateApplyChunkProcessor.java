@@ -24,11 +24,12 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Applies one buffered chunk of a policy update, once all its chunks are buffered. The chunk is
- * turned into identity commands, which the identity processors apply and distribute to the other
- * partitions. Each identity processor validates its own command, so an entry that cannot be
- * applied, for example a delete of a missing role, is rejected on its own while the other entries
- * of the chunk apply.
+ * Applies one buffered chunk of a policy update, once all its chunks are buffered and the update is
+ * validated (see {@link PolicyUpdateAppendChunkProcessor}). The chunk is turned into identity
+ * commands, which the identity processors apply and distribute to the other partitions. Each
+ * identity processor still validates its own command, so an entry that became invalid since the
+ * update was validated, or that the update validation doesn't check yet, is rejected on its own
+ * while the other entries of the chunk apply.
  *
  * <p>The processor then writes the command for the next chunk. Its identity commands are written
  * after those of this chunk, so the chunks are applied in order. After the last chunk, it instead
@@ -92,6 +93,7 @@ public final class PolicyUpdateApplyChunkProcessor
                   String.join("; ", commands.getLeft())));
       return;
     }
+
     commands
         .get()
         .forEach(

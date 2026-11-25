@@ -524,7 +524,12 @@ public final class EngineProcessors {
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
 
     PolicyUpdateProcessors.addPolicyUpdateProcessors(
-        typedRecordProcessors, processingState, keyGenerator, writers, commandDistributionBehavior);
+        typedRecordProcessors,
+        processingState,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior,
+        securityConfig);
 
     addResourceFetchProcessors(
         typedRecordProcessors, writers, processingState, permissionsBehavior, tenantCheck, config);

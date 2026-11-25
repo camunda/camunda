@@ -24,7 +24,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 
@@ -157,23 +156,5 @@ public class PermissionsBehavior {
             ownerId, record.getResourcePropertyName())
         : PERMISSIONS_FOR_RESOURCE_IDENTIFIER_ALREADY_EXISTS_MESSAGE.formatted(
             ownerId, record.getResourceId());
-  }
-
-  public Either<Rejection, AuthorizationRecord> hasValidPermissionTypes(
-      final AuthorizationRecord record,
-      final Set<PermissionType> permissionTypes,
-      final AuthorizationResourceType resourceType,
-      final String rejectionMessage) {
-    if (resourceType.getSupportedPermissionTypes().containsAll(record.getPermissionTypes())) {
-      return Either.right(record);
-    }
-
-    permissionTypes.removeAll(resourceType.getSupportedPermissionTypes());
-
-    return Either.left(
-        new Rejection(
-            RejectionType.INVALID_ARGUMENT,
-            rejectionMessage.formatted(
-                permissionTypes, resourceType, resourceType.getSupportedPermissionTypes())));
   }
 }

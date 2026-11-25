@@ -59,7 +59,8 @@ public class AuthorizationCreateProcessor
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
     permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
-    authorizationEntityChecker = new AuthorizationEntityValidator(processingState, securityConfig);
+    authorizationEntityChecker =
+        new AuthorizationEntityValidator(new StateIdentityView(processingState), securityConfig);
     this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
   }
 
@@ -71,14 +72,11 @@ public class AuthorizationCreateProcessor
         .isAuthorized(command, PermissionType.CREATE)
         .flatMap(
             record ->
-                permissionsBehavior.hasValidPermissionTypes(
-                    record,
-                    record.getPermissionTypes(),
-                    record.getResourceType(),
-                    "Expected to create authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
+                authorizationEntityChecker.validatePermissionTypes(
+                    record, record.getResourceType(), "create"))
         .flatMap(record -> authorizationEntityChecker.validateResourceMatcher(record, "create"))
         .flatMap(permissionsBehavior::permissionsAlreadyExist)
-        .flatMap(authorizationRecord -> authorizationEntityChecker.ownerAndResourceExists(command))
+        .flatMap(authorizationEntityChecker::ownerAndResourceExists)
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, command.getValue()),
             (rejection) -> {
@@ -96,7 +94,7 @@ public class AuthorizationCreateProcessor
         command.getValue().getOwnerId());
     permissionsBehavior
         .permissionsAlreadyExist(command.getValue())
-        .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
+        .flatMap(authorizationEntityChecker::ownerAndResourceExists)
         .ifRightOrLeft(
             ignored -> {
               stateWriter.appendFollowUpEvent(

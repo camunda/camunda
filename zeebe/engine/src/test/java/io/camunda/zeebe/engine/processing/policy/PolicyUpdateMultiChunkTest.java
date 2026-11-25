@@ -9,18 +9,24 @@ package io.camunda.zeebe.engine.processing.policy;
 
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.appliedRecord;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.apply;
+import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.authorization;
+import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.rejectionOf;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.uid;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyDeleteEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.PolicyDeleteEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyMembershipEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
@@ -261,6 +267,123 @@ public final class PolicyUpdateMultiChunkTest {
 
     // then
     assertThat(appliedRecord(secondUpdateId).getValue().getChunkIndex()).isZero();
+  }
+
+  @Test
+  public void shouldFailAnUpdateWhoseLastChunkIsInvalidWithoutApplyingAnyChunk() {
+    // given a valid first chunk, and a last chunk with an authorization of a role that doesn't
+    // exist
+    final var updateId = "update-" + uid();
+    final var validRoleId = "role-" + uid();
+    final var missingRoleId = "role-" + uid();
+    apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(validRoleId))));
+
+    // when
+    apply(
+        ENGINE,
+        chunk(updateId, 1, 2)
+            .setAuthorizations(
+                List.<AuthorizationRecordValue>of(
+                    authorization(missingRoleId, PermissionType.READ_PROCESS_DEFINITION))));
+
+    // then
+    final var rejection = rejectionOf(updateId);
+    assertThat(rejection.getValue().getChunkIndex()).isOne();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains(missingRoleId);
+    assertThat(
+            RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.FAILED)
+                .filter(record -> record.getValue().getUpdateId().equals(updateId))
+                .exists())
+        .isTrue();
+
+    // a later update, which can only open once the failed one is removed, marks the end marks the
+    // end of everything the invalid one could have caused
+    final var laterUpdateId = "update-" + uid();
+    apply(ENGINE, chunk(laterUpdateId, 0, 1));
+    final var recordsUntilLaterUpdateApplied =
+        RecordingExporter.records()
+            .limit(
+                record ->
+                    record.getIntent() == PolicyUpdateIntent.CHUNK_APPLIED
+                        && ((PolicyUpdateRecordValue) record.getValue())
+                            .getUpdateId()
+                            .equals(laterUpdateId))
+            .toList();
+    assertThat(recordsUntilLaterUpdateApplied)
+        .noneMatch(
+            record ->
+                record.getIntent() == PolicyUpdateIntent.APPLY_CHUNK
+                    && ((PolicyUpdateRecordValue) record.getValue()).getUpdateId().equals(updateId))
+        .noneMatch(
+            record ->
+                record.getValue() instanceof final RoleRecordValue role
+                    && role.getRoleId().equals(validRoleId));
+  }
+
+  @Test
+  public void shouldRejectAnUpdateThatUpsertsARoleInTwoChunks() {
+    // given
+    final var updateId = "update-" + uid();
+    final var roleId = "role-" + uid();
+    apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
+
+    // when
+    apply(ENGINE, chunk(updateId, 1, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
+
+    // then
+    final var rejection = rejectionOf(updateId);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains("role with ID '%s' appears more than once".formatted(roleId));
+  }
+
+  @Test
+  public void shouldFailAnUpdateWithAnAuthorizationOfARoleThatAnEarlierChunkDeletes() {
+    // given
+    final var roleId = "role-" + uid();
+    final var setupUpdateId = "update-" + uid();
+    apply(ENGINE, chunk(setupUpdateId, 0, 1).setRoles(List.<RoleRecordValue>of(role(roleId))));
+    appliedRecord(setupUpdateId);
+
+    // when the first chunk deletes the role, and the second one authorizes it
+    final var updateId = "update-" + uid();
+    apply(
+        ENGINE,
+        chunk(updateId, 0, 2)
+            .setDeletes(
+                List.<PolicyDeleteEntryValue>of(
+                    new PolicyDeleteEntry()
+                        .setEntityType(PolicyUpdateEntityType.ROLE)
+                        .setId(roleId))));
+    apply(
+        ENGINE,
+        chunk(updateId, 1, 2)
+            .setAuthorizations(
+                List.<AuthorizationRecordValue>of(
+                    authorization(roleId, PermissionType.READ_PROCESS_DEFINITION))));
+
+    // then
+    final var rejection = rejectionOf(updateId);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains(roleId);
+
+    // a later update marks the end of everything the invalid one could have caused
+    final var laterUpdateId = "update-" + uid();
+    apply(ENGINE, chunk(laterUpdateId, 0, 1));
+    assertThat(
+            RecordingExporter.records()
+                .limit(
+                    record ->
+                        record.getIntent() == PolicyUpdateIntent.CHUNK_APPLIED
+                            && ((PolicyUpdateRecordValue) record.getValue())
+                                .getUpdateId()
+                                .equals(laterUpdateId))
+                .roleRecords()
+                .withIntent(RoleIntent.DELETED)
+                .withRoleId(roleId)
+                .exists())
+        .isFalse();
   }
 
   private static PolicyUpdateRecord chunk(
