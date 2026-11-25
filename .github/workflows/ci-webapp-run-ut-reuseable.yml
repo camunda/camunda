@@ -68,6 +68,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-be-${{inputs.componentName}}
+          test-run-order-key-modifier: ${{ inputs.suite }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
           vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}

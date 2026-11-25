@@ -49,6 +49,13 @@ inputs:
     description: A modifier to use for maven cache key
     required: false
     default: "shared"
+  test-run-order-key-modifier:
+    description: >
+      Passed to setup-maven-cache. Tells apart jobs that run different tests but share a workflow, job id, matrix and Maven
+      cache modifier, e.g. one reusable workflow called with different test suites. Jobs with the
+      same value share one set of test run-order statistics, so set it to whatever selects the tests.
+    default: ""
+    required: false
   maven-cache-download-timeout-mins:
     description: |
       Upper bound, in minutes, on how long the Maven cache restore may spend downloading a
@@ -195,6 +202,7 @@ runs:
     uses: ./.github/actions/setup-maven-cache
     with:
       maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
+      test-run-order-key-modifier: ${{ inputs.test-run-order-key-modifier }}
       cache-download-timeout-mins: ${{ inputs.maven-cache-download-timeout-mins }}
   # Camunda Nexus and extra mirrors/servers must be merged on ids (extra values have precedence).
   - name: Get Maven mirrors and servers to use

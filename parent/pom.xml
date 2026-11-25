@@ -37,6 +37,18 @@
     <!-- data layer nightly test exclusion flag -->
     <failsafe.excluded.nightly>dl-nightly</failsafe.excluded.nightly>
 
+    <!--
+      Start the test classes that took longest in the previous run first, so parallel forks don't
+      idle while one slow class finishes last. Run times come from a .surefire-<checksum> file in
+      the module basedir; without one, the order is the default filesystem order. The checksum pins
+      the file name (by default a hash of the whole plugin configuration) and keeps unit and
+      integration test statistics apart. CI carries the files between runs (setup-maven-cache).
+    -->
+    <surefire.runOrder>balanced</surefire.runOrder>
+    <surefire.runOrder.statisticsFile.checksum>unit</surefire.runOrder.statisticsFile.checksum>
+    <failsafe.runOrder>balanced</failsafe.runOrder>
+    <failsafe.runOrder.statisticsFile.checksum>it</failsafe.runOrder.statisticsFile.checksum>
+
     <!-- EXTERNAL LIBS -->
     <version.agrona>2.7.1</version.agrona>
     <version.animal-sniffer>1.29.1</version.animal-sniffer>
