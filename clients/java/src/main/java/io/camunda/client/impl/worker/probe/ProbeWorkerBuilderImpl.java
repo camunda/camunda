@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.regex.Pattern;
 
 /**
  * Builds a probe worker. Its defaults are the job worker's: the client's default job worker name,
@@ -54,8 +53,6 @@ public final class ProbeWorkerBuilderImpl
 
   /** The most probe IDs the cluster accepts in one poll. */
   static final int MAX_PROBE_IDS = 100;
-
-  private static final Pattern WHITESPACE = Pattern.compile("\\s");
 
   private final CamundaClientConfiguration configuration;
   private final HttpClient httpClient;
@@ -204,7 +201,7 @@ public final class ProbeWorkerBuilderImpl
     ensureNotNullNorEmpty("probeId", probeId);
     if (probeId.length() > MAX_PROBE_ID_LENGTH
         || "*".equals(probeId)
-        || WHITESPACE.matcher(probeId).find()) {
+        || probeId.chars().anyMatch(Character::isWhitespace)) {
       throw new IllegalArgumentException(
           String.format(
               "Expected a probe ID of 1 to %d characters, without whitespace, and not '*', but "

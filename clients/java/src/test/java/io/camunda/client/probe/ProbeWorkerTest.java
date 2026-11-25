@@ -524,7 +524,7 @@ public final class ProbeWorkerTest extends ClientRestTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"", "*", "with space", "with\ttab"})
+  @ValueSource(strings = {"", "*", "with space", "with\ttab", "with em-space"})
   void shouldRejectAnInvalidProbeId(final String probeId) {
     assertThatThrownBy(
             () -> client.newProbeWorker().probeId(probeId, probe -> ProbeAnswer.unsupported()))
