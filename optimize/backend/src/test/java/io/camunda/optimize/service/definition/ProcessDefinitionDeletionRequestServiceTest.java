@@ -72,12 +72,19 @@ public class ProcessDefinitionDeletionRequestServiceTest {
     when(jobRegistryReader.findLastByJobTypeAndEntityId(
             JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID))
         .thenReturn(Optional.empty());
+    final JobRegistryEntryDto queuedJob =
+        new JobRegistryEntryDto(
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID);
+    queuedJob.setId("queued-job-id");
+    when(jobRegistryWriter.createJobEntry(
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID))
+        .thenReturn(queuedJob);
 
     // when
     underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_ID, REQUESTED_BY);
 
     // then: the request and the queued job are both attributable to the client, and the queued
-    // line names the job so a later completion or failure log can be correlated with it
+    // line names the exact job so a later completion or failure log can be correlated with it
     assertThat(logs.getEvents()).hasSize(2);
     logs.assertContains(
         "Received request to delete Optimize data for process definition ["
@@ -86,7 +93,7 @@ public class ProcessDefinitionDeletionRequestServiceTest {
             + REQUESTED_BY
             + "]");
     logs.assertContains(
-        "for process definition ["
+        "Queued deletion job [queued-job-id] for process definition ["
             + PROCESS_DEFINITION_ID
             + "] requested by client ["
             + REQUESTED_BY
