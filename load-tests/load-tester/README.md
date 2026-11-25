@@ -51,8 +51,8 @@ Both roles serve `/health/readiness` and `/health/liveness` on port 9600 (no `/a
   (gRPC `RESOURCE_EXHAUSTED`, HTTP 429) count as success, every other failure does not.
 - **Liveness (worker):** none. A worker without jobs cannot be told apart from one without load.
 
-A startup probe on `/health/readiness` restarts a pod that never connects. Reference configuration
-for the Helm chart, which does not apply it yet:
+A startup probe on `/health/readiness` restarts a pod that never connects. The `camunda-load-tests`
+Helm chart enables these probes by default:
 
 ```yaml
 startupProbe:
