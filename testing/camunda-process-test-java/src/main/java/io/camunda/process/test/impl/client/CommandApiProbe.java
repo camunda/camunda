@@ -26,6 +26,8 @@ public final class CommandApiProbe {
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
   private static final Duration POLL_INTERVAL = Duration.ofMillis(100);
 
+  private static final int HTTP_UNAUTHORIZED = 401;
+  private static final int HTTP_FORBIDDEN = 403;
   private static final int HTTP_NOT_FOUND = 404;
   private static final int HTTP_SERVER_ERROR = 500;
 
@@ -65,10 +67,18 @@ public final class CommandApiProbe {
       if (e instanceof ProblemException && e.code() == HTTP_NOT_FOUND) {
         return true;
       }
-      if (e.code() >= HTTP_SERVER_ERROR) {
+      if (isRetryable(e.code())) {
         return false;
       }
       throw e;
     }
+  }
+
+  /**
+   * Server errors mean the partition is not ready yet. After a purge the cluster restores users and
+   * authorizations, so requests can be rejected with 401 or 403 until that is done.
+   */
+  private static boolean isRetryable(final int code) {
+    return code >= HTTP_SERVER_ERROR || code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN;
   }
 }

@@ -68,6 +68,19 @@ class CommandApiProbeTest {
   }
 
   @Test
+  void shouldRetryWhileCredentialsAreRejected() {
+    // given
+    when(camundaClient.newCompleteCommand(anyLong()).useRest().send().join())
+        .thenThrow(problem(401), problem(403), problem(404));
+
+    // when
+    CommandApiProbe.waitUntilCommandApiAcceptsCommands(camundaClient);
+
+    // then
+    verify(camundaClient, times(3)).newCompleteCommand(DEPLOYMENT_PARTITION_JOB_KEY);
+  }
+
+  @Test
   void shouldRetryOnServerErrorWithoutProblemDetail() {
     // given
     when(camundaClient.newCompleteCommand(anyLong()).useRest().send().join())
