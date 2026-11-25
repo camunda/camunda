@@ -416,19 +416,25 @@ public class ResourceDeletionDeleteProcessor
     final var processRecord = process.toProcessRecord();
     final String processId = processRecord.getBpmnProcessId();
     final var latestVersion = processState.getLatestProcessVersion(processId, tenantId);
+    // A newer version may still be draining, so the latest version does not always hold the start
+    // events. Checked before DRAINING is written, while this version still counts as active.
+    final boolean holdsStartEvents =
+        processState
+            .findLatestActiveProcessVersionBefore(processIdBuffer, latestVersion + 1, tenantId)
+            .map(latestActive -> latestActive.getKey() == process.getKey())
+            .orElse(false);
 
     processRecord.setDrainPartitions(routingInfo.desiredPartitions());
     processRecord.setDeleteHistory(command.getValue().isDeleteHistory());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DRAINING, processRecord);
 
-    // If we are deleting the latest version we must unsubscribe the start events
-    if (latestVersion == process.getVersion()) {
+    if (holdsStartEvents) {
       unsubscribeStartEvents(process);
 
       // Hand the start subscription down to the latest ACTIVE version; DRAINING/deleted versions
       // reject new instances so must stay unsubscribed.
       processState
-          .findLatestActiveProcessVersionBefore(processIdBuffer, latestVersion, tenantId)
+          .findLatestActiveProcessVersionBefore(processIdBuffer, process.getVersion(), tenantId)
           .ifPresent(startEventSubscriptions::resubscribeToStartEvents);
     }
 

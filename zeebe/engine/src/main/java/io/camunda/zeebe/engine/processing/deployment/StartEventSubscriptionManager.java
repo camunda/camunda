@@ -168,20 +168,18 @@ public class StartEventSubscriptionManager {
   private DeployedProcess findPreviousVersionOfProcess(
       final ProcessMetadata processRecord,
       final Predicate<ExecutableCatchEventElement> hasStartEventMatching) {
-    final Optional<Integer> processVersionBefore =
-        processState.findProcessVersionBefore(
-            processRecord.getBpmnProcessId(),
+    // Draining versions hold no start events, so the owner can sit below the version directly
+    // before the new one.
+    final Optional<DeployedProcess> latestActiveVersionBefore =
+        processState.findLatestActiveProcessVersionBefore(
+            processRecord.getBpmnProcessIdBuffer(),
             processRecord.getVersion(),
             processRecord.getTenantId());
-    if (processVersionBefore.isEmpty()) {
+    if (latestActiveVersionBefore.isEmpty()) {
       return null;
     }
 
-    final var previousVersionOfProcess =
-        processState.getProcessByProcessIdAndVersion(
-            processRecord.getBpmnProcessIdBuffer(),
-            processVersionBefore.get(),
-            processRecord.getTenantId());
+    final var previousVersionOfProcess = latestActiveVersionBefore.get();
     final var hasMatchingStartEvent =
         previousVersionOfProcess.getProcess().getStartEvents().stream()
             .anyMatch(hasStartEventMatching);
