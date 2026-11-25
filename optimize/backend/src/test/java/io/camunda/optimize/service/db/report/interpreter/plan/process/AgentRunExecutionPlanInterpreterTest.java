@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutio
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_CACHE_WRITE_TOKENS_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_FREQUENCY_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_INPUT_TOKENS_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_INVENTORY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_OUTPUT_TOKENS_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_REASONING_TOKENS_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.AGENT_RUN_TOTAL_TOKENS_GROUP_BY_NONE;
@@ -68,7 +69,8 @@ class AgentRunExecutionPlanInterpreterTest {
             AGENT_RUN_OUTPUT_TOKENS_GROUP_BY_NONE,
             AGENT_RUN_CACHE_READ_TOKENS_GROUP_BY_NONE,
             AGENT_RUN_CACHE_WRITE_TOKENS_GROUP_BY_NONE,
-            AGENT_RUN_REASONING_TOKENS_GROUP_BY_NONE);
+            AGENT_RUN_REASONING_TOKENS_GROUP_BY_NONE,
+            AGENT_RUN_INVENTORY);
   }
 
   @Test

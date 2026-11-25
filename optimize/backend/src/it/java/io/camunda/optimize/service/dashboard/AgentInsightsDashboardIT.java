@@ -23,6 +23,7 @@ import static io.camunda.optimize.dto.optimize.query.report.single.configuration
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.AGENT_INSIGHTS_DASHBOARD_ID;
+import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.AGENT_INVENTORY_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.INCIDENT_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.PROCESS_DURATION_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.TOTAL_TOKENS_REPORT_ID;
@@ -86,7 +87,7 @@ class AgentInsightsDashboardIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
-  void shouldServeDashboardWithOneTilePerSummaryReport() {
+  void shouldServeDashboardWithOneTilePerReport() {
     // when
     final AuthorizedDashboardDefinitionResponseDto response =
         embeddedOptimizeExtension.getBean(DashboardService.class).getAgentInsightsDashboard();
@@ -101,7 +102,10 @@ class AgentInsightsDashboardIT extends AbstractBrokerlessZeebeCCSMIT {
             tuple(
                 PROCESS_DURATION_REPORT_ID,
                 Map.of("section", "summary", "tile", "processDuration")),
-            tuple(INCIDENT_RATE_REPORT_ID, Map.of("section", "summary", "tile", "incidentRate")));
+            tuple(INCIDENT_RATE_REPORT_ID, Map.of("section", "summary", "tile", "incidentRate")),
+            tuple(
+                AGENT_INVENTORY_REPORT_ID,
+                Map.of("section", "inventory", "tile", "agentInventory")));
   }
 
   @Test

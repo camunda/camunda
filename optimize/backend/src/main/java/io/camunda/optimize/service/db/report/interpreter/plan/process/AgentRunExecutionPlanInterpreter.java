@@ -71,6 +71,19 @@ public interface AgentRunExecutionPlanInterpreter extends ProcessExecutionPlanIn
    */
   static Map<String, Set<String>> definedAgentIdsByTenant(
       final AgentDefinitionReader agentDefinitionReader, final ProcessReportDataDto reportData) {
+    final Map<String, Set<String>> agentIdsByTenant = new HashMap<>();
+    for (final AgentDefinitionDto agentDefinition :
+        agentDefinitionReader.getAgentDefinitions(tenantIdsByProcessDefinitionKey(reportData))) {
+      agentIdsByTenant
+          .computeIfAbsent(agentDefinition.getTenantId(), tenantId -> new HashSet<>())
+          .add(agentDefinition.getAgentId());
+    }
+    return agentIdsByTenant;
+  }
+
+  /** The tenants the report is scoped to, per process definition key. */
+  static Map<String, Set<String>> tenantIdsByProcessDefinitionKey(
+      final ProcessReportDataDto reportData) {
     final Map<String, Set<String>> tenantIdsByProcessDefinitionKey = new HashMap<>();
     for (final ReportDataDefinitionDto definition : reportData.getDefinitions()) {
       if (definition.getKey() != null) {
@@ -79,13 +92,6 @@ public interface AgentRunExecutionPlanInterpreter extends ProcessExecutionPlanIn
             .addAll(Optional.ofNullable(definition.getTenantIds()).orElse(List.of()));
       }
     }
-    final Map<String, Set<String>> agentIdsByTenant = new HashMap<>();
-    for (final AgentDefinitionDto agentDefinition :
-        agentDefinitionReader.getAgentDefinitions(tenantIdsByProcessDefinitionKey)) {
-      agentIdsByTenant
-          .computeIfAbsent(agentDefinition.getTenantId(), tenantId -> new HashSet<>())
-          .add(agentDefinition.getAgentId());
-    }
-    return agentIdsByTenant;
+    return tenantIdsByProcessDefinitionKey;
   }
 }

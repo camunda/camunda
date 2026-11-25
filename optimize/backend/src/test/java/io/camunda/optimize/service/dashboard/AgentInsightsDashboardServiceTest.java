@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.dashboard;
 
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.AGENT_INSIGHTS_DASHBOARD_ID;
+import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.AGENT_INVENTORY_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.INCIDENT_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.PROCESS_DURATION_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.TOTAL_TOKENS_REPORT_ID;
@@ -29,6 +30,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.HasAgentInstancesFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -92,7 +94,7 @@ class AgentInsightsDashboardServiceTest {
   }
 
   @Test
-  void shouldSaveDashboardWithOneSummaryTilePerReport() {
+  void shouldSaveDashboardWithOneTilePerReport() {
     // when
     underTest.reconcile();
 
@@ -112,7 +114,10 @@ class AgentInsightsDashboardServiceTest {
             tuple(
                 PROCESS_DURATION_REPORT_ID,
                 Map.of("section", "summary", "tile", "processDuration")),
-            tuple(INCIDENT_RATE_REPORT_ID, Map.of("section", "summary", "tile", "incidentRate")));
+            tuple(INCIDENT_RATE_REPORT_ID, Map.of("section", "summary", "tile", "incidentRate")),
+            tuple(
+                AGENT_INVENTORY_REPORT_ID,
+                Map.of("section", "inventory", "tile", "agentInventory")));
   }
 
   @Test
@@ -192,6 +197,23 @@ class AgentInsightsDashboardServiceTest {
             CompletedInstancesOnlyFilterDto.class,
             HasAgentInstancesFilterDto.class,
             ResolvedIncidentFilterDto.class);
+  }
+
+  @Test
+  void shouldSeedAgentInventoryAsRawAgentRunTableOverCompletedRuns() {
+    // when
+    underTest.reconcile();
+
+    // then
+    final ProcessReportDataDto data = capturedReportData(AGENT_INVENTORY_REPORT_ID);
+    assertThat(data.isAgentInsightsReport()).isTrue();
+    assertThat(data.getDefinitions()).isEmpty();
+    assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_RUN);
+    assertThat(data.getView().getProperties()).containsExactly(ViewProperty.RAW_DATA);
+    assertThat(data.getVisualization()).isEqualTo(ProcessVisualization.TABLE);
+    assertThat(data.getFilter())
+        .extracting(ProcessFilterDto::getClass)
+        .containsExactly(CompletedInstancesOnlyFilterDto.class);
   }
 
   private ProcessReportDataDto capturedReportData(final String reportId) {
