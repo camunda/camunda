@@ -340,6 +340,8 @@ registerProject(":zeebe-feel-tagged-parameters", "zeebe/feel-tagged-parameters")
 
 include(":debug-cli")
 
+registerProject(":es9-index-migrator", "migration/es9-index-migrator")
+
 registerProject(":zeebe-opensearch-exporter", "zeebe/exporters/opensearch-exporter")
 
 registerProject(":zeebe-msgpack-core", "zeebe/msgpack-core")
