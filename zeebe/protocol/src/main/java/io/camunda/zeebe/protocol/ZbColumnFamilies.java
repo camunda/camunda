@@ -467,7 +467,13 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
    * definition is suspended; it is only set and removed by event appliers. Global, so a partition
    * added by scaling starts with the same suspended definitions.
    */
-  SUSPENDED_PROCESS_DEFINITIONS(176, GLOBAL);
+  SUSPENDED_PROCESS_DEFINITIONS(176, GLOBAL),
+
+  /**
+   * elementInstanceKey -> activeIncidentCount: the number of active incidents on an element
+   * instance or on an element instance below it. An entry exists only while the count is above 0.
+   */
+  INCIDENT_COUNT_BY_ELEMENT_INSTANCE(177, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

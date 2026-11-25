@@ -30,4 +30,10 @@ public interface IncidentState {
 
   /** Returns the total number of incidents currently stored in the state. */
   long getIncidentCount();
+
+  /**
+   * Returns the number of active incidents on this element instance or on an element instance
+   * below it, 0 when there is no entry.
+   */
+  long getActiveIncidentCount(long elementInstanceKey);
 }

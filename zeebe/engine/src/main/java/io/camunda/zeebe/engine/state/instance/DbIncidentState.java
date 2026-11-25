@@ -43,6 +43,12 @@ public final class DbIncidentState implements MutableIncidentState {
   private final ColumnFamily<DbForeignKey<DbLong>, IncidentKey> jobIncidentColumnFamily;
   private final IncidentKey incidentKeyValue = new IncidentKey();
 
+  /** element instance key -> number of active incidents at or below the element instance */
+  private final DbLong countElementInstanceKey = new DbLong();
+
+  private final DbLong activeIncidentCount = new DbLong();
+  private final ColumnFamily<DbLong, DbLong> incidentCountColumnFamily;
+
   public DbIncidentState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     incidentKey = new DbLong();
@@ -62,6 +68,13 @@ public final class DbIncidentState implements MutableIncidentState {
     jobIncidentColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.INCIDENT_JOBS, transactionContext, jobKey, incidentKeyValue);
+
+    incidentCountColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.INCIDENT_COUNT_BY_ELEMENT_INSTANCE,
+            transactionContext,
+            countElementInstanceKey,
+            activeIncidentCount);
   }
 
   @Override
@@ -169,5 +182,35 @@ public final class DbIncidentState implements MutableIncidentState {
   @Override
   public long getIncidentCount() {
     return incidentColumnFamily.count();
+  }
+
+  @Override
+  public long getActiveIncidentCount(final long elementInstanceKey) {
+    countElementInstanceKey.wrapLong(elementInstanceKey);
+    final DbLong count = incidentCountColumnFamily.get(countElementInstanceKey);
+    return count == null ? 0 : count.getValue();
+  }
+
+  @Override
+  public void incrementActiveIncidentCount(final long elementInstanceKey) {
+    final long count = getActiveIncidentCount(elementInstanceKey);
+    countElementInstanceKey.wrapLong(elementInstanceKey);
+    activeIncidentCount.wrapLong(count + 1);
+    incidentCountColumnFamily.upsert(countElementInstanceKey, activeIncidentCount);
+  }
+
+  @Override
+  public void decrementActiveIncidentCount(final long elementInstanceKey) {
+    final long count = getActiveIncidentCount(elementInstanceKey);
+    if (count == 0) {
+      return;
+    }
+    countElementInstanceKey.wrapLong(elementInstanceKey);
+    if (count == 1) {
+      incidentCountColumnFamily.deleteExisting(countElementInstanceKey);
+    } else {
+      activeIncidentCount.wrapLong(count - 1);
+      incidentCountColumnFamily.upsert(countElementInstanceKey, activeIncidentCount);
+    }
   }
 }
