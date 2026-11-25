@@ -24,6 +24,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -65,6 +67,46 @@ public class BatchOperationUpdateTaskTest {
         .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
         .isEqualTo(1);
     assertThat(repository.documentUpdates).containsExactly(new DocumentUpdate("1", 0L, 0L, 0L, 0L));
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = BatchOperationState.class,
+      names = {"PARTIALLY_COMPLETED", "FAILED"})
+  void shouldUpdatePartiallyCompletedOrFailedBatchOperationWithoutItemsWithZeroCounts(
+      final BatchOperationState state) {
+    // given a terminal batch operation that has no items, for example because every partition
+    // failed to run the query
+    repository.batchOperations.add(new NotFinishedBatchOperation("1", state, 0));
+
+    // when
+    final var result = task.execute();
+
+    // then it is updated like a completed one, which is what sets its end date
+    assertThat(result)
+        .succeedsWithin(REQUEST_TIMEOUT)
+        .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+        .isEqualTo(1);
+    assertThat(repository.documentUpdates).containsExactly(new DocumentUpdate("1", 0L, 0L, 0L, 0L));
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = BatchOperationState.class,
+      names = {"CREATED", "ACTIVE", "SUSPENDED"})
+  void shouldNotUpdateNonTerminalBatchOperationWithoutItems(final BatchOperationState state) {
+    // given a batch operation that has not finished, so its empty total is not final
+    repository.batchOperations.add(new NotFinishedBatchOperation("1", state, 0));
+
+    // when
+    final var result = task.execute();
+
+    // then no zeroed update is written, as it could not set an end date anyway
+    assertThat(result)
+        .succeedsWithin(REQUEST_TIMEOUT)
+        .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+        .isEqualTo(0);
+    assertThat(repository.documentUpdates).isEmpty();
   }
 
   @Test
