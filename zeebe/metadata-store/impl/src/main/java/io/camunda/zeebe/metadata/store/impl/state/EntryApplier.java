@@ -60,11 +60,19 @@ public final class EntryApplier {
     switch (namespaceEntry) {
       case final NamespaceEntry.Created created -> {
         createNamespace(created.namespace());
-        changeKeys(created.namespace(), created.operations());
+        if (!created.operations().isEmpty()) {
+          changeKeys(created.namespace(), created.operations());
+        }
       }
       case final NamespaceEntry.Deleted deleted -> deleteNamespace(deleted.namespace());
-      case final NamespaceEntry.KeysChanged keysChanged ->
-          changeKeys(keysChanged.namespace(), keysChanged.operations());
+      case final NamespaceEntry.KeysChanged keysChanged -> {
+        if (keysChanged.operations().isEmpty()) {
+          throw new IllegalStateException(
+              "Expected the change of namespace '%s' at position %d to change a key, but it has no operations"
+                  .formatted(keysChanged.namespace(), position));
+        }
+        changeKeys(keysChanged.namespace(), keysChanged.operations());
+      }
     }
   }
 

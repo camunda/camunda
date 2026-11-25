@@ -36,7 +36,9 @@ public record Entry(String producerVersion, long timestamp, List<NamespaceEntry>
     Namespace namespace();
 
     /**
-     * Creates the namespace, with the operations of the same batch on its keys.
+     * Creates the namespace, with the operations of the same batch on its keys: a batch that
+     * creates a namespace and writes its first keys is one entry, so no reader sees the namespace
+     * without them.
      *
      * @param operations the operations on its keys, each key at most once
      */

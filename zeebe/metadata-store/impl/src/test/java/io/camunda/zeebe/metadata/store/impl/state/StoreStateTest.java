@@ -19,6 +19,8 @@ import io.camunda.zeebe.metadata.store.impl.state.Entry.NamespaceEntry;
 import io.camunda.zeebe.metadata.store.impl.state.Entry.Operation;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -77,6 +79,22 @@ final class StoreStateTest {
     // when - then: values are immutable, so only the maps could be changed
     assertThatThrownBy(() -> STATE.requireNamespace(NAMESPACE).values().clear())
         .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  void shouldKeepPublishedStateWhenCallerChangesItsMap() {
+    // given
+    final var values = new TreeMap<String, KeyValue>();
+    final var key = StoreKey.of(NAMESPACE, "a");
+    values.put("a", new KeyValue(key, bytes("a"), null));
+    final var state =
+        new StoreState(1, Map.of(NAMESPACE, new NamespaceState(values, "8.11.0", 1, 1L, 1)));
+
+    // when
+    values.clear();
+
+    // then
+    assertThat(state.get(key)).hasValue(new KeyValue(key, bytes("a"), null));
   }
 
   private static StoreState stateWith(final List<String> keys) {

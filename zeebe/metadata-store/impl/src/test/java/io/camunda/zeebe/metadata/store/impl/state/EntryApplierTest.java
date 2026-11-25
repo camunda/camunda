@@ -115,6 +115,23 @@ final class EntryApplierTest {
         .isInstanceOf(IllegalStateException.class);
     assertThatThrownBy(() -> apply(state, 2, changed(CONFIG, delete("missing"))))
         .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> apply(state, 2, changed(CONFIG)))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldCreateEmptyNamespaceWithOnlyItsCreation() {
+    // when
+    final var applied = apply(StoreState.empty(), 3, created(CONFIG));
+
+    // then
+    final var namespace = applied.state().requireNamespace(CONFIG);
+    assertThat(namespace.values()).isEmpty();
+    assertThat(namespace.incarnation()).isEqualTo(3);
+    assertThat(namespace.lastUpdatedPosition()).isEqualTo(3);
+    assertThat(applied.changes())
+        .containsExactly(
+            new NamespaceChanged(new NamespaceChange(CONFIG, NamespaceChange.ChangeType.CREATED)));
   }
 
   @Test

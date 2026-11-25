@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.SequencedMap;
+import java.util.TreeMap;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -30,13 +31,10 @@ public record NamespaceState(
     long lastUpdatedTimestamp,
     long lastUpdatedPosition) {
 
-  /**
-   * The values are wrapped, not copied: the applier hands over a map it no longer changes, so that
-   * applying an entry copies each changed namespace once.
-   */
+  /** The values are copied, so a caller that changes its map later cannot change this state. */
   public NamespaceState {
     Objects.requireNonNull(version, "version");
-    values = Collections.unmodifiableNavigableMap(Objects.requireNonNull(values, "values"));
+    values = Collections.unmodifiableNavigableMap(new TreeMap<>(values));
   }
 
   /** Returns the pair stored under exactly this key. */
