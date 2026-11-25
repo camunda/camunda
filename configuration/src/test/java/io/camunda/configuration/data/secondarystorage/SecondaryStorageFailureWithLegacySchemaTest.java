@@ -13,6 +13,7 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.operate.OperatePropertiesOverride;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -65,8 +66,32 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
               .rootCause()
               .hasMessageContaining("Ambiguous configuration")
-              .hasMessageContaining("conflicts");
+              .hasMessageContaining("conflicts")
+              .hasMessageContaining("is not set")
+              .hasMessageContaining("camunda.data.secondary-storage.type=opensearch");
         });
+  }
+
+  @Test
+  void testSecurityEnabledOnlyInLegacyPropertyShouldFailAndExplainTheDefault() {
+    new ApplicationContextRunner()
+        .withUserConfiguration(
+            UnifiedConfiguration.class,
+            UnifiedConfigurationHelper.class,
+            SearchEngineConnectPropertiesOverride.class)
+        .withPropertyValues(
+            "camunda.data.secondary-storage.type=elasticsearch",
+            "camunda.database.security.enabled=true")
+        .run(
+            context -> {
+              assertThat(context).hasFailed();
+              assertThat(context.getStartupFailure())
+                  .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
+                  .rootCause()
+                  .hasMessageContaining("is not set")
+                  .hasMessageContaining(
+                      "camunda.data.secondary-storage.elasticsearch.security.enabled=true");
+            });
   }
 
   @Test
@@ -78,7 +103,8 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
               .rootCause()
               .hasMessageContaining("Ambiguous configuration")
-              .hasMessageContaining("conflicts");
+              .hasMessageContaining("conflicts")
+              .hasMessageContaining("is not set");
         });
   }
 }

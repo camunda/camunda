@@ -184,7 +184,48 @@ class UnifiedConfigurationHelperTest {
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
                     NEW_PROPERTY, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES))
-        .withMessageContaining("Ambiguous configuration");
+        .withMessageContaining("Ambiguous configuration")
+        .withMessageNotContaining("is not set");
+  }
+
+  @Test
+  void testErrorExplainsDefaultWhenNewPropertyIsNotSet() {
+    // given: the unified value only comes from a default, the operator did not set the key
+    final String defaultValue = "defaultValue";
+    final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
+
+    // when
+    setPropertyValues("legacy.prop1", "legacyValue");
+
+    // then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () ->
+                UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+                    NEW_PROPERTY, defaultValue, String.class, mode, SINGLE_LEGACY_PROPERTY))
+        .withMessageContaining("Ambiguous configuration")
+        .withMessageContaining("conflicts")
+        .withMessageContaining("is not set")
+        .withMessageContaining("Set " + NEW_PROPERTY + "=legacyValue");
+  }
+
+  @Test
+  void testErrorForDefaultedNewPropertyDoesNotShowSensitiveValues() {
+    // given
+    final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
+
+    // when
+    setPropertyValues("legacy.prop1", "legacySecret");
+
+    // then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () ->
+                UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
+                    NEW_PROPERTY, "defaultSecret", String.class, mode, SINGLE_LEGACY_PROPERTY))
+        .withMessageContaining("is not set")
+        .withMessageNotContaining("legacySecret")
+        .withMessageNotContaining("defaultSecret");
   }
 
   @Test
