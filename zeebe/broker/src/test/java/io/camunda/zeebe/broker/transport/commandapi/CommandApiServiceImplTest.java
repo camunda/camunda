@@ -151,27 +151,23 @@ public class CommandApiServiceImplTest {
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/70461")
-  public void shouldReturnLeaderMismatchOnceNoLongerLeaderBeforeTransitionPrepared() {
+  public void shouldReturnLeaderMismatchWhenPausedAfterNoLongerLeader() {
     // given
-    when(transitionContext.getPartitionId()).thenReturn(1);
     when(logStream.newLogStreamWriter()).thenReturn(mock());
-    when(transitionContext.getLogStream()).thenReturn(logStream);
-    when(transitionContext.getQueryService()).thenReturn(mock());
-    final var transitionStep = new CommandApiServiceTransitionStep();
-    transitionStep.transitionTo(transitionContext, 1, Role.LEADER);
+    commandApiService.registerHandlers(1, logStream, mock());
     scheduler.workUntilDone();
     final var commandHandler = ArgumentCaptor.forClass(RequestHandler.class);
     verify(serverTransport)
         .subscribe(eq(PARTITION_ID), eq(RequestType.COMMAND), commandHandler.capture());
-    commandApiService.onPaused(1);
-    scheduler.workUntilDone();
 
     // when
-    transitionStep.onNewRaftRole(transitionContext, Role.FOLLOWER);
+    commandApiService.onNoLongerLeader(1);
+    commandApiService.onPaused(1);
+    final var errorCode = sendCommand(commandHandler.getValue());
     scheduler.workUntilDone();
 
     // then
-    assertThat(sendCommand(commandHandler.getValue()))
+    assertThat(errorCode)
         .succeedsWithin(Duration.ofSeconds(5))
         .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
   }
@@ -256,7 +252,6 @@ public class CommandApiServiceImplTest {
           }
         };
     handler.onRequest(output, 1, 0, requestBuffer, 0, request.getLength());
-    scheduler.workUntilDone();
     return errorCode;
   }
 }

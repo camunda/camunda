@@ -122,6 +122,12 @@ public final class CommandApiServiceImpl extends Actor
         });
   }
 
+  @Override
+  public void onNoLongerLeader(final int partitionId) {
+    commandHandler.removePartition(partitionId);
+    queryHandler.removePartition(partitionId);
+  }
+
   private void unregisterHandlersActorless(final int partitionId) {
     commandHandler.removePartition(partitionId);
     queryHandler.removePartition(partitionId);
