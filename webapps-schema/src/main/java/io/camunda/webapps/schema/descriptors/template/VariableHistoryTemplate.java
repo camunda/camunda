@@ -31,6 +31,7 @@ public class VariableHistoryTemplate extends AbstractTemplateDescriptor
   public static final String FULL_VALUE = "fullValue";
   public static final String IS_PREVIEW = "isPreview";
   public static final String SCOPE_KEY = "scopeKey";
+  public static final String STORAGE_ORDINAL = "storageOrdinal";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String TIMESTAMP = "timestamp";

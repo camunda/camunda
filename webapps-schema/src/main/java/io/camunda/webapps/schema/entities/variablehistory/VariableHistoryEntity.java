@@ -48,6 +48,9 @@ public class VariableHistoryEntity extends AbstractExporterEntity<VariableHistor
   private Long rootProcessInstanceKey;
 
   @SinceVersion(value = "8.11.0", requireDefault = false)
+  private Integer storageOrdinal;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
   private Long processDefinitionKey;
 
   @SinceVersion(value = "8.11.0", requireDefault = false)
@@ -168,6 +171,15 @@ public class VariableHistoryEntity extends AbstractExporterEntity<VariableHistor
 
   public VariableHistoryEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
+  public VariableHistoryEntity setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 

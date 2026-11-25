@@ -38,6 +38,7 @@ class VariableHistoryTemplateTest {
           "scopeKey",
           "processInstanceKey",
           "rootProcessInstanceKey",
+          "storageOrdinal",
           "processDefinitionKey",
           "processDefinitionId",
           "tenantId",
