@@ -636,6 +636,13 @@ jobs:
           OPTIMIZE_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/optimize' || 'team-zeebe/optimize' }}
           METRICS_EXPORTER_BUILT: ${{ needs.build-metrics-exporter-image.result == 'success' }}
         run: |-
+          # Only pass the option when set: the installer comes from `inputs.ref`, and a ref from
+          # before the option existed rejects it as an unknown argument.
+          profile_args=()
+          if [[ -n "${PHYSICAL_TENANT_PROFILES}" ]]; then
+            profile_args=(--physical-tenant-profiles "${PHYSICAL_TENANT_PROFILES}")
+          fi
+
           .github/scripts/load-test-install-camunda-platform.sh \
             "${NAMESPACE}" \
             "${INSTALL_TARGET}" \
@@ -654,7 +661,7 @@ jobs:
             --orchestration-tag "${ORCHESTRATION_TAG}" \
             --identity-tag "${IDENTITY_TAG}" \
             --connectors-tag "${CONNECTORS_TAG}" \
-            --physical-tenant-profiles "${PHYSICAL_TENANT_PROFILES}" \
+            "${profile_args[@]}" \
             --load-test-load "${LOAD_TEST_LOAD}" \
             --platform-helm-values "${PLATFORM_HELM_VALUES}" \
             --load-test-setup-helm-values "${LOAD_TEST_SETUP_HELM_VALUES}" \
