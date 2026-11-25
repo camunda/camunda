@@ -16,6 +16,7 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ExporterPauseState;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
@@ -42,7 +43,8 @@ final class ExporterContainer implements Controller {
   private final Exporter exporter;
   private long position;
 
-  private ExporterPhase phase = ExporterPhase.EXPORTING;
+  // written on the actor thread, read from exporter background task threads
+  private volatile ExporterPhase phase = ExporterPhase.EXPORTING;
 
   private long lastUnacknowledgedPosition;
   private long lastAcknowledgedPosition;
@@ -211,6 +213,15 @@ final class ExporterContainer implements Controller {
   public ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task) {
     final var scheduledTimer = actor.schedule(delay, task);
     return scheduledTimer::cancel;
+  }
+
+  @Override
+  public ExporterPauseState getPauseState() {
+    return switch (phase) {
+      case PAUSED -> ExporterPauseState.PAUSED;
+      case SOFT_PAUSED -> ExporterPauseState.SOFT_PAUSED;
+      case EXPORTING, CLOSED -> ExporterPauseState.EXPORTING;
+    };
   }
 
   @Override
