@@ -35,7 +35,6 @@ usable.
   determine an appropriate value. [^region]
 - `credentials` A pair of `accessKey` and `secretKey`. If none are provided, the AWS SDK will try to
   determine an appropriate value. [^credentials]
-
 - `waitForReplication` When enabled, a backup is only saved, and therefore only confirmed, once
   every object of the backup has been replicated by the bucket's own replication (S3 replication or
   MinIO bucket replication). See [Waiting for replication](#waiting-for-replication).
