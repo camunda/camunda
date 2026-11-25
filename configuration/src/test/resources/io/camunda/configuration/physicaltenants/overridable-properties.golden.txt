@@ -167,6 +167,7 @@ data.secondary-storage.elasticsearch.number-of-shards-per-index.usage-metric
 data.secondary-storage.elasticsearch.number-of-shards-per-index.usage-metric-tu
 data.secondary-storage.elasticsearch.number-of-shards-per-index.user
 data.secondary-storage.elasticsearch.number-of-shards-per-index.variable
+data.secondary-storage.elasticsearch.number-of-shards-per-index.variable-history
 data.secondary-storage.elasticsearch.number-of-shards-per-index.wait-state
 data.secondary-storage.elasticsearch.number-of-shards-per-index.web-session
 data.secondary-storage.elasticsearch.password
@@ -279,6 +280,7 @@ data.secondary-storage.opensearch.number-of-shards-per-index.usage-metric
 data.secondary-storage.opensearch.number-of-shards-per-index.usage-metric-tu
 data.secondary-storage.opensearch.number-of-shards-per-index.user
 data.secondary-storage.opensearch.number-of-shards-per-index.variable
+data.secondary-storage.opensearch.number-of-shards-per-index.variable-history
 data.secondary-storage.opensearch.number-of-shards-per-index.wait-state
 data.secondary-storage.opensearch.number-of-shards-per-index.web-session
 data.secondary-storage.opensearch.password

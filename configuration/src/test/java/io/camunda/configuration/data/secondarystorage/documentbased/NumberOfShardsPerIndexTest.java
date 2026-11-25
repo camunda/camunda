@@ -86,14 +86,23 @@ class NumberOfShardsPerIndexTest {
     void shouldBindKebabCaseYamlKeys() {
       // given — the shape existing deployments already have in their YAML
       final var properties =
-          Map.<String, Object>of("shards.list-view", "3", "shards.post-importer-queue", "1");
+          Map.<String, Object>of(
+              "shards.list-view",
+              "3",
+              "shards.post-importer-queue",
+              "1",
+              "shards.variable-history",
+              "4");
 
       // when
       final var shards = bind(properties);
 
       // then
       assertThat(shards.toIndexNameMap())
-          .containsOnly(Map.entry("list-view", 3), Map.entry("post-importer-queue", 1));
+          .containsOnly(
+              Map.entry("list-view", 3),
+              Map.entry("post-importer-queue", 1),
+              Map.entry("variable-history", 4));
     }
 
     @Test
@@ -103,7 +112,13 @@ class NumberOfShardsPerIndexTest {
       final var environment =
           new SystemEnvironmentPropertySource(
               StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
-              Map.of("SHARDS_LISTVIEW", "3", "SHARDS_POSTIMPORTERQUEUE", "1"));
+              Map.of(
+                  "SHARDS_LISTVIEW",
+                  "3",
+                  "SHARDS_POSTIMPORTERQUEUE",
+                  "1",
+                  "SHARDS_VARIABLEHISTORY",
+                  "4"));
 
       // when
       final var shards =
@@ -113,7 +128,10 @@ class NumberOfShardsPerIndexTest {
 
       // then
       assertThat(shards.toIndexNameMap())
-          .containsOnly(Map.entry("list-view", 3), Map.entry("post-importer-queue", 1));
+          .containsOnly(
+              Map.entry("list-view", 3),
+              Map.entry("post-importer-queue", 1),
+              Map.entry("variable-history", 4));
     }
   }
 
