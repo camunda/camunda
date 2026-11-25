@@ -34,6 +34,8 @@ final class DeploymentCacheBoundsTest {
   private MutableProcessingState processingState;
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private TransactionContext transactionContext;
+  private DbProcessState lastProcessState;
+  private String processTenantId;
 
   @Test
   void shouldReuseCachedFormWhileTtlHasNotElapsed() {
@@ -165,9 +167,6 @@ final class DeploymentCacheBoundsTest {
     // then
     assertThat(boundedManager.getLatestResourceVersion("evicted", TENANT_ID)).isEqualTo(5);
   }
-
-  private DbProcessState lastProcessState;
-  private String processTenantId;
 
   private long storeProcess(final EngineConfiguration config) {
     final var transformer =
