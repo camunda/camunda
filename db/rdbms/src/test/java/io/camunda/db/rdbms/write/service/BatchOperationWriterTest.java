@@ -20,9 +20,11 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.QueueItemMerger;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
@@ -174,6 +176,81 @@ class BatchOperationWriterTest {
         .finalizeEndDate(new BatchOperationFinalizeEndDateDto("1", processedDate));
     Mockito.verify(batchOperationMapper)
         .finalizeEndDate(new BatchOperationFinalizeEndDateDto("2", processedDate));
+  }
+
+  /** Backs the mocked queue with a list that applies merges like the real queue. */
+  private List<QueueItem> mergingQueue() {
+    final var queue = new ArrayList<QueueItem>();
+    Mockito.doAnswer(invocation -> queue.add(invocation.getArgument(0)))
+        .when(executionQueue)
+        .executeInQueue(Mockito.any());
+    Mockito.doAnswer(
+            invocation -> {
+              final QueueItemMerger merger = invocation.getArgument(0);
+              for (int i = queue.size() - 1; i >= 0; i--) {
+                if (merger.canBeMerged(queue.get(i))) {
+                  queue.set(i, merger.merge(queue.get(i)));
+                  return true;
+                }
+              }
+              return false;
+            })
+        .when(executionQueue)
+        .tryMergeWithExistingQueueItem(Mockito.any());
+    return queue;
+  }
+
+  @Test
+  void shouldKeepOneFinalizeEndDatePerBatchOperationWithTheLatestTimestamp() {
+    // given a queue that applies merges like the real one
+    final var queue = mergingQueue();
+    final var start = OffsetDateTime.parse("2026-01-01T10:00:00Z");
+
+    // when items of two batch operations settle, and the lifecycle record has an earlier timestamp
+    batchOperationWriter.updateItem(settledItem("1", 1L, start.plusSeconds(1)));
+    batchOperationWriter.updateItem(settledItem("2", 2L, start.plusSeconds(2)));
+    batchOperationWriter.updateItem(settledItem("1", 3L, start.plusSeconds(3)));
+    batchOperationWriter.finish("1", start);
+
+    // then
+    assertThat(queue)
+        .filteredOn(q -> q.statementId().endsWith(".finalizeEndDate"))
+        .extracting(QueueItem::parameter)
+        .containsExactly(
+            new BatchOperationFinalizeEndDateDto("1", start.plusSeconds(3)),
+            new BatchOperationFinalizeEndDateDto("2", start.plusSeconds(2)));
+    assertThat(queue)
+        .filteredOn(q -> q.statementId().endsWith(".incrementCompletedOperationsCount"))
+        .hasSize(3);
+  }
+
+  @Test
+  void shouldKeepQueuedFinalizeEndDateWhenMergedItemHasNoProcessedDate() {
+    // given
+    final var queue = mergingQueue();
+    final var start = OffsetDateTime.parse("2026-01-01T10:00:00Z");
+
+    // when an item without a processed date settles after one with a processed date
+    batchOperationWriter.updateItem(settledItem("1", 1L, start));
+    batchOperationWriter.updateItem(settledItem("1", 2L, null));
+
+    // then the queued end date is kept
+    assertThat(queue)
+        .filteredOn(q -> q.statementId().endsWith(".finalizeEndDate"))
+        .extracting(QueueItem::parameter)
+        .containsExactly(new BatchOperationFinalizeEndDateDto("1", start));
+  }
+
+  private static BatchOperationItemDbModel settledItem(
+      final String batchOperationKey, final long itemKey, final OffsetDateTime processedDate) {
+    return new BatchOperationItemDbModel(
+        batchOperationKey,
+        itemKey,
+        itemKey,
+        itemKey,
+        BatchOperationItemState.COMPLETED,
+        processedDate,
+        null);
   }
 
   private List<QueueItem> queuedItems() {

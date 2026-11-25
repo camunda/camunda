@@ -25,6 +25,7 @@ import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.QueueItemMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
@@ -41,6 +42,9 @@ public class BatchOperationWriter implements RdbmsWriter {
 
   /** Above the default order of all other batch operation updates, see {@link #finalizeEndDate}. */
   private static final int FINALIZE_END_DATE_ORDER = 1;
+
+  private static final String FINALIZE_END_DATE_STATEMENT =
+      "io.camunda.db.rdbms.sql.BatchOperationMapper.finalizeEndDate";
 
   private final ExecutionQueue executionQueue;
   private final VendorDatabaseProperties vendorDatabaseProperties;
@@ -226,16 +230,24 @@ public class BatchOperationWriter implements RdbmsWriter {
    *
    * <p>The queue sorts the updates of a flush by statement ID, so it is queued with a higher {@code
    * order} to run after the state and count updates it reads.
+   *
+   * <p>Only one call per batch operation is kept in each flush, with the latest timestamp: they all
+   * run after the count updates and see the same row, so the others could not change the result.
    */
   private void finalizeEndDate(final String batchOperationKey, final OffsetDateTime endDate) {
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.BATCH_OPERATION,
-            WriteStatementType.UPDATE,
-            batchOperationKey,
-            "io.camunda.db.rdbms.sql.BatchOperationMapper.finalizeEndDate",
-            new BatchOperationFinalizeEndDateDto(batchOperationKey, endDate),
-            FINALIZE_END_DATE_ORDER));
+    final var wasMerged =
+        executionQueue.tryMergeWithExistingQueueItem(
+            new FinalizeEndDateMerger(batchOperationKey, endDate));
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.BATCH_OPERATION,
+              WriteStatementType.UPDATE,
+              batchOperationKey,
+              FINALIZE_END_DATE_STATEMENT,
+              new BatchOperationFinalizeEndDateDto(batchOperationKey, endDate),
+              FINALIZE_END_DATE_ORDER));
+    }
   }
 
   private void updateCompleted(final String batchOperationKey, final BatchOperationUpdateDto dto) {
@@ -312,5 +324,29 @@ public class BatchOperationWriter implements RdbmsWriter {
 
   public int cleanupHistory(final OffsetDateTime cleanupDate, final int rowsToRemove) {
     return mapper.cleanupHistory(new CleanupBatchOperationHistoryDto(cleanupDate, rowsToRemove));
+  }
+
+  /** Keeps the later end date of two {@link #finalizeEndDate} calls in the same flush. */
+  private record FinalizeEndDateMerger(String batchOperationKey, OffsetDateTime endDate)
+      implements QueueItemMerger {
+
+    @Override
+    public boolean canBeMerged(final QueueItem queueItem) {
+      return queueItem.contextType() == ContextType.BATCH_OPERATION
+          && queueItem.statementId().equals(FINALIZE_END_DATE_STATEMENT)
+          && queueItem.id().equals(batchOperationKey);
+    }
+
+    @Override
+    public QueueItem merge(final QueueItem originalItem) {
+      final var queuedEndDate =
+          ((BatchOperationFinalizeEndDateDto) originalItem.parameter()).endDate();
+      final var laterEndDate =
+          queuedEndDate == null || (endDate != null && endDate.isAfter(queuedEndDate))
+              ? endDate
+              : queuedEndDate;
+      return originalItem.copy(
+          b -> b.parameter(new BatchOperationFinalizeEndDateDto(batchOperationKey, laterEndDate)));
+    }
   }
 }
