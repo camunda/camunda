@@ -577,6 +577,63 @@ class DefaultExecutionQueueTest {
   }
 
   @Test
+  public void shouldOrderByExplicitOrderBeforeFallingBackToStatementId() {
+    // given - the alphabetically first statement is queued with a high explicit order, the
+    // alphabetically last one with the default order
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.UPDATE,
+            1L,
+            "ms.firstAlphabetically",
+            "runsLast",
+            Integer.MAX_VALUE));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.UPDATE,
+            1L,
+            "ms.lastAlphabetically",
+            "runsFirst"));
+
+    // when
+    executionQueue.flush();
+
+    // then - the default-order statement runs first although its statement ID sorts later; the
+    // statement ID alone would have produced the opposite order
+    final var inOrder = Mockito.inOrder(session);
+    inOrder.verify(session).update("ms.lastAlphabetically", "runsFirst");
+    inOrder.verify(session).update("ms.firstAlphabetically", "runsLast");
+  }
+
+  @Test
+  public void shouldFallBackToStatementIdWhenOrderIsEqual() {
+    // given - two default-order items, queued in reverse alphabetical statement ID order
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.UPDATE,
+            1L,
+            "zzz.statement",
+            "queuedFirst"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.UPDATE,
+            1L,
+            "aaa.statement",
+            "queuedSecond"));
+
+    // when
+    executionQueue.flush();
+
+    // then - items with equal order are still sorted by statement ID, as before the order field
+    final var inOrder = Mockito.inOrder(session);
+    inOrder.verify(session).update("aaa.statement", "queuedSecond");
+    inOrder.verify(session).update("zzz.statement", "queuedFirst");
+  }
+
+  @Test
   public void shouldGroupUserTaskStatementsOfDifferentUserTasksByStatementId() {
     // given - three user task updates, each queuing update, deleteCandidateUsers and
     // deleteCandidateGroups, as UserTaskWriter#update does
