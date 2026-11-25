@@ -110,6 +110,13 @@ public interface IncidentRecordValue
   List<Integer> getCallingElementPath();
 
   /**
+   * @return keys of the element instances, process instances included, whose incident flag changes
+   *     with this event. The flag is set to true on {@code IncidentIntent.CREATED} and to false on
+   *     {@code IncidentIntent.RESOLVED}. Empty for other intents or when no flag changes.
+   */
+  List<Long> getIncidentFlagKeys();
+
+  /**
    * Returns the key of the root process instance in the hierarchy. For top-level process instances,
    * this is equal to {@link #getProcessInstanceKey()}. For child process instances (created via
    * call activities), this is the key of the topmost parent process instance.
