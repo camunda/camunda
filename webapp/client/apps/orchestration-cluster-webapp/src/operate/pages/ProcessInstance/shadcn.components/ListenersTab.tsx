@@ -10,6 +10,7 @@ import {useState} from 'react';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {
+	EmptyState,
 	Label,
 	Select,
 	SelectContent,
@@ -19,7 +20,7 @@ import {
 	Skeleton,
 	StatusIcon,
 } from '@camunda/design-system';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
+import {ListChecks} from '@camunda/design-system/icons';
 import {CenteredContent} from '#/operate/shared/CenteredContent/shadcn.components/CenteredContent';
 import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
@@ -28,7 +29,7 @@ import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {listenersQuery, type ListenerKind} from '../listeners.queries';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
 import {useProcessInstancePage} from '../useProcessInstancePage';
-import {DataLoadErrorAlert} from './DataLoadErrorAlert';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 
 type FilterOption = 'all' | 'execution' | 'task';
 
@@ -92,12 +93,12 @@ const ListenersTab: React.FC = () => {
 	const hasNextPageError = isFetchNextPageError && !hasError;
 	const isPending = !hasError && (isLoading || isPlaceholderData || !isSelectionResolved);
 
-	const emptyMessage =
+	const emptyHeading =
 		hasUserTaskSelected && activeOption === 'all'
-			? t('operate.processInstance.listeners.emptyAll')
+			? t('operate.processInstance.ds.listeners.emptyAllHeading')
 			: hasUserTaskSelected && activeOption === 'task'
-				? t('operate.processInstance.listeners.emptyTask')
-				: t('operate.processInstance.listeners.emptyExecution');
+				? t('operate.processInstance.ds.listeners.emptyTaskHeading')
+				: t('operate.processInstance.ds.listeners.emptyExecutionHeading');
 
 	return (
 		<div className="relative flex h-full min-h-0 flex-col">
@@ -175,13 +176,17 @@ const ListenersTab: React.FC = () => {
 					<DataLoadErrorAlert onRetry={() => void (isFetchingElementError ? refetchElement() : refetchListeners())} />
 				) : (
 					<CenteredContent>
-						<EmptyMessage message={emptyMessage} />
+						<EmptyState
+							size="sm"
+							headingLevel={3}
+							icon={<ListChecks aria-hidden />}
+							heading={emptyHeading}
+							description={t('operate.processInstance.ds.listeners.emptyDescription')}
+						/>
 					</CenteredContent>
 				)}
 				{hasNextPageError && listeners.length > 0 && (
-					<p role="alert" className="shrink-0 px-4 py-2 text-sm text-danger-foreground-subtle">
-						{t('operate.shared.errorMessage.message')}
-					</p>
+					<DataLoadErrorAlert className="shrink-0 px-4 py-2" onRetry={() => void fetchNextPage()} />
 				)}
 			</div>
 		</div>

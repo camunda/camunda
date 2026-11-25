@@ -8,7 +8,16 @@
 
 import {OPERATE_BASE} from '#/shared/operateBase';
 import {useMemo, useState} from 'react';
-import {Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@camunda/design-system';
+import {
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@camunda/design-system';
 import {
 	ArrowRightLeft,
 	Ban,
@@ -256,16 +265,26 @@ const ProcessInstanceOperations: React.FC = () => {
 				})
 			)}
 			{!(isCollapsed && isRunning) && canModify && (
-				<Button variant="ghost" size="sm" title={modifyTitle} aria-label={modifyTitle} onClick={openModification}>
-					<Wrench aria-hidden="true" data-icon="inline-start" />
-					{modifyLabel}
-				</Button>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button variant="ghost" size="sm" aria-label={modifyTitle} onClick={openModification}>
+							<Wrench aria-hidden="true" data-icon="inline-start" />
+							{modifyLabel}
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>{modifyTitle}</TooltipContent>
+				</Tooltip>
 			)}
 			{!(isCollapsed && isRunning) && canMigrate && (
-				<Button variant="ghost" size="sm" title={migrateTitle} aria-label={migrateTitle} onClick={openMigration}>
-					<ArrowRightLeft aria-hidden="true" data-icon="inline-start" />
-					{migrateLabel}
-				</Button>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button variant="ghost" size="sm" aria-label={migrateTitle} onClick={openMigration}>
+							<ArrowRightLeft aria-hidden="true" data-icon="inline-start" />
+							{migrateLabel}
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>{migrateTitle}</TooltipContent>
+				</Tooltip>
 			)}
 			{isModificationHelperOpen && state === 'ACTIVE' && (
 				<ModificationHelperModal

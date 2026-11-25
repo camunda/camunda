@@ -42,6 +42,7 @@ const DecisionInstanceError: React.FC<Props> = ({error, decisionInstanceId, onRe
 			kind: 'error',
 			title: t('operate.decisionInstance.notFoundNotificationTitle', {decisionInstanceId}),
 			isDismissable: true,
+			autoRemove: false,
 		});
 		void navigate({
 			to: `${OPERATE_BASE}/decisions` as const,

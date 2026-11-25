@@ -91,6 +91,10 @@ class Notifications {
 	};
 
 	hideNotification = (notificationId: string) => {
+		if (!this.notifications.some(({id}) => id === notificationId)) {
+			return;
+		}
+
 		const queuedNotification = this.#dequeueNotification();
 
 		this.notifications = this.notifications.filter(({id}) => id !== notificationId);

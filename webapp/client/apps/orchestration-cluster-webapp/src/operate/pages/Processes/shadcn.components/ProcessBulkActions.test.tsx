@@ -117,13 +117,11 @@ describe('Processes DS bulk actions', () => {
 
 		await select(screen, '1');
 
-		const count = screen.getByText('1 instance selected', {exact: false});
-		await expect
-			.element(count)
-			.toHaveAttribute('title', expect.stringContaining('No finished process instances selected'));
-		await expect
-			.element(count)
-			.toHaveAttribute('title', expect.stringContaining('No suspended process instances selected'));
+		await userEvent.hover(screen.getByText('1 instance selected', {exact: false}));
+
+		const tooltip = screen.getByRole('tooltip');
+		await expect.poll(() => tooltip.element().textContent).toContain('No finished process instances selected');
+		await expect.poll(() => tooltip.element().textContent).toContain('No suspended process instances selected');
 	});
 
 	it('should confirm and submit Resume for the selected suspended instance', async ({worker}) => {

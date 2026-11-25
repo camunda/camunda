@@ -20,12 +20,32 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
 } from '@camunda/design-system';
 import {ForbiddenError} from '#/shared/errors';
 import {TenantField} from '#/operate/shared/TenantField/shadcn.components/TenantField';
 import {StateIcon} from '#/operate/shared/StateIcon/shadcn.components/StateIcon';
 import type {ProcessesSearch} from '../processesFilter';
 import type {ProcessFilterOptions} from './useProcessFilterOptions';
+
+const LockedField: React.FC<{lockedTitle?: string; children: React.ReactNode}> = ({lockedTitle, children}) => {
+	const field = (
+		<div className="flex flex-col gap-1.5" tabIndex={lockedTitle === undefined ? undefined : 0}>
+			{children}
+		</div>
+	);
+	if (lockedTitle === undefined) {
+		return field;
+	}
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>{field}</TooltipTrigger>
+			<TooltipContent>{lockedTitle}</TooltipContent>
+		</Tooltip>
+	);
+};
 
 const ALL_VERSIONS = 'all';
 
@@ -151,7 +171,7 @@ const ProcessFilters: React.FC<Props> = ({
 					<Heading as="h3" variant="heading-xs">
 						{t('operate.processes.filters.processSection')}
 					</Heading>
-					<div className="flex flex-col gap-1.5" title={lockedTitle}>
+					<LockedField lockedTitle={lockedTitle}>
 						<Label htmlFor="process-name-filter">{t('operate.processes.filters.name')}</Label>
 						<Combobox
 							id="process-name-filter"
@@ -164,8 +184,8 @@ const ProcessFilters: React.FC<Props> = ({
 							searchPlaceholder={t('operate.processes.ds.filters.searchByName')}
 							onValueChange={selectProcess}
 						/>
-					</div>
-					<div className="flex flex-col gap-1.5" title={lockedTitle}>
+					</LockedField>
+					<LockedField lockedTitle={lockedTitle}>
 						<Label htmlFor="process-version-filter">{t('operate.processes.filters.version')}</Label>
 						<Select
 							value={selectedVersion}
@@ -183,11 +203,11 @@ const ProcessFilters: React.FC<Props> = ({
 								))}
 							</SelectContent>
 						</Select>
-					</div>
+					</LockedField>
 					{areDefinitionsError && !areDefinitionsFetching && (
 						<LoadError error={selectedDefinitionsError} onRetry={() => void refetchSelectedDefinitions()} />
 					)}
-					<div className="flex flex-col gap-1.5" title={lockedTitle}>
+					<LockedField lockedTitle={lockedTitle}>
 						<Label htmlFor="process-element-filter">{t('operate.processes.filters.element')}</Label>
 						<Combobox
 							id="process-element-filter"
@@ -200,7 +220,7 @@ const ProcessFilters: React.FC<Props> = ({
 							searchPlaceholder={t('operate.processes.ds.filters.searchByElement')}
 							onValueChange={selectElement}
 						/>
-					</div>
+					</LockedField>
 					{isXmlError && selectedDefinitionKey !== undefined && (
 						<LoadError error={xmlError} onRetry={() => void refetchDiagramXml()} />
 					)}

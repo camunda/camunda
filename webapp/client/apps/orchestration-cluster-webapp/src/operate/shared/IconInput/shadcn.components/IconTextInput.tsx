@@ -8,6 +8,7 @@
 
 import * as React from 'react';
 import {Button, Label} from '@camunda/design-system';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {cn} from '#/shared/cn';
 
 interface Props {
@@ -78,7 +79,7 @@ const IconTextInput: React.FC<Props> = ({
 				onClick={onClick ?? onIconClick}
 				className={cn('w-full justify-between font-normal', !value && 'text-neutral-foreground-subtle', className)}
 			>
-				<span className="truncate">{value || placeholder}</span>
+				<TruncatedText text={value || placeholder || ''} className="min-w-0" />
 				<Icon className="size-4 shrink-0 opacity-60" aria-hidden="true" />
 			</Button>
 			{showInvalidText ? (

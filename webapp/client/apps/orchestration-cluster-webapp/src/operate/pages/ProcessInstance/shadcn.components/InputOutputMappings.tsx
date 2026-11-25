@@ -8,18 +8,18 @@
 
 import {useId, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Alert, Link, Spinner} from '@camunda/design-system';
+import {Alert, EmptyState, Link, Skeleton} from '@camunda/design-system';
+import {ArrowRightLeft} from '@camunda/design-system/icons';
 import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
 import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
-import {CenteredContent} from '#/operate/shared/CenteredContent/shadcn.components/CenteredContent';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {getMappings, type MappingType} from '../getMappings';
 import {isMappingsHelperBannerHidden, setMappingsHelperBannerHidden} from '../inputOutputMappingsPreference';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
 import {useProcessInstancePage} from '../useProcessInstancePage';
-import {DataLoadErrorAlert} from './DataLoadErrorAlert';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 
+const SKELETON_ROWS = [0, 1, 2];
 const DOCUMENTATION_URL = 'https://docs.camunda.io/docs/components/concepts/variables/#inputoutput-variable-mappings';
 
 const InfoBanner: React.FC<{type: MappingType; onClose: () => void}> = ({type, onClose}) => {
@@ -74,16 +74,29 @@ const InputOutputMappings: React.FC<{type: MappingType; elementId: string}> = ({
 				</div>
 			)}
 			{isPending ? (
-				<CenteredContent>
-					<Spinner size="default" accessibleLabel={t('operate.processInstance.mappings.loading')} />
-				</CenteredContent>
+				<div className="flex flex-col gap-2 px-4" aria-busy="true">
+					<span className="sr-only">{t('operate.processInstance.mappings.loading')}</span>
+					{SKELETON_ROWS.map((row) => (
+						<Skeleton key={row} aria-hidden="true" className="h-8 w-full" />
+					))}
+				</div>
 			) : isError ? (
 				<DataLoadErrorAlert className="py-0" onRetry={() => void refetch()} />
 			) : mappings.length === 0 ? (
 				<div className="m-auto">
-					<EmptyMessage
-						message={t(
-							isInput ? 'operate.processInstance.mappings.noInput' : 'operate.processInstance.mappings.noOutput',
+					<EmptyState
+						size="sm"
+						headingLevel={3}
+						icon={<ArrowRightLeft aria-hidden />}
+						heading={t(
+							isInput
+								? 'operate.processInstance.ds.mappings.noInputHeading'
+								: 'operate.processInstance.ds.mappings.noOutputHeading',
+						)}
+						description={t(
+							isInput
+								? 'operate.processInstance.ds.mappings.noInputDescription'
+								: 'operate.processInstance.ds.mappings.noOutputDescription',
 						)}
 					/>
 				</div>

@@ -7,9 +7,8 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
-import {CircleAlert, CircleCheck, CircleDashed, Clock} from '@camunda/design-system/icons';
-import {cn} from '#/shared/cn';
+import {StatusIcon, Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
+import {CircleDashed, Clock} from '@camunda/design-system/icons';
 
 type Props = {
 	totalCount: number;
@@ -55,8 +54,7 @@ const BatchItemsCount: React.FC<Props> = ({totalCount, completedCount, failedCou
 				count: completedCount,
 				formattedCount: formatCount(completedCount),
 			}),
-			Icon: CircleCheck,
-			className: 'text-success-foreground-subtle',
+			icon: <StatusIcon variant="success" />,
 		},
 		{
 			key: 'failed',
@@ -65,8 +63,7 @@ const BatchItemsCount: React.FC<Props> = ({totalCount, completedCount, failedCou
 				count: failedCount,
 				formattedCount: formatCount(failedCount),
 			}),
-			Icon: CircleAlert,
-			className: 'text-danger-foreground-subtle',
+			icon: <StatusIcon variant="danger" />,
 		},
 		{
 			key: 'pending',
@@ -75,8 +72,7 @@ const BatchItemsCount: React.FC<Props> = ({totalCount, completedCount, failedCou
 				count: pendingCount,
 				formattedCount: formatCount(pendingCount),
 			}),
-			Icon: Clock,
-			className: 'text-neutral-foreground-subtle',
+			icon: <Clock aria-hidden="true" focusable="false" className="h-4 w-4 shrink-0 text-neutral-foreground-subtle" />,
 		},
 	];
 
@@ -84,7 +80,7 @@ const BatchItemsCount: React.FC<Props> = ({totalCount, completedCount, failedCou
 		<div className="flex items-center gap-4">
 			{statusConfig
 				.filter(({count}) => count > 0)
-				.map(({key, count, label, Icon, className}) => (
+				.map(({key, count, label, icon}) => (
 					<Tooltip key={key}>
 						<TooltipTrigger asChild>
 							<span
@@ -93,7 +89,7 @@ const BatchItemsCount: React.FC<Props> = ({totalCount, completedCount, failedCou
 								tabIndex={0}
 								className="flex min-w-12 cursor-default items-center gap-2"
 							>
-								<Icon aria-hidden="true" focusable="false" className={cn('h-4 w-4 shrink-0', className)} />
+								{icon}
 								{formatCompactCount(count)}
 							</span>
 						</TooltipTrigger>
