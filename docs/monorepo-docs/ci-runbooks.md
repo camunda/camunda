@@ -224,6 +224,7 @@ You can leverage [incident.io MCP](https://docs.incident.io/ai/remote-mcp) toget
    - Update the [.codeowners file](https://github.com/camunda/camunda/blob/main/.codeowners) to reflect right GitHub team handle for the GHA workflow YAML file path.
    - Adjust the job-level `TEST_OWNER` environment variable in the GHA workflow YAML.
    - Ask the medic of the owning team to take over incident command.
+   - Note: a failed `integration-tests` shard whose Maven step was skipped broke before any test ran (setup, download, image build). It is already routed to Engineering Operations rather than the shard owner, see [Pre-test failures](./ci.md#pre-test-failures-are-routed-to-engineering-operations).
 
 1. **Verify the pattern**: Check the [Job Trends dashboard](https://dashboard.int.camunda.com/d/ch6qgkj/ci-job-trends-camunda-camunda) for the specific job and branch to understand whether this is a new regression or ongoing instability.
 

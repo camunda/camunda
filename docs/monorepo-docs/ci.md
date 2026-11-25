@@ -286,6 +286,12 @@ See [Metrics Collection](#metrics-collection) for the concrete `env:` snippet, i
 
 This keeps the job owner as a safe default — an ambiguous or unattributable failure is never confidently misrouted to the wrong team — while single-team failures are attributed to their real code owner. An explicitly provided `user_description` input still takes precedence over both. Resolution runs only on failed jobs, so the green path is unaffected.
 
+##### Pre-test failures are routed to Engineering Operations
+
+Failures that happen before any test runs (checkout, setup, artifact download, Docker image build) say nothing about the tests of the job's owner, and there is no failing test class to attribute. A job can therefore set `user_description` explicitly for them, which takes precedence as described above. The `integration-tests` job in `ci.yml` does this: when the job failed **and** its `Maven Test Build Integration` step (`id: maven-it`) was skipped because an earlier step failed, the failure is attributed to `@camunda/engineering-operations` instead of the shard's `matrix.owner`.
+
+Failures of the Maven step itself (compilation or test failures), cancelled or timed-out jobs and successful jobs are unaffected and keep the resolution described above. The rule keys on the step outcome, not on log text. Other jobs keep their `TEST_OWNER` unless they adopt the same pattern.
+
 ### Legacy CI
 
 "Legacy CI" is a name for CI tests that has not been migrated to the Unified CI. Legacy tests do not meet the [inclusion criteria for Unified CI](#workflow-inclusion-criteria), such as running under 10 minutes.
