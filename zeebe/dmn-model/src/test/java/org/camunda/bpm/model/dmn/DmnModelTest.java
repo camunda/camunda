@@ -29,9 +29,9 @@ import org.camunda.bpm.model.dmn.util.Java9CDataWhitespaceFilter;
 import org.camunda.bpm.model.dmn.util.ParseDmnModelRule;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.w3c.dom.Document;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.diff.Diff;
@@ -40,13 +40,13 @@ public abstract class DmnModelTest {
 
   public static final String TEST_NAMESPACE = "http://camunda.org/schema/1.0/dmn";
 
-  @Rule public final ParseDmnModelRule parseDmnModelRule = new ParseDmnModelRule();
+  @RegisterExtension public final ParseDmnModelRule parseDmnModelRule = new ParseDmnModelRule();
 
-  @Rule public TemporaryFolder tmpFolder = new TemporaryFolder();
+  @TempDir public File tmpFolder;
 
   protected DmnModelInstance modelInstance;
 
-  @Before
+  @BeforeEach
   public void setup() {
     modelInstance = parseDmnModelRule.getDmnModel();
   }
@@ -89,7 +89,7 @@ public abstract class DmnModelTest {
   }
 
   protected void assertModelEqualsFile(String expectedPath) throws Exception {
-    final File actualFile = tmpFolder.newFile();
+    final File actualFile = File.createTempFile("actual", ".dmn", tmpFolder);
     Dmn.writeModelToFile(actualFile, modelInstance);
 
     final File expectedFile = ReflectUtil.getResourceAsFile(expectedPath);

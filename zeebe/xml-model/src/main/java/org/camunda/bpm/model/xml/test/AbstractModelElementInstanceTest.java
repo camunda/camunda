@@ -29,7 +29,7 @@ import org.camunda.bpm.model.xml.test.assertions.AttributeAssert;
 import org.camunda.bpm.model.xml.test.assertions.ChildElementAssert;
 import org.camunda.bpm.model.xml.test.assertions.ModelElementTypeAssert;
 import org.camunda.bpm.model.xml.type.ModelElementType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.DOMException;
 
 public abstract class AbstractModelElementInstanceTest {

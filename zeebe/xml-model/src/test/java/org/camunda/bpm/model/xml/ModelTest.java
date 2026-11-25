@@ -23,8 +23,8 @@ import java.util.Collection;
 import org.camunda.bpm.model.xml.testmodel.TestModel;
 import org.camunda.bpm.model.xml.testmodel.instance.*;
 import org.camunda.bpm.model.xml.type.ModelElementType;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Sebastian Menski
@@ -33,7 +33,7 @@ public class ModelTest {
 
   private Model model;
 
-  @Before
+  @BeforeEach
   public void createModel() {
     model = TestModel.getTestModel();
   }

@@ -22,24 +22,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.Input;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class CamundaExtensionsTest {
 
-  private final DmnModelInstance originalModelInstance;
   private DmnModelInstance modelInstance;
 
-  public CamundaExtensionsTest(DmnModelInstance originalModelInstance) {
-    this.originalModelInstance = originalModelInstance;
-  }
-
-  @Parameters(name = "Namespace: {0}")
   public static Collection<Object[]> parameters() {
     return Arrays.asList(
         new Object[][] {
@@ -56,36 +46,44 @@ public class CamundaExtensionsTest {
         });
   }
 
-  @Before
-  public void parseModel() {
+  private void parseModel(final DmnModelInstance originalModelInstance) {
     modelInstance = originalModelInstance.clone();
   }
 
-  @Test
-  public void testCamundaClauseOutput() {
+  @ParameterizedTest(name = "Namespace: {0}")
+  @MethodSource("parameters")
+  public void testCamundaClauseOutput(final DmnModelInstance originalModelInstance) {
+    parseModel(originalModelInstance);
+
     final Input input = modelInstance.getModelElementById("input");
     assertThat(input.getCamundaInputVariable()).isEqualTo("myVariable");
     input.setCamundaInputVariable("foo");
     assertThat(input.getCamundaInputVariable()).isEqualTo("foo");
   }
 
-  @Test
-  public void testCamundaHistoryTimeToLive() {
+  @ParameterizedTest(name = "Namespace: {0}")
+  @MethodSource("parameters")
+  public void testCamundaHistoryTimeToLive(final DmnModelInstance originalModelInstance) {
+    parseModel(originalModelInstance);
+
     final Decision decision = modelInstance.getModelElementById("decision");
     assertThat(decision.getCamundaHistoryTimeToLive()).isEqualTo(5);
     decision.setCamundaHistoryTimeToLive(6);
     assertThat(decision.getCamundaHistoryTimeToLive()).isEqualTo(6);
   }
 
-  @Test
-  public void testCamundaVersionTag() {
+  @ParameterizedTest(name = "Namespace: {0}")
+  @MethodSource("parameters")
+  public void testCamundaVersionTag(final DmnModelInstance originalModelInstance) {
+    parseModel(originalModelInstance);
+
     final Decision decision = modelInstance.getModelElementById("decision");
     assertThat(decision.getVersionTag()).isEqualTo("1.0.0");
     decision.setVersionTag("1.1.0");
     assertThat(decision.getVersionTag()).isEqualTo("1.1.0");
   }
 
-  @After
+  @AfterEach
   public void validateModel() {
     Dmn.validateModel(modelInstance);
   }

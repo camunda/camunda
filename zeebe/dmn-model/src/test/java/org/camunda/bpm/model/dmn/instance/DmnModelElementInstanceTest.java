@@ -19,16 +19,16 @@ package org.camunda.bpm.model.dmn.instance;
 import org.camunda.bpm.model.dmn.impl.DmnModelConstants;
 import org.camunda.bpm.model.dmn.util.GetDmnModelElementTypeRule;
 import org.camunda.bpm.model.xml.test.AbstractModelElementInstanceTest;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public abstract class DmnModelElementInstanceTest extends AbstractModelElementInstanceTest {
 
-  @ClassRule
+  @RegisterExtension
   public static final GetDmnModelElementTypeRule MODEL_ELEMENT_TYPE_RULE =
       new GetDmnModelElementTypeRule();
 
-  @BeforeClass
+  @BeforeAll
   public static void initModelElementType() {
     initModelElementType(MODEL_ELEMENT_TYPE_RULE);
   }

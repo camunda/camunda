@@ -32,7 +32,7 @@ import java.util.Collection;
 import org.camunda.bpm.model.dmn.impl.instance.InputDataImpl;
 import org.camunda.bpm.model.dmn.instance.*;
 import org.camunda.bpm.model.dmn.util.DmnModelResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ReadWriteTest extends DmnModelTest {
 

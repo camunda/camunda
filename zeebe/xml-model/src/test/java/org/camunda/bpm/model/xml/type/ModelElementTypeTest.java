@@ -25,8 +25,8 @@ import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.util.ModelTypeException;
 import org.camunda.bpm.model.xml.testmodel.TestModelParser;
 import org.camunda.bpm.model.xml.testmodel.instance.*;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Sebastian Menski
@@ -40,7 +40,7 @@ public class ModelElementTypeTest {
   private ModelElementType flyingAnimalType;
   private ModelElementType birdType;
 
-  @Before
+  @BeforeEach
   public void getTypes() {
     final TestModelParser modelParser = new TestModelParser();
     modelInstance = modelParser.getEmptyModel();

@@ -40,23 +40,13 @@ import org.camunda.bpm.model.dmn.instance.OutputEntry;
 import org.camunda.bpm.model.dmn.instance.OutputValues;
 import org.camunda.bpm.model.dmn.instance.Rule;
 import org.camunda.bpm.model.dmn.instance.Text;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class ExampleCompatibilityTest extends DmnModelTest {
 
   public static final String EXAMPLE_DMN = "org/camunda/bpm/model/dmn/Example.dmn";
 
-  private final DmnModelInstance originalModelInstance;
-
-  public ExampleCompatibilityTest(DmnModelInstance originalModelInstance) {
-    this.originalModelInstance = originalModelInstance;
-  }
-
-  @Parameterized.Parameters(name = "Namespace: {0}")
   public static Collection<Object[]> parameters() {
     return Arrays.asList(
         new Object[][] {
@@ -92,13 +82,14 @@ public class ExampleCompatibilityTest extends DmnModelTest {
         });
   }
 
-  @Before
-  public void parseModel() {
+  private void parseModel(final DmnModelInstance originalModelInstance) {
     modelInstance = originalModelInstance.clone();
   }
 
-  @Test
-  public void shouldGetElements() {
+  @ParameterizedTest(name = "Namespace: {0}")
+  @MethodSource("parameters")
+  public void shouldGetElements(final DmnModelInstance originalModelInstance) {
+    parseModel(originalModelInstance);
 
     // Definitions
     final Definitions definitions = modelInstance.getDefinitions();
@@ -242,8 +233,11 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     assertThat(businessContextElements).isEmpty();
   }
 
-  @Test
-  public void shouldWriteElements() throws Exception {
+  @ParameterizedTest(name = "Namespace: {0}")
+  @MethodSource("parameters")
+  public void shouldWriteElements(final DmnModelInstance originalModelInstance) throws Exception {
+    parseModel(originalModelInstance);
+
     modelInstance = Dmn.createEmptyModel();
 
     // Definitions

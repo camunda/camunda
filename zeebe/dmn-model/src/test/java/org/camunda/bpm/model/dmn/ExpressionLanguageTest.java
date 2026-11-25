@@ -31,7 +31,7 @@ import org.camunda.bpm.model.dmn.instance.OutputValues;
 import org.camunda.bpm.model.dmn.instance.Rule;
 import org.camunda.bpm.model.dmn.instance.Text;
 import org.camunda.bpm.model.dmn.util.DmnModelResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ExpressionLanguageTest extends DmnModelTest {
 

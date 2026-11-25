@@ -24,10 +24,10 @@ import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.test.GetModelElementTypeRule;
 import org.camunda.bpm.model.xml.type.ModelElementType;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
-public class GetDmnModelElementTypeRule extends TestWatcher implements GetModelElementTypeRule {
+public class GetDmnModelElementTypeRule implements BeforeAllCallback, GetModelElementTypeRule {
 
   private ModelInstance modelInstance;
   private Model model;
@@ -35,8 +35,8 @@ public class GetDmnModelElementTypeRule extends TestWatcher implements GetModelE
 
   @Override
   @SuppressWarnings("unchecked")
-  protected void starting(Description description) {
-    String className = description.getClassName();
+  public void beforeAll(ExtensionContext context) {
+    String className = context.getRequiredTestClass().getName();
     assertThat(className).endsWith("Test");
     className = className.substring(0, className.length() - "Test".length());
     final Class<? extends ModelElementInstance> instanceClass;
