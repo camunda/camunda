@@ -57,10 +57,12 @@ is lost when all members restart. Consumers that need durability persist the val
 **D4. Keys are typed descriptors that carry their scope, codec and merge strategy.**
 A key is a `GlobalKey<T>` or `MemberKey<T>` that names a cluster-wide unique key and carries a
 `GossipCodec<T>` (`T <-> byte[]`). A `GlobalKey` also carries its `MergeStrategy<T>` and a default
-value. Putting scope and merge on the key, rather than on each call, makes it impossible to write a
-key as GLOBAL in one place and as MEMBER in another, or for two members to merge the same key
-differently. Only fixed keys are supported; dynamic key families (`prefix.<suffix>`) are deferred.
-A consumer that needs a dynamic set of entries puts a map inside one value.
+value. Putting scope and merge on the key, rather than on each call, means a consumer declares them
+once, in a shared key constant, instead of on every call. Each member rejects a name used with
+incompatible descriptors (D5), but nothing compares descriptors across members: all members must use
+the same key definition, in practice the same constant in the consumer's code. Only fixed keys are
+supported; dynamic key families (`prefix.<suffix>`) are deferred. A consumer that needs a dynamic set
+of entries puts a map inside one value.
 
 **D5. Keys are registered on first use; conflicting descriptors fail fast.**
 The gossiper starts early in the broker, before its consumers, so there is no registration phase
@@ -81,16 +83,20 @@ than once and along different paths. Two strategies exist:
 - `lastWriterWins()` — the gossiper attaches a hidden `(timestamp, writer member id)` header; the
   highest timestamp wins, ties go to the higher member id, and remaining ties to the greater encoded
   value. The last tie-break keeps the order total when a restarted member reuses a timestamp of its
-  previous run for a different value, which would otherwise leave members disagreeing. The timestamp
-  is wall-clock time, so under clock skew the member with the faster clock wins. Because the header
-  is hidden, it can move to a hybrid logical clock later without an API change.
+  previous run for a different value, which would otherwise leave members disagreeing. A member
+  stamps each write with a timestamp higher than the one it holds for the key, so its own write
+  always replaces its local value, even while the clock stands still. The timestamp is wall-clock
+  time, so under clock skew the member with the faster clock wins. Because the header is hidden, it
+  can move to a hybrid logical clock later without an API change.
 - `merging(BinaryOperator<T>)` — merges values only. Any ordering the consumer needs, such as a
   version, lives inside `T`.
 
 A third strategy exposing the gossiper's header to custom merges is deliberately not offered.
 
 **D8. Local GLOBAL writes go through the merge.**
-`put(key, value)` stores `merge(current, value)`; under last-writer-wins this replaces the value.
+`put(key, value)` stores `merge(stored, value)`, or `value` itself if nothing is stored yet: the
+default (D11) is read-only and never merged into a write. Under last-writer-wins a local write always
+replaces the local value (D7), though it can still lose to a concurrent write on another member.
 `update(key, fn)` applies `fn` to the current value and stores the merged result. Storing a value raw
 under a custom merge would be overridden as soon as a peer gossips back, which looks like a lost
 write.

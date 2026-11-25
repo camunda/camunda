@@ -47,8 +47,10 @@ import java.util.function.UnaryOperator;
 public interface ClusterGossiper {
 
   /**
-   * Writes a GLOBAL value. The stored value is {@code merge(current, value)}; under {@link
-   * MergeStrategy#lastWriterWins()} the value simply replaces the current one.
+   * Writes a GLOBAL value. The stored value is {@code merge(stored, value)}, or {@code value}
+   * itself if nothing is stored yet; the key's default value is never merged into a write. Under
+   * {@link MergeStrategy#lastWriterWins()} the value replaces the local one, though it can still
+   * lose to a concurrent write on another member.
    */
   <T> void put(GlobalKey<T> key, T value);
 

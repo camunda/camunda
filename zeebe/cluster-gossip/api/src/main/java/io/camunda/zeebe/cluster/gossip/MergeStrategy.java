@@ -24,7 +24,8 @@ public sealed interface MergeStrategy<T> {
    * The gossiper attaches a hidden write timestamp and the writer's member id to every write. The
    * write with the highest timestamp wins; ties go to the higher member id by {@link
    * io.atomix.cluster.MemberId#ID_COMPARATOR}, and remaining ties to the greater encoded value, so
-   * every member picks the same winner.
+   * every member picks the same winner. A member stamps each write with a timestamp higher than the
+   * one it holds for the key, so its own write always replaces its local value.
    *
    * <p>The timestamp is wall-clock time, so under clock skew the member with the faster clock wins.
    */
