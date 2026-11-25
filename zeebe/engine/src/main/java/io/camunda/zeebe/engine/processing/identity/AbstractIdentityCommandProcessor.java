@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.jspecify.annotations.NullMarked;
 
@@ -92,9 +93,20 @@ public abstract class AbstractIdentityCommandProcessor<T extends UnifiedRecordVa
   @Override
   public final ProcessingError tryHandleError(final TypedRecord<T> command, final Throwable error) {
     // the engine rejects the command afterwards; this fails its policy update
-    policyUpdateBehavior.failOpenUpdate(
-        command, "failed with an unexpected error: %s".formatted(error.getMessage()));
+    policyUpdateBehavior.failOpenUpdate(command, describe(error));
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  /**
+   * When the command's results exceed the batch size, the engine's rejection must still fit next to
+   * the update's failure, so the failure leaves out the exception's message, which quotes the
+   * record that did not fit.
+   */
+  private static String describe(final Throwable error) {
+    if (error instanceof ExceededBatchRecordSizeException) {
+      return "exceeded the maximum batch size";
+    }
+    return "failed with an unexpected error: %s".formatted(error.getMessage());
   }
 
   private void reject(final TypedRecord<T> command, final RejectionType type, final String reason) {

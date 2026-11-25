@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.policy;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.chunk;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.uid;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.engine.processing.identity.AbstractIdentityCommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -30,9 +31,11 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.records.CopiedRecords;
+import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.time.InstantSource;
 import java.util.List;
@@ -67,6 +70,7 @@ public final class PolicyUpdateIdentityCommandErrorTest {
 
   private TestStreams streams;
   private StreamProcessor streamProcessor;
+  private RuntimeException error = new RuntimeException("expected");
 
   @Before
   public void setUp() {
@@ -103,7 +107,7 @@ public final class PolicyUpdateIdentityCommandErrorTest {
                         @Override
                         protected void processNewIdentityCommand(
                             final TypedRecord<RoleRecord> command) {
-                          throw new RuntimeException("expected");
+                          throw error;
                         }
 
                         @Override
@@ -143,6 +147,33 @@ public final class PolicyUpdateIdentityCommandErrorTest {
             RoleRecordValue.class);
     assertThat(rejection.getValue().getRoleId()).isEqualTo(roleId);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.PROCESSING_ERROR);
+  }
+
+  @Test
+  public void shouldLeaveTheRecordOutOfTheFailureWhenACommandExceedsTheBatchSize() {
+    // given
+    error =
+        new ExceededBatchRecordSizeException(mock(RecordBatchEntry.class), 4_000_000, 1, 4_000_000);
+    final var update =
+        chunk().setRoles(List.<RoleRecordValue>of(new RoleRecord().setRoleId("role-" + uid())));
+
+    // when
+    appendChunk(update);
+
+    // then
+    final var failed =
+        await(
+            record -> Records.isEvent(record, ValueType.POLICY_UPDATE, PolicyUpdateIntent.FAILED),
+            PolicyUpdateRecordValue.class);
+    assertThat(failed.getValue().getErrorMessage())
+        .contains(update.getUpdateId(), "ROLE.CREATE", "exceeded the maximum batch size")
+        .doesNotContain(error.getMessage());
+
+    final var rejection =
+        await(
+            record -> Records.isRejection(record, ValueType.ROLE, RoleIntent.CREATE),
+            RoleRecordValue.class);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
   }
 
   @Test
