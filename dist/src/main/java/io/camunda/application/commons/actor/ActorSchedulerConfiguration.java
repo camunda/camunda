@@ -8,6 +8,7 @@
 package io.camunda.application.commons.actor;
 
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorScheduler.DefaultActorThreadFactory;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -67,6 +68,33 @@ public final class ActorSchedulerConfiguration {
     return GatewayActorScheduler.dedicated(gatewayScheduler);
   }
 
+  /**
+   * The schedulers of the physical tenants. With the tenant pool disabled, all tenants use the
+   * scheduler of the broker. Otherwise each tenant gets a scheduler of its own, named after the
+   * broker-wide one and the tenant, when its first partition actor is submitted.
+   */
+  @Bean(destroyMethod = "close")
+  public PhysicalTenantActorSchedulers physicalTenantActorSchedulers(
+      final ActorScheduler scheduler) {
+    if (!schedulerConfiguration.tenantPoolEnabled()) {
+      return PhysicalTenantActorSchedulers.shared(scheduler);
+    }
+
+    return PhysicalTenantActorSchedulers.dedicated(
+        physicalTenantId ->
+            newScheduler(schedulerConfiguration.schedulerPrefix())
+                .setSchedulerName(
+                    String.format(
+                        "%s-%s-%s",
+                        schedulerConfiguration.schedulerPrefix(),
+                        schedulerConfiguration.nodeId(),
+                        physicalTenantId))
+                .setCpuBoundActorThreadCount(schedulerConfiguration.tenantCpuThreads())
+                .setIoBoundActorThreadCount(schedulerConfiguration.tenantIoThreads())
+                .setActorThreadFactory(new DefaultActorThreadFactory(physicalTenantId + "-"))
+                .build());
+  }
+
   private ActorScheduler.ActorSchedulerBuilder newScheduler(final String prefix) {
     return ActorScheduler.newActorScheduler()
         .setActorClock(actorClockConfiguration.getClock().orElse(null))
@@ -79,6 +107,10 @@ public final class ActorSchedulerConfiguration {
    * @param gatewayCpuThreads the CPU threads of a separate scheduler for the gateway side, see
    *     {@link GatewayActorScheduler}. With 0, the gateway side uses the scheduler of this
    *     configuration.
+   * @param tenantPoolEnabled whether each physical tenant gets a scheduler of its own, see {@link
+   *     PhysicalTenantActorSchedulers}
+   * @param tenantCpuThreads the CPU threads of the scheduler of each physical tenant
+   * @param tenantIoThreads the IO threads of the scheduler of each physical tenant
    */
   public record SchedulerConfiguration(
       int cpuThreads,
@@ -86,5 +118,8 @@ public final class ActorSchedulerConfiguration {
       int gatewayCpuThreads,
       boolean metricsEnabled,
       String schedulerPrefix,
-      String nodeId) {}
+      String nodeId,
+      boolean tenantPoolEnabled,
+      int tenantCpuThreads,
+      int tenantIoThreads) {}
 }

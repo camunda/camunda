@@ -24,6 +24,7 @@ import io.camunda.service.UserServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -66,6 +67,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final BrokerBasedConfiguration configuration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorScheduler actorScheduler;
+  private final PhysicalTenantActorSchedulers physicalTenantActorSchedulers;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final BrokerShutdownHelper shutdownHelper;
@@ -91,6 +93,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final BrokerBasedConfiguration configuration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorScheduler actorScheduler,
+      final PhysicalTenantActorSchedulers physicalTenantActorSchedulers,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final BrokerShutdownHelper shutdownHelper,
@@ -113,6 +116,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
+    this.physicalTenantActorSchedulers = physicalTenantActorSchedulers;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
@@ -148,6 +152,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withRootBrokerCfg(configuration.config())
             .withRootCamunda(unifiedConfiguration.getCamunda())
             .withActorScheduler(actorScheduler)
+            .withPhysicalTenantActorSchedulers(physicalTenantActorSchedulers)
             .withCluster(cluster)
             .withBrokerClient(brokerClient)
             .withMeterRegistry(meterRegistry)

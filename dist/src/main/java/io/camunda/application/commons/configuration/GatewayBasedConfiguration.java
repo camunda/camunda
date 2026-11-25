@@ -113,7 +113,7 @@ public final class GatewayBasedConfiguration {
     // the gateway is the only component of the process, so it needs no separate scheduler
     final var gatewayCpuThreads = 0;
     return new SchedulerConfiguration(
-        cpuThreads, ioThreads, gatewayCpuThreads, metricsEnabled, "Gateway", nodeId);
+        cpuThreads, ioThreads, gatewayCpuThreads, metricsEnabled, "Gateway", nodeId, false, 0, 0);
   }
 
   @Bean

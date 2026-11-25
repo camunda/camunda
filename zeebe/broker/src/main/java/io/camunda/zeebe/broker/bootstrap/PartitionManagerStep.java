@@ -100,11 +100,22 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             .andThen(ignore -> topologyManager.closeAsync(), concurrencyControl),
         (ok, error) -> {
           brokerShutdownContext.removePartitionManager(physicalTenantId);
-          if (error != null) {
-            shutdownFuture.completeExceptionally(error);
-          } else {
-            shutdownFuture.complete(brokerShutdownContext);
-          }
+          // the partitions are stopped, so nothing runs on the scheduler of the tenant anymore;
+          // this also happens when stopping failed, so that its threads do not leak
+          brokerShutdownContext
+              .getPhysicalTenantActorSchedulers()
+              .release(physicalTenantId)
+              .whenComplete(
+                  (released, releaseError) ->
+                      concurrencyControl.run(
+                          () -> {
+                            final var failure = error != null ? error : releaseError;
+                            if (failure != null) {
+                              shutdownFuture.completeExceptionally(failure);
+                            } else {
+                              shutdownFuture.complete(brokerShutdownContext);
+                            }
+                          }));
         });
   }
 

@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -66,6 +67,9 @@ public interface BrokerStartupContext {
   SpringBrokerBridge getSpringBrokerBridge();
 
   ActorSchedulingService getActorSchedulingService();
+
+  /** Returns the schedulers on which the partition actors of the physical tenants run. */
+  PhysicalTenantActorSchedulers getPhysicalTenantActorSchedulers();
 
   ConcurrencyControl getConcurrencyControl();
 

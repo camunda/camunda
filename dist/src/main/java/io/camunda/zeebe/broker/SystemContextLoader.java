@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -64,6 +65,7 @@ public final class SystemContextLoader {
   private BrokerCfg rootBrokerCfg;
   private Camunda rootCamunda;
   private ActorScheduler actorScheduler;
+  private PhysicalTenantActorSchedulers physicalTenantActorSchedulers;
   private AtomixCluster cluster;
   private BrokerClient brokerClient;
   private MeterRegistry meterRegistry;
@@ -107,6 +109,12 @@ public final class SystemContextLoader {
 
   public SystemContextLoader withActorScheduler(final ActorScheduler actorScheduler) {
     this.actorScheduler = actorScheduler;
+    return this;
+  }
+
+  public SystemContextLoader withPhysicalTenantActorSchedulers(
+      final PhysicalTenantActorSchedulers physicalTenantActorSchedulers) {
+    this.physicalTenantActorSchedulers = physicalTenantActorSchedulers;
     return this;
   }
 
@@ -222,6 +230,7 @@ public final class SystemContextLoader {
         shutdownTimeout,
         rootBrokerCfg,
         actorScheduler,
+        physicalTenantActorSchedulers,
         cluster,
         brokerClient,
         meterRegistry,

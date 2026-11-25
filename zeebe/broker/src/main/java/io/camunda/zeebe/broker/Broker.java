@@ -67,6 +67,7 @@ public final class Broker implements AutoCloseable {
             systemContext.getBrokerConfiguration(),
             springBrokerBridge,
             scheduler,
+            systemContext.getPhysicalTenantActorSchedulers(),
             healthCheckService,
             new ClusterServicesImpl(systemContext.getCluster()),
             systemContext.getBrokerClient(),
