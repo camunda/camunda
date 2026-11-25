@@ -81,6 +81,7 @@
     <version.elasticsearch>7.17.29</version.elasticsearch>
     <version.jakarta-mail>2.0.2</version.jakarta-mail>
     <version.jakarta-mail-angus>2.0.5</version.jakarta-mail-angus>
+    <version.janino>3.1.12</version.janino>
     <version.jersey>4.0.2</version.jersey>
     <version.lucene>8.11.3</version.lucene>
     <version.opencsv>5.12.0</version.opencsv>

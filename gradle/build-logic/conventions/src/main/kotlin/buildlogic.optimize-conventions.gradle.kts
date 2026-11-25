@@ -34,6 +34,7 @@ configurations.configureEach {
     "io.github.netmikey.logunit:logunit-core:${optVersion("logunit.version")}",
     "org.apache.lucene:lucene-core:${optVersion("version.lucene")}",
     "org.eclipse.angus:jakarta.mail:${optVersion("version.jakarta-mail-angus")}",
+    "org.codehaus.janino:janino:${optVersion("version.janino")}",
     "org.elasticsearch:elasticsearch:${optVersion("version.elasticsearch")}",
     "co.elastic.clients:elasticsearch-rest5-client:$optimizeElasticsearchRestClientVersion",
     "org.glassfish.jersey.core:jersey-client:${optVersion("version.jersey")}",
