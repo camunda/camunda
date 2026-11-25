@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.util.SemanticVersion;
-import io.camunda.zeebe.util.VersionUtil;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -189,23 +188,5 @@ final class ClusterBehaviorTest {
     // when, then
     assertThatThrownBy(() -> ClusterBehavior.empty().isCapabilityEnabled(-1))
         .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void shouldHoldTheSupportedSetOfTheBinaryWithItsVersion() {
-    // given ClusterBehavior keeps only the release of the version, so the expected version does too
-    final var version =
-        VersionUtil.getSemanticVersion()
-            .orElse(ClusterBehavior.UNKNOWN_VERSION)
-            .withoutPreRelease();
-
-    // when
-    final var supported = ClusterBehavior.supported();
-
-    // then
-    assertThat(supported.behaviorVersion()).isEqualTo(version);
-    for (final var capability : CapabilityCatalog.values()) {
-      assertThat(supported.isCapabilityEnabled(capability)).isTrue();
-    }
   }
 }

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.clusterbehavior;
 
 import io.camunda.zeebe.util.SemanticVersion;
-import io.camunda.zeebe.util.VersionUtil;
 import java.util.Arrays;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -70,20 +69,6 @@ public final class ClusterBehavior {
       lastSupportedCapability =
           lastWord * Long.SIZE + (Long.SIZE - 1 - Long.numberOfLeadingZeros(highestWord));
     }
-  }
-
-  /**
-   * The cluster behavior of everything this binary supports: all entries of the {@link
-   * CapabilityCatalog}, with the version of this binary as behavior version. It is {@link
-   * #UNKNOWN_VERSION} if the version of the binary is not a semantic version, for example in a
-   * development build.
-   *
-   * <p>This is a method and not a constant because {@link VersionUtil#getSemanticVersion()} reads
-   * the version from the environment, so it cannot be initialized statically (and tests could not
-   * override it). It builds the set on every call: callers that need it more than once memoize it.
-   */
-  public static ClusterBehavior supported() {
-    return of(VersionUtil.getSemanticVersion().orElse(UNKNOWN_VERSION), CapabilityCatalog.values());
   }
 
   /** The empty set, with an {@link #UNKNOWN_VERSION unknown} behavior version. */
