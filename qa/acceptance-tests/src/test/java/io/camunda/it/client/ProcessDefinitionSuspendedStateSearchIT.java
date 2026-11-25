@@ -9,6 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForProcessDefinitionState;
 import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
@@ -20,14 +21,12 @@ import io.camunda.client.api.response.SuspendProcessDefinitionVersionResult.Outc
 import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessDefinition;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -52,7 +51,8 @@ class ProcessDefinitionSuspendedStateSearchIT {
         .processDefinitionKey(versions.v2().getProcessDefinitionKey())
         .send()
         .join();
-    awaitState(versions.v2(), ProcessDefinitionState.SUSPENDED);
+    waitForProcessDefinitionState(
+        camundaClient, versions.v2().getProcessDefinitionKey(), ProcessDefinitionState.SUSPENDED);
 
     // when
     final var suspended =
@@ -84,7 +84,8 @@ class ProcessDefinitionSuspendedStateSearchIT {
         .processDefinitionKey(versions.v2().getProcessDefinitionKey())
         .send()
         .join();
-    awaitState(versions.v2(), ProcessDefinitionState.SUSPENDED);
+    waitForProcessDefinitionState(
+        camundaClient, versions.v2().getProcessDefinitionKey(), ProcessDefinitionState.SUSPENDED);
 
     // when
     final var latestActive =
@@ -116,13 +117,13 @@ class ProcessDefinitionSuspendedStateSearchIT {
             processId + ".bpmn");
     final var key = process.getProcessDefinitionKey();
     camundaClient.newSuspendProcessDefinitionCommand().processDefinitionKey(key).send().join();
-    awaitState(process, ProcessDefinitionState.SUSPENDED);
+    waitForProcessDefinitionState(camundaClient, key, ProcessDefinitionState.SUSPENDED);
 
     // when
     camundaClient.newResumeProcessDefinitionCommand().processDefinitionKey(key).send().join();
 
     // then
-    awaitState(process, ProcessDefinitionState.ACTIVE);
+    waitForProcessDefinitionState(camundaClient, key, ProcessDefinitionState.ACTIVE);
     assertThat(searchByKeyAndState(key, ProcessDefinitionState.ACTIVE))
         .extracting(ProcessDefinition::getProcessDefinitionKey)
         .containsExactly(key);
@@ -143,13 +144,13 @@ class ProcessDefinitionSuspendedStateSearchIT {
     waitForProcessInstances(
         camundaClient, f -> f.processDefinitionId(processId).state(ProcessInstanceState.ACTIVE), 1);
     camundaClient.newSuspendProcessDefinitionCommand().processDefinitionKey(key).send().join();
-    awaitState(process, ProcessDefinitionState.SUSPENDED);
+    waitForProcessDefinitionState(camundaClient, key, ProcessDefinitionState.SUSPENDED);
 
     // when
     camundaClient.newDeleteResourceCommand(key).deleteHistory(false).send().join();
 
     // then
-    awaitState(process, ProcessDefinitionState.DRAINING);
+    waitForProcessDefinitionState(camundaClient, key, ProcessDefinitionState.DRAINING);
     assertThat(searchByKeyAndState(key, ProcessDefinitionState.SUSPENDED)).isEmpty();
   }
 
@@ -192,7 +193,8 @@ class ProcessDefinitionSuspendedStateSearchIT {
         .deleteHistory(false)
         .send()
         .join();
-    awaitState(v1, ProcessDefinitionState.DRAINING);
+    waitForProcessDefinitionState(
+        camundaClient, v1.getProcessDefinitionKey(), ProcessDefinitionState.DRAINING);
 
     // when - suspend all versions of the process ID
     final var response =
@@ -211,8 +213,10 @@ class ProcessDefinitionSuspendedStateSearchIT {
             tuple(v1.getProcessDefinitionKey(), Outcome.DRAINING),
             tuple(v2.getProcessDefinitionKey(), Outcome.SUSPENDED),
             tuple(v3.getProcessDefinitionKey(), Outcome.SUSPENDED));
-    awaitState(v2, ProcessDefinitionState.SUSPENDED);
-    awaitState(v3, ProcessDefinitionState.SUSPENDED);
+    waitForProcessDefinitionState(
+        camundaClient, v2.getProcessDefinitionKey(), ProcessDefinitionState.SUSPENDED);
+    waitForProcessDefinitionState(
+        camundaClient, v3.getProcessDefinitionKey(), ProcessDefinitionState.SUSPENDED);
     // v1 was already DRAINING before the suspend, so only a search for SUSPENDED proves that the
     // exporter did not overwrite it
     assertThat(
@@ -225,7 +229,8 @@ class ProcessDefinitionSuspendedStateSearchIT {
                 .items())
         .extracting(ProcessDefinition::getProcessDefinitionKey)
         .containsExactlyInAnyOrder(v2.getProcessDefinitionKey(), v3.getProcessDefinitionKey());
-    awaitState(v1, ProcessDefinitionState.DRAINING);
+    waitForProcessDefinitionState(
+        camundaClient, v1.getProcessDefinitionKey(), ProcessDefinitionState.DRAINING);
   }
 
   private static Versions deployTwoVersions() {
@@ -252,21 +257,6 @@ class ProcessDefinitionSuspendedStateSearchIT {
         .send()
         .join()
         .items();
-  }
-
-  private static void awaitState(final Process process, final ProcessDefinitionState expected) {
-    Awaitility.await("process definition should be " + expected)
-        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        camundaClient
-                            .newProcessDefinitionGetRequest(process.getProcessDefinitionKey())
-                            .send()
-                            .join()
-                            .getState())
-                    .isEqualTo(expected));
   }
 
   private record Versions(Process v1, Process v2) {}
