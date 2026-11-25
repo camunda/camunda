@@ -23,7 +23,7 @@
       "@camunda/camunda-composite-components": "$@camunda/camunda-composite-components"
     },
     "monaco-editor": {
-      "dompurify": "3.4.18"
+      "dompurify": "3.5.0"
     }
   },
   "dependencies": {
