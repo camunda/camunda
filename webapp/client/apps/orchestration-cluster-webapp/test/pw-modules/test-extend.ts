@@ -30,6 +30,7 @@ import {OperateDecisionInstancePage} from '#/pages/operate/OperateDecisionInstan
 import {OperateOperationsLogPage} from '#/pages/operate/OperateOperationsLog.page';
 import {AdminIndexPage} from '#/pages/admin/AdminIndex.page';
 import {AdminLoginPage} from '#/pages/admin/AdminLogin.page';
+import {AdminSetupPage} from '#/pages/admin/AdminSetup.page';
 import {AdminMcpProcessesPage} from '#/pages/admin/AdminMcpProcesses.page';
 import {AdminOperationsLogPage} from '#/pages/admin/AdminOperationsLog.page';
 import {AdminMappingRulesPage} from '#/pages/admin/AdminMappingRules.page';
@@ -73,6 +74,7 @@ type Fixtures = {
 	operateOperationsLogPage: OperateOperationsLogPage;
 	adminIndexPage: AdminIndexPage;
 	adminLoginPage: AdminLoginPage;
+	adminSetupPage: AdminSetupPage;
 	adminMcpProcessesPage: AdminMcpProcessesPage;
 	adminOperationsLogPage: AdminOperationsLogPage;
 	adminMappingRulesPage: AdminMappingRulesPage;
@@ -160,6 +162,9 @@ const test = base.extend<Fixtures>({
 	},
 	adminLoginPage: async ({page}, use) => {
 		await use(new AdminLoginPage(page));
+	},
+	adminSetupPage: async ({page}, use) => {
+		await use(new AdminSetupPage(page));
 	},
 	adminMcpProcessesPage: async ({page}, use) => {
 		await use(new AdminMcpProcessesPage(page));
