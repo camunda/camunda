@@ -35,8 +35,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class IncidentExportHandlerTest {
 
-  private static final int MAX_TREE_PATH_SIZE = 4096;
-
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @Mock private IncidentWriter incidentWriter;
@@ -47,7 +45,7 @@ class IncidentExportHandlerTest {
 
   @BeforeEach
   void setUp() {
-    handler = new IncidentExportHandler(incidentWriter, processCache, MAX_TREE_PATH_SIZE);
+    handler = new IncidentExportHandler(incidentWriter, processCache);
   }
 
   // Regression test for https://github.com/camunda/camunda/issues/50014.
@@ -86,8 +84,7 @@ class IncidentExportHandlerTest {
     when(processCache.get(parentProcessDefinitionKey))
         .thenReturn(
             Optional.of(
-                new CachedProcessEntity(
-                    null, 1, null, List.of(callActivityId), Map.of(), false, Map.of())));
+                new CachedProcessEntity(null, 1, null, List.of(callActivityId), Map.of(), false)));
 
     // when
     handler.export(record);
