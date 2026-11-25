@@ -61,18 +61,7 @@ public final class ActorSchedulerConfiguration {
         newScheduler("Gateway")
             .setCpuBoundActorThreadCount(gatewayCpuThreads)
             .setIoBoundActorThreadCount(0)
-            .setActorThreadFactory(
-                (name, id, group, taskScheduler, clock, timerQueue, metrics, idleStrategy) ->
-                    new DefaultActorThreadFactory()
-                        .newThread(
-                            GATEWAY_THREAD_NAME_PREFIX + name,
-                            id,
-                            group,
-                            taskScheduler,
-                            clock,
-                            timerQueue,
-                            metrics,
-                            idleStrategy))
+            .setActorThreadFactory(new DefaultActorThreadFactory(GATEWAY_THREAD_NAME_PREFIX))
             .build();
     gatewayScheduler.start();
     return GatewayActorScheduler.dedicated(gatewayScheduler);

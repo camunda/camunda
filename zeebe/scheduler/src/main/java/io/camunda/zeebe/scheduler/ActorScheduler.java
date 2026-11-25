@@ -270,6 +270,17 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
   }
 
   public static final class DefaultActorThreadFactory implements ActorThreadFactory {
+    private final String threadNamePrefix;
+
+    public DefaultActorThreadFactory() {
+      this("");
+    }
+
+    /** Creates threads whose names are the given prefix followed by the scheduler's thread name. */
+    public DefaultActorThreadFactory(final String threadNamePrefix) {
+      this.threadNamePrefix = threadNamePrefix;
+    }
+
     @Override
     public ActorThread newThread(
         final String name,
@@ -281,7 +292,14 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
         final ActorMetrics actorMetrics,
         final IdleStrategy idleStrategy) {
       return new ActorThread(
-          name, id, threadGroup, taskScheduler, clock, timerQueue, actorMetrics, idleStrategy);
+          threadNamePrefix + name,
+          id,
+          threadGroup,
+          taskScheduler,
+          clock,
+          timerQueue,
+          actorMetrics,
+          idleStrategy);
     }
   }
 
