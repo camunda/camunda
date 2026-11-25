@@ -293,7 +293,8 @@ describe('<OperationsLog />', () => {
 				await expect.element(fetchFailedToast).not.toBeInTheDocument();
 
 				worker.use(mockQueryAuditLogsEndpoint({successResponse: HttpResponse.json(createQueryAuditLogsResponse())}));
-				await expect.element(screen.getByText('No operation log items yet'), {timeout: 6000}).toBeVisible();
+				await vi.advanceTimersByTimeAsync(5_000);
+				await expect.element(screen.getByText('No operation log items yet')).toBeVisible();
 
 				worker.use(mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}));
 				await vi.advanceTimersByTimeAsync(5_000);
