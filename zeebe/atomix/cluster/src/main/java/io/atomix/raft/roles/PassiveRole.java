@@ -893,7 +893,7 @@ public class PassiveRole extends InactiveRole {
       final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
     final var snapshot = raft.getCurrentSnapshot();
     if (snapshot == null || request.prevLogIndex() != snapshot.getIndex()) {
-      log.debug(
+      throttledLogger.warn(
           "Rejected {}: Previous index ({}) is neither in the local log, which starts at {}, nor the snapshot index ({})",
           request,
           request.prevLogIndex(),
