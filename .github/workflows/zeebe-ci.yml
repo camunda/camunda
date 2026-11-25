@@ -31,7 +31,8 @@ jobs:
   smoke-tests:
     name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
     timeout-minutes: 20
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -55,8 +56,9 @@ jobs:
         with:
           dockerhub-readonly:  ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -106,22 +108,25 @@ jobs:
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           detailed_junit_tests: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   property-tests:
     name: Property Tests
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
@@ -158,15 +163,17 @@ jobs:
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   performance-tests:
     name: Performance Tests
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 20
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
     steps:
@@ -174,8 +181,9 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
@@ -223,16 +231,18 @@ jobs:
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   strace-tests:
     # Zeebe tests requiring strace
     name: Strace Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@v4
       - name: Install and allow strace tests
@@ -242,8 +252,9 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
@@ -280,15 +291,17 @@ jobs:
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   docker-checks:
     name: Docker checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
+      id-token: write # Vault JWT login
       security-events: write
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
@@ -317,8 +330,9 @@ jobs:
         with:
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -346,9 +360,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   test-summary:
     # Used by the merge queue to check all tests, including the unit test matrix.
@@ -381,7 +396,8 @@ jobs:
   deploy-docker-snapshot:
     name: Deploy snapshot Docker image
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     needs: [ test-summary, utils-get-snapshot-docker-tag-and-concurrency-group ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
@@ -394,8 +410,9 @@ jobs:
         with:
           dockerhub: true
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -415,8 +432,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
   deploy-benchmark-images:
     name: Deploy benchmark images
     timeout-minutes: 5
@@ -447,8 +465,9 @@ jobs:
         with:
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - run: ./mvnw -B -D skipTests -D skipChecks -pl zeebe/benchmarks/project -am package
       - name: Build Starter Image
         run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter
@@ -460,9 +479,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
   deploy-snyk-projects:
     name: Deploy Snyk development projects
     needs: [ test-summary ]
@@ -473,6 +493,9 @@ jobs:
     concurrency:
       group: deploy-snyk-projects
       cancel-in-progress: false
+    permissions:
+      id-token: write # Vault JWT login
+      security-events: write
     uses: ./.github/workflows/zeebe-snyk.yml
     with:
       monitor: true
@@ -496,20 +519,22 @@ jobs:
       github.event_name == 'pull_request' &&
       (github.actor == 'backport-action')
     permissions:
+      id-token: write # Vault JWT login
       checks: read
       pull-requests: write
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
           github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@v6
       - id: approve-and-merge-backport-renovate
@@ -527,5 +552,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}

@@ -68,7 +68,8 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.12'
@@ -92,15 +93,17 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   commitlint:
     if: needs.detect-changes.outputs.commitlint == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Determine fetch depth for checkout
         id: depth
@@ -124,6 +127,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
@@ -132,15 +138,17 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: maven-spotless-linter
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - run: ./mvnw spotless:check
       - name: Observe build status
         if: always()
@@ -149,8 +157,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   junit-vintage-check:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -158,7 +167,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@v6
       - name: Check for missing junit-vintage-engine
@@ -170,8 +180,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           
   validate-pom-metadata:
     if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
@@ -179,7 +190,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@v6
         with:
@@ -188,8 +200,9 @@ jobs:
         with:
           maven-cache-key-modifier: validate-pom-metadata
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Bootstrap reactor modules
         run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true -Dquickly=true install
       - name: Generate flattened POMs
@@ -203,15 +216,17 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
     name: Java checks
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: gcp-perf-core-8-default
     steps:
       - uses: actions/checkout@v4
@@ -219,8 +234,9 @@ jobs:
         with:
           maven-cache-key-modifier: java-checks
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       # Not running Maven Spotless here since it is checked in a dedicated job
       - run: ./mvnw -T1C -B -D skipTests -Dspotless.check.skip=true -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
       - name: Observe build status
@@ -229,16 +245,18 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   build-platform-frontend:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build-frontend
@@ -259,23 +277,26 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   java-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
@@ -310,16 +331,18 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 25
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -373,8 +396,9 @@ jobs:
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -434,16 +458,18 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   archunit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "General / Unit - ArchUnit"
     needs: [ detect-changes ]
     timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     runs-on: gcp-perf-core-16-default
     env:
       TEST_PRODUCT: Camunda
@@ -458,8 +484,9 @@ jobs:
         with:
           maven-cache-key-modifier: archunit-tests
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -499,9 +526,10 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
@@ -510,6 +538,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
+      id-token: write # Vault JWT login
       security-events: write
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
@@ -540,8 +569,9 @@ jobs:
           maven-cache-key-modifier: docker-checks
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
@@ -586,16 +616,18 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   identity-frontend-tests:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     defaults:
       run:
         working-directory: identity/client
@@ -626,8 +658,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   tasklist-frontend-tests:
     if: needs.detect-changes.outputs.tasklist-frontend-changes == 'true'
@@ -638,6 +671,12 @@ jobs:
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
     needs: [detect-changes]
+    permissions:
+      checks: read
+      contents: read
+      pull-requests: write
+      id-token: write # Vault JWT login
+      security-events: write
     uses: ./.github/workflows/zeebe-ci.yml
     secrets: inherit
     with:
@@ -648,7 +687,8 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
@@ -660,8 +700,9 @@ jobs:
           java-distribution: adopt
           maven-cache-key-modifier: operate
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Build Maven
         run: |
           ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
@@ -678,9 +719,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   tasklist-docker-tests:
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
@@ -695,6 +737,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      id-token: write # Vault JWT login
       contents: read
       pull-requests: write
     env:
@@ -737,9 +780,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   spring-boot-compatibility-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -747,7 +791,8 @@ jobs:
     needs: [detect-changes]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 10
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     strategy:
       fail-fast: false
       matrix:
@@ -761,8 +806,9 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
@@ -799,9 +845,10 @@ jobs:
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
@@ -811,6 +858,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:
+      id-token: write # Vault JWT login
       checks: read
     needs:  # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
@@ -838,9 +886,10 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - run: |
           echo "The \`check-results\` job has the function to fail if any previous job was unsuccessful!"
           echo "If you're reading this and wondering what the is the problem, please check other GHA jobs of this workflow run to for errors/cancellation and see their logs."
@@ -866,7 +915,8 @@ jobs:
     needs: [ check-results, utils-get-concurrency-group-for-maven-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
@@ -878,9 +928,10 @@ jobs:
         uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
@@ -917,9 +968,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
   utils-get-snapshot-docker-tag-and-concurrency-group:
@@ -937,7 +989,8 @@ jobs:
     needs: [ check-results, utils-get-snapshot-docker-tag-and-concurrency-group]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.concurrency_group_name }}
@@ -948,8 +1001,9 @@ jobs:
         with:
           dockerhub: true
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
@@ -981,6 +1035,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}

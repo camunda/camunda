@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
+      id-token: write # Vault JWT login
       contents: write
     outputs:
       branch: ${{ steps.resolve-branch.outputs.branch }}
@@ -45,12 +46,22 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   dry-run-release:
     needs: setup
     name: "${{ matrix.version }} from ${{ inputs.branch || 'main' }}"
+    permissions:
+      actions: read
+      contents: write
+      issues: write
+      pull-requests: read
+      id-token: write # Vault JWT login
+      security-events: write
     uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
     strategy:
@@ -75,6 +86,7 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
+      id-token: write # Vault JWT login
       contents: write
     steps:
       - uses: actions/checkout@v6
@@ -87,8 +99,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   notify:
     name: Send slack notification

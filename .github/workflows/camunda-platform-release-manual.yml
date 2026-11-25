@@ -37,6 +37,13 @@ concurrency:
 jobs:
   run-release:
     name: "Release ${{ inputs.releaseVersion }} from ${{ inputs.releaseBranch }}"
+    permissions:
+      actions: read
+      contents: write
+      issues: write
+      pull-requests: read
+      id-token: write # Vault JWT login
+      security-events: write
     uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
     with:
