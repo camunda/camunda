@@ -38,6 +38,7 @@ import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.system.Configuration;
 import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalException;
@@ -50,7 +51,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -347,6 +350,93 @@ final class PassiveRoleTest {
     verify(log, never()).deleteAfter(anyLong());
     assertThat(response.succeeded()).isTrue();
     assertThat(response.lastLogIndex()).isOne();
+  }
+
+  @Test
+  void shouldAcceptAppendWhosePreviousEntryIsTheSnapshotWhileTheLogHasEntriesAfterIt()
+      throws CheckedJournalException {
+    // given - the log starts after the snapshot at index 9, e.g. because this member kept the
+    // entries 10 to 12 when it rejected an append whose flush failed
+    givenLogAfterSnapshot();
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(5)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(4)
+            .withPrevLogIndex(9)
+            .withEntries(List.of(new ReplicatableJournalRecord(5, 10, 1, new byte[1])))
+            .withCommitIndex(10)
+            .build();
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the previous entry matches the snapshot, so the entries are kept
+    assertThat(response.succeeded()).isTrue();
+    assertThat(response.lastLogIndex()).isEqualTo(10);
+    verify(log, never()).deleteAfter(anyLong());
+    verify(log, never()).reset(anyLong());
+  }
+
+  @Test
+  void shouldRejectAppendWhosePreviousEntryIsBeforeTheSnapshotWithTheSnapshotIndex() {
+    // given
+    givenLogAfterSnapshot();
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(5)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(4)
+            .withPrevLogIndex(8)
+            .withEntries(List.of(new ReplicatableJournalRecord(4, 9, 1, new byte[1])))
+            .withCommitIndex(10)
+            .build();
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the leader continues after the snapshot, instead of going further back
+    assertThat(response.succeeded()).isFalse();
+    assertThat(response.lastLogIndex()).isEqualTo(9);
+  }
+
+  /** A snapshot at index 9 of term 4, and a log with the entries 10 to 12 of term 5. */
+  private void givenLogAfterSnapshot() {
+    final PersistedSnapshot snapshot = mock(PersistedSnapshot.class);
+    when(snapshot.getIndex()).thenReturn(9L);
+    when(snapshot.getTerm()).thenReturn(4L);
+    when(ctx.getCurrentSnapshot()).thenReturn(snapshot);
+    when(ctx.getCurrentSnapshotIndex()).thenReturn(9L);
+    when(ctx.getTerm()).thenReturn(5L);
+
+    final var entries = new TreeMap<Long, IndexedRaftLogEntry>();
+    for (long index = 10; index <= 12; index++) {
+      final var entry = mock(IndexedRaftLogEntry.class);
+      when(entry.index()).thenReturn(index);
+      when(entry.term()).thenReturn(5L);
+      entries.put(index, entry);
+    }
+    when(log.getFirstIndex()).thenReturn(10L);
+    when(log.getLastIndex()).thenReturn(12L);
+    when(log.getLastEntry()).thenReturn(entries.lastEntry().getValue());
+    // like the journal's reader, seeking before the first entry positions at the first entry
+    when(log.openUncommittedReader())
+        .thenAnswer(
+            ignored -> {
+              final var reader = mock(RaftLogReader.class);
+              final var position = new AtomicLong();
+              when(reader.seek(anyLong()))
+                  .thenAnswer(
+                      seek -> {
+                        position.set(Math.max(seek.<Long>getArgument(0), entries.firstKey()));
+                        return position.get();
+                      });
+              when(reader.hasNext()).thenAnswer(next -> entries.containsKey(position.get()));
+              when(reader.next()).thenAnswer(next -> entries.get(position.getAndIncrement()));
+              return reader;
+            });
   }
 
   @Test
