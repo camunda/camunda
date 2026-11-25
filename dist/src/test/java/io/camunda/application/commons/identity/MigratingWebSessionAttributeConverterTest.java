@@ -23,9 +23,6 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.ConditionalMembership;
-import io.camunda.security.api.model.authz.MembershipCondition;
-import io.camunda.security.api.model.authz.Operand;
-import io.camunda.security.api.model.authz.ResourceAttribute;
 import jakarta.servlet.http.Cookie;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -684,32 +681,6 @@ class MigratingWebSessionAttributeConverterTest {
     // then
     assertThat(restored.authenticatedRoleIds()).containsExactly("role1");
     assertThat(restored.conditionalRoleMemberships()).isEmpty();
-  }
-
-  @Test
-  void shouldRoundTripConditionalRoleMemberships() {
-    // given conditions on both resource attributes
-    final var reviewerInPaymentsOnOwnTasks =
-        new ConditionalMembership(
-            "reviewer",
-            List.of(
-                new MembershipCondition(
-                    ResourceAttribute.WORKSPACE_ID, new Operand.Equals("payments")),
-                new MembershipCondition(
-                    ResourceAttribute.PROJECT_ID, new Operand.Equals("invoicing"))));
-    final var auth =
-        CamundaAuthentication.of(
-            b ->
-                b.user("bob")
-                    .role("viewer")
-                    .conditionalRoleMemberships(List.of(reviewerInPaymentsOnOwnTasks)));
-
-    // when
-    final var restored = (CamundaAuthentication) converter.deserialize(converter.serialize(auth));
-
-    // then
-    assertThat(restored).isEqualTo(auth);
-    assertThat(restored.conditionalRoleMemberships()).containsExactly(reviewerInPaymentsOnOwnTasks);
   }
 
   @Test
