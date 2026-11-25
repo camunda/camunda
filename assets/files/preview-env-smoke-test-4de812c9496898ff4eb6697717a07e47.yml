@@ -480,6 +480,7 @@ jobs:
       issues: write
       pull-requests: write
       id-token: write # Vault JWT login
+      deployments: write
     uses: ./.github/workflows/preview-env-teardown.yml
     secrets: inherit
     with:
