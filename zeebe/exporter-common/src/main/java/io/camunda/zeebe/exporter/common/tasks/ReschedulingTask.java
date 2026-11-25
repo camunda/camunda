@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 
 public final class ReschedulingTask implements RunnableTask {
+  static final long PAUSE_CHECK_DELAY_MS = 5_000L;
   private static final long ERROR_DELAY_MS = 10_000L;
   private final BackgroundTask task;
   private final int minimumWorkCount;
@@ -28,10 +29,13 @@ public final class ReschedulingTask implements RunnableTask {
   private final ExponentialBackoff idleStrategy;
   private final ExponentialBackoff errorStrategy;
   private final AtomicLong executionCounter = new AtomicLong(0L);
+  private final PauseStateSupplier pauseState;
+  private final long pausedDelayMs;
   private long delayMs;
   private long errorDelayMs;
   private volatile boolean closed = false;
   private volatile boolean scheduled;
+  private volatile boolean pauseLogged;
 
   public ReschedulingTask(
       final BackgroundTask task,
@@ -40,10 +44,31 @@ public final class ReschedulingTask implements RunnableTask {
       final long maxDelayBetweenRunsMs,
       final ScheduledExecutorService executor,
       final Logger logger) {
+    this(
+        task,
+        minimumWorkCount,
+        delayBetweenRunsMs,
+        maxDelayBetweenRunsMs,
+        executor,
+        logger,
+        PauseStateSupplier.NOT_PAUSED);
+  }
+
+  public ReschedulingTask(
+      final BackgroundTask task,
+      final int minimumWorkCount,
+      final long delayBetweenRunsMs,
+      final long maxDelayBetweenRunsMs,
+      final ScheduledExecutorService executor,
+      final Logger logger,
+      final PauseStateSupplier pauseState) {
     this.task = task;
     this.minimumWorkCount = minimumWorkCount;
     this.executor = executor;
     this.logger = logger;
+    this.pauseState = pauseState;
+    // some tasks have an interval of hours, a resume must not wait that long
+    pausedDelayMs = Math.min(delayBetweenRunsMs, PAUSE_CHECK_DELAY_MS);
 
     periodicLogger = new ReschedulingTaskLogger(logger, true);
     idleStrategy = new ExponentialBackoff(maxDelayBetweenRunsMs, delayBetweenRunsMs, 1.2, 0);
@@ -62,7 +87,11 @@ public final class ReschedulingTask implements RunnableTask {
     scheduled = true;
     CompletionStage<Integer> result;
     try {
-      result = task.execute();
+      result =
+          pauseState.paused()
+              ? CompletableFuture.failedFuture(
+                  new TaskPausedException("Exporting is paused, skipping " + task.getCaption()))
+              : task.execute();
     } catch (final Exception e) {
       // in case the task throws an exception instead of returning a failed CompletionStage
       result = CompletableFuture.failedFuture(e);
@@ -113,6 +142,7 @@ public final class ReschedulingTask implements RunnableTask {
   }
 
   private long onWorkPerformed(final int count) {
+    logResumeIfPaused();
     errorDelayMs = 0;
 
     // if we worked on less than the minimum expected work count, then there's probably even more
@@ -123,7 +153,32 @@ public final class ReschedulingTask implements RunnableTask {
     return delayMs;
   }
 
+  @VisibleForTesting
+  public boolean isPaused() {
+    return pauseState.paused();
+  }
+
+  private void logResumeIfPaused() {
+    if (pauseLogged) {
+      pauseLogged = false;
+      logger.info("Task {} is no longer paused, running again", task.getCaption());
+    }
+  }
+
   private long onError(final Throwable error) {
+    if (TaskPausedException.isCauseOf(error)) {
+      if (!pauseLogged) {
+        pauseLogged = true;
+        logger.info(
+            "Task {} is paused because exporting is paused, checking again every {}ms",
+            task.getCaption(),
+            pausedDelayMs);
+      }
+      logger.trace("Task {} is paused, checking again in {}ms", task, pausedDelayMs);
+      return pausedDelayMs;
+    }
+
+    logResumeIfPaused();
     errorDelayMs = errorStrategy.applyAsLong(errorDelayMs);
 
     logError(error);

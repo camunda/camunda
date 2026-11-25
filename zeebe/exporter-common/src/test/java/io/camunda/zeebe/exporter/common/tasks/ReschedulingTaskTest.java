@@ -11,15 +11,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -237,5 +241,103 @@ final class ReschedulingTaskTest {
     Awaitility.await("Until task has been run").until(() -> task.executionCount() >= 1);
     assertThat(task.executionCount()).isEqualTo(1L);
     assertThat(runningCounter.get()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldNotExecuteTaskWhilePaused() {
+    // given
+    final var task = new ReschedulingTask(archiverJob, 1, 10, 1000, executor, LOGGER, () -> true);
+
+    // when
+    task.run();
+
+    // then
+    Awaitility.await("Until task has been rescheduled").until(() -> task.executionCount() >= 2);
+    verify(archiverJob, never()).execute();
+  }
+
+  @Test
+  void shouldExecuteTaskAgainAfterResume() {
+    // given
+    final var paused = new AtomicBoolean(true);
+    when(archiverJob.execute()).thenReturn(CompletableFuture.completedFuture(1));
+    final var task = new ReschedulingTask(archiverJob, 1, 10, 1000, executor, LOGGER, paused::get);
+
+    // when
+    task.run();
+    Awaitility.await("Until task has been rescheduled while paused")
+        .until(() -> task.executionCount() >= 1);
+    paused.set(false);
+
+    // then
+    verify(archiverJob, timeout(5_000).atLeastOnce()).execute();
+  }
+
+  @Test
+  void shouldNotLogErrorWhenTaskFailsWithTaskPausedException() {
+    // given
+    when(archiverJob.execute())
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CompletionException(new TaskPausedException("paused"))));
+    final var mockLogger = mock(Logger.class);
+    final var task = new ReschedulingTask(archiverJob, 1, 10, 1000, executor, mockLogger);
+
+    // when
+    task.run();
+
+    // then
+    Awaitility.await("Until task has been rescheduled").until(() -> task.executionCount() >= 2);
+    verify(mockLogger, never()).atLevel(any());
+  }
+
+  @Test
+  void shouldLogPauseOnceAtInfoWhilePaused() {
+    // given
+    final var mockLogger = mock(Logger.class);
+    final var task =
+        new ReschedulingTask(archiverJob, 1, 10, 1000, executor, mockLogger, () -> true);
+
+    // when
+    task.run();
+
+    // then
+    Awaitility.await("Until task has been rescheduled while paused")
+        .until(() -> task.executionCount() >= 3);
+    verify(mockLogger, times(1)).info(startsWith("Task {} is paused"), any(), any());
+  }
+
+  @Test
+  void shouldLogResumeAtInfoAfterPause() {
+    // given
+    final var paused = new AtomicBoolean(true);
+    when(archiverJob.execute()).thenReturn(CompletableFuture.completedFuture(1));
+    when(archiverJob.getCaption()).thenReturn("test-job");
+    final var mockLogger = mock(Logger.class);
+    final var task =
+        new ReschedulingTask(archiverJob, 1, 10, 1000, executor, mockLogger, paused::get);
+
+    // when
+    task.run();
+    Awaitility.await("Until task has been rescheduled while paused")
+        .until(() -> task.executionCount() >= 1);
+    paused.set(false);
+
+    // then
+    verify(mockLogger, timeout(5_000).times(1))
+        .info("Task {} is no longer paused, running again", "test-job");
+  }
+
+  @Test
+  void shouldUsePauseCheckDelayNotErrorDelayWhenPaused() {
+    // given
+    final var task = new ReschedulingTask(archiverJob, 1, 10, 1000, executor, LOGGER, () -> true);
+
+    // when
+    task.run();
+
+    // then - an error backoff would grow to 12ms, the pause check delay stays at 10ms
+    verify(executor, timeout(2_000).atLeast(3)).schedule(task, 10L, TimeUnit.MILLISECONDS);
+    verify(executor, never()).schedule(task, 12L, TimeUnit.MILLISECONDS);
   }
 }

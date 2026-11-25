@@ -28,7 +28,9 @@ public final class SelfSchedulingTask implements RunnableTask {
   private final Supplier<Duration> errorDelay;
   private final ScheduledExecutorService executor;
   private final Logger logger;
+  private final PauseStateSupplier pauseState;
   private volatile boolean closed = false;
+  private volatile boolean pauseLogged;
 
   public SelfSchedulingTask(
       final String name,
@@ -36,11 +38,22 @@ public final class SelfSchedulingTask implements RunnableTask {
       final Supplier<Duration> errorDelay,
       final ScheduledExecutorService executor,
       final Logger logger) {
+    this(name, task, errorDelay, executor, logger, PauseStateSupplier.NOT_PAUSED);
+  }
+
+  public SelfSchedulingTask(
+      final String name,
+      final Supplier<Duration> task,
+      final Supplier<Duration> errorDelay,
+      final ScheduledExecutorService executor,
+      final Logger logger,
+      final PauseStateSupplier pauseState) {
     this.name = name;
     this.task = task;
     this.errorDelay = errorDelay;
     this.executor = executor;
     this.logger = logger;
+    this.pauseState = pauseState;
   }
 
   @Override
@@ -50,7 +63,22 @@ public final class SelfSchedulingTask implements RunnableTask {
     }
     Duration nextDelay;
     try {
-      nextDelay = task.get();
+      if (pauseState.paused()) {
+        if (!pauseLogged) {
+          pauseLogged = true;
+          logger.info(
+              "Background task '{}' is paused because exporting is paused, checking again every {}ms",
+              name,
+              ReschedulingTask.PAUSE_CHECK_DELAY_MS);
+        }
+        nextDelay = Duration.ofMillis(ReschedulingTask.PAUSE_CHECK_DELAY_MS);
+      } else {
+        if (pauseLogged) {
+          pauseLogged = false;
+          logger.info("Background task '{}' is no longer paused, running again", name);
+        }
+        nextDelay = task.get();
+      }
     } catch (final Exception e) {
       final var fallback = errorDelay.get();
       logger.warn(
