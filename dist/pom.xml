@@ -1320,6 +1320,11 @@
             <dep>org.springframework.security:spring-security-web</dep>
             <dep>org.springframework.security:spring-security-config</dep>
             <dep>io.camunda:zeebe-backup-store-filesystem</dep>
+            <!-- Referenced directly only by AzureSignInLoggingTest; they reach dist at compile
+                 scope via camunda-secret-store-azure, which a test scope would shadow -->
+            <dep>com.azure:azure-core</dep>
+            <dep>com.azure:azure-identity</dep>
+            <dep>io.projectreactor:reactor-core</dep>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>

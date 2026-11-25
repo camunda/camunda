@@ -14,13 +14,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.azure.core.credential.TokenCredential;
 import com.azure.core.credential.TokenRequestContext;
 import com.azure.core.exception.ClientAuthenticationException;
+import com.azure.core.http.HttpMethod;
+import com.azure.core.http.HttpPipelineBuilder;
+import com.azure.core.http.HttpRequest;
+import com.azure.core.http.policy.BearerTokenAuthenticationPolicy;
 import com.azure.core.util.Configuration;
+import com.azure.core.util.Context;
 import io.camunda.secretstore.SecretStoreMetricsDoc;
 import io.camunda.secretstore.azure.StubAzureHttpClient.Request;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -367,6 +374,47 @@ final class AzureCredentialChainTest {
   }
 
   @Test
+  void shouldNotLetTheVaultClientLogTheTokenOfASignInResponseItCannotParse() {
+    // given Entra ID answering with a token response cut off inside the token, which the SDK's
+    // JSON parser quotes in its error, and the vault client's bearer-token policy, whose token
+    // cache logs every failed sign-in at ERROR whatever the identity loggers are set to
+    final var http =
+        StubAzureHttpClient.answeringSignIn(
+            200,
+            "{\"token_type\":\"Bearer\",\"expires_in\":3600,\"access_token\":\""
+                + StubAzureHttpClient.TOKEN);
+    final var credential =
+        chain(
+            AzureKeyVaultStoreConfig.of(VAULT_URL),
+            servicePrincipalEnvironment("sp-client-id", "sp-secret"),
+            http);
+    final var vault =
+        new HttpPipelineBuilder()
+            .httpClient(http)
+            .policies(
+                new BearerTokenAuthenticationPolicy(credential, "https://vault.azure.net/.default"))
+            .build();
+
+    try (final var log = LogCapturer.capturing("com.azure.core", Level.DEBUG)) {
+      // when
+      assertThatThrownBy(() -> vault.sendSync(secretRequest(), Context.NONE))
+          .isInstanceOf(ClientAuthenticationException.class)
+          .satisfies(
+              failure ->
+                  assertThat(causes(failure)).noneMatch(AzureCredentialChainTest::quotesTheToken));
+      assertThatThrownBy(() -> vault.send(secretRequest()).block())
+          .isInstanceOf(ClientAuthenticationException.class)
+          .satisfies(
+              failure ->
+                  assertThat(causes(failure)).noneMatch(AzureCredentialChainTest::quotesTheToken));
+
+      // then
+      assertThat(log.messages()).isNotEmpty();
+      assertThat(log.containsInMessagesOrThrowables(StubAzureHttpClient.TOKEN)).isFalse();
+    }
+  }
+
+  @Test
   void shouldWarnWhenTheServicePrincipalInTheEnvironmentIsIncomplete() {
     // given — a secret without its tenant
     final var environment =
@@ -444,6 +492,22 @@ final class AzureCredentialChainTest {
 
   private double signInFailures() {
     return meterRegistry.get(SecretStoreMetricsDoc.SIGNIN_FAILURES.getName()).counter().count();
+  }
+
+  private static boolean quotesTheToken(final Throwable failure) {
+    return failure.getMessage() != null && failure.getMessage().contains(StubAzureHttpClient.TOKEN);
+  }
+
+  private static List<Throwable> causes(final Throwable failure) {
+    final var causes = new ArrayList<Throwable>();
+    for (Throwable t = failure; t != null && !causes.contains(t); t = t.getCause()) {
+      causes.add(t);
+    }
+    return causes;
+  }
+
+  private static HttpRequest secretRequest() {
+    return new HttpRequest(HttpMethod.GET, VAULT_URL + "/secrets/db-password?api-version=7.6");
   }
 
   private static AzureKeyVaultStoreConfig config(
