@@ -316,9 +316,13 @@ final class AzureMockedEntraSignInIT {
   private void assertNoSecretLogged(final CapturedLogs logs, final String... moreSecrets) {
     final var secrets = new ArrayList<>(List.of(token, secretValue));
     secrets.addAll(List.of(moreSecrets));
-    assertThat(logs.capturers().stream().flatMap(log -> log.messages().stream()))
-        .isNotEmpty()
-        .allSatisfy(message -> assertThat(message).doesNotContain(secrets.toArray(String[]::new)));
+    assertThat(logs.capturers().stream().flatMap(log -> log.messages().stream())).isNotEmpty();
+    assertThat(secrets)
+        .allSatisfy(
+            secret ->
+                assertThat(logs.capturers())
+                    .as("logs or logged exceptions containing a secret")
+                    .noneMatch(log -> log.containsInMessagesOrThrowables(secret)));
   }
 
   private static CapturedLogs capturingSdkAndStoreLogs() {
