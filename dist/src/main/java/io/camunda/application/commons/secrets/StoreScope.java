@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -34,6 +35,7 @@ import org.jspecify.annotations.Nullable;
 record StoreScope(@Nullable String backend, String prefix, @Nullable String container) {
 
   private static final int HTTPS_PORT = 443;
+  private static final Pattern PROJECT_NUMBER = Pattern.compile("[0-9]+");
 
   static StoreScope of(final FileStore store) {
     final var directory = realPath(Path.of(store.getPath())).toString();
@@ -55,7 +57,7 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
 
   static StoreScope of(final GcpSecretManagerStore store) {
     return new StoreScope(
-        store.getProjectId(),
+        project(store.getProjectId()),
         Objects.requireNonNullElse(store.getPathPrefix(), ""),
         store.getContainerSecretId());
   }
@@ -89,22 +91,31 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
 
   /**
    * The directory a file store reads, with symlinks resolved as the store resolves them. Only the
-   * part of the path that exists can be resolved, so the rest is kept as written.
+   * part of the path that exists can be resolved, so the rest is kept as written. A {@code ..} is
+   * only collapsed after the symlinks before it are resolved, as the filesystem does.
    */
   private static Path realPath(final Path directory) {
-    final var absolute = directory.toAbsolutePath().normalize();
+    final var absolute = directory.toAbsolutePath();
     @Nullable Path existing = absolute;
     while (existing != null && !Files.exists(existing)) {
       existing = existing.getParent();
     }
     if (existing == null) {
-      return absolute;
+      return absolute.normalize();
     }
     try {
-      return existing.toRealPath().resolve(existing.relativize(absolute));
+      return existing.toRealPath().resolve(existing.relativize(absolute)).normalize();
     } catch (final IOException unreadable) {
-      return absolute;
+      return absolute.normalize();
     }
+  }
+
+  /**
+   * The project a GCP store reads, or {@code null} if it may be any project: a project number names
+   * the same project as a project id, and the two can't be matched here.
+   */
+  private static @Nullable String project(final @Nullable String projectId) {
+    return projectId == null || PROJECT_NUMBER.matcher(projectId).matches() ? null : projectId;
   }
 
   /**

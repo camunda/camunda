@@ -532,6 +532,23 @@ class PhysicalTenantSecretsOverlayTest {
   }
 
   @Test
+  void shouldRefuseEnvConfigurationSecretsStoreInSaas() {
+    // given
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.security.saas.cluster-id", "cluster-1",
+                "camunda.secrets.internal-config.env.prefix", "CONFIG_SECRET_")));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("not supported in SaaS")
+        .withMessageContaining("camunda.secrets.internal-config.env")
+        .withMessageContaining("[default]");
+  }
+
+  @Test
   void shouldRefuseEnvStoreForAPhysicalTenantInSaas() {
     // given a SaaS cluster where only tenanta configures an env store
     setProperties(

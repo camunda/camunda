@@ -13,6 +13,7 @@ import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
 import io.camunda.configuration.Secrets.AzureKeyVaultStore;
 import io.camunda.configuration.Secrets.EnvStore;
 import io.camunda.configuration.Secrets.FileStore;
+import io.camunda.configuration.Secrets.GcpSecretManagerStore;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -126,6 +127,42 @@ class StoreScopeTest {
   }
 
   @Test
+  void shouldResolveSymlinksBeforeAParentReference(@TempDir final Path directory)
+      throws IOException {
+    // given
+    final var jobs = Files.createDirectories(directory.resolve("jobs"));
+    final var nested = Files.createDirectories(jobs.resolve("nested"));
+    final var link = Files.createSymbolicLink(directory.resolve("link"), nested);
+    final var first = StoreScope.of(file(jobs.toString()));
+    final var second = StoreScope.of(file(link + "/../config"));
+
+    // when
+    final var result = first.overlaps(second);
+
+    // then
+    assertThat(result).isTrue();
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "my-project, 123456789012, true",
+    "123456789012, 210987654321, true",
+    "my-project, other-project, false"
+  })
+  void shouldTreatAGcpProjectNumberAsPossiblyAnyProject(
+      final String firstProject, final String secondProject, final boolean overlaps) {
+    // given
+    final var first = StoreScope.of(gcp(firstProject, null));
+    final var second = StoreScope.of(gcp(secondProject, "camunda-internal-"));
+
+    // when
+    final var result = first.overlaps(second);
+
+    // then
+    assertThat(result).isEqualTo(overlaps);
+  }
+
+  @Test
   void shouldTreatABlankAwsPathPrefixAsNoPrefix() {
     // given
     final var first = StoreScope.of(aws(" ", null, null));
@@ -202,6 +239,13 @@ class StoreScopeTest {
   private static AzureKeyVaultStore azure(final String vaultUrl, final String prefix) {
     final var store = new AzureKeyVaultStore();
     store.setVaultUrl(vaultUrl);
+    store.setPathPrefix(prefix);
+    return store;
+  }
+
+  private static GcpSecretManagerStore gcp(final String projectId, final String prefix) {
+    final var store = new GcpSecretManagerStore();
+    store.setProjectId(projectId);
     store.setPathPrefix(prefix);
     return store;
   }
