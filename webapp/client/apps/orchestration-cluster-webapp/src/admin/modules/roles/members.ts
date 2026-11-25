@@ -15,6 +15,13 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
+import {
+	getMemberSort,
+	narrowMemberSort,
+	type MemberSortField,
+	type MemberSortRequest,
+	type MemberSortSearch,
+} from '#/admin/modules/shared/memberSorting';
 
 const MEMBER_KINDS = ['users', 'groups', 'mappingRules', 'clients'] as const;
 
@@ -34,23 +41,43 @@ type MembersResponse =
 	| QueryMappingRulesByRoleResponseBody
 	| QueryClientsByRoleResponseBody;
 
-type MemberPage = {page: {from: number; limit: number}; filter?: {username: {$like: string}}};
+type MemberPage = {
+	page: {from: number; limit: number};
+	filter?: {username: {$like: string}};
+	sort?: MemberSortRequest;
+};
+
+const MEMBER_SORT_FIELDS = {
+	users: {id: 'username'},
+	groups: {id: 'groupId'},
+	mappingRules: {id: 'mappingRuleId', name: 'name', claimName: 'claimName', claimValue: 'claimValue'},
+	clients: {id: 'clientId'},
+} as const satisfies Record<MemberKind, Partial<Record<keyof MemberRow, MemberSortField>>>;
 
 const MEMBER_KIND_CONFIG = {
 	users: {
-		query: queries.queryUsersByRole,
+		query: (roleId: string, body: MemberPage) =>
+			queries.queryUsersByRole(roleId, narrowMemberSort(body, Object.values(MEMBER_SORT_FIELDS.users))),
 		assign: (roleId: string, id: string) => endpoints.assignUserToRole({roleId, username: id}),
 		unassign: (roleId: string, id: string) => endpoints.unassignUserFromRole({roleId, username: id}),
 		toRow: (item: QueryUsersByRoleResponseBody['items'][number]): MemberRow => ({id: item.username}),
 	},
 	groups: {
-		query: queries.queryGroupsByRole,
+		query: (roleId: string, body: MemberPage) =>
+			queries.queryGroupsByRole(
+				roleId,
+				narrowMemberSort({page: body.page, sort: body.sort}, Object.values(MEMBER_SORT_FIELDS.groups)),
+			),
 		assign: (roleId: string, id: string) => endpoints.assignGroupToRole({roleId, groupId: id}),
 		unassign: (roleId: string, id: string) => endpoints.unassignGroupFromRole({roleId, groupId: id}),
 		toRow: (item: QueryGroupsByRoleResponseBody['items'][number]): MemberRow => ({id: item.groupId}),
 	},
 	mappingRules: {
-		query: queries.queryMappingRulesByRole,
+		query: (roleId: string, body: MemberPage) =>
+			queries.queryMappingRulesByRole(
+				roleId,
+				narrowMemberSort({page: body.page, sort: body.sort}, Object.values(MEMBER_SORT_FIELDS.mappingRules)),
+			),
 		assign: (roleId: string, id: string) => endpoints.assignMappingToRole({roleId, mappingRuleId: id}),
 		unassign: (roleId: string, id: string) => endpoints.unassignMappingFromRole({roleId, mappingRuleId: id}),
 		toRow: (item: QueryMappingRulesByRoleResponseBody['items'][number]): MemberRow => ({
@@ -61,12 +88,29 @@ const MEMBER_KIND_CONFIG = {
 		}),
 	},
 	clients: {
-		query: queries.queryClientsByRole,
+		query: (roleId: string, body: MemberPage) =>
+			queries.queryClientsByRole(
+				roleId,
+				narrowMemberSort({page: body.page, sort: body.sort}, Object.values(MEMBER_SORT_FIELDS.clients)),
+			),
 		assign: (roleId: string, id: string) => endpoints.assignClientToRole({roleId, clientId: id}),
 		unassign: (roleId: string, id: string) => endpoints.unassignClientFromRole({roleId, clientId: id}),
 		toRow: (item: QueryClientsByRoleResponseBody['items'][number]): MemberRow => ({id: item.clientId}),
 	},
 } satisfies Record<MemberKind, unknown>;
+
+function getMemberColumnSortField(kind: MemberKind, column: keyof MemberRow): MemberSortField | undefined {
+	const sortFields: Partial<Record<keyof MemberRow, MemberSortField>> = MEMBER_SORT_FIELDS[kind];
+	return sortFields[column];
+}
+
+function getMemberSortFields(kind: MemberKind): MemberSortField[] {
+	return Object.values(MEMBER_SORT_FIELDS[kind]);
+}
+
+function getMemberSortRequest(kind: MemberKind, search: MemberSortSearch) {
+	return getMemberSort(search, getMemberSortFields(kind));
+}
 
 function getMembersQuery(kind: MemberKind, roleId: string, body: MemberPage) {
 	const query = MEMBER_KIND_CONFIG[kind].query(roleId, body);
@@ -115,6 +159,9 @@ export {
 	MEMBER_KINDS,
 	getActiveMemberKind,
 	getAssignRequest,
+	getMemberColumnSortField,
+	getMemberSortFields,
+	getMemberSortRequest,
 	getMembersQuery,
 	getMembersQueryKeyPrefix,
 	getUnassignRequest,

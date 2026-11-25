@@ -7,13 +7,14 @@
  */
 
 import {z} from 'zod';
+import {memberSortSearchShape} from '#/admin/modules/shared/memberSorting';
 import {PAGE_SIZES} from './searchSchema';
 
 const TENANT_TABS = ['users', 'groups', 'roles', 'mapping-rules', 'clients'] as const;
 
 const tenantDetailSearchSchema = z.object({
 	tab: z.enum(TENANT_TABS).optional(),
-	sortOrder: z.enum(['ASC', 'DESC']).optional(),
+	...memberSortSearchShape,
 	page: z.number().int().positive().optional(),
 	pageSize: z.literal(PAGE_SIZES).optional(),
 });

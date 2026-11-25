@@ -7,6 +7,7 @@
  */
 
 import {HttpResponse, http} from 'msw';
+import {z} from 'zod';
 import {cleanup} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
@@ -173,6 +174,52 @@ describe('<AdminGroupDetailPage />', () => {
 		const {screen} = await renderPage({isOidc: false, search: {tab: 'clients'}});
 
 		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).toBeVisible();
+	});
+
+	it('should sort the mapping rules of the group by claim name when the reader sorts that column', async ({worker}) => {
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+			mockQueryMappingRulesByGroupEndpoint({
+				schema: z.object({sort: z.tuple([z.object({field: z.literal('claimName'), order: z.literal('ASC')})])}),
+				failureResponse: HttpResponse.json(
+					createPage([{mappingRuleId: 'unsorted', name: 'Unsorted', claimName: 'groups', claimValue: 'engineering'}]),
+				),
+				successResponse: HttpResponse.json(
+					createPage([{mappingRuleId: 'sorted', name: 'Sorted', claimName: 'groups', claimValue: 'engineering'}]),
+				),
+			}),
+		);
+		const {screen, onSearchChange} = await renderPage({isOidc: true, search: {tab: 'mappingRules'}});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Claim name'}));
+
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'claimName', sortOrder: 'ASC', page: undefined});
+		await expect.element(screen.getByRole('cell', {name: 'Sorted'})).toBeVisible();
+	});
+
+	it('should sort the users of the group by username when the reader sorts the column', async ({worker}) => {
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([{username: 'john.doe'}]))}),
+		);
+		const {screen, onSearchChange} = await renderPage({isOidc: true});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Username'}));
+
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'username', sortOrder: 'ASC', page: undefined});
+	});
+
+	it('should not offer sorting on the name and email filled in for each user', async ({worker}) => {
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([{username: 'john.doe'}]))}),
+			mockQueryUsersEndpoint({
+				successResponse: HttpResponse.json(createPage([createUser({username: 'john.doe', name: 'John Doe'})])),
+			}),
+		);
+
+		const {screen} = await renderPage({isOidc: false});
+
+		await expect.element(screen.getByRole('button', {name: 'Username'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Email'})).not.toBeInTheDocument();
 	});
 
 	it('should show the name and email of each user when the login is not delegated', async ({worker}) => {

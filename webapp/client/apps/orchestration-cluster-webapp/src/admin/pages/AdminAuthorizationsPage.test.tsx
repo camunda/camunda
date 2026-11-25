@@ -122,6 +122,24 @@ describe('<AdminAuthorizationsPage />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Resource ID'})).not.toBeInTheDocument();
 	});
 
+	it('should sort user task authorizations by resource property name when the reader sorts that column', async () => {
+		const {screen, onSearchChange} = await renderPage({
+			resourceType: 'USER_TASK',
+			authorizations: [
+				createAuthorization({
+					resourceType: 'USER_TASK',
+					resourceId: null,
+					resourcePropertyName: 'candidateGroups',
+					permissionTypes: ['READ'],
+				}),
+			],
+		});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Resource property name'}));
+
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'resourcePropertyName', sortOrder: 'ASC', page: undefined});
+	});
+
 	it('should offer to create the first authorization when the resource type has none', async () => {
 		const {screen} = await renderPage({authorizations: [], totalItems: 0});
 

@@ -156,8 +156,11 @@ function useTenantMemberMutations(tab: TenantTab, tenantId: string) {
 				item: member,
 				getId: (item: TenantMember) => getMemberId(tab, item),
 				compare: (a, b, queryKey) => compareMembersBySort(tab, a, b, queryKey),
-				canInsert: (_item, queryKey, currentItemCount) =>
-					isFirstPageWithRoom((queryKey[2] as MembersListBody | undefined)?.page, currentItemCount),
+				canInsert: (_item, queryKey, currentItemCount) => {
+					const body = queryKey[2] as MembersListBody | undefined;
+					const isSortedById = (body?.sort?.[0]?.field ?? MEMBER_ID_KEY[tab]) === MEMBER_ID_KEY[tab];
+					return isSortedById && isFirstPageWithRoom(body?.page, currentItemCount);
+				},
 			});
 		}
 

@@ -60,11 +60,7 @@ const AuthorizationsTable: React.FC<AuthorizationsTableProps> = ({
 			{accessorKey: 'ownerType', header: t('admin.authorizations.ownerTypeColumn')},
 			{accessorKey: 'ownerId', header: t('admin.authorizations.ownerIdColumn')},
 			isUserTask
-				? {
-						accessorKey: 'resourcePropertyName',
-						header: t('admin.authorizations.resourcePropertyNameColumn'),
-						enableSorting: false,
-					}
+				? {accessorKey: 'resourcePropertyName', header: t('admin.authorizations.resourcePropertyNameColumn')}
 				: {accessorKey: 'resourceId', header: t('admin.authorizations.resourceIdColumn')},
 			{
 				id: 'permissionTypes',

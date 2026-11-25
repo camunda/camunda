@@ -663,6 +663,8 @@
 				"roleNameColumn": "Name",
 				"mappingRuleIdColumn": "Mapping rule ID",
 				"mappingRuleNameColumn": "Name",
+				"mappingRuleClaimNameColumn": "Claim name",
+				"mappingRuleClaimValueColumn": "Claim value",
 				"clientIdColumn": "Client ID",
 				"members": {
 					"candidatesLoadError": "Options could not be loaded",

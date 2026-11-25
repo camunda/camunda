@@ -42,7 +42,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/$groupId')({
 						canManageMappingRules: canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured),
 					});
 					const kind = getActiveMemberKind(visibleKinds, search.tab);
-					return queryClient.query(getMembersQuery(kind, groupId, getGroupMembersRequestBody(search)));
+					return queryClient.query(getMembersQuery(kind, groupId, getGroupMembersRequestBody(search, kind)));
 				}),
 			]);
 		} catch (error) {

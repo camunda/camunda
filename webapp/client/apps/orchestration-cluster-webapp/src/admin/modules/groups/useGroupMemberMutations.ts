@@ -13,6 +13,7 @@ import {
 	compareMembersById,
 	getAssignRequest,
 	getMemberId,
+	getMemberIdSortField,
 	getMembersQuery,
 	getMembersQueryKeyPrefix,
 	getUnassignRequest,
@@ -95,9 +96,14 @@ function useGroupMemberMutations(groupId: string) {
 						queryKeyPrefix: getMembersQueryKeyPrefix(groupId, result.kind),
 						item,
 						getId: (member: MembersResponse['items'][number]) => getMemberId(result.kind, member),
-						compare: (a, b) => compareMembersById(result.kind, a, b),
-						canInsert: (_member, queryKey, itemCount) =>
-							isFirstPageWithRoom((queryKey[3] as MemberPage).page, itemCount),
+						compare: (a, b, queryKey) =>
+							compareMembersById(result.kind, a, b, (queryKey[3] as MemberPage).sort?.[0]?.order),
+						canInsert: (_member, queryKey, itemCount) => {
+							const {page, sort} = queryKey[3] as MemberPage;
+							const isSortedById =
+								(sort?.[0]?.field ?? getMemberIdSortField(result.kind)) === getMemberIdSortField(result.kind);
+							return isSortedById && isFirstPageWithRoom(page, itemCount);
+						},
 					});
 				}
 			}
