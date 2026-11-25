@@ -67,7 +67,8 @@ public class VariableHistoryEntity extends AbstractExporterEntity<VariableHistor
   @SinceVersion(value = "8.11.0", requireDefault = false)
   private VariableOperationType variableOperationType;
 
-  // the element instance that caused the change
+  // the element instance that caused the change. Without a causing element, this and elementId
+  // stay absent, not the protocol defaults -1 and "", because the readers return what is stored.
   @SinceVersion(value = "8.11.0", requireDefault = false)
   private Long elementInstanceKey;
 
