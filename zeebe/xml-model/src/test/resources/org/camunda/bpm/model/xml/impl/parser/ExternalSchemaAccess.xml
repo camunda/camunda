@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<animals xmlns="http://camunda.org/animals"
+  xmlns:tns="http://camunda.org/animals"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:custom="http://example.com/TEST"
+  xsi:schemaLocation="http://camunda.org/animals ../Testmodel.xsd ">
+
+  <bird id="timmy" gender="Male" />
+</animals>

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="dish" name="Dish"    
+  namespace="http://camunda.org/schema/1.0/dmn"
+  xmlns="http://www.omg.org/spec/DMN/20151101/dmn.xsd"
+  xmlns:camunda="http://camunda.org/schema/1.0/dmn"
+  xmlns:biodi="http://bpmn.io/ns/di">
+  
+  <inputData name="Type of day" id="dayType_id">
+    <extensionElements>
+      <biodi:bounds x="240" y="270" width="200" height="60" />
+    </extensionElements>
+    <variable typeRef="string" name="Type of day" id="dayType_ii"/>
+  </inputData>
+  <inputData name="Weather in Celsius" id="temperature_id">
+    <extensionElements>
+      <biodi:bounds x="5" y="270" width="170" height="90" />
+    </extensionElements>
+    <variable typeRef="integer" name="Weather in Celsius" id="temperature_ii"/>
+  </inputData>
+  <knowledgeSource name="Host" id="host_ks">
+    <extensionElements>
+      <biodi:bounds x="495" y="10" width="120" height="75" />
+    </extensionElements>
+  </knowledgeSource>
+  <decision id="dish-decision" name="Dish Decision">
+    <extensionElements>
+      <biodi:bounds x="150" y="10" width="100" height="55" />
+      <!-- need to associate edge with (informationRequirement -> requiredDecision -> href) === (edge -> target) -->
+      <!-- assumption requiredDecision -> href is always unique per decission element (@philipp) -->
+      <biodi:edge target="season">
+        <biodi:waypoint x="80" y="140" />
+        <biodi:waypoint x="205" y="65" />
+      </biodi:edge>
+      <biodi:edge target="guestCount">
+        <biodi:waypoint x="345" y="140" />
+        <biodi:waypoint x="205" y="65" />
+      </biodi:edge>
+      <biodi:edge target="host_ks">
+        <biodi:waypoint x="495" y="30" />
+        <biodi:waypoint x="250" y="30" />
+      </biodi:edge>
+    </extensionElements>
+    <informationRequirement>
+      <requiredDecision href="#season" />
+    </informationRequirement>
+    <informationRequirement>
+      <requiredDecision href="#guestCount" />
+    </informationRequirement>
+    <authorityRequirement>
+      <requiredAuthority href="#host_ks"/>
+    </authorityRequirement>
+    <decisionTable id="dishDecisionTable">
+    <input id="seasonInput" label="Season">
+        <inputExpression id="seasonInputExpression" typeRef="string">
+          <text>season</text>
+        </inputExpression>
+      </input>
+      <input id="guestCountInput" label="How many guests">
+        <inputExpression id="guestCountInputExpression" typeRef="integer">
+          <text>guestCount</text>
+        </inputExpression>
+      </input>
+      <output id="output1" label="Dish" name="desiredDish" typeRef="string" />
+      <rule id="row-495762709-1">
+        <inputEntry id="UnaryTests_1nxcsjr">
+          <text><![CDATA["Winter"]]></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1r9yorj">
+          <text><![CDATA[<=8]]></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1mtwzqz">
+          <text><![CDATA["Spareribs"]]></text>
+        </outputEntry>
+      </rule>
+      <rule id="row-495762709-2">
+        <inputEntry id="UnaryTests_1lxjbif">
+          <text><![CDATA["Winter"]]></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0nhiedb">
+          <text><![CDATA[>8]]></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1h30r12">
+          <text><![CDATA["Pasta"]]></text>
+        </outputEntry>
+      </rule>
+      <rule id="row-495762709-3">
+        <inputEntry id="UnaryTests_0ifgmfm">
+          <text><![CDATA["Summer"]]></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_12cib9m">
+          <text><![CDATA[>10]]></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0wgaegy">
+          <text><![CDATA["Light salad"]]></text>
+        </outputEntry>
+      </rule>
+      <rule id="row-495762709-7">
+        <inputEntry id="UnaryTests_0ozm9s7">
+          <text><![CDATA["Summer"]]></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0sesgov">
+          <text><![CDATA[<=10]]></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1dvc5x3">
+          <text><![CDATA["Beans salad"]]></text>
+        </outputEntry>
+      </rule>
+      <rule id="row-445981423-3">
+        <inputEntry id="UnaryTests_1er0je1">
+          <text><![CDATA["Spring"]]></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1uzqner">
+          <text><![CDATA[<10]]></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1pxy4g1">
+          <text><![CDATA["Stew"]]></text>
+        </outputEntry>
+      </rule>
+      <rule id="row-445981423-4">
+        <inputEntry id="UnaryTests_06or48g">
+          <text><![CDATA["Spring"]]></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0wa71sy">
+          <text><![CDATA[>=10]]></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_09ggol9">
+          <text><![CDATA["Steak"]]></text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="season" name="Season decision">
+    <extensionElements>
+      <biodi:bounds x="10" y="140" width="140" height="55" />
+      <biodi:edge target="temperature_id">
+        <biodi:waypoint x="80" y="270" />
+        <biodi:waypoint x="80" y="195" />
+      </biodi:edge>
+    </extensionElements>
+    <informationRequirement>
+      <requiredInput href="#temperature_id"/>
+    </informationRequirement>
+    <decisionTable id="seasonDecisionTable">
+      <input id="temperatureInput" label="Weather in Celsius">
+        <inputExpression id="temperatureInputExpression" typeRef="integer">
+          <text>temperature</text>
+        </inputExpression>
+      </input>
+      <output id="seasonOutput" label="season" name="season" typeRef="string" />
+      <rule id="row-495762709-5">
+        <inputEntry id="UnaryTests_1fd0eqo">
+          <text><![CDATA[>30]]></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0l98klb">
+          <text><![CDATA["Summer"]]></text>
+        </outputEntry>
+      </rule>
+      <rule id="row-495762709-6">
+        <inputEntry id="UnaryTests_1nz6at2">
+          <text><![CDATA[<10]]></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_08moy1k">
+          <text><![CDATA["Winter"]]></text>
+        </outputEntry>
+      </rule>
+      <rule id="row-445981423-2">
+        <inputEntry id="UnaryTests_1a0imxy">
+          <text>[10..30]</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1poftw4">
+          <text><![CDATA["Spring"]]></text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="guestCount" name="Guest Count">
+    <extensionElements>
+      <biodi:bounds x="230" y="140" width="210" height="55" />
+      <biodi:edge target="dayType_id">
+        <biodi:waypoint x="340" y="270" />
+        <biodi:waypoint x="340" y="195" />
+      </biodi:edge>
+    </extensionElements>
+    <informationRequirement>
+      <requiredInput href="#dayType_id"/>
+    </informationRequirement>
+    <decisionTable id="guestCountDecisionTable">
+      <input id="typeOfDayInput" label="Type of day">
+        <inputExpression id="typeOfDayInputExpression" typeRef="string">
+          <text>dayType</text>
+        </inputExpression>
+      </input>
+      <output id="guestCountOutput" label="Guest count" name="guestCount" typeRef="integer" />
+      <rule id="row-495762709-8">
+        <inputEntry id="UnaryTests_0l72u8n">
+          <text><![CDATA["Weekday"]]></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0wuwqaz">
+          <text>4</text>
+        </outputEntry>
+      </rule>
+      <rule id="row-495762709-9">
+        <inputEntry id="UnaryTests_03a73o9">
+          <text><![CDATA["Holiday"]]></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1whn119">
+          <text>10</text>
+        </outputEntry>
+      </rule>
+      <rule id="row-495762709-10">
+        <inputEntry id="UnaryTests_12tygwt">
+          <text><![CDATA["Weekend"]]></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1b5k9t8">
+          <text>15</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>  
+</definitions>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             id="definitions"
+             name="definitions"
+             expressionLanguage="juel"
+             namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="decision" name="Check Order">
+    <decisionTable id="decisionTable">
+      <input id="input">
+        <inputExpression id="inputExpression" expressionLanguage="juel"/>
+        <inputValues id="inputValues" expressionLanguage="juel">
+          <text/>
+        </inputValues>
+      </input>
+      <output id="output">
+        <outputValues id="outputValues" expressionLanguage="juel">
+          <text/>
+        </outputValues>
+      </output>
+      <rule id="rule">
+        <inputEntry id="inputEntry" expressionLanguage="juel">
+          <text/>
+        </inputEntry>
+        <outputEntry id="outputEntry" expressionLanguage="juel" />
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

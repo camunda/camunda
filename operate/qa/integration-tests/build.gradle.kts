@@ -68,7 +68,7 @@ dependencies {
   testImplementation(project(":camunda-authentication"))
   testImplementation(libs.org.awaitility.awaitility)
   testImplementation(project(":configuration"))
-  testImplementation(libs.org.camunda.bpm.model.camunda.xml.model)
+  testImplementation(project(":zeebe-xml-model"))
   testImplementation(project(":zeebe-qa-util"))
 }
 

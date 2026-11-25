@@ -8,7 +8,7 @@ dependencies {
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-bpmn-model"))
-  implementation(libs.org.camunda.bpm.model.camunda.xml.model)
+  implementation(project(":zeebe-xml-model"))
   implementation(project(":zeebe-auth"))
   implementation(project(":zeebe-protocol"))
   implementation(project(":camunda-security-protocol"))

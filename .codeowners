@@ -228,6 +228,7 @@ mwnw*                       @camunda/engineering-operations
 # Zeebe engine and core processing modules (overrides for distributed-platform default)
 /zeebe/auth/                @camunda/core-features
 /zeebe/bpmn-model/          @camunda/core-features
+/zeebe/dmn-model/           @camunda/core-features
 /zeebe/dmn/                 @camunda/core-features
 /zeebe/engine/              @camunda/core-features
 /zeebe/expression-language/ @camunda/core-features
@@ -235,6 +236,7 @@ mwnw*                       @camunda/engineering-operations
 /zeebe/feel-tagged-parameters/ @camunda/core-features
 /zeebe/exporter-api/        @camunda/core-features
 /zeebe/exporter-config-support/ @camunda/core-features
+/zeebe/xml-model/           @camunda/core-features
 
 # Engine-expert skill
 /.agents/skills/engine-expert/ @korthout @camunda/core-features

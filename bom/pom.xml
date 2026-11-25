@@ -72,6 +72,18 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-xml-model</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-dmn-model</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>camunda-client-java</artifactId>
         <version>${project.version}</version>
       </dependency>

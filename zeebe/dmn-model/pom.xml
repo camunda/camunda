@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.11.0-SNAPSHOT</version>
+    <relativePath>../../parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>zeebe-dmn-model</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Zeebe DMN model API</name>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <version.java>8</version.java>
+    <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
+  </properties>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-xml-model</artifactId>
+    </dependency>
+
+    <!-- Test dependencies -->
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.xmlunit</groupId>
+      <artifactId>xmlunit-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <!-- keep the headers of the sources forked from Camunda 7 -->
+          <skipExistingHeaders>true</skipExistingHeaders>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

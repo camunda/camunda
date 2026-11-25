@@ -16,6 +16,10 @@ import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.util.LogUtil;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import java.io.ByteArrayInputStream;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -25,10 +29,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.FlowNode;
-import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.slf4j.Logger;
 
 public abstract class BranchAnalysisReader {

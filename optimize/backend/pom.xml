@@ -63,31 +63,8 @@
 
     <!-- Camunda dependencies -->
     <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-bpmn-model</artifactId>
-      <version>${version.camunda}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-dmn-model</artifactId>
-      <version>${version.camunda}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.camunda.bpm</groupId>
-      <artifactId>camunda-engine</artifactId>
-      <version>${version.camunda}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.camunda.feel</groupId>
-          <artifactId>feel-engine</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-dmn-model</artifactId>
     </dependency>
 
     <dependency>
@@ -693,9 +670,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-xml-model</artifactId>
-      <version>${version.camunda}</version>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-xml-model</artifactId>
     </dependency>
 
     <dependency>
