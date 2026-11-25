@@ -400,3 +400,19 @@ test('should have no accessibility violations in the instance history', async ({
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);
 });
+
+test('should have no accessibility violations in the what moved helper modal', async ({
+	network,
+	page,
+	operatePreviewProcessInstancePage,
+	makeAxeBuilder,
+}) => {
+	network.use(...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})));
+	await page.addInitScript(() => localStorage.removeItem('operate.hideProcessInstanceHelperModal'));
+
+	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+	await expect(page.getByRole('dialog', {name: "Here's what moved in Operate"})).toBeVisible();
+
+	const results = await makeAxeBuilder().include('[role="dialog"]').analyze();
+	expect(results.violations).toEqual([]);
+});
