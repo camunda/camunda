@@ -99,12 +99,23 @@ final class Es9MigratorAppTest {
         Arguments.of((Object) new String[] {"recover", "--help"}));
   }
 
-  @Test
-  void shouldRejectMigrateWithoutValidGroup() {
-    assertThat(Es9MigratorApp.execute("migrate")).isEqualTo(Es9MigratorApp.USAGE_ERROR);
-    assertThat(Es9MigratorApp.execute("migrate", "--group=other"))
-        .isEqualTo(Es9MigratorApp.USAGE_ERROR);
-    assertThat(Es9MigratorApp.execute()).isEqualTo(Es9MigratorApp.USAGE_ERROR);
+  @ParameterizedTest
+  @MethodSource("invalidArgs")
+  void shouldRejectInvalidArguments(final String[] args) {
+    // when
+    final var exitCode = Es9MigratorApp.execute(args);
+
+    // then
+    assertThat(exitCode).isEqualTo(Es9MigratorApp.USAGE_ERROR);
+  }
+
+  static Stream<Arguments> invalidArgs() {
+    return Stream.of(
+        Arguments.of((Object) new String[] {}),
+        Arguments.of((Object) new String[] {"--unrelated"}),
+        Arguments.of((Object) new String[] {"migrate"}),
+        Arguments.of((Object) new String[] {"migrate", "--group=other"}),
+        Arguments.of((Object) new String[] {"migrate", "--group=oc", "--unrelated"}));
   }
 
   @ParameterizedTest
