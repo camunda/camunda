@@ -1868,11 +1868,9 @@ jobs:
           job_name: ${{ format('integration-tests/{0}{1}', matrix.group, matrix.stressRun != 1 && format('/{0}', matrix.stressRun) || '') }}
           build_status: ${{ job.status }}
           # A failed job whose Maven step never ran (outcome 'skipped') broke before any test
-          # executed, i.e. in checkout, setup, distball download or image build. That is not
-          # the shard owner's (matrix.owner) failure, so route it to engineering-operations.
-          # When Maven ran (success or failure) or the job was cancelled, user_description
-          # stays empty and attribution falls back to the failing-test owner / TEST_OWNER.
-          user_description: ${{ job.status == 'failure' && steps.maven-it.outcome == 'skipped' && '@camunda/engineering-operations' || '' }}
+          # executed (checkout, setup, distball download, image build), so observe-build-status
+          # attributes it to @camunda/engineering-operations instead of matrix.owner.
+          test_step_outcome: ${{ steps.maven-it.outcome }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           detailed_junit_tests: true
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
