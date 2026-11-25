@@ -158,6 +158,17 @@ describe('<InstancesTable /> (shadcn)', () => {
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 	});
 
+	it('should show the instances after trying again', async ({worker}) => {
+		worker.use(mockQueryDecisionInstancesEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+		const screen = await renderInstancesTable();
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+
+		worker.use(mockInstances([createDecisionInstance({decisionEvaluationInstanceKey: '1'})]));
+		await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
+
+		await expect.element(screen.getByRole('checkbox', {name: 'Select row 1'})).toBeVisible();
+	});
+
 	describe('selection and delete', () => {
 		it('should show the toolbar once a row is selected, and hide it after discarding', async ({worker}) => {
 			worker.use(mockInstances([createDecisionInstance({decisionEvaluationInstanceKey: '1'})]));

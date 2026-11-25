@@ -201,7 +201,7 @@ describe('<ListenersTab /> (design system)', () => {
 		const screen = await renderListeners(search);
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
-		await expect.element(screen.getByText('This element has no execution listeners')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No execution listeners on this element')).not.toBeInTheDocument();
 	});
 
 	it('should keep the loaded listeners visible when the next page cannot be fetched', async ({worker}) => {
@@ -225,7 +225,8 @@ describe('<ListenersTab /> (design system)', () => {
 
 		await userEvent.wheel(screen.getByRole('table'), {delta: {y: 3000}});
 
-		await expect.element(screen.getByRole('alert')).toHaveTextContent("Couldn't fetch data");
+		await expect.poll(() => screen.getByRole('alert').element().textContent).toContain("Couldn't fetch data");
+		await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: '1000', exact: true})).toBeVisible();
 	});
 
@@ -237,7 +238,7 @@ describe('<ListenersTab /> (design system)', () => {
 		);
 		const screen = await renderListeners(search);
 
-		await expect.element(screen.getByText('This element has no execution listeners')).toBeVisible();
+		await expect.element(screen.getByText('No execution listeners on this element')).toBeVisible();
 	});
 
 	it('should filter the listeners of a user task by type', async ({worker}) => {
@@ -279,9 +280,7 @@ describe('<ListenersTab /> (design system)', () => {
 		);
 		const screen = await renderListeners(search);
 
-		await expect
-			.element(screen.getByText('This element has no execution listeners nor user task listeners'))
-			.toBeVisible();
+		await expect.element(screen.getByText('No listeners on this element')).toBeVisible();
 		await expect.element(screen.getByRole('combobox')).toBeDisabled();
 	});
 
@@ -298,11 +297,11 @@ describe('<ListenersTab /> (design system)', () => {
 		await userEvent.click(screen.getByRole('combobox'));
 		await userEvent.click(screen.getByRole('option', {name: 'User task listeners'}));
 
-		await expect.element(screen.getByText('This element has no user task listeners')).toBeVisible();
+		await expect.element(screen.getByText('No user task listeners on this element')).toBeVisible();
 
 		await userEvent.click(screen.getByRole('combobox'));
 		await userEvent.click(screen.getByRole('option', {name: 'Execution listeners'}));
 
-		await expect.element(screen.getByText('This element has no execution listeners')).toBeVisible();
+		await expect.element(screen.getByText('No execution listeners on this element')).toBeVisible();
 	});
 });

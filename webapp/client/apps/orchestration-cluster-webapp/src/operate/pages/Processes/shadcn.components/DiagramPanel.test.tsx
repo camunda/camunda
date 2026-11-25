@@ -98,7 +98,7 @@ describe('<DiagramPanel /> (design system)', () => {
 			processDefinitionSelection: {kind: 'no-match'},
 		});
 
-		await expect.element(screen.getByText('There is no process selected')).toBeVisible();
+		await expect.element(screen.getByText('Select a process')).toBeVisible();
 	});
 
 	it('shows an empty message when multiple versions are selected', async () => {

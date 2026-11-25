@@ -8,7 +8,7 @@
 
 import {useForm, useFormState} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
-import {IconButton, Spinner} from '@camunda/design-system';
+import {IconButton} from '@camunda/design-system';
 import {Check, X} from '@camunda/design-system/icons';
 import {useFieldError} from '#/operate/shared/hooks/useFieldError';
 import type {VariableFormValues} from '../variableFormValues';
@@ -35,26 +35,21 @@ const VariableEditButtons: React.FC<{isSaveBlocked?: boolean}> = ({isSaveBlocked
 					form.reset({});
 				}}
 			/>
-			{submitting ? (
-				<span className="inline-flex size-8 shrink-0 items-center justify-center">
-					<Spinner accessibleLabel={t('operate.processInstance.variables.saving')} />
-				</span>
-			) : (
-				<IconButton
-					type="button"
-					variant="ghost"
-					size="sm"
-					label={t('operate.processInstance.variables.saveDescription')}
-					tooltipSide="top"
-					icon={Check}
-					disabled={
-						isSaveBlocked || initialValues?.value === values.value || validating || hasValidationErrors || hasError
-					}
-					onClick={() => {
-						void form.submit();
-					}}
-				/>
-			)}
+			<IconButton
+				type="button"
+				variant="ghost"
+				size="sm"
+				label={t('operate.processInstance.variables.saveDescription')}
+				tooltipSide="top"
+				icon={Check}
+				loading={submitting}
+				disabled={
+					isSaveBlocked || initialValues?.value === values.value || validating || hasValidationErrors || hasError
+				}
+				onClick={() => {
+					void form.submit();
+				}}
+			/>
 		</>
 	);
 };

@@ -118,7 +118,7 @@ describe('Input and output mappings (design system)', () => {
 		await expect.element(screen.getByText('localOrderId')).not.toBeInTheDocument();
 	});
 
-	it('should show a spinner while the diagram is loading', async ({worker}) => {
+	it('should show a skeleton while the diagram is loading', async ({worker}) => {
 		worker.use(
 			http.get(endpoints.getProcessDefinitionXml.getUrl({processDefinitionKey: ':processDefinitionKey'}), async () => {
 				await delay('infinite');
@@ -133,13 +133,13 @@ describe('Input and output mappings (design system)', () => {
 	it('should show an empty message for an element without mappings', async () => {
 		const screen = await renderMappings(InputMappingsTab, 'plain-task');
 
-		await expect.element(screen.getByText('No Input Mappings defined')).toBeVisible();
+		await expect.element(screen.getByText('No input mappings defined')).toBeVisible();
 	});
 
 	it('should show an empty message for output mappings of an element without mappings', async () => {
 		const screen = await renderMappings(OutputMappingsTab, 'plain-task');
 
-		await expect.element(screen.getByText('No Output Mappings defined')).toBeVisible();
+		await expect.element(screen.getByText('No output mappings defined')).toBeVisible();
 	});
 
 	it('should list the mappings of the element behind a selected element instance', async ({worker}) => {

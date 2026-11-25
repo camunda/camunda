@@ -299,7 +299,7 @@ describe('<IncidentsTab /> (design system)', () => {
 			`?elementId=call&elementInstanceKey=${ELEMENT_INSTANCE_KEY}&tenantId=tenant-a`,
 		);
 
-		await expect.element(screen.getByText('No incidents found on this element.')).toBeVisible();
+		await expect.element(screen.getByText('No incidents on this element')).toBeVisible();
 		await expect
 			.element(screen.getByRole('link', {name: 'View in Child Process'}))
 			.toHaveAttribute('href', '/operate-preview/processes/9001?tenantId=tenant-a');
@@ -316,8 +316,7 @@ describe('<IncidentsTab /> (design system)', () => {
 		await userEvent.click(incidentRow(screen, 'Expression failed').getByRole('button', {name: 'Expand row'}));
 
 		await expect.element(screen.getByText('2251799813685291')).toBeVisible();
-		await userEvent.click(screen.getByRole('button', {name: 'More'}));
-		await expect.element(screen.getByRole('dialog', {name: 'Element "Review invoice" Error'})).toBeVisible();
+		await expect.element(screen.getByRole('definition').filter({hasText: 'at line 3'})).toBeVisible();
 		await expect.element(incidentRow(screen, 'Expression failed').getByText('Selected')).not.toBeInTheDocument();
 	});
 
@@ -413,7 +412,7 @@ describe('<IncidentsTab /> (design system)', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
 
-		await expect.element(screen.getByText('There are no incidents matching this filter set')).toBeVisible();
+		await expect.element(screen.getByText('No open incidents')).toBeVisible();
 	});
 
 	it('should report a retry whose incident cannot be read back', async ({worker}) => {
@@ -500,7 +499,7 @@ describe('<IncidentsTab /> (design system)', () => {
 		worker.use(...enrichment());
 		const screen = await renderIncidents('', {hasIncident: false});
 
-		await expect.element(screen.getByText('There are no incidents matching this filter set')).toBeVisible();
+		await expect.element(screen.getByText('No open incidents')).toBeVisible();
 	});
 
 	it('should show an error message when the incidents cannot be fetched', async ({worker}) => {

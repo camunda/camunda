@@ -10,11 +10,10 @@ import {Suspense} from 'react';
 import {useTranslation} from 'react-i18next';
 import {ErrorBoundary} from 'react-error-boundary';
 import {QueryErrorResetBoundary} from '@tanstack/react-query';
-import {Button} from '@camunda/design-system';
 import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DecisionViewer} from '#/operate/shared/DecisionViewer/shadcn.components/DecisionViewer';
 import {DiagramShell} from '#/operate/shared/DiagramShell/shadcn.components/DiagramShell';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {useDecisionDefinitionXml} from '../useDecisionDefinitionXml';
 import {getDecisionDefinitionName} from '../getDecisionDefinitionName';
 import {DecisionHeader} from './DecisionHeader';
@@ -34,19 +33,6 @@ const DecisionDiagram: React.FC<{definition: DecisionDefinition}> = ({definition
 		<DiagramShell status="content">
 			<DecisionViewer xml={xml} decisionViewId={definition.decisionDefinitionId} />
 		</DiagramShell>
-	);
-};
-
-const DecisionDiagramError: React.FC<{onRetry: () => void}> = ({onRetry}) => {
-	const {t} = useTranslation();
-
-	return (
-		<div className="flex grow flex-col items-center justify-center gap-4">
-			<ErrorMessage />
-			<Button type="button" variant="secondary" size="sm" onClick={onRetry}>
-				{t('errorGenericErrorPageButtonLabel')}
-			</Button>
-		</div>
 	);
 };
 
@@ -75,8 +61,8 @@ const DecisionPanelBody: React.FC<Omit<Props, 'headerActions'>> = ({
 					<DiagramShell
 						status="empty"
 						emptyMessage={{
-							message: t('operate.decisions.ds.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
-							additionalInfo: t('operate.decisions.ds.diagramPanel.selectSingleVersion'),
+							heading: t('operate.decisions.ds.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
+							description: t('operate.decisions.ds.diagramPanel.selectSingleVersion'),
 						}}
 					/>
 				);
@@ -85,8 +71,8 @@ const DecisionPanelBody: React.FC<Omit<Props, 'headerActions'>> = ({
 					<DiagramShell
 						status="empty"
 						emptyMessage={{
-							message: t('operate.decisions.ds.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
-							additionalInfo: t('operate.decisions.ds.diagramPanel.selectSingleTenant'),
+							heading: t('operate.decisions.ds.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
+							description: t('operate.decisions.ds.diagramPanel.selectSingleTenant'),
 						}}
 					/>
 				);
@@ -95,8 +81,8 @@ const DecisionPanelBody: React.FC<Omit<Props, 'headerActions'>> = ({
 					<DiagramShell
 						status="empty"
 						emptyMessage={{
-							message: t('operate.decisions.ds.diagramPanel.noDecisionSelected'),
-							additionalInfo: t('operate.decisions.ds.diagramPanel.selectDecisionInFilters'),
+							heading: t('operate.decisions.ds.diagramPanel.noDecisionSelected'),
+							description: t('operate.decisions.ds.diagramPanel.selectDecisionInFilters'),
 						}}
 					/>
 				);
@@ -108,7 +94,7 @@ const DecisionPanelBody: React.FC<Omit<Props, 'headerActions'>> = ({
 			{({reset}) => (
 				<ErrorBoundary
 					onReset={reset}
-					fallbackRender={({resetErrorBoundary}) => <DecisionDiagramError onRetry={resetErrorBoundary} />}
+					fallbackRender={({resetErrorBoundary}) => <DataLoadErrorAlert onRetry={resetErrorBoundary} />}
 					resetKeys={[decisionDefinitionSelection.definition.decisionDefinitionKey]}
 				>
 					<Suspense fallback={<DiagramShell status="loading" />}>

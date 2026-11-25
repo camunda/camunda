@@ -1212,7 +1212,11 @@
 						"operationState": "Estado de la operación",
 						"operationStateLoading": "Cargando estados de las operaciones",
 						"emptyMessage": "Ninguna instancia coincide con estos filtros",
-						"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia"
+						"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
+						"emptyFilteredDescription": "Cambie o borre los filtros para ver más instancias.",
+						"emptyNoStateHeading": "Seleccione un estado de instancia",
+						"emptyDefaultHeading": "Aún no hay instancias en ejecución",
+						"emptyDefaultDescription": "Las instancias aparecen aquí cuando se inicia un proceso. Para ver las instancias finalizadas, selecciónelas en los filtros."
 					},
 					"toolbar": {
 						"selectAll": "Seleccionar todas las instancias",
@@ -1224,7 +1228,7 @@
 						"ariaLabel": "Panel del diagrama",
 						"multipleTenantsSelected": "El proceso \"{{name}}\" existe en varios inquilinos",
 						"multipleVersionsSelected": "Hay más de una versión seleccionada para el proceso \"{{name}}\"",
-						"noProcessSelected": "No hay ningún proceso seleccionado",
+						"noProcessSelected": "Seleccione un proceso",
 						"selectProcessInFilters": "Para ver un diagrama, seleccione un proceso en el panel de filtros",
 						"selectSingleTenant": "Para ver un diagrama, seleccione un solo inquilino",
 						"selectSingleVersion": "Para ver un diagrama, seleccione una única versión"
@@ -1232,6 +1236,11 @@
 					"diagramHeader": {
 						"copyButtonDescription": "ID del proceso / Clic para copiar",
 						"copyButtonTitle": "Copiar ID del proceso: {{id}}"
+					},
+					"migration": {
+						"noElementsHeading": "No hay elementos que asignar",
+						"noElementsDescription": "El proceso de origen no tiene elementos ni flujos de secuencia asignables. Salga de la migración y seleccione otro proceso.",
+						"selectTargetDescription": "Elija un destino para ver su diagrama y asignar los elementos de origen."
 					}
 				},
 				"migration": {
@@ -1630,7 +1639,7 @@
 					"diagramPanel": {
 						"multipleTenantsSelected": "La decisión \"{{name}}\" existe en más de un inquilino",
 						"multipleVersionsSelected": "Hay más de una versión seleccionada para la decisión \"{{name}}\"",
-						"noDecisionSelected": "No hay ninguna decisión seleccionada",
+						"noDecisionSelected": "Seleccione una decisión",
 						"selectDecisionInFilters": "Para ver una tabla de decisión o una expresión literal, seleccione una decisión en el panel de filtros",
 						"selectSingleTenant": "Para ver una tabla de decisión o una expresión literal, seleccione un solo inquilino",
 						"selectSingleVersion": "Para ver una tabla de decisión o una expresión literal, seleccione una sola versión"
@@ -1731,7 +1740,11 @@
 					"variablesPanel": {
 						"tabsLabel": "Pestañas del panel de variables",
 						"inputsAndOutputs": "Entradas y salidas",
-						"loadingResult": "Cargando resultado"
+						"loadingResult": "Cargando resultado",
+						"noResultHeading": "No hay resultado disponible",
+						"noInputHeading": "No hay entrada disponible",
+						"noOutputHeading": "No hay salida disponible",
+						"evaluationFailedDescription": "La evaluación falló. Revise el mensaje de error de arriba y la definición de decisión."
 					},
 					"forbidden": {
 						"heading": "No tiene permiso para ver esta información"
@@ -1747,6 +1760,52 @@
 				"ds": {
 					"forbidden": {
 						"heading": "No tiene permiso para ver esta información"
+					},
+					"incidents": {
+						"noMatchesHeading": "Ningún incidente coincide con estos tipos de error",
+						"noMatchesDescription": "Borre el filtro de tipo de error para ver todos los incidentes.",
+						"emptyHeading": "Sin incidentes abiertos",
+						"emptyDescription": "Los incidentes aparecen aquí cuando falla un elemento de esta instancia.",
+						"noElementIncidentsHeading": "Sin incidentes en este elemento",
+						"noElementIncidentsDescription": "Seleccione otro elemento o borre la selección para ver todos los incidentes."
+					},
+					"operationsLog": {
+						"multiInstanceHeading": "Seleccione una sola instancia de elemento",
+						"noInstancesHeading": "Este elemento aún no se ha ejecutado",
+						"noInstancesDescription": "Las operaciones aparecen aquí cuando se ejecuta el elemento. Seleccione otro elemento en el historial de la instancia.",
+						"emptyHeading": "Aún no hay operaciones",
+						"emptyDescription": "Las operaciones sobre esta instancia, como reintentos o cambios de variables, aparecen aquí.",
+						"noMatchesHeading": "Ninguna operación coincide con estos filtros",
+						"noMatchesDescription": "Cambie el filtro de tipo de operación o de tipo de entidad para ver más operaciones."
+					},
+					"listeners": {
+						"emptyAllHeading": "Ningún listener en este elemento",
+						"emptyTaskHeading": "Ningún listener de tarea de usuario en este elemento",
+						"emptyExecutionHeading": "Ningún listener de ejecución en este elemento",
+						"emptyDescription": "Seleccione otro elemento del diagrama para ver sus listeners."
+					},
+					"variables": {
+						"emptyHeading": "Este elemento no tiene variables",
+						"emptyDescription": "Las variables aparecen aquí cuando el elemento las define. Seleccione otro elemento para ver sus variables.",
+						"multiInstanceDescription": "Para ver las variables, seleccione una única instancia de elemento en el historial de la instancia.",
+						"noSearchResultsHeading": "Ninguna variable coincide con su búsqueda",
+						"noSearchResultsDescription": "Cambie o borre el término de búsqueda para ver más variables.",
+						"noDocumentsHeading": "Aún no hay variables de documento",
+						"noDocumentsDescription": "Las variables de documento aparecen aquí cuando la instancia recibe documentos."
+					},
+					"mappings": {
+						"noInputHeading": "No hay mapeos de entrada definidos",
+						"noInputDescription": "Defina mapeos de entrada para este elemento en el modelo de proceso para asignar variables a su ámbito.",
+						"noOutputHeading": "No hay mapeos de salida definidos",
+						"noOutputDescription": "Defina mapeos de salida para este elemento en el modelo de proceso para asignar variables fuera de su ámbito."
+					},
+					"details": {
+						"noElementHeading": "Ningún elemento seleccionado",
+						"noElementDescription": "Seleccione un elemento del diagrama para ver sus detalles.",
+						"multiInstanceDescription": "Para ver los detalles, seleccione una única instancia de elemento en el historial de la instancia."
+					},
+					"diagram": {
+						"noDiagramDescription": "La definición de proceso no tiene ningún diagrama que mostrar. Revise el modelo en Modeler."
 					}
 				},
 				"history": {
@@ -2303,6 +2362,12 @@
 				},
 				"notifications": {
 					"fetchFailed": "No se pudieron recuperar los registros de auditoría"
+				},
+				"ds": {
+					"emptyState": {
+						"noResultsTitle": "Ninguna operación coincide con estos filtros",
+						"noResultsDescription": "Cambie o borre los filtros para ver más operaciones."
+					}
 				}
 			},
 			"batchOperations": {
@@ -2333,7 +2398,11 @@
 				"pageSelectLabel_one": "Página de {{count}} página",
 				"pageSelectLabel_other": "Página de {{count}} páginas",
 				"pageText": "página {{page}}",
-				"pageOf": "Página {{page}} de {{count}}"
+				"pageOf": "Página {{page}} de {{count}}",
+				"ds": {
+					"emptyHeading": "Aún no hay operaciones por lotes",
+					"emptyDescription": "Seleccione instancias en la página Procesos o Decisiones y aplique una acción para iniciar una operación por lotes."
+				}
 			},
 			"batchOperation": {
 				"title": "Operaciones en lote",
@@ -2377,7 +2446,9 @@
 						"tableLabel": "Elementos de la operación por lotes",
 						"expandFailure": "Mostrar los detalles del fallo",
 						"collapseFailure": "Ocultar los detalles del fallo",
-						"itemStatusPrefix": "Estado del elemento"
+						"itemStatusPrefix": "Estado del elemento",
+						"emptyHeading": "Aún no hay elementos",
+						"emptyDescription": "Los elementos aparecen aquí a medida que la operación por lotes los procesa."
 					}
 				},
 				"actions": {
@@ -2687,7 +2758,8 @@
 						"deleteTitle": "Eliminar instancia {{processInstanceKey}}",
 						"suspendTitle": "Suspender instancia {{processInstanceKey}}",
 						"resumeTitle": "Reanudar instancia {{processInstanceKey}}"
-					}
+					},
+					"clearFilters": "Borrar filtros"
 				}
 			}
 		}

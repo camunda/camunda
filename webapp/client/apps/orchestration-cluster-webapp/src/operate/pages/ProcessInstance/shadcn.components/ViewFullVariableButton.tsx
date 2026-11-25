@@ -10,7 +10,7 @@ import {useRef, useState} from 'react';
 import {useForm} from 'react-final-form';
 import {useQueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import {Button, SpinnerIcon} from '@camunda/design-system';
+import {Button} from '@camunda/design-system';
 import {RichTextEditorModal} from '#/operate/shared/Editors/shadcn.components/RichTextEditorModal';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {variableQuery} from '../variables.queries';
@@ -45,6 +45,7 @@ const ViewFullVariableButton: React.FC<Props> = ({variableKey, variableName, but
 				kind: 'error',
 				title: t('operate.shared.editors.fetchFailed', {label: variableName}),
 				isDismissable: true,
+				autoRemove: false,
 			});
 		} finally {
 			setIsLoading(false);
@@ -53,11 +54,10 @@ const ViewFullVariableButton: React.FC<Props> = ({variableKey, variableName, but
 
 	return (
 		<>
-			{isLoading && <SpinnerIcon />}
 			{buttonLabel === undefined ? (
 				<MaximizeButton ref={triggerRef} isBusy={isLoading} onClick={open} />
 			) : (
-				<Button type="button" variant="ghost" size="sm" ref={triggerRef} aria-busy={isLoading} onClick={open}>
+				<Button type="button" variant="ghost" size="sm" ref={triggerRef} loading={isLoading} onClick={open}>
 					{buttonLabel}
 				</Button>
 			)}

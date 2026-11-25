@@ -29,7 +29,7 @@ class OperatePreviewBatchOperationsPage extends BasePage {
 	}
 
 	get emptyState() {
-		return this.page.getByText('No batch operations found');
+		return this.page.getByText('No batch operations yet');
 	}
 
 	get pageIndicator() {

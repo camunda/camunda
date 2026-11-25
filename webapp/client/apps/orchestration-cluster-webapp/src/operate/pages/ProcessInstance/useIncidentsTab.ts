@@ -184,6 +184,7 @@ function useIncidentsTab() {
 		hasNextPage: result.hasNextPage,
 		isFetchingPreviousPage: result.isFetchingPreviousPage,
 		isFetchingNextPage: result.isFetchingNextPage,
+		refetch: result.refetch,
 		selectIncident: (incident: {elementId: string; elementInstanceKey: string}) => {
 			const selectedIncidents = enhancedIncidents.filter((item) => item.isSelected);
 			if (selectedIncidents.length === 1 && selectedIncidents[0]?.elementInstanceKey === incident.elementInstanceKey) {

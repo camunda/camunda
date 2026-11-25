@@ -20,10 +20,19 @@ const toastByKind = {
 	'warning-alt': toast.warning,
 } satisfies Record<Notification['kind'], typeof toast.info>;
 
-const showToast = ({kind, title, subtitle, isActionable, actionButtonLabel, onActionButtonClick}: Notification) =>
+const showToast = ({
+	kind,
+	title,
+	subtitle,
+	isActionable,
+	actionButtonLabel,
+	onActionButtonClick,
+	hideNotification,
+}: Notification) =>
 	toastByKind[kind](title, {
 		description: subtitle,
 		duration: Infinity,
+		onDismiss: hideNotification,
 		action: isActionable ? {label: actionButtonLabel ?? '', onClick: () => onActionButtonClick?.()} : undefined,
 	});
 

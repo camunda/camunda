@@ -18,7 +18,7 @@ const CellResult: React.FC<Props> = ({item}) => {
 	return (
 		<div className="flex items-center gap-2">
 			<OperationsLogResultIcon state={item.result} data-testid={`${item.auditLogKey}-icon`} />
-			<span className="sr-only">{spaceAndCapitalize(item.result)}</span>
+			<span>{spaceAndCapitalize(item.result)}</span>
 		</div>
 	);
 };

@@ -309,11 +309,11 @@ describe('<VariablesPanel />', () => {
 		);
 
 		const screen = await renderPanel();
-		await expect.element(screen.getByText('No input available because the evaluation failed')).toBeVisible();
-		await expect.element(screen.getByText('No output available because the evaluation failed')).toBeVisible();
+		await expect.element(screen.getByText('No input available', {exact: true})).toBeVisible();
+		await expect.element(screen.getByText('No output available', {exact: true})).toBeVisible();
 
 		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
-		await expect.element(screen.getByText('No result available because the evaluation failed')).toBeVisible();
+		await expect.element(screen.getByText('No result available', {exact: true})).toBeVisible();
 	});
 
 	it('should show the failed-evaluation output empty state and keep existing inputs', async ({worker}) => {
@@ -331,11 +331,11 @@ describe('<VariablesPanel />', () => {
 
 		const screen = await renderPanel();
 		await expect.element(screen.getByText('Age')).toBeVisible();
-		await expect.element(screen.getByText('No output available because the evaluation failed')).toBeVisible();
-		await expect.element(screen.getByText('No input available because the evaluation failed')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No output available', {exact: true})).toBeVisible();
+		await expect.element(screen.getByText('No input available', {exact: true})).not.toBeInTheDocument();
 
 		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
-		await expect.element(screen.getByText('No result available because the evaluation failed')).toBeVisible();
+		await expect.element(screen.getByText('No result available', {exact: true})).toBeVisible();
 	});
 
 	it('should display explicit errors in both panels when the query fails', async ({worker}) => {

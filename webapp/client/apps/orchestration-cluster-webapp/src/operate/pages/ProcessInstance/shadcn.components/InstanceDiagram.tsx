@@ -73,6 +73,7 @@ const InstanceDiagram: React.FC = () => {
 		isError: isXmlError,
 		error: xmlError,
 		isFetching: isXmlFetching,
+		refetch: refetchXml,
 	} = useDiagramXml(processInstance.processDefinitionKey);
 	const rootElement = diagram?.diagramModel?.rootElement;
 	const hasDiagram =
@@ -277,6 +278,7 @@ const InstanceDiagram: React.FC = () => {
 						: 'operate.processInstance.diagram.calledDecisionError',
 				),
 				isDismissable: true,
+				autoRemove: false,
 			});
 		} finally {
 			if (currentInstanceId.current === processInstanceId && drillDownVersion.current === version) {
@@ -298,7 +300,13 @@ const InstanceDiagram: React.FC = () => {
 
 	const shellProps =
 		status === 'empty'
-			? ({status, emptyMessage: {message: t('operate.processInstance.diagram.noDiagram')}} as const)
+			? ({
+					status,
+					emptyMessage: {
+						heading: t('operate.processInstance.diagram.noDiagram'),
+						description: t('operate.processInstance.ds.diagram.noDiagramDescription'),
+					},
+				} as const)
 			: ({status} as const);
 
 	const banner =
@@ -329,7 +337,7 @@ const InstanceDiagram: React.FC = () => {
 					}
 				/>
 			)}
-			<DiagramShell {...shellProps}>
+			<DiagramShell {...shellProps} onRetry={isXmlError ? () => void refetchXml() : undefined}>
 				{diagram && hasDiagram && (
 					<Diagram
 						key={processInstanceId}

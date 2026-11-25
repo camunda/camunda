@@ -9,16 +9,15 @@
 import {OPERATE_BASE} from '#/shared/operateBase';
 import {useState} from 'react';
 import {useNavigate} from '@tanstack/react-router';
-import {Button, IconButton, Text} from '@camunda/design-system';
-import {Maximize2, Minimize, X} from '@camunda/design-system/icons';
+import {EmptyState, IconButton, Text} from '@camunda/design-system';
+import {Maximize2, Minimize, Workflow, X} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {ForbiddenError} from '#/shared/errors';
 import {DrdUnavailableError} from '#/operate/shared/DecisionViewer/DrdJS';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {DiagramShell} from '#/operate/shared/DiagramShell/shadcn.components/DiagramShell';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
-import {cn} from '#/shared/cn';
 import {useDecisionInstance} from '../decisionInstance.queries';
 import {useDrdData} from '../drdData.queries';
 import {useDecisionDefinitionXml} from '../useDecisionDefinitionXml';
@@ -74,8 +73,10 @@ const Drd: React.FC<Props> = ({
 		>
 			<PanelHeader title={definitionsName || t('operate.decisionInstance.ds.drd.title')} size="md">
 				{drdPanelState === 'maximized' && (
-					<Text as="span" variant="body-sm" className="ml-4 truncate text-neutral-foreground-subtle">
-						{instanceName ? `${instanceName} · ${decisionEvaluationInstanceKey}` : decisionEvaluationInstanceKey}
+					<Text as="span" variant="body-sm" className="ml-4 min-w-0 text-neutral-foreground-subtle">
+						<TruncatedText
+							text={instanceName ? `${instanceName} · ${decisionEvaluationInstanceKey}` : decisionEvaluationInstanceKey}
+						/>
 					</Text>
 				)}
 				<div className="ml-auto flex items-center">
@@ -126,25 +127,19 @@ const Drd: React.FC<Props> = ({
 					)}
 				</DiagramShell>
 				{isUnavailable && (
-					<EmptyMessage
+					<EmptyState
+						size="sm"
+						headingLevel={3}
+						icon={<Workflow aria-hidden />}
 						className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-						message={t('operate.decisionInstance.ds.drd.unavailableTitle')}
-						additionalInfo={t('operate.decisionInstance.ds.drd.unavailableInfo')}
+						heading={t('operate.decisionInstance.ds.drd.unavailableTitle')}
+						description={t('operate.decisionInstance.ds.drd.unavailableInfo')}
 					/>
 				)}
 				{isError && !isForbidden && (
-					<div
-						className={cn(
-							'pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-5 bg-[var(--neutral-background-subtle)] p-5',
-						)}
-					>
-						<ErrorMessage />
-						<Button
-							type="button"
-							variant="secondary"
-							size="sm"
-							className="pointer-events-auto"
-							onClick={() => {
+					<div className="absolute left-1/2 top-1/2 z-10 w-full max-w-md -translate-x-1/2 -translate-y-1/2 bg-[var(--neutral-background-subtle)]">
+						<DataLoadErrorAlert
+							onRetry={() => {
 								if (drdData.isError) {
 									void drdData.refetch();
 								}
@@ -156,9 +151,7 @@ const Drd: React.FC<Props> = ({
 									});
 								}
 							}}
-						>
-							{t('errorGenericErrorPageButtonLabel')}
-						</Button>
+						/>
 					</div>
 				)}
 			</div>

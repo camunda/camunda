@@ -6,14 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {CircleCheck, CircleX} from '@camunda/design-system/icons';
+import {StatusIcon, type StatusIconVariant} from '@camunda/design-system';
 import type {AuditLogResult} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
-import {cn} from '#/shared/cn';
 
-const resultIconsMap = {
-	FAIL: CircleX,
-	SUCCESS: CircleCheck,
-} as const;
+const resultVariantMap = {
+	FAIL: 'danger',
+	SUCCESS: 'success',
+} as const satisfies Record<AuditLogResult, StatusIconVariant>;
 
 type Props = {
 	state: AuditLogResult;
@@ -21,20 +20,7 @@ type Props = {
 };
 
 const OperationsLogResultIcon: React.FC<Props> = ({state, 'data-testid': dataTestId}) => {
-	const TargetComponent = resultIconsMap[state];
-
-	return (
-		<TargetComponent
-			data-testid={dataTestId}
-			size={20}
-			aria-hidden="true"
-			focusable="false"
-			className={cn('shrink-0', {
-				'text-danger-foreground-subtle': state === 'FAIL',
-				'text-success-foreground-subtle': state === 'SUCCESS',
-			})}
-		/>
-	);
+	return <StatusIcon data-testid={dataTestId} size="lg" variant={resultVariantMap[state]} />;
 };
 
 export {OperationsLogResultIcon};

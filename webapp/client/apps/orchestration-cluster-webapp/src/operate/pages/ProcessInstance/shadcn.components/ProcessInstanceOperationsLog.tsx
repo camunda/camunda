@@ -8,14 +8,14 @@
 
 import {useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {EmptyState} from '@camunda/design-system';
+import {FunnelX, MousePointerClick, ScrollText} from '@camunda/design-system/icons';
 import {
 	auditLogSortFieldEnum,
 	type AuditLog,
 	type QueryAuditLogsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/shadcn.components/PaginatedSortableTable';
 import {
 	OperationsLogDetailsModal,
@@ -30,6 +30,7 @@ import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {useAuditLogs} from '#/operate/pages/OperationsLog/operationsLog.queries';
 import {useAuditLogsErrorNotification} from '#/operate/pages/OperationsLog/useAuditLogsErrorNotification';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
 import {useProcessInstancePage} from '../useProcessInstancePage';
 import type {ProcessInstanceOperationsLogSearch} from '../processInstanceOperationsLog.schema';
@@ -47,6 +48,7 @@ const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsL
 		selectedElementInstanceCount,
 		isSelectedInstancePlaceholder,
 		isFetchingElementError,
+		refetchElement,
 		hasSelection,
 	} = useProcessInstanceElementSelection();
 	const [detailsModal, setDetailsModal] = useState<DetailsModalState>({isOpen: false});
@@ -85,32 +87,39 @@ const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsL
 		isFetchingNextPage,
 		hasNextPage,
 		fetchNextPage,
+		refetch,
 	} = useAuditLogs(filter, [{field: sortField, order: sortOrder}], {
 		enabled: isScopeResolved,
 	});
 	useAuditLogsErrorNotification(error, dataUpdatedAt);
 
 	if (isFetchingElementError) {
-		return (
-			<CenteredContent>
-				<ErrorMessage />
-			</CenteredContent>
-		);
+		return <DataLoadErrorAlert onRetry={() => void refetchElement()} />;
 	}
 
 	if (hasMultipleInstances || hasNoInstances) {
 		return (
 			<CenteredContent>
-				<EmptyMessage
-					message={t(
+				<EmptyState
+					size="sm"
+					headingLevel={3}
+					icon={<MousePointerClick aria-hidden />}
+					heading={t(
+						hasMultipleInstances
+							? 'operate.processInstance.ds.operationsLog.multiInstanceHeading'
+							: 'operate.processInstance.ds.operationsLog.noInstancesHeading',
+					)}
+					description={t(
 						hasMultipleInstances
 							? 'operate.processInstance.operationsLog.multiInstance'
-							: 'operate.processInstance.operationsLog.empty',
+							: 'operate.processInstance.ds.operationsLog.noInstancesDescription',
 					)}
 				/>
 			</CenteredContent>
 		);
 	}
+
+	const hasFilters = Boolean(search.operationType?.length || search.entityType?.length);
 
 	const auditLogs = data?.pages.flatMap((page) => page.items) ?? [];
 	const isLoadingScope = !isScopeResolved || isPending || (isPlaceholderData && isFetching && auditLogs.length === 0);
@@ -175,9 +184,25 @@ const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsL
 					rowKey={(row) => row.auditLogKey}
 					emptyState={
 						isLoadingScope ? undefined : error === null ? (
-							<EmptyMessage message={t('operate.processInstance.operationsLog.empty')} />
+							hasFilters ? (
+								<EmptyState
+									size="sm"
+									headingLevel={3}
+									icon={<FunnelX aria-hidden />}
+									heading={t('operate.processInstance.ds.operationsLog.noMatchesHeading')}
+									description={t('operate.processInstance.ds.operationsLog.noMatchesDescription')}
+								/>
+							) : (
+								<EmptyState
+									size="sm"
+									headingLevel={3}
+									icon={<ScrollText aria-hidden />}
+									heading={t('operate.processInstance.ds.operationsLog.emptyHeading')}
+									description={t('operate.processInstance.ds.operationsLog.emptyDescription')}
+								/>
+							)
 						) : (
-							<ErrorMessage />
+							<DataLoadErrorAlert onRetry={() => void refetch()} />
 						)
 					}
 					hideHeaderWhenEmpty

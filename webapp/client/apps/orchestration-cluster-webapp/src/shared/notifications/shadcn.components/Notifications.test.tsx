@@ -81,6 +81,21 @@ describe('<Notifications /> (design system)', () => {
 		await expect.element(screen.getByText('Dismiss me')).not.toBeInTheDocument();
 	});
 
+	it('should free a slot in the store when a persistent toast is dismissed', async () => {
+		const screen = await render(<Notifications />, {wrapper: Wrapper});
+		notificationsStore.displayNotification({
+			kind: 'error',
+			title: 'Persistent',
+			isDismissable: true,
+			autoRemove: false,
+		});
+
+		await expect.element(screen.getByText('Persistent')).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Dismiss'}));
+
+		await expect.poll(() => notificationsStore.notifications).toHaveLength(0);
+	});
+
 	it('should render an action button and fire its callback', async () => {
 		const onActionButtonClick = vi.fn();
 		const screen = await render(<Notifications />, {wrapper: Wrapper});

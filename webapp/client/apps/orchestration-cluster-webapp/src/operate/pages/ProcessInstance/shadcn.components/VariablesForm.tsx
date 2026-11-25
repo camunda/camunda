@@ -9,9 +9,10 @@
 import {useState} from 'react';
 import {Form} from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
-import type {Mutator} from 'final-form';
+import {FORM_ERROR, type Mutator} from 'final-form';
 import {useQueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
+import {Alert} from '@camunda/design-system';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {requestErrorSchema} from '#/shared/http/request';
 import {isValidJSON} from '#/shared/json/isValidJSON';
@@ -27,6 +28,11 @@ import type {VariableFormValues} from '../variableFormValues';
 type Props = {
 	scopeKey: string;
 	status: 'loading' | 'empty' | 'variables';
+};
+
+type SaveError = {
+	title: string;
+	description?: string;
 };
 
 const triggerValidation: Mutator<VariableFormValues> = ([fieldName], state, {changeValue}) => {
@@ -47,7 +53,23 @@ const VariablesForm: React.FC<Props> = ({scopeKey, status}) => {
 		<Form<VariableFormValues>
 			mutators={{...arrayMutators, triggerValidation}}
 			initialValues={initialValues}
-			render={({handleSubmit}) => <VariablesFormContent onSubmit={handleSubmit} scopeKey={scopeKey} status={status} />}
+			render={({handleSubmit, submitError, dirtySinceLastSubmit}) => {
+				const saveError: SaveError | undefined = submitError;
+
+				return (
+					<>
+						<VariablesFormContent onSubmit={handleSubmit} scopeKey={scopeKey} status={status} />
+						{saveError !== undefined && !dirtySinceLastSubmit && (
+							<Alert
+								variant="destructive"
+								title={saveError.title}
+								description={saveError.description}
+								className="shrink-0"
+							/>
+						)}
+					</>
+				);
+			}}
 			onSubmit={async ({name, value}, form) => {
 				const {initialValues: submittedInitialValues} = form.getState();
 
@@ -81,21 +103,19 @@ const VariablesForm: React.FC<Props> = ({scopeKey, status}) => {
 					});
 				} catch (error) {
 					const response = requestErrorSchema.safeParse(error).data?.response ?? null;
-					notificationsStore.displayNotification(
-						response?.status === 403
-							? {
-									kind: 'warning',
-									title: t('operate.shared.operations.forbiddenTitle'),
-									subtitle: t('operate.shared.operations.forbiddenSubtitle'),
-									isDismissable: true,
-								}
-							: {
-									kind: 'error',
-									title: t('operate.processInstance.variables.saveFailed'),
-									subtitle: response?.statusText,
-									isDismissable: true,
-								},
-					);
+					await queryClient.invalidateQueries({queryKey: variableQueryKeys.instanceVariables(processInstanceId)});
+					return {
+						[FORM_ERROR]:
+							response?.status === 403
+								? {
+										title: t('operate.shared.operations.forbiddenTitle'),
+										description: t('operate.shared.operations.forbiddenSubtitle'),
+									}
+								: {
+										title: t('operate.processInstance.variables.saveFailed'),
+										description: response?.statusText,
+									},
+					};
 				}
 
 				form.reset({});

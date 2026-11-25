@@ -23,8 +23,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Link,
+	Spinner,
 } from '@camunda/design-system';
-import {LoaderCircle} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
@@ -105,10 +105,7 @@ const CancelConfirmationModal: React.FC<Props> = ({
 				</AlertDialogDescription>
 				<p>{t('operate.shared.operations.cancelConfirmationModal.hint')}</p>
 				{isPending ? (
-					<div className="flex flex-row items-center gap-2" role="status" aria-live="polite">
-						<LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-						<span>{t('operate.shared.operations.cancelConfirmationModal.verificationLoading')}</span>
-					</div>
+					<Spinner label={t('operate.shared.operations.cancelConfirmationModal.verificationLoading')} />
 				) : null}
 				{isError ? (
 					<Alert

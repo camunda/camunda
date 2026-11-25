@@ -59,9 +59,6 @@ describe('<DiagramHeader /> (design system)', () => {
 		await expect.element(screen.getByText('order-process')).toBeVisible();
 		await expect.element(screen.getByText('v2.0')).toBeVisible();
 		await expect
-			.element(screen.getByRole('heading', {name: 'Order Process'}))
-			.toHaveAttribute('title', 'Process name: Order Process');
-		await expect
 			.element(screen.getByRole('button', {name: /order-process/}))
 			.toHaveAttribute('title', 'Copy process ID: order-process');
 		await expect

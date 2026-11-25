@@ -10,12 +10,12 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {ErrorBoundary} from 'react-error-boundary';
 import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
-import {Alert, AlertTitle, Button, IconButton} from '@camunda/design-system';
+import {Alert, AlertTitle, IconButton} from '@camunda/design-system';
 import {ChevronDown, ChevronUp} from '@camunda/design-system/icons';
 import {ForbiddenError} from '#/shared/errors';
 import {DiagramShell} from '#/operate/shared/DiagramShell/shadcn.components/DiagramShell';
 import {DecisionViewer} from '#/operate/shared/DecisionViewer/shadcn.components/DecisionViewer';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {useDecisionInstance} from '../decisionInstance.queries';
 import {getHighlightableRules} from '../getHighlightableRules';
 import {useDecisionDefinitionXml} from '../useDecisionDefinitionXml';
@@ -112,31 +112,19 @@ const DecisionPanel: React.FC<Props> = ({decisionEvaluationInstanceKey}) => {
 			)}
 			{panelStatus === 'error' && isDecisionDefinitionXmlError ? (
 				<DiagramShell status="content">
-					<div className="flex grow flex-col items-center justify-center gap-4">
-						<ErrorMessage />
-						<Button type="button" variant="secondary" size="sm" onClick={() => void refetchDecisionDefinitionXml()}>
-							{t('errorGenericErrorPageButtonLabel')}
-						</Button>
-					</div>
+					<DataLoadErrorAlert className="self-center" onRetry={() => void refetchDecisionDefinitionXml()} />
 				</DiagramShell>
 			) : (
 				<DiagramShell status={panelStatus}>
 					<ErrorBoundary
 						resetKeys={[decisionDefinitionXml]}
 						fallbackRender={({resetErrorBoundary}) => (
-							<div className="flex grow flex-col items-center justify-center gap-4">
-								<ErrorMessage />
-								<Button
-									type="button"
-									variant="secondary"
-									size="sm"
-									onClick={() => {
-										void refetchDecisionDefinitionXml().then(resetErrorBoundary);
-									}}
-								>
-									{t('errorGenericErrorPageButtonLabel')}
-								</Button>
-							</div>
+							<DataLoadErrorAlert
+								className="self-center"
+								onRetry={() => {
+									void refetchDecisionDefinitionXml().then(resetErrorBoundary);
+								}}
+							/>
 						)}
 					>
 						<DecisionViewer

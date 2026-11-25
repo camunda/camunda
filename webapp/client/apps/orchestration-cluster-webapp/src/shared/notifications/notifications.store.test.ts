@@ -133,6 +133,34 @@ describe('notifications store', () => {
 		expect(notificationsStore.notifications.find((n) => n.title === 'Queued')).toBeDefined();
 	});
 
+	it('should not promote queued notifications when an already hidden one is hidden again', () => {
+		// given
+		for (let i = 1; i <= 5; i++) {
+			notificationsStore.displayNotification({
+				kind: 'info',
+				title: `Notification ${i}`,
+				isDismissable: true,
+				autoRemove: false,
+			});
+		}
+		for (let i = 1; i <= 2; i++) {
+			notificationsStore.displayNotification({
+				kind: 'info',
+				title: `Queued ${i}`,
+				isDismissable: true,
+				autoRemove: false,
+			});
+		}
+		const hide = notificationsStore.notifications[0]!.hideNotification;
+
+		// when
+		hide();
+		hide();
+
+		// then
+		expect(notificationsStore.notifications).toHaveLength(5);
+	});
+
 	it('should reset all notifications', () => {
 		notificationsStore.displayNotification({kind: 'info', title: 'A', isDismissable: true});
 		notificationsStore.displayNotification({kind: 'info', title: 'B', isDismissable: true});

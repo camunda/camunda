@@ -10,6 +10,7 @@ import {useTranslation} from 'react-i18next';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {StateIcon} from '#/operate/shared/StateIcon/shadcn.components/StateIcon';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {ElementInstanceIcon} from './ElementInstanceIcon';
 import {historyRowProps} from './historyRowOffset';
@@ -47,10 +48,7 @@ const HistoryRowLabel: React.FC<Props> = ({rowId, item, businessObject, suffix, 
 			</span>
 			<ElementInstanceIcon businessObject={businessObject} root={item.type === 'PROCESS'} />
 			<span className="sr-only">{t(STATE_LABEL_KEYS[state])}</span>
-			<span className="min-w-0 flex-1 truncate">
-				{name}
-				{suffix}
-			</span>
+			<TruncatedText text={`${name}${suffix ?? ''}`} className="min-w-0 flex-1" />
 			{showTimestamp && item.endDate && (
 				<span className="shrink-0 text-xs text-muted-foreground">{formatTimestamp(item.endDate)}</span>
 			)}

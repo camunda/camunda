@@ -216,7 +216,7 @@ describe('<OperationsLog />', () => {
 
 			await expect.element(screen.getByRole('table', {name: 'Operations log'})).toBeVisible();
 			await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
-			await expect.element(screen.getByText('No operations log found')).not.toBeInTheDocument();
+			await expect.element(screen.getByText('No operations match these filters')).not.toBeInTheDocument();
 		});
 
 		it('should offer sorting only once the first audit response has arrived', async ({worker}) => {
@@ -245,7 +245,7 @@ describe('<OperationsLog />', () => {
 
 			const screen = await renderPage({search: {actorId: 'unknown'}});
 
-			await expect.element(screen.getByText('No operations log found')).toBeVisible();
+			await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 			await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
 		});
 
@@ -269,7 +269,7 @@ describe('<OperationsLog />', () => {
 
 			await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
 			await expect.element(screen.getByRole('table', {name: 'Operations log'})).toBeVisible();
-			await expect.element(screen.getByText('No operations log found')).not.toBeInTheDocument();
+			await expect.element(screen.getByText('No operations match these filters')).not.toBeInTheDocument();
 		});
 
 		it('should notify a failing audit log poll once until it recovers', async ({worker}) => {
@@ -450,7 +450,7 @@ describe('<OperationsLog />', () => {
 
 		const screen = await renderPage({search: {actorId: 'demo'}});
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 	});
 
 	it('should render audit log rows with humanized operation and entity type labels', async ({worker}) => {

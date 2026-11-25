@@ -213,7 +213,7 @@ describe('<InstancesTable /> (design system)', () => {
 
 		const screen = await renderInstancesTable({...BASE_SEARCH, active: false, incidents: false, suspended: false});
 
-		await expect.element(screen.getByText('No instances match these filters')).toBeVisible();
+		await expect.element(screen.getByText('Select an instance state')).toBeVisible();
 		await expect.element(screen.getByText('To see results, select at least one instance state')).toBeVisible();
 	});
 
@@ -228,7 +228,7 @@ describe('<InstancesTable /> (design system)', () => {
 		const screen = await renderInstancesTable();
 
 		await expect.element(screen.getByRole('region', {name: 'Process instances panel'})).toBeVisible();
-		await expect.element(screen.getByText('No instances match these filters')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No running instances yet')).not.toBeInTheDocument();
 	});
 
 	it('should show the error message when the search fails', async ({worker}) => {

@@ -136,8 +136,8 @@ describe('<ProcessInstanceDetails /> (design system)', () => {
 	});
 
 	it.for([
-		{totalItems: 0, message: 'There is no element selected.'},
-		{totalItems: 3, message: 'To view the details, select a single element instance in the instance history.'},
+		{totalItems: 0, message: 'No element selected'},
+		{totalItems: 3, message: 'Select a single element instance'},
 	])('should show "$message" when $totalItems element instances match', async ({totalItems, message}, {worker}) => {
 		worker.use(
 			mockQueryElementInstancesEndpoint({
@@ -221,7 +221,7 @@ describe('<ProcessInstanceDetails /> (design system)', () => {
 		const screen = await renderDetails(selected('service-task'));
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
-		await expect.element(screen.getByText('There is no element selected.')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No element selected')).not.toBeInTheDocument();
 	});
 
 	it('should show the user task properties and a Tasklist link for a Camunda user task', async ({worker}) => {

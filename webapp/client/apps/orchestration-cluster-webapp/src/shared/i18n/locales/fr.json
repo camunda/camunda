@@ -1215,7 +1215,11 @@
 						"operationState": "État de l'opération",
 						"operationStateLoading": "Chargement des états des opérations",
 						"emptyMessage": "Aucune instance ne correspond à ces filtres",
-						"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance"
+						"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
+						"emptyFilteredDescription": "Modifiez ou effacez les filtres pour voir plus d’instances.",
+						"emptyNoStateHeading": "Sélectionnez un état d’instance",
+						"emptyDefaultHeading": "Aucune instance en cours pour le moment",
+						"emptyDefaultDescription": "Les instances apparaissent ici dès qu’un processus démarre. Pour voir les instances terminées, sélectionnez-les dans les filtres."
 					},
 					"toolbar": {
 						"selectAll": "Sélectionner toutes les instances",
@@ -1227,7 +1231,7 @@
 						"ariaLabel": "Panneau du diagramme",
 						"multipleTenantsSelected": "Le processus « {{name}} » existe dans plusieurs locataires",
 						"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour le processus « {{name}} »",
-						"noProcessSelected": "Aucun processus n'est sélectionné",
+						"noProcessSelected": "Sélectionnez un processus",
 						"selectProcessInFilters": "Pour voir un diagramme, sélectionnez un processus dans le panneau des filtres",
 						"selectSingleTenant": "Pour voir un diagramme, sélectionnez un seul locataire",
 						"selectSingleVersion": "Pour voir un diagramme, sélectionnez une seule version"
@@ -1235,6 +1239,11 @@
 					"diagramHeader": {
 						"copyButtonDescription": "ID du processus / Cliquer pour copier",
 						"copyButtonTitle": "Copier l'ID du processus : {{id}}"
+					},
+					"migration": {
+						"noElementsHeading": "Aucun élément à associer",
+						"noElementsDescription": "Le processus source ne contient aucun élément ni flux de séquence associable. Quittez la migration et sélectionnez un autre processus.",
+						"selectTargetDescription": "Choisissez une cible pour voir son diagramme et associer les éléments source."
 					}
 				},
 				"migration": {
@@ -1633,7 +1642,7 @@
 					"diagramPanel": {
 						"multipleTenantsSelected": "La décision \"{{name}}\" existe dans plusieurs locataires",
 						"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour la décision \"{{name}}\"",
-						"noDecisionSelected": "Aucune décision n'est sélectionnée",
+						"noDecisionSelected": "Sélectionnez une décision",
 						"selectDecisionInFilters": "Pour voir une table de décision ou une expression littérale, sélectionnez une décision dans le panneau de filtres",
 						"selectSingleTenant": "Pour voir une table de décision ou une expression littérale, sélectionnez un seul locataire",
 						"selectSingleVersion": "Pour voir une table de décision ou une expression littérale, sélectionnez une seule version"
@@ -1734,7 +1743,11 @@
 					"variablesPanel": {
 						"tabsLabel": "Onglets du panneau des variables",
 						"inputsAndOutputs": "Entrées et sorties",
-						"loadingResult": "Chargement du résultat"
+						"loadingResult": "Chargement du résultat",
+						"noResultHeading": "Aucun résultat disponible",
+						"noInputHeading": "Aucune entrée disponible",
+						"noOutputHeading": "Aucune sortie disponible",
+						"evaluationFailedDescription": "L'évaluation a échoué. Consultez le message d'échec ci-dessus et la définition de décision."
 					},
 					"forbidden": {
 						"heading": "Vous n'avez pas la permission de consulter ces informations"
@@ -1750,6 +1763,52 @@
 				"ds": {
 					"forbidden": {
 						"heading": "Vous n'avez pas la permission de consulter ces informations"
+					},
+					"incidents": {
+						"noMatchesHeading": "Aucun incident ne correspond à ces types d’erreur",
+						"noMatchesDescription": "Effacez le filtre de type d’erreur pour voir tous les incidents.",
+						"emptyHeading": "Aucun incident ouvert",
+						"emptyDescription": "Les incidents apparaissent ici lorsqu’un élément de cette instance échoue.",
+						"noElementIncidentsHeading": "Aucun incident sur cet élément",
+						"noElementIncidentsDescription": "Sélectionnez un autre élément ou effacez la sélection pour voir tous les incidents."
+					},
+					"operationsLog": {
+						"multiInstanceHeading": "Sélectionnez une seule instance d’élément",
+						"noInstancesHeading": "Cet élément ne s’est pas encore exécuté",
+						"noInstancesDescription": "Les opérations apparaissent ici dès que l’élément s’exécute. Sélectionnez un autre élément dans l’historique de l’instance.",
+						"emptyHeading": "Aucune opération pour le moment",
+						"emptyDescription": "Les opérations sur cette instance, comme les nouvelles tentatives ou les modifications de variables, apparaissent ici.",
+						"noMatchesHeading": "Aucune opération ne correspond à ces filtres",
+						"noMatchesDescription": "Modifiez le filtre de type d’opération ou de type d’entité pour voir plus d’opérations."
+					},
+					"listeners": {
+						"emptyAllHeading": "Aucun listener sur cet élément",
+						"emptyTaskHeading": "Aucun listener de tâche utilisateur sur cet élément",
+						"emptyExecutionHeading": "Aucun listener d'exécution sur cet élément",
+						"emptyDescription": "Sélectionnez un autre élément dans le diagramme pour voir ses listeners."
+					},
+					"variables": {
+						"emptyHeading": "Cet élément n'a pas de variables",
+						"emptyDescription": "Les variables apparaissent ici dès que l'élément les définit. Sélectionnez un autre élément pour voir ses variables.",
+						"multiInstanceDescription": "Pour voir les variables, sélectionnez une seule instance d'élément dans l'historique de l'instance.",
+						"noSearchResultsHeading": "Aucune variable ne correspond à votre recherche",
+						"noSearchResultsDescription": "Modifiez ou effacez le terme de recherche pour voir plus de variables.",
+						"noDocumentsHeading": "Aucune variable de document pour l'instant",
+						"noDocumentsDescription": "Les variables de document apparaissent ici dès que l'instance reçoit des documents."
+					},
+					"mappings": {
+						"noInputHeading": "Aucun mapping d'entrée défini",
+						"noInputDescription": "Définissez des mappings d'entrée pour cet élément dans le modèle de processus afin d'associer des variables à sa portée.",
+						"noOutputHeading": "Aucun mapping de sortie défini",
+						"noOutputDescription": "Définissez des mappings de sortie pour cet élément dans le modèle de processus afin d'exporter des variables hors de sa portée."
+					},
+					"details": {
+						"noElementHeading": "Aucun élément sélectionné",
+						"noElementDescription": "Sélectionnez un élément dans le diagramme pour voir ses détails.",
+						"multiInstanceDescription": "Pour voir les détails, sélectionnez une seule instance d'élément dans l'historique de l'instance."
+					},
+					"diagram": {
+						"noDiagramDescription": "La définition de processus ne contient aucun diagramme à afficher. Vérifiez le modèle dans Modeler."
 					}
 				},
 				"history": {
@@ -2306,6 +2365,12 @@
 				},
 				"notifications": {
 					"fetchFailed": "Impossible de récupérer les journaux d'audit"
+				},
+				"ds": {
+					"emptyState": {
+						"noResultsTitle": "Aucune opération ne correspond à ces filtres",
+						"noResultsDescription": "Modifiez ou effacez les filtres pour voir plus d’opérations."
+					}
 				}
 			},
 			"batchOperations": {
@@ -2336,7 +2401,11 @@
 				"pageSelectLabel_one": "Page sur {{count}} page",
 				"pageSelectLabel_other": "Page sur {{count}} pages",
 				"pageText": "page {{page}}",
-				"pageOf": "Page {{page}} sur {{count}}"
+				"pageOf": "Page {{page}} sur {{count}}",
+				"ds": {
+					"emptyHeading": "Aucune opération par lots pour le moment",
+					"emptyDescription": "Sélectionnez des instances sur la page Processus ou Décisions et appliquez une action pour lancer une opération par lots."
+				}
 			},
 			"batchOperation": {
 				"title": "Opérations par lots",
@@ -2380,7 +2449,9 @@
 						"tableLabel": "Éléments de l'opération par lots",
 						"expandFailure": "Afficher les détails de l'échec",
 						"collapseFailure": "Masquer les détails de l'échec",
-						"itemStatusPrefix": "Statut de l'élément"
+						"itemStatusPrefix": "Statut de l'élément",
+						"emptyHeading": "Aucun élément pour le moment",
+						"emptyDescription": "Les éléments apparaissent ici au fur et à mesure que l’opération par lots les traite."
 					}
 				},
 				"actions": {
@@ -2690,7 +2761,8 @@
 						"deleteTitle": "Supprimer l'instance {{processInstanceKey}}",
 						"suspendTitle": "Suspendre l'instance {{processInstanceKey}}",
 						"resumeTitle": "Reprendre l'instance {{processInstanceKey}}"
-					}
+					},
+					"clearFilters": "Effacer les filtres"
 				}
 			}
 		}

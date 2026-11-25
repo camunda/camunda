@@ -7,26 +7,19 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
 import {ForbiddenError} from '#/shared/errors';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 
-const VariablesError: React.FC<{error: Error | null}> = ({error}) => {
+const VariablesError: React.FC<{error: Error | null; onRetry: () => void}> = ({error, onRetry}) => {
 	const {t} = useTranslation();
-	const isForbidden = error instanceof ForbiddenError;
 
-	return (
-		<div className="flex h-full items-center justify-center">
-			<ErrorMessage
-				message={t(
-					isForbidden ? 'operate.processInstance.variables.forbidden' : 'operate.processInstance.variables.error',
-				)}
-				additionalInfo={t(
-					isForbidden
-						? 'operate.processInstance.variables.forbiddenInfo'
-						: 'operate.shared.errorMessage.additionalInfo',
-				)}
-			/>
-		</div>
+	return error instanceof ForbiddenError ? (
+		<DataLoadErrorAlert
+			title={t('operate.processInstance.variables.forbidden')}
+			description={t('operate.processInstance.variables.forbiddenInfo')}
+		/>
+	) : (
+		<DataLoadErrorAlert title={t('operate.processInstance.variables.error')} onRetry={onRetry} />
 	);
 };
 

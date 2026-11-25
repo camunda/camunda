@@ -103,6 +103,7 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 					kind: 'error',
 					title: t('operate.batchOperation.notFoundNotificationTitle', {batchOperationKey}),
 					isDismissable: true,
+					autoRemove: false,
 				}),
 			);
 			void navigate({to: `${OPERATE_BASE}/batch-operations` as const, replace: true});

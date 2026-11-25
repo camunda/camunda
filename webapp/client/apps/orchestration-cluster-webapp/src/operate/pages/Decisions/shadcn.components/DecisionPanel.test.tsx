@@ -42,7 +42,7 @@ describe('<DecisionPanel />', () => {
 	it('should show an empty message when no decision is selected', async () => {
 		const screen = await renderDecisionPanel({decisionDefinitionSelection: {kind: 'no-match'}});
 
-		await expect.element(screen.getByText('There is no decision selected')).toBeVisible();
+		await expect.element(screen.getByText('Select a decision')).toBeVisible();
 	});
 
 	it('should show an empty message when multiple versions are selected', async () => {
