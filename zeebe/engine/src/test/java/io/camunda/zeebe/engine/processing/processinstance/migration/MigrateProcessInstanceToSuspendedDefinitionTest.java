@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -62,21 +61,12 @@ public class MigrateProcessInstanceToSuspendedDefinitionTest {
         .hasRejectionReason(
             "Expected to migrate process instance to process definition with key '%d' but it is suspended"
                 .formatted(target.getProcessDefinitionKey()));
-    // the rejected command leaves the instance untouched: the first MIGRATED record is written by
-    // the later successful migration, after the rejection
-    engine
-        .processDefinitionSuspension()
-        .withProcessDefinitionKey(target.getProcessDefinitionKey())
-        .resume();
-    migrate(processInstanceKey, target);
     assertThat(
-            RecordingExporter.processInstanceMigrationRecords(
-                    ProcessInstanceMigrationIntent.MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(1)
-                .map(Record::getPosition))
-        .hasSize(1)
-        .allMatch(position -> position > rejection.getPosition());
+            RecordingExporter.processInstanceMigrationRecords()
+                .limit(r -> r.getPosition() >= rejection.getPosition())
+                .withIntent(ProcessInstanceMigrationIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey))
+        .isEmpty();
   }
 
   @Test
