@@ -8,11 +8,15 @@
 package io.camunda.exporter.tasks.historydeletion;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.time.InstantSource;
+import java.util.Map;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +46,8 @@ public class ElasticsearchHistoryDeletionRepositoryIT extends HistoryDeletionRep
         LOGGER,
         partitionId,
         config.getHistoryDeletion(),
-        InstantSource.system());
+        InstantSource.system(),
+        new TargetIndexLocator());
   }
 
   @Override
@@ -61,5 +66,24 @@ public class ElasticsearchHistoryDeletionRepositoryIT extends HistoryDeletionRep
   protected long countAuditLogCleanupEntries() {
     client.indices().refresh(r -> r.index(auditLogCleanupIndex.getFullQualifiedName())).join();
     return client.count(c -> c.index(auditLogCleanupIndex.getFullQualifiedName())).join().count();
+  }
+
+  @Override
+  protected void indexOperation(final String indexName, final String id) {
+    client
+        .index(
+            b ->
+                b.index(indexName)
+                    .id(id)
+                    .document(Map.of("id", id, "state", OperationState.SCHEDULED.name()))
+                    .refresh(Refresh.True))
+        .join();
+  }
+
+  @Override
+  protected String getOperationState(final String indexName, final String id) {
+    client.indices().refresh(r -> r.index(indexName)).join();
+    final var response = client.get(g -> g.index(indexName).id(id), Map.class).join();
+    return (String) response.source().get("state");
   }
 }

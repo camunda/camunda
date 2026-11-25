@@ -27,6 +27,12 @@ public class HistoryDeletionEntity implements ExporterEntity<HistoryDeletionEnti
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private long partitionId;
 
+  // the storage ordinal of the resource that is being deleted (not the history deletion entity
+  // itself). This is used to determine which index the resource is stored in, so that the history
+  // deletion can be applied to the correct index.
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private Integer resourceStorageOrdinal;
+
   @Override
   public String getId() {
     return id;
@@ -74,9 +80,19 @@ public class HistoryDeletionEntity implements ExporterEntity<HistoryDeletionEnti
     return this;
   }
 
+  public Integer getResourceStorageOrdinal() {
+    return resourceStorageOrdinal;
+  }
+
+  public HistoryDeletionEntity setResourceStorageOrdinal(final Integer resourceStorageOrdinal) {
+    this.resourceStorageOrdinal = resourceStorageOrdinal;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(id, resourceKey, resourceType, batchOperationKey, partitionId);
+    return Objects.hash(
+        id, resourceKey, resourceType, batchOperationKey, partitionId, resourceStorageOrdinal);
   }
 
   @Override
@@ -89,7 +105,8 @@ public class HistoryDeletionEntity implements ExporterEntity<HistoryDeletionEnti
         && batchOperationKey == that.batchOperationKey
         && Objects.equals(id, that.id)
         && Objects.equals(resourceType, that.resourceType)
-        && partitionId == that.partitionId;
+        && partitionId == that.partitionId
+        && Objects.equals(resourceStorageOrdinal, that.resourceStorageOrdinal);
   }
 
   @Override
@@ -107,6 +124,8 @@ public class HistoryDeletionEntity implements ExporterEntity<HistoryDeletionEnti
         + batchOperationKey
         + ", partitionId="
         + partitionId
+        + ", resourceStorageOrdinal="
+        + resourceStorageOrdinal
         + '}';
   }
 }

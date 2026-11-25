@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.index;
 
+import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import org.jspecify.annotations.NullMarked;
@@ -23,6 +24,19 @@ public class TargetIndexLocator {
   public TargetIndex locateHistoryDeletionOrdinalIndex(
       final String indexName, final HistoryDeletionRecordValue historyDeletionRecordValue) {
     final var ordinal = historyDeletionRecordValue.getResourceStorageOrdinal();
+    return targetIndexForOrdinal(indexName, ordinal);
+  }
+
+  /**
+   * Locates the index holding the resource of the given history deletion entity. Entities written
+   * before the resource storage ordinal was introduced have none, and live in the main index.
+   */
+  public TargetIndex locateHistoryDeletionOrdinalIndex(
+      final String indexName, final HistoryDeletionEntity historyDeletionEntity) {
+    final var ordinal = historyDeletionEntity.getResourceStorageOrdinal();
+    if (ordinal == null) {
+      return TargetIndex.mainIndex(indexName);
+    }
     return targetIndexForOrdinal(indexName, ordinal);
   }
 

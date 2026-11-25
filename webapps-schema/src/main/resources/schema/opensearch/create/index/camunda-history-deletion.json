@@ -16,6 +16,9 @@
       },
       "partitionId": {
         "type": "integer"
+      },
+      "resourceStorageOrdinal": {
+        "type": "integer"
       }
     }
   }
