@@ -325,6 +325,43 @@ public class DrainingProcessDefinitionTest {
   }
 
   @Test
+  public void shouldCallLatestActiveVersionWhenLatestCalledVersionIsDraining() {
+    // given - child v1 is active and child v2 is draining
+    final var childId = helper.getBpmnProcessId() + "-child";
+    final var parentId = helper.getBpmnProcessId() + "-parent";
+    final long childV1Key = deployWithJob(childId, "end-v1").getProcessDefinitionKey();
+    final long childV2Key = deployWithJob(childId, "end-v2").getProcessDefinitionKey();
+    awaitJobCreated(engine.processInstance().ofBpmnProcessId(childId).withVersion(2).create());
+    drainViaDeletion(childV2Key);
+
+    // and - a parent calling the latest child version
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(parentId)
+                .startEvent()
+                .callActivity(
+                    "call",
+                    c -> c.zeebeProcessId(childId).zeebeBindingType(ZeebeBindingType.latest))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long parentInstanceKey = engine.processInstance().ofBpmnProcessId(parentId).create();
+
+    // then - the active child v1 is called, like create-by-id does
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withParentProcessInstanceKey(parentInstanceKey)
+                .withProcessDefinitionKey(childV1Key)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("the call activity must call the latest active child version v1")
+        .isTrue();
+  }
+
+  @Test
   public void shouldRaiseIncidentWhenCallActivityCallsDrainingProcessWithDeploymentBinding() {
     // given - deployment binding resolves the called process within the same deployment
     final var childId = helper.getBpmnProcessId() + "-child";
@@ -1041,6 +1078,53 @@ public class DrainingProcessDefinitionTest {
     Assertions.assertThat(spawned.getValue().getProcessDefinitionKey())
         .describedAs("the message start subscription is handed to v1, skipping the DRAINING v2")
         .isEqualTo(v1Key);
+  }
+
+  @Test
+  public void shouldCorrelateBufferedMessageToLatestActiveVersionWhenLatestIsDraining() {
+    // given - two versions with a message start event; v2 holds the subscription
+    final var processId = helper.getBpmnProcessId();
+    final long v1Key = deployWithMessageStartAndJob(processId, "task-v1").getProcessDefinitionKey();
+    final long v2Key = deployWithMessageStartAndJob(processId, "task-v2").getProcessDefinitionKey();
+
+    // and - a message starts a v2 instance with correlation key "key"
+    engine
+        .message()
+        .withName("start-message")
+        .withCorrelationKey("key")
+        .withTimeToLive(Duration.ofHours(1))
+        .publish();
+    final long v2InstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessDefinitionKey(v2Key)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getKey();
+    awaitJobCreated(v2InstanceKey);
+
+    // and - a second message with the same correlation key is buffered, because the v2 instance
+    // still holds the correlation key
+    engine
+        .message()
+        .withName("start-message")
+        .withCorrelationKey("key")
+        .withTimeToLive(Duration.ofHours(1))
+        .publish();
+
+    // and - v2 is draining, so its subscription is handed over to v1
+    drainViaDeletion(v2Key);
+
+    // when - the v2 instance completes and releases the correlation key
+    engine.job().ofInstance(v2InstanceKey).withType(JOB_TYPE).complete();
+
+    // then - the buffered message starts v1, which now holds the subscription
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withProcessDefinitionKey(v1Key)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("the buffered message must be correlated to the active v1")
+        .isTrue();
   }
 
   @Test
