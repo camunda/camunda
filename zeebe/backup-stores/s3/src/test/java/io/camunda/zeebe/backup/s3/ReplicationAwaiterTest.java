@@ -55,6 +55,9 @@ final class ReplicationAwaiterTest {
   /** Number of HEAD requests per key. */
   private final Map<String, Integer> heads = new ConcurrentHashMap<>();
 
+  /** Keys whose HEAD request fails with the given exception. */
+  private final Map<String, Throwable> failingHeads = new ConcurrentHashMap<>();
+
   @BeforeEach
   void setUp() {
     lenient()
@@ -66,6 +69,10 @@ final class ReplicationAwaiterTest {
               consumer.accept(builder);
               final var key = builder.build().key();
               heads.merge(key, 1, Integer::sum);
+              final var failure = failingHeads.get(key);
+              if (failure != null) {
+                return CompletableFuture.failedFuture(failure);
+              }
               final var queued = statuses.get(key);
               final var status = queued.size() > 1 ? queued.poll() : queued.peek();
               final var response = HeadObjectResponse.builder();
@@ -138,6 +145,25 @@ final class ReplicationAwaiterTest {
         .havingCause()
         .isInstanceOf(BackupReplicationFailed.class)
         .withMessageContaining("'b'");
+  }
+
+  @Test
+  void shouldFailWithTheCauseWhenCheckingAnObjectFails() {
+    // given
+    final var awaiter = awaiter(WAIT);
+    reportStatuses("a", ReplicationStatus.COMPLETED);
+    final var headFailure = S3Exception.builder().message("access denied").statusCode(403).build();
+    failingHeads.put("b", headFailure);
+
+    // when
+    final var replicated = awaiter.awaitReplication(List.of("a", "b"), awaiter.deadline());
+
+    // then
+    assertThat(replicated)
+        .failsWithin(WAIT)
+        .withThrowableThat()
+        .havingCause()
+        .isSameAs(headFailure);
   }
 
   @Test
