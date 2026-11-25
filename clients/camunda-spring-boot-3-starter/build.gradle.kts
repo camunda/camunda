@@ -90,6 +90,7 @@ tasks.named<JavaCompile>("compileTestJava") {
   exclude(
     "io/camunda/client/impl/CamundaObjectMapperTest.java",
     "io/camunda/client/spring/configuration/JsonMapperConfigurationTest.java",
+    "io/camunda/client/spring/configuration/JsonMapperAutoConfigurationJackson3Test.java",
     "io/camunda/client/spring/actuator/CamundaClientHealthIndicatorTest.java",
   )
 }
