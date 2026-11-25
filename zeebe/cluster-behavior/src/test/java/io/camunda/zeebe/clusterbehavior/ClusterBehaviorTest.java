@@ -63,6 +63,16 @@ final class ClusterBehaviorTest {
   }
 
   @Test
+  void shouldBuildTheEmptySetWithTheGivenVersion() {
+    // when
+    final var behavior = ClusterBehavior.of(V1);
+
+    // then
+    assertThat(behavior.behaviorVersion()).isEqualTo(V1);
+    assertThat(behavior.capabilityBitmask()).isEmpty();
+  }
+
+  @Test
   void shouldStoreNoWordWhenTheSetIsContiguousUpToAWordBoundary() {
     // when every ordinal of words 0 and 1 is in the set
     final var behavior = ClusterBehavior.ofOrdinals(V1, range(0, 128));

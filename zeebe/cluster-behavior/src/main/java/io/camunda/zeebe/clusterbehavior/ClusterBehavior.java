@@ -76,6 +76,14 @@ public final class ClusterBehavior {
     return EMPTY;
   }
 
+  /** The set of the given catalog entries with the given behavior version. */
+  public static ClusterBehavior of(
+      final SemanticVersion behaviorVersion, final CapabilityCatalog... capabilities) {
+    return ofOrdinals(
+        behaviorVersion,
+        Arrays.stream(capabilities).mapToInt(CapabilityCatalog::getValue).toArray());
+  }
+
   /**
    * The set of the given ordinals, in any order and with duplicates allowed, with the given
    * behavior version. It keeps ordinals that the catalog of this binary does not list.
