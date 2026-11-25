@@ -71,11 +71,9 @@ public class RandomizedRaftTest {
         RaftOperation.withFlushFailures(RaftOperation.getRaftOperationsWithRestarts());
     operationsWithSnapshotsAndRestarts =
         RaftOperation.withFlushFailures(RaftOperation.getRaftOperationsWithSnapshotsAndRestarts());
-    // Without flush failures: with them, a member restarted with data loss can get stuck while it
-    // catches up, as the leader keeps sending appends that it rejects. That is a separate bug, so
-    // this property would fail on it.
     operationsWithSnapshotsAndRestartsWithDataLoss =
-        RaftOperation.getRaftOperationsWithSnapshotsAndRestartsWithDataLoss();
+        RaftOperation.withFlushFailures(
+            RaftOperation.getRaftOperationsWithSnapshotsAndRestartsWithDataLoss());
     raftMembers = servers;
   }
 
