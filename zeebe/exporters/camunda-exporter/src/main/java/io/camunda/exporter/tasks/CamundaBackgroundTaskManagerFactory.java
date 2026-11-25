@@ -63,6 +63,7 @@ import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.zeebe.exporter.api.context.ExporterPauseState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
@@ -73,6 +74,7 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.function.Supplier;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
@@ -98,6 +100,7 @@ public final class CamundaBackgroundTaskManagerFactory {
   private AuditLogArchiverRepository auditLogArchiverRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private final InstantSource clock;
+  private final Supplier<ExporterPauseState> pauseState;
 
   public CamundaBackgroundTaskManagerFactory(
       final int partitionId,
@@ -109,7 +112,8 @@ public final class CamundaBackgroundTaskManagerFactory {
       final ExporterMetadata metadata,
       final ObjectMapper objectMapper,
       final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final Supplier<ExporterPauseState> pauseState) {
     this.partitionId = partitionId;
     this.exporterId = exporterId;
     this.config = config;
@@ -120,6 +124,16 @@ public final class CamundaBackgroundTaskManagerFactory {
     this.objectMapper = objectMapper;
     this.processCache = processCache;
     this.clock = clock;
+    this.pauseState = pauseState;
+  }
+
+  private boolean isPaused() {
+    final var state = pauseState.get();
+    return state == ExporterPauseState.SOFT_PAUSED || state == ExporterPauseState.PAUSED;
+  }
+
+  private boolean isHardPaused() {
+    return pauseState.get() == ExporterPauseState.PAUSED;
   }
 
   public CamundaBackgroundTaskManager build() {
@@ -357,7 +371,13 @@ public final class CamundaBackgroundTaskManagerFactory {
     final long delayBetweenRuns =
         config.getHistory().getRetention().getApplyPolicyJobInterval().toMillis();
     return new ReschedulingTask(
-        applyRolloverPeriodJob, 0, delayBetweenRuns, delayBetweenRuns, executor, logger);
+        applyRolloverPeriodJob,
+        0,
+        delayBetweenRuns,
+        delayBetweenRuns,
+        executor,
+        logger,
+        this::isPaused);
   }
 
   private ReschedulingTask buildProcessInstanceToBeArchivedCountJob() {
@@ -393,7 +413,8 @@ public final class CamundaBackgroundTaskManagerFactory {
         postExport.getDelayBetweenRuns(),
         postExport.getMaxDelayBetweenRuns(),
         executor,
-        logger);
+        logger,
+        this::isHardPaused);
   }
 
   private ReschedulingTask buildPendingIncidentCountTask() {
@@ -418,7 +439,8 @@ public final class CamundaBackgroundTaskManagerFactory {
         postExport.getDelayBetweenRuns(),
         postExport.getMaxDelayBetweenRuns(),
         executor,
-        logger);
+        logger,
+        this::isHardPaused);
   }
 
   private ReschedulingTask buildProcessInstanceArchiverJob() {
@@ -520,7 +542,8 @@ public final class CamundaBackgroundTaskManagerFactory {
         config.getHistory().getDelayBetweenRuns(),
         config.getHistory().getMaxDelayBetweenRuns(),
         executor,
-        logger);
+        logger,
+        this::isPaused);
   }
 
   private ReschedulingTask buildHistoryDeletionJob() {
@@ -543,7 +566,8 @@ public final class CamundaBackgroundTaskManagerFactory {
         historyDeletion.getDelayBetweenRuns().toMillis(),
         historyDeletion.getMaxDelayBetweenRuns().toMillis(),
         executor,
-        logger);
+        logger,
+        this::isPaused);
   }
 
   private ReschedulingTask buildAuditLogArchiverJob() {

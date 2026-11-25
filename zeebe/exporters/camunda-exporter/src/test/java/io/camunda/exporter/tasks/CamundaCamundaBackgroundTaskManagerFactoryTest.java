@@ -28,6 +28,7 @@ import io.camunda.exporter.tasks.historydeletion.HistoryDeletionJob;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.incident.PendingIncidentUpdateCountTask;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
+import io.camunda.zeebe.exporter.api.context.ExporterPauseState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
 import io.camunda.zeebe.exporter.common.tasks.ReschedulingTask;
@@ -35,6 +36,9 @@ import io.camunda.zeebe.exporter.common.tasks.RunnableTask;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
@@ -46,6 +50,8 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
 
   private CamundaBackgroundTaskManagerFactory factory;
   private final ExporterConfiguration config = new ExporterConfiguration();
+  private final AtomicReference<ExporterPauseState> pauseState =
+      new AtomicReference<>(ExporterPauseState.EXPORTING);
 
   @BeforeEach
   void setUp() {
@@ -60,7 +66,8 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
             mock(ExporterMetadata.class),
             new ObjectMapper(),
             mock(ExporterEntityCacheImpl.class),
-            InstantSource.system());
+            InstantSource.system(),
+            pauseState::get);
   }
 
   @Test
@@ -217,6 +224,89 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
         .as("Should schedule ApplyRolloverPeriodJob when retention is enabled")
         .hasSize(13)
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
+  }
+
+  @Test
+  void shouldPauseNoTaskWhenExporting() {
+    // given
+    enableAllOptionalTasks();
+    pauseState.set(ExporterPauseState.EXPORTING);
+
+    // when
+    final var tasks = getTasksFromManager(factory.build());
+
+    // then
+    assertThat(pausedTaskTypes(tasks)).isEmpty();
+  }
+
+  @Test
+  void shouldPauseOnlyDocumentMovingTasksWhenSoftPaused() {
+    // given
+    enableAllOptionalTasks();
+    pauseState.set(ExporterPauseState.SOFT_PAUSED);
+
+    // when
+    final var tasks = getTasksFromManager(factory.build());
+
+    // then
+    assertThat(pausedTaskTypes(tasks))
+        .containsExactlyInAnyOrder(
+            ProcessInstanceArchiverJob.class,
+            BatchOperationArchiverJob.class,
+            UsageMetricArchiverJob.class,
+            UsageMetricTUArchiverJob.class,
+            JobBatchMetricsArchiverJob.class,
+            StandaloneDecisionArchiverJob.class,
+            AuditLogArchiverJob.class,
+            ApplyRolloverPeriodJob.class,
+            HistoryDeletionJob.class);
+    assertThat(runningTaskTypes(tasks))
+        .containsExactlyInAnyOrder(
+            IncidentUpdateTask.class,
+            BatchOperationUpdateTask.class,
+            PendingIncidentUpdateCountTask.class,
+            ProcessInstanceToBeArchivedCountJob.class);
+  }
+
+  @Test
+  void shouldPauseAllWritingTasksWhenHardPaused() {
+    // given
+    enableAllOptionalTasks();
+    pauseState.set(ExporterPauseState.PAUSED);
+
+    // when
+    final var tasks = getTasksFromManager(factory.build());
+
+    // then
+    assertThat(runningTaskTypes(tasks))
+        .containsExactlyInAnyOrder(
+            PendingIncidentUpdateCountTask.class, ProcessInstanceToBeArchivedCountJob.class);
+    assertThat(pausedTaskTypes(tasks))
+        .hasSize(11)
+        .doesNotContain(
+            PendingIncidentUpdateCountTask.class, ProcessInstanceToBeArchivedCountJob.class);
+  }
+
+  private void enableAllOptionalTasks() {
+    config.getHistory().setProcessInstanceEnabled(true);
+    config.getHistory().setTrackArchivalMetricsForProcessInstance(true);
+    config.getHistory().getRetention().setEnabled(true);
+  }
+
+  private Set<Class<?>> pausedTaskTypes(final List<RunnableTask> tasks) {
+    return taskTypesByPaused(tasks, true);
+  }
+
+  private Set<Class<?>> runningTaskTypes(final List<RunnableTask> tasks) {
+    return taskTypesByPaused(tasks, false);
+  }
+
+  private Set<Class<?>> taskTypesByPaused(final List<RunnableTask> tasks, final boolean paused) {
+    return tasks.stream()
+        .map(ReschedulingTask.class::cast)
+        .filter(task -> task.isPaused() == paused)
+        .map(task -> (Class<?>) getWrappedTask(task).getClass())
+        .collect(Collectors.toSet());
   }
 
   private List<RunnableTask> getTasksFromManager(final CamundaBackgroundTaskManager taskManager) {

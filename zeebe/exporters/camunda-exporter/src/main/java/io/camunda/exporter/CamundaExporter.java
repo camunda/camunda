@@ -70,6 +70,7 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ExporterPauseState;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -296,8 +297,13 @@ public class CamundaExporter implements Exporter {
                 metadata,
                 clientAdapter.objectMapper(),
                 provider.getProcessCache(),
-                context.clock())
+                context.clock(),
+                this::pauseState)
             .build();
+  }
+
+  private ExporterPauseState pauseState() {
+    return controller == null ? ExporterPauseState.EXPORTING : controller.getPauseState();
   }
 
   private SchemaManager createSchemaManager() {
