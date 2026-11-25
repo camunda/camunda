@@ -165,6 +165,7 @@ const MigrationDiagrams: React.FC<Props> = ({
 					<div className="isolate min-h-0 flex-1">
 						<DiagramShell
 							status={getDiagramStatus(sourceXml, failedSourceXml)}
+							onRetry={sourceXml.isError ? () => void sourceXml.refetch() : undefined}
 							contentLabel={t('operate.processes.migration.source')}
 						>
 							{sourceXml.data?.xml && (
@@ -240,7 +241,11 @@ const MigrationDiagrams: React.FC<Props> = ({
 						<DiagramShell
 							status={targetStatus === 'content' && target === null ? 'empty' : targetStatus}
 							contentLabel={t('operate.processes.migration.target')}
-							emptyMessage={{message: t('operate.processes.migration.selectTarget')}}
+							onRetry={targetXml.isError ? () => void targetXml.refetch() : undefined}
+							emptyMessage={{
+								heading: t('operate.processes.migration.selectTarget'),
+								description: t('operate.processes.ds.migration.selectTargetDescription'),
+							}}
 							messagePosition="center"
 						>
 							{targetXml.data?.xml && targetElements !== undefined && (

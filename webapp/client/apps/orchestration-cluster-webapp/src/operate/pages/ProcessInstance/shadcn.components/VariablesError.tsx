@@ -8,7 +8,7 @@
 
 import {useTranslation} from 'react-i18next';
 import {ForbiddenError} from '#/shared/errors';
-import {DataLoadErrorAlert} from './DataLoadErrorAlert';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 
 const VariablesError: React.FC<{error: Error | null; onRetry: () => void}> = ({error, onRetry}) => {
 	const {t} = useTranslation();

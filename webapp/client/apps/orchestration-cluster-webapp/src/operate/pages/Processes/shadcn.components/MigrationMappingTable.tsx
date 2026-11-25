@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {
 	Alert,
 	Badge,
+	EmptyState,
 	Label,
 	Link,
 	Select,
@@ -30,8 +31,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@camunda/design-system';
-import {ArrowRight, CircleCheck} from '@camunda/design-system/icons';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
+import {ArrowRight, CircleCheck, Workflow} from '@camunda/design-system/icons';
 import {cn} from '#/shared/cn';
 import {getNameOrId} from '../getElementName';
 import {getTargetChoices, hasEmbeddedForm, isCamundaUserTask, type MigrationElements} from '../migrationMapping';
@@ -98,9 +98,12 @@ const MigrationMappingTable: React.FC<Props> = ({
 		<div className="flex h-full flex-col overflow-auto">
 			{!hasSourceXml || (sourceElements.elements.length === 0 && sourceElements.sequenceFlows.length === 0) ? (
 				<div className="flex flex-1 items-center justify-center">
-					<ErrorMessage
-						message={t('operate.processes.migration.noElements')}
-						additionalInfo={t('operate.processes.migration.noElementsInfo')}
+					<EmptyState
+						size="sm"
+						headingLevel={3}
+						icon={<Workflow aria-hidden />}
+						heading={t('operate.processes.ds.migration.noElementsHeading')}
+						description={t('operate.processes.ds.migration.noElementsDescription')}
 					/>
 				</div>
 			) : (

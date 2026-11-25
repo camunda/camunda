@@ -1209,7 +1209,7 @@
 						"ariaLabel": "Diagram panel",
 						"multipleTenantsSelected": "Process \"{{name}}\" exists in more than one tenant",
 						"multipleVersionsSelected": "There is more than one version selected for process \"{{name}}\"",
-						"noProcessSelected": "There is no process selected",
+						"noProcessSelected": "Select a process",
 						"selectProcessInFilters": "To see a diagram, select a process in the filters panel",
 						"selectSingleTenant": "To see a diagram, select a single tenant",
 						"selectSingleVersion": "To see a diagram, select a single version"
@@ -1217,6 +1217,11 @@
 					"diagramHeader": {
 						"copyButtonDescription": "Process ID / click to copy",
 						"copyButtonTitle": "Copy process ID: {{id}}"
+					},
+					"migration": {
+						"noElementsHeading": "No elements to map",
+						"noElementsDescription": "The source process has no mappable elements or sequence flows. Exit the migration and select a different process.",
+						"selectTargetDescription": "Choose a target to see its diagram and map the source elements."
 					}
 				},
 				"migration": {
@@ -1613,7 +1618,7 @@
 						"selectSingleVersion": "To see a decision table or a literal expression, select a single version",
 						"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one tenant",
 						"selectSingleTenant": "To see a decision table or a literal expression, select a single tenant",
-						"noDecisionSelected": "There is no decision selected",
+						"noDecisionSelected": "Select a decision",
 						"selectDecisionInFilters": "To see a decision table or a literal expression, select a decision in the filters panel"
 					},
 					"filters": {
@@ -1716,7 +1721,11 @@
 					"variablesPanel": {
 						"tabsLabel": "Variable panel tabs",
 						"inputsAndOutputs": "Inputs and outputs",
-						"loadingResult": "Loading result"
+						"loadingResult": "Loading result",
+						"noResultHeading": "No result available",
+						"noInputHeading": "No input available",
+						"noOutputHeading": "No output available",
+						"evaluationFailedDescription": "The evaluation failed. Check the failure message above and the decision definition."
 					},
 					"forbidden": {
 						"heading": "You do not have permission to view this information"
@@ -1749,6 +1758,35 @@
 						"emptyDescription": "Operations on this instance, such as retries or variable changes, appear here.",
 						"noMatchesHeading": "No operations match these filters",
 						"noMatchesDescription": "Change the operation type or entity type filter to see more operations."
+					},
+					"listeners": {
+						"emptyAllHeading": "No listeners on this element",
+						"emptyTaskHeading": "No user task listeners on this element",
+						"emptyExecutionHeading": "No execution listeners on this element",
+						"emptyDescription": "Select another element in the diagram to see its listeners."
+					},
+					"variables": {
+						"emptyHeading": "This element has no variables",
+						"emptyDescription": "Variables appear here once the element sets them. Select another element to see its variables.",
+						"multiInstanceDescription": "To view the variables, select one element instance in the instance history.",
+						"noSearchResultsHeading": "No variables match your search",
+						"noSearchResultsDescription": "Change or clear the search term to see more variables.",
+						"noDocumentsHeading": "No document variables yet",
+						"noDocumentsDescription": "Document variables appear here once the instance receives documents."
+					},
+					"mappings": {
+						"noInputHeading": "No input mappings defined",
+						"noInputDescription": "Define input mappings on this element in the process model to map variables into its scope.",
+						"noOutputHeading": "No output mappings defined",
+						"noOutputDescription": "Define output mappings on this element in the process model to map variables out of its scope."
+					},
+					"details": {
+						"noElementHeading": "No element selected",
+						"noElementDescription": "Select an element in the diagram to see its details.",
+						"multiInstanceDescription": "To view the details, select one element instance in the instance history."
+					},
+					"diagram": {
+						"noDiagramDescription": "The process definition has no diagram to display. Check the model in Modeler."
 					}
 				},
 				"history": {

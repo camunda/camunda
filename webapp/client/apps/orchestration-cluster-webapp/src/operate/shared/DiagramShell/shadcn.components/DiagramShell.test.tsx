@@ -23,7 +23,9 @@ describe('<DiagramShell />', () => {
 		await expect.element(content.getByRole('region', {name: 'Diagram content'})).toHaveAttribute('tabindex', '0');
 		await content.unmount();
 
-		const empty = await render(<DiagramShell status="empty" emptyMessage={{message: 'Nothing'}} />);
+		const empty = await render(
+			<DiagramShell status="empty" emptyMessage={{heading: 'Nothing', description: 'Select something'}} />,
+		);
 		await expect.element(empty.getByTestId('diagram-body')).not.toHaveAttribute('tabindex');
 	});
 
@@ -39,7 +41,7 @@ describe('<DiagramShell />', () => {
 
 	it('should render the empty message', async () => {
 		const screen = await render(
-			<DiagramShell status="empty" emptyMessage={{message: 'Nothing here', additionalInfo: 'Select something'}}>
+			<DiagramShell status="empty" emptyMessage={{heading: 'Nothing here', description: 'Select something'}}>
 				{null}
 			</DiagramShell>,
 		);
@@ -52,6 +54,7 @@ describe('<DiagramShell />', () => {
 		const screen = await render(<DiagramShell status="error">{null}</DiagramShell>);
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+		await expect.element(screen.getByText('Refresh the page to try again')).toBeVisible();
 	});
 
 	it('should render the forbidden message', async () => {

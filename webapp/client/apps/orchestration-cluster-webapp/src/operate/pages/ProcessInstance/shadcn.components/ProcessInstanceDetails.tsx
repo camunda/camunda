@@ -9,8 +9,8 @@
 import {useQuery} from '@tanstack/react-query';
 import {Link as RouterLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {TFunction} from 'i18next';
-import {Alert, Heading, Link, linkVariants, Skeleton} from '@camunda/design-system';
+import {Alert, EmptyState, Heading, Link, linkVariants, Skeleton} from '@camunda/design-system';
+import {MousePointerClick} from '@camunda/design-system/icons';
 import type {
 	ProcessInstance,
 	QueryDecisionInstancesResponseBody,
@@ -21,7 +21,6 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {mergePathname} from '#/shared/http/mergePathname';
 import {OPERATE_BASE} from '#/shared/operateBase';
 import {CenteredContent} from '#/operate/shared/CenteredContent/shadcn.components/CenteredContent';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {isCamundaUserTask, isMessageEventElement} from '#/operate/shared/utils/elements';
@@ -37,16 +36,12 @@ import {
 import {getExecutionDuration} from '../getExecutionDuration';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
 import {useProcessInstancePage} from '../useProcessInstancePage';
-import {DataLoadErrorAlert} from './DataLoadErrorAlert';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {ProcessInstanceWaitingStatus} from './ProcessInstanceWaitingStatus';
 
 type Row = {key: string; label: string; value: React.ReactNode};
 
 const SKELETON_ROW_COUNT = 5;
-
-function getMultipleInstancesMessage(t: TFunction, hasMultipleInstances: boolean, fallbackKey: string) {
-	return hasMultipleInstances ? t('operate.processInstance.details.multiInstance') : t(fallbackKey);
-}
 
 const CalledProcessInstanceValue: React.FC<{
 	calledProcessInstances: QueryProcessInstancesResponseBody | undefined;
@@ -219,8 +214,20 @@ const ProcessInstanceDetails: React.FC = () => {
 		return (
 			<div role="region" aria-label={t('operate.processInstance.details.title')} className="flex h-full min-h-0">
 				<CenteredContent className="flex-1">
-					<EmptyMessage
-						message={getMultipleInstancesMessage(t, hasMultipleInstances, 'operate.processInstance.details.noElement')}
+					<EmptyState
+						size="sm"
+						headingLevel={3}
+						icon={<MousePointerClick aria-hidden />}
+						heading={t(
+							hasMultipleInstances
+								? 'operate.processInstance.ds.operationsLog.multiInstanceHeading'
+								: 'operate.processInstance.ds.details.noElementHeading',
+						)}
+						description={t(
+							hasMultipleInstances
+								? 'operate.processInstance.ds.details.multiInstanceDescription'
+								: 'operate.processInstance.ds.details.noElementDescription',
+						)}
 					/>
 				</CenteredContent>
 			</div>

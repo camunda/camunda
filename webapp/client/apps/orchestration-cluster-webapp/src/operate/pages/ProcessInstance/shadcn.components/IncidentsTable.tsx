@@ -9,17 +9,16 @@
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link} from '@tanstack/react-router';
-import {Button, EmptyState, linkVariants, Text, Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
-import {CircleCheck, FunnelX} from '@camunda/design-system/icons';
+import {Button, EmptyState, linkVariants, Text} from '@camunda/design-system';
+import {CircleCheck, FunnelX, Search} from '@camunda/design-system/icons';
 import {cn} from '#/shared/cn';
 import {SortableTable} from '#/operate/shared/SortableTable/shadcn.components/SortableTable';
 import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import type {ChildInstanceWithIncident, DecisionInstanceLookup, EnhancedIncident} from '../incidents.types';
 import {useIncidentsFilter} from '../useIncidentsFilter';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
-import {DataLoadErrorAlert} from './DataLoadErrorAlert';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {IncidentOperation} from './IncidentOperation';
 
 type Props = {
@@ -53,15 +52,6 @@ const ExpansionField: React.FC<{label: string; children: React.ReactNode}> = ({l
 	</div>
 );
 
-const TruncatedLink: React.FC<{label: string; children: React.ReactElement}> = ({label, children}) => (
-	<Tooltip>
-		<TooltipTrigger asChild>{children}</TooltipTrigger>
-		<TooltipContent side="bottom" className="max-w-md break-words whitespace-pre-wrap">
-			{label}
-		</TooltipContent>
-	</Tooltip>
-);
-
 const ElementName: React.FC<{
 	incident: EnhancedIncident;
 	processInstanceKey: string;
@@ -76,34 +66,30 @@ const ElementName: React.FC<{
 	if (decisionInstance !== undefined) {
 		const label = `${decisionInstance.decisionDefinitionName} - ${decisionInstance.decisionInstanceKey}`;
 		return (
-			<TruncatedLink label={label}>
-				<Link
-					to="/operate-preview/decisions/$decisionInstanceId"
-					params={{decisionInstanceId: decisionInstance.decisionInstanceKey}}
-					search={{tenantId}}
-					className={cn(linkVariants(), 'block truncate')}
-					data-interactive
-				>
-					{label}
-				</Link>
-			</TruncatedLink>
+			<Link
+				to="/operate-preview/decisions/$decisionInstanceId"
+				params={{decisionInstanceId: decisionInstance.decisionInstanceKey}}
+				search={{tenantId}}
+				className={cn(linkVariants(), 'block min-w-0')}
+				data-interactive
+			>
+				<TruncatedText text={label} />
+			</Link>
 		);
 	}
 
 	if (incident.processInstanceKey !== processInstanceKey) {
 		const label = `${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`;
 		return (
-			<TruncatedLink label={label}>
-				<Link
-					to="/operate-preview/processes/$processInstanceId"
-					params={{processInstanceId: incident.processInstanceKey}}
-					search={{elementId: incident.elementId, tenantId}}
-					className={cn(linkVariants(), 'block truncate')}
-					data-interactive
-				>
-					{label}
-				</Link>
-			</TruncatedLink>
+			<Link
+				to="/operate-preview/processes/$processInstanceId"
+				params={{processInstanceId: incident.processInstanceKey}}
+				search={{elementId: incident.elementId, tenantId}}
+				className={cn(linkVariants(), 'block min-w-0')}
+				data-interactive
+			>
+				<TruncatedText text={label} />
+			</Link>
 		);
 	}
 
@@ -199,9 +185,12 @@ const IncidentsTable: React.FC<Props> = ({
 		return (
 			<div className={CENTERED_STATE_CLASS}>
 				<div className="flex flex-col gap-4">
-					<EmptyMessage
-						message={t('operate.processInstance.incidents.noIncidentsOnElement')}
-						additionalInfo={t('operate.processInstance.incidents.calledInstanceInfo')}
+					<EmptyState
+						size="sm"
+						headingLevel={3}
+						icon={<Search aria-hidden />}
+						heading={t('operate.processInstance.ds.incidents.noElementIncidentsHeading')}
+						description={t('operate.processInstance.incidents.calledInstanceInfo')}
 					/>
 					{type === 'process' ? (
 						<Link

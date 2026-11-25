@@ -243,7 +243,7 @@ describe('<ProcessInstanceVariables />', () => {
 		worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse([])}));
 		const screen = await renderVariables();
 
-		await expect.element(screen.getByText('The element has no variables')).toBeVisible();
+		await expect.element(screen.getByText('This element has no variables')).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Copy variables'})).toBeDisabled();
 		await expect.element(screen.getByRole('searchbox')).not.toBeInTheDocument();
 	});
@@ -279,9 +279,7 @@ describe('<ProcessInstanceVariables />', () => {
 		);
 		const screen = await renderVariables('?elementId=user-task');
 
-		await expect
-			.element(screen.getByText('To view the variables, select a single element instance in the instance history.'))
-			.toBeVisible();
+		await expect.element(screen.getByText('Select a single element instance')).toBeVisible();
 	});
 
 	it('should ask for a single instance when the selected element count is only a lower bound', async ({worker}) => {
@@ -297,9 +295,7 @@ describe('<ProcessInstanceVariables />', () => {
 		);
 		const screen = await renderVariables('?elementId=user-task');
 
-		await expect
-			.element(screen.getByText('To view the variables, select a single element instance in the instance history.'))
-			.toBeVisible();
+		await expect.element(screen.getByText('Select a single element instance')).toBeVisible();
 	});
 
 	it('should show an empty message for an element that has not run', async ({worker}) => {
@@ -310,13 +306,13 @@ describe('<ProcessInstanceVariables />', () => {
 		);
 		const screen = await renderVariables('?elementId=user-task');
 
-		await expect.element(screen.getByText('The element has no variables')).toBeVisible();
+		await expect.element(screen.getByText('This element has no variables')).toBeVisible();
 	});
 
 	it('should show an empty message for a placeholder instance', async () => {
 		const screen = await renderVariables('?elementId=user-task&elementInstanceKey=1&isPlaceholder=true');
 
-		await expect.element(screen.getByText('The element has no variables')).toBeVisible();
+		await expect.element(screen.getByText('This element has no variables')).toBeVisible();
 	});
 
 	it('should scope variables to the selected element instance', async ({worker}) => {
@@ -626,7 +622,7 @@ describe('<ProcessInstanceVariables />', () => {
 
 			await userEvent.click(screen.getByRole('radio', {name: 'Documents', exact: true}));
 
-			await expect.element(screen.getByText('There are no document variables')).toBeVisible();
+			await expect.element(screen.getByText('No document variables yet')).toBeVisible();
 			await expect.element(variableRow(screen, 'nestedDecoy')).not.toBeInTheDocument();
 		});
 
@@ -799,7 +795,7 @@ describe('<ProcessInstanceVariables />', () => {
 
 			await expect.element(variableRow(screen, 'invoice')).toBeVisible();
 			await expect.element(variableRow(screen, 'decoy-00')).not.toBeInTheDocument();
-			await expect.element(screen.getByText('There are no document variables')).not.toBeInTheDocument();
+			await expect.element(screen.getByText('No document variables yet')).not.toBeInTheDocument();
 		});
 
 		it('should keep loading documents while the filtered page is underfilled', async ({worker}) => {
@@ -857,7 +853,7 @@ describe('<ProcessInstanceVariables />', () => {
 			await userEvent.click(screen.getByRole('radio', {name: 'Documents', exact: true}));
 
 			await expect.element(screen.getByText('Variables could not be fetched')).toBeVisible();
-			await expect.element(screen.getByText('There are no document variables')).not.toBeInTheDocument();
+			await expect.element(screen.getByText('No document variables yet')).not.toBeInTheDocument();
 		});
 
 		it('should not report a failed full value fetch for a complete document list', async ({worker}) => {

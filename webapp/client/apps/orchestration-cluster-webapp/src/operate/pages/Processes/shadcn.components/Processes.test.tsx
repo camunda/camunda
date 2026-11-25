@@ -92,7 +92,7 @@ describe('<Processes /> (design system)', () => {
 
 		await expect.element(screen.getByRole('heading', {name: 'Processes'})).toBeInTheDocument();
 		await expect.element(screen.getByRole('region', {name: 'Diagram panel'})).toBeVisible();
-		await expect.element(screen.getByText('There is no process selected')).toBeVisible();
+		await expect.element(screen.getByText('Select a process', {exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('region', {name: 'Process instances panel'})).toBeVisible();
 	});
 

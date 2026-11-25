@@ -14,7 +14,7 @@ import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ForbiddenError} from '#/shared/errors';
 import {cn} from '#/shared/cn';
-import {DataLoadErrorAlert} from './DataLoadErrorAlert';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {historyRowOffset} from './historyRowOffset';
 import {HistoryPagingSentinel} from './HistoryPagingSentinel';
 import {HISTORY_TREE_CLASS_NAME, HistoryRowLabel} from './HistoryRowLabel';

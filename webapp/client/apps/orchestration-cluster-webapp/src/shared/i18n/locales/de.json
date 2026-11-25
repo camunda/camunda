@@ -1197,7 +1197,7 @@
 						"ariaLabel": "Diagrammbereich",
 						"multipleTenantsSelected": "Prozess \"{{name}}\" ist in mehreren Mandanten vorhanden",
 						"multipleVersionsSelected": "Für den Prozess \"{{name}}\" ist mehr als eine Version ausgewählt",
-						"noProcessSelected": "Es ist kein Prozess ausgewählt",
+						"noProcessSelected": "Prozess auswählen",
 						"selectProcessInFilters": "Um ein Diagramm zu sehen, wählen Sie einen Prozess im Filterbereich aus",
 						"selectSingleTenant": "Um ein Diagramm zu sehen, wählen Sie einen einzelnen Mandanten aus",
 						"selectSingleVersion": "Um ein Diagramm zu sehen, wählen Sie eine einzelne Version aus"
@@ -1205,6 +1205,11 @@
 					"diagramHeader": {
 						"copyButtonDescription": "Prozess-ID / Klicken zum Kopieren",
 						"copyButtonTitle": "Prozess-ID kopieren: {{id}}"
+					},
+					"migration": {
+						"noElementsHeading": "Keine Elemente zum Mappen",
+						"noElementsDescription": "Der Quellprozess enthält keine mappbaren Elemente oder Sequenzflüsse. Beenden Sie die Migration und wählen Sie einen anderen Prozess aus.",
+						"selectTargetDescription": "Wählen Sie ein Ziel aus, um dessen Diagramm anzuzeigen und die Quellelemente zu mappen."
 					}
 				},
 				"migration": {
@@ -1603,7 +1608,7 @@
 					"diagramPanel": {
 						"multipleTenantsSelected": "Die Entscheidung \"{{name}}\" ist in mehr als einem Mandanten vorhanden",
 						"multipleVersionsSelected": "Für die Entscheidung \"{{name}}\" ist mehr als eine Version ausgewählt",
-						"noDecisionSelected": "Es ist keine Entscheidung ausgewählt",
+						"noDecisionSelected": "Entscheidung auswählen",
 						"selectDecisionInFilters": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine Entscheidung im Filterbereich aus",
 						"selectSingleTenant": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie einen einzelnen Mandanten aus",
 						"selectSingleVersion": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine einzelne Version aus"
@@ -1704,7 +1709,11 @@
 					"variablesPanel": {
 						"tabsLabel": "Registerkarten des Variablenbereichs",
 						"inputsAndOutputs": "Eingaben und Ausgaben",
-						"loadingResult": "Ergebnis wird geladen"
+						"loadingResult": "Ergebnis wird geladen",
+						"noResultHeading": "Kein Ergebnis verfügbar",
+						"noInputHeading": "Keine Eingabe verfügbar",
+						"noOutputHeading": "Keine Ausgabe verfügbar",
+						"evaluationFailedDescription": "Die Auswertung ist fehlgeschlagen. Prüfen Sie die Fehlermeldung oben und die Entscheidungsdefinition."
 					},
 					"forbidden": {
 						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
@@ -1737,6 +1746,35 @@
 						"emptyDescription": "Operationen an dieser Instanz, etwa Wiederholungen oder Variablenänderungen, erscheinen hier.",
 						"noMatchesHeading": "Keine Operationen entsprechen diesen Filtern",
 						"noMatchesDescription": "Ändern Sie den Filter für Operationstyp oder Entitätstyp, um mehr Operationen zu sehen."
+					},
+					"listeners": {
+						"emptyAllHeading": "Keine Listener an diesem Element",
+						"emptyTaskHeading": "Keine User-Task-Listener an diesem Element",
+						"emptyExecutionHeading": "Keine Ausführungs-Listener an diesem Element",
+						"emptyDescription": "Wählen Sie ein anderes Element im Diagramm aus, um dessen Listener anzuzeigen."
+					},
+					"variables": {
+						"emptyHeading": "Dieses Element hat keine Variablen",
+						"emptyDescription": "Variablen erscheinen hier, sobald das Element sie setzt. Wählen Sie ein anderes Element aus, um dessen Variablen anzuzeigen.",
+						"multiInstanceDescription": "Wählen Sie im Instanzverlauf eine einzelne Elementinstanz aus, um die Variablen anzuzeigen.",
+						"noSearchResultsHeading": "Keine Variablen entsprechen Ihrer Suche",
+						"noSearchResultsDescription": "Ändern oder löschen Sie den Suchbegriff, um weitere Variablen anzuzeigen.",
+						"noDocumentsHeading": "Noch keine Dokumentvariablen",
+						"noDocumentsDescription": "Dokumentvariablen erscheinen hier, sobald die Instanz Dokumente erhält."
+					},
+					"mappings": {
+						"noInputHeading": "Keine Input-Mappings definiert",
+						"noInputDescription": "Definieren Sie Input-Mappings für dieses Element im Prozessmodell, um Variablen in dessen Scope zu übernehmen.",
+						"noOutputHeading": "Keine Output-Mappings definiert",
+						"noOutputDescription": "Definieren Sie Output-Mappings für dieses Element im Prozessmodell, um Variablen aus dessen Scope zu übertragen."
+					},
+					"details": {
+						"noElementHeading": "Kein Element ausgewählt",
+						"noElementDescription": "Wählen Sie ein Element im Diagramm aus, um dessen Details anzuzeigen.",
+						"multiInstanceDescription": "Wählen Sie im Instanzverlauf eine einzelne Elementinstanz aus, um die Details anzuzeigen."
+					},
+					"diagram": {
+						"noDiagramDescription": "Die Prozessdefinition enthält kein Diagramm. Prüfen Sie das Modell im Modeler."
 					}
 				},
 				"history": {

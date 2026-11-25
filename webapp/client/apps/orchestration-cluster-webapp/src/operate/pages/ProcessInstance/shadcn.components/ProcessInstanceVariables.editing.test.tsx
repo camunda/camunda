@@ -348,11 +348,11 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse([])}));
 		const screen = await renderVariables();
 
-		await expect.element(screen.getByText('The element has no variables')).toBeVisible();
+		await expect.element(screen.getByText('This element has no variables')).toBeVisible();
 		await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
 
 		await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveFocus();
-		await expect.element(screen.getByText('The element has no variables')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('This element has no variables')).not.toBeInTheDocument();
 	});
 
 	it.for([

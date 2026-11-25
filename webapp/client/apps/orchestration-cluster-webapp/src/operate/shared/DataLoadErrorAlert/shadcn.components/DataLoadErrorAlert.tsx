@@ -19,10 +19,15 @@ type Props = {
 
 const DataLoadErrorAlert: React.FC<Props> = ({title, description, onRetry, className}) => {
 	const {t} = useTranslation();
+	const fallbackDescription = onRetry === undefined ? t('operate.shared.errorMessage.additionalInfo') : undefined;
 
 	return (
 		<div className={cn('w-full p-4', className)}>
-			<Alert variant="destructive" title={title ?? t('operate.shared.errorMessage.message')} description={description}>
+			<Alert
+				variant="destructive"
+				title={title ?? t('operate.shared.errorMessage.message')}
+				description={description ?? fallbackDescription}
+			>
 				{onRetry !== undefined && (
 					<Button variant="secondary" size="sm" onClick={onRetry}>
 						{t('errorGenericErrorPageButtonLabel')}

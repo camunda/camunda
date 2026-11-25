@@ -8,9 +8,8 @@
 
 import {useForm, useFormState} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
-import {Button} from '@camunda/design-system';
-import {Plus} from '@camunda/design-system/icons';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
+import {Button, EmptyState} from '@camunda/design-system';
+import {Braces, Plus} from '@camunda/design-system/icons';
 import {useProcessInstanceModification} from '../useProcessInstanceModification';
 import {useVariableScope} from '../useVariableScope';
 import {useSyncRemovedVariableModification} from '../useSyncRemovedVariableModification';
@@ -59,7 +58,13 @@ const VariablesFormContent: React.FC<Props> = ({onSubmit, scopeKey, status}) => 
 			<div className="flex min-h-0 flex-1 flex-col justify-between">
 				{isViewMode && status === 'empty' && (
 					<div className="flex flex-1 items-center justify-center">
-						<EmptyMessage message={t('operate.processInstance.variables.empty')} />
+						<EmptyState
+							size="sm"
+							headingLevel={3}
+							icon={<Braces aria-hidden />}
+							heading={t('operate.processInstance.ds.variables.emptyHeading')}
+							description={t('operate.processInstance.ds.variables.emptyDescription')}
+						/>
 					</div>
 				)}
 				{(!isViewMode || status === 'variables') && <VariablesTable scopeKey={scopeKey} />}

@@ -12,9 +12,8 @@ import {keepPreviousData, useInfiniteQuery} from '@tanstack/react-query';
 import {useForm, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import {useTranslation} from 'react-i18next';
-import {IconButton, SearchInput, ToggleGroup, ToggleGroupItem} from '@camunda/design-system';
-import {Pencil} from '@camunda/design-system/icons';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
+import {EmptyState, IconButton, SearchInput, ToggleGroup, ToggleGroupItem} from '@camunda/design-system';
+import {Pencil, Search} from '@camunda/design-system/icons';
 import {PreviewDocumentButton} from '#/operate/shared/Documents/shadcn.components/PreviewDocumentButton';
 import {DownloadDocumentButton} from '#/operate/shared/Documents/shadcn.components/DownloadDocumentButton';
 import {StructuredList, StructuredRows} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
@@ -145,11 +144,19 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 				{error !== null && <VariablesError error={error} onRetry={() => void refetch()} />}
 				{error === null && isEmptyResult && (
 					<div className="flex flex-1 items-center justify-center">
-						<EmptyMessage
-							message={t(
+						<EmptyState
+							size="sm"
+							headingLevel={3}
+							icon={<Search aria-hidden />}
+							heading={t(
 								hasSearchTerm
-									? 'operate.processInstance.variables.noSearchResults'
-									: 'operate.processInstance.variables.noDocuments',
+									? 'operate.processInstance.ds.variables.noSearchResultsHeading'
+									: 'operate.processInstance.ds.variables.noDocumentsHeading',
+							)}
+							description={t(
+								hasSearchTerm
+									? 'operate.processInstance.ds.variables.noSearchResultsDescription'
+									: 'operate.processInstance.ds.variables.noDocumentsDescription',
 							)}
 						/>
 					</div>

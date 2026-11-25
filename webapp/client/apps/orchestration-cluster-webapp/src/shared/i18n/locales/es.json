@@ -1197,7 +1197,7 @@
 						"ariaLabel": "Panel del diagrama",
 						"multipleTenantsSelected": "El proceso \"{{name}}\" existe en varios inquilinos",
 						"multipleVersionsSelected": "Hay más de una versión seleccionada para el proceso \"{{name}}\"",
-						"noProcessSelected": "No hay ningún proceso seleccionado",
+						"noProcessSelected": "Seleccione un proceso",
 						"selectProcessInFilters": "Para ver un diagrama, seleccione un proceso en el panel de filtros",
 						"selectSingleTenant": "Para ver un diagrama, seleccione un solo inquilino",
 						"selectSingleVersion": "Para ver un diagrama, seleccione una única versión"
@@ -1205,6 +1205,11 @@
 					"diagramHeader": {
 						"copyButtonDescription": "ID del proceso / Clic para copiar",
 						"copyButtonTitle": "Copiar ID del proceso: {{id}}"
+					},
+					"migration": {
+						"noElementsHeading": "No hay elementos que asignar",
+						"noElementsDescription": "El proceso de origen no tiene elementos ni flujos de secuencia asignables. Salga de la migración y seleccione otro proceso.",
+						"selectTargetDescription": "Elija un destino para ver su diagrama y asignar los elementos de origen."
 					}
 				},
 				"migration": {
@@ -1603,7 +1608,7 @@
 					"diagramPanel": {
 						"multipleTenantsSelected": "La decisión \"{{name}}\" existe en más de un inquilino",
 						"multipleVersionsSelected": "Hay más de una versión seleccionada para la decisión \"{{name}}\"",
-						"noDecisionSelected": "No hay ninguna decisión seleccionada",
+						"noDecisionSelected": "Seleccione una decisión",
 						"selectDecisionInFilters": "Para ver una tabla de decisión o una expresión literal, seleccione una decisión en el panel de filtros",
 						"selectSingleTenant": "Para ver una tabla de decisión o una expresión literal, seleccione un solo inquilino",
 						"selectSingleVersion": "Para ver una tabla de decisión o una expresión literal, seleccione una sola versión"
@@ -1704,7 +1709,11 @@
 					"variablesPanel": {
 						"tabsLabel": "Pestañas del panel de variables",
 						"inputsAndOutputs": "Entradas y salidas",
-						"loadingResult": "Cargando resultado"
+						"loadingResult": "Cargando resultado",
+						"noResultHeading": "No hay resultado disponible",
+						"noInputHeading": "No hay entrada disponible",
+						"noOutputHeading": "No hay salida disponible",
+						"evaluationFailedDescription": "La evaluación falló. Revise el mensaje de error de arriba y la definición de decisión."
 					},
 					"forbidden": {
 						"heading": "No tiene permiso para ver esta información"
@@ -1737,6 +1746,35 @@
 						"emptyDescription": "Las operaciones sobre esta instancia, como reintentos o cambios de variables, aparecen aquí.",
 						"noMatchesHeading": "Ninguna operación coincide con estos filtros",
 						"noMatchesDescription": "Cambie el filtro de tipo de operación o de tipo de entidad para ver más operaciones."
+					},
+					"listeners": {
+						"emptyAllHeading": "Ningún listener en este elemento",
+						"emptyTaskHeading": "Ningún listener de tarea de usuario en este elemento",
+						"emptyExecutionHeading": "Ningún listener de ejecución en este elemento",
+						"emptyDescription": "Seleccione otro elemento del diagrama para ver sus listeners."
+					},
+					"variables": {
+						"emptyHeading": "Este elemento no tiene variables",
+						"emptyDescription": "Las variables aparecen aquí cuando el elemento las define. Seleccione otro elemento para ver sus variables.",
+						"multiInstanceDescription": "Para ver las variables, seleccione una única instancia de elemento en el historial de la instancia.",
+						"noSearchResultsHeading": "Ninguna variable coincide con su búsqueda",
+						"noSearchResultsDescription": "Cambie o borre el término de búsqueda para ver más variables.",
+						"noDocumentsHeading": "Aún no hay variables de documento",
+						"noDocumentsDescription": "Las variables de documento aparecen aquí cuando la instancia recibe documentos."
+					},
+					"mappings": {
+						"noInputHeading": "No hay mapeos de entrada definidos",
+						"noInputDescription": "Defina mapeos de entrada para este elemento en el modelo de proceso para asignar variables a su ámbito.",
+						"noOutputHeading": "No hay mapeos de salida definidos",
+						"noOutputDescription": "Defina mapeos de salida para este elemento en el modelo de proceso para asignar variables fuera de su ámbito."
+					},
+					"details": {
+						"noElementHeading": "Ningún elemento seleccionado",
+						"noElementDescription": "Seleccione un elemento del diagrama para ver sus detalles.",
+						"multiInstanceDescription": "Para ver los detalles, seleccione una única instancia de elemento en el historial de la instancia."
+					},
+					"diagram": {
+						"noDiagramDescription": "La definición de proceso no tiene ningún diagrama que mostrar. Revise el modelo en Modeler."
 					}
 				},
 				"history": {

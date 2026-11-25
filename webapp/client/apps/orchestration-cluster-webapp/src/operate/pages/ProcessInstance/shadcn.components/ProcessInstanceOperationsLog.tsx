@@ -30,7 +30,7 @@ import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {useAuditLogs} from '#/operate/pages/OperationsLog/operationsLog.queries';
 import {useAuditLogsErrorNotification} from '#/operate/pages/OperationsLog/useAuditLogsErrorNotification';
-import {DataLoadErrorAlert} from './DataLoadErrorAlert';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
 import {useProcessInstancePage} from '../useProcessInstancePage';
 import type {ProcessInstanceOperationsLogSearch} from '../processInstanceOperationsLog.schema';

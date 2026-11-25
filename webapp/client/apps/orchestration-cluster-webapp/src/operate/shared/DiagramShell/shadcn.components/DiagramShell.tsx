@@ -7,25 +7,33 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {LoaderCircle} from '@camunda/design-system/icons';
-import {EmptyMessage} from '../../EmptyMessage/shadcn.components/EmptyMessage';
-import {ErrorMessage} from '../../ErrorMessage/shadcn.components/ErrorMessage';
+import {LoaderCircle, Workflow} from '@camunda/design-system/icons';
+import {EmptyState} from '@camunda/design-system';
+import {DataLoadErrorAlert} from '../../DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 
 type DefaultProps = {
 	children?: React.ReactNode;
 	status: 'error' | 'loading' | 'content' | 'forbidden';
 	contentLabel?: string;
+	onRetry?: () => void;
 };
 
 type WithEmptyMessageProps = {
 	children?: React.ReactNode;
 	status: 'error' | 'empty' | 'loading' | 'content';
 	contentLabel?: string;
-	emptyMessage: React.ComponentProps<typeof EmptyMessage>;
+	onRetry?: () => void;
+	emptyMessage: {heading: string; description: string};
 	messagePosition?: 'top' | 'center';
 };
 
-const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({children, status, contentLabel, ...props}) => {
+const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({
+	children,
+	status,
+	contentLabel,
+	onRetry,
+	...props
+}) => {
 	const {t} = useTranslation();
 	const position = 'messagePosition' in props ? props.messagePosition : 'top';
 	const messageClassName = position === 'center' ? 'self-center' : 'mt-8';
@@ -57,18 +65,25 @@ const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({children,
 			)}
 
 			{status === 'empty' && 'emptyMessage' in props && (
-				<EmptyMessage className={messageClassName} {...props.emptyMessage} />
-			)}
-
-			{status === 'forbidden' && (
-				<ErrorMessage
+				<EmptyState
+					size="sm"
+					headingLevel={3}
+					icon={<Workflow aria-hidden />}
 					className={messageClassName}
-					message={t('operate.decisionInstance.ds.forbidden.heading')}
-					additionalInfo={t('operate.decisionInstance.forbidden.description')}
+					heading={props.emptyMessage.heading}
+					description={props.emptyMessage.description}
 				/>
 			)}
 
-			{status === 'error' && <ErrorMessage className={messageClassName} />}
+			{status === 'forbidden' && (
+				<DataLoadErrorAlert
+					className={messageClassName}
+					title={t('operate.decisionInstance.ds.forbidden.heading')}
+					description={t('operate.decisionInstance.forbidden.description')}
+				/>
+			)}
+
+			{status === 'error' && <DataLoadErrorAlert className={messageClassName} onRetry={onRetry} />}
 		</div>
 	);
 };

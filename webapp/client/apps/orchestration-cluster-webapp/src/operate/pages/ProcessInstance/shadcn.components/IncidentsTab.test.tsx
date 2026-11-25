@@ -299,7 +299,7 @@ describe('<IncidentsTab /> (design system)', () => {
 			`?elementId=call&elementInstanceKey=${ELEMENT_INSTANCE_KEY}&tenantId=tenant-a`,
 		);
 
-		await expect.element(screen.getByText('No incidents found on this element.')).toBeVisible();
+		await expect.element(screen.getByText('No incidents on this element')).toBeVisible();
 		await expect
 			.element(screen.getByRole('link', {name: 'View in Child Process'}))
 			.toHaveAttribute('href', '/operate-preview/processes/9001?tenantId=tenant-a');

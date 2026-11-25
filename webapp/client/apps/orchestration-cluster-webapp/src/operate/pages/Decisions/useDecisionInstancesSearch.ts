@@ -61,6 +61,7 @@ function useDecisionInstancesSearch(search: DecisionsSearch) {
 		isFetchingNextPage,
 		hasNextPage,
 		fetchNextPage,
+		refetch,
 	} = query;
 
 	const decisionInstances = data?.pages.flatMap((page) => page.items) ?? [];
@@ -76,6 +77,7 @@ function useDecisionInstancesSearch(search: DecisionsSearch) {
 		isFetchingNextPage,
 		hasNextPage,
 		fetchNextPage,
+		refetch,
 		decisionInstances,
 		totalCount,
 		hasMoreTotalItems,
