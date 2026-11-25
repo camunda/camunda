@@ -20,9 +20,25 @@ import org.junit.jupiter.api.Test;
 
 class WorkerResultMetricsTest {
 
+  private static final String JOB_TYPE = "benchmark-task";
+
   private final MeterRegistry registry = new SimpleMeterRegistry();
   private final List<Object> pending = new ArrayList<>();
-  private final WorkerResultMetrics metrics = new WorkerResultMetrics(registry, pending);
+  private final WorkerResultMetrics metrics = new WorkerResultMetrics(registry, JOB_TYPE, pending);
+
+  @Test
+  void shouldTagEveryMetricWithTheJobType() {
+    // given / when
+    metrics.recordMessagePublication();
+    metrics.recordMessagePublication(new IllegalStateException("failed"));
+    metrics.recordJobCompletion();
+    metrics.recordJobCompletion(new IllegalStateException("failed"));
+
+    // then
+    assertThat(registry.getMeters())
+        .isNotEmpty()
+        .allSatisfy(meter -> assertThat(meter.getId().getTag("job_type")).isEqualTo(JOB_TYPE));
+  }
 
   @Test
   void shouldCountDroppedTracking() {
@@ -54,7 +70,7 @@ class WorkerResultMetricsTest {
   void shouldScrapeSuccessAndFailureWithAnEmptyErrorTag() {
     // given
     final var prometheus = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-    final var prometheusMetrics = new WorkerResultMetrics(prometheus, pending);
+    final var prometheusMetrics = new WorkerResultMetrics(prometheus, JOB_TYPE, pending);
 
     // when
     prometheusMetrics.recordJobCompletion();
@@ -62,8 +78,9 @@ class WorkerResultMetricsTest {
 
     // then
     assertThat(prometheus.scrape())
-        .contains("worker_job_completions_total{error=\"\",outcome=\"success\"} 1.0")
         .contains(
-            "worker_job_completions_total{error=\"IllegalStateException\",outcome=\"failure\"} 1.0");
+            "worker_job_completions_total{error=\"\",job_type=\"benchmark-task\",outcome=\"success\"} 1.0")
+        .contains(
+            "worker_job_completions_total{error=\"IllegalStateException\",job_type=\"benchmark-task\",outcome=\"failure\"} 1.0");
   }
 }

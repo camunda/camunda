@@ -8,18 +8,26 @@
 package io.camunda.zeebe.worker;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.bean.BeanInfo;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc.WorkerMetricKeyNames;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
@@ -51,13 +59,47 @@ public class Worker {
       final LoadTesterProperties properties,
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
-      final MeterRegistry registry) {
+      final MeterRegistry registry,
+      final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers) {
     this.client = client;
+    final var jobType = resolveJobType(jobWorkerValueCustomizers);
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
-    resultMetrics = new WorkerResultMetrics(registry, requestFutures);
+    resultMetrics = new WorkerResultMetrics(registry, jobType, requestFutures);
+
+    // Static values, registered early so they are available even if the client never connects.
+    Gauge.builder(WorkerMetricsDoc.CLIENT_INFO.getName(), () -> 1)
+        .description(WorkerMetricsDoc.CLIENT_INFO.getDescription())
+        .tag(StarterMetricKeyNames.NAME.asString(), "worker")
+        .tag(WorkerMetricKeyNames.JOB_TYPE.asString(), jobType)
+        .tag(
+            WorkerMetricKeyNames.COMPLETION_DELAY.asString(),
+            workerCfg.getCompletionDelay().toString())
+        .tag(
+            WorkerMetricKeyNames.SEND_MESSAGE.asString(), String.valueOf(workerCfg.isSendMessage()))
+        .register(registry);
     responseChecker = new ResponseChecker(requestFutures, resultMetrics);
     this.connectionMonitor = connectionMonitor;
+  }
+
+  // The subscription is created after this bean, so the type is resolved by running the same
+  // customizers on the value that the annotation processor builds for handleJob.
+  static String resolveJobType(final List<JobWorkerValueCustomizer> customizers) {
+    try {
+      final var method = Worker.class.getMethod("handleJob", JobClient.class, ActivatedJob.class);
+      final var beanInfo =
+          BeanInfo.builder()
+              .beanName("worker")
+              .beanSupplier(() -> null)
+              .targetClass(Worker.class)
+              .build();
+      final var value =
+          AnnotationUtil.getJobWorkerValue(beanInfo.toMethodInfo(method)).orElseThrow();
+      customizers.forEach(customizer -> customizer.customize(value));
+      return value.getType();
+    } catch (final NoSuchMethodException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   @PostConstruct
