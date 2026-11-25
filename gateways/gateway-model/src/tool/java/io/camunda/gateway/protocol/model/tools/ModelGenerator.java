@@ -444,14 +444,23 @@ public final class ModelGenerator {
           discriminator.get("mapping") instanceof Map<?, ?>
               ? (Map<String, Object>) discriminator.get("mapping")
               : null;
-      iface
-          .addAnnotation(JSON_IGNORE_PROPS)
-          .setStringValue("value", prop)
-          .setLiteralValue("allowSetters", "true");
+      // Jackson writes a single, fixed type id per subtype class. When several discriminator
+      // values map to the same schema, that id would replace the value the instance carries, so
+      // the instance's own discriminator property is serialized instead.
+      final boolean sharedSubtype =
+          mapping != null && mapping.values().stream().distinct().count() < mapping.size();
+      if (!sharedSubtype) {
+        iface
+            .addAnnotation(JSON_IGNORE_PROPS)
+            .setStringValue("value", prop)
+            .setLiteralValue("allowSetters", "true");
+      }
       iface
           .addAnnotation(JSON_TYPE_INFO)
           .setLiteralValue("use", "JsonTypeInfo.Id.NAME")
-          .setLiteralValue("include", "JsonTypeInfo.As.PROPERTY")
+          .setLiteralValue(
+              "include",
+              sharedSubtype ? "JsonTypeInfo.As.EXISTING_PROPERTY" : "JsonTypeInfo.As.PROPERTY")
           .setStringValue("property", prop)
           .setLiteralValue("visible", "true");
       if (mapping != null && !mapping.isEmpty()) {

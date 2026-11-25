@@ -26,7 +26,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -395,6 +397,55 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
                       "operation": "UpdateIncarnationNumberOperation",
                       "brokerId": "1"
                     }
+                  ]
+                }
+              ]
+            }
+            """,
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldReportBrokerOperationsOfARestorePlanUnderTheirOwnNames() {
+    // given — besides updating the incarnation number, a restore re-initializes the schema and
+    // updates the routing state; each is reported as a broker operation
+    final var broker = MemberId.from("1");
+    when(clusterRecoveryServices.restore(
+            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.right(
+                    plannedChange(
+                        9L,
+                        PartitionGroupPhase.sequential(
+                            Map.of(
+                                "default",
+                                List.of(
+                                    new SchemaInitializationOperation(broker),
+                                    new UpdateRoutingState(broker, Optional.empty()),
+                                    new UpdateIncarnationNumberOperation(broker))))))));
+
+    // when / then
+    webClient
+        .post()
+        .uri(RESTORE_URL + "?dryRun=true")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100]}")
+        .exchange()
+        .expectStatus()
+        .isAccepted()
+        .expectBody()
+        .json(
+            """
+            {
+              "changeId": "9",
+              "plannedChanges": [
+                {
+                  "physicalTenantId": "default",
+                  "operations": [
+                    { "operation": "SchemaInitializationOperation", "brokerId": "1" },
+                    { "operation": "UpdateRoutingState", "brokerId": "1" },
+                    { "operation": "UpdateIncarnationNumberOperation", "brokerId": "1" }
                   ]
                 }
               ]

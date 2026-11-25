@@ -150,13 +150,25 @@ public final class InProcessRestoreTestUtil {
    */
   static HttpResponse<String> sendClusterRestoreRequest(
       final CamundaClient client, final String physicalTenantId, final ClusterRestoreRequest body) {
+    return sendClusterRestoreRequest(client, physicalTenantId, body, false);
+  }
+
+  /**
+   * Like {@link #sendClusterRestoreRequest(CamundaClient, String, ClusterRestoreRequest)}, but with
+   * {@code dryRun=true} only plans the restore without starting it.
+   */
+  static HttpResponse<String> sendClusterRestoreRequest(
+      final CamundaClient client,
+      final String physicalTenantId,
+      final ClusterRestoreRequest body,
+      final boolean dryRun) {
     try (final var httpClient = HttpClient.newHttpClient()) {
       final var tenantQueryParam =
           physicalTenantId == null ? "" : "&physicalTenantId=" + physicalTenantId;
       final var uri =
           URI.create(
-              "%scluster/v2/restore?dryRun=false%s"
-                  .formatted(client.getConfiguration().getRestAddress(), tenantQueryParam));
+              "%scluster/v2/restore?dryRun=%s%s"
+                  .formatted(client.getConfiguration().getRestAddress(), dryRun, tenantQueryParam));
       final var request =
           HttpRequest.newBuilder(uri)
               .header("Content-Type", "application/json")
