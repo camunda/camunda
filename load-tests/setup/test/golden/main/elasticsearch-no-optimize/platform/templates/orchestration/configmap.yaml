@@ -183,6 +183,7 @@ data:
               - UPDATE_PROCESS_INSTANCE
               - READ_PROCESS_INSTANCE
               - READ_PROCESS_DEFINITION
+              - READ_USER_TASK
               resourceId: '*'
               resourceType: PROCESS_DEFINITION
             - ownerId: orchestration

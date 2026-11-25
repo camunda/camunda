@@ -146,7 +146,8 @@ orchestration:
           resourceId: "*"
           permissions:
             - CREATE
-        # Grant the orchestration client permissions to manage and observe process instances
+        # Grant the orchestration client permissions to manage and observe process instances,
+        # and to read user tasks (k6 user task lookup benchmark)
         - ownerType: CLIENT
           ownerId: orchestration
           resourceType: PROCESS_DEFINITION
@@ -156,6 +157,7 @@ orchestration:
             - UPDATE_PROCESS_INSTANCE
             - READ_PROCESS_INSTANCE
             - READ_PROCESS_DEFINITION
+            - READ_USER_TASK
         # Grant the orchestration client permission to publish messages
         # (required by realistic benchmark workers: customer_notification,
         # dispute_process_request_proof_from_vendor)
