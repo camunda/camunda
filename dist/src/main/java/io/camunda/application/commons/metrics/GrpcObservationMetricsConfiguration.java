@@ -15,8 +15,10 @@ import org.springframework.context.annotation.Configuration;
 /**
  * The gRPC gateway observes calls for tracing, and Spring Boot's observation registry records every
  * observation as meters as well: a timer, a long task timer and a counter per event. The gateway
- * already reports its gRPC metrics with MetricCollectingServerInterceptor, so these would be a
- * second, differently named set.
+ * already publishes backwards-compatible gRPC metrics ({@code grpc.server.requests.received},
+ * {@code grpc.server.responses.sent}, {@code grpc.server.processing.duration} with custom
+ * Prometheus SLO buckets) via {@code MetricCollectingServerInterceptor}, so these differently named
+ * observation meters are denied to avoid duplicating them or breaking existing dashboards.
  */
 @Configuration(proxyBeanMethods = false)
 public class GrpcObservationMetricsConfiguration {
