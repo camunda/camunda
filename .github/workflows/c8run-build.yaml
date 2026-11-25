@@ -93,17 +93,8 @@ jobs:
     permissions:
       id-token: write # Vault JWT login
       actions: write
-      attestations: none
       checks: write
       contents: read
-      deployments: none
-      issues: none
-      discussions: none
-      packages: none
-      pages: none
-      pull-requests: none
-      repository-projects: none
-      security-events: none
       statuses: write
     strategy:
       matrix:
@@ -211,17 +202,8 @@ jobs:
     permissions:
       id-token: write # Vault JWT login
       actions: write
-      attestations: none
       checks: write
       contents: read
-      deployments: none
-      issues: none
-      discussions: none
-      packages: none
-      pages: none
-      pull-requests: none
-      repository-projects: none
-      security-events: none
       statuses: write
     name: C8Run Test Windows
     runs-on: windows-latest
