@@ -21,7 +21,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRange;
-import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.Event;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.MockProcessingResultBuilder;
@@ -509,37 +508,6 @@ final class CheckpointRecordsProcessorTest {
         .returns(CheckpointIntent.CONFIRM_BACKUP, Event::intent)
         .returns(RecordType.COMMAND_REJECTION, Event::type)
         .returns(value, Event::value);
-  }
-
-  @Test
-  void shouldNotifyListenerWhenBackupConfirmed() {
-    // given
-    final AtomicLong confirmedId = new AtomicLong(-1);
-    final AtomicLong confirmedPosition = new AtomicLong(-1);
-    processor.addCheckpointListener(
-        new CheckpointListener() {
-          @Override
-          public void onNewCheckpointCreated(
-              final long checkpointId, final CheckpointType checkpointType) {}
-
-          @Override
-          public void onBackupConfirmed(final long checkpointId, final long checkpointPosition) {
-            confirmedId.set(checkpointId);
-            confirmedPosition.set(checkpointPosition);
-          }
-        });
-    final var value =
-        new CheckpointRecord().setCheckpointId(7).setCheckpointPosition(70).setFirstLogPosition(1);
-    final var record =
-        new MockTypedCheckpointRecord(
-            71, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
-
-    // when
-    processor.process(record, resultBuilder);
-
-    // then
-    assertThat(confirmedId).hasValue(7);
-    assertThat(confirmedPosition).hasValue(70);
   }
 
   @Test

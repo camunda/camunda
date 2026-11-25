@@ -128,11 +128,7 @@ public final class CheckpointRecordsProcessor
             checkpointState, checkpointMetadataState, checkpointListeners, trackBackupMetadata);
     checkpointBackupConfirmedApplier =
         new CheckpointBackupConfirmedApplier(
-            checkpointState,
-            checkpointMetadataState,
-            backupRangeState,
-            checkpointListeners,
-            trackBackupMetadata);
+            checkpointState, checkpointMetadataState, backupRangeState, trackBackupMetadata);
     checkpointBackupDeletedApplier =
         new CheckpointBackupDeletedApplier(
             checkpointMetadataState, backupRangeState, checkpointState);
@@ -172,7 +168,6 @@ public final class CheckpointRecordsProcessor
           listener -> listener.onNewCheckpointCreated(checkpointId, checkpointType));
       metrics.setCheckpointId(checkpointId, checkpointState.getLatestCheckpointPosition());
     }
-    notifyLatestConfirmedBackup(checkpointState, checkpointListeners);
 
     recordProcessorContext.addLifecycleListeners(List.of(this));
   }
@@ -271,21 +266,7 @@ public final class CheckpointRecordsProcessor
             if (checkpointId != CheckpointState.NO_CHECKPOINT && checkpointType != null) {
               checkpointListener.onNewCheckpointCreated(checkpointId, checkpointType);
             }
-            notifyLatestConfirmedBackup(state, Set.of(checkpointListener));
           });
-    }
-  }
-
-  public void removeCheckpointListener(final CheckpointListener checkpointListener) {
-    checkpointListeners.remove(checkpointListener);
-  }
-
-  private static void notifyLatestConfirmedBackup(
-      final CheckpointState state, final Set<CheckpointListener> listeners) {
-    final long backupId = state.getLatestBackupId();
-    if (backupId != CheckpointState.NO_CHECKPOINT) {
-      final long backupPosition = state.getLatestBackupPosition();
-      listeners.forEach(listener -> listener.onBackupConfirmed(backupId, backupPosition));
     }
   }
 
