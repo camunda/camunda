@@ -13,6 +13,7 @@ import {
 	mockLicenseEndpoint,
 	mockSystemConfigurationEndpoint,
 	mockQueryTenantsEndpoint,
+	mockCreateTenantEndpoint,
 	mockGetTenantEndpoint,
 	mockQueryUsersByTenantEndpoint,
 	mockQueryUsersEndpoint,
@@ -72,6 +73,22 @@ test('should match the create tenant modal snapshot', async ({adminTenantsPage, 
 	await adminTenantsPage.createButton.click();
 
 	await expect(adminTenantsPage.createModal.dialog).toBeVisible();
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the tenant created next step snapshot', async ({adminTenantsPage, network, page}) => {
+	network.use(
+		mockCreateTenantEndpoint({
+			successResponse: HttpResponse.json(createTenant({tenantId: 'new-tenant', name: 'New tenant'})),
+		}),
+	);
+	await adminTenantsPage.goto();
+	await adminTenantsPage.createButton.click();
+	await adminTenantsPage.createModal.tenantIdInput.fill('new-tenant');
+	await adminTenantsPage.createModal.nameInput.fill('New tenant');
+	await adminTenantsPage.createModal.createButton.click();
+
+	await expect(page.getByRole('heading', {name: 'Tenant created'})).toBeVisible();
 	await expect(page).toHaveScreenshot();
 });
 

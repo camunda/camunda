@@ -13,6 +13,7 @@ import {
 	mockLicenseEndpoint,
 	mockSystemConfigurationEndpoint,
 	mockQueryTenantsEndpoint,
+	mockCreateTenantEndpoint,
 	mockGetTenantEndpoint,
 	mockQueryUsersByTenantEndpoint,
 	mockQueryUsersEndpoint,
@@ -97,6 +98,29 @@ test('should have no accessibility violations with the create tenant modal open'
 	await adminTenantsPage.goto();
 	await adminTenantsPage.createButton.click();
 	await expect(adminTenantsPage.createModal.dialog).toBeVisible();
+
+	const accessibilityScanResults = await makeAxeBuilder().analyze();
+
+	expect(accessibilityScanResults.violations).toEqual([]);
+});
+
+test('should have no accessibility violations in the tenant created next step', async ({
+	adminTenantsPage,
+	makeAxeBuilder,
+	network,
+	page,
+}) => {
+	network.use(
+		mockCreateTenantEndpoint({
+			successResponse: HttpResponse.json(createTenant({tenantId: 'new-tenant', name: 'New tenant'})),
+		}),
+	);
+	await adminTenantsPage.goto();
+	await adminTenantsPage.createButton.click();
+	await adminTenantsPage.createModal.tenantIdInput.fill('new-tenant');
+	await adminTenantsPage.createModal.nameInput.fill('New tenant');
+	await adminTenantsPage.createModal.createButton.click();
+	await expect(page.getByRole('heading', {name: 'Tenant created'})).toBeVisible();
 
 	const accessibilityScanResults = await makeAxeBuilder().analyze();
 
