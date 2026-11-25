@@ -49,6 +49,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PRO
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_FREQUENCY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_INPUT_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_OUTPUT_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_RAW_DATA;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_TOOL_CALLS;
@@ -747,7 +748,13 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
       PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS,
       PROCESS_GROUP_BY_NONE,
       PROCESS_DISTRIBUTED_BY_NONE,
-      NUMBER);
+      NUMBER),
+  // One raw row per agent, aggregated over its runs, for the Hub agent inventory.
+  AGENT_RUN_INVENTORY(
+      PROCESS_VIEW_AGENT_RUN_RAW_DATA,
+      PROCESS_GROUP_BY_NONE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      RAW_DATA);
 
   private final ProcessView view;
   private final ProcessGroupBy groupBy;

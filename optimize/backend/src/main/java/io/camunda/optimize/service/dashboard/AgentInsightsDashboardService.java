@@ -60,6 +60,8 @@ public class AgentInsightsDashboardService {
   public static final String TILE_TOTAL_TOKENS = "totalTokens";
   public static final String TILE_PROCESS_DURATION = "processDuration";
   public static final String TILE_INCIDENT_RATE = "incidentRate";
+  public static final String SECTION_INVENTORY = "inventory";
+  public static final String TILE_AGENT_INVENTORY = "agentInventory";
 
   // Ids are UUIDv3 over these seed strings, so a seed is part of the persisted contract with Hub:
   // changing one orphans its report on every existing installation.
@@ -67,6 +69,8 @@ public class AgentInsightsDashboardService {
   public static final String PROCESS_DURATION_REPORT_ID =
       idFromSeed("agent-insights-process-duration");
   public static final String INCIDENT_RATE_REPORT_ID = idFromSeed("agent-insights-incident-rate");
+  public static final String AGENT_INVENTORY_REPORT_ID =
+      idFromSeed("agent-insights-agent-inventory");
 
   private static final Logger LOG = LoggerFactory.getLogger(AgentInsightsDashboardService.class);
 
@@ -101,6 +105,7 @@ public class AgentInsightsDashboardService {
     tiles.add(buildTotalTokensTile());
     tiles.add(buildProcessDurationTile());
     tiles.add(buildIncidentRateTile());
+    tiles.add(buildAgentInventoryTile());
 
     final DashboardDefinitionRestDto dashboard = buildDashboard(tiles);
     if (dashboardReader.getDashboard(AGENT_INSIGHTS_DASHBOARD_ID).isEmpty()) {
@@ -161,6 +166,27 @@ public class AgentInsightsDashboardService {
     return buildTile(INCIDENT_RATE_REPORT_ID, 12, TILE_INCIDENT_RATE);
   }
 
+  // One row per agent with a completed run in the range, sorted by agent instances; Hub asks for
+  // every row and searches and sorts client-side.
+  private DashboardReportTileDto buildAgentInventoryTile() {
+    final ProcessReportDataDto reportData =
+        reportData(
+            new ProcessViewDto(ProcessViewEntity.AGENT_RUN, ViewProperty.RAW_DATA),
+            List.of(),
+            ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList(),
+            ProcessVisualization.TABLE);
+    reportWriter.createOrUpdateSingleProcessReport(
+        AGENT_INVENTORY_REPORT_ID, null, reportData, "Agent inventory", null, null);
+    return DashboardReportTileDto.builder()
+        .id(AGENT_INVENTORY_REPORT_ID)
+        .type(DashboardTileType.OPTIMIZE_REPORT)
+        .position(new PositionDto(0, 2))
+        .dimensions(new DimensionDto(18, 6))
+        .configuration(
+            Map.of(TILE_CONFIG_SECTION, SECTION_INVENTORY, TILE_CONFIG_TILE, TILE_AGENT_INVENTORY))
+        .build();
+  }
+
   private static ProcessFilterBuilder completedAgenticInstances() {
     return ProcessFilterBuilder.filter().completedInstancesOnly().add().hasAgentInstances().add();
   }
@@ -169,6 +195,14 @@ public class AgentInsightsDashboardService {
       final ProcessViewDto view,
       final List<AggregationDto> aggregations,
       final List<ProcessFilterDto<?>> filters) {
+    return reportData(view, aggregations, filters, ProcessVisualization.NUMBER);
+  }
+
+  private static ProcessReportDataDto reportData(
+      final ProcessViewDto view,
+      final List<AggregationDto> aggregations,
+      final List<ProcessFilterDto<?>> filters,
+      final ProcessVisualization visualization) {
     final SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
     if (!aggregations.isEmpty()) {
       configuration.setAggregationTypes(aggregations.toArray(AggregationDto[]::new));
@@ -178,7 +212,7 @@ public class AgentInsightsDashboardService {
         .view(view)
         .groupBy(new NoneGroupByDto())
         .distributedBy(new NoneDistributedByDto())
-        .visualization(ProcessVisualization.NUMBER)
+        .visualization(visualization)
         .configuration(configuration)
         .filter(filters)
         .agentInsightsReport(true)

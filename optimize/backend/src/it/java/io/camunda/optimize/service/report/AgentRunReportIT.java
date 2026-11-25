@@ -16,15 +16,20 @@ import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.TOTAL_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
+import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ReportType;
+import io.camunda.optimize.dto.optimize.TenantDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import io.camunda.optimize.dto.optimize.query.agent.AgentDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
@@ -48,19 +53,25 @@ import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ReportReader;
+import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
+import io.camunda.optimize.service.security.CCSMTokenService;
+import io.camunda.optimize.service.security.util.tenant.CamundaCCSMTenantAuthorizationService;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Evaluates agentRun views against the agent run index the way the seeded agent insights reports
@@ -93,7 +104,7 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldSumAndAverageEveryTokenViewOverCompletedRuns() {
     // given
     final String processKey = uniqueKey();
-    persistProcessDefinition(processKey, ZEEBE_DEFAULT_TENANT_ID);
+    persistAgenticProcess(processKey, ZEEBE_DEFAULT_TENANT_ID);
     persistAgentRuns(
         completedRun(processKey, 1L), completedRun(processKey, 3L), runningRun(processKey, 100L));
     final String reportId = createAgentRunReport(TOKEN_PROPERTIES, completedRunsOnly());
@@ -121,7 +132,7 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldCountCompletedRuns() {
     // given
     final String processKey = uniqueKey();
-    persistProcessDefinition(processKey, ZEEBE_DEFAULT_TENANT_ID);
+    persistAgenticProcess(processKey, ZEEBE_DEFAULT_TENANT_ID);
     persistAgentRuns(
         completedRun(processKey, 1L), completedRun(processKey, 2L), runningRun(processKey, 3L));
     final String reportId = createAgentRunReport(List.of(FREQUENCY), completedRunsOnly());
@@ -139,7 +150,7 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldOnlyCountRunsThatEndedInTheDateRange() {
     // given
     final String processKey = uniqueKey();
-    persistProcessDefinition(processKey, ZEEBE_DEFAULT_TENANT_ID);
+    persistAgenticProcess(processKey, ZEEBE_DEFAULT_TENANT_ID);
     final AgentRunDto oldRun = completedRun(processKey, 5L);
     oldRun.setEndDate(OffsetDateTime.now().minusDays(30));
     persistAgentRuns(completedRun(processKey, 1L), oldRun);
@@ -159,7 +170,7 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
     // given a visible process, and runs of a process the user's tenants do not contain
     final String visibleKey = uniqueKey();
     final String hiddenKey = uniqueKey();
-    persistProcessDefinition(visibleKey, ZEEBE_DEFAULT_TENANT_ID);
+    persistAgenticProcess(visibleKey, ZEEBE_DEFAULT_TENANT_ID);
     final AgentRunDto hiddenTenantRun = completedRun(visibleKey, 7L);
     hiddenTenantRun.setTenantId("tenant-the-user-cannot-see");
     persistAgentRuns(completedRun(visibleKey, 1L), completedRun(hiddenKey, 5L), hiddenTenantRun);
@@ -194,10 +205,57 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
+  void shouldOnlyCountRunsOfAgentsWithAnImportedDefinition() {
+    // given two agents of one process, and only the first agent's definition imported
+    final String processKey = uniqueKey();
+    persistAgenticProcess(processKey, ZEEBE_DEFAULT_TENANT_ID);
+    final AgentRunDto runOfUndefinedAgent = completedRun(processKey, 5L);
+    runOfUndefinedAgent.setAgentId(processKey + ":agent-without-definition");
+    persistAgentRuns(completedRun(processKey, 1L), runOfUndefinedAgent);
+    final String reportId = createAgentRunReport(List.of(FREQUENCY), completedRunsOnly());
+
+    // when
+    final CommandEvaluationResult<?> result =
+        evaluate(reportId, noExtraFilters()).getFirstCommandResult();
+
+    // then only the run of the defined agent is counted
+    assertThat(result.getMeasures()).singleElement().extracting(MeasureDto::getData).isEqualTo(1.0);
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+  }
+
+  @Test
+  void shouldOnlyCountRunsOfAgentsDefinedOnTheRunsTenant() {
+    // given a process on two tenants the user may see, with the agent only defined on tenant A
+    final String tenantA = "tenant-a-" + UUID.randomUUID();
+    final String tenantB = "tenant-b-" + UUID.randomUUID();
+    final String processKey = uniqueKey();
+    persistAgenticProcess(processKey, tenantA);
+    persistProcessDefinition(processKey, tenantB);
+    final AgentRunDto runOnTenantA = completedRun(processKey, 1L);
+    runOnTenantA.setTenantId(tenantA);
+    final AgentRunDto runOnTenantB = completedRun(processKey, 5L);
+    runOnTenantB.setTenantId(tenantB);
+    persistAgentRuns(runOnTenantA, runOnTenantB);
+    final String reportId = createAgentRunReport(List.of(TOTAL_TOKENS), completedRunsOnly());
+
+    // when
+    final List<MeasureDto<?>> measures =
+        withUserAuthorizedFor(
+            List.of(tenantA, tenantB),
+            userId -> evaluateMeasures(userId, reportId, noExtraFilters()));
+
+    // then only the run on tenant A, where the agent has a definition, is counted
+    assertThat(measures)
+        .extracting(measure -> measure.getAggregationType().getType(), MeasureDto::getData)
+        .containsExactlyInAnyOrder(
+            tuple(SUM, tokenFactor(TOTAL_TOKENS)), tuple(AVERAGE, tokenFactor(TOTAL_TOKENS)));
+  }
+
+  @Test
   void shouldRejectFiltersThatAgentRunsDoNotSupport() {
     // given
     final String processKey = uniqueKey();
-    persistProcessDefinition(processKey, ZEEBE_DEFAULT_TENANT_ID);
+    persistAgenticProcess(processKey, ZEEBE_DEFAULT_TENANT_ID);
     final String reportId =
         createAgentRunReport(
             List.of(FREQUENCY),
@@ -284,8 +342,15 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
 
   private List<MeasureDto<?>> evaluateMeasures(
       final String reportId, final AdditionalProcessReportEvaluationFilterDto filters) {
+    return evaluateMeasures(USER_ID, reportId, filters);
+  }
+
+  private List<MeasureDto<?>> evaluateMeasures(
+      final String userId,
+      final String reportId,
+      final AdditionalProcessReportEvaluationFilterDto filters) {
     final List<MeasureDto<?>> measures = new ArrayList<>();
-    evaluate(reportId, filters)
+    evaluate(userId, reportId, filters)
         .getCommandEvaluationResults()
         .forEach(result -> measures.addAll(result.getMeasures()));
     return measures;
@@ -293,12 +358,41 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
 
   private SingleReportEvaluationResult<?> evaluate(
       final String reportId, final AdditionalProcessReportEvaluationFilterDto filters) {
+    return evaluate(USER_ID, reportId, filters);
+  }
+
+  private SingleReportEvaluationResult<?> evaluate(
+      final String userId,
+      final String reportId,
+      final AdditionalProcessReportEvaluationFilterDto filters) {
     return (SingleReportEvaluationResult<?>)
         embeddedOptimizeExtension
             .getBean(ReportEvaluationService.class)
             .evaluateSavedReportWithAdditionalFilters(
-                USER_ID, ZoneId.of("UTC"), reportId, filters, null)
+                userId, ZoneId.of("UTC"), reportId, filters, null)
             .getEvaluationResult();
+  }
+
+  /** A process definition with one agent, {@code <key>:agent}, the agent id of the test runs. */
+  private void persistAgenticProcess(final String key, final String tenantId) {
+    persistProcessDefinition(key, tenantId);
+    final AgentDefinitionDto agentDefinition = new AgentDefinitionDto();
+    agentDefinition.setAgentId(key + ":agent");
+    agentDefinition.setTenantId(tenantId);
+    agentDefinition.setProcessDefinitionKey(key);
+    agentDefinition.setFlowNodeId("agent");
+    agentDefinition.setName("Agent");
+    agentDefinition.setAgentType("AI_AGENT_TASK");
+    agentDefinition.setProcessDefinitionVersions(List.of("1"));
+    embeddedOptimizeExtension
+        .getBean(DatabaseClient.class)
+        .executeImportRequestsAsBulk(
+            "test agent definitions",
+            embeddedOptimizeExtension
+                .getBean(AgentDefinitionWriter.class)
+                .generateAgentDefinitionImports(List.of(agentDefinition)),
+            false);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void persistProcessDefinition(final String key, final String tenantId) {
@@ -307,7 +401,7 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
         .importProcessDefinitions(
             List.of(
                 ProcessDefinitionOptimizeDto.builder()
-                    .id(key + ":1:1")
+                    .id(key + ":1:" + tenantId)
                     .key(key)
                     .version("1")
                     .name(key)
@@ -387,6 +481,39 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
         .getAgenticPhase2Configuration()
         .setEnabled(enabled);
     embeddedOptimizeExtension.reloadConfiguration();
+  }
+
+  /**
+   * Tenant authorizations come from Identity through {@link CCSMTokenService}; it is swapped on the
+   * shared authorization service for the call instead of replaced as a bean, which would start a
+   * second Spring context.
+   */
+  private <T> T withUserAuthorizedFor(
+      final List<String> tenantIds, final Function<String, T> callAsUser) {
+    final CamundaCCSMTenantAuthorizationService tenantAuthorizationService =
+        embeddedOptimizeExtension.getBean(CamundaCCSMTenantAuthorizationService.class);
+    final Object originalTokenService =
+        ReflectionTestUtils.getField(tenantAuthorizationService, "ccsmTokenService");
+    // a new user per call, because authorized tenants are cached per user
+    final String userId = "user-" + UUID.randomUUID();
+    final String token = "token-" + userId;
+    final CCSMTokenService tokenService = mock(CCSMTokenService.class);
+    when(tokenService.getCurrentUserIdFromAuthToken()).thenReturn(Optional.of(userId));
+    when(tokenService.getCurrentUserAuthToken()).thenReturn(Optional.of(token));
+    when(tokenService.getAuthorizedTenantsFromToken(token))
+        .thenReturn(
+            tenantIds.stream()
+                .map(tenantId -> new TenantDto(tenantId, tenantId, ZEEBE_DATA_SOURCE))
+                .toList());
+    embeddedOptimizeExtension.getConfigurationService().setMultiTenancyEnabled(true);
+    ReflectionTestUtils.setField(tenantAuthorizationService, "ccsmTokenService", tokenService);
+    try {
+      return callAsUser.apply(userId);
+    } finally {
+      ReflectionTestUtils.setField(
+          tenantAuthorizationService, "ccsmTokenService", originalTokenService);
+      embeddedOptimizeExtension.getConfigurationService().setMultiTenancyEnabled(false);
+    }
   }
 
   private static String uniqueKey() {

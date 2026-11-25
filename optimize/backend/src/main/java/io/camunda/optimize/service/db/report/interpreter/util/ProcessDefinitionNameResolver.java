@@ -38,7 +38,11 @@ public final class ProcessDefinitionNameResolver {
     result.getGroups().forEach(group -> applyLabel(group, labelsByKey));
   }
 
-  private static Map<String, String> labelsByKey(final List<ReportDataDefinitionDto> definitions) {
+  /**
+   * The label of each definition key: its display name, else its name; keys without either are left
+   * out.
+   */
+  public static Map<String, String> labelsByKey(final List<ReportDataDefinitionDto> definitions) {
     final Map<String, String> labelsByKey = new HashMap<>();
     if (definitions == null) {
       return labelsByKey;

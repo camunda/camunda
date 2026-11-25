@@ -10,11 +10,13 @@ package io.camunda.optimize.dto.optimize.query.report.single;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataAgentDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = RawDataProcessInstanceDto.class),
   @JsonSubTypes.Type(value = RawDataDecisionInstanceDto.class),
+  @JsonSubTypes.Type(value = RawDataAgentDto.class),
 })
 public interface RawDataInstanceDto {}
