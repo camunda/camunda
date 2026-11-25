@@ -234,6 +234,7 @@ mwnw*                       @camunda/engineering-operations
 /zeebe/feel-tagged-parameters/ @camunda/core-features
 /zeebe/exporter-api/        @camunda/core-features
 /zeebe/exporter-config-support/ @camunda/core-features
+/zeebe/cluster-behavior/ @camunda/core-features
 
 # Engine-expert skill
 /.agents/skills/engine-expert/ @korthout @camunda/core-features

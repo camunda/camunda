@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.11.0-SNAPSHOT</version>
+    <relativePath>../../parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>zeebe-cluster-behavior</artifactId>
+
+  <name>Zeebe Cluster Behavior</name>
+
+  <!--
+    The capability catalog and the cluster behavior (the set of capabilities a cluster committed
+    to). It is a shared registry that several teams add to and several modules read, so it is a
+    module of its own: a module that uses it declares the dependency in its pom, instead of
+    reaching it through zeebe-util.
+  -->
+
+  <dependencies>
+    <!-- testing -->
+  </dependencies>
+
+</project>

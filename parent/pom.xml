@@ -559,6 +559,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-cluster-behavior</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-exporter-filter</artifactId>
         <version>${project.version}</version>
       </dependency>
