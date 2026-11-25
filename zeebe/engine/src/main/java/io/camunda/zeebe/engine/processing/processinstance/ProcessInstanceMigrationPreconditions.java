@@ -89,8 +89,8 @@ public final class ProcessInstanceMigrationPreconditions {
       but it is being deleted""";
   private static final String ERROR_MESSAGE_TARGET_PROCESS_DEFINITION_SUSPENDED =
       """
-      Expected to migrate process instance to process definition with key '%d' \
-      but it is suspended""";
+      Expected to migrate process instance to process definition with ID '%s' and version %d \
+      (key %d), but it is suspended""";
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_HAS_START_EVENT_INSTANCE =
       """
       Expected to migrate process instance '%d' \
@@ -299,15 +299,18 @@ public final class ProcessInstanceMigrationPreconditions {
    * instances, and migrating onto it would add one. Migrating away from a suspended version stays
    * allowed.
    *
+   * @param targetProcessDefinition target process definition to check (must be non-null)
    * @param targetSuspended whether the target process definition is suspended
-   * @param targetProcessDefinitionKey target process definition key, for the error message
    */
   public static void requireTargetProcessDefinitionNotSuspended(
-      final boolean targetSuspended, final long targetProcessDefinitionKey) {
+      final DeployedProcess targetProcessDefinition, final boolean targetSuspended) {
     if (targetSuspended) {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           String.format(
-              ERROR_MESSAGE_TARGET_PROCESS_DEFINITION_SUSPENDED, targetProcessDefinitionKey),
+              ERROR_MESSAGE_TARGET_PROCESS_DEFINITION_SUSPENDED,
+              BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId()),
+              targetProcessDefinition.getVersion(),
+              targetProcessDefinition.getKey()),
           RejectionType.INVALID_STATE);
     }
   }

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -59,8 +60,26 @@ public class MigrateProcessInstanceToSuspendedDefinitionTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to migrate process instance to process definition with key '%d' but it is suspended"
-                .formatted(target.getProcessDefinitionKey()));
+            "Expected to migrate process instance to process definition with ID '%s' and version %d (key %d), but it is suspended"
+                .formatted(
+                    target.getBpmnProcessId(),
+                    target.getVersion(),
+                    target.getProcessDefinitionKey()));
+    // the rejected command leaves the instance untouched: the first MIGRATED record is written by
+    // the later successful migration, after the rejection
+    engine
+        .processDefinitionSuspension()
+        .withProcessDefinitionKey(target.getProcessDefinitionKey())
+        .resume();
+    migrate(processInstanceKey, target);
+    assertThat(
+            RecordingExporter.processInstanceMigrationRecords(
+                    ProcessInstanceMigrationIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(1)
+                .map(Record::getPosition))
+        .hasSize(1)
+        .allMatch(position -> position > rejection.getPosition());
   }
 
   @Test
@@ -73,6 +92,26 @@ public class MigrateProcessInstanceToSuspendedDefinitionTest {
 
     // when
     migrate(processInstanceKey, target);
+
+    // then
+    assertMigrated(processInstanceKey);
+  }
+
+  @Test
+  public void shouldMigrateWithinSameSuspendedVersion() {
+    // given
+    final var process = deploy(helper.getBpmnProcessId(), "A");
+    final long processInstanceKey = createInstance(process);
+    suspend(process);
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(process.getProcessDefinitionKey())
+        .addMappingInstruction("A", "A")
+        .migrate();
 
     // then
     assertMigrated(processInstanceKey);

@@ -204,6 +204,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
 
   @Test
   public void shouldRejectMigrationToSuspendedTargetWithoutPermissionAsForbidden() {
+    // callers without access must not learn that the version is suspended
     // given
     final var processInstanceKey = createProcessInstance();
     engine
@@ -223,6 +224,10 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
 
     // then
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionReason())
+        .startsWith(
+            "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'")
+        .doesNotContain("suspended");
   }
 
   @Test

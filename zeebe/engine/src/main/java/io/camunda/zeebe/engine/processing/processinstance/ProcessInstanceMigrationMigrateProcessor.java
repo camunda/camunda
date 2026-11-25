@@ -182,8 +182,11 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
 
     requireTargetProcessDefinitionNotDraining(targetProcessDefinition, targetProcessDefinitionKey);
-    requireTargetProcessDefinitionNotSuspended(
-        processState.isSuspended(targetProcessDefinitionKey), targetProcessDefinitionKey);
+    // staying on the same version adds no new work to it, so only a different target is checked
+    if (targetProcessDefinitionKey != processInstanceRecord.getProcessDefinitionKey()) {
+      requireTargetProcessDefinitionNotSuspended(
+          targetProcessDefinition, processState.isSuspended(targetProcessDefinitionKey));
+    }
     requireNoStartEventInstanceForTargetProcess(
         processInstance, targetProcessDefinition, messageState);
     requireReferredElementsExist(
