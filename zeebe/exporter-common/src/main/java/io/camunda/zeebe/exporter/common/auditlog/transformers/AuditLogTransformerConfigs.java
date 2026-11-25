@@ -119,9 +119,16 @@ public class AuditLogTransformerConfigs {
   public static final TransformerConfig JOB_CONFIG =
       TransformerConfig.with(ValueType.JOB).withIntents(JobIntent.COMPLETED);
 
+  // A probe has no process instance whose deletion cleans up its entries. Each audited intent
+  // schedules the cleanup, as the end entry is not logged for every actor.
   public static final TransformerConfig PROBE_CONFIG =
       TransformerConfig.with(ValueType.PROBE)
           .withIntents(
+              ProbeIntent.CREATED,
+              ProbeIntent.ANSWERED,
+              ProbeIntent.TIMED_OUT,
+              ProbeIntent.CANCELED)
+          .withDataCleanupIntents(
               ProbeIntent.CREATED,
               ProbeIntent.ANSWERED,
               ProbeIntent.TIMED_OUT,

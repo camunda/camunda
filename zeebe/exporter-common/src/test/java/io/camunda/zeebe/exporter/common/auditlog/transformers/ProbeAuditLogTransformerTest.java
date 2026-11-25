@@ -100,6 +100,21 @@ final class ProbeAuditLogTransformerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProbeIntent.class,
+      names = {"CREATED", "ANSWERED", "TIMED_OUT", "CANCELED"})
+  void shouldScheduleCleanupOnEveryAuditedEvent(final ProbeIntent intent) {
+    // given
+    final var record = probeRecord(intent, ProbeOutcome.OK);
+
+    // when
+    final var triggersCleanUp = transformer.triggersCleanUp(record);
+
+    // then
+    assertThat(triggersCleanUp).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ProbeIntent.class,
       names = {"CREATED", "ANSWERED", "TIMED_OUT", "CANCELED"},
       mode = EnumSource.Mode.EXCLUDE)
   void shouldNotAuditOtherProbeEvents(final ProbeIntent intent) {
