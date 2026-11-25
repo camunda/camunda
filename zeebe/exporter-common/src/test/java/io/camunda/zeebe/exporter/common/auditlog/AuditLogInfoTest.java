@@ -15,16 +15,22 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableOperationType;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.ArrayList;
 import java.util.List;
@@ -172,6 +178,57 @@ class AuditLogInfoTest {
     // then
     final var info = AuditLogInfo.of(record);
     assertThat(info.operationType()).isEqualTo(AuditLogOperationType.UNASSIGN);
+  }
+
+  @Test
+  void shouldUseTheGivenActorAndKeepTheOtherFields() {
+    // given
+    final var value =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withTenantId("tenant-1")
+            .build();
+    final var record =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.UPDATED)
+                    .withValue(value)
+                    .withAuthorizations(Map.of(Authorization.AUTHORIZED_CLIENT_ID, "test-client")));
+
+    // when
+    final var info = AuditLogInfo.of(record, AuditLogActor.ENGINE);
+
+    // then
+    assertThat(info.actor()).isEqualTo(AuditLogActor.ENGINE);
+    assertThat(info.category()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
+    assertThat(info.entityType()).isEqualTo(AuditLogEntityType.VARIABLE);
+    assertThat(info.operationType()).isEqualTo(AuditLogOperationType.UPDATE);
+    assertThat(info.tenant()).contains(new AuditLogInfo.AuditLogTenant("tenant-1"));
+  }
+
+  @Test
+  void shouldTakeTheActorFromTheIdentityEvenForAnEngineVariableChange() {
+    // given an audit log entry must never carry the engine actor
+    final var value =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withSource(new VariableSourceRecord().setType(VariableOperationType.OUTPUT_MAPPING))
+            .build();
+    final var record =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.UPDATED)
+                    .withValue(value)
+                    .withAuthorizations(Map.of(Authorization.AUTHORIZED_CLIENT_ID, "test-client")));
+
+    // when
+    final var info = AuditLogInfo.of(record);
+
+    // then
+    assertThat(info.actor().actorType()).isEqualTo(AuditLogActorType.CLIENT);
+    assertThat(info.actor().actorId()).isEqualTo("test-client");
   }
 
   /**
