@@ -39,13 +39,17 @@ final class ClusterBehaviorTest {
     final var behavior = ClusterBehavior.ofOrdinals(V1, ordinals);
 
     // then
-    assertThat(behavior.firstUnsupportedCapability()).isEqualTo(146);
-    assertThat(behavior.lastSupportedCapability()).isEqualTo(150);
-    assertThat(behavior.firstWord()).isEqualTo(2);
-    assertThat(behavior.lastWord()).isEqualTo(2);
+    assertThat(behavior.firstUnsupportedCapability())
+        .as("first unsupported capability, the first ordinal missing from the set")
+        .isEqualTo(146);
+    assertThat(behavior.lastSupportedCapability()).as("highest ordinal in the set").isEqualTo(150);
+    assertThat(behavior.firstWord()).as("index of the first stored word").isEqualTo(2);
+    assertThat(behavior.lastWord()).as("index of the last stored word").isEqualTo(2);
     // word 2: bits 0 to 17 (ordinals 128 to 145) are the padding ones, then 20 (148) and 22 (150)
-    assertThat(behavior.capabilityBitmask()).containsExactly(0b101_0011_1111_1111_1111_1111L);
-    assertThat(behavior.behaviorVersion()).isEqualTo(V1);
+    assertThat(behavior.capabilityBitmask())
+        .as("stored words: padding ones below the first unsupported capability, then the set bits")
+        .containsExactly(0b101_0011_1111_1111_1111_1111L);
+    assertThat(behavior.behaviorVersion()).as("behavior version kept as given").isEqualTo(V1);
   }
 
   @Test
@@ -54,12 +58,18 @@ final class ClusterBehaviorTest {
     final var behavior = ClusterBehavior.empty();
 
     // then
-    assertThat(behavior.firstUnsupportedCapability()).isZero();
-    assertThat(behavior.lastSupportedCapability()).isEqualTo(-1);
-    assertThat(behavior.firstWord()).isZero();
-    assertThat(behavior.lastWord()).isEqualTo(-1);
-    assertThat(behavior.capabilityBitmask()).isEmpty();
-    assertThat(behavior.behaviorVersion()).isEqualTo(ClusterBehavior.UNKNOWN_VERSION);
+    assertThat(behavior.firstUnsupportedCapability())
+        .as("first unsupported capability of the empty set")
+        .isZero();
+    assertThat(behavior.lastSupportedCapability())
+        .as("highest ordinal of the empty set, none")
+        .isEqualTo(-1);
+    assertThat(behavior.firstWord()).as("index of the first stored word").isZero();
+    assertThat(behavior.lastWord()).as("index of the last stored word, none").isEqualTo(-1);
+    assertThat(behavior.capabilityBitmask()).as("stored words of the empty set").isEmpty();
+    assertThat(behavior.behaviorVersion())
+        .as("behavior version of the empty set")
+        .isEqualTo(ClusterBehavior.UNKNOWN_VERSION);
   }
 
   @Test
@@ -68,8 +78,10 @@ final class ClusterBehaviorTest {
     final var behavior = ClusterBehavior.of(V1);
 
     // then
-    assertThat(behavior.behaviorVersion()).isEqualTo(V1);
-    assertThat(behavior.capabilityBitmask()).isEmpty();
+    assertThat(behavior.behaviorVersion()).as("behavior version kept as given").isEqualTo(V1);
+    assertThat(behavior.capabilityBitmask())
+        .as("stored words of a set without capabilities")
+        .isEmpty();
   }
 
   @Test
@@ -78,11 +90,19 @@ final class ClusterBehaviorTest {
     final var behavior = ClusterBehavior.ofOrdinals(V1, range(0, 128));
 
     // then
-    assertThat(behavior.firstUnsupportedCapability()).isEqualTo(128);
-    assertThat(behavior.lastSupportedCapability()).isEqualTo(127);
-    assertThat(behavior.firstWord()).isEqualTo(2);
-    assertThat(behavior.lastWord()).isEqualTo(1);
-    assertThat(behavior.capabilityBitmask()).isEmpty();
+    assertThat(behavior.firstUnsupportedCapability())
+        .as("first ordinal missing from the set, the next word boundary")
+        .isEqualTo(128);
+    assertThat(behavior.lastSupportedCapability()).as("highest ordinal in the set").isEqualTo(127);
+    assertThat(behavior.firstWord())
+        .as("index of the first stored word, past the last full word")
+        .isEqualTo(2);
+    assertThat(behavior.lastWord())
+        .as("index of the last stored word, before the first one: no word")
+        .isEqualTo(1);
+    assertThat(behavior.capabilityBitmask())
+        .as("stored words: none, every ordinal below 128 is implied")
+        .isEmpty();
   }
 
   @Test
@@ -94,9 +114,14 @@ final class ClusterBehaviorTest {
     final var behavior = ClusterBehavior.ofOrdinals(V1, ordinals);
 
     // then
-    assertThat(behavior.firstUnsupportedCapability()).isEqualTo(64);
-    assertThat(behavior.capabilityBitmask()).containsExactly(0b100L, 0L, 1L);
+    assertThat(behavior.firstUnsupportedCapability())
+        .as("first ordinal missing from the set, a word boundary")
+        .isEqualTo(64);
+    assertThat(behavior.capabilityBitmask())
+        .as("stored words, the empty one in between kept")
+        .containsExactly(0b100L, 0L, 1L);
     assertThat(IntStream.range(0, 300).filter(behavior::isCapabilityEnabled).toArray())
+        .as("ordinals reported as enabled")
         .containsExactly(ordinals);
   }
 
@@ -113,12 +138,19 @@ final class ClusterBehaviorTest {
     final var behavior = ClusterBehavior.ofOrdinals(V1, ordinals);
 
     // then
-    assertThat(behavior.firstUnsupportedCapability()).isEqualTo(offset + 3);
-    assertThat(behavior.firstWord()).isEqualTo(offset / 64);
-    assertThat(behavior.lastWord()).isEqualTo((offset + 1000) / 64);
+    assertThat(behavior.firstUnsupportedCapability())
+        .as("first ordinal missing from the set with offset %d", offset)
+        .isEqualTo(offset + 3);
+    assertThat(behavior.firstWord())
+        .as("index of the first stored word with offset %d", offset)
+        .isEqualTo(offset / 64);
+    assertThat(behavior.lastWord())
+        .as("index of the last stored word with offset %d", offset)
+        .isEqualTo((offset + 1000) / 64);
     assertThat(IntStream.range(0, offset + 1100).filter(behavior::isCapabilityEnabled).toArray())
+        .as("ordinals reported as enabled with offset %d", offset)
         .containsExactly(ordinals);
-    assertThat(behavior.isCapabilityEnabled(100_000)).isFalse();
+    assertThat(behavior.isCapabilityEnabled(100_000)).as("an ordinal far above the set").isFalse();
   }
 
   @Test
@@ -132,15 +164,21 @@ final class ClusterBehaviorTest {
         ClusterBehavior.ofOrdinals(V1, concat(new int[] {150, 148, 150}, descending));
 
     // then
-    assertThat(shuffled).isEqualTo(sorted).hasSameHashCodeAs(sorted);
+    assertThat(shuffled)
+        .as("set built from a shuffled input with duplicates")
+        .isEqualTo(sorted)
+        .hasSameHashCodeAs(sorted);
   }
 
   @Test
   void shouldNotBeEqualToASetWithADifferentContent() {
     // when, then a different first unsupported ordinal with the same (empty) words
-    assertThat(ClusterBehavior.empty()).isNotEqualTo(ClusterBehavior.ofOrdinals(V1, range(0, 64)));
+    assertThat(ClusterBehavior.empty())
+        .as("different first unsupported capability, same (empty) words")
+        .isNotEqualTo(ClusterBehavior.ofOrdinals(V1, range(0, 64)));
     // the same first unsupported ordinal with different words
     assertThat(ClusterBehavior.ofOrdinals(V1, 0, 2))
+        .as("same first unsupported capability, different words")
         .isNotEqualTo(ClusterBehavior.ofOrdinals(V1, 0, 2, 3));
   }
 
@@ -153,7 +191,9 @@ final class ClusterBehaviorTest {
     behavior.capabilityBitmask()[0] = 0;
 
     // then
-    assertThat(behavior.capabilityBitmask()).containsExactly(0b101L);
+    assertThat(behavior.capabilityBitmask())
+        .as("stored words after changing the returned copy")
+        .containsExactly(0b101L);
   }
 
   @Test
@@ -163,7 +203,10 @@ final class ClusterBehaviorTest {
     final var v2 = ClusterBehavior.ofOrdinals(V2, 0, 2);
 
     // then
-    assertThat(v1).isEqualTo(v2).hasSameHashCodeAs(v2);
+    assertThat(v1)
+        .as("sets with the same ordinals and different versions")
+        .isEqualTo(v2)
+        .hasSameHashCodeAs(v2);
   }
 
   @Test
@@ -173,7 +216,9 @@ final class ClusterBehaviorTest {
         ClusterBehavior.ofOrdinals(new SemanticVersion(8, 11, 0, "alpha1", "build.5"), 0);
 
     // then
-    assertThat(behavior.behaviorVersion()).isEqualTo(V1);
+    assertThat(behavior.behaviorVersion())
+        .as("behavior version without pre-release and build metadata")
+        .isEqualTo(V1);
   }
 
   @Test
