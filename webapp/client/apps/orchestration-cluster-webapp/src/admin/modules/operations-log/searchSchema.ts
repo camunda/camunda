@@ -17,23 +17,32 @@ const PAGE_SIZES = [50, 100, 200] as const;
 const DEFAULT_PAGE_SIZE = 50;
 
 // Deliberately a curated subset of the full 14-value enums, relevant to the ADMIN
-// audit-log category this page shows — mirrors Identity's ALLOWED_OPERATION_TYPES.
+// audit-log category this page shows — Identity's ALLOWED_OPERATION_TYPES, plus the
+// COMPLETE and CANCEL entries that end a probe.
 const ALLOWED_OPERATION_TYPES = [
 	'CREATE',
 	'ASSIGN',
 	'UNASSIGN',
 	'DELETE',
 	'UPDATE',
+	'COMPLETE',
+	'CANCEL',
 ] as const satisfies readonly AuditLogOperationType[];
 
 // Mirrors Identity's ALLOWED_ENTITY_TYPES.
-const ALLOWED_ENTITY_TYPES = [
+const ALLOWED_RELATED_ENTITY_TYPES = [
 	'AUTHORIZATION',
 	'ROLE',
 	'USER',
 	'GROUP',
 	'MAPPING_RULE',
 	'TENANT',
+] as const satisfies readonly AuditLogEntityType[];
+
+// A probe writes ADMIN entries too, but never owns an authorization, so it is no related entity type.
+const ALLOWED_ENTITY_TYPES = [
+	...ALLOWED_RELATED_ENTITY_TYPES,
+	'PROBE',
 ] as const satisfies readonly AuditLogEntityType[];
 
 const ALLOWED_RESULT_TYPES = auditLogResultSchema.options;
@@ -44,7 +53,7 @@ const SORTABLE_FIELDS = ['operationType', 'entityType', 'actorId', 'timestamp'] 
 const operationsLogSearchSchema = z.object({
 	operationType: z.enum(ALLOWED_OPERATION_TYPES).optional(),
 	entityType: z.enum(ALLOWED_ENTITY_TYPES).optional(),
-	relatedEntityType: z.enum(ALLOWED_ENTITY_TYPES).optional(),
+	relatedEntityType: z.enum(ALLOWED_RELATED_ENTITY_TYPES).optional(),
 	// coerce: a numeric-looking owner key arrives typed as a JS number from the router's
 	// search parser, matching the MCP Processes route schema.
 	relatedEntityKey: z.coerce.string().optional(),
@@ -63,6 +72,7 @@ type OperationsLogSearch = z.infer<typeof operationsLogSearchSchema>;
 export {
 	ALLOWED_ENTITY_TYPES,
 	ALLOWED_OPERATION_TYPES,
+	ALLOWED_RELATED_ENTITY_TYPES,
 	ALLOWED_RESULT_TYPES,
 	DEFAULT_PAGE_SIZE,
 	PAGE_SIZES,
