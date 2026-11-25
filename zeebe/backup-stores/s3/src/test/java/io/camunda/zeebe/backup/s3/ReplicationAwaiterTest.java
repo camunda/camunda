@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -254,6 +255,33 @@ final class ReplicationAwaiterTest {
                             .errorCode(ReplicationAwaiter.REPLICATION_CONFIGURATION_NOT_FOUND)
                             .build())
                     .build()));
+
+    // when
+    final var verified = awaiter.verifyReplicationConfigured();
+
+    // then
+    assertThat(verified)
+        .failsWithin(WAIT)
+        .withThrowableThat()
+        .havingCause()
+        .isInstanceOf(ConfigurationException.class)
+        .withMessageContaining("has no replication configured");
+  }
+
+  @Test
+  void shouldRejectBucketWithoutReplicationConfigurationWhenTheFailureIsWrapped() {
+    // given the async client reports the failure wrapped in a CompletionException
+    final var awaiter = awaiter(WAIT);
+    final var notFound =
+        S3Exception.builder()
+            .statusCode(404)
+            .awsErrorDetails(
+                AwsErrorDetails.builder()
+                    .errorCode(ReplicationAwaiter.REPLICATION_CONFIGURATION_NOT_FOUND)
+                    .build())
+            .build();
+    when(client.getBucketReplication(any(Consumer.class)))
+        .thenReturn(CompletableFuture.failedFuture(new CompletionException(notFound)));
 
     // when
     final var verified = awaiter.verifyReplicationConfigured();
