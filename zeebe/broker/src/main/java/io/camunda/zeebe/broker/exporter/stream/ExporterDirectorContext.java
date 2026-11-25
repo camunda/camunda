@@ -42,6 +42,8 @@ public final class ExporterDirectorContext {
   private String tenantName;
   private boolean receiveOnLegacySubject = true;
   private boolean exportOnlyBackedUpRecords;
+  private @Nullable BackedUpPositionSource backedUpPositionSource;
+  private Duration backedUpPositionPollInterval = Duration.ofSeconds(5);
 
   public int getId() {
     return id;
@@ -158,6 +160,26 @@ public final class ExporterDirectorContext {
   public ExporterDirectorContext exportOnlyBackedUpRecords(
       final boolean exportOnlyBackedUpRecords) {
     this.exportOnlyBackedUpRecords = exportOnlyBackedUpRecords;
+    return this;
+  }
+
+  public @Nullable BackedUpPositionSource getBackedUpPositionSource() {
+    return backedUpPositionSource;
+  }
+
+  public ExporterDirectorContext backedUpPositionSource(
+      final @Nullable BackedUpPositionSource backedUpPositionSource) {
+    this.backedUpPositionSource = backedUpPositionSource;
+    return this;
+  }
+
+  public Duration getBackedUpPositionPollInterval() {
+    return backedUpPositionPollInterval;
+  }
+
+  public ExporterDirectorContext backedUpPositionPollInterval(
+      final Duration backedUpPositionPollInterval) {
+    this.backedUpPositionPollInterval = backedUpPositionPollInterval;
     return this;
   }
 

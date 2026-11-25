@@ -109,7 +109,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final InstantSource clock;
   private final RecordMetadataBlock skipRecordDecoder = new RecordMetadataBlock();
   private final boolean exportOnlyBackedUpRecords;
-  // Highest log position covered by a confirmed backup; only read when exportOnlyBackedUpRecords
+  private final @Nullable BackedUpPositionSource backedUpPositionSource;
+  private final Duration backedUpPositionPollInterval;
+  private @Nullable ScheduledTimer backedUpPositionTimer;
+  private boolean backedUpPositionRequestInFlight;
+  // Highest log position a restore would contain; only read when exportOnlyBackedUpRecords is set
   private long backedUpPosition = -1;
 
   public ExporterDirector(
@@ -167,28 +171,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     migrationStatusScanMaxRecords = context.getMigrationStatusScanMaxRecords();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
     exportOnlyBackedUpRecords = context.isExportOnlyBackedUpRecords();
+    backedUpPositionSource = context.getBackedUpPositionSource();
+    backedUpPositionPollInterval = context.getBackedUpPositionPollInterval();
 
     // needs name to be initialized
     healthReport = HealthReport.healthy(this);
-  }
-
-  /**
-   * Notifies the director that the log up to and including {@code position} is contained in a
-   * confirmed backup. When {@code exportOnlyBackedUpRecords} is enabled, the director never exports
-   * (or skips past) a record beyond the highest position it was notified about.
-   */
-  public void onBackupConfirmed(final long position) {
-    if (!exportOnlyBackedUpRecords || actor.isClosed()) {
-      return;
-    }
-    actor.run(
-        () -> {
-          if (position > backedUpPosition) {
-            LOG.debug("Records up to position {} are backed up and may be exported", position);
-            backedUpPosition = position;
-            readNextEvent();
-          }
-        });
   }
 
   public ActorFuture<Void> startAsync(final ActorSchedulingService actorSchedulingService) {
@@ -600,6 +587,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       exporterDistributionTimer.cancel();
       exporterDistributionTimer = null;
     }
+    if (backedUpPositionTimer != null) {
+      backedUpPositionTimer.cancel();
+      backedUpPositionTimer = null;
+    }
     if (logStreamReader != null) {
       // We have to close it, otherwise it will prevent journal segment deletion
       logStreamReader.close();
@@ -719,6 +710,58 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     exporterDistributionTimer =
         actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
+    startPollingBackedUpPosition();
+  }
+
+  private void startPollingBackedUpPosition() {
+    if (!exportOnlyBackedUpRecords) {
+      return;
+    }
+    if (backedUpPositionSource == null) {
+      LOG.warn(
+          "Exporting is restricted to backed-up records, but no backup information is available."
+              + " No records will be exported.");
+      return;
+    }
+    if (backedUpPositionTimer != null) {
+      backedUpPositionTimer.cancel();
+    }
+    refreshBackedUpPosition();
+    backedUpPositionTimer =
+        actor.runAtFixedRate(backedUpPositionPollInterval, this::refreshBackedUpPosition);
+  }
+
+  private void refreshBackedUpPosition() {
+    if (backedUpPositionSource == null || backedUpPositionRequestInFlight) {
+      return;
+    }
+    backedUpPositionRequestInFlight = true;
+    backedUpPositionSource
+        .backedUpPosition()
+        .whenComplete(
+            (position, error) ->
+                actor.run(
+                    () -> {
+                      backedUpPositionRequestInFlight = false;
+                      if (error != null) {
+                        LOG.debug("Failed to determine the backed-up position", error);
+                      } else {
+                        position.ifPresent(this::updateBackedUpPosition);
+                      }
+                    }));
+  }
+
+  private void updateBackedUpPosition(final long position) {
+    if (position == backedUpPosition) {
+      return;
+    }
+    LOG.debug(
+        "Records up to position {} are backed up on all partitions and may be exported", position);
+    final boolean advanced = position > backedUpPosition;
+    backedUpPosition = position;
+    if (advanced) {
+      readNextEvent();
+    }
   }
 
   private void startPassiveExportingMode() {

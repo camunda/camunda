@@ -7,30 +7,25 @@
  */
 package io.camunda.zeebe.backup.processing;
 
-import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
-import java.util.Set;
 
 public class CheckpointBackupConfirmedApplier {
   private final CheckpointState checkpointState;
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final DbBackupRangeState backupRangeState;
-  private final Set<CheckpointListener> checkpointListeners;
   private final boolean trackBackupMetadata;
 
   public CheckpointBackupConfirmedApplier(
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
-      final Set<CheckpointListener> checkpointListeners,
       final boolean trackBackupMetadata) {
     this.checkpointState = checkpointState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
-    this.checkpointListeners = checkpointListeners;
     this.trackBackupMetadata = trackBackupMetadata;
   }
 
@@ -55,9 +50,6 @@ public class CheckpointBackupConfirmedApplier {
       checkpointMetadataState.addBackupCheckpoint(
           checkpointId, checkpointPosition, checkpointTimestamp, checkpointType, firstLogPosition);
     }
-
-    checkpointListeners.forEach(
-        listener -> listener.onBackupConfirmed(checkpointId, checkpointPosition));
   }
 
   private void updateRangeState(

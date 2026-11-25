@@ -53,7 +53,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -489,41 +491,73 @@ public final class ExporterDirectorTest {
   }
 
   @Test
-  public void shouldOnlyExportRecordsCoveredByConfirmedBackup() {
+  public void shouldOnlyExportRecordsCoveredByCommonBackup() {
     // given
-    rule.withExporterDirectorContextConfigurator(ctx -> ctx.exportOnlyBackedUpRecords(true));
+    final var backedUpPosition = new AtomicReference<OptionalLong>(OptionalLong.empty());
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.exportOnlyBackedUpRecords(true)
+                .backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> CompletableFuture.completedFuture(backedUpPosition.get())));
     startExporterDirector(exporterDescriptors);
     final long first = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
     final long second = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
     final long third = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
 
     // when
-    rule.getDirector().onBackupConfirmed(second);
+    backedUpPosition.set(OptionalLong.of(second));
 
     // then
-    Awaitility.await("exporter has exported records up to the confirmed backup")
+    Awaitility.await("exporter has exported records up to the backed-up position")
         .atMost(Duration.ofSeconds(5))
         .untilAsserted(
             () ->
                 assertThat(exporters.get(0).getExportedRecords())
                     .extracting(Record::getPosition)
                     .containsExactly(first, second));
-    Awaitility.await("exporter does not export beyond the confirmed backup")
+
+    // when the partitions disagree for a while, the director keeps the previous position
+    backedUpPosition.set(OptionalLong.empty());
+
+    // then
+    Awaitility.await("exporter does not export beyond the backed-up position")
         .during(Duration.ofMillis(500))
         .atMost(Duration.ofSeconds(5))
         .untilAsserted(() -> assertThat(exporters.get(0).getExportedRecords()).hasSize(2));
 
     // when
-    rule.getDirector().onBackupConfirmed(third);
+    backedUpPosition.set(OptionalLong.of(third));
 
     // then
-    Awaitility.await("exporter continues once the next backup is confirmed")
+    Awaitility.await("exporter continues once a newer backup is common to all partitions")
         .atMost(Duration.ofSeconds(5))
         .untilAsserted(
             () ->
                 assertThat(exporters.get(0).getExportedRecords())
                     .extracting(Record::getPosition)
                     .containsExactly(first, second, third));
+  }
+
+  @Test
+  public void shouldNotExportWithoutBackedUpPosition() {
+    // given
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.exportOnlyBackedUpRecords(true)
+                .backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> CompletableFuture.completedFuture(OptionalLong.of(-1))));
+    startExporterDirector(exporterDescriptors);
+
+    // when
+    rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+
+    // then
+    Awaitility.await("exporter does not export records that are not backed up")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(exporters.get(0).getExportedRecords()).isEmpty());
   }
 
   @Test
