@@ -109,6 +109,35 @@ final class AppendAfterSnapshotInstallTest {
     assertThat(raft.getRaftContext(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex + 1);
   }
 
+  @Test
+  void shouldRejectPreviousEntryBeforeLogThatStartsBeforeSnapshot() {
+    // given - the follower takes its own snapshot inside its log, without compacting it, so its
+    // log starts before its snapshot
+    final long installedSnapshotIndex = followerWithLogAfterSnapshot();
+    raft.clientAppendOnLeader();
+    raft.clientAppendOnLeader();
+    raft.runUntilDone(LEADER);
+    replicateTo(FOLLOWER);
+    final var follower = raft.getRaftContext(FOLLOWER);
+    final long firstIndex = follower.getLog().getFirstIndex();
+    final long lastIndex = follower.getLog().getLastIndex();
+    assertThat(follower.getCommitIndex()).isEqualTo(lastIndex);
+    raft.takeSnapshot(FOLLOWER, lastIndex - 1);
+    raft.runUntilDone(FOLLOWER);
+    assertThat(firstIndex).isEqualTo(installedSnapshotIndex + 1);
+    assertThat(follower.getCurrentSnapshotIndex()).isEqualTo(lastIndex - 1);
+
+    // when - the previous entry is before the log, with the term of the log's first entry, which
+    // the follower compared against before
+    final var response = appendOnFollower(firstIndex - 1, termAt(FOLLOWER, firstIndex));
+
+    // then - the leader continues after the snapshot, and the log is kept
+    assertThat(response.succeeded()).isFalse();
+    assertThat(response.lastLogIndex()).isEqualTo(lastIndex - 1);
+    assertThat(follower.getLog().getFirstIndex()).isEqualTo(firstIndex);
+    assertThat(follower.getLog().getLastIndex()).isEqualTo(lastIndex);
+  }
+
   /**
    * Builds the scenario of {@link #installSnapshotOfOlderTermOnFollower()}, and lets the follower
    * append the entry after the snapshot.
