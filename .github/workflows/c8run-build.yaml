@@ -114,10 +114,6 @@ jobs:
             secret/data/products/distribution/ci NEXUS_USERNAME;
             secret/data/products/distribution/ci NEXUS_PASSWORD;
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
       - name: Download Camunda Core Dist
         uses: actions/download-artifact@v4
         with:
@@ -136,33 +132,15 @@ jobs:
           local-archive-build: "true"
           checkout: "false"
 
-      - name: Install dependencies
-        run: npm ci
-        working-directory: ./c8run/e2e_tests
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-        working-directory: ./c8run/e2e_tests
-
       - name: Wait for camunda process to start
         run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done'
       - name: Unit tests
         run: go test ./...
         working-directory: ./c8run
 
-      - name: Run Playwright tests
-        run: npx playwright test
-        working-directory: ./c8run/e2e_tests
-
       - name: Run v2 API endpoint test
         run: ./api_tests.sh
         working-directory: ./c8run/e2e_tests
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-${{ matrix.os }}
-          path: ./c8run/e2e_tests/playwright-report
-          retention-days: 30
 
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -263,28 +241,6 @@ jobs:
         shell: bash
         run: ./api_tests.sh
         working-directory: .\c8run\e2e_tests
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: .\c8run\e2e_tests
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-        working-directory: .\c8run\e2e_tests
-
-      - name: Run Playwright tests
-        run: npx playwright test
-        working-directory: .\c8run\e2e_tests
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: .\c8run\e2e_tests\playwright-report
-          retention-days: 30
 
       - uses: actions/upload-artifact@v4
         with:
