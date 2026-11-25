@@ -48,6 +48,7 @@ import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.PartitionInRecoveryException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
@@ -189,6 +190,30 @@ final class BackupEndpointTest {
           .extracting(Error::getMessage)
           .asString()
           .contains("failure");
+    }
+
+    @Test
+    void shouldReturn503WhenPartitionIsInRecovery() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
+      final var endpoint = new BackupEndpoint(api, config);
+      doReturn(CompletableFuture.failedFuture(new PartitionInRecoveryException(2)))
+          .when(api)
+          .takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
+
+      // when
+      final var response = endpoint.take(1);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(503);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .extracting(Error::getMessage)
+          .isEqualTo("Partition 2 is currently in recovery mode.");
     }
 
     @Test
@@ -1596,6 +1621,31 @@ final class BackupEndpointTest {
                 assertThat(body.getMessage())
                     .contains("tenantb is down")
                     .contains("Backups were still triggered for physical tenant(s): [tenanta]");
+              });
+    }
+
+    @Test
+    void shouldReturn503WithTriggeredBackupIdsWhenPartitionOfOnePhysicalTenantIsInRecovery() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.takeBackup(TENANT_A)).thenReturn(CompletableFuture.completedFuture(101L));
+      when(apiB.takeBackup(TENANT_B))
+          .thenReturn(CompletableFuture.failedFuture(new PartitionInRecoveryException(1)));
+      final var endpoint = endpoint(generatedIds(apiA), generatedIds(apiB));
+
+      // when
+      final var response = endpoint.take();
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(503);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(TakeBackupRuntimeResponse.class))
+          .satisfies(
+              body -> {
+                assertThat(body.getBackupIds()).isEqualTo(Map.of(TENANT_A, 101L));
+                assertThat(body.getFailureReason())
+                    .isEqualTo("Partition 1 is currently in recovery mode.");
               });
     }
 

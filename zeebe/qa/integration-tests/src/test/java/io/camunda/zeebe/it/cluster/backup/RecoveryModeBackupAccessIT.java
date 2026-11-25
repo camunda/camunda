@@ -8,11 +8,16 @@
 package io.camunda.zeebe.it.cluster.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import feign.FeignException;
 import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
 import io.camunda.configuration.data.primarystorage.backup.Filesystem;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupRange;
+import io.camunda.zeebe.management.cluster.BrokerState;
+import io.camunda.zeebe.management.cluster.PartitionState;
+import io.camunda.zeebe.management.cluster.PartitionStateCode;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -27,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -174,6 +180,48 @@ final class RecoveryModeBackupAccessIT {
     assertThat(statusInRecovery.getBackupId())
         .describedAs("status lookup by backup ID must return the correct ID in recovery mode")
         .isEqualTo(knownBackupId);
+  }
+
+  @Test
+  void shouldRejectTakingBackupWithServiceUnavailableInRecoveryMode() {
+    // given — the cluster is in RECOVERING mode and every partition reports it
+    final var backupActuator = BackupActuator.of(cluster.availableGateway());
+    final var clusterActuator = ClusterActuator.of(cluster.availableGateway());
+    final long toRecovering;
+    try (final var client = cluster.newClientBuilder().build()) {
+      toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
+    }
+    Awaitility.await("cluster transitions to RECOVERING")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                ClusterActuatorAssert.assertThat(clusterActuator)
+                    .hasCompletedChanges(toRecovering)
+                    .doesNotHavePendingChanges());
+    Awaitility.await("every partition reports RECOVERING")
+        .timeout(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(clusterActuator.getTopology().getBrokers())
+                    .flatExtracting(BrokerState::getPartitions)
+                    .extracting(PartitionState::getState)
+                    .containsOnly(PartitionStateCode.RECOVERING));
+
+    // when — then: a recovering partition is a transient condition the operator can retry after,
+    // so it must surface as 503 rather than 500. Awaited because the gateway learns that the
+    // partition has no leader through gossip, which can lag behind the completed mode change.
+    Awaitility.await("taking a backup is rejected as unavailable")
+        .timeout(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThatThrownBy(backupActuator::take)
+                    .asInstanceOf(InstanceOfAssertFactories.type(FeignException.class))
+                    .satisfies(
+                        exception -> {
+                          assertThat(exception.status()).isEqualTo(503);
+                          assertThat(exception.contentUTF8())
+                              .contains("Partition 1 is currently in recovery mode.");
+                        }));
   }
 
   private void generateLoad() {
