@@ -157,6 +157,16 @@ final class ClusterBehaviorTest {
   }
 
   @Test
+  void shouldOnlyKeepTheReleaseOfTheVersion() {
+    // when
+    final var behavior =
+        ClusterBehavior.ofOrdinals(new SemanticVersion(8, 11, 0, "alpha1", "build.5"), 0);
+
+    // then
+    assertThat(behavior.behaviorVersion()).isEqualTo(V1);
+  }
+
+  @Test
   void shouldRejectANegativeOrdinalInTheFactory() {
     // when, then
     assertThatThrownBy(() -> ClusterBehavior.ofOrdinals(V1, 0, -1))

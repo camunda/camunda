@@ -32,8 +32,9 @@ import org.jspecify.annotations.Nullable;
  * lastSupportedCapability}, {@code firstWord}, {@code lastWord}) are derived from these. A cluster
  * behavior keeps ordinals that the {@link CapabilityCatalog} of this binary does not list.
  *
- * <p>The behavior version is a semantic version for display only and never used for gating: it is
- * not part of {@link #equals(Object)} and {@link #hashCode()}, which compare the set only. {@link
+ * <p>The behavior version is a semantic version without pre-release and build metadata (it is only
+ * meaningful for a released version), for display only and never used for gating: it is not part of
+ * {@link #equals(Object)} and {@link #hashCode()}, which compare the set only. {@link
  * #UNKNOWN_VERSION} stands for a version that is not known.
  */
 public final class ClusterBehavior {
@@ -57,7 +58,7 @@ public final class ClusterBehavior {
       final SemanticVersion behaviorVersion) {
     this.firstUnsupportedCapability = firstUnsupportedCapability;
     this.capabilityBitmask = capabilityBitmask;
-    this.behaviorVersion = behaviorVersion;
+    this.behaviorVersion = behaviorVersion.withoutPreRelease();
     firstWord = firstUnsupportedCapability / Long.SIZE;
     lastWord = firstWord + capabilityBitmask.length - 1;
     if (capabilityBitmask.length == 0) {
@@ -122,7 +123,7 @@ public final class ClusterBehavior {
     return capabilityBitmask.clone();
   }
 
-  /** The behavior version of the set, never null. */
+  /** The behavior version of the set, never null; pre-release and build metadata are not kept. */
   public SemanticVersion behaviorVersion() {
     return behaviorVersion;
   }
