@@ -85,6 +85,18 @@ class ListViewFlowNodeIncidentFlagHandlerTest {
   }
 
   @Test
+  void shouldNotHandleRecordWithContainerKeysOnly() {
+    // given
+    final long container = 5L;
+    final var incidentRecord =
+        recordWith(
+            IncidentIntent.CREATED, List.of(container), List.of(List.of(P1, container, P1E1)));
+
+    // when - then
+    assertThat(underTest.handlesRecord(incidentRecord)).isFalse();
+  }
+
+  @Test
   void shouldGenerateIdsFromFlowNodeKeys() {
     // given
     final var incidentRecord = recordWith(IncidentIntent.CREATED, List.of(P1, P1E1, P2, P2E1));
@@ -173,10 +185,15 @@ class ListViewFlowNodeIncidentFlagHandlerTest {
 
   private Record<IncidentRecordValue> recordWith(
       final IncidentIntent intent, final List<Long> flagKeys) {
+    return recordWith(intent, flagKeys, List.of(List.of(P1, P1E1), List.of(P2, P2E1)));
+  }
+
+  private Record<IncidentRecordValue> recordWith(
+      final IncidentIntent intent, final List<Long> flagKeys, final List<List<Long>> path) {
     final IncidentRecordValue value =
         ImmutableIncidentRecordValue.builder()
             .from(factory.generateObject(IncidentRecordValue.class))
-            .withElementInstancePath(List.of(List.of(P1, P1E1), List.of(P2, P2E1)))
+            .withElementInstancePath(path)
             .withIncidentFlagKeys(flagKeys)
             .build();
     return factory.generateRecord(

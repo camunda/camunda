@@ -27,6 +27,10 @@ class IncidentFlagKeysUtilTest {
   private static final long P1E1 = 2L;
   private static final long P2 = 3L;
   private static final long P2E1 = 4L;
+  private static final long SUB = 5L;
+  private static final long CA = 6L;
+  private static final long SUB2 = 7L;
+  private static final long TASK = 8L;
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
@@ -52,6 +56,49 @@ class IncidentFlagKeysUtilTest {
 
     // then
     assertThat(result).containsExactly(P1E1, P2E1);
+  }
+
+  @Test
+  void shouldSkipContainerElementsOnThePath() {
+    // given
+    final var value =
+        valueWithPath(
+            List.of(List.of(P1, SUB, CA), List.of(P2, SUB2, TASK)),
+            List.of(P1, SUB, CA, P2, SUB2, TASK));
+
+    // when - then
+    assertThat(IncidentFlagKeysUtil.flowNodeFlagKeys(value)).containsExactly(CA, TASK);
+    assertThat(IncidentFlagKeysUtil.processInstanceFlagKeys(value)).containsExactly(P1, P2);
+  }
+
+  @Test
+  void shouldIgnoreFlagKeysThatAreNotOnThePath() {
+    // given
+    final var value = valueWithFlagKeys(List.of(99L, P1E1));
+
+    // when - then
+    assertThat(IncidentFlagKeysUtil.flowNodeFlagKeys(value)).containsExactly(P1E1);
+    assertThat(IncidentFlagKeysUtil.processInstanceFlagKeys(value)).isEmpty();
+  }
+
+  @Test
+  void shouldNotReturnFlowNodeKeysForProcessLevelIncident() {
+    // given
+    final var value = valueWithPath(List.of(List.of(P1)), List.of(P1));
+
+    // when - then
+    assertThat(IncidentFlagKeysUtil.flowNodeFlagKeys(value)).isEmpty();
+    assertThat(IncidentFlagKeysUtil.processInstanceFlagKeys(value)).containsExactly(P1);
+  }
+
+  @Test
+  void shouldSkipEmptyPathLists() {
+    // given
+    final var value = valueWithPath(List.of(List.of(), List.of(P1, P1E1)), List.of(P1, P1E1));
+
+    // when - then
+    assertThat(IncidentFlagKeysUtil.flowNodeFlagKeys(value)).containsExactly(P1E1);
+    assertThat(IncidentFlagKeysUtil.processInstanceFlagKeys(value)).containsExactly(P1);
   }
 
   @Test
@@ -123,9 +170,14 @@ class IncidentFlagKeysUtilTest {
   }
 
   private IncidentRecordValue valueWithFlagKeys(final List<Long> flagKeys) {
+    return valueWithPath(List.of(List.of(P1, P1E1), List.of(P2, P2E1)), flagKeys);
+  }
+
+  private IncidentRecordValue valueWithPath(
+      final List<List<Long>> path, final List<Long> flagKeys) {
     return ImmutableIncidentRecordValue.builder()
         .from(factory.generateObject(IncidentRecordValue.class))
-        .withElementInstancePath(List.of(List.of(P1, P1E1), List.of(P2, P2E1)))
+        .withElementInstancePath(path)
         .withIncidentFlagKeys(flagKeys)
         .build();
   }

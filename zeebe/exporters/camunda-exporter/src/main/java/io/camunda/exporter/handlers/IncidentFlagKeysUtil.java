@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
 /**
  * Splits the incident flag keys of an incident record into process instance keys and flow node
  * instance keys. The engine decides the keys, the element instance path tells which kind a key is.
+ * Only process instances, call activities and the incident element get the flag, the same set the
+ * post importer used. Container elements on the path are skipped on purpose.
  */
 final class IncidentFlagKeysUtil {
 
@@ -28,10 +30,12 @@ final class IncidentFlagKeysUtil {
   }
 
   static List<Long> flowNodeFlagKeys(final IncidentRecordValue value) {
-    final Set<Long> processInstanceKeys = processInstanceKeys(value);
-    return value.getIncidentFlagKeys().stream()
-        .filter(key -> !processInstanceKeys.contains(key))
-        .toList();
+    final Set<Long> flowNodeKeys =
+        value.getElementInstancePath().stream()
+            .filter(keys -> keys.size() > 1)
+            .map(List::getLast)
+            .collect(Collectors.toUnmodifiableSet());
+    return value.getIncidentFlagKeys().stream().filter(flowNodeKeys::contains).toList();
   }
 
   static long processInstanceKeyOf(final IncidentRecordValue value, final long elementInstanceKey) {
@@ -56,6 +60,7 @@ final class IncidentFlagKeysUtil {
 
   private static Set<Long> processInstanceKeys(final IncidentRecordValue value) {
     return value.getElementInstancePath().stream()
+        .filter(keys -> !keys.isEmpty())
         .map(List::getFirst)
         .collect(Collectors.toUnmodifiableSet());
   }
