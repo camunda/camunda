@@ -44,16 +44,16 @@ const AgentShineOverlay: React.FC<Pick<OverlayEntry, 'container' | 'elementId'>>
 			?.querySelector<SVGRectElement>(`[data-element-id="${CSS.escape(elementId)}"] .djs-visual rect`);
 		shine.style.display = shape ? 'block' : 'none';
 		if (shape) {
-			shine.style.width = `${Number(shape.getAttribute('width') ?? 0) + 2}px`;
-			shine.style.height = `${Number(shape.getAttribute('height') ?? 0) + 2}px`;
-			shine.style.borderRadius = `${Number(shape.getAttribute('rx') ?? 0) + 1}px`;
+			shine.style.width = `${Number(shape.getAttribute('width') ?? 0) - 2}px`;
+			shine.style.height = `${Number(shape.getAttribute('height') ?? 0) - 2}px`;
+			shine.style.borderRadius = `${Math.max(Number(shape.getAttribute('rx') ?? 0) - 1, 0)}px`;
 		}
 	}, [container, elementId]);
 
 	return createPortal(
 		<span
 			ref={shineRef}
-			className="instance-agent-shine pointer-events-none absolute -inset-px hidden p-0.5 opacity-70"
+			className="instance-agent-shine pointer-events-none absolute inset-px hidden p-0.5 opacity-70"
 		/>,
 		container,
 	);
@@ -103,7 +103,7 @@ const InstanceDiagramOverlays: React.FC<Props> = ({businessObjects}) => {
 				<Text
 					as="span"
 					variant="label-md-strong"
-					className="inline-block rounded-full border border-accent-action-default bg-background px-2 py-0.5 whitespace-nowrap text-accent-foreground-subtle shadow-sm"
+					className="inline-block rounded-full border border-accent-border-strong bg-background px-2 py-0.5 whitespace-nowrap text-accent-foreground-subtle shadow-sm"
 				>
 					{label}
 					{additionalActiveCount > 0 && (
