@@ -203,6 +203,29 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
   }
 
   @Test
+  public void shouldRejectMigrationToSuspendedTargetWithoutPermissionAsForbidden() {
+    // given
+    final var processInstanceKey = createProcessInstance();
+    engine
+        .processDefinitionSuspension()
+        .withProcessDefinitionKey(targetProcDefKey)
+        .suspend(DEFAULT_USER.getUsername());
+    final var user = createUser();
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.UPDATE_PROCESS_INSTANCE,
+        AuthorizationResourceMatcher.ID,
+        PROCESS_ID);
+
+    // when
+    final var rejection = migrateTo(processInstanceKey, targetProcDefKey, user.getUsername());
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+  }
+
+  @Test
   public void shouldBeAuthorizedToMigrateToNewVersionOfSameProcessWithSourcePermissionOnly() {
     // given
     final var processInstanceKey = createProcessInstance();

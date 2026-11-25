@@ -182,6 +182,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
 
     requireTargetProcessDefinitionNotDraining(targetProcessDefinition, targetProcessDefinitionKey);
+    requireTargetProcessDefinitionNotSuspended(
+        processState.isSuspended(targetProcessDefinitionKey), targetProcessDefinitionKey);
     requireNoStartEventInstanceForTargetProcess(
         processInstance, targetProcessDefinition, messageState);
     requireReferredElementsExist(
