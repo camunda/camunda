@@ -24,5 +24,9 @@ jobs:
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'multidb-test-rdbms') ||
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'multidb-test-rdbms'))
+    permissions:
+      actions: write
+      contents: read
+      id-token: write # Vault JWT login
     uses: ./.github/workflows/zeebe-rdbms-integration-tests.yml
     secrets: inherit

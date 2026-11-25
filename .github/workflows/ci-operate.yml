@@ -84,7 +84,8 @@ jobs:
     name: "Build Back End"
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
       TEST_TYPE: Build
@@ -102,8 +103,9 @@ jobs:
           java-distribution: adopt
           maven-cache-key-modifier: operate
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           minimus: true
       - name: Build Maven
         run: |
@@ -114,16 +116,18 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   fe-unit-tests:
     if: inputs.runFeTests
     name: "Unit - Front End [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     strategy:
       fail-fast: false
       matrix:
@@ -179,9 +183,10 @@ jobs:
           job_name: "operate-ci/fe-unit-tests-${{ matrix.shardIndex }}"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   fe-unit-tests-merge:
     if: ${{ !cancelled() && inputs.runFeTests }}
@@ -252,7 +257,8 @@ jobs:
     name: "Tool / Front End - TypeScript Type Check"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -284,9 +290,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Front End Code linting
   operate-fe-eslint:
@@ -294,7 +301,8 @@ jobs:
     name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -326,16 +334,18 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   operate-fe-prettier:
     if: inputs.runFeTests
     name: "Tool / Front End - Prettier"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -367,9 +377,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # description: This workflow runs a11y accessibility tests on Operate
   operate-fe-a11y-tests:
@@ -377,7 +388,8 @@ jobs:
     name: "Tool / Front End - a11y"
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -422,16 +434,18 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   operate-fe-visual-regression-tests:
     if: inputs.runFeTests
     name: "Unit / Front End - Visual Regression [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     strategy:
       fail-fast: false
       matrix:
@@ -490,9 +504,10 @@ jobs:
         with:
           job_name: "operate-ci/operate-fe-visual-regression-tests-${{ matrix.shardIndex }}"
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   operate-fe-visual-regression-merge:
     if: ${{ !cancelled() && inputs.runFeTests }}
@@ -576,7 +591,8 @@ jobs:
     name: "Tool / Front End - Update Screenshots"
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     env:
       TEST_TYPE: screenshot-update
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -620,9 +636,10 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
 # As part of the V1 API cleanup, the backup restore tests have been disabled
 # and need to be reinstated before 8.10 releases.
