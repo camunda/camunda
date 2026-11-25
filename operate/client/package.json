@@ -108,7 +108,7 @@
     "globals": "17.14.0",
     "jsdom": "26.1.0",
     "knip": "6.47.0",
-    "monaco-editor": "0.55.1",
+    "monaco-editor": "0.58.0",
     "msw": "2.15.0",
     "playwright": "1.65.0",
     "prettier": "3.10.1",
@@ -128,10 +128,5 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "npm@12.2.0",
-  "overrides": {
-    "monaco-editor": {
-      "dompurify": "3.4.17"
-    }
-  }
+  "packageManager": "npm@12.2.0"
 }
