@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.incident.IncidentFlagKeys;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
@@ -55,6 +56,7 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
 
     if (hasIncident) {
       final IncidentRecord incidentRecord = incidentState.getIncidentRecord(incidentKey);
+      IncidentFlagKeys.setForResolved(incidentState, incidentRecord);
       stateWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, incidentRecord);
       incidentMetrics.incidentResolved();
     }
@@ -110,6 +112,7 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
             .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
             .setCallingElementPath(treePathProperties.callingElementPath());
 
+    IncidentFlagKeys.setForCreated(incidentState, jobIncidentRecord);
     stateWriter.appendFollowUpEvent(
         keyGenerator.nextKey(), IncidentIntent.CREATED, jobIncidentRecord);
     incidentMetrics.incidentCreated();
@@ -145,6 +148,7 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
         .setCallingElementPath(treePathProperties.callingElementPath());
 
     final var key = keyGenerator.nextKey();
+    IncidentFlagKeys.setForCreated(incidentState, incidentRecord);
     stateWriter.appendFollowUpEvent(key, IncidentIntent.CREATED, incidentRecord);
     incidentMetrics.incidentCreated();
   }
@@ -157,6 +161,7 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
     incidentState.forExistingProcessIncident(
         elementInstanceKey,
         (record, key) -> {
+          IncidentFlagKeys.setForResolved(incidentState, record);
           stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, record);
           incidentMetrics.incidentResolved();
         });

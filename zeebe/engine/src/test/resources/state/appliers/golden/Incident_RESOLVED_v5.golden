@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -50,6 +51,12 @@ final class IncidentResolvedV5Applier implements TypedEventApplier<IncidentInten
     }
     reactivateJobIfNeeded(value);
     incidentState.deleteIncident(incidentKey);
+
+    for (final List<Long> processInstancePath : value.getElementInstancePath()) {
+      for (final long key : processInstancePath) {
+        incidentState.decrementActiveIncidentCount(key);
+      }
+    }
   }
 
   private void reactivateJobIfNeeded(final IncidentRecord value) {

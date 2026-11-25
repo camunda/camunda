@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.incident.IncidentFlagKeys;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -108,6 +109,7 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
         continue;
       }
       final var incidentEvent = buildIncident(jobKey, job, storeId, secretReference);
+      IncidentFlagKeys.setForCreated(incidentState, incidentEvent);
       // the record batch is empty when this cycle starts, so the check normally passes for the
       // first incident. It can still reject it when the reserve alone exceeds the maximum fragment
       // size, and a cycle that appends nothing drains no entry and re-queues the same job keys, so

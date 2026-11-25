@@ -32,8 +32,8 @@ public interface IncidentState {
   long getIncidentCount();
 
   /**
-   * Returns the number of active incidents on this element instance or on an element instance
-   * below it, 0 when there is no entry.
+   * Returns the number of active incidents on this element instance or on an element instance below
+   * it, 0 when there is no entry.
    */
   long getActiveIncidentCount(long elementInstanceKey);
 }

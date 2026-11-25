@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.incident.IncidentFlagKeys;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -85,6 +87,7 @@ public class JobThrowErrorProcessor
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final JobProcessingMetrics jobMetrics;
   private final ProcessState processState;
+  private final IncidentState incidentState;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final StateWriter stateWriter;
@@ -108,6 +111,7 @@ public class JobThrowErrorProcessor
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
+    incidentState = state.getIncidentState();
     eventScopeInstanceState = state.getEventScopeInstanceState();
     this.agentDefinitionBehavior = agentDefinitionBehavior;
     this.cslCheck = cslCheck;
@@ -262,6 +266,7 @@ public class JobThrowErrorProcessor
         .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
         .setCallingElementPath(treePathProperties.callingElementPath());
 
+    IncidentFlagKeys.setForCreated(incidentState, incidentEvent);
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
     incidentMetrics.incidentCreated();
   }

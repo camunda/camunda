@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import java.util.List;
 
 /**
  * Adds {@code SECRET_RESOLUTION_ERROR} handling on top of {@link IncidentCreatedApplier} (v1). A
@@ -42,6 +43,12 @@ final class IncidentCreatedV3Applier implements TypedEventApplier<IncidentIntent
   @Override
   public void applyState(final long incidentKey, final IncidentRecord value) {
     incidentState.createIncident(incidentKey, value);
+
+    for (final List<Long> processInstancePath : value.getElementInstancePath()) {
+      for (final long key : processInstancePath) {
+        incidentState.incrementActiveIncidentCount(key);
+      }
+    }
 
     final long jobKey = value.getJobKey();
     if (jobKey == -1) {
