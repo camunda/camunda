@@ -47,7 +47,7 @@ const ProcessInstanceHelperModal: React.FC = observer(() => {
 				}
 			}}
 		>
-			<DialogContent size="md" initialFocusRef={gotItButtonRef} dismissOnOutsideClick={false}>
+			<DialogContent size="lg" initialFocusRef={gotItButtonRef} dismissOnOutsideClick={false}>
 				<DialogHeader>
 					<DialogTitle>{t('operate.processInstance.helper.title')}</DialogTitle>
 					<DialogDescription>{t('operate.processInstance.helper.intro')}</DialogDescription>
