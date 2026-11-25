@@ -36,6 +36,8 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
 
   private static final int HTTPS_PORT = 443;
   private static final Pattern PROJECT_NUMBER = Pattern.compile("[0-9]+");
+  private static final Pattern SECRET_ARN =
+      Pattern.compile("arn:[^:]+:secretsmanager:[^:]*:[^:]*:secret:(.*)");
 
   static StoreScope of(final FileStore store) {
     final var directory = realPath(Path.of(store.getPath())).toString();
@@ -47,12 +49,20 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
     return new StoreScope(null, store.getPrefix().toUpperCase(Locale.ROOT), null);
   }
 
+  /**
+   * A blank region is left to the environment, as the store leaves it. A secret id can be an ARN as
+   * well as a name, so an ARN is compared as the name it ends with.
+   */
   static StoreScope of(final AwsSecretsManagerStore store) {
+    final var region = store.getRegion();
     final var pathPrefix = store.getPathPrefix();
-    return new StoreScope(
-        store.getRegion(),
-        pathPrefix == null || pathPrefix.isBlank() ? "" : pathPrefix,
-        store.getContainerSecretId());
+    final var container = store.getContainerSecretId();
+    final var prefix = pathPrefix == null || pathPrefix.isBlank() ? "" : pathPrefix;
+    final var backend = region == null || region.isBlank() ? null : region;
+    if (prefix.isEmpty() && container != null) {
+      return new StoreScope(backend, "", secretName(container));
+    }
+    return new StoreScope(backend, secretName(prefix), container);
   }
 
   static StoreScope of(final GcpSecretManagerStore store) {
@@ -108,6 +118,12 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
     } catch (final IOException unreadable) {
       return absolute.normalize();
     }
+  }
+
+  /** The secret name in an AWS secret id, which may be written as an ARN. */
+  private static String secretName(final String secretId) {
+    final var arn = SECRET_ARN.matcher(secretId);
+    return arn.matches() ? arn.group(1) : secretId;
   }
 
   /**

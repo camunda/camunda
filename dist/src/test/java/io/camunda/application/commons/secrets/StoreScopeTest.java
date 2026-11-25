@@ -163,6 +163,46 @@ class StoreScopeTest {
   }
 
   @Test
+  void shouldTreatABlankAwsRegionAsAnyRegion() {
+    // given
+    final var first = StoreScope.of(aws("camunda/", null, " "));
+    final var second = StoreScope.of(aws("camunda/internal/", null, "eu-west-1"));
+
+    // when
+    final var result = first.overlaps(second);
+
+    // then
+    assertThat(result).isTrue();
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      nullValues = "-",
+      value = {
+        "arn:aws:secretsmanager:eu-west-1:123456789012:secret:camunda/, -, camunda/internal/, -,"
+            + " true",
+        "-, arn:aws:secretsmanager:eu-west-1:123456789012:secret:camunda/config, camunda/, -, true",
+        "arn:aws:secretsmanager:eu-west-1:123456789012:secret:camunda/jobs/, -, camunda/config/, -,"
+            + " false"
+      })
+  void shouldCompareAnAwsArnAsTheSecretNameItHolds(
+      final String firstPrefix,
+      final String firstContainer,
+      final String secondPrefix,
+      final String secondContainer,
+      final boolean overlaps) {
+    // given
+    final var first = StoreScope.of(aws(firstPrefix, firstContainer, null));
+    final var second = StoreScope.of(aws(secondPrefix, secondContainer, null));
+
+    // when
+    final var result = first.overlaps(second);
+
+    // then
+    assertThat(result).isEqualTo(overlaps);
+  }
+
+  @Test
   void shouldTreatABlankAwsPathPrefixAsNoPrefix() {
     // given
     final var first = StoreScope.of(aws(" ", null, null));
