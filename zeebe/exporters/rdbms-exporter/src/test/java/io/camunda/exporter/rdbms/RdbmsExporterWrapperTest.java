@@ -40,6 +40,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.HistoryDeletionAud
 import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.JobAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProbeAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessDefinitionSuspensionAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
@@ -267,6 +268,7 @@ class RdbmsExporterWrapperTest {
             Map.entry(UserAuditLogTransformer.class, ValueType.USER),
             Map.entry(UserTaskAuditLogTransformer.class, ValueType.USER_TASK),
             Map.entry(JobAuditLogTransformer.class, ValueType.JOB),
+            Map.entry(ProbeAuditLogTransformer.class, ValueType.PROBE),
             Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE));
 
     // Check that all expected AuditLogExportHandlers are registered
