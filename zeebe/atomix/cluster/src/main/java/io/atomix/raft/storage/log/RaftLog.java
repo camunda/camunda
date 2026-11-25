@@ -18,6 +18,7 @@ package io.atomix.raft.storage.log;
 
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 
+import io.atomix.raft.metrics.RaftLogMetrics;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.ReplicatableJournalRecord;
 import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
@@ -41,12 +42,14 @@ public final class RaftLog implements Closeable {
   private final RaftEntrySerializer serializer = new RaftEntrySBESerializer();
   private final Journal journal;
   private final RaftLogFlusher flusher;
+  private final RaftLogMetrics metrics;
   private IndexedRaftLogEntry lastAppendedEntry;
   private volatile long commitIndex;
 
-  RaftLog(final Journal journal, final RaftLogFlusher flusher) {
+  RaftLog(final Journal journal, final RaftLogFlusher flusher, final RaftLogMetrics metrics) {
     this.journal = journal;
     this.flusher = flusher;
+    this.metrics = metrics;
   }
 
   /**
@@ -74,6 +77,22 @@ public final class RaftLog implements Closeable {
    */
   public RaftLogReader openCommittedReader() {
     return new RaftLogCommittedReader(this, new RaftLogUncommittedReader(journal.openReader()));
+  }
+
+  /**
+   * Opens a reader that can only read committed entries, and that fails with a {@link
+   * io.camunda.zeebe.journal.CorruptedJournalException} instead of reporting the end of the log
+   * when a committed entry cannot be read back.
+   *
+   * @return the reader
+   */
+  public RaftLogReader openCommittedReaderFailingOnMissingEntries() {
+    return new RaftLogCommittedReader(
+        this, new RaftLogUncommittedReader(journal.openReader()), true);
+  }
+
+  void onMissingCommittedEntry() {
+    metrics.observeMissingCommittedEntry();
   }
 
   public boolean isOpen() {
