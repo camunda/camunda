@@ -48,8 +48,8 @@ public class DecisionStateMultiTenantTest {
     decisionState.storeDecisionRequirements(drg2);
 
     // then
-    var actualDrg1 = decisionState.findDecisionRequirementsByTenantAndKey(tenant1, drgKey);
-    var actualDrg2 = decisionState.findDecisionRequirementsByTenantAndKey(tenant2, drgKey);
+    final var actualDrg1 = decisionState.findDecisionRequirementsByTenantAndKey(tenant1, drgKey);
+    final var actualDrg2 = decisionState.findDecisionRequirementsByTenantAndKey(tenant2, drgKey);
     assertDeployedDrg(actualDrg1.get(), tenant1, drgKey, drgId, version);
     assertDeployedDrg(actualDrg2.get(), tenant2, drgKey, drgId, version);
   }
