@@ -21,6 +21,7 @@ For the rules, the pods, and the changelog template, refer to [reference.md](ref
 - Keep the public names that `lib/<version>/index.ts` exports.
 - A change in one version tree does not go into the other trees.
 - If a spec change causes type errors in the webapp, correct the webapp in the same PR. Ask the pod that owns the changed code to review the PR.
+- Do not write tests in the package, and do not add a test runner (for example vitest) to it. The schemas come from the spec, and the typecheck of the consumers examines them. Test the behavior in the webapp that uses the schemas.
 
 ## Procedure 1: Change the spec
 
