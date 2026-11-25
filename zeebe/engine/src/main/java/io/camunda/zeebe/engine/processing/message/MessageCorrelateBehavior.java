@@ -143,9 +143,9 @@ public final class MessageCorrelateBehavior {
    *     P_B} and applied by the reply processors on {@code P_K} — so a caller that must distinguish
    *     "nothing correlated" from "correlation delegated cross-partition" (e.g. the synchronous
    *     correlate command, to avoid reporting a spurious {@code NOT_FOUND}) relies on this flag. A
-   *     local start that {@link #triggerOrDelegateStartEvent} could not create (definition draining
-   *     or removed) also returns {@code -1} but is <em>not</em> reported as delegated — it must
-   *     fall through to the {@code NOT_FOUND} rejection.
+   *     local start that {@link #triggerOrDelegateStartEvent} could not create (definition
+   *     suspended, draining, or removed) also returns {@code -1} but is <em>not</em> reported as
+   *     delegated — it must fall through to the {@code NOT_FOUND} rejection.
    */
   public boolean correlateToMessageStartEvents(
       final MessageData messageData,
@@ -181,9 +181,10 @@ public final class MessageCorrelateBehavior {
             } else if (shouldDelegateToBusinessIdPartition(messageData)) {
               // triggerOrDelegateStartEvent returned -1: distinguish a genuine cross-partition
               // delegation (the terminal outcome comes later from P_B via the reply processors)
-              // from a local start that simply could not be created (definition draining or
-              // removed). Only the former defers the synchronous response; the latter must fall
-              // through to the NOT_FOUND rejection so the correlate does not hang.
+              // from a local start that simply could not be created (definition suspended,
+              // draining, or removed). Only the former defers the synchronous response; the
+              // latter must fall through to the NOT_FOUND rejection so the correlate does not
+              // hang.
               delegatedCrossPartition.set(true);
             }
           } else {
@@ -412,7 +413,9 @@ public final class MessageCorrelateBehavior {
    * event is triggered locally. Returns the new process-instance key and its storage ordinal when
    * started locally, or {@code -1} (with {@link StorageOrdinalRelated#NOT_ORDINAL_CONTROLLED}) when
    * the start was delegated cross-partition (the {@code CORRELATED} event is then written by the
-   * STARTED reply processor on {@code P_K} once {@code P_B} confirms).
+   * STARTED reply processor on {@code P_K} once {@code P_B} confirms). {@code -1} is also returned
+   * when a local start could not be created because the definition is suspended, draining, or
+   * removed; callers must not read it as "pending on {@code P_B}".
    *
    * <p>This is shared by the live publish path ({@link #correlateToMessageStartEvents}) and the
    * buffered-message pick-up ({@code BpmnBufferedMessageStartEventBehavior}) so a buffered message
