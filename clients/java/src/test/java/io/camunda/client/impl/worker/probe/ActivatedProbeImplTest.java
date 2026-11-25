@@ -16,6 +16,7 @@
 package io.camunda.client.impl.worker.probe;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.protocol.rest.ActivatedProbeResult;
@@ -92,6 +93,24 @@ final class ActivatedProbeImplTest {
     assertThat(probe.getInputAsMap()).isEqualTo(Collections.singletonMap("secretKey", "value"));
   }
 
+  @Test
+  void shouldRemoveTheEscapedValuesFromAFailedConversion() {
+    // given - a failed conversion prints the input as JSON, with the secret escaped
+    final String secret = "pa\"ss\\wo\nrd";
+    final ActivatedProbeImpl probe =
+        probe(JSON_MAPPER.toJson(Collections.singletonMap("port", secret)), "/port");
+    final Throwable failure = catchThrowable(() -> probe.getInputAsType(Port.class));
+    assertThat(failure.getMessage()).contains("pa\\\"ss\\\\wo\\nrd");
+
+    // when
+    final String stackTrace = ProbeExceptionHandlerImpl.stackTraceWithoutSecrets(probe, failure);
+
+    // then
+    assertThat(stackTrace)
+        .contains("Failed to deserialize")
+        .doesNotContain("pa\"ss", "pa\\\"ss", "wo\nrd", "wo\\nrd");
+  }
+
   private static ActivatedProbeImpl probe(final String input, final String... pointers) {
     final List<String> secretPointers = Arrays.asList(pointers);
     final ActivatedProbeResult result =
@@ -105,5 +124,9 @@ final class ActivatedProbeImplTest {
             .input(JSON_MAPPER.fromJsonAsMap(input))
             .secretPointers(secretPointers);
     return new ActivatedProbeImpl(JSON_MAPPER, result);
+  }
+
+  public static final class Port {
+    public int port;
   }
 }

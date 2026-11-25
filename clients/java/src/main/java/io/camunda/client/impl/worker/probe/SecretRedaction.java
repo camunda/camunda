@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.worker.probe;
 
+import com.fasterxml.jackson.core.io.JsonStringEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -26,8 +27,9 @@ import java.util.Set;
 
 /**
  * Removes the values that the cluster injected into a probe's input, at the leaves named by its
- * secret pointers (JSON pointers, RFC 6901). A leaf that mixes a secret with other text is removed
- * whole; a text that holds only part of such a leaf is not caught.
+ * secret pointers (JSON pointers, RFC 6901), as they are and as JSON escapes them. A leaf that
+ * mixes a secret with other text is removed whole; a text that holds only part of such a leaf is
+ * not caught.
  */
 final class SecretRedaction {
 
@@ -68,6 +70,11 @@ final class SecretRedaction {
     final Set<String> values = new LinkedHashSet<>();
     for (final String pointer : pointers) {
       collectLeaves(valueAt(input, tokens(pointer)), values);
+    }
+    // a failed conversion of the input prints it as JSON, where quotes, backslashes and control
+    // characters are escaped
+    for (final String value : new ArrayList<>(values)) {
+      values.add(new String(JsonStringEncoder.getInstance().quoteAsString(value)));
     }
     values.remove("");
     final List<String> sorted = new ArrayList<>(values);
