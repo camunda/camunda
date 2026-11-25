@@ -22,6 +22,8 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.ProcessCreatedHandler;
 import io.camunda.exporter.handlers.ProcessFullyDeletedHandler;
 import io.camunda.exporter.handlers.ProcessStateHandler;
+import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.VariableHistoryHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
@@ -36,6 +38,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableHistoryTemplate;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
 import io.camunda.zeebe.exporter.common.waitstate.transformers.WaitStateTransformerRegistry;
@@ -297,6 +300,72 @@ public class DefaultExporterResourceProviderTest {
         .hasSize(expectedTransformers.size());
   }
 
+  @Test
+  void shouldNotRegisterTheVariableHistoryHandlerByDefault() {
+    // given the default configuration, where the audit log is on and the history switch is off
+    final var config = new ExporterConfiguration();
+
+    // when
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext().setPartitionId(PROCESS_DEFINITION_PARTITION),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // then
+    final var handlers = provider.getExportHandlers();
+    assertThat(handlers).noneMatch(VariableHistoryHandler.class::isInstance);
+    assertThat(handlers).anyMatch(AuditLogHandler.class::isInstance);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {PROCESS_DEFINITION_PARTITION, 2})
+  void shouldRegisterTheVariableHistoryHandlerWhenItsSwitchIsOn(final int partitionId) {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getAuditLog().setVariableHistoryEnabled(true);
+
+    // when
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext().setPartitionId(partitionId),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // then the variable handler stays, and the history handler writes to its own index
+    final var handlers = provider.getExportHandlers();
+    assertThat(handlers).filteredOn(VariableHistoryHandler.class::isInstance).hasSize(1);
+    assertThat(handlers).anyMatch(VariableHandler.class::isInstance);
+    assertThat(handlers)
+        .filteredOn(VariableHistoryHandler.class::isInstance)
+        .extracting(ExportHandler::getIndexName)
+        .containsExactly(new VariableHistoryTemplate("", true).getFullQualifiedName());
+  }
+
+  @Test
+  void shouldNotRegisterTheVariableHistoryHandlerWhenTheAuditLogIsDisabled() {
+    // given the history switch is on, but the audit log is off
+    final var config = new ExporterConfiguration();
+    config.getAuditLog().setVariableHistoryEnabled(true);
+    config.getAuditLog().setEnabled(false);
+
+    // when
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext().setPartitionId(PROCESS_DEFINITION_PARTITION),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // then
+    assertThat(provider.getExportHandlers()).noneMatch(VariableHistoryHandler.class::isInstance);
+  }
+
   /**
    * Verifies that all `ExportHandlers` declare a `ValueType` in `getHandledValueType()` that
    * matches their `RecordValue` type parameter according to `ValueTypeMapping`.
@@ -307,8 +376,9 @@ public class DefaultExporterResourceProviderTest {
   void shouldHaveAllHandlersWithCorrectValueTypeMatchingRecordValueTypeParameter() {
     // given
     final var config = new ExporterConfiguration();
-    // enable audit log and batch operation export to include their handlers
+    // enable audit log, variable history and batch operation export to include their handlers
     config.getAuditLog().setEnabled(true);
+    config.getAuditLog().setVariableHistoryEnabled(true);
     config.getBatchOperation().setExportItemsOnCreation(true);
 
     final var provider = new DefaultExporterResourceProvider();
