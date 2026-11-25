@@ -14,7 +14,13 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public class CommandApiServiceTransitionStep implements PartitionTransitionStep {
   @Override
-  public void onNewRaftRole(final PartitionTransitionContext context, final Role newRole) {}
+  public void onNewRaftRole(final PartitionTransitionContext context, final Role newRole) {
+    // the stream processor pauses on the role change, but the handlers are only deactivated once
+    // the later steps have closed; answer a leader mismatch meanwhile, which the gateway resends
+    if (newRole != Role.LEADER) {
+      context.getCommandApiService().deactivateHandlers(context.getPartitionId());
+    }
+  }
 
   @Override
   public ActorFuture<Void> prepareTransition(

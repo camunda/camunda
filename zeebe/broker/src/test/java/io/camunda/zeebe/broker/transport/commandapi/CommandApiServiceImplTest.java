@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
@@ -22,14 +23,23 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.test.TestPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.camunda.zeebe.transport.RequestHandler;
 import io.camunda.zeebe.transport.RequestType;
+import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerTransport;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -37,6 +47,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -139,6 +150,32 @@ public class CommandApiServiceImplTest {
     verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.COMMAND));
   }
 
+  @RegressionTest("https://github.com/camunda/camunda/issues/70461")
+  public void shouldReturnLeaderMismatchOnceNoLongerLeaderBeforeTransitionPrepared() {
+    // given
+    when(transitionContext.getPartitionId()).thenReturn(1);
+    when(logStream.newLogStreamWriter()).thenReturn(mock());
+    when(transitionContext.getLogStream()).thenReturn(logStream);
+    when(transitionContext.getQueryService()).thenReturn(mock());
+    final var transitionStep = new CommandApiServiceTransitionStep();
+    transitionStep.transitionTo(transitionContext, 1, Role.LEADER);
+    scheduler.workUntilDone();
+    final var commandHandler = ArgumentCaptor.forClass(RequestHandler.class);
+    verify(serverTransport)
+        .subscribe(eq(PARTITION_ID), eq(RequestType.COMMAND), commandHandler.capture());
+    commandApiService.onPaused(1);
+    scheduler.workUntilDone();
+
+    // when
+    transitionStep.onNewRaftRole(transitionContext, Role.FOLLOWER);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(sendCommand(commandHandler.getValue()))
+        .succeedsWithin(Duration.ofSeconds(5))
+        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
+  }
+
   @RegressionTest("https://github.com/camunda/camunda/issues/25897")
   @Timeout(value = 10)
   public void shouldUnsubscribeOnceWhenTransitioningFromFollowerToInactive() {
@@ -196,5 +233,30 @@ public class CommandApiServiceImplTest {
     // then - subscriptions are cleaned up
     verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.QUERY));
     verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.COMMAND));
+  }
+
+  private CompletableFuture<ErrorCode> sendCommand(final RequestHandler handler) {
+    final var request =
+        new TestPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+    request.serializeValue();
+    final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
+    request.write(requestBuffer, 0);
+
+    final var errorCode = new CompletableFuture<ErrorCode>();
+    final ServerOutput output =
+        response -> {
+          final var buffer = new ExpandableArrayBuffer();
+          response.write(buffer, 0);
+          final var error = new ErrorResponse();
+          if (error.tryWrap(buffer)) {
+            error.wrap(buffer, 0, response.getLength());
+            errorCode.complete(error.getErrorCode());
+          } else {
+            errorCode.completeExceptionally(new AssertionError("Expected an error response"));
+          }
+        };
+    handler.onRequest(output, 1, 0, requestBuffer, 0, request.getLength());
+    scheduler.workUntilDone();
+    return errorCode;
   }
 }
