@@ -58,6 +58,8 @@ spec:
       - name: DATA_DIR
         value: /data
 
+      # Test-specific settings, e.g. `k6.tests.<name>.env.RATE=10`.
+
       # Credentials
       - name: CAMUNDA_BASE_URL
         valueFrom:
@@ -176,6 +178,8 @@ spec:
 
       - name: DATA_DIR
         value: /data
+
+      # Test-specific settings, e.g. `k6.tests.<name>.env.RATE=10`.
 
       # Credentials
       - name: CAMUNDA_BASE_URL
