@@ -60,11 +60,8 @@ public class MigrateProcessInstanceToSuspendedDefinitionTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to migrate process instance to process definition with ID '%s' and version %d (key %d), but it is suspended"
-                .formatted(
-                    target.getBpmnProcessId(),
-                    target.getVersion(),
-                    target.getProcessDefinitionKey()));
+            "Expected to migrate process instance to process definition with key '%d' but it is suspended"
+                .formatted(target.getProcessDefinitionKey()));
     // the rejected command leaves the instance untouched: the first MIGRATED record is written by
     // the later successful migration, after the rejection
     engine

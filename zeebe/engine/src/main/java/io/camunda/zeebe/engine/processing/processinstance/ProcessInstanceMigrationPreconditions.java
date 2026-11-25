@@ -89,8 +89,8 @@ public final class ProcessInstanceMigrationPreconditions {
       but it is being deleted""";
   private static final String ERROR_MESSAGE_TARGET_PROCESS_DEFINITION_SUSPENDED =
       """
-      Expected to migrate process instance to process definition with ID '%s' and version %d \
-      (key %d), but it is suspended""";
+      Expected to migrate process instance to process definition with key '%d' \
+      but it is suspended""";
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_HAS_START_EVENT_INSTANCE =
       """
       Expected to migrate process instance '%d' \
@@ -307,10 +307,7 @@ public final class ProcessInstanceMigrationPreconditions {
     if (targetSuspended) {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           String.format(
-              ERROR_MESSAGE_TARGET_PROCESS_DEFINITION_SUSPENDED,
-              BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId()),
-              targetProcessDefinition.getVersion(),
-              targetProcessDefinition.getKey()),
+              ERROR_MESSAGE_TARGET_PROCESS_DEFINITION_SUSPENDED, targetProcessDefinition.getKey()),
           RejectionType.INVALID_STATE);
     }
   }
