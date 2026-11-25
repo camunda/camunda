@@ -228,8 +228,13 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.flushLog();
   }
 
+  /**
+   * Opens a reader over the committed entries. It fails with a {@link
+   * io.camunda.zeebe.journal.CorruptedJournalException} when a committed entry cannot be read back,
+   * so that whoever consumes the log does not mistake lost entries for the end of the log.
+   */
   public RaftLogReader openReader() {
-    return server.getContext().getLog().openCommittedReader();
+    return server.getContext().getLog().openCommittedReaderFailingOnMissingEntries();
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
