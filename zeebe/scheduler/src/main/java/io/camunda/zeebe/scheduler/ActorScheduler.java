@@ -11,7 +11,7 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -82,7 +82,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
   }
 
-  public Future<Void> stop() {
+  public CompletableFuture<Void> stop() {
     if (state.compareAndSet(SchedulerState.RUNNING, SchedulerState.TERMINATING)) {
 
       return actorTaskExecutor.closeAsync().thenRun(() -> state.set(SchedulerState.TERMINATED));

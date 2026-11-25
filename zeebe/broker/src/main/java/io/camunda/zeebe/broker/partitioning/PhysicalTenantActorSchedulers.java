@@ -13,10 +13,12 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -36,6 +38,7 @@ import org.slf4j.LoggerFactory;
 public final class PhysicalTenantActorSchedulers implements CloseableSilently {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalTenantActorSchedulers.class);
+  private static final Duration STOP_TIMEOUT = Duration.ofSeconds(10);
 
   private final @Nullable ActorScheduler sharedScheduler;
   private final @Nullable Function<String, ActorScheduler> schedulerFactory;
@@ -87,7 +90,8 @@ public final class PhysicalTenantActorSchedulers implements CloseableSilently {
    * Stops the dedicated scheduler of the given tenant, if it has one. Must be called after all
    * actors submitted through {@link #schedulingService(String)} are closed.
    *
-   * @return a future that completes when the threads of the scheduler have stopped
+   * @return a future that completes when the threads of the scheduler have stopped, or when
+   *     stopping failed or took longer than ten seconds; it never completes exceptionally
    */
   public CompletableFuture<Void> release(final String physicalTenantId) {
     final var scheduler = dedicatedSchedulers.remove(physicalTenantId);
@@ -95,8 +99,15 @@ public final class PhysicalTenantActorSchedulers implements CloseableSilently {
       return CompletableFuture.completedFuture(null);
     }
 
-    // closing blocks until the scheduler threads stop, which must not block the caller
-    return CompletableFuture.runAsync(() -> closeScheduler(scheduler));
+    // stop() fails synchronously when the scheduler is not running, which thenCompose captures
+    return CompletableFuture.<Void>completedFuture(null)
+        .thenCompose(ignored -> scheduler.stop())
+        .orTimeout(STOP_TIMEOUT.toSeconds(), TimeUnit.SECONDS)
+        .exceptionally(
+            e -> {
+              LOGGER.warn("Failed to stop the actor scheduler of a physical tenant", e);
+              return null;
+            });
   }
 
   @Override
@@ -113,13 +124,5 @@ public final class PhysicalTenantActorSchedulers implements CloseableSilently {
           scheduler.start();
           return scheduler;
         });
-  }
-
-  private static void closeScheduler(final ActorScheduler scheduler) {
-    try {
-      scheduler.close();
-    } catch (final Exception e) {
-      LOGGER.warn("Failed to stop the actor scheduler of a physical tenant", e);
-    }
   }
 }

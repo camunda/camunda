@@ -128,6 +128,21 @@ final class PhysicalTenantActorSchedulersTest {
   }
 
   @Test
+  void shouldCompleteReleaseWhenSchedulerFailsToStop() throws Exception {
+    // given
+    final var sut = dedicatedSchedulers();
+    threadNameOf(sut.schedulingService("tenanta"), SchedulingHints.cpuBound());
+    // stopping a scheduler that is not running fails
+    created.get(0).stop().get(10, TimeUnit.SECONDS);
+
+    // when
+    final var released = sut.release("tenanta");
+
+    // then
+    assertThat(released).succeedsWithin(Duration.ofSeconds(10));
+  }
+
+  @Test
   void shouldCreateNewSchedulerWhenTenantIsUsedAfterRelease() throws Exception {
     // given
     final var sut = dedicatedSchedulers();
