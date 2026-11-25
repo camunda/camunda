@@ -17,6 +17,9 @@ env:
 
 jobs:
   request-validation-tests:
+    permissions:
+      contents: read
+      id-token: write
     name: V2 Stateless Tests (${{ matrix.branch }})
     strategy:
       fail-fast: false
@@ -108,9 +111,10 @@ jobs:
         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;

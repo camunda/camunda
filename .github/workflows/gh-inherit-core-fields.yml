@@ -15,7 +15,8 @@ on:
 
 jobs:
   inherit-from-parent: # owner: @camunda/core-features
-    permissions: {} # restrict default Github token permissions since we use a GitHub App token
+    permissions:
+      id-token: write # Vault JWT login
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
@@ -24,9 +25,10 @@ jobs:
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID}}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/github.com/organizations/camunda ISSUE_FIELD_INHERITANCE_GH_APP_ID;
             secret/data/github.com/organizations/camunda ISSUE_FIELD_INHERITANCE_GH_APP_KEY;
