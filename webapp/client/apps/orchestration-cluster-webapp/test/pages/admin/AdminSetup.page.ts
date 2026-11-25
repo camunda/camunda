@@ -37,6 +37,10 @@ class AdminSetupPage extends BasePage {
 		return this.page.getByRole('button', {name: 'Create user'});
 	}
 
+	get usernameError() {
+		return this.page.getByRole('alert').filter({hasText: /username is required/i});
+	}
+
 	get passwordMismatchError() {
 		return this.page.getByRole('alert').filter({hasText: 'Passwords do not match'});
 	}
