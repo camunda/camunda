@@ -39,6 +39,13 @@ concurrency:
 jobs:
   run-release:
     name: "Release ${{ inputs.releaseVersion }} from ${{ inputs.releaseBranch }}"
+    permissions:
+      actions: read
+      contents: write
+      issues: write
+      pull-requests: read
+      id-token: write # Vault JWT login
+      security-events: write
     uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
     with:
@@ -56,16 +63,18 @@ jobs:
     # else => send slack notification as an actual release failed
     if: ${{ failure() && inputs.dryRun == false }}
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      id-token: write # Vault JWT login
     steps:
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
