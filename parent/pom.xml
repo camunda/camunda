@@ -429,6 +429,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-workflow-engine-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-msgpack-core</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -515,6 +521,14 @@
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-db</artifactId>
         <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-db</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+        <type>test-jar</type>
       </dependency>
 
       <dependency>

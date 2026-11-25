@@ -108,11 +108,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-expression-language</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-logstreams</artifactId>
     </dependency>
 
@@ -163,7 +158,18 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-workflow-engine-api</artifactId>
+    </dependency>
+
+    <!--
+      TestEngineFactory discovers the implementation through ServiceLoader at test runtime.
+      Maven has no test-runtime-only scope; runtime keeps engine classes off test compilation,
+      but also places the engine on the broker's production runtime classpath.
+    -->
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-workflow-engine</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -342,6 +348,14 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-test-util</artifactId>
       <scope>test</scope>
     </dependency>
@@ -355,14 +369,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-exporter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-workflow-engine</artifactId>
-      <classifier>tests</classifier>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
@@ -508,8 +514,11 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
+          <ignoredUnusedDeclaredDependencies combine.children="append">
+            <ignoredUnusedDeclaredDependency>io.camunda:zeebe-workflow-engine</ignoredUnusedDeclaredDependency>
+          </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
-            <ignoredNonTestScopedDependency>io.camunda:zeebe-journal</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-workflow-engine</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <usedDependencies>
             <dependency>net.jqwik:jqwik</dependency>

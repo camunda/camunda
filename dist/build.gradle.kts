@@ -352,6 +352,8 @@ dependencies {
   implementation(project(":dynamic-node-id-provider"))
   implementation(project(":zeebe-broker"))
   implementation(project(":zeebe-broker-client"))
+  implementation(project(":zeebe-workflow-engine"))
+  implementation(project(":zeebe-workflow-engine-api"))
   implementation(project(":zeebe-gateway"))
   implementation(project(":zeebe-gateway-grpc"))
   implementation(project(":zeebe-restore-standalone"))

@@ -8,14 +8,26 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.test.MigratedVersionWriter;
+import io.camunda.zeebe.broker.test.TestEngineFactory;
+import io.camunda.zeebe.broker.test.TestZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.migration.DbMigrationState;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
 import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
@@ -23,6 +35,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.File;
 import java.io.IOException;
@@ -37,7 +50,8 @@ final class ZeebePartitionAdminAccessTest {
 
   private final PartitionAdminControl adminControl = mock(PartitionAdminControl.class);
   private final ZeebePartitionAdminAccess sut =
-      new ZeebePartitionAdminAccess(new TestConcurrencyControl(), 1, adminControl);
+      new ZeebePartitionAdminAccess(
+          new TestConcurrencyControl(), 1, adminControl, TestEngineFactory.create());
 
   @Test
   void shouldCompleteResumeProcessingOnlyAfterStreamProcessorResumes() throws IOException {
@@ -62,6 +76,47 @@ final class ZeebePartitionAdminAccessTest {
     assertThat(resumed).succeedsWithin(Duration.ofSeconds(5));
   }
 
+  @Nested
+  final class BanInstance {
+
+    @TempDir private File dbDirectory;
+    private ZeebeDb<ZbColumnFamilies> zeebeDb;
+
+    @BeforeEach
+    void openDb() throws Exception {
+      zeebeDb = TestZeebeDbFactory.defaultFactory().createDb(dbDirectory);
+      when(adminControl.getZeebeDb()).thenReturn(zeebeDb);
+    }
+
+    @AfterEach
+    void closeDb() throws Exception {
+      zeebeDb.close();
+    }
+
+    @Test
+    void shouldBanTheInstanceInState() {
+      // given
+      final long processInstanceKey = 2251799813685251L;
+      final var writer = mock(LogStreamWriter.class, CALLS_REAL_METHODS);
+      doReturn(Either.right(1L)).when(writer).tryWrite(any(), anyList(), anyLong());
+      final var logStream = mock(LogStream.class);
+      when(logStream.newLogStreamWriter()).thenReturn(writer);
+      when(adminControl.getLogStream()).thenReturn(logStream);
+
+      // when
+      final var banned = sut.banInstance(processInstanceKey);
+
+      // then
+      assertThat(banned).succeedsWithin(Duration.ofSeconds(5));
+      final var key = new DbLong();
+      key.wrapLong(processInstanceKey);
+      final var bannedInstances =
+          zeebeDb.createColumnFamily(
+              ZbColumnFamilies.BANNED_INSTANCE, zeebeDb.createContext(), key, DbNil.INSTANCE);
+      assertThat(bannedInstances.exists(key)).isTrue();
+    }
+  }
+
   /**
    * Uses a real, on-disk ZeebeDb since {@link ZeebePartitionAdminAccess#getMigrationStatus()} opens
    * a second transaction context on the live db, the same technique already used for banning
@@ -71,17 +126,47 @@ final class ZeebePartitionAdminAccessTest {
   final class MigrationStatus {
 
     @TempDir private File dbDirectory;
+    @TempDir private File secondDbDirectory;
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
 
     @BeforeEach
     void openDb() throws Exception {
-      zeebeDb = DefaultZeebeDbFactory.<ZbColumnFamilies>defaultFactory().createDb(dbDirectory);
+      zeebeDb = TestZeebeDbFactory.defaultFactory().createDb(dbDirectory);
       when(adminControl.getZeebeDb()).thenReturn(zeebeDb);
     }
 
     @AfterEach
     void closeDb() throws Exception {
       zeebeDb.close();
+    }
+
+    @Test
+    void shouldReuseTheReaderForTheSameDbAndRebuildItWhenTheDbChanges() throws Exception {
+      // given - delegating mocks count how often a transaction context is opened on each db
+      final var firstDb = mock(ZeebeDb.class, delegatesTo(zeebeDb));
+      when(adminControl.isMigrationSnapshotTaken()).thenReturn(true);
+      when(adminControl.getZeebeDb()).thenReturn(firstDb);
+
+      try (final ZeebeDb<ZbColumnFamilies> secondDb =
+          TestZeebeDbFactory.defaultFactory().createDb(secondDbDirectory)) {
+        final var secondDbSpy = mock(ZeebeDb.class, delegatesTo(secondDb));
+        MigratedVersionWriter.writeMigratedByVersion(secondDb, VersionUtil.getVersion());
+
+        // when
+        sut.getMigrationStatus().join();
+        sut.getMigrationStatus().join();
+
+        // then
+        verify(firstDb, times(1)).createContext();
+
+        // when - the partition swaps to a db that has a migrated version recorded
+        when(adminControl.getZeebeDb()).thenReturn(secondDbSpy);
+        final var status = sut.getMigrationStatus().join();
+
+        // then
+        assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+        verify(secondDbSpy, times(1)).createContext();
+      }
     }
 
     @Test
@@ -151,7 +236,7 @@ final class ZeebePartitionAdminAccessTest {
     }
 
     private void writeMigratedByVersion(final String version) {
-      new DbMigrationState(zeebeDb, zeebeDb.createContext()).setMigratedByVersion(version);
+      MigratedVersionWriter.writeMigratedByVersion(zeebeDb, version);
     }
   }
 

@@ -110,6 +110,16 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-workflow-engine</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-workflow-engine-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway</artifactId>
     </dependency>
 

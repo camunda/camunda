@@ -26,7 +26,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.broker.test.TestZeebeDbFactory;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
@@ -99,7 +99,7 @@ public final class AsyncSnapshottingTest {
 
     snapshotController =
         new StateControllerImpl(
-            DefaultZeebeDbFactory.defaultFactory(),
+            TestZeebeDbFactory.defaultFactory(),
             persistedSnapshotStore,
             rootDirectory.resolve("runtime"),
             l ->

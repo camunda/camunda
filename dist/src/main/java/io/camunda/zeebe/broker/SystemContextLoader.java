@@ -27,6 +27,7 @@ import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.engine.DefaultEngineFactory;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -275,7 +276,8 @@ public final class SystemContextLoader {
         featureFlags,
         brokerConfig,
         exporterRepository,
-        secretStoreRegistries.forPhysicalTenant(physicalTenantId));
+        secretStoreRegistries.forPhysicalTenant(physicalTenantId),
+        new DefaultEngineFactory());
   }
 
   private ExporterRepository predefinedExporterRepository() {

@@ -7,10 +7,14 @@
  */
 package io.camunda.zeebe.engine;
 
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public record GlobalListenerConfiguration(
     String id,
@@ -20,6 +24,13 @@ public record GlobalListenerConfiguration(
     boolean afterNonGlobal,
     int priority,
     GlobalListenerType listenerType) {
+
+  /** The event types a global listener may subscribe to: the task listener events and "all". */
+  public static final Set<String> VALID_EVENT_TYPES =
+      Stream.concat(
+              Stream.of(GlobalListenerRecord.ALL_EVENT_TYPES),
+              Stream.of(ZeebeTaskListenerEventType.values()).map(Enum::name))
+          .collect(Collectors.toUnmodifiableSet());
 
   public GlobalListenerRecord toRecord() {
     return new GlobalListenerRecord()

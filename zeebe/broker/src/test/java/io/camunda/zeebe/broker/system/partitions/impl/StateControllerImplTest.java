@@ -16,8 +16,8 @@ import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
+import io.camunda.zeebe.broker.test.TestZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDbException;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -81,7 +81,7 @@ public final class StateControllerImplTest {
     runtimeDirectory = tempFolderRule.getRoot().toPath().resolve("runtime");
     snapshotController =
         new StateControllerImpl(
-            DefaultZeebeDbFactory.defaultFactory(),
+            TestZeebeDbFactory.defaultFactory(),
             store,
             runtimeDirectory,
             l -> atomixRecordEntrySupplier.get().getPreviousIndexedEntry(l),

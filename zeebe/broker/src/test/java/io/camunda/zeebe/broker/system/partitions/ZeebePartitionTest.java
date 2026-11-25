@@ -34,6 +34,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.engine.api.EngineFactory;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -89,6 +90,7 @@ public class ZeebePartitionTest {
     healthMonitor = mock(CriticalComponentsHealthMonitor.class);
 
     when(ctx.getPartitionAdminControl()).thenReturn(mock(PartitionAdminControl.class));
+    when(ctx.getEngineFactory()).thenReturn(mock(EngineFactory.class));
     when(ctx.getRaftPartition()).thenReturn(raft);
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.partitionId()).thenReturn(partitionId);

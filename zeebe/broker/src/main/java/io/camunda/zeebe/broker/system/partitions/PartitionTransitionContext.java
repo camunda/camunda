@@ -30,7 +30,8 @@ import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSende
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.api.EngineDependencies;
+import io.camunda.zeebe.engine.api.EngineFactory;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -78,7 +79,9 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   CommandApiService getCommandApiService();
 
-  TypedRecordProcessorFactory getTypedRecordProcessorFactory();
+  EngineDependencies getEngineDependencies();
+
+  EngineFactory getEngineFactory();
 
   ConcurrencyControl getConcurrencyControl();
 

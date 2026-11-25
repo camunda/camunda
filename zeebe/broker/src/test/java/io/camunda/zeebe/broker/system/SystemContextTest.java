@@ -38,6 +38,7 @@ import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.test.TestEngineFactory;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -582,7 +583,8 @@ final class SystemContextTest {
                     flags,
                     new BrokerCfg(),
                     new ExporterRepository(),
-                    new SecretStoreRegistry(Map.of()))),
+                    new SecretStoreRegistry(Map.of()),
+                    TestEngineFactory.create())),
             ignored -> mock(UserServices.class),
             mock(PasswordEncoder.class),
             authConfig -> mock(JwtDecoder.class),
@@ -918,7 +920,8 @@ final class SystemContextTest {
                         FeatureFlags.createDefaultForTests(),
                         brokerCfg,
                         new ExporterRepository(),
-                        new SecretStoreRegistry(Map.of()))));
+                        new SecretStoreRegistry(Map.of()),
+                        TestEngineFactory.create())));
     return new SystemContext(
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,

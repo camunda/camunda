@@ -22,6 +22,7 @@ dependencies {
   testImplementation(project(":camunda-security-protocol"))
   testImplementation(project(":zeebe-stream-platform"))
   testImplementation(project(":zeebe-workflow-engine"))
+  testImplementation(project(":zeebe-workflow-engine-api"))
   testImplementation(project(":zeebe-util"))
   testImplementation(project(":zeebe-bpmn-model"))
   testImplementation(project(":zeebe-scheduler"))

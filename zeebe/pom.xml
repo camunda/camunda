@@ -25,6 +25,7 @@
     <module>bpmn-model</module>
     <module>logstreams</module>
     <module>stream-platform</module>
+    <module>engine-api</module>
     <module>engine</module>
     <module>transport</module>
     <module>util</module>

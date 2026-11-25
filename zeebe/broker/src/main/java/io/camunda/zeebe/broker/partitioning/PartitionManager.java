@@ -107,6 +107,7 @@ public interface PartitionManager {
         physicalTenantContext.authorizationConverter(),
         physicalTenantContext.featureFlags(),
         physicalTenantContext.secretStoreRegistry(),
+        physicalTenantContext.engineFactory(),
         topologyManager);
   }
 

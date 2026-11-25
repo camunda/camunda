@@ -11,7 +11,6 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.state.QueryService;
-import io.camunda.zeebe.engine.state.query.StateQueryService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.InstantSource;
@@ -45,7 +44,10 @@ public final class QueryServicePartitionTransitionStep implements PartitionTrans
     if (targetRole != Role.INACTIVE
         && (currentRole == Role.LEADER || context.getQueryService() == null)) {
       try {
-        final var service = new StateQueryService(context.getZeebeDb(), InstantSource.system());
+        final var service =
+            context
+                .getEngineFactory()
+                .createQueryService(context.getZeebeDb(), InstantSource.system());
         context.setQueryService(service);
         return CompletableActorFuture.completed(null);
       } catch (final Exception e) {
