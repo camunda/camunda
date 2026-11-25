@@ -853,11 +853,9 @@ public class PassiveRole extends InactiveRole {
     // If the previous log index is less than the last written entry index, look up the entry.
     if (request.prevLogIndex() < lastEntryIndex) {
       try (final RaftLogReader reader = raft.getLog().openUncommittedReader()) {
-        // Reset the reader to the previous log index.
-        reader.seek(request.prevLogIndex());
-
-        // The previous entry should exist in the log if we've gotten this far.
-        if (!reader.hasNext()) {
+        // The previous entry should exist in the log if we've gotten this far. A seek that misses
+        // lands on another entry, whose term must not be compared.
+        if (reader.seek(request.prevLogIndex()) != request.prevLogIndex() || !reader.hasNext()) {
           log.debug("Rejected {}: Previous entry does not exist in the local log", request);
           return failAppend(lastEntryIndex, future);
         }
