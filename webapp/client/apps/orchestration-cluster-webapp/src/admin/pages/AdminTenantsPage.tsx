@@ -27,7 +27,7 @@ import {DeleteTenantModal} from '#/admin/modules/tenants/DeleteTenantModal';
 import {isDefaultTenant} from '#/admin/modules/tenants/defaultTenant';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type TenantsSearch} from '#/admin/modules/tenants/searchSchema';
 import {CreateEmptyState} from '#/admin/modules/shared/CreateEmptyState';
-import {RouterRowLink} from '#/admin/modules/shared/RouterRowLink';
+import {RouterRowLink} from '#/shared/router/RouterRowLink';
 import {useAdminDetailPath} from '#/admin/modules/shared/useAdminDetailPath';
 import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 import {GUIDE_URLS} from '#/admin/modules/shared/guideUrls';
