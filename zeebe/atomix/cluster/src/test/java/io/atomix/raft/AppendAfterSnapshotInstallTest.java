@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
+import io.atomix.raft.protocol.ReplicatableJournalRecord;
 import io.atomix.raft.protocol.VersionedAppendRequest;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -84,7 +85,9 @@ final class AppendAfterSnapshotInstallTest {
     final long snapshotTerm = raft.getRaftContext(FOLLOWER).getCurrentSnapshot().getTerm();
 
     // when - the previous entry is covered by the snapshot, but is not the snapshot itself
-    final var response = appendOnFollower(snapshotIndex - 1, snapshotTerm);
+    final var response =
+        appendOnFollower(
+            snapshotIndex - 1, snapshotTerm, List.of(conflictingEntryAfter(snapshotIndex - 1)));
 
     // then - the leader continues after the snapshot, and the log is kept
     assertThat(response.succeeded()).isFalse();
@@ -100,7 +103,9 @@ final class AppendAfterSnapshotInstallTest {
     final long snapshotTerm = raft.getRaftContext(FOLLOWER).getCurrentSnapshot().getTerm();
 
     // when
-    final var response = appendOnFollower(snapshotIndex, snapshotTerm + 1);
+    final var response =
+        appendOnFollower(
+            snapshotIndex, snapshotTerm + 1, List.of(conflictingEntryAfter(snapshotIndex)));
 
     // then - the leader probes the entry before, and the log is kept
     assertThat(response.succeeded()).isFalse();
@@ -129,11 +134,37 @@ final class AppendAfterSnapshotInstallTest {
 
     // when - the previous entry is before the log, with the term of the log's first entry, which
     // the follower compared against before
-    final var response = appendOnFollower(firstIndex - 1, termAt(FOLLOWER, firstIndex));
+    final var response =
+        appendOnFollower(
+            firstIndex - 1,
+            termAt(FOLLOWER, firstIndex),
+            List.of(conflictingEntryAfter(firstIndex - 1)));
 
     // then - the leader continues after the snapshot, and the log is kept
     assertThat(response.succeeded()).isFalse();
     assertThat(response.lastLogIndex()).isEqualTo(lastIndex - 1);
+    assertThat(follower.getLog().getFirstIndex()).isEqualTo(firstIndex);
+    assertThat(follower.getLog().getLastIndex()).isEqualTo(lastIndex);
+  }
+
+  @Test
+  void shouldAcceptPreviousEntryAtFirstIndexOfLog() {
+    // given - the follower's log starts right after its snapshot, and has more than one entry
+    followerWithLogAfterSnapshot();
+    raft.clientAppendOnLeader();
+    raft.runUntilDone(LEADER);
+    replicateTo(FOLLOWER);
+    final var follower = raft.getRaftContext(FOLLOWER);
+    final long firstIndex = follower.getLog().getFirstIndex();
+    final long lastIndex = follower.getLog().getLastIndex();
+    assertThat(lastIndex).isGreaterThan(firstIndex);
+
+    // when - the previous entry is the first entry of the log, which the log can confirm
+    final var response = appendOnFollower(firstIndex, termAt(FOLLOWER, firstIndex), List.of());
+
+    // then
+    assertThat(response.succeeded()).isTrue();
+    assertThat(response.lastLogIndex()).isEqualTo(firstIndex);
     assertThat(follower.getLog().getFirstIndex()).isEqualTo(firstIndex);
     assertThat(follower.getLog().getLastIndex()).isEqualTo(lastIndex);
   }
@@ -152,8 +183,11 @@ final class AppendAfterSnapshotInstallTest {
     return snapshotIndex;
   }
 
-  /** Sends an empty append with the given previous entry to the follower, as the leader. */
-  private AppendResponse appendOnFollower(final long prevLogIndex, final long prevLogTerm) {
+  /** Sends an append with the given previous entry and entries to the follower, as the leader. */
+  private AppendResponse appendOnFollower(
+      final long prevLogIndex,
+      final long prevLogTerm,
+      final List<ReplicatableJournalRecord> entries) {
     final var follower = raft.getRaftContext(FOLLOWER);
     final var request =
         VersionedAppendRequest.builder()
@@ -161,7 +195,7 @@ final class AppendAfterSnapshotInstallTest {
             .withLeader(LEADER)
             .withPrevLogIndex(prevLogIndex)
             .withPrevLogTerm(prevLogTerm)
-            .withEntries(List.of())
+            .withEntries(entries)
             .withCommitIndex(follower.getCommitIndex())
             .build();
     final var response = new AtomicReference<CompletableFuture<AppendResponse>>();
@@ -267,6 +301,15 @@ final class AppendAfterSnapshotInstallTest {
       raft.deliverAll(follower);
       raft.deliverAll(LEADER);
     }
+  }
+
+  /**
+   * An entry of a term that the follower's log does not have at that index. A follower that went on
+   * to append it after rejecting the previous entry would overwrite its log with it.
+   */
+  private ReplicatableJournalRecord conflictingEntryAfter(final long prevLogIndex) {
+    final long term = raft.getRaftContext(FOLLOWER).getTerm() + 1;
+    return new ReplicatableJournalRecord(term, prevLogIndex + 1, 0, new byte[1]);
   }
 
   private long termAt(final MemberId member, final long index) {
