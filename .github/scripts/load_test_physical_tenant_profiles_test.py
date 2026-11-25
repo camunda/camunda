@@ -58,19 +58,32 @@ class ComputeTest(unittest.TestCase):
 
     def test_total_rate_scales_only_unpinned_tenants(self):
         tenants = run(saturating_count=0, overrides="pt1=1", total_rate=100)
-        self.assertAlmostEqual(sum(t.rate for t in tenants.values()), 100)
+        self.assertEqual(sum(profiles.whole_rate(t.rate) for t in tenants.values()), 100)
         self.assertAlmostEqual(tenants["pt1"].rate, 300 / 11)
         self.assertFalse(tenants["pt1"].scaled)
         self.assertTrue(tenants["pt2"].scaled)
 
     def test_single_tenant_reference_takes_the_total_rate(self):
         tenants = run(tenant_count=0, saturating_count=0, total_rate=210)
-        self.assertAlmostEqual(tenants["default"].rate, 210)
+        self.assertEqual(tenants["default"].rate, 210)
 
     def test_total_rate_keeps_the_saturating_tenant_and_scales_the_quiet_ones(self):
         tenants = run(total_rate=300)
-        self.assertAlmostEqual(sum(t.rate for t in tenants.values()), 300)
+        self.assertEqual(sum(profiles.whole_rate(t.rate) for t in tenants.values()), 300)
         self.assertAlmostEqual(tenants["pt1"].rate, 300 / 11 * 3)
+
+    def test_total_rate_is_not_inflated_by_rounding_each_tenant_up(self):
+        tenants = run(saturating_count=0, total_rate=101)
+        self.assertEqual(sum(profiles.whole_rate(t.rate) for t in tenants.values()), 101)
+        self.assertEqual(sorted({profiles.whole_rate(t.rate) for t in tenants.values()}), [9, 10])
+
+    def test_total_rate_that_gives_a_tenant_less_than_one_is_rejected(self):
+        with self.assertRaisesRegex(profiles.InputError, "at least 1 PI/s each"):
+            run(saturating_count=0, total_rate=5)
+
+    def test_total_rate_must_be_whole(self):
+        with self.assertRaisesRegex(profiles.InputError, "whole number"):
+            run(saturating_count=0, total_rate=100.5)
 
     def test_total_rate_below_pinned_load_is_rejected(self):
         with self.assertRaisesRegex(profiles.InputError, "Raise total-rate or lower the pinned load"):

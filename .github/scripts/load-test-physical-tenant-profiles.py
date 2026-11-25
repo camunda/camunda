@@ -141,27 +141,46 @@ def compute(
         tenants.append(Tenant(name, weight_of[name], allowance, role, multiplier, rate, pinned))
 
     if total_rate > 0:
-        pinned_sum = sum(t.rate for t in tenants if t.pinned)
+        if total_rate != int(total_rate):
+            raise InputError(f"total-rate ({total_rate:g}) must be a whole number: the starter takes whole PI/s")
+        pinned_sum = sum(whole_rate(t.rate) for t in tenants if t.pinned)
         free = [t for t in tenants if not t.pinned]
-        free_sum = sum(t.rate for t in free)
-        remaining = total_rate - pinned_sum
-        if remaining <= 0 and free:
-            raise InputError(
-                f"pinned tenants (saturating or overridden) offer {pinned_sum:.1f} PI/s, which is not below "
-                f"total-rate ({total_rate:.1f}). Raise total-rate or lower the pinned load."
-            )
+        remaining = int(total_rate) - pinned_sum
         if not free and not math.isclose(pinned_sum, total_rate, rel_tol=0.01):
             raise InputError(
-                f"all tenants are pinned and offer {pinned_sum:.1f} PI/s, which differs from "
-                f"total-rate ({total_rate:.1f})"
+                f"all tenants are pinned and offer {pinned_sum} PI/s, which differs from "
+                f"total-rate ({total_rate:g})"
+            )
+        if free and remaining <= 0:
+            raise InputError(
+                f"pinned tenants (saturating or overridden) offer {pinned_sum} PI/s, which is not below "
+                f"total-rate ({total_rate:g}). Raise total-rate or lower the pinned load."
+            )
+        if free and remaining < len(free):
+            raise InputError(
+                f"total-rate ({total_rate:g}) leaves {remaining} PI/s for {len(free)} unpinned tenants, "
+                "which need at least 1 PI/s each. Raise total-rate."
             )
         if free:
-            factor = remaining / free_sum
-            for t in free:
-                t.rate *= factor
-                t.multiplier *= factor
+            for t, rate in zip(free, split_whole(remaining, [t.rate for t in free])):
+                t.rate = float(rate)
+                t.multiplier = t.rate / t.allowance
                 t.scaled = True
     return tenants
+
+
+def split_whole(total: int, shares: list[float]) -> list[int]:
+    """Split `total` whole PI/s in proportion to `shares`, each at least 1, adding up to exactly `total`."""
+    exact = [total * share / sum(shares) for share in shares]
+    rates = [max(1, math.floor(value)) for value in exact]
+    by_remainder = sorted(range(len(shares)), key=lambda i: exact[i] - math.floor(exact[i]), reverse=True)
+    step = 0
+    while sum(rates) < total:
+        rates[by_remainder[step % len(rates)]] += 1
+        step += 1
+    while sum(rates) > total:  # the minimum of 1 can overshoot: take it back from the largest
+        rates[rates.index(max(rates))] -= 1
+    return rates
 
 
 def whole_rate(rate: float) -> int:
