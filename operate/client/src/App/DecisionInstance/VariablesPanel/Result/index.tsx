@@ -15,7 +15,13 @@ import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 
 const JSONViewer = lazy(async () => {
-  const {JSONViewer} = await import('./JSONViewer');
+  const [{loadMonaco}, {JSONViewer}] = await Promise.all([
+    import('modules/loadMonaco'),
+    import('./JSONViewer'),
+  ]);
+
+  loadMonaco();
+
   return {default: JSONViewer};
 });
 
