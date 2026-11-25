@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.exporter.config.ExporterConfiguration;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -588,20 +589,25 @@ public class UnifiedConfigurationHelper {
                   displayValue(newValue, isSensitiveData),
                   newProperty,
                   newProperty,
-                  isSensitiveData || isStructured(legacyValue)
-                      ? newProperty + " to the value of the legacy properties"
-                      : newProperty + "=" + legacyValue,
+                  !isSensitiveData && isScalar(legacyValue)
+                      ? newProperty + "=" + legacyValue
+                      : newProperty + " to the value of the legacy properties",
                   String.join(", ", legacyProperties));
       throw new UnifiedConfigurationException(errorMessage);
     }
   }
 
   /**
-   * True for a map or a list. The error message then says "Set x to the value of the legacy
-   * properties" instead of "Set x={a=1}", since {@code {a=1}} is not a valid property value.
+   * True for values whose {@code toString()} is a valid property value, so the error message can
+   * say "Set x=value". Maps, lists and config objects get "Set x to the value of the legacy
+   * properties" instead, since {@code {a=1}} is not a valid property value.
    */
-  private static boolean isStructured(final Object value) {
-    return value instanceof Map || value instanceof Collection;
+  private static boolean isScalar(final Object value) {
+    return value instanceof CharSequence
+        || value instanceof Number
+        || value instanceof Boolean
+        || value instanceof Enum<?>
+        || value instanceof Duration;
   }
 
   private static <T> T backwardsCompatibilitySupported(

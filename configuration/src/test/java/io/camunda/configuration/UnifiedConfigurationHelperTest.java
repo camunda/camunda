@@ -14,14 +14,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.data.secondarystorage.documentbased.NumberOfShardsPerIndex;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.ResolvableType;
 import org.springframework.mock.env.MockEnvironment;
 
 class UnifiedConfigurationHelperTest {
@@ -212,13 +211,12 @@ class UnifiedConfigurationHelperTest {
   }
 
   @Test
-  void testErrorForDefaultedMapPropertyDoesNotSuggestKeyValueLine() {
+  void testErrorForDefaultedObjectPropertyDoesNotSuggestKeyValueLine() {
     // given
     final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
-    final Map<String, Integer> defaultValue = Map.of("my-index", 1);
 
     // when
-    setPropertyValues("legacy.prop1.my-index", "2");
+    setPropertyValues("legacy.prop1.form", "2");
 
     // then
     assertThatExceptionOfType(UnifiedConfigurationException.class)
@@ -226,10 +224,10 @@ class UnifiedConfigurationHelperTest {
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
                     NEW_PROPERTY,
-                    defaultValue,
-                    ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
+                    new NumberOfShardsPerIndex(),
+                    NumberOfShardsPerIndex.class,
                     mode,
-                    Set.of("legacy.prop1")))
+                    SINGLE_LEGACY_PROPERTY))
         .withMessageContaining("is not set")
         .withMessageContaining(NEW_PROPERTY + " to the value of the legacy properties")
         .withMessageNotContaining(NEW_PROPERTY + "=");
