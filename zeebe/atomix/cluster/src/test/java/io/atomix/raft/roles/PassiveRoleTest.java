@@ -17,6 +17,7 @@ package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -37,6 +38,7 @@ import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.system.Configuration;
 import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalException;
@@ -49,24 +51,25 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
 
-public class PassiveRoleTest {
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
+final class PassiveRoleTest {
 
-  @Rule public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
   private RaftLog log;
   private PassiveRole role;
   private RaftContext ctx;
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
-  @Before
-  public void setup() throws IOException {
+  @BeforeEach
+  void setup() throws IOException {
     ctx = mock(RaftContext.class);
 
     log = mock(RaftLog.class);
@@ -93,7 +96,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldFailAppendWithIncorrectChecksum() {
+  void shouldFailAppendWithIncorrectChecksum() {
     // given
     final var entries = List.of(new ReplicatableJournalRecord(1, 1, 12345, new byte[1]));
     final VersionedAppendRequest request =
@@ -118,7 +121,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldFlushAfterAppendRequest() throws CheckedJournalException {
+  void shouldFlushAfterAppendRequest() throws CheckedJournalException {
     // given
     final var entries =
         List.of(
@@ -148,7 +151,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldFlushAfterPartiallyAppendedRequest() throws CheckedJournalException {
+  void shouldFlushAfterPartiallyAppendedRequest() throws CheckedJournalException {
     // given
     final var entries =
         List.of(
@@ -178,7 +181,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldNotFlushIfNoEntryIsAppended() throws CheckedJournalException {
+  void shouldNotFlushIfNoEntryIsAppended() throws CheckedJournalException {
     // given
     final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
     final VersionedAppendRequest request =
@@ -204,7 +207,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldFlushEventWithFailure() throws CheckedJournalException {
+  void shouldFlushEventWithFailure() throws CheckedJournalException {
     // given
     final var entries =
         List.of(
@@ -235,7 +238,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldAppendOldVersion() throws CheckedJournalException {
+  void shouldAppendOldVersion() throws CheckedJournalException {
     // given
     final var entries = List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
     final var request = new AppendRequest(2, "a", 0, 0, entries, 1);
@@ -251,7 +254,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldCompleteFutureWithErrorIfAppendFails() throws CheckedJournalException {
+  void shouldCompleteFutureWithErrorIfAppendFails() throws CheckedJournalException {
     // given
     final var entries = List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
     final var request = new AppendRequest(2, "a", 0, 0, entries, 1);
@@ -265,7 +268,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldNotAbortPendingSnapshotOnEmptyAppend() throws Exception {
+  void shouldNotAbortPendingSnapshotOnEmptyAppend() throws Exception {
     // given - a pending snapshot is in progress
     final ReceivedSnapshot receivedSnapshot = mock(ReceivedSnapshot.class);
     setPendingSnapshot(receivedSnapshot);
@@ -290,7 +293,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldAbortPendingSnapshotOnNonEmptyAppend() throws Exception {
+  void shouldAbortPendingSnapshotOnNonEmptyAppend() throws Exception {
     // given - a pending snapshot is in progress
     final ReceivedSnapshot receivedSnapshot = mock(ReceivedSnapshot.class);
     setPendingSnapshot(receivedSnapshot);
@@ -319,7 +322,151 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldCheckForDataLossWithTheIndexTheLeaderAgreesOn() throws CheckedJournalException {
+  void shouldKeepMatchingEntriesWhenAppendRequestStartsTheLog() throws CheckedJournalException {
+    // given - the local log starts at the leader's first entry and already holds it, e.g. because
+    // this member kept the entry after it rejected an append whose flush failed
+    final var lastEntry = mock(IndexedRaftLogEntry.class);
+    when(lastEntry.index()).thenReturn(1L);
+    when(lastEntry.term()).thenReturn(1L);
+    when(log.getFirstIndex()).thenReturn(1L);
+    when(log.getLastIndex()).thenReturn(1L);
+    when(log.getLastEntry()).thenReturn(lastEntry);
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1])))
+            .withCommitIndex(0)
+            .build();
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the entry, which the leader may have committed with this member, is kept
+    verify(log, never()).reset(anyLong());
+    verify(log, never()).deleteAfter(anyLong());
+    assertThat(response.succeeded()).isTrue();
+    assertThat(response.lastLogIndex()).isOne();
+  }
+
+  @Test
+  void shouldAcceptAppendWhosePreviousEntryIsTheSnapshotWhileTheLogHasEntriesAfterIt()
+      throws CheckedJournalException {
+    // given - the log starts after the snapshot at index 9, e.g. because this member kept the
+    // entries 10 to 12 when it rejected an append whose flush failed
+    givenLogAfterSnapshot();
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(5)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(4)
+            .withPrevLogIndex(9)
+            .withEntries(List.of(new ReplicatableJournalRecord(5, 10, 1, new byte[1])))
+            .withCommitIndex(10)
+            .build();
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the previous entry matches the snapshot, so the entries are kept
+    assertThat(response.succeeded()).isTrue();
+    assertThat(response.lastLogIndex()).isEqualTo(10);
+    verify(log, never()).deleteAfter(anyLong());
+    verify(log, never()).reset(anyLong());
+  }
+
+  @Test
+  void shouldRejectAppendWhosePreviousEntryIsBeforeTheSnapshotWithTheSnapshotIndex() {
+    // given
+    givenLogAfterSnapshot();
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(5)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(4)
+            .withPrevLogIndex(8)
+            .withEntries(List.of(new ReplicatableJournalRecord(4, 9, 1, new byte[1])))
+            .withCommitIndex(10)
+            .build();
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the leader continues after the snapshot, instead of going further back
+    assertThat(response.succeeded()).isFalse();
+    assertThat(response.lastLogIndex()).isEqualTo(9);
+    verify(log, never()).append(any(ReplicatableJournalRecord.class));
+  }
+
+  @Test
+  void shouldRejectAppendWhosePreviousEntryIsTheSnapshotWithAnotherTerm()
+      throws CheckedJournalException {
+    // given
+    givenLogAfterSnapshot();
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(5)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(3)
+            .withPrevLogIndex(9)
+            .withEntries(List.of(new ReplicatableJournalRecord(5, 10, 1, new byte[1])))
+            .withCommitIndex(10)
+            .build();
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the append is not processed any further
+    assertThat(response.succeeded()).isFalse();
+    verify(log, never()).append(any(ReplicatableJournalRecord.class));
+    verify(log, never()).flush();
+  }
+
+  /** A snapshot at index 9 of term 4, and a log with the entries 10 to 12 of term 5. */
+  private void givenLogAfterSnapshot() {
+    final PersistedSnapshot snapshot = mock(PersistedSnapshot.class);
+    when(snapshot.getIndex()).thenReturn(9L);
+    when(snapshot.getTerm()).thenReturn(4L);
+    when(ctx.getCurrentSnapshot()).thenReturn(snapshot);
+    when(ctx.getCurrentSnapshotIndex()).thenReturn(9L);
+    when(ctx.getTerm()).thenReturn(5L);
+
+    final var entries = new TreeMap<Long, IndexedRaftLogEntry>();
+    for (long index = 10; index <= 12; index++) {
+      final var entry = mock(IndexedRaftLogEntry.class);
+      when(entry.index()).thenReturn(index);
+      when(entry.term()).thenReturn(5L);
+      entries.put(index, entry);
+    }
+    when(log.getFirstIndex()).thenReturn(10L);
+    when(log.getLastIndex()).thenReturn(12L);
+    when(log.getLastEntry()).thenReturn(entries.lastEntry().getValue());
+    // like the journal's reader, seeking before the first entry positions at the first entry
+    when(log.openUncommittedReader())
+        .thenAnswer(
+            ignored -> {
+              final var reader = mock(RaftLogReader.class);
+              final var position = new AtomicLong();
+              when(reader.seek(anyLong()))
+                  .thenAnswer(
+                      seek -> {
+                        position.set(Math.max(seek.<Long>getArgument(0), entries.firstKey()));
+                        return position.get();
+                      });
+              when(reader.hasNext()).thenAnswer(next -> entries.containsKey(position.get()));
+              when(reader.next()).thenAnswer(next -> entries.get(position.getAndIncrement()));
+              return reader;
+            });
+  }
+
+  @Test
+  void shouldCheckForDataLossWithTheIndexTheLeaderAgreesOn() throws CheckedJournalException {
     // given - a promotable member whose log ends far beyond what this append covers
     final var promotableRole = new PromotableRole(ctx);
     when(log.getLastIndex()).thenReturn(120L);
@@ -350,7 +497,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldCheckForDataLossWithTheLocalLogEndWhenPassive() throws CheckedJournalException {
+  void shouldCheckForDataLossWithTheLocalLogEndWhenPassive() throws CheckedJournalException {
     // given - a passive member whose log ends far beyond what this append covers
     when(log.getLastIndex()).thenReturn(120L);
     final var entries =
@@ -399,7 +546,7 @@ public class PassiveRoleTest {
    * the leader then rejected as a stale configuration.
    */
   @Test
-  public void shouldStoreTheConfigurationsOwnTerm() {
+  void shouldStoreTheConfigurationsOwnTerm() {
     // given
     final var cluster = mock(RaftClusterContext.class);
     when(ctx.getCluster()).thenReturn(cluster);
