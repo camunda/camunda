@@ -21,6 +21,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.BatchCountMismatchException;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
+import io.camunda.zeebe.exporter.common.tasks.TaskPausedException;
 import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -83,7 +85,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            LOGGER);
+            LOGGER,
+            () -> false);
 
     // when - first call should encounter retryable error and return 0
     final var firstResult = taskSupplier.moveNextBatch().join();
@@ -125,7 +128,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            LOGGER);
+            LOGGER,
+            () -> false);
 
     // when - first call retries (retryCount becomes 1, which is <= maxRetryCount 1)
     final var firstResult = taskSupplier.moveNextBatch().join();
@@ -158,7 +162,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            LOGGER);
+            LOGGER,
+            () -> false);
 
     // when
     final var future = taskSupplier.moveNextBatch();
@@ -186,7 +191,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            logger);
+            logger,
+            () -> false);
 
     // when - the undercount is treated as a retryable BatchCountMismatchException
     final var result = taskSupplier.moveNextBatch().join();
@@ -216,7 +222,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            logger);
+            logger,
+            () -> false);
 
     // when
     final var result = taskSupplier.moveNextBatch().join();
@@ -244,7 +251,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture(2L),
             DIRECT_EXECUTOR,
             metrics,
-            logger);
+            logger,
+            () -> false);
 
     // when
     final var result = taskSupplier.moveNextBatch().join();
@@ -272,7 +280,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            logger);
+            logger,
+            () -> false);
 
     // when
     final var result = taskSupplier.moveNextBatch().join();
@@ -295,7 +304,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            LOGGER);
+            LOGGER,
+            () -> false);
 
     // when
     final var result = taskSupplier.moveNextBatch().join();
@@ -322,7 +332,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            LOGGER);
+            LOGGER,
+            () -> false);
 
     // when
     final var result = taskSupplier.moveNextBatch().join();
@@ -358,7 +369,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            LOGGER);
+            LOGGER,
+            () -> false);
 
     // when - call 1 fails, triggers retry (retryCount=1)
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
@@ -419,7 +431,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            LOGGER);
+            LOGGER,
+            () -> false);
 
     // when - attempt 1 fails, full batch size used
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
@@ -478,7 +491,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            LOGGER);
+            LOGGER,
+            () -> false);
 
     // when - attempt 1 fails: 100 used, reduction gives 50
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
@@ -525,7 +539,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            LOGGER);
+            LOGGER,
+            () -> false);
 
     // when - attempt 1 fails with non-SocketTimeout error
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
@@ -565,7 +580,8 @@ class ArchiveByIdTaskSupplierTest {
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
             metrics,
-            LOGGER);
+            LOGGER,
+            () -> false);
 
     // when
     final long startNanos = System.nanoTime();
@@ -576,6 +592,138 @@ class ArchiveByIdTaskSupplierTest {
     assertThat(result).isEqualTo(0L);
     assertThat(elapsedMs).isGreaterThanOrEqualTo(499); // 500ms delay
     verify(metrics, times(1)).recordArchiverBatchRetry();
+  }
+
+  @Test
+  void shouldFailWithTaskPausedExceptionWhenPaused() {
+    // given
+    final var idsCallCount = new AtomicInteger(0);
+    final var reindexCallCount = new AtomicInteger(0);
+    final var deleteCallCount = new AtomicInteger(0);
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            historyConfigWithMaxRetry(3),
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) -> {
+              idsCallCount.incrementAndGet();
+              return CompletableFuture.completedFuture(
+                  ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1")));
+            },
+            (source, dest, ids) -> {
+              reindexCallCount.incrementAndGet();
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            (source, ids) -> {
+              deleteCallCount.incrementAndGet();
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            DIRECT_EXECUTOR,
+            metrics,
+            LOGGER,
+            () -> true);
+
+    // when
+    final var future = taskSupplier.moveNextBatch();
+
+    // then
+    assertThatThrownBy(future::join)
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(TaskPausedException.class);
+    assertThat(idsCallCount).hasValue(0);
+    assertThat(reindexCallCount).hasValue(0);
+    assertThat(deleteCallCount).hasValue(0);
+    assertThat(taskSupplier.isComplete()).isFalse();
+  }
+
+  @Test
+  void shouldCompleteCurrentSubBatchAndStopBeforeNextWhenPaused() {
+    // given - a full page, so the supplier is not complete after the first sub-batch
+    final var paused = new AtomicBoolean(false);
+    final var reindexCallCount = new AtomicInteger(0);
+    final var deleteCallCount = new AtomicInteger(0);
+    final var config = historyConfigWithMaxRetry(3);
+    config.setReindexBatchSize(2);
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            config,
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) ->
+                CompletableFuture.completedFuture(
+                    ArchiveDocIdsBatch.from(
+                        List.of(IdWithRouting.of("doc1"), IdWithRouting.of("doc2")),
+                        List.of("after1"))),
+            (source, dest, ids) -> {
+              reindexCallCount.incrementAndGet();
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            (source, ids) -> {
+              deleteCallCount.incrementAndGet();
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            DIRECT_EXECUTOR,
+            metrics,
+            LOGGER,
+            paused::get);
+
+    // when - the first sub-batch runs while not paused
+    final var firstResult = taskSupplier.moveNextBatch().join();
+    paused.set(true);
+    final var secondFuture = taskSupplier.moveNextBatch();
+
+    // then
+    assertThat(firstResult).isEqualTo(2L);
+    assertThatThrownBy(secondFuture::join)
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(TaskPausedException.class);
+    assertThat(reindexCallCount).hasValue(1);
+    assertThat(deleteCallCount).hasValue(1);
+  }
+
+  @Test
+  void shouldFinishPendingRetryBeforeStoppingWhenPaused() {
+    // given - the delete of the first sub-batch fails once, and the pause starts at that moment
+    final var paused = new AtomicBoolean(false);
+    final var deleteCallCount = new AtomicInteger(0);
+    final var config = historyConfigWithMaxRetry(3);
+    config.setReindexBatchSize(2);
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            config,
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) ->
+                CompletableFuture.completedFuture(
+                    ArchiveDocIdsBatch.from(
+                        List.of(IdWithRouting.of("doc1"), IdWithRouting.of("doc2")),
+                        List.of("after1"))),
+            (source, dest, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            (source, ids) -> {
+              if (deleteCallCount.incrementAndGet() == 1) {
+                paused.set(true);
+                return CompletableFuture.failedFuture(
+                    new VersionConflictOnArchiveDeleteException("version conflict"));
+              }
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            DIRECT_EXECUTOR,
+            metrics,
+            LOGGER,
+            paused::get);
+
+    // when - the first call schedules the retry, the second call is the retry
+    final var failedAttempt = taskSupplier.moveNextBatch().join();
+    final var retriedAttempt = taskSupplier.moveNextBatch().join();
+    final var afterRetry = taskSupplier.moveNextBatch();
+
+    // then - the reindexed documents are deleted from the source before the archiver stops
+    assertThat(failedAttempt).isZero();
+    assertThat(retriedAttempt).isEqualTo(2L);
+    assertThat(deleteCallCount).hasValue(2);
+    assertThatThrownBy(afterRetry::join)
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(TaskPausedException.class);
   }
 
   private static HistoryConfiguration historyConfigWithMaxRetry(final int maxRetryCount) {

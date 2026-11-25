@@ -1746,7 +1746,8 @@ final class OpenSearchArchiverRepositoryIT {
         genericClient,
         Runnable::run,
         metrics,
-        LOGGER);
+        LOGGER,
+        () -> false);
   }
 
   private void createAuditLogIndex() throws IOException {

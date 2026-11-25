@@ -103,7 +103,9 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
     // from operate-list-view index
     // 2. Then archive all docs except `joinRelation=processInstance` from operate-list-view index;
     // we use this as a catch-all clause to move all related documents.
-    // 3. Then archive all `joinRelation=processInstance` docs from operate-list-view index
+    // 3. Then archive all `joinRelation=processInstance` docs from operate-list-view index; a
+    // pause does not stop this move, as a batch is found through its root documents, so children
+    // left behind after the root moved would never be archived
     return archiveProcessDependants(batch)
         .thenComposeAsync(
             v ->
@@ -116,15 +118,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
                         ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION)),
             getExecutor())
         .thenComposeAsync(
-            ignored ->
-                archive(
-                    templateDescriptor,
-                    batch,
-                    Map.of(
-                        ListViewTemplate.JOIN_RELATION,
-                        ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
-                    Map.of()),
-            getExecutor())
+            ignored -> archiveProcessInstanceDocuments(templateDescriptor, batch), getExecutor())
         .thenApply(FunctionUtil.peek(archived -> markBatchRecentlyArchived(batch)));
   }
 
@@ -213,6 +207,20 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
             idsMap,
             inclusionFilters,
             exclusionFilters,
+            getExecutor())
+        .thenApplyAsync(ok -> batch.size(), getExecutor());
+  }
+
+  private CompletableFuture<Integer> archiveProcessInstanceDocuments(
+      final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
+    final var sourceIdxName = templateDescriptor.getFullQualifiedName();
+    return getArchiverRepository()
+        .moveDocumentsByIdToCompletion(
+            sourceIdxName,
+            sourceIdxName + batch.finishDate(),
+            createIdsByFieldMap(templateDescriptor, batch),
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
+            Map.of(),
             getExecutor())
         .thenApplyAsync(ok -> batch.size(), getExecutor());
   }

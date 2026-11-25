@@ -228,7 +228,8 @@ public final class CamundaBackgroundTaskManagerFactory {
         genericClient,
         executor,
         metrics,
-        logger);
+        logger,
+        this::isPaused);
   }
 
   private ElasticsearchBatchOperationUpdateRepository createBatchOperationRepository(
@@ -275,7 +276,14 @@ public final class CamundaBackgroundTaskManagerFactory {
   private ElasticsearchArchiverRepository createArchiverRepository(
       final ElasticsearchAsyncClient asyncClient) {
     return new ElasticsearchArchiverRepository(
-        partitionId, config.getHistory(), resourceProvider, asyncClient, executor, metrics, logger);
+        partitionId,
+        config.getHistory(),
+        resourceProvider,
+        asyncClient,
+        executor,
+        metrics,
+        logger,
+        this::isPaused);
   }
 
   private List<RunnableTask> buildTasks() {
