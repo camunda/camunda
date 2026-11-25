@@ -23,7 +23,6 @@ import java.util.List;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
-import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.impl.type.ModelElementTypeBuilderImpl;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
@@ -36,49 +35,55 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class ModelBuilderImpl extends ModelBuilder {
 
-  private final List<ModelElementTypeBuilderImpl> typeBuilders =
-      new ArrayList<ModelElementTypeBuilderImpl>();
+  private final List<ModelElementTypeBuilderImpl> unbuiltTypeBuilders = new ArrayList<>();
   private final ModelImpl model;
 
-  public ModelBuilderImpl(String modelName) {
+  public ModelBuilderImpl(final String modelName) {
     model = new ModelImpl(modelName);
   }
 
-  public ModelBuilder alternativeNamespace(String alternativeNs, String actualNs) {
+  @Override
+  public ModelBuilder alternativeNamespace(final String alternativeNs, final String actualNs) {
     model.declareAlternativeNamespace(alternativeNs, actualNs);
     return this;
   }
 
+  @Override
   public ModelElementTypeBuilder defineType(
-      Class<? extends ModelElementInstance> modelInstanceType, String typeName) {
+      final Class<? extends ModelElementInstance> modelInstanceType, final String typeName) {
     final ModelElementTypeBuilderImpl typeBuilder =
         new ModelElementTypeBuilderImpl(modelInstanceType, typeName, model);
-    typeBuilders.add(typeBuilder);
+    unbuiltTypeBuilders.add(typeBuilder);
     return typeBuilder;
   }
 
-  public ModelElementType defineGenericType(String typeName, String typeNamespaceUri) {
+  @Override
+  public ModelElementType defineGenericType(final String typeName, final String typeNamespaceUri) {
     final ModelElementTypeBuilder typeBuilder =
         defineType(ModelElementInstance.class, typeName)
             .namespaceUri(typeNamespaceUri)
             .instanceProvider(
-                new ModelTypeInstanceProvider<ModelElementInstance>() {
-                  public ModelElementInstance newInstance(
-                      ModelTypeInstanceContext instanceContext) {
-                    return new ModelElementInstanceImpl(instanceContext);
-                  }
-                });
+                (ModelTypeInstanceProvider<ModelElementInstance>) ModelElementInstanceImpl::new);
 
     return typeBuilder.build();
   }
 
+  /**
+   * Builds the types defined since the last call and returns the model.
+   *
+   * <p>Types that were already built are skipped. Building a type again would register its
+   * references a second time, so the reference lists of the model would grow each time a generic
+   * type is added (see {@link ModelInstanceImpl#registerGenericType(String, String)}).
+   */
+  @Override
   public Model build() {
-    for (ModelElementTypeBuilderImpl typeBuilder : typeBuilders) {
+    for (final ModelElementTypeBuilderImpl typeBuilder : unbuiltTypeBuilders) {
       typeBuilder.buildTypeHierarchy(model);
     }
-    for (ModelElementTypeBuilderImpl typeBuilder : typeBuilders) {
+    for (final ModelElementTypeBuilderImpl typeBuilder : unbuiltTypeBuilders) {
       typeBuilder.performModelBuild(model);
     }
+    unbuiltTypeBuilders.clear();
     return model;
   }
 }
