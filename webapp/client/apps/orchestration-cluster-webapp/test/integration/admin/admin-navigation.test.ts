@@ -16,12 +16,16 @@ import {
 	mockQueryUsersEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {createAdminClientConfigScript} from '#/shared-test-modules/api-mocks/authorizations';
+import {SAAS_CLUSTER_ID, SAAS_ORGANIZATION_ID} from '#/shared-test-modules/api-mocks/saas';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryRolesResponse} from '#/shared-test-modules/api-mocks/roles';
 import {createQueryMappingRulesResponse} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {createQueryUsersResponse} from '#/shared-test-modules/api-mocks/users';
+
+import {createSaasAdminHandlers} from './saasAdminHandlers';
 
 test.beforeEach(async ({network, adminRolesPage}) => {
 	await adminRolesPage.mockClientConfig();
@@ -129,5 +133,29 @@ test.describe('Admin navigation', () => {
 
 		await expect(adminIndexPage.navItem('Mapping rules')).toBeVisible();
 		await expect(adminIndexPage.navItem('Users')).toBeHidden();
+	});
+
+	test('should offer mapping rules on SaaS with an additional IdP', async ({
+		adminIndexPage,
+		adminRolesPage,
+		network,
+	}) => {
+		await adminIndexPage.seedSaasBootConfig({organizationId: SAAS_ORGANIZATION_ID, clusterId: SAAS_CLUSTER_ID});
+		await adminRolesPage.mockClientConfig(createAdminClientConfigScript({isAdditionalIdpConfigured: 'true'}));
+		network.use(...createSaasAdminHandlers());
+
+		await adminIndexPage.goto();
+
+		await expect(adminIndexPage.navItem('Mapping rules')).toBeVisible();
+	});
+
+	test('should hide mapping rules on SaaS without an additional IdP', async ({adminIndexPage, network}) => {
+		await adminIndexPage.seedSaasBootConfig({organizationId: SAAS_ORGANIZATION_ID, clusterId: SAAS_CLUSTER_ID});
+		network.use(...createSaasAdminHandlers());
+
+		await adminIndexPage.goto();
+
+		await expect(adminIndexPage.navItem('Roles')).toBeVisible();
+		await expect(adminIndexPage.navItem('Mapping rules')).toBeHidden();
 	});
 });

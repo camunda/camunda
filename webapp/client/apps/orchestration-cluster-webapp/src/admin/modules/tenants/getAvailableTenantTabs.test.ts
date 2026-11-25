@@ -15,6 +15,7 @@ const config: AdminSectionConfig = {
 	isSaas: false,
 	isTenantsApiEnabled: true,
 	isCamundaGroupsEnabled: true,
+	isAdditionalIdpConfigured: false,
 };
 
 describe('getAvailableTenantTabs', () => {

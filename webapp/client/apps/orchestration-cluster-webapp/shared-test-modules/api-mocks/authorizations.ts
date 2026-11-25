@@ -48,6 +48,7 @@ const ADMIN_CLIENT_CONFIG = {
 		AUTHORIZATION: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
 	},
 	defaultRoleIds: ['admin'],
+	isAdditionalIdpConfigured: 'false',
 };
 
 function createAdminClientConfigScript(overrides?: Partial<typeof ADMIN_CLIENT_CONFIG>): string {

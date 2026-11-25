@@ -15,12 +15,15 @@ import {
 	mockQueryUsersEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {createAdminClientConfigScript} from '#/shared-test-modules/api-mocks/authorizations';
+import {SAAS_CLUSTER_ID, SAAS_ORGANIZATION_ID} from '#/shared-test-modules/api-mocks/saas';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryMappingRulesResponse} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {createQueryUsersResponse} from '#/shared-test-modules/api-mocks/users';
 import {mockAdminClientConfig} from '#/pages/admin/mockAdminClientConfig';
+import {createSaasAdminHandlers} from './saasAdminHandlers';
 
 test.beforeEach(async ({network, page}) => {
 	await mockAdminClientConfig(page);
@@ -63,5 +66,20 @@ test.describe('Admin index page', () => {
 		await adminIndexPage.goto();
 
 		await expect(page).toHaveURL('/admin/mapping-rules');
+	});
+
+	test('should not redirect to mapping rules on SaaS with an additional IdP', async ({
+		adminIndexPage,
+		adminMappingRulesPage,
+		network,
+		page,
+	}) => {
+		await adminIndexPage.seedSaasBootConfig({organizationId: SAAS_ORGANIZATION_ID, clusterId: SAAS_CLUSTER_ID});
+		await adminMappingRulesPage.mockClientConfig(createAdminClientConfigScript({isAdditionalIdpConfigured: 'true'}));
+		network.use(...createSaasAdminHandlers());
+
+		await adminIndexPage.goto();
+
+		await expect(page).toHaveURL('/admin/groups');
 	});
 });

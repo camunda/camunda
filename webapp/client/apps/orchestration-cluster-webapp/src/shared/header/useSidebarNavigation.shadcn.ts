@@ -31,7 +31,7 @@ import {
 } from '@camunda/design-system/icons';
 import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
 import type {AuthenticatedCurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
-import {getAdminSectionConfig, isAdminSectionAvailable, type AdminSectionKey} from '#/admin/adminSections';
+import {isAdminSectionAvailable, useAdminSectionConfig, type AdminSectionKey} from '#/admin/adminSections';
 import {OPERATE_BASE} from '#/shared/operateBase';
 import {hasComponentAccess} from '#/shared/componentAccess';
 import {ENABLE_CASE_MANAGEMENT} from '#/shared/feature-flags';
@@ -149,6 +149,7 @@ function useSidebarNavigation(currentUser: AuthenticatedCurrentUser): SidebarNav
 	const activeComponentHomeRoute = useActiveComponentHomeRoute();
 	const isTasklistRoute = activeComponentHomeRoute === tabRoutes['tasklistIndex'];
 	const isAdminRoute = activeComponentHomeRoute === tabRoutes['adminIndex'];
+	const sectionConfig = useAdminSectionConfig(isAdminRoute && hasComponentAccess('admin', authorizedComponents));
 
 	if (isTasklistRoute) {
 		const hasTasklistAccess = hasComponentAccess('tasklist', authorizedComponents);
@@ -296,8 +297,6 @@ function useSidebarNavigation(currentUser: AuthenticatedCurrentUser): SidebarNav
 
 	if (isAdminRoute) {
 		const hasAdminAccess = hasComponentAccess('admin', authorizedComponents);
-		const sectionConfig = getAdminSectionConfig();
-
 		return {
 			ariaLabel: t('admin.adminPanelNavAria'),
 			homeRoute: activeComponentHomeRoute,
@@ -327,4 +326,4 @@ function useSidebarNavigation(currentUser: AuthenticatedCurrentUser): SidebarNav
 	};
 }
 
-export {ADMIN_NAV_ITEMS, useSidebarNavigation};
+export {useSidebarNavigation};

@@ -36,10 +36,10 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/$roleId')({
 			await Promise.all([
 				queryClient.query(queries.getRole(roleId)),
 				queryClient.query(queries.adminClientConfig()).then((clientConfig) => {
-					const sectionConfig = getAdminSectionConfig();
+					const sectionConfig = getAdminSectionConfig(clientConfig.isAdditionalIdpConfigured);
 					const visibleKinds = getVisibleMemberKinds({
 						isOidc: sectionConfig.isOidc,
-						canManageMappingRules: canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured),
+						canManageMappingRules: canManageMappingRuleMembers(sectionConfig),
 					});
 					const kind = getActiveMemberKind(visibleKinds, search.tab);
 					return queryClient.query(getMembersQuery(kind, roleId, getRoleMembersRequestBody(search, kind)));
@@ -77,7 +77,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/$roleId')({
 		const search = Route.useSearch();
 		const {data: role} = useSuspenseQuery(queries.getRole(roleId));
 		const {data: clientConfig} = useSuspenseQuery(queries.adminClientConfig());
-		const sectionConfig = getAdminSectionConfig();
+		const sectionConfig = getAdminSectionConfig(clientConfig.isAdditionalIdpConfigured);
 		const {isOidc, isCamundaGroupsEnabled} = sectionConfig;
 
 		const handleSearchChange = useCallback(
@@ -100,7 +100,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/$roleId')({
 			<AdminRoleDetailPage
 				role={role}
 				isOidc={isOidc}
-				canManageMappingRules={canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured)}
+				canManageMappingRules={canManageMappingRuleMembers(sectionConfig)}
 				isCamundaGroupsEnabled={isCamundaGroupsEnabled}
 				defaultRoleIds={clientConfig.defaultRoleIds}
 				search={search}
