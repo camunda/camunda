@@ -3,6 +3,7 @@
 import os
 import sys
 import unittest
+import unittest.mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 import tenant_report as report  # noqa: E402
@@ -56,6 +57,9 @@ def fake(with_tenant_label=True):
                 if failed:
                     rows.append(sample(failed, tenant=t, outcome="failure", error="grpc_resource_exhausted"))
             return rows
+        if "le=~" in promql:  # the share of observations within the target: p99 within it means 99% or more
+            table = RESPONSE_P99 if "response_latency" in promql else AVAILABILITY_P99
+            return [sample(0.995 if v <= 5.0 else 0.9, tenant=t) for t, v in table.items()]
         if "histogram_quantile" in promql:
             quantile = float(promql.split("histogram_quantile(")[1].split(",")[0])
             table = RESPONSE_P99 if "response_latency" in promql else AVAILABILITY_P99
@@ -150,18 +154,39 @@ class EvaluateTest(unittest.TestCase):
             report.classify(self.tenants, ["pt99"])
 
     def test_a_quiet_tenant_that_loses_load_and_storage_latency_misses_its_targets(self):
-        verdict = report.evaluate(self.tenants, 0.95, 5.0, 5.0)
+        verdict = report.evaluate(self.tenants, 0.95, 5.0)
         self.assertEqual(verdict.failing["pt2"], ["served", "availability", "export"])
         self.assertEqual(verdict.failing["pt3"], [])
         self.assertEqual(verdict.failing["default"], [])
 
     def test_a_tenant_with_a_long_export_queue_is_flagged_even_when_served(self):
         self.assertEqual(self.tenants["pt6"].role, "no load")  # no load tester, only an export queue
-        verdict = report.evaluate(self.tenants, 0.95, 5.0, 5.0)
+        verdict = report.evaluate(self.tenants, 0.95, 5.0)
         self.assertEqual(verdict.failing["pt6"], ["export"])
 
+    def test_a_stalled_exporter_is_an_unbounded_lag_that_misses_the_target(self):
+        self.tenants["pt3"].export_partitions = {"1": {"backlog": 100, "rate": 100}, "2": {"backlog": 10000, "rate": 0}}
+        self.assertEqual(self.tenants["pt3"].export_lag_seconds, float("inf"))
+        self.assertEqual(report.evaluate(self.tenants, 0.95, 5.0).failing["pt3"], ["export"])
+
+    def test_an_empty_queue_that_exports_nothing_is_not_a_stall(self):
+        self.tenants["pt3"].export_partitions = {"1": {"backlog": 0, "rate": 0}}
+        self.assertEqual(self.tenants["pt3"].export_lag_seconds, 0)
+
+    def test_a_tenant_without_export_metrics_misses_the_export_target(self):
+        self.tenants["pt3"].export_partitions = {}
+        self.tenants["pt3"].export_backlog = None
+        self.assertIsNone(self.tenants["pt3"].export_lag_seconds)
+        self.assertEqual(report.evaluate(self.tenants, 0.95, 5.0).failing["pt3"], ["export"])
+
+    def test_latency_that_cannot_be_measured_against_the_target_is_not_a_pass(self):
+        for t in self.tenants.values():  # no bucket ends at the target, or the latency is beyond the last one
+            t.response_within = t.availability_within = None
+        verdict = report.evaluate(self.tenants, 0.95, 5.0)
+        self.assertEqual(verdict.failing["pt3"], ["response", "availability"])
+
     def test_counts_of_tenants_that_pass(self):
-        verdict = report.evaluate(self.tenants, 0.95, 5.0, 5.0)
+        verdict = report.evaluate(self.tenants, 0.95, 5.0)
         self.assertEqual(verdict.passing(), ["default", "pt3"])
         self.assertIn("pt2", set(self.tenants) - set(verdict.passing("response")) | {"pt2"})
 
@@ -192,6 +217,15 @@ class StatisticsTest(unittest.TestCase):
 
 
 class RenderTest(unittest.TestCase):
+    def test_a_stalled_tenant_does_not_break_the_statistics(self):
+        stalled = {"pt2": {"1": (3000, 0), "2": (2000, 300)}}
+        with unittest.mock.patch.dict(PARTITIONS, stalled):
+            markdown, data = report.build_report(fake(), args("--reference", "c8-ref"))
+        self.assertIn("stalled", markdown)
+        self.assertIn("Export stalled", markdown)
+        self.assertIn("export", data["failing"]["pt2"])
+        report.json.dumps(data, allow_nan=False, default=str)  # the JSON stays valid
+
     def test_the_report_has_every_section(self):
         markdown, data = report.build_report(fake(), args("--reference", "c8-ref"))
         for heading in (

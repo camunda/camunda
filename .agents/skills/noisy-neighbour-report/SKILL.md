@@ -50,7 +50,7 @@ Useful options:
 | `--saturating pt1` | Name the noisy tenants. Default: tenants offering at least twice the median load |
 | `--weights pt2=3` | Relative shares, if the tenants do not have equal weights |
 | `--min-service 0.95` | Served share that counts as served |
-| `--slo-seconds 5` | p99 limit for response latency and for the data to reach the storage |
+| `--slo-seconds 5` | p99 limit for response latency and for the data to reach the storage. Judged by the share of observations within the limit, so a histogram bucket must end at it (the response histogram ends at 5 s); otherwise the target counts as missed |
 | `--lag-seconds 5` | Limit for the time the exporter needs to clear its queue |
 
 Run the tests with `python3 -m unittest discover -s .agents/skills/noisy-neighbour-report/tests`.
