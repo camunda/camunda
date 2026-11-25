@@ -445,8 +445,22 @@ jobs:
       - name: Get Maven project version
         id: maven-version
         run: |
-          VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args="\${project.version}" --non-recursive exec:exec)
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          # Resolving the version builds the exec-maven-plugin realm, pulling the plugin
+          # and its sbe-tool dependency from the remote repository, so retry to ride out a
+          # transient resolution blip. -q sends Maven output to stdout, which the command
+          # substitution otherwise swallows; capture and print it so a real failure is
+          # visible instead of surfacing as a bare exit 1.
+          for attempt in 1 2 3; do
+            if VERSION=$(timeout 300 ./mvnw -q -Dexec.executable=echo -Dexec.args="\${project.version}" --non-recursive exec:exec); then
+              echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::warning::Maven project version resolution failed (attempt ${attempt}/3):"
+            echo "${VERSION}"
+            sleep $((attempt * 10))
+          done
+          echo "::error::Could not resolve Maven project version after 3 attempts."
+          exit 1
 
       - name: Set semantic image tag
         id: set-image-tag
