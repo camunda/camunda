@@ -77,8 +77,8 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
-import io.camunda.zeebe.engine.processing.policy.HubPolicyClient;
 import io.camunda.zeebe.engine.processing.policy.PolicyUpdateProcessors;
+import io.camunda.zeebe.engine.processing.policy.hub.FanoutClientFactory;
 import io.camunda.zeebe.engine.processing.probe.ProbeBehavior;
 import io.camunda.zeebe.engine.processing.probe.ProbeProcessors;
 import io.camunda.zeebe.engine.processing.processdefinition.ProcessDefinitionSuspensionResumeProcessor;
@@ -153,7 +153,7 @@ public final class EngineProcessors {
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final SecretStoreRegistry secretStoreRegistry,
-      final HubPolicyClient hubPolicyClient) {
+      final FanoutClientFactory fanoutClientFactory) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -527,7 +527,7 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         scheduledTaskStateFactory,
-        hubPolicyClient);
+        fanoutClientFactory);
 
     addResourceFetchProcessors(
         typedRecordProcessors, writers, processingState, permissionsBehavior, tenantCheck, config);

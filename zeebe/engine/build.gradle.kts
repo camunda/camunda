@@ -15,6 +15,7 @@ dependencies {
   implementation(libs.io.camunda.security.library.validation)
   implementation(libs.io.camunda.security.library.api)
   implementation(libs.io.camunda.security.library.core)
+  implementation(libs.io.camunda.fanout.fanout.client)
   implementation(libs.io.camunda.fanout.fanout.protocol) {
     // as in parent/pom.xml: only the generated models, not the JSON reader and writer
     exclude(group = "tools.jackson.core")

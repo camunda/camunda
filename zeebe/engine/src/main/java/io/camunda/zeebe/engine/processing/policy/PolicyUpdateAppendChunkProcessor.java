@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.policy;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -24,23 +25,26 @@ import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Buffers a chunk of a policy update. The broker writes the chunks of an update one after another,
- * in index order, and the log keeps that order, so each chunk must be the next one of its update.
- * Once the last chunk is buffered, the processor starts applying the update with its first chunk.
- * It applies the update with the identifiers and chunk count that are buffered with the update,
- * which is the same count that decides whether every chunk is buffered.
+ * Buffers a chunk of a policy update. The Hub scheduler writes the chunks of an update one after
+ * another, in index order, and the log keeps that order, so each chunk must be the next one of its
+ * update. Once the last chunk is buffered, the processor starts applying the update with its first
+ * chunk. It applies the update with the identifiers and chunk count that are buffered with the
+ * update, which is the same count that decides whether every chunk is buffered.
  *
  * <p>Only one update is open at a time. The processor rejects a chunk without changing the open
  * update if it cannot belong to it.
  *
- * <p>The sender may deliver a chunk more than once, for example when a new leader polls Hub again
- * while the chunks of the previous leader are not processed yet. A chunk the open update already
- * buffered is therefore only rejected: it changes nothing, and it never fails the update. The same
- * update id and chunk index always mean the same chunk.
+ * <p>The sender may deliver a chunk more than once, for example when a new leader receives the
+ * change set from Hub again while the chunks of the previous leader are not processed yet. A chunk
+ * the open update already buffered is therefore only rejected: it changes nothing, and it never
+ * fails the update. The same update id and chunk index always mean the same chunk.
  *
  * <p>Once every chunk is buffered, the update is being applied: its identity commands may already
  * be written, and nothing can undo them. A chunk of it is then only rejected, and the update never
  * fails, whatever is wrong with the chunk.
+ *
+ * <p>Once a failed update is committed in the log, partition 1 tells the {@link
+ * PolicyUpdateOutcomeListener} why, which reports the update to Hub as rejected.
  *
  * <p>The processor checks no user authorization; see {@link PolicyUpdateGuard}.
  */
@@ -54,13 +58,18 @@ public final class PolicyUpdateAppendChunkProcessor
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SideEffectWriter sideEffectWriter;
+  private final PolicyUpdateOutcomeListener outcomeListener;
 
   public PolicyUpdateAppendChunkProcessor(
       final PolicyUpdateState policyUpdateState,
       final KeyGenerator keyGenerator,
-      final Writers writers) {
+      final Writers writers,
+      final PolicyUpdateOutcomeListener outcomeListener) {
     this.policyUpdateState = policyUpdateState;
     this.keyGenerator = keyGenerator;
+    this.outcomeListener = outcomeListener;
+    sideEffectWriter = writers.sideEffect();
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -174,6 +183,8 @@ public final class PolicyUpdateAppendChunkProcessor
             .setErrorMessage(reason);
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), PolicyUpdateIntent.FAILED, failed);
     rejectionWriter.appendRejection(command, rejectionType, reason);
+    final var updateId = openUpdate.getUpdateId();
+    sideEffectWriter.appendSideEffect(() -> outcomeListener.onFailed(updateId, reason));
   }
 
   /** The open update, if every one of its chunks is buffered. */

@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.policy;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.policy.hub.FanoutClientFactory;
+import io.camunda.zeebe.engine.processing.policy.hub.HubPolicyUpdateScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -30,14 +32,21 @@ public final class PolicyUpdateProcessors {
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
-      final HubPolicyClient hubPolicyClient) {
+      final FanoutClientFactory fanoutClientFactory) {
     final var policyUpdateState = processingState.getPolicyUpdateState();
     final var commandMapper = new PolicyUpdateCommandMapper(processingState);
+    final var hubPolicy =
+        fanoutClientFactory == FanoutClientFactory.DISABLED
+            ? null
+            : new HubPolicyUpdateScheduler(scheduledTaskStateFactory, fanoutClientFactory);
+    final PolicyUpdateOutcomeListener outcomeListener =
+        hubPolicy == null ? PolicyUpdateOutcomeListener.NOOP : hubPolicy.outcomeListener();
     typedRecordProcessors
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPEND_CHUNK,
-            new PolicyUpdateAppendChunkProcessor(policyUpdateState, keyGenerator, writers))
+            new PolicyUpdateAppendChunkProcessor(
+                policyUpdateState, keyGenerator, writers, outcomeListener))
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPLY_CHUNK,
@@ -46,10 +55,10 @@ public final class PolicyUpdateProcessors {
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.COMMIT_VERSION,
-            new PolicyUpdateCommitVersionProcessor(keyGenerator, distributionBehavior, writers));
-    if (hubPolicyClient != HubPolicyClient.DISABLED) {
-      typedRecordProcessors.withListener(
-          new HubPolicyUpdateScheduler(scheduledTaskStateFactory, hubPolicyClient));
+            new PolicyUpdateCommitVersionProcessor(
+                keyGenerator, distributionBehavior, writers, outcomeListener));
+    if (hubPolicy != null) {
+      typedRecordProcessors.withListener(hubPolicy);
     }
   }
 }
