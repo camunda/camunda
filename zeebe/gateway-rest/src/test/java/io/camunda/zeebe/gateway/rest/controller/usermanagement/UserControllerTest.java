@@ -343,6 +343,27 @@ public class UserControllerTest {
       verifyNoInteractions(userServices);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {".", ".."})
+    void shouldRejectUserCreationWithDotSegmentUsername(final String username) {
+      // given
+      final var request = userRequestWith(username, "zabraboof", "bar@baz.com");
+
+      // when then
+      assertRequestRejectedExceptionally(
+          request,
+          """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided username '%s' cannot be addressed in /v2/users/{username}. It must not be '.' or '..' and must not contain '%%' or ';'.",
+              "instance": "%s"
+            }"""
+              .formatted(username, USER_BASE_URL));
+      verifyNoInteractions(userServices);
+    }
+
     @Test
     void deleteUserShouldReturnNoContent() {
       // given
