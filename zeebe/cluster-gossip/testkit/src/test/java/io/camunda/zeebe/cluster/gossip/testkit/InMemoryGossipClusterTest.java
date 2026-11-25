@@ -119,6 +119,21 @@ final class InMemoryGossipClusterTest {
     }
 
     @Test
+    void shouldConvergeWhenRestartedWriterReusesTimestamp() {
+      // given - the restarted run writes with the same timestamp as the previous run
+      a.put(FLAG, "before-restart");
+      cluster.sync();
+      final var restarted = cluster.restart(A);
+      restarted.put(FLAG, "after-restart");
+
+      // when
+      cluster.sync();
+
+      // then
+      assertThat(List.of(b.get(FLAG), c.get(FLAG))).containsOnly(restarted.get(FLAG));
+    }
+
+    @Test
     void shouldLetLocalWriteWinWhileClockStandsStill() {
       // given
       a.put(FLAG, "first");

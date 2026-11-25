@@ -246,13 +246,19 @@ public final class InMemoryGossipCluster {
     byte[] bytes();
   }
 
-  /** A last-writer-wins write: the higher timestamp wins, ties go to the higher writer id. */
+  /**
+   * A last-writer-wins write: the higher timestamp wins, ties go to the higher writer id and then
+   * to the greater encoded value. The last tie-break makes the order total, so members converge
+   * even when a restarted writer reuses a timestamp of its previous run for a different value.
+   */
   private record LastWrite(byte[] bytes, long timestamp, MemberId writer) implements GlobalEntry {
 
     boolean isNewerThan(final LastWrite other) {
-      return timestamp != other.timestamp
-          ? timestamp > other.timestamp
-          : MemberId.ID_COMPARATOR.compare(writer, other.writer) > 0;
+      if (timestamp != other.timestamp) {
+        return timestamp > other.timestamp;
+      }
+      final int byWriter = MemberId.ID_COMPARATOR.compare(writer, other.writer);
+      return byWriter != 0 ? byWriter > 0 : Arrays.compareUnsigned(bytes, other.bytes) > 0;
     }
   }
 
