@@ -9,12 +9,14 @@ package io.camunda.zeebe.dynamic.config;
 
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32C;
 import org.jspecify.annotations.NullMarked;
@@ -51,6 +53,8 @@ public final class PersistedCurrentClusterConfiguration {
   private final Path configurationFile;
   private final ClusterConfigurationSerializer serializer;
   private CurrentClusterConfiguration configuration;
+  // whether loading the file returns this configuration; not after a failed write, see update
+  private boolean persisted = true;
 
   private PersistedCurrentClusterConfiguration(
       final Path configurationFile,
@@ -89,12 +93,24 @@ public final class PersistedCurrentClusterConfiguration {
     return configuration;
   }
 
+  /**
+   * Persists the configuration, replacing the previous one.
+   *
+   * <p>After a failed write, the file may hold the previous configuration or the one that failed to
+   * be written, so the next update writes even a configuration equal to the one in memory. Retrying
+   * is safe: every write rewrites the whole configuration to a temporary file and renames it over
+   * the old one, so it never relies on syncing again what failed to sync.
+   *
+   * @throws IOException if writing fails
+   */
   public void update(final CurrentClusterConfiguration updatedConfiguration) throws IOException {
-    if (configuration.equals(updatedConfiguration)) {
+    if (persisted && configuration.equals(updatedConfiguration)) {
       return;
     }
+    persisted = false;
     writeToFile(updatedConfiguration, configurationFile, serializer);
     configuration = updatedConfiguration;
+    persisted = true;
   }
 
   /**
@@ -162,13 +178,22 @@ public final class PersistedCurrentClusterConfiguration {
             .put(VERSION)
             .putLong(checksum)
             .put(body);
+    // Write a new file and replace the old one with it, rather than overwriting the old one in
+    // place: a write that fails, and a restart before the next one, would otherwise leave neither
+    // the old nor the new configuration on disk.
+    final var tempFile = configurationFile.resolveSibling(configurationFile.getFileName() + ".tmp");
     Files.write(
-        configurationFile,
+        tempFile,
         buffer.array(),
         StandardOpenOption.CREATE,
         StandardOpenOption.WRITE,
         StandardOpenOption.TRUNCATE_EXISTING,
         StandardOpenOption.DSYNC);
+    FileUtil.moveDurably(
+        tempFile,
+        configurationFile,
+        StandardCopyOption.ATOMIC_MOVE,
+        StandardCopyOption.REPLACE_EXISTING);
   }
 
   private static long checksum(final byte[] bytes, final int offset, final int length) {
