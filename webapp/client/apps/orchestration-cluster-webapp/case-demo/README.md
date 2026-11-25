@@ -29,7 +29,7 @@ Insurance claim                          process, case marker
 │  ├─ Inspect the damage                 ┐ parallel
 │  ├─ Collect repair quotes              ┘ sub-process with a multi-instance task (3 workshops)
 │  └─ Expert report                      sub-process
-│     └─ Draft the report                sub-process with a nested stage marker: ignored, only top-level stages count
+│     └─ Draft the report                sub-process; no stage marker: the engine rejects stage markers below the top level
 ├─ Coverage check                        ad-hoc stage, 2 required and 2 optional tasks, completes on its own
 ├─ Decision                              stage; "need more information" loops back to Coverage check
 ├─ Payout                                stage, only when approved

@@ -18,7 +18,7 @@ import {
 	CardTitle,
 } from '@camunda/design-system';
 import {X} from '@camunda/design-system/icons';
-import type {CurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {AssignButton} from '#/tasklist/modules/task-details/components/AssignButton';
 import {CompleteTaskButton} from '#/tasklist/modules/task-details/components/CompleteTaskButton';
 import {useTaskCompletion} from '#/tasklist/modules/task-details/useTaskCompletion';
@@ -26,7 +26,7 @@ import {TaskDetailsForm} from '#/tasklist/modules/task-details-form/components/T
 
 type Props = {
 	task: UserTask;
-	currentUser: CurrentUser;
+	currentUser: AuthenticatedCurrentUser;
 	formSchema: string | null;
 	variables: Variable[];
 	onCompleted: () => void;
@@ -41,6 +41,7 @@ const CaseTaskPanel: React.FC<Props> = ({task, currentUser, formSchema, variable
 		currentUser: currentUser.username,
 		taskState: task.state,
 		assignee: task.assignee ?? null,
+		isSuspended: task.isSuspended,
 		onComplete: onCompleted,
 	});
 
@@ -57,6 +58,7 @@ const CaseTaskPanel: React.FC<Props> = ({task, currentUser, formSchema, variable
 						assignee={task.assignee ?? null}
 						taskState={task.state}
 						currentUser={currentUser.username}
+						isSuspended={task.isSuspended}
 					/>
 					<Button variant="ghost" size="sm" aria-label={t('tasklist.caseCloseTask')} onClick={onClose}>
 						<X aria-hidden />
@@ -73,6 +75,7 @@ const CaseTaskPanel: React.FC<Props> = ({task, currentUser, formSchema, variable
 							status={status}
 							isHidden={isHidden}
 							isDisabled={!isCompletionAllowed}
+							isSuspended={task.isSuspended}
 							onClick={() => complete()}
 						/>
 					</CardFooter>
@@ -85,6 +88,7 @@ const CaseTaskPanel: React.FC<Props> = ({task, currentUser, formSchema, variable
 						completionStatus={status}
 						isCompletionAllowed={isCompletionAllowed}
 						isHidden={isHidden}
+						isSuspended={task.isSuspended}
 						onSubmit={complete}
 					/>
 				</CardContent>

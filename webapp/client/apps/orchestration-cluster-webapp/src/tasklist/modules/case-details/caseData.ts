@@ -9,7 +9,7 @@
 import {keepPreviousData, queryOptions, useQuery, useSuspenseQuery, type QueryClient} from '@tanstack/react-query';
 import {getCaseProgress, getCaseVariableNames, getCurrentStage, parseCaseModel} from '@camunda/case-management-sdk';
 import type {
-	CurrentUser,
+	AuthenticatedCurrentUser,
 	ElementInstance,
 	ProcessInstance,
 	QueryVariablesResponseBody,
@@ -34,7 +34,7 @@ import {getSelectedVariablesRequestBody} from '#/tasklist/modules/task-details-f
 const REFETCH_INTERVAL = 5000;
 
 type CaseData = {
-	currentUser: CurrentUser;
+	currentUser: AuthenticatedCurrentUser;
 	processInstance: ProcessInstance;
 	xml: string;
 	elementInstances: ElementInstance[];

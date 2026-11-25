@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {CaseTaskPanel} from '#/tasklist/modules/case-details/components/CaseTaskPanel';
 
 type Props = {
 	task: UserTask;
-	currentUser: CurrentUser;
+	currentUser: AuthenticatedCurrentUser;
 	formSchema: string | null;
 	variables: Variable[];
 	onCompleted: () => void;

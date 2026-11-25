@@ -132,9 +132,6 @@
           <bpmn:outgoing>flow-report-1</bpmn:outgoing>
         </bpmn:startEvent>
         <bpmn:subProcess id="draft-report" name="Draft the report">
-          <bpmn:extensionElements>
-            <zeebe:stage />
-          </bpmn:extensionElements>
           <bpmn:incoming>flow-report-1</bpmn:incoming>
           <bpmn:outgoing>flow-report-2</bpmn:outgoing>
           <bpmn:startEvent id="draft-start">
