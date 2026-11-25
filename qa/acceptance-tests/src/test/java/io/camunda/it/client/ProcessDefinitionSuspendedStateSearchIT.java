@@ -178,6 +178,15 @@ class ProcessDefinitionSuspendedStateSearchIT {
                 .endEvent()
                 .done(),
             processId + ".bpmn");
+    final var v3 =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("wait3")
+                .endEvent()
+                .done(),
+            processId + ".bpmn");
     camundaClient
         .newDeleteResourceCommand(v1.getProcessDefinitionKey())
         .deleteHistory(false)
@@ -193,15 +202,17 @@ class ProcessDefinitionSuspendedStateSearchIT {
             .send()
             .join();
 
-    // then - the draining version keeps its outcome, the other version is suspended
+    // then - the draining version keeps its outcome, every active version is suspended
     assertThat(response.getProcessDefinitions())
         .extracting(
             SuspendProcessDefinitionVersionResult::getProcessDefinitionKey,
             SuspendProcessDefinitionVersionResult::getOutcome)
         .containsExactlyInAnyOrder(
             tuple(v1.getProcessDefinitionKey(), Outcome.DRAINING),
-            tuple(v2.getProcessDefinitionKey(), Outcome.SUSPENDED));
+            tuple(v2.getProcessDefinitionKey(), Outcome.SUSPENDED),
+            tuple(v3.getProcessDefinitionKey(), Outcome.SUSPENDED));
     awaitState(v2, ProcessDefinitionState.SUSPENDED);
+    awaitState(v3, ProcessDefinitionState.SUSPENDED);
     // v1 was already DRAINING before the suspend, so only a search for SUSPENDED proves that the
     // exporter did not overwrite it
     assertThat(
@@ -213,7 +224,7 @@ class ProcessDefinitionSuspendedStateSearchIT {
                 .join()
                 .items())
         .extracting(ProcessDefinition::getProcessDefinitionKey)
-        .containsExactly(v2.getProcessDefinitionKey());
+        .containsExactlyInAnyOrder(v2.getProcessDefinitionKey(), v3.getProcessDefinitionKey());
     awaitState(v1, ProcessDefinitionState.DRAINING);
   }
 
