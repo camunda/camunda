@@ -23,6 +23,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.ProblemDetail;
+import io.camunda.client.api.command.ClientHttpException;
+import io.camunda.client.api.command.MalformedResponseException;
 import io.camunda.client.api.command.ProblemException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,6 +65,33 @@ class CommandApiProbeTest {
 
     // then
     verify(camundaClient, times(3)).newCompleteCommand(DEPLOYMENT_PARTITION_JOB_KEY);
+  }
+
+  @Test
+  void shouldRetryOnServerErrorWithoutProblemDetail() {
+    // given
+    when(camundaClient.newCompleteCommand(anyLong()).useRest().send().join())
+        .thenThrow(
+            new ClientHttpException(503, "Service Unavailable"),
+            new MalformedResponseException(503, "Service Unavailable", new RuntimeException()),
+            problem(404));
+
+    // when
+    CommandApiProbe.waitUntilCommandApiAcceptsCommands(camundaClient);
+
+    // then
+    verify(camundaClient, times(3)).newCompleteCommand(DEPLOYMENT_PARTITION_JOB_KEY);
+  }
+
+  @Test
+  void shouldNotTreatNotFoundWithoutProblemDetailAsReady() {
+    // given
+    when(camundaClient.newCompleteCommand(anyLong()).useRest().send().join())
+        .thenThrow(new ClientHttpException(404, "Not Found"));
+
+    // when / then
+    assertThatThrownBy(() -> CommandApiProbe.waitUntilCommandApiAcceptsCommands(camundaClient))
+        .isInstanceOf(ClientHttpException.class);
   }
 
   @Test

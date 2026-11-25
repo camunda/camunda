@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.client;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.ProblemException;
 import java.time.Duration;
 import org.awaitility.Awaitility;
@@ -60,8 +61,8 @@ public final class CommandApiProbe {
       client.newCompleteCommand(PROBE_JOB_KEY).useRest().send().join();
       throw new IllegalStateException(
           "Expected the broker to reject completing a job that does not exist, but it was accepted.");
-    } catch (final ProblemException e) {
-      if (e.code() == HTTP_NOT_FOUND) {
+    } catch (final ClientHttpException e) {
+      if (e instanceof ProblemException && e.code() == HTTP_NOT_FOUND) {
         return true;
       }
       if (e.code() >= HTTP_SERVER_ERROR) {
