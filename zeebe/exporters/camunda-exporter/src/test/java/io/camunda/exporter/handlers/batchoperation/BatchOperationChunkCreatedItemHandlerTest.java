@@ -14,7 +14,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -69,27 +71,33 @@ class BatchOperationChunkCreatedItemHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
     final int numItems = 3;
+    final long batchOperationKey = 42L;
     final Record<BatchOperationChunkRecordValue> record =
-        aChunkRecordWithMultipleItems(42L, numItems);
+        aChunkRecordWithMultipleItems(batchOperationKey, numItems);
+
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index1 = TargetIndex.mainIndex(indexName);
+    final TargetIndex index2 = TargetIndex.ordinalIndex(indexName, 1);
+    final TargetIndex index3 = TargetIndex.ordinalIndex(indexName, 2);
+
+    final var items = record.getValue().getItems();
+    when(indexLocator.locateOrdinalIndex(eq(indexName), eq(items.get(0)))).thenReturn(index1);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), eq(items.get(1)))).thenReturn(index2);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), eq(items.get(2)))).thenReturn(index3);
 
     // when
-    final var idList = underTest.generateIds(record);
+    final var idAndIndexList = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(idList).hasSize(numItems);
-    final long batchOperationKey = record.getValue().getBatchOperationKey();
-    record
-        .getValue()
-        .getItems()
-        .forEach(
-            item -> {
-              final String expectedId =
-                  String.format(ID_PATTERN, batchOperationKey, item.getItemKey());
-              assertThat(idList).contains(expectedId);
-            });
+    assertThat(idAndIndexList)
+        .isEqualTo(
+            List.of(
+                new IdAndIndex(batchOperationKey + "_" + items.get(0).getItemKey(), index1),
+                new IdAndIndex(batchOperationKey + "_" + items.get(1).getItemKey(), index2),
+                new IdAndIndex(batchOperationKey + "_" + items.get(2).getItemKey(), index3)));
   }
 
   @Test

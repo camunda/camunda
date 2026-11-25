@@ -20,6 +20,13 @@ public interface IndexTemplateDescriptor extends IndexDescriptor {
    */
   String ORDINAL_SUFFIX_START = "ord";
 
+  /** The main index plus its ordinal indices, which hold runtime data next to it. */
+  @Override
+  default List<String> getActiveIndexNames() {
+    final var fullQualifiedName = getFullQualifiedName();
+    return List.of(fullQualifiedName, fullQualifiedName + ORDINAL_SUFFIX_START + "*");
+  }
+
   String getIndexPattern();
 
   String getTemplateName();

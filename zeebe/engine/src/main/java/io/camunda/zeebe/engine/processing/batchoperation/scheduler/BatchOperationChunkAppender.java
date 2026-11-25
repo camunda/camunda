@@ -170,14 +170,12 @@ public class BatchOperationChunkAppender {
     return command;
   }
 
-  // TODO(#57006): set the storage ordinal of every item from the item provider once it exposes
-  //  it. Until then every item is written with 0 = not known.
   private static BatchOperationItemValue mapItem(final Item item) {
     return new BatchOperationItem(
         item.itemKey(),
         item.processInstanceKey(),
         Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L),
-        StorageOrdinalRelated.MAIN_INDEX);
+        Optional.ofNullable(item.storageOrdinal()).orElse(StorageOrdinalRelated.MAIN_INDEX));
   }
 
   /**

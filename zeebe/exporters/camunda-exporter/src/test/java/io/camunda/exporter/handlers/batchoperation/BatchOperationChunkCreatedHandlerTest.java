@@ -13,9 +13,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -61,17 +64,22 @@ class BatchOperationChunkCreatedHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
     final Record<BatchOperationChunkRecordValue> record =
         factory.generateRecordWithIntent(
             ValueType.BATCH_OPERATION_CHUNK, BatchOperationChunkIntent.CREATED);
+    final var indexLocator = mock(TargetIndexLocator.class);
+    final var index = TargetIndex.ordinalIndex(indexName, 1005);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), eq(record.getValue()))).thenReturn(index);
 
     // when
-    final var idList = underTest.generateIds(record);
+    final var idAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then - static composite ID (batchKey:chunk) to collapse all chunks into one cached entity
-    assertThat(idList).containsExactly(record.getValue().getBatchOperationKey() + ":chunk");
+    assertThat(idAndIndexes)
+        .containsExactly(
+            new IdAndIndex(record.getValue().getBatchOperationKey() + ":chunk", index));
   }
 
   @Test

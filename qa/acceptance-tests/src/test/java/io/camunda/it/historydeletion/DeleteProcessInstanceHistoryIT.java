@@ -33,11 +33,15 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+// TODO remove this once archiverless support for history deletion batch operations is fully
+// implemented in https://github.com/camunda/camunda/issues/69617
+@Tag("archiverless-wip")
 public class DeleteProcessInstanceHistoryIT {
 
   public static final String MESSAGE_NAME = "testMessage";

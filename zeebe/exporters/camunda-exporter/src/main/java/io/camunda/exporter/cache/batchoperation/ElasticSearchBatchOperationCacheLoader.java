@@ -27,12 +27,12 @@ public class ElasticSearchBatchOperationCacheLoader
       LoggerFactory.getLogger(ElasticSearchBatchOperationCacheLoader.class);
 
   private final ElasticsearchClient client;
-  private final String batchOperationIndexName;
+  private final String batchOperationReadIndices;
 
   public ElasticSearchBatchOperationCacheLoader(
-      final ElasticsearchClient client, final String batchOperationIndexName) {
+      final ElasticsearchClient client, final String batchOperationReadIndices) {
     this.client = client;
-    this.batchOperationIndexName = batchOperationIndexName;
+    this.batchOperationReadIndices = batchOperationReadIndices;
   }
 
   @Override
@@ -46,7 +46,7 @@ public class ElasticSearchBatchOperationCacheLoader
         client.search(
             request ->
                 request
-                    .index(batchOperationIndexName)
+                    .index(batchOperationReadIndices)
                     .query(termQuery)
                     .source(s -> s.filter(sourceFilter))
                     .size(1),

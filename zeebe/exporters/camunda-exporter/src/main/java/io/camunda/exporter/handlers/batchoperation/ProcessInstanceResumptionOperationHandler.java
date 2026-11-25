@@ -22,7 +22,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
  * entity.
  */
 public class ProcessInstanceResumptionOperationHandler
-    extends AbstractOperationStatusHandler<ProcessInstanceRecordValue> {
+    extends AbstractOrdinalOperationStatusHandler<ProcessInstanceRecordValue> {
 
   public ProcessInstanceResumptionOperationHandler(
       final String indexName,

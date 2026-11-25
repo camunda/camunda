@@ -10,7 +10,9 @@ package io.camunda.exporter.handlers.batchoperation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
@@ -81,17 +83,22 @@ class BatchOperationLifecycleManagementHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
     final Record<BatchOperationLifecycleManagementRecordValue> record =
         factory.generateRecordWithIntent(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, BatchOperationIntent.CANCELED);
+    final var indexLocator = mock(TargetIndexLocator.class);
+    final var index = TargetIndex.ordinalIndex(indexName, 1005);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), eq(record.getValue()))).thenReturn(index);
 
     // when
-    final List<String> idList = handler.generateIds(record);
+    final var idAndIndexes = handler.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(record.getValue().getBatchOperationKey()));
+    assertThat(idAndIndexes)
+        .containsExactly(
+            new IdAndIndex(String.valueOf(record.getValue().getBatchOperationKey()), index));
   }
 
   @Test

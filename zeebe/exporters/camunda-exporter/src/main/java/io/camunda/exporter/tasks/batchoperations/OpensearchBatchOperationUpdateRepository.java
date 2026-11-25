@@ -53,18 +53,18 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
   private static final String BATCH_OPERATION_STATEAGG_NAME = "state";
   private static final Integer RETRY_COUNT = 3;
 
-  private final String batchOperationIndex;
-  private final String operationIndex;
+  private final String batchOperationReadIndices;
+  private final String operationReadIndices;
 
   public OpensearchBatchOperationUpdateRepository(
       final OpenSearchAsyncClient client,
       final Executor executor,
-      final String batchOperationIndex,
-      final String operationIndex,
+      final String batchOperationReadIndices,
+      final String operationReadIndices,
       final Logger logger) {
     super(client, executor, logger);
-    this.batchOperationIndex = batchOperationIndex;
-    this.operationIndex = operationIndex;
+    this.batchOperationReadIndices = batchOperationReadIndices;
+    this.operationReadIndices = operationReadIndices;
   }
 
   @Override
@@ -72,7 +72,7 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
       final int batchSize, final String afterId) {
     final var requestBuilder =
         new SearchRequest.Builder()
-            .index(batchOperationIndex)
+            .index(batchOperationReadIndices)
             .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))))
             .sort(so -> so.field(f -> f.field(ID).order(SortOrder.Asc)))
             .size(batchSize);
@@ -126,7 +126,7 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
 
     final var request =
         new SearchRequest.Builder()
-            .index(operationIndex)
+            .index(operationReadIndices)
             .query(batchOperationKeysQ.toQuery())
             .size(0)
             .aggregations(BATCH_OPERATION_IDAGG_NAME, aggregation)
@@ -174,7 +174,7 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
             END_DATE,
             OffsetDateTime.now());
     return new UpdateOperation.Builder<>()
-        .index(batchOperationIndex)
+        .index(update.index())
         .id(update.id())
         .retryOnConflict(RETRY_COUNT)
         .script(getBatchOperationUpdateScript(params))
@@ -210,11 +210,11 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
       final Hit<BatchOperationEntity> hit) {
     final var source = hit.source();
     if (source == null) {
-      return new NotFinishedBatchOperation(hit.id(), null, 0);
+      return new NotFinishedBatchOperation(hit.id(), hit.index(), null, 0);
     }
     final var totalCount = source.getOperationsTotalCount();
     return new NotFinishedBatchOperation(
-        hit.id(), source.getState(), totalCount == null ? 0 : totalCount);
+        hit.id(), hit.index(), source.getState(), totalCount == null ? 0 : totalCount);
   }
 
   private List<OperationsAggData> processAggregations(final SearchResponse<Void> response) {

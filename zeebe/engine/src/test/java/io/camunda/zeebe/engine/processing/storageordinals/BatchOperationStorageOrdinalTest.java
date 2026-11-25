@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -190,7 +189,7 @@ public final class BatchOperationStorageOrdinalTest {
   public void shouldCarryOrdinalToInitializingRecord() {
     // given
     when(SEARCH_CLIENTS_PROXY.searchProcessInstances(any(ProcessInstanceQuery.class)))
-        .thenReturn(processInstancePage(Set.of(1L, 2L, 3L), 10000))
+        .thenReturn(processInstancePage(Set.of(1L, 2L, 3L), Map.of(), 10000))
         .thenThrow(new RuntimeException("search unavailable"));
 
     // when
@@ -503,7 +502,6 @@ public final class BatchOperationStorageOrdinalTest {
     assertThat(failed.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
   }
 
-  @Ignore("TODO(#57006): enable once the item providers expose the storage ordinal of an item")
   @Test
   public void shouldCarryItemStorageOrdinalToChunkItems() {
     // given process instances 1 and 2 live under ordinal 5, process instance 3 under ordinal 9
@@ -530,7 +528,6 @@ public final class BatchOperationStorageOrdinalTest {
     }
   }
 
-  @Ignore("TODO(#57006): enable once the item providers expose the storage ordinal of an item")
   @Test
   public void shouldCarryItemStorageOrdinalToExecutionRecords() {
     // given process instances 1 and 2 live under ordinal 5, process instance 3 under ordinal 9
@@ -564,7 +561,6 @@ public final class BatchOperationStorageOrdinalTest {
         .containsOnly(tuple(1L, 5), tuple(2L, 5), tuple(3L, 9));
   }
 
-  @Ignore("TODO(#57006): enable once the item providers expose the storage ordinal of an item")
   @Test
   public void shouldStampItemCommandsWithItemStorageOrdinal() {
     // given process instances 1 and 2 live under ordinal 5, process instance 3 under ordinal 9
@@ -615,7 +611,7 @@ public final class BatchOperationStorageOrdinalTest {
   }
 
   private static boolean belongsTo(final Record<?> record, final long batchOperationKey) {
-    return record.getValue() instanceof BatchOperationRelated related
+    return record.getValue() instanceof final BatchOperationRelated related
         && related.getBatchOperationKey() == batchOperationKey;
   }
 
@@ -647,19 +643,30 @@ public final class BatchOperationStorageOrdinalTest {
 
   private void stubProcessInstanceSearch(final Set<Long> processInstanceKeys) {
     when(SEARCH_CLIENTS_PROXY.searchProcessInstances(any(ProcessInstanceQuery.class)))
-        .thenReturn(processInstancePage(processInstanceKeys, processInstanceKeys.size()));
+        .thenReturn(processInstancePage(processInstanceKeys, Map.of(), processInstanceKeys.size()));
   }
 
-  // TODO(#57006): place the ordinal on the ProcessInstanceEntity once the item providers read it,
-  // until then the search result carries no ordinal and every item is written with 0.
   private void stubProcessInstanceSearch(final Map<Long, Integer> processInstanceOrdinals) {
-    stubProcessInstanceSearch(processInstanceOrdinals.keySet());
+    when(SEARCH_CLIENTS_PROXY.searchProcessInstances(any(ProcessInstanceQuery.class)))
+        .thenReturn(
+            processInstancePage(
+                processInstanceOrdinals.keySet(),
+                processInstanceOrdinals,
+                processInstanceOrdinals.size()));
   }
 
   private SearchQueryResult<ProcessInstanceEntity> processInstancePage(
-      final Set<Long> processInstanceKeys, final long total) {
+      final Set<Long> processInstanceKeys,
+      final Map<Long, Integer> processInstanceOrdinals,
+      final long total) {
     return new SearchQueryResult.Builder<ProcessInstanceEntity>()
-        .items(processInstanceKeys.stream().map(this::fakeProcessInstanceEntity).toList())
+        .items(
+            processInstanceKeys.stream()
+                .map(
+                    processInstanceKey ->
+                        fakeProcessInstanceEntity(
+                            processInstanceKey, processInstanceOrdinals.get(processInstanceKey)))
+                .toList())
         .total(total)
         .build();
   }
@@ -669,7 +676,8 @@ public final class BatchOperationStorageOrdinalTest {
         .thenThrow(new RuntimeException("search unavailable"));
   }
 
-  private ProcessInstanceEntity fakeProcessInstanceEntity(final long processInstanceKey) {
+  private ProcessInstanceEntity fakeProcessInstanceEntity(
+      final long processInstanceKey, final Integer storageOrdinal) {
     return new ProcessInstanceEntity(
         processInstanceKey,
         null, // rootProcessInstanceKey
@@ -689,6 +697,6 @@ public final class BatchOperationStorageOrdinalTest {
         Set.of(), // tags
         null, // businessId
         null, // suspendedDate
-        null); // storageOrdinal
+        storageOrdinal); // storageOrdinal
   }
 }

@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 
 public class ProcessInstanceHistoryDeletionOperationHandler
-    extends AbstractOperationStatusHandler<HistoryDeletionRecordValue> {
+    extends AbstractHistoryDeletionOperationStatusHandler {
 
   public ProcessInstanceHistoryDeletionOperationHandler(
       final String indexName,
