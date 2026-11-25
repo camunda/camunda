@@ -20,6 +20,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.policy.hub.FanoutClientFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -142,6 +143,7 @@ public final class EngineRule extends ExternalResource {
   private JobStreamer jobStreamer = JobStreamer.noop();
   private ProbeNotifier probeNotifier = ProbeNotifier.noop();
   private SecretStoreRegistry secretStoreRegistry = new SecretStoreRegistry(Map.of());
+  private FanoutClientFactory fanoutClientFactory = FanoutClientFactory.DISABLED;
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
@@ -271,6 +273,11 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withSecretStoreRegistry(final SecretStoreRegistry secretStoreRegistry) {
     this.secretStoreRegistry = secretStoreRegistry;
+    return this;
+  }
+
+  public EngineRule withFanoutClientFactory(final FanoutClientFactory fanoutClientFactory) {
+    this.fanoutClientFactory = fanoutClientFactory;
     return this;
   }
 
@@ -414,7 +421,8 @@ public final class EngineRule extends ExternalResource {
                         probeNotifier,
                         searchClientsProxy,
                         brokerRequestAuthorizationConverter,
-                        secretStoreRegistry)
+                        secretStoreRegistry,
+                        fanoutClientFactory)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

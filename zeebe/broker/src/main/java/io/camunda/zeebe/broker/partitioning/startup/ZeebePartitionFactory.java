@@ -64,6 +64,7 @@ import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.policy.hub.FanoutClientFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -310,7 +311,8 @@ public final class ZeebePartitionFactory {
           probeNotifier,
           searchClientsProxy,
           brokerRequestAuthorizationConverter,
-          secretStoreRegistry);
+          secretStoreRegistry,
+          FanoutClientFactory.DISABLED);
     };
   }
 }

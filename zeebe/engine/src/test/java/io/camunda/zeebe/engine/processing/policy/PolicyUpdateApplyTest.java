@@ -220,7 +220,7 @@ public final class PolicyUpdateApplyTest {
   }
 
   /** Appends the chunk, as the broker will; the last chunk of an update starts applying it. */
-  static void apply(final EngineRule engine, final PolicyUpdateRecord chunk) {
+  public static void apply(final EngineRule engine, final PolicyUpdateRecord chunk) {
     engine.writeRecords(
         RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPEND_CHUNK, chunk));
   }
@@ -276,7 +276,7 @@ public final class PolicyUpdateApplyTest {
         .setPermissionTypes(Set.of(permission));
   }
 
-  static String uid() {
+  public static String uid() {
     return UUID.randomUUID().toString().substring(0, 8);
   }
 }

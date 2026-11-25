@@ -8,12 +8,16 @@
 package io.camunda.zeebe.engine.processing.policy;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.policy.hub.FanoutClientFactory;
+import io.camunda.zeebe.engine.processing.policy.hub.HubPolicyUpdateScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -26,14 +30,23 @@ public final class PolicyUpdateProcessors {
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
+      final FanoutClientFactory fanoutClientFactory) {
     final var policyUpdateState = processingState.getPolicyUpdateState();
     final var commandMapper = new PolicyUpdateCommandMapper(processingState);
+    final var hubPolicy =
+        fanoutClientFactory == FanoutClientFactory.DISABLED
+            ? null
+            : new HubPolicyUpdateScheduler(scheduledTaskStateFactory, fanoutClientFactory);
+    final PolicyUpdateOutcomeListener outcomeListener =
+        hubPolicy == null ? PolicyUpdateOutcomeListener.NOOP : hubPolicy.outcomeListener();
     typedRecordProcessors
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPEND_CHUNK,
-            new PolicyUpdateAppendChunkProcessor(policyUpdateState, keyGenerator, writers))
+            new PolicyUpdateAppendChunkProcessor(
+                policyUpdateState, keyGenerator, writers, outcomeListener))
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPLY_CHUNK,
@@ -42,6 +55,10 @@ public final class PolicyUpdateProcessors {
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.COMMIT_VERSION,
-            new PolicyUpdateCommitVersionProcessor(keyGenerator, distributionBehavior, writers));
+            new PolicyUpdateCommitVersionProcessor(
+                keyGenerator, distributionBehavior, writers, outcomeListener));
+    if (hubPolicy != null) {
+      typedRecordProcessors.withListener(hubPolicy);
+    }
   }
 }

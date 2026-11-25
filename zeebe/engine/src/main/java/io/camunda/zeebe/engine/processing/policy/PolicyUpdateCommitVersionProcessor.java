@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.policy;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -25,6 +26,9 @@ import org.jspecify.annotations.NullMarked;
  * after the last chunk of an update is applied and distributes the commit on the identity queue.
  * The update's identity commands were distributed on the same queue before, so every other
  * partition commits only after it has applied the whole update.
+ *
+ * <p>Once the commit is committed in the log, partition 1 tells the {@link
+ * PolicyUpdateOutcomeListener}, which reports the update to Hub as applied.
  */
 @ExcludeAuthorizationCheck
 @NullMarked
@@ -35,15 +39,20 @@ public final class PolicyUpdateCommitVersionProcessor
   private final CommandDistributionBehavior distributionBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SideEffectWriter sideEffectWriter;
+  private final PolicyUpdateOutcomeListener outcomeListener;
 
   public PolicyUpdateCommitVersionProcessor(
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior distributionBehavior,
-      final Writers writers) {
+      final Writers writers,
+      final PolicyUpdateOutcomeListener outcomeListener) {
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
+    this.outcomeListener = outcomeListener;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    sideEffectWriter = writers.sideEffect();
   }
 
   @Override
@@ -61,6 +70,11 @@ public final class PolicyUpdateCommitVersionProcessor
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
+
+    final var update = command.getValue();
+    final var updateId = update.getUpdateId();
+    final long seqNo = update.getSeqNo();
+    sideEffectWriter.appendSideEffect(() -> outcomeListener.onCommitted(updateId, seqNo));
   }
 
   @Override

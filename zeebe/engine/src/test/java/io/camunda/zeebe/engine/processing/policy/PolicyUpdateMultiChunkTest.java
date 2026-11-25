@@ -201,25 +201,23 @@ public final class PolicyUpdateMultiChunkTest {
   }
 
   @Test
-  public void shouldFailTheUpdateWhenAChunkIsReceivedAgain() {
+  public void shouldRejectAChunkThatIsReceivedAgainWithoutFailingTheUpdate() {
     // given
     final var updateId = "update-" + uid();
     apply(ENGINE, chunk(updateId, 0, 2));
 
-    // when
+    // when the sender delivers the first chunk again, and then the last one
     apply(ENGINE, chunk(updateId, 0, 2));
+    apply(ENGINE, chunk(updateId, 1, 2));
 
     // then
-    final var failed =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.FAILED)
-            .filter(record -> record.getValue().getUpdateId().equals(updateId))
-            .getFirst();
-    assertThat(failed.getValue().getChunkIndex()).isZero();
-    assertThat(failed.getValue().getErrorMessage())
-        .contains("Expected chunk 1", updateId, "received next", "received chunk 0");
     final var rejection = appendRejection(updateId);
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).isEqualTo(failed.getValue().getErrorMessage());
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
+    assertThat(rejection.getRejectionReason())
+        .contains("Expected chunk 1", updateId, "chunk 0 is already buffered");
+    assertThat(appliedRecord(updateId).getValue().getChunkIndex()).isZero();
+    assertThat(recordsUntilAMarkerUpdateIsApplied())
+        .noneMatch(record -> isPolicyUpdate(record, PolicyUpdateIntent.FAILED, updateId));
   }
 
   @Test
@@ -228,7 +226,7 @@ public final class PolicyUpdateMultiChunkTest {
     final var updateId = "update-" + uid();
     final var roleId = "role-" + uid();
     apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
-    apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
+    apply(ENGINE, chunk(updateId, 1, 2).setPolicyVersion(3));
 
     // when
     apply(ENGINE, chunk(updateId, 1, 2));
