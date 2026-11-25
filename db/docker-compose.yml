@@ -153,6 +153,14 @@ services:
     networks:
       - zeebe_network
     restart: always
+    # `up --wait` only waits for a running container when there is no healthcheck, so a tenant
+    # node that dies or never starts listening is otherwise noticed only once the tests hang.
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fs 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' > /dev/null" ]
+      interval: 5s
+      timeout: 10s
+      retries: 24
+      start_period: 10s
 
   opensearch:
     image: opensearchproject/opensearch:${IMAGE_VERSION:-2.19.6}
@@ -206,6 +214,14 @@ services:
       - 9201:9200
     networks:
       - zeebe_network
+    # `up --wait` only waits for a running container when there is no healthcheck, so a tenant
+    # node that dies or never starts listening is otherwise noticed only once the tests hang.
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fs 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' > /dev/null" ]
+      interval: 5s
+      timeout: 10s
+      retries: 24
+      start_period: 10s
 
   postgres-primary:
     image: bitnamilegacy/postgresql:17
