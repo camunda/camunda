@@ -171,7 +171,7 @@ describe('<DecisionOperations />', () => {
 			expect(screen.router.state.location.search).toEqual({
 				decisionDefinitionId: 'my-decision',
 				decisionDefinitionVersion: 1,
-				...(tenantId === undefined ? {} : {tenantId}),
+				tenantId,
 				evaluated: true,
 				failed: true,
 			});
