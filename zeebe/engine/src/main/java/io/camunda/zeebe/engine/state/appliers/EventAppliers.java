@@ -824,6 +824,10 @@ public final class EventAppliers implements EventApplier {
         2,
         new IncidentCreatedV2Applier(state.getIncidentState(), state.getJobState()));
     register(
+        IncidentIntent.CREATED,
+        3,
+        new IncidentCreatedV3Applier(state.getIncidentState(), state.getJobState()));
+    register(
         IncidentIntent.RESOLVED,
         1,
         new IncidentResolvedV1Applier(
@@ -842,6 +846,11 @@ public final class EventAppliers implements EventApplier {
         IncidentIntent.RESOLVED,
         4,
         new IncidentResolvedV4Applier(
+            state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
+    register(
+        IncidentIntent.RESOLVED,
+        5,
+        new IncidentResolvedV5Applier(
             state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
     register(IncidentIntent.MIGRATED, new IncidentMigratedApplier(state.getIncidentState()));
   }
