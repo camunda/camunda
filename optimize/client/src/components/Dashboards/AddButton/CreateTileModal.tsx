@@ -81,9 +81,9 @@ export default function CreateTileModal({close, confirm}: CreateTileModalProps) 
   ];
   const isInvalid = isCurrentTabInvalid(tabOpen, externalUrl, selectedReportId);
   const loading = availableReports === null;
-  const selectedReport = (!loading && reportsListItems.find(({id}) => selectedReportId === id)) || {
-    id: undefined,
-  };
+  const selectedReport = loading
+    ? null
+    : (reportsListItems.find(({id}) => id === selectedReportId) ?? null);
 
   return (
     <Modal className="CreateTileModal" open onClose={close} isOverflowVisible>
@@ -102,7 +102,7 @@ export default function CreateTileModal({close, confirm}: CreateTileModalProps) 
                   items={reportsListItems}
                   placeholder={t('dashboard.addButton.selectReportPlaceholder').toString()}
                   onChange={({selectedItem}) => setSelectedReportId(selectedItem?.id || '')}
-                  itemToString={(item) => (item as ReportListItem | null)?.name ?? ''}
+                  itemToString={(item) => item?.name ?? ''}
                 />
               )}
             </Tabs.Tab>
