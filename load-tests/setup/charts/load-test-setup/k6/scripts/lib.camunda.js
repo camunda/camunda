@@ -103,6 +103,42 @@ export class Client {
     });
   }
 
+  // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/create-process-instance/
+  createProcessInstance(processDefinitionId, variables) {
+    return this.post("/v2/process-instances", {
+      processDefinitionId,
+      variables,
+    });
+  }
+
+  /* Search the user tasks that are waiting to be completed, 1000 at a time. Pass the
+   * `page.endCursor` of the previous response as `after` to get the next page. */
+  // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-user-tasks/
+  searchUserTasks(processDefinitionId, after) {
+    const page = { limit: 1000 };
+    if (after !== undefined) {
+      page.after = after;
+    }
+    return this.post("/v2/user-tasks/search", {
+      filter: { processDefinitionId, state: "CREATED" },
+      page,
+    });
+  }
+
+  /* Read a user task and all its variables from the engine state. The empty body means that
+   * all variables are fetched.
+   *
+   * The `name` tag is fixed: by default it is the endpoint, which contains the user task key
+   * and would create one metric series per task. */
+  // Not documented yet, see https://github.com/camunda/camunda/issues/67501
+  lookupUserTask(userTaskKey) {
+    return this.post(
+      `/v2/user-tasks/${userTaskKey}/lookup`,
+      {},
+      { tags: { name: "/v2/user-tasks/{userTaskKey}/lookup" } },
+    );
+  }
+
   // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/get-topology/
   topology() {
     return this.get("/v2/topology");

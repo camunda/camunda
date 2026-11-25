@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.47.0">
+  <bpmn:process id="k6-user-task-lookup" name="k6-user-task-lookup" isExecutable="true">
+    <bpmn:startEvent id="start" />
+    <bpmn:userTask id="task" name="task">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:endEvent id="end" />
+    <bpmn:sequenceFlow id="flow_start_task" sourceRef="start" targetRef="task" />
+    <bpmn:sequenceFlow id="flow_task_end" sourceRef="task" targetRef="end" />
+    <bpmn:textAnnotation id="note">
+      <bpmn:text>This model only exists for specific k6 tests.
+
+Process instances are created by the k6 user-task-lookup test and wait in the user task forever. Nobody completes the task: the test only reads it.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="note_association" sourceRef="task" targetRef="note" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="k6-user-task-lookup">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="182" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_di" bpmnElement="task">
+        <dc:Bounds x="270" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="422" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="note_di" bpmnElement="note">
+        <dc:Bounds x="160" y="40" width="300" height="84" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_start_task_di" bpmnElement="flow_start_task">
+        <di:waypoint x="218" y="200" />
+        <di:waypoint x="270" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_task_end_di" bpmnElement="flow_task_end">
+        <di:waypoint x="370" y="200" />
+        <di:waypoint x="422" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="note_association_di" bpmnElement="note_association">
+        <di:waypoint x="320" y="160" />
+        <di:waypoint x="320" y="124" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

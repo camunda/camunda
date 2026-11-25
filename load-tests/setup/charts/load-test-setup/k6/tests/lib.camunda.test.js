@@ -180,6 +180,66 @@ describe("endpoint helpers", () => {
   });
 });
 
+describe("user task helpers", () => {
+  it("should create a process instance with its variables", () => {
+    // given
+    const client = new Client();
+
+    // when
+    client.createProcessInstance("my-process", { a: 1 });
+
+    // then
+    const [method, url, body] = http.request.mock.calls[0].arguments;
+    assert.equal(method, "POST");
+    assert.equal(url, "http://camunda:8080/v2/process-instances");
+    assert.deepEqual(JSON.parse(body), {
+      processDefinitionId: "my-process",
+      variables: { a: 1 },
+    });
+  });
+
+  it("should search the created user tasks of a process, 1000 per page", () => {
+    // given
+    const client = new Client();
+
+    // when
+    client.searchUserTasks("my-process");
+    client.searchUserTasks("my-process", "cursor-1");
+
+    // then
+    const calls = http.request.mock.calls.map((c) => c.arguments);
+    assert.equal(calls[0][1], "http://camunda:8080/v2/user-tasks/search");
+    assert.deepEqual(JSON.parse(calls[0][2]), {
+      filter: { processDefinitionId: "my-process", state: "CREATED" },
+      page: { limit: 1000 },
+    });
+    assert.deepEqual(JSON.parse(calls[1][2]).page, {
+      limit: 1000,
+      after: "cursor-1",
+    });
+  });
+
+  it("should look up a user task with an empty body and a fixed name tag", () => {
+    // given
+    const client = new Client();
+
+    // when
+    client.lookupUserTask("2251799813685249");
+
+    // then: the key must not be part of the `name` tag, which would create a series per task.
+    const [method, url, body, params] = http.request.mock.calls[0].arguments;
+    assert.equal(method, "POST");
+    assert.equal(
+      url,
+      "http://camunda:8080/v2/user-tasks/2251799813685249/lookup",
+    );
+    assert.equal(body, "{}");
+    assert.deepEqual(params.tags, {
+      name: "/v2/user-tasks/{userTaskKey}/lookup",
+    });
+  });
+});
+
 describe("Client.waitUntilReady", () => {
   it("should retry every 10 seconds until topology returns 200", () => {
     // given: a non-200 response and a thrown error both trigger a retry.

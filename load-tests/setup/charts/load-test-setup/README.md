@@ -157,6 +157,27 @@ See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/
   `/v2/process-definitions/search` endpoint (`k6_data_read_supported=false` in
   `stable-87/Makefile`).
 
+#### `user-task-lookup`
+
+Benchmarks the engine cost of the user task lookup (`POST /v2/user-tasks/{userTaskKey}/lookup`).
+It is disabled by default: enable it with the `realistic` scenario, and compare against a run
+without it to find which read rate a partition sustains.
+
+* Setup creates a pool of process instances (`k6-user-task-lookup`) that wait in a user task
+  forever, then the lookup rate ramps through a series of plateaus and drops to 0.
+* Tune it with `k6.tests.user-task-lookup.env.<NAME>`:
+  * `POOL_SIZE` (default `9000`): number of user tasks to read from.
+  * `LOOKUP_RATES` (default `30:150:300:750:1500:3000`): total requests per second of the
+    plateaus, separated by colons (commas need escaping in Helm `--set`).
+  * `LOOKUP_PLATEAU` (default `15m`): how long each rate is held.
+  * `LOOKUP_RAMP` (default `1m`): ramp time to each plateau.
+* The default k6 resources cannot drive thousands of requests per second: raise them.
+
+```shell
+gh workflow run camunda-load-test.yml --repo camunda/camunda --field ref=<branch> --field name=<name> --field scenario=realistic \
+  --field load-test-setup-helm-values="--set k6.tests.user-task-lookup.enabled=true --set k6.resources.requests.cpu=4 --set k6.resources.limits.cpu=4 --set k6.resources.requests.memory=2Gi --set k6.resources.limits.memory=2Gi"
+```
+
 ### How to add a new test?
 
 1. Add the script under [`k6/scripts/`](k6/scripts) (e.g. `test.mytest.js`).

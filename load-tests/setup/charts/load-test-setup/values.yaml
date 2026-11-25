@@ -532,6 +532,11 @@ k6:
     data-read:
       enabled: true
       script: test.data-read.js
+    # Benchmarks the engine cost of the user task lookup (reads from primary storage).
+    # Enable explicitly; tune with `env` (see the script header for the variables).
+    user-task-lookup:
+      enabled: false
+      script: test.user-task-lookup.js
 
   prometheus:
     endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
