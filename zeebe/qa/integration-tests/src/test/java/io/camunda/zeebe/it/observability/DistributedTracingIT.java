@@ -30,6 +30,8 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -187,6 +189,35 @@ final class DistributedTracingIT {
   void shouldNotCreateSpanExporterWithoutEndpoint() {
     assertThatThrownBy(() -> BROKER.bean(SpanExporter.class))
         .isInstanceOf(NoSuchBeanDefinitionException.class);
+  }
+
+  @Test
+  void shouldAttachTraceExemplarToPrometheusMetricsForTracedRestRequest() throws Exception {
+    // when
+    try (final var client =
+        BROKER
+            .newClientBuilder()
+            .preferRestOverGrpc(true)
+            .withChainHandlers(new TraceparentChainHandler())
+            .build()) {
+      client.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
+    }
+    awaitChainFromBrokerClientSpan();
+
+    // then - non-lazy OTel SpanContext replaced Spring Boot's lazy bean and OpenMetrics scrape
+    // includes a trace exemplar linking back to the sampled trace
+    assertThat((Object) BROKER.bean("openTelemetryPrometheusSpanContext")).isNotNull();
+    assertThatThrownBy(() -> BROKER.bean("spanContext"))
+        .isInstanceOf(NoSuchBeanDefinitionException.class);
+
+    final var request =
+        java.net.http.HttpRequest.newBuilder(BROKER.actuatorUri("prometheus"))
+            .header("Accept", "application/openmetrics-text; version=1.0.0; charset=utf-8")
+            .GET()
+            .build();
+    final var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(response.body()).contains("trace_id=\"" + TRACE_ID + "\"");
   }
 
   private static boolean isBrokerClientSpan(final SpanData span) {
