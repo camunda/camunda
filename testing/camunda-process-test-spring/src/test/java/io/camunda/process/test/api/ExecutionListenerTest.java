@@ -18,15 +18,21 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.ProblemDetail;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
@@ -56,6 +62,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
@@ -66,6 +73,9 @@ public class ExecutionListenerTest {
 
   private static final URI GRPC_API_ADDRESS = URI.create("http://my-host:100");
   private static final URI REST_API_ADDRESS = URI.create("http://my-host:200");
+
+  /** Partition id 1 in the upper bits, sequence number 1 in the lower bits. */
+  private static final long DEPLOYMENT_PARTITION_JOB_KEY = (1L << 51) | 1;
 
   private static final Consumer<String> NOOP = s -> {};
 
@@ -286,6 +296,7 @@ public class ExecutionListenerTest {
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
     setManagementClientDummy(listener);
+    stubProbeClient();
     listener.afterTestMethod(testContext);
 
     // then
@@ -329,6 +340,7 @@ public class ExecutionListenerTest {
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
     setManagementClientDummy(listener);
+    stubProbeClient();
     setTestResultCollectorMock(listener);
     when(testContext.getTestException()).thenReturn(new AssertionError("test failure (expected)"));
     listener.afterTestMethod(testContext);
@@ -353,6 +365,7 @@ public class ExecutionListenerTest {
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
     setManagementClientDummy(listener);
+    stubProbeClient();
     setTestResultCollectorMock(listener);
     when(testContext.getTestException()).thenReturn(null);
     listener.afterTestMethod(testContext);
@@ -376,10 +389,54 @@ public class ExecutionListenerTest {
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
     setManagementClientDummy(listener);
+    stubProbeClient();
     listener.afterTestMethod(testContext);
 
     // then
     verify(camundaManagementClient).purgeCluster();
+  }
+
+  @Test
+  void shouldProbeCommandApiAfterPurge() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    listener.beforeTestClass(testContext);
+    listener.beforeTestMethod(testContext);
+
+    setManagementClientDummy(listener);
+    final CamundaClient probeClient = stubProbeClient(404);
+
+    // when
+    listener.afterTestMethod(testContext);
+
+    // then
+    final InOrder inOrder = inOrder(camundaManagementClient, probeClient);
+    inOrder.verify(camundaManagementClient).purgeCluster();
+    inOrder.verify(probeClient).newCompleteCommand(DEPLOYMENT_PARTITION_JOB_KEY);
+    verify(probeClient).close();
+  }
+
+  @Test
+  void shouldCloseProbeClientWhenProbeFails() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    listener.beforeTestClass(testContext);
+    listener.beforeTestMethod(testContext);
+
+    setManagementClientDummy(listener);
+    final CamundaClient probeClient = stubProbeClient(400);
+
+    // when
+    listener.afterTestMethod(testContext);
+
+    // then
+    verify(probeClient).close();
   }
 
   @Test
@@ -396,6 +453,7 @@ public class ExecutionListenerTest {
     // CamundaManagementClient will attempt to call resetTime() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
     setManagementClientDummy(listener);
+    stubProbeClient();
     listener.afterTestMethod(testContext);
 
     // then
@@ -421,6 +479,7 @@ public class ExecutionListenerTest {
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
     setManagementClientDummy(listener);
+    stubProbeClient();
     listener.afterTestMethod(testContext);
     listener.afterTestClass(testContext);
 
@@ -455,6 +514,21 @@ public class ExecutionListenerTest {
     // then
     verify(processCoverageBuilder).reportDirectory(reportDirectory);
     verify(processCoverageBuilder).excludeProcessDefinitionIds(excludedProcesses);
+  }
+
+  private CamundaClient stubProbeClient() {
+    return stubProbeClient(404);
+  }
+
+  private CamundaClient stubProbeClient(final int status) {
+    final CamundaClientBuilder builder = mock(CamundaClientBuilder.class, Answers.RETURNS_SELF);
+    final CamundaClient probeClient = mock(CamundaClient.class, Answers.RETURNS_DEEP_STUBS);
+    lenient()
+        .when(probeClient.newCompleteCommand(anyLong()).useRest().send().join())
+        .thenThrow(new ProblemException(status, "reason", new ProblemDetail()));
+    lenient().when(builder.build()).thenReturn(probeClient);
+    lenient().when(camundaClientBuilderFactory.get()).thenReturn(builder);
+    return probeClient;
   }
 
   private void setManagementClientDummy(final CamundaProcessTestExecutionListener listener) {
