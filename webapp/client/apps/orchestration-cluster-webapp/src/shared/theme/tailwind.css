@@ -252,6 +252,7 @@
 @media (prefers-reduced-motion: reduce) {
 	.instance-agent-shine {
 		animation: none;
+		background-position: 50% 50%;
 	}
 }
 
@@ -284,20 +285,42 @@
 		outline: none;
 	}
 
-	.op-selectable:hover .djs-outline {
+	.djs-outline {
+		vector-effect: non-scaling-stroke;
+	}
+
+	.op-selectable:hover:not(.op-selected-frame, :focus-visible) .djs-outline {
 		stroke-width: 1px;
 		stroke: var(--info-action-default);
 	}
 
-	.op-selectable:focus-visible .djs-outline {
+	.op-selected-frame .djs-outline {
 		stroke-width: 2px;
 		stroke: var(--info-action-default);
 	}
 
-	.op-selected-frame .djs-outline,
-	.op-selected-frame:focus-visible .djs-outline {
-		stroke-width: 2px;
-		stroke: var(--info-action-default);
+	.op-selected .djs-visual {
+		filter: drop-shadow(0 0 1px var(--info-action-default)) drop-shadow(0 0 1px var(--info-action-default))
+			drop-shadow(0 0 1px var(--info-action-default));
+	}
+
+	.op-selectable:focus-visible .djs-outline {
+		stroke-width: 3px;
+		stroke: var(--ring);
+	}
+
+	@media (forced-colors: active) {
+		.op-selected-frame .djs-outline {
+			stroke: Highlight;
+		}
+
+		.op-selected .djs-visual {
+			filter: drop-shadow(0 0 2px Highlight);
+		}
+
+		.op-selectable:focus-visible .djs-outline {
+			stroke: CanvasText;
+		}
 	}
 
 	.op-non-selectable {
