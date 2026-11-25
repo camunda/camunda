@@ -1156,6 +1156,10 @@ final class ClusterApiUtilsTest {
     return MemberId.from(String.valueOf(id));
   }
 
+  /**
+   * A cluster configuration with one broker holding a single partition per physical tenant, each
+   * partition configured with the given exporters in the given states.
+   */
   private static CurrentClusterConfiguration configWithExporters(
       final Map<String, Map<String, State>> exportersPerTenant) {
     final var globalConfiguration =
