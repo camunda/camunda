@@ -107,9 +107,7 @@ public class BrokerBasedConfiguration {
         metricsEnabled,
         "Broker",
         nodeId,
-        threadCfg.isPhysicalTenantPoolEnabled(),
-        threadCfg.getPhysicalTenantCpuThreadCount(),
-        threadCfg.getPhysicalTenantIoThreadCount());
+        threadCfg.getPhysicalTenantActorPool());
   }
 
   /**

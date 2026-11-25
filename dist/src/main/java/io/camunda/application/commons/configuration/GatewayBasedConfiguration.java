@@ -18,6 +18,7 @@ import io.camunda.application.commons.broker.client.BrokerClientConfiguration.Br
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.job.HttpJobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
+import io.camunda.zeebe.broker.system.configuration.TenantActorPoolCfg;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
@@ -113,7 +114,13 @@ public final class GatewayBasedConfiguration {
     // the gateway is the only component of the process, so it needs no separate scheduler
     final var gatewayCpuThreads = 0;
     return new SchedulerConfiguration(
-        cpuThreads, ioThreads, gatewayCpuThreads, metricsEnabled, "Gateway", nodeId, false, 0, 0);
+        cpuThreads,
+        ioThreads,
+        gatewayCpuThreads,
+        metricsEnabled,
+        "Gateway",
+        nodeId,
+        TenantActorPoolCfg.DISABLED);
   }
 
   @Bean

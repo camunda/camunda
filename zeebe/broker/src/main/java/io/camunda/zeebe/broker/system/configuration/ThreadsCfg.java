@@ -10,9 +10,7 @@ package io.camunda.zeebe.broker.system.configuration;
 public final class ThreadsCfg implements ConfigurationEntry {
   private int cpuThreadCount = 2;
   private int ioThreadCount = 2;
-  private boolean physicalTenantPoolEnabled = false;
-  private int physicalTenantCpuThreadCount = 2;
-  private int physicalTenantIoThreadCount = 2;
+  private TenantActorPoolCfg physicalTenantActorPool = TenantActorPoolCfg.DISABLED;
 
   public int getCpuThreadCount() {
     return cpuThreadCount;
@@ -30,28 +28,12 @@ public final class ThreadsCfg implements ConfigurationEntry {
     ioThreadCount = ioThreads;
   }
 
-  public boolean isPhysicalTenantPoolEnabled() {
-    return physicalTenantPoolEnabled;
+  public TenantActorPoolCfg getPhysicalTenantActorPool() {
+    return physicalTenantActorPool;
   }
 
-  public void setPhysicalTenantPoolEnabled(final boolean physicalTenantPoolEnabled) {
-    this.physicalTenantPoolEnabled = physicalTenantPoolEnabled;
-  }
-
-  public int getPhysicalTenantCpuThreadCount() {
-    return physicalTenantCpuThreadCount;
-  }
-
-  public void setPhysicalTenantCpuThreadCount(final int physicalTenantCpuThreadCount) {
-    this.physicalTenantCpuThreadCount = physicalTenantCpuThreadCount;
-  }
-
-  public int getPhysicalTenantIoThreadCount() {
-    return physicalTenantIoThreadCount;
-  }
-
-  public void setPhysicalTenantIoThreadCount(final int physicalTenantIoThreadCount) {
-    this.physicalTenantIoThreadCount = physicalTenantIoThreadCount;
+  public void setPhysicalTenantActorPool(final TenantActorPoolCfg physicalTenantActorPool) {
+    this.physicalTenantActorPool = physicalTenantActorPool;
   }
 
   @Override
@@ -61,12 +43,8 @@ public final class ThreadsCfg implements ConfigurationEntry {
         + cpuThreadCount
         + ", ioThreadCount="
         + ioThreadCount
-        + ", physicalTenantPoolEnabled="
-        + physicalTenantPoolEnabled
-        + ", physicalTenantCpuThreadCount="
-        + physicalTenantCpuThreadCount
-        + ", physicalTenantIoThreadCount="
-        + physicalTenantIoThreadCount
+        + ", physicalTenantActorPool="
+        + physicalTenantActorPool
         + '}';
   }
 }

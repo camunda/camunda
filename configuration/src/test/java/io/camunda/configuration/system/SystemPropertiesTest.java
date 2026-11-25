@@ -107,17 +107,17 @@ public class SystemPropertiesTest {
 
     @Test
     void shouldSetPhysicalTenantActorPoolEnabled() {
-      assertThat(brokerCfg.getThreads().isPhysicalTenantPoolEnabled()).isTrue();
+      assertThat(brokerCfg.getThreads().getPhysicalTenantActorPool().enabled()).isTrue();
     }
 
     @Test
     void shouldSetPhysicalTenantActorPoolCpuThreadCount() {
-      assertThat(brokerCfg.getThreads().getPhysicalTenantCpuThreadCount()).isEqualTo(3);
+      assertThat(brokerCfg.getThreads().getPhysicalTenantActorPool().cpuThreads()).isEqualTo(3);
     }
 
     @Test
     void shouldSetPhysicalTenantActorPoolIoThreadCount() {
-      assertThat(brokerCfg.getThreads().getPhysicalTenantIoThreadCount()).isEqualTo(5);
+      assertThat(brokerCfg.getThreads().getPhysicalTenantActorPool().ioThreads()).isEqualTo(5);
     }
 
     @Test
