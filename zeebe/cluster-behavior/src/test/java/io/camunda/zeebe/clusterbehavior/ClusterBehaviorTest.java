@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class ClusterBehaviorTest {
 
@@ -83,6 +85,29 @@ final class ClusterBehaviorTest {
     // then
     assertThat(behavior.firstUnsupportedCapability()).isEqualTo(64);
     assertThat(behavior.capabilityBitmask()).containsExactly(0b100L, 0L, 1L);
+    assertThat(IntStream.range(0, 300).filter(behavior::isCapabilityEnabled).toArray())
+        .containsExactly(ordinals);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, 128}) // the first stored word is 0, then 2
+  void shouldCheckCapabilitiesAcrossWordsAndGaps(final int offset) {
+    // given every ordinal below the offset, then offset + 0, 1, 2, 63 (the last bit of a word), 64,
+    // 65, 127, 200 and 1000
+    final int[] above =
+        IntStream.of(0, 1, 2, 63, 64, 65, 127, 200, 1000).map(o -> offset + o).toArray();
+    final int[] ordinals = concat(range(0, offset), above);
+
+    // when
+    final var behavior = ClusterBehavior.ofOrdinals(V1, ordinals);
+
+    // then
+    assertThat(behavior.firstUnsupportedCapability()).isEqualTo(offset + 3);
+    assertThat(behavior.firstWord()).isEqualTo(offset / 64);
+    assertThat(behavior.lastWord()).isEqualTo((offset + 1000) / 64);
+    assertThat(IntStream.range(0, offset + 1100).filter(behavior::isCapabilityEnabled).toArray())
+        .containsExactly(ordinals);
+    assertThat(behavior.isCapabilityEnabled(100_000)).isFalse();
   }
 
   @Test
@@ -101,6 +126,13 @@ final class ClusterBehaviorTest {
   void shouldRejectANegativeOrdinalInTheFactory() {
     // when, then
     assertThatThrownBy(() -> ClusterBehavior.ofOrdinals(V1, 0, -1))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldRejectANegativeOrdinalInTheCapabilityCheck() {
+    // when, then
+    assertThatThrownBy(() -> ClusterBehavior.empty().isCapabilityEnabled(-1))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }

@@ -138,4 +138,29 @@ public final class ClusterBehavior {
   public int lastWord() {
     return lastWord;
   }
+
+  /** Whether the set contains the given capability. */
+  public boolean isCapabilityEnabled(final CapabilityCatalog capability) {
+    return isCapabilityEnabled(capability.getValue());
+  }
+
+  /**
+   * Whether the set contains the given explicit ordinal.
+   *
+   * @param capability a non-negative ordinal, not {@link Enum#ordinal()}
+   */
+  public boolean isCapabilityEnabled(final int capability) {
+    if (capability < 0) {
+      throw new IllegalArgumentException("ordinal must not be negative: " + capability);
+    }
+    if (capability < firstUnsupportedCapability) {
+      return true;
+    }
+    if (capability > lastSupportedCapability) {
+      return false;
+    }
+    return (capabilityBitmask[capability / Long.SIZE - firstWord]
+            & (1L << (capability % Long.SIZE)))
+        != 0;
+  }
 }
