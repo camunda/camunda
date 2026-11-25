@@ -33,8 +33,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
  * Proves that suspend, resume and delete of a process definition, sent through the REST endpoints,
- * are exported to secondary storage and visible through the search API and get by key. The two
- * {@code DRAINING} cases are skipped on the relational database.
+ * are exported to secondary storage and visible through the search API and get by key.
  */
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "(?i)aws_os")
@@ -131,7 +130,6 @@ class ProcessDefinitionSuspendedStateSearchIT {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
   void shouldMarkSuspendedVersionAsDrainingWhenDeleted() {
     // given - a user task keeps the instance running, so the deleted version drains
     final var processId = Strings.newRandomValidBpmnId();
@@ -156,7 +154,6 @@ class ProcessDefinitionSuspendedStateSearchIT {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
   void shouldKeepDrainingVersionWhenAllVersionsAreSuspended() {
     // given - v1 drains because its user task instance is still running
     final var processId = Strings.newRandomValidBpmnId();
