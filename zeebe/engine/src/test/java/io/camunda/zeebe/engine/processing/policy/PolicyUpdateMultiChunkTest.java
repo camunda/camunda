@@ -13,6 +13,7 @@ import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.ui
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
@@ -86,6 +87,28 @@ public final class PolicyUpdateMultiChunkTest {
                 .limit(3))
         .extracting(record -> record.getValue().getRoleId())
         .containsExactlyElementsOf(roleIds);
+  }
+
+  @Test
+  public void shouldReferenceTheFirstChunkOnTheIdentityCommandsOfEveryChunk() {
+    // given
+    final var updateId = "update-" + uid();
+    final var roleIds = List.of("role-0-" + uid(), "role-1-" + uid());
+    apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleIds.get(0)))));
+
+    // when
+    apply(ENGINE, chunk(updateId, 1, 2).setRoles(List.<RoleRecordValue>of(role(roleIds.get(1)))));
+
+    // then
+    final var firstChunkAppended = appendedRecord(updateId, 0);
+    assertThat(firstChunkAppended.getKey()).isNotEqualTo(appendedRecord(updateId, 1).getKey());
+    assertThat(
+            RecordingExporter.roleRecords(RoleIntent.CREATE)
+                .onlyCommands()
+                .filter(record -> roleIds.contains(record.getValue().getRoleId()))
+                .limit(2))
+        .extracting(InternalOperationReference::of)
+        .containsOnly(InternalOperationReference.policyUpdate(firstChunkAppended.getKey()));
   }
 
   @Test

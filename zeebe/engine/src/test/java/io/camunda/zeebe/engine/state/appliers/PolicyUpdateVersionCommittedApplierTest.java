@@ -52,9 +52,9 @@ final class PolicyUpdateVersionCommittedApplierTest {
   void shouldRemoveEveryBufferedUpdateAndItsChunks() {
     // given the applied chunks of the committed update are still buffered, and so is a chunk of an
     // update that never completed
-    policyUpdateState.bufferChunk(chunk("update-1", 0, 2));
-    policyUpdateState.bufferChunk(chunk("update-1", 1, 2));
-    policyUpdateState.bufferChunk(chunk("update-0", 0, 3));
+    policyUpdateState.bufferChunk(1L, chunk("update-1", 0, 2));
+    policyUpdateState.bufferChunk(1L, chunk("update-1", 1, 2));
+    policyUpdateState.bufferChunk(1L, chunk("update-0", 0, 3));
 
     // when
     applier.applyState(1L, chunk("update-1", 1, 2));
