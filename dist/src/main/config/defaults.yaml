@@ -548,6 +548,12 @@ camunda: # Type: io.camunda.configuration.Camunda
           # https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-
           # determine-the-aws-region-from-the-environment
           region: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_REGION
+          # How often to check the replication status of backup objects that are still pending replication. Only
+          # used when wait-for-replication is enabled.
+          replication-poll-interval: "5s" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_REPLICATIONPOLLINTERVAL
+          # How long to wait for all objects of a backup to be replicated before the backup fails. Only used
+          # when wait-for-replication is enabled.
+          replication-timeout: "15m" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_REPLICATIONTIMEOUT
           # Configure access credentials. If either accessKey or secretKey is not provided, the credentials will
           # be determined as documented in
           # https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain
@@ -559,6 +565,12 @@ camunda: # Type: io.camunda.configuration.Camunda
           ssec-key: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_SSECKEY
           # Enable s3 md5 plugin for legacy support
           support-legacy-md5: false # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_SUPPORTLEGACYMD5
+          # When enabled, a backup is only confirmed once every object of the backup has been replicated by the
+          # bucket's own replication (S3 replication or MinIO bucket replication) to the replica site, as
+          # reported by each object's replication status. If replication of an object fails, or does not
+          # complete within replication-timeout, the backup fails. Requires replication to be configured on the
+          # bucket, and permission to read the bucket's replication configuration.
+          wait-for-replication: false # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_WAITFORREPLICATION
         
         schedule: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_SCHEDULE
         # Set the backup store type. Supported values are [NONE, S3, GCS, AZURE, FILESYSTEM]. Default value is

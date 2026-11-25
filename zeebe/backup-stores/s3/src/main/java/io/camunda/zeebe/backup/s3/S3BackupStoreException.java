@@ -79,8 +79,31 @@ public abstract sealed class S3BackupStoreException extends RuntimeException {
 
   public static final class ConfigurationException extends S3BackupStoreException {
 
-    public ConfigurationException(final String message, final Throwable cause) {
+    public ConfigurationException(final String message, final @Nullable Throwable cause) {
       super(message, cause);
+    }
+  }
+
+  /**
+   * Thrown when waiting for bucket replication and an object of the backup reports that its
+   * replication failed, or reports no replication status at all because no replication rule covers
+   * it. Waiting longer would not help, so the backup fails right away.
+   */
+  public static final class BackupReplicationFailed extends S3BackupStoreException {
+
+    public BackupReplicationFailed(final String message) {
+      super(message, null);
+    }
+  }
+
+  /**
+   * Thrown when waiting for bucket replication and not all objects of the backup were replicated
+   * within the configured replication timeout.
+   */
+  public static final class BackupReplicationTimedOut extends S3BackupStoreException {
+
+    public BackupReplicationTimedOut(final String message) {
+      super(message, null);
     }
   }
 }
