@@ -71,9 +71,19 @@ public final class ProbeExceptionHandlerImpl implements ProbeExceptionHandler {
       }
       LOG.warn("The errorMessageProvider returned no message, using the default message");
     } catch (final Exception e) {
-      LOG.warn("The errorMessageProvider failed, using the default message", e);
+      LOG.warn(
+          "The errorMessageProvider failed, using the default message: {}",
+          withoutSecrets(context.getActivatedProbe(), stackTraceOf(e)));
     }
     return DEFAULT_ERROR_MESSAGE_PROVIDER.apply(context);
+  }
+
+  /**
+   * @return the stack trace of the failure, with its causes and suppressed exceptions, without the
+   *     values the cluster injected into the probe, for a log line
+   */
+  static String stackTraceWithoutSecrets(final ActivatedProbe probe, final Throwable failure) {
+    return withoutSecrets(probe, stackTraceOf(failure));
   }
 
   private static String messageOf(final Exception exception) {
@@ -87,7 +97,7 @@ public final class ProbeExceptionHandlerImpl implements ProbeExceptionHandler {
         : text;
   }
 
-  private static String stackTraceOf(final Exception exception) {
+  private static String stackTraceOf(final Throwable exception) {
     final StringWriter stackTrace = new StringWriter();
     exception.printStackTrace(new PrintWriter(stackTrace));
     return stackTrace.toString();

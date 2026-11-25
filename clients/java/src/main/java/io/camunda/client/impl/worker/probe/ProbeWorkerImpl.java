@@ -342,7 +342,9 @@ final class ProbeWorkerImpl implements ProbeWorker, Closeable {
       }
       LOG.warn("The probeExceptionHandler returned no answer, using the default handler");
     } catch (final Exception e) {
-      LOG.warn("The probeExceptionHandler failed, using the default handler", e);
+      LOG.warn(
+          "The probeExceptionHandler failed, using the default handler: {}",
+          ProbeExceptionHandlerImpl.stackTraceWithoutSecrets(probe, e));
     }
     return DEFAULT_EXCEPTION_HANDLER.handleProbeException(context);
   }

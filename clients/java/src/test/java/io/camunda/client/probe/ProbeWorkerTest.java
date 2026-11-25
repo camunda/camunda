@@ -43,11 +43,20 @@ import io.camunda.client.api.worker.probe.ProbeExceptionHandler;
 import io.camunda.client.api.worker.probe.ProbeWorker;
 import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1.ProbeWorkerBuilderStep2;
 import io.camunda.client.util.ClientRestTest;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +68,10 @@ public final class ProbeWorkerTest extends ClientRestTest {
   private static final String ACTIVATION_URL = REST_API_PATH + "/probes/activation";
   private static final String SECRET = "s3cr3t-value";
 
+  private static final String PROBE_WORKER_LOGGER_NAME = "io.camunda.client.probe.worker";
+
   private WireMockRuntimeInfo wireMock;
+  private ListAppender logCapture;
   private ProbeWorker worker;
   private String awsProbeId;
   private String slackProbeId;
@@ -71,6 +83,14 @@ public final class ProbeWorkerTest extends ClientRestTest {
     awsProbeId = "validate-configuration/aws-" + System.nanoTime();
     slackProbeId = "validate-configuration/slack-" + System.nanoTime();
     nextProbeKey = System.nanoTime();
+
+    logCapture = new ListAppender("capture-" + PROBE_WORKER_LOGGER_NAME);
+    logCapture.start();
+    final LoggerContext context = (LoggerContext) LogManager.getContext(false);
+    final LoggerConfig loggerConfig = new LoggerConfig(PROBE_WORKER_LOGGER_NAME, Level.ALL, true);
+    loggerConfig.addAppender(logCapture, null, null);
+    context.getConfiguration().addLogger(PROBE_WORKER_LOGGER_NAME, loggerConfig);
+    context.updateLoggers();
   }
 
   @AfterEach
@@ -78,6 +98,10 @@ public final class ProbeWorkerTest extends ClientRestTest {
     if (worker != null) {
       worker.close();
     }
+    final LoggerContext context = (LoggerContext) LogManager.getContext(false);
+    context.getConfiguration().removeLogger(PROBE_WORKER_LOGGER_NAME);
+    context.updateLoggers();
+    logCapture.stop();
   }
 
   @Test
@@ -391,6 +415,81 @@ public final class ProbeWorkerTest extends ClientRestTest {
   }
 
   @Test
+  void shouldLogAFailingExceptionHandlerWithoutTheInjectedValues() {
+    // given
+    final long key = nextProbeKey++;
+    activateOnce(probe(key, awsProbeId, secretInput(), "[\"/secretKey\"]"));
+
+    // when
+    worker =
+        client
+            .newProbeWorker()
+            .probeId(
+                awsProbeId,
+                probe -> {
+                  throw new IllegalStateException("handler saw " + SECRET);
+                })
+            .probeExceptionHandler(
+                context -> {
+                  throw new IllegalStateException(
+                      "exception handler saw " + SECRET, context.getException());
+                })
+            .pollInterval(Duration.ofMillis(10))
+            .open();
+
+    // then
+    await().untilAsserted(() -> assertThat(answerCount(key)).isEqualTo(1));
+    assertThat(loggedText()).contains("exception handler saw ***").doesNotContain(SECRET);
+  }
+
+  @Test
+  void shouldLogAFailingErrorMessageProviderWithoutTheInjectedValues() {
+    // given
+    final long key = nextProbeKey++;
+    activateOnce(probe(key, awsProbeId, secretInput(), "[\"/secretKey\"]"));
+
+    // when
+    worker =
+        client
+            .newProbeWorker()
+            .probeId(
+                awsProbeId,
+                probe -> {
+                  throw new IllegalStateException("handler saw " + SECRET);
+                })
+            .probeExceptionHandler(
+                ProbeExceptionHandler.withErrorMessageProvider(
+                    context -> {
+                      throw new IllegalStateException("provider saw " + SECRET);
+                    }))
+            .pollInterval(Duration.ofMillis(10))
+            .open();
+
+    // then
+    await().untilAsserted(() -> assertThat(answerCount(key)).isEqualTo(1));
+    assertThat(loggedText()).contains("provider saw ***").doesNotContain(SECRET);
+  }
+
+  @Test
+  void shouldLogAnAnswerThatIsNotAnObjectWithoutTheInjectedValues() {
+    // given
+    final long key = nextProbeKey++;
+    activateOnce(probe(key, awsProbeId, secretInput(), "[\"/secretKey\"]"));
+
+    // when
+    worker =
+        client
+            .newProbeWorker()
+            .probeId(awsProbeId, probe -> ProbeAnswer.ok(Collections.singletonList(SECRET)))
+            .pollInterval(Duration.ofMillis(10))
+            .open();
+
+    // then
+    await().untilAsserted(() -> assertThat(answerCount(key)).isEqualTo(1));
+    assertThat(loggedText()).contains("Failed to deserialize").doesNotContain(SECRET);
+  }
+
+  @Test
   void shouldSendTheAnswerAgainAfterA503() {
     // given
     final long key = nextProbeKey++;
@@ -664,6 +763,25 @@ public final class ProbeWorkerTest extends ClientRestTest {
                 .inScenario("answer")
                 .whenScenarioStateIs("failed")
                 .willReturn(noContent()));
+  }
+
+  private String loggedText() {
+    return logCapture.getEvents().stream()
+        .map(ProbeWorkerTest::textOf)
+        .collect(Collectors.joining("\n"));
+  }
+
+  private static String textOf(final LogEvent event) {
+    final StringWriter text = new StringWriter();
+    text.append(event.getMessage().getFormattedMessage());
+    if (event.getThrown() != null) {
+      event.getThrown().printStackTrace(new PrintWriter(text));
+    }
+    return text.toString();
+  }
+
+  private static String secretInput() {
+    return "{\"secretKey\":\"" + SECRET + "\"}";
   }
 
   private int answerCount(final long key) {

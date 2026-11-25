@@ -85,9 +85,9 @@ final class ProbeAnswerSender {
     } catch (final RuntimeException e) {
       LOG.warn(
           "Expected the answer to probe with key {} to carry a JSON object as data, but it could "
-              + "not be converted; answering ERROR instead",
+              + "not be converted; answering ERROR instead: {}",
           probe.getKey(),
-          e);
+          ProbeExceptionHandlerImpl.stackTraceWithoutSecrets(probe, e));
       send(
           probe,
           new ProbeErrorAnswerRequest().outcome("ERROR").message(DATA_NOT_AN_OBJECT_MESSAGE),
