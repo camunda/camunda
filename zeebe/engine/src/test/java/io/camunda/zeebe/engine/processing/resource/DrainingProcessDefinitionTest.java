@@ -578,6 +578,51 @@ public class DrainingProcessDefinitionTest {
   }
 
   @Test
+  public void shouldContinueExistingInstanceAfterIncidentResolutionWhenDraining() {
+    // given - an instance whose start execution listener raised an incident while the process was
+    // activating; it keeps the deleted definition draining
+    final var processId = helper.getBpmnProcessId();
+    final var metadata =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .zeebeExecutionListener(el -> el.start().typeExpression("listenerType"))
+                    .startEvent()
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    drainViaDeletion(metadata.getProcessDefinitionKey());
+
+    // when
+    engine
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("listenerType", "listener"))
+        .update();
+    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    engine.job().ofInstance(processInstanceKey).withType("listener").complete();
+
+    // then - the existing instance completes and the definition finishes draining
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .isTrue();
+    assertDeletedLocally(metadata.getProcessDefinitionKey());
+    assertReportedDrained(metadata.getProcessDefinitionKey());
+  }
+
+  @Test
   public void shouldReportDrainedWhenLastDrainingInstanceCompletes() {
     // given - a draining definition with a single active instance
     final var processId = helper.getBpmnProcessId();
