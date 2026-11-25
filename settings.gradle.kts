@@ -364,6 +364,8 @@ registerProject(":zeebe-exporter-common", "zeebe/exporter-common")
 
 registerProject(":zeebe-exporter-config-support", "zeebe/exporter-config-support")
 
+registerProject(":zeebe-cluster-behavior", "zeebe/cluster-behavior")
+
 registerProject(":zeebe-backup-store-gcs", "zeebe/backup-stores/gcs")
 
 registerProject(":camunda-db-rdbms-schema", "db/rdbms-schema")
