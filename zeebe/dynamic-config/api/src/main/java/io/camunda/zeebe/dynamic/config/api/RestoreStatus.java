@@ -102,7 +102,14 @@ public record RestoreStatus(ChangePlan plan, List<BrokerRestoreStatus> brokers) 
 
     final var brokers = new ArrayList<BrokerRestoreStatus>();
     brokerPartitionMap.forEach(
-        (brokerId, partitions) -> brokers.add(toBrokerStatus(brokerId, partitions)));
+        (brokerId, partitions) -> {
+          // A partition missing from the backup is only wiped by a pre-restore and never
+          // restored, so it is not reported; a broker holding only such partitions is omitted.
+          partitions.values().removeIf(accumulator -> !accumulator.hasRestore());
+          if (!partitions.isEmpty()) {
+            brokers.add(toBrokerStatus(brokerId, partitions));
+          }
+        });
     return List.copyOf(brokers);
   }
 
@@ -179,6 +186,11 @@ public record RestoreStatus(ChangePlan plan, List<BrokerRestoreStatus> brokers) 
     private @Nullable SortedSet<Long> backupIds;
     private boolean preRestored;
     private @Nullable Instant restoredAt;
+
+    /** Only set by a {@link PartitionRestoreOperation}, completed or pending. */
+    private boolean hasRestore() {
+      return backupIds != null;
+    }
 
     private PartitionRestoreStatus toStatus(final int partitionId) {
       final PartitionRestoreState state;
