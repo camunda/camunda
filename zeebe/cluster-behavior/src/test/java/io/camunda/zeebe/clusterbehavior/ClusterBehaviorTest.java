@@ -19,6 +19,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 final class ClusterBehaviorTest {
 
   private static final SemanticVersion V1 = new SemanticVersion(8, 11, 0, null, null);
+  private static final SemanticVersion V2 = new SemanticVersion(8, 12, 0, null, null);
 
   private static int[] range(final int fromInclusive, final int toExclusive) {
     return IntStream.range(fromInclusive, toExclusive).toArray();
@@ -111,6 +112,29 @@ final class ClusterBehaviorTest {
   }
 
   @Test
+  void shouldBuildTheSameSetWhateverTheOrderAndDuplicates() {
+    // given
+    final var sorted = ClusterBehavior.ofOrdinals(V1, concat(range(0, 146), 148, 150));
+
+    // when descending, with duplicates
+    final int[] descending = IntStream.range(0, 146).map(i -> 145 - i).toArray();
+    final var shuffled =
+        ClusterBehavior.ofOrdinals(V1, concat(new int[] {150, 148, 150}, descending));
+
+    // then
+    assertThat(shuffled).isEqualTo(sorted).hasSameHashCodeAs(sorted);
+  }
+
+  @Test
+  void shouldNotBeEqualToASetWithADifferentContent() {
+    // when, then a different first unsupported ordinal with the same (empty) words
+    assertThat(ClusterBehavior.empty()).isNotEqualTo(ClusterBehavior.ofOrdinals(V1, range(0, 64)));
+    // the same first unsupported ordinal with different words
+    assertThat(ClusterBehavior.ofOrdinals(V1, 0, 2))
+        .isNotEqualTo(ClusterBehavior.ofOrdinals(V1, 0, 2, 3));
+  }
+
+  @Test
   void shouldCopyTheBitmask() {
     // given
     final var behavior = ClusterBehavior.ofOrdinals(V1, 0, 2);
@@ -120,6 +144,16 @@ final class ClusterBehaviorTest {
 
     // then
     assertThat(behavior.capabilityBitmask()).containsExactly(0b101L);
+  }
+
+  @Test
+  void shouldIgnoreTheVersionInEqualsAndHashCode() {
+    // when
+    final var v1 = ClusterBehavior.ofOrdinals(V1, 0, 2);
+    final var v2 = ClusterBehavior.ofOrdinals(V2, 0, 2);
+
+    // then
+    assertThat(v1).isEqualTo(v2).hasSameHashCodeAs(v2);
   }
 
   @Test

@@ -9,6 +9,8 @@ package io.camunda.zeebe.clusterbehavior;
 
 import io.camunda.zeebe.util.SemanticVersion;
 import java.util.Arrays;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The cluster behavior: the capabilities that are enabled in a cluster, and the human-readable
@@ -30,7 +32,8 @@ import java.util.Arrays;
  * lastSupportedCapability}, {@code firstWord}, {@code lastWord}) are derived from these. A cluster
  * behavior keeps ordinals that the {@link CapabilityCatalog} of this binary does not list.
  *
- * <p>The behavior version is a semantic version for display only and never used for gating. {@link
+ * <p>The behavior version is a semantic version for display only and never used for gating: it is
+ * not part of {@link #equals(Object)} and {@link #hashCode()}, which compare the set only. {@link
  * #UNKNOWN_VERSION} stands for a version that is not known.
  */
 public final class ClusterBehavior {
@@ -162,5 +165,33 @@ public final class ClusterBehavior {
     return (capabilityBitmask[capability / Long.SIZE - firstWord]
             & (1L << (capability % Long.SIZE)))
         != 0;
+  }
+
+  @Override
+  public boolean equals(final @Nullable Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof final ClusterBehavior that)) {
+      return false;
+    }
+    return firstUnsupportedCapability == that.firstUnsupportedCapability
+        && Arrays.equals(capabilityBitmask, that.capabilityBitmask);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(firstUnsupportedCapability, Arrays.hashCode(capabilityBitmask));
+  }
+
+  @Override
+  public String toString() {
+    return "ClusterBehavior{behaviorVersion="
+        + behaviorVersion
+        + ", firstUnsupportedCapability="
+        + firstUnsupportedCapability
+        + ", lastSupportedCapability="
+        + lastSupportedCapability
+        + "}";
   }
 }
