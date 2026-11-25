@@ -23,10 +23,12 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -68,7 +70,10 @@ public class GatewayModuleConfiguration {
       @Autowired(required = false)
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       final MeterRegistry meterRegistry,
-      final GatewayRestConfiguration gatewayRestConfiguration) {
+      final GatewayRestConfiguration gatewayRestConfiguration,
+      // Spring Boot provides the registry; none exists only without its observation
+      // autoconfiguration
+      @Autowired(required = false) final @Nullable ObservationRegistry observationRegistry) {
     LOGGER.info(
         "Starting standalone gateway {} with version {}",
         configuration.config().getCluster().getMemberId(),
@@ -96,7 +101,8 @@ public class GatewayModuleConfiguration {
             gatewayRestConfiguration.getMaxNameFieldLength(),
             serviceRegistry,
             scopedJwtDecoderFactory,
-            scopedOidcClaimsProviderFactory);
+            scopedOidcClaimsProviderFactory,
+            observationRegistry);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStatesSupplier(
         () -> clusterStatesByPhysicalTenant(brokerClient, physicalTenantResolver));

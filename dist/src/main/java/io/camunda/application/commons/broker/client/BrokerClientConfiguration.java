@@ -19,7 +19,9 @@ import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,18 +35,31 @@ public final class BrokerClientConfiguration {
   private final ActorScheduler scheduler;
   private final BrokerClientRequestMetrics metrics;
   private final BrokerClientTopologyMetrics topologyMetrics;
+  private final OpenTelemetry openTelemetry;
+
+  public BrokerClientConfiguration(
+      final BrokerClientCfg config,
+      final AtomixCluster cluster,
+      final GatewayActorScheduler scheduler,
+      final MeterRegistry meterRegistry) {
+    this(config, cluster, scheduler, meterRegistry, null);
+  }
 
   @Autowired
   public BrokerClientConfiguration(
       final BrokerClientCfg config,
       final AtomixCluster cluster,
       final GatewayActorScheduler scheduler,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      // Spring Boot provides a bean also when the SDK is disabled; none exists only without its
+      // autoconfiguration
+      @Autowired(required = false) final @Nullable OpenTelemetry openTelemetry) {
     this.config = config;
     this.cluster = cluster;
     this.scheduler = scheduler.scheduler();
     metrics = new BrokerClientRequestMetrics(meterRegistry);
     topologyMetrics = new BrokerClientTopologyMetrics(meterRegistry);
+    this.openTelemetry = openTelemetry != null ? openTelemetry : OpenTelemetry.noop();
   }
 
   @Bean
@@ -71,7 +86,8 @@ public final class BrokerClientConfiguration {
             cluster.getEventService(),
             scheduler,
             topologyManager,
-            metrics);
+            metrics,
+            openTelemetry);
     brokerClient.start().forEach(ActorFuture::join);
     return brokerClient;
   }

@@ -26,6 +26,7 @@ final class BrokerAddressProvider implements Supplier<@Nullable String> {
   private final BrokerTopologyManager topologyManager;
   private final String partitionGroup;
   private final Function<BrokerClusterState, @Nullable BrokerMemberId> nodeIdSelector;
+  private volatile @Nullable BrokerMemberId lastResolvedBrokerId;
 
   private BrokerAddressProvider(
       final BrokerTopologyManager topologyManager,
@@ -84,10 +85,18 @@ final class BrokerAddressProvider implements Supplier<@Nullable String> {
     if (topology != null) {
       final var brokerId = nodeIdSelector.apply(topology);
       if (brokerId != null) {
-        return topology.getBrokerAddress(brokerId);
+        final var address = topology.getBrokerAddress(brokerId);
+        if (address != null) {
+          lastResolvedBrokerId = brokerId;
+        }
+        return address;
       }
     }
     return null;
+  }
+
+  @Nullable BrokerMemberId lastResolvedBrokerId() {
+    return lastResolvedBrokerId;
   }
 
   /**

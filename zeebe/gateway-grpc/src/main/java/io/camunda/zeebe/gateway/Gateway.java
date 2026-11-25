@@ -60,6 +60,8 @@ import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingServerInterceptor;
+import io.micrometer.core.instrument.binder.grpc.ObservationGrpcServerInterceptor;
+import io.micrometer.observation.ObservationRegistry;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -111,6 +113,7 @@ public final class Gateway implements CloseableSilently {
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
   private final PhysicalTenantIds physicalTenantIds;
+  private final ObservationRegistry observationRegistry;
 
   public Gateway(
       final Duration shutdownDuration,
@@ -125,7 +128,8 @@ public final class Gateway implements CloseableSilently {
       final PasswordEncoder passwordEncoder,
       final MeterRegistry meterRegistry,
       final int maxVariableNameLength,
-      final PhysicalTenantIds physicalTenantIds) {
+      final PhysicalTenantIds physicalTenantIds,
+      final ObservationRegistry observationRegistry) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.securityConfigurationsByPhysicalTenant =
@@ -143,6 +147,7 @@ public final class Gateway implements CloseableSilently {
     this.meterRegistry = meterRegistry;
     this.maxVariableNameLength = maxVariableNameLength;
     this.physicalTenantIds = physicalTenantIds;
+    this.observationRegistry = Objects.requireNonNull(observationRegistry);
 
     healthManager = new GatewayHealthManagerImpl();
   }
@@ -473,6 +478,8 @@ public final class Gateway implements CloseableSilently {
             authEnabled,
             metricsByTenant,
             meterRegistry));
+    // last added runs first: the span must surround authentication and everything inside
+    interceptors.add(new ObservationGrpcServerInterceptor(observationRegistry));
     return ServerInterceptors.intercept(service, interceptors);
   }
 

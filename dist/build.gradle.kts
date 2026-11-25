@@ -456,6 +456,8 @@ dependencies {
   implementation(project(":zeebe-transport"))
   implementation(libs.io.micrometer.micrometer.commons)
   implementation(libs.io.micrometer.micrometer.core)
+  implementation(libs.io.opentelemetry.opentelemetry.api)
+  implementation(libs.io.opentelemetry.opentelemetry.context)
   implementation(libs.io.micrometer.micrometer.observation)
   implementation(libs.org.springframework.boot.spring.boot.micrometer.observation)
   implementation(libs.org.springframework.boot.spring.boot.starter.web) {
@@ -465,6 +467,8 @@ dependencies {
     exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
   }
   implementation(libs.io.micrometer.micrometer.registry.prometheus)
+  implementation("io.prometheus:prometheus-metrics-tracer-common")
+  implementation(libs.io.micrometer.micrometer.registry.otlp)
   implementation(libs.org.springframework.spring.beans)
   implementation(libs.org.springframework.spring.core)
   implementation(libs.org.springframework.spring.context)
@@ -491,8 +495,10 @@ dependencies {
   implementation(libs.org.apache.httpcomponents.client5.httpclient5)
   implementation(libs.org.apache.httpcomponents.core5.httpcore5)
   implementation(libs.com.zaxxer.hikaricp)
-  runtimeOnly(libs.io.micrometer.micrometer.registry.otlp)
-  runtimeOnly("org.springframework.boot:spring-boot-opentelemetry")
+  runtimeOnly("org.springframework.boot:spring-boot-starter-opentelemetry") {
+    // Match Maven / analytics-exporter: use the JDK HTTP sender instead of OkHttp.
+    exclude(group = "io.opentelemetry", module = "opentelemetry-exporter-sender-okhttp")
+  }
   runtimeOnly(libs.org.bouncycastle.bcpkix.jdk18on)
   runtimeOnly(libs.org.bouncycastle.bcprov.jdk18on)
   testImplementation(libs.org.apache.logging.log4j.log4j.core.test)

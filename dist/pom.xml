@@ -651,6 +651,16 @@
     </dependency>
 
     <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-context</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-observation</artifactId>
     </dependency>
@@ -700,15 +710,25 @@
     </dependency>
 
     <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>prometheus-metrics-tracer-common</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-otlp</artifactId>
-      <scope>runtime</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-opentelemetry</artifactId>
+      <artifactId>spring-boot-starter-opentelemetry</artifactId>
       <scope>runtime</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>io.opentelemetry</groupId>
+          <artifactId>opentelemetry-exporter-sender-okhttp</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -1274,8 +1294,7 @@
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
 
             <!-- Micrometer Exporters/Registries -->
-            <dependency>io.micrometer:micrometer-registry-otlp</dependency>
-            <dependency>org.springframework.boot:spring-boot-opentelemetry</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-opentelemetry</dependency>
 
             <!-- App Integrations Exporter -->
             <dependency>io.camunda:app-integrations-exporter</dependency>
