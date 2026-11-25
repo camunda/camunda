@@ -350,6 +350,12 @@ public final class ControllableRaftContexts {
     getDeterministicScheduler(memberId).runUntilIdle();
   }
 
+  /** Delivers all messages queued for the member and runs its tasks until it is idle. */
+  public void deliverAll(final MemberId memberId) {
+    getServerProtocol(memberId).receiveAll();
+    runUntilDone(memberId);
+  }
+
   public void runNextTask(final MemberId memberId) {
     final var scheduler = getDeterministicScheduler(memberId);
     if (!scheduler.isIdle()) {

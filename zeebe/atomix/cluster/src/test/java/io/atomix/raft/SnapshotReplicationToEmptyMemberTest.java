@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.impl.RaftContext;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -50,33 +49,24 @@ final class SnapshotReplicationToEmptyMemberTest {
     // given - the leader has a bootstrap snapshot, and its log still starts at index 1
     raft.tickElectionTimeout(LEADER);
     raft.runUntilDone(LEADER);
-    assertThat(context(LEADER).getRole()).isEqualTo(Role.LEADER);
+    assertThat(raft.getRaftContext(LEADER).getRole()).isEqualTo(Role.LEADER);
     raft.takeBootstrapSnapshot(LEADER);
     raft.runUntilDone(LEADER);
-    assertThat(context(LEADER).getCurrentSnapshot().getId()).startsWith("1-1-0-0-");
-    assertThat(context(LEADER).getLog().getFirstIndex()).isOne();
+    assertThat(raft.getRaftContext(LEADER).getCurrentSnapshot().getId()).startsWith("1-1-0-0-");
+    assertThat(raft.getRaftContext(LEADER).getLog().getFirstIndex()).isOne();
 
     // when
     final var join = raft.join(JOINING_MEMBER, List.of(LEADER));
     for (int i = 0; i < 50 && !join.isDone(); i++) {
       raft.tickHeartbeatTimeout(LEADER);
-      deliverAll(JOINING_MEMBER);
-      deliverAll(LEADER);
+      raft.deliverAll(JOINING_MEMBER);
+      raft.deliverAll(LEADER);
     }
 
     // then - the member received the snapshot, instead of the log from index 1
     assertThat(join).isCompleted();
-    assertThat(context(JOINING_MEMBER).getCurrentSnapshotIndex()).isOne();
+    assertThat(raft.getRaftContext(JOINING_MEMBER).getCurrentSnapshotIndex()).isOne();
     assertThat(raft.getServerProtocol(JOINING_MEMBER).getReceivedInstallRequests()).isPositive();
-    assertThat(context(JOINING_MEMBER).getLog().getFirstIndex()).isEqualTo(2);
-  }
-
-  private void deliverAll(final MemberId member) {
-    raft.getServerProtocol(member).receiveAll();
-    raft.runUntilDone(member);
-  }
-
-  private RaftContext context(final MemberId member) {
-    return raft.getRaftContext(member);
+    assertThat(raft.getRaftContext(JOINING_MEMBER).getLog().getFirstIndex()).isEqualTo(2);
   }
 }

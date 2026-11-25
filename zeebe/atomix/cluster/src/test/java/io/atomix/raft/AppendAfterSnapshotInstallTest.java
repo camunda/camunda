@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
 import io.atomix.raft.protocol.VersionedAppendRequest;
@@ -65,16 +64,16 @@ final class AppendAfterSnapshotInstallTest {
     // when - the follower appends the entries after the snapshot, but fails to flush them, so the
     // leader appends them again, with the snapshot as the previous entry
     raft.failNextFlush(FOLLOWER);
-    deliverAll(FOLLOWER);
-    assertThat(context(FOLLOWER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
-    assertThat(context(FOLLOWER).getLog().getLastEntry().term())
-        .isGreaterThan(context(FOLLOWER).getCurrentSnapshot().getTerm());
+    raft.deliverAll(FOLLOWER);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getLastEntry().term())
+        .isGreaterThan(raft.getRaftContext(FOLLOWER).getCurrentSnapshot().getTerm());
     raft.clientAppendOnLeader();
     replicateTo(FOLLOWER);
 
     // then
-    assertThat(context(FOLLOWER).getCommitIndex())
-        .isEqualTo(context(LEADER).getLog().getLastIndex());
+    assertThat(raft.getRaftContext(FOLLOWER).getCommitIndex())
+        .isEqualTo(raft.getRaftContext(LEADER).getLog().getLastIndex());
     raft.assertAllLogsEqual();
   }
 
@@ -82,7 +81,7 @@ final class AppendAfterSnapshotInstallTest {
   void shouldRejectPreviousEntryBeforeSnapshotWithSnapshotIndexAsLastLogIndex() {
     // given - the follower's log starts right after its snapshot
     final long snapshotIndex = followerWithLogAfterSnapshot();
-    final long snapshotTerm = context(FOLLOWER).getCurrentSnapshot().getTerm();
+    final long snapshotTerm = raft.getRaftContext(FOLLOWER).getCurrentSnapshot().getTerm();
 
     // when - the previous entry is covered by the snapshot, but is not the snapshot itself
     final var response = appendOnFollower(snapshotIndex - 1, snapshotTerm);
@@ -90,15 +89,15 @@ final class AppendAfterSnapshotInstallTest {
     // then - the leader continues after the snapshot, and the log is kept
     assertThat(response.succeeded()).isFalse();
     assertThat(response.lastLogIndex()).isEqualTo(snapshotIndex);
-    assertThat(context(FOLLOWER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
-    assertThat(context(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex + 1);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex + 1);
   }
 
   @Test
   void shouldRejectPreviousEntryAtSnapshotIndexWithAnotherTerm() {
     // given - the follower's log starts right after its snapshot
     final long snapshotIndex = followerWithLogAfterSnapshot();
-    final long snapshotTerm = context(FOLLOWER).getCurrentSnapshot().getTerm();
+    final long snapshotTerm = raft.getRaftContext(FOLLOWER).getCurrentSnapshot().getTerm();
 
     // when
     final var response = appendOnFollower(snapshotIndex, snapshotTerm + 1);
@@ -106,8 +105,8 @@ final class AppendAfterSnapshotInstallTest {
     // then - the leader probes the entry before, and the log is kept
     assertThat(response.succeeded()).isFalse();
     assertThat(response.lastLogIndex()).isEqualTo(snapshotIndex - 1);
-    assertThat(context(FOLLOWER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
-    assertThat(context(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex + 1);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex + 1);
   }
 
   /**
@@ -118,15 +117,15 @@ final class AppendAfterSnapshotInstallTest {
    */
   private long followerWithLogAfterSnapshot() {
     final long snapshotIndex = installSnapshotOfOlderTermOnFollower();
-    deliverAll(FOLLOWER);
-    assertThat(context(FOLLOWER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
-    assertThat(context(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex + 1);
+    raft.deliverAll(FOLLOWER);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex + 1);
     return snapshotIndex;
   }
 
   /** Sends an empty append with the given previous entry to the follower, as the leader. */
   private AppendResponse appendOnFollower(final long prevLogIndex, final long prevLogTerm) {
-    final var follower = context(FOLLOWER);
+    final var follower = raft.getRaftContext(FOLLOWER);
     final var request =
         VersionedAppendRequest.builder()
             .withTerm(follower.getTerm())
@@ -164,55 +163,57 @@ final class AppendAfterSnapshotInstallTest {
     }
     for (int i = 0; i < 10; i++) {
       raft.tickHeartbeatTimeout(OLD_LEADER);
-      deliverAll(LEADER);
-      deliverAll(OLD_LEADER);
+      raft.deliverAll(LEADER);
+      raft.deliverAll(OLD_LEADER);
       dropAll(FOLLOWER);
     }
-    final long snapshotIndex = context(OLD_LEADER).getLog().getLastIndex();
-    assertThat(context(OLD_LEADER).getCommitIndex()).isEqualTo(snapshotIndex);
-    assertThat(context(LEADER).getCommitIndex()).isEqualTo(snapshotIndex);
-    assertThat(context(FOLLOWER).getLog().getLastIndex()).isLessThan(snapshotIndex);
+    final long snapshotIndex = raft.getRaftContext(OLD_LEADER).getLog().getLastIndex();
+    assertThat(raft.getRaftContext(OLD_LEADER).getCommitIndex()).isEqualTo(snapshotIndex);
+    assertThat(raft.getRaftContext(LEADER).getCommitIndex()).isEqualTo(snapshotIndex);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getLastIndex()).isLessThan(snapshotIndex);
 
     // a new leader is elected without the follower, and commits its initial entry
     raft.transferLeadershipTo(LEADER);
-    for (int i = 0; i < 100 && context(LEADER).getRole() != Role.LEADER; i++) {
-      deliverAll(LEADER);
-      deliverAll(OLD_LEADER);
+    for (int i = 0; i < 100 && raft.getRaftContext(LEADER).getRole() != Role.LEADER; i++) {
+      raft.deliverAll(LEADER);
+      raft.deliverAll(OLD_LEADER);
       dropAll(FOLLOWER);
     }
-    assertThat(context(LEADER).getRole()).isEqualTo(Role.LEADER);
+    assertThat(raft.getRaftContext(LEADER).getRole()).isEqualTo(Role.LEADER);
     raft.assertAtMostOneLeader();
     for (int i = 0; i < 10; i++) {
       raft.tickHeartbeatTimeout(LEADER);
-      deliverAll(OLD_LEADER);
-      deliverAll(LEADER);
+      raft.deliverAll(OLD_LEADER);
+      raft.deliverAll(LEADER);
       dropAll(FOLLOWER);
     }
-    assertThat(context(LEADER).getCommitIndex()).isEqualTo(snapshotIndex + 1);
-    assertThat(context(LEADER).getTerm()).isGreaterThan(termAt(LEADER, snapshotIndex));
+    assertThat(raft.getRaftContext(LEADER).getCommitIndex()).isEqualTo(snapshotIndex + 1);
+    assertThat(raft.getRaftContext(LEADER).getTerm()).isGreaterThan(termAt(LEADER, snapshotIndex));
 
     // the leader takes a snapshot of the last entry of the old leader's term, and sends it to the
     // follower
     raft.takeSnapshot(LEADER, snapshotIndex);
     raft.runUntilDone(LEADER);
-    for (int i = 0; i < 100 && context(FOLLOWER).getCurrentSnapshotIndex() < snapshotIndex; i++) {
+    for (int i = 0;
+        i < 100 && raft.getRaftContext(FOLLOWER).getCurrentSnapshotIndex() < snapshotIndex;
+        i++) {
       raft.tickHeartbeatTimeout(LEADER);
-      deliverAll(FOLLOWER);
-      deliverAll(LEADER);
+      raft.deliverAll(FOLLOWER);
+      raft.deliverAll(LEADER);
     }
-    assertThat(context(FOLLOWER).getCurrentSnapshotIndex()).isEqualTo(snapshotIndex);
-    assertThat(context(FOLLOWER).getLog().isEmpty()).isTrue();
+    assertThat(raft.getRaftContext(FOLLOWER).getCurrentSnapshotIndex()).isEqualTo(snapshotIndex);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().isEmpty()).isTrue();
     return snapshotIndex;
   }
 
   private void electLeader(final MemberId leader) {
     raft.tickElectionTimeout(leader);
-    for (int i = 0; i < 100 && context(leader).getRole() != Role.LEADER; i++) {
+    for (int i = 0; i < 100 && raft.getRaftContext(leader).getRole() != Role.LEADER; i++) {
       raft.tickHeartbeatTimeout();
       raft.processAllMessage();
       raft.runUntilDone();
     }
-    assertThat(context(leader).getRole()).isEqualTo(Role.LEADER);
+    assertThat(raft.getRaftContext(leader).getRole()).isEqualTo(Role.LEADER);
     // records the leader, which clientAppendOnLeader appends on
     raft.assertAtMostOneLeader();
     for (int i = 0; i < 10; i++) {
@@ -223,24 +224,24 @@ final class AppendAfterSnapshotInstallTest {
     assertThat(List.of(OLD_LEADER, LEADER, FOLLOWER))
         .allSatisfy(
             member ->
-                assertThat(context(member).getCommitIndex())
-                    .isEqualTo(context(leader).getLog().getLastIndex()));
+                assertThat(raft.getRaftContext(member).getCommitIndex())
+                    .isEqualTo(raft.getRaftContext(leader).getLog().getLastIndex()));
   }
 
   private void replicateTo(final MemberId follower) {
-    final var leader = context(LEADER);
+    final var leader = raft.getRaftContext(LEADER);
     for (int i = 0;
-        i < 100 && context(follower).getCommitIndex() < leader.getLog().getLastIndex();
+        i < 100 && raft.getRaftContext(follower).getCommitIndex() < leader.getLog().getLastIndex();
         i++) {
       raft.tickHeartbeatTimeout(LEADER);
-      deliverAll(OLD_LEADER);
-      deliverAll(follower);
-      deliverAll(LEADER);
+      raft.deliverAll(OLD_LEADER);
+      raft.deliverAll(follower);
+      raft.deliverAll(LEADER);
     }
   }
 
   private long termAt(final MemberId member, final long index) {
-    try (final var reader = context(member).getLog().openCommittedReader()) {
+    try (final var reader = raft.getRaftContext(member).getLog().openCommittedReader()) {
       reader.seek(index);
       return reader.next().term();
     }
@@ -248,17 +249,6 @@ final class AppendAfterSnapshotInstallTest {
 
   private void dropAll(final MemberId member) {
     raft.runUntilDone();
-    for (int i = 0; i < 100; i++) {
-      raft.getServerProtocol(member).dropNextMessage();
-    }
-  }
-
-  private void deliverAll(final MemberId member) {
-    raft.getServerProtocol(member).receiveAll();
-    raft.runUntilDone(member);
-  }
-
-  private RaftContext context(final MemberId member) {
-    return raft.getRaftContext(member);
+    raft.getServerProtocol(member).dropAllMessages();
   }
 }

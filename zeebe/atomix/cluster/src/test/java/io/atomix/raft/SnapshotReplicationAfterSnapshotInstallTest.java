@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.impl.RaftContext;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Random;
@@ -43,7 +42,7 @@ final class SnapshotReplicationAfterSnapshotInstallTest {
     raft =
         new ControllableRaftContexts(3, config -> config.setPreferSnapshotReplicationThreshold(0));
     raft.setup(directory, new Random(1));
-    context(FOLLOWER)
+    raft.getRaftContext(FOLLOWER)
         .addSnapshotReplicationListener(
             new SnapshotReplicationListener() {
               @Override
@@ -65,21 +64,22 @@ final class SnapshotReplicationAfterSnapshotInstallTest {
   void shouldAppendAfterSnapshotWhenLeadersLogStartsAfterIt() {
     // given - the new leader installed the old leader's snapshot, and its log starts after it
     final long snapshotIndex = replicateSnapshotToNewLeaderOnly();
-    assertThat(context(NEW_LEADER).getLog().getFirstIndex()).isEqualTo(snapshotIndex + 1);
-    assertThat(context(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex);
+    assertThat(raft.getRaftContext(NEW_LEADER).getLog().getFirstIndex())
+        .isEqualTo(snapshotIndex + 1);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getLastIndex()).isEqualTo(snapshotIndex);
 
     // when
     electNewLeader();
-    final long lastIndex = context(NEW_LEADER).getLog().getLastIndex();
-    for (int i = 0; i < 20 && context(FOLLOWER).getCommitIndex() < lastIndex; i++) {
+    final long lastIndex = raft.getRaftContext(NEW_LEADER).getLog().getLastIndex();
+    for (int i = 0; i < 20 && raft.getRaftContext(FOLLOWER).getCommitIndex() < lastIndex; i++) {
       raft.tickHeartbeatTimeout(NEW_LEADER);
-      deliverAll(FOLLOWER);
-      deliverAll(NEW_LEADER);
+      raft.deliverAll(FOLLOWER);
+      raft.deliverAll(NEW_LEADER);
     }
 
     // then - the follower catches up with appends, without receiving the snapshot
-    assertThat(context(FOLLOWER).getCommitIndex()).isEqualTo(lastIndex);
-    assertThat(context(FOLLOWER).getLog().getFirstIndex()).isOne();
+    assertThat(raft.getRaftContext(FOLLOWER).getCommitIndex()).isEqualTo(lastIndex);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getFirstIndex()).isOne();
     assertThat(snapshotReplicationsStarted).hasValue(0);
   }
 
@@ -88,12 +88,12 @@ final class SnapshotReplicationAfterSnapshotInstallTest {
    */
   private long replicateSnapshotToNewLeaderOnly() {
     raft.tickElectionTimeout(OLD_LEADER);
-    for (int i = 0; i < 100 && context(OLD_LEADER).getRole() != Role.LEADER; i++) {
+    for (int i = 0; i < 100 && raft.getRaftContext(OLD_LEADER).getRole() != Role.LEADER; i++) {
       raft.tickHeartbeatTimeout();
       raft.processAllMessage();
       raft.runUntilDone();
     }
-    assertThat(context(OLD_LEADER).getRole()).isEqualTo(Role.LEADER);
+    assertThat(raft.getRaftContext(OLD_LEADER).getRole()).isEqualTo(Role.LEADER);
     // records the leader, which clientAppendOnLeader appends on
     raft.assertAtMostOneLeader();
 
@@ -102,19 +102,21 @@ final class SnapshotReplicationAfterSnapshotInstallTest {
       raft.clientAppendOnLeader();
     }
     raft.runUntilDone(OLD_LEADER);
-    final long snapshotIndex = context(OLD_LEADER).getLog().getLastIndex();
+    final long snapshotIndex = raft.getRaftContext(OLD_LEADER).getLog().getLastIndex();
     replicateOnlyTo(FOLLOWER, NEW_LEADER, snapshotIndex);
     raft.takeSnapshot(OLD_LEADER, snapshotIndex);
     raft.runUntilDone(OLD_LEADER);
 
     // the new leader installs the snapshot, and then commits one more entry without the follower
-    for (int i = 0; i < 20 && context(NEW_LEADER).getCurrentSnapshotIndex() < snapshotIndex; i++) {
+    for (int i = 0;
+        i < 20 && raft.getRaftContext(NEW_LEADER).getCurrentSnapshotIndex() < snapshotIndex;
+        i++) {
       raft.tickHeartbeatTimeout(OLD_LEADER);
       dropAll(FOLLOWER);
-      deliverAll(NEW_LEADER);
-      deliverAll(OLD_LEADER);
+      raft.deliverAll(NEW_LEADER);
+      raft.deliverAll(OLD_LEADER);
     }
-    assertThat(context(NEW_LEADER).getCurrentSnapshotIndex()).isEqualTo(snapshotIndex);
+    assertThat(raft.getRaftContext(NEW_LEADER).getCurrentSnapshotIndex()).isEqualTo(snapshotIndex);
     raft.clientAppendOnLeader();
     replicateOnlyTo(NEW_LEADER, FOLLOWER, snapshotIndex + 1);
 
@@ -125,25 +127,25 @@ final class SnapshotReplicationAfterSnapshotInstallTest {
   }
 
   private void replicateOnlyTo(final MemberId member, final MemberId other, final long index) {
-    for (int i = 0; i < 20 && context(OLD_LEADER).getCommitIndex() < index; i++) {
+    for (int i = 0; i < 20 && raft.getRaftContext(OLD_LEADER).getCommitIndex() < index; i++) {
       raft.runUntilDone(OLD_LEADER);
       dropAll(other);
-      deliverAll(member);
-      deliverAll(OLD_LEADER);
+      raft.deliverAll(member);
+      raft.deliverAll(OLD_LEADER);
       raft.tickHeartbeatTimeout(OLD_LEADER);
     }
-    assertThat(context(OLD_LEADER).getCommitIndex()).isEqualTo(index);
+    assertThat(raft.getRaftContext(OLD_LEADER).getCommitIndex()).isEqualTo(index);
   }
 
   private void electNewLeader() {
-    for (int i = 0; i < 20 && context(NEW_LEADER).getRole() != Role.LEADER; i++) {
+    for (int i = 0; i < 20 && raft.getRaftContext(NEW_LEADER).getRole() != Role.LEADER; i++) {
       raft.tickElectionTimeout(NEW_LEADER);
       for (int j = 0; j < 10; j++) {
-        deliverAll(FOLLOWER);
-        deliverAll(NEW_LEADER);
+        raft.deliverAll(FOLLOWER);
+        raft.deliverAll(NEW_LEADER);
       }
     }
-    assertThat(context(NEW_LEADER).getRole()).isEqualTo(Role.LEADER);
+    assertThat(raft.getRaftContext(NEW_LEADER).getRole()).isEqualTo(Role.LEADER);
   }
 
   private void dropAll(final MemberId member) {
@@ -151,14 +153,5 @@ final class SnapshotReplicationAfterSnapshotInstallTest {
       raft.getServerProtocol(member).dropNextMessage();
     }
     raft.runUntilDone(member);
-  }
-
-  private void deliverAll(final MemberId member) {
-    raft.getServerProtocol(member).receiveAll();
-    raft.runUntilDone(member);
-  }
-
-  private RaftContext context(final MemberId member) {
-    return raft.getRaftContext(member);
   }
 }

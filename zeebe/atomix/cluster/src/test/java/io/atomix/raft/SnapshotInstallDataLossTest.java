@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.impl.RaftContext;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -47,7 +46,7 @@ final class SnapshotInstallDataLossTest {
     raft =
         new ControllableRaftContexts(3, config -> config.setPreferSnapshotReplicationThreshold(0));
     raft.setup(directory, new Random(1));
-    context(FOLLOWER)
+    raft.getRaftContext(FOLLOWER)
         .addSnapshotReplicationListener(
             new SnapshotReplicationListener() {
               @Override
@@ -72,10 +71,10 @@ final class SnapshotInstallDataLossTest {
 
     // then - the follower still has the committed entry it acknowledged, and did not start to
     // receive the snapshot
-    assertThat(context(FOLLOWER).getLog().getLastIndex())
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getLastIndex())
         .describedAs("last index of the follower after the leader sent the snapshot")
         .isEqualTo(base + 2);
-    assertThat(context(FOLLOWER).getCurrentSnapshotIndex()).isZero();
+    assertThat(raft.getRaftContext(FOLLOWER).getCurrentSnapshotIndex()).isZero();
     assertThat(snapshotReplicationsStarted).hasValue(0);
   }
 
@@ -83,13 +82,13 @@ final class SnapshotInstallDataLossTest {
   void shouldStopSendingSnapshotAfterFollowerSkippedFirstChunk() {
     // given
     commitEntryWithFollowerThenSendOlderSnapshotToIt();
-    assertThat(chunkCount(context(LEADER).getCurrentSnapshot())).isGreaterThan(1);
+    assertThat(chunkCount(raft.getRaftContext(LEADER).getCurrentSnapshot())).isGreaterThan(1);
 
     // when
     for (int i = 0; i < 10; i++) {
       raft.tickHeartbeatTimeout(LEADER);
-      deliverAll(FOLLOWER);
-      deliverAll(LEADER);
+      raft.deliverAll(FOLLOWER);
+      raft.deliverAll(LEADER);
     }
 
     // then
@@ -106,8 +105,8 @@ final class SnapshotInstallDataLossTest {
     replicateToAll();
 
     // then - the leader appends after the snapshot instead of sending it again
-    assertThat(context(FOLLOWER).getCommitIndex()).isEqualTo(base + 3);
-    assertThat(context(FOLLOWER).getCurrentSnapshotIndex()).isZero();
+    assertThat(raft.getRaftContext(FOLLOWER).getCommitIndex()).isEqualTo(base + 3);
+    assertThat(raft.getRaftContext(FOLLOWER).getCurrentSnapshotIndex()).isZero();
     assertThat(snapshotReplicationsStarted).hasValue(0);
     raft.assertAllLogsEqual();
   }
@@ -120,13 +119,16 @@ final class SnapshotInstallDataLossTest {
     // when - the old leader is gone, and the two followers elect a new leader, which commits its
     // initial entry
     final var newLeader = electLeaderAmongFollowers();
-    final long initialEntryIndex = context(newLeader).getLog().getLastIndex();
-    for (int i = 0; i < 100 && context(newLeader).getCommitIndex() < initialEntryIndex; i++) {
+    final long initialEntryIndex = raft.getRaftContext(newLeader).getLog().getLastIndex();
+    for (int i = 0;
+        i < 100 && raft.getRaftContext(newLeader).getCommitIndex() < initialEntryIndex;
+        i++) {
       raft.tickHeartbeatTimeout(newLeader);
-      deliverAll(FOLLOWER);
-      deliverAll(SLOW_FOLLOWER);
+      raft.deliverAll(FOLLOWER);
+      raft.deliverAll(SLOW_FOLLOWER);
     }
-    assertThat(context(newLeader).getCommitIndex()).isGreaterThanOrEqualTo(initialEntryIndex);
+    assertThat(raft.getRaftContext(newLeader).getCommitIndex())
+        .isGreaterThanOrEqualTo(initialEntryIndex);
 
     // then - the entry the old leader committed at base + 2 is not replaced
     raft.assertAllLogsEqual();
@@ -146,48 +148,49 @@ final class SnapshotInstallDataLossTest {
       raft.clientAppendOnLeader();
     }
     replicateToAll();
-    final long base = context(LEADER).getLog().getLastIndex();
+    final long base = raft.getRaftContext(LEADER).getLog().getLastIndex();
     assertThat(List.of(LEADER, FOLLOWER, SLOW_FOLLOWER))
-        .allSatisfy(member -> assertThat(context(member).getCommitIndex()).isEqualTo(base));
+        .allSatisfy(
+            member -> assertThat(raft.getRaftContext(member).getCommitIndex()).isEqualTo(base));
 
     // entry base + 1 is committed with the slow follower, and the leader takes a snapshot of it
     raft.clientAppendOnLeader();
     raft.runUntilDone(LEADER);
-    deliverAll(SLOW_FOLLOWER);
-    deliverAll(LEADER);
-    assertThat(context(LEADER).getCommitIndex()).isEqualTo(base + 1);
+    raft.deliverAll(SLOW_FOLLOWER);
+    raft.deliverAll(LEADER);
+    assertThat(raft.getRaftContext(LEADER).getCommitIndex()).isEqualTo(base + 1);
     raft.takeSnapshot(LEADER, base + 1);
     raft.runUntilDone(LEADER);
 
     // the follower fails to flush entry base + 1: it rejects the append, but keeps the entry
     raft.failNextFlush(FOLLOWER);
-    deliverAll(FOLLOWER);
-    assertThat(context(FOLLOWER).getLog().getLastIndex()).isEqualTo(base + 1);
+    raft.deliverAll(FOLLOWER);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getLastIndex()).isEqualTo(base + 1);
 
     // before the leader sees the rejection, it pipelines entry base + 2 to the follower, which
     // appends and flushes it; the slow follower never gets it
     raft.clientAppendOnLeader();
     raft.runUntilDone(LEADER);
-    deliverAll(FOLLOWER);
-    assertThat(context(FOLLOWER).getLog().getLastIndex()).isEqualTo(base + 2);
+    raft.deliverAll(FOLLOWER);
+    assertThat(raft.getRaftContext(FOLLOWER).getLog().getLastIndex()).isEqualTo(base + 2);
     raft.getServerProtocol(SLOW_FOLLOWER).dropNextMessage();
 
     // the leader handles the rejection, which makes it send its snapshot to the follower, and
     // then the acknowledgement, which commits entry base + 2 with the follower
-    deliverAll(LEADER);
-    assertThat(context(LEADER).getCommitIndex()).isEqualTo(base + 2);
-    assertThat(context(SLOW_FOLLOWER).getLog().getLastIndex()).isEqualTo(base + 1);
+    raft.deliverAll(LEADER);
+    assertThat(raft.getRaftContext(LEADER).getCommitIndex()).isEqualTo(base + 2);
+    assertThat(raft.getRaftContext(SLOW_FOLLOWER).getLog().getLastIndex()).isEqualTo(base + 1);
 
     // the follower handles the snapshot, i.e. it either installs it, or skips it and gets the
     // commit index with the next append; the leader crashes before it replicates anything else
     boolean handled = false;
     for (int i = 0; i < 20 && !handled; i++) {
-      deliverAll(FOLLOWER);
+      raft.deliverAll(FOLLOWER);
       handled =
-          context(FOLLOWER).getCurrentSnapshotIndex() >= base + 1
-              || context(FOLLOWER).getCommitIndex() >= base + 2;
+          raft.getRaftContext(FOLLOWER).getCurrentSnapshotIndex() >= base + 1
+              || raft.getRaftContext(FOLLOWER).getCommitIndex() >= base + 2;
       if (!handled) {
-        deliverAll(LEADER);
+        raft.deliverAll(LEADER);
       }
     }
     assertThat(handled).describedAs("the follower handled the snapshot").isTrue();
@@ -197,12 +200,12 @@ final class SnapshotInstallDataLossTest {
 
   private void electLeader(final MemberId leader) {
     raft.tickElectionTimeout(leader);
-    for (int i = 0; i < 100 && context(leader).getRole() != Role.LEADER; i++) {
+    for (int i = 0; i < 100 && raft.getRaftContext(leader).getRole() != Role.LEADER; i++) {
       raft.tickHeartbeatTimeout();
       raft.processAllMessage();
       raft.runUntilDone();
     }
-    assertThat(context(leader).getRole()).isEqualTo(Role.LEADER);
+    assertThat(raft.getRaftContext(leader).getRole()).isEqualTo(Role.LEADER);
     // records the leader, which clientAppendOnLeader appends on
     raft.assertAtMostOneLeader();
     replicateToAll();
@@ -217,10 +220,10 @@ final class SnapshotInstallDataLossTest {
       for (final var candidate : List.of(FOLLOWER, SLOW_FOLLOWER)) {
         raft.tickElectionTimeout(candidate);
         for (int j = 0; j < 10; j++) {
-          deliverAll(FOLLOWER);
-          deliverAll(SLOW_FOLLOWER);
+          raft.deliverAll(FOLLOWER);
+          raft.deliverAll(SLOW_FOLLOWER);
         }
-        if (context(candidate).getRole() == Role.LEADER) {
+        if (raft.getRaftContext(candidate).getRole() == Role.LEADER) {
           raft.assertAtMostOneLeader();
           return candidate;
         }
@@ -230,19 +233,22 @@ final class SnapshotInstallDataLossTest {
   }
 
   private void replicateToAll() {
-    final var leader = context(LEADER);
+    final var leader = raft.getRaftContext(LEADER);
     for (int i = 0; i < 100; i++) {
       raft.processAllMessage();
       raft.runUntilDone();
       if (List.of(LEADER, FOLLOWER, SLOW_FOLLOWER).stream()
-          .allMatch(m -> context(m).getCommitIndex() == leader.getLog().getLastIndex())) {
+          .allMatch(
+              m -> raft.getRaftContext(m).getCommitIndex() == leader.getLog().getLastIndex())) {
         return;
       }
       raft.tickHeartbeatTimeout(LEADER);
     }
     assertThat(List.of(LEADER, FOLLOWER, SLOW_FOLLOWER))
         .allSatisfy(
-            m -> assertThat(context(m).getCommitIndex()).isEqualTo(leader.getLog().getLastIndex()));
+            m ->
+                assertThat(raft.getRaftContext(m).getCommitIndex())
+                    .isEqualTo(leader.getLog().getLastIndex()));
   }
 
   private static int chunkCount(final PersistedSnapshot snapshot) {
@@ -253,14 +259,5 @@ final class SnapshotInstallDataLossTest {
       }
     }
     return count;
-  }
-
-  private void deliverAll(final MemberId member) {
-    raft.getServerProtocol(member).receiveAll();
-    raft.runUntilDone(member);
-  }
-
-  private RaftContext context(final MemberId member) {
-    return raft.getRaftContext(member);
   }
 }
