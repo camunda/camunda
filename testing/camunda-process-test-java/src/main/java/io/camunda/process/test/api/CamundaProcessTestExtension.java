@@ -20,6 +20,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.client.CommandApiProbe;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -332,6 +333,9 @@ public class CamundaProcessTestExtension
       final Instant startTime = Instant.now();
 
       camundaManagementClient.purgeCluster();
+      try (final CamundaClient client = camundaProcessTestContext.createClient()) {
+        CommandApiProbe.waitUntilCommandApiAcceptsCommands(client);
+      }
       final Instant endTime = Instant.now();
       final Duration duration = Duration.between(startTime, endTime);
       LOG.debug("Runtime data deleted in {}", duration);
