@@ -9,6 +9,9 @@ package io.camunda.optimize.upgrade.plan.factories;
 
 import io.camunda.optimize.service.db.es.schema.index.AgentDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AgentRunIndexES;
+import io.camunda.optimize.service.db.es.schema.index.AuthorizationIndexES;
+import io.camunda.optimize.service.db.es.schema.index.MappingRuleIndexES;
+import io.camunda.optimize.service.db.es.schema.index.RoleIndexES;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -23,6 +26,9 @@ public class Upgrade810to811PlanFactory implements UpgradePlanFactory {
         .toVersion("8.11.0")
         .addUpgradeStep(new CreateIndexStep(new AgentRunIndexES()))
         .addUpgradeStep(new CreateIndexStep(new AgentDefinitionIndexES()))
+        .addUpgradeStep(new CreateIndexStep(new RoleIndexES()))
+        .addUpgradeStep(new CreateIndexStep(new MappingRuleIndexES()))
+        .addUpgradeStep(new CreateIndexStep(new AuthorizationIndexES()))
         .build();
   }
 }

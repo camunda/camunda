@@ -49,6 +49,9 @@ public final class DatabaseConstants {
   public static final String WEB_SESSION_INDEX_NAME = "web-session";
   public static final String JOB_REGISTRY_INDEX_NAME = "job-registry";
   public static final String TENANT_INDEX_NAME = "tenant";
+  public static final String ROLE_INDEX_NAME = "role";
+  public static final String MAPPING_RULE_INDEX_NAME = "mapping-rule";
+  public static final String AUTHORIZATION_INDEX_NAME = "authorization";
   public static final String VARIABLE_LABEL_INDEX_NAME = "variable-label";
   public static final String PROCESS_OVERVIEW_INDEX_NAME = "process-overview";
   public static final String BUSINESS_VALUE_TARGET_INDEX_NAME = "business-value-target";
