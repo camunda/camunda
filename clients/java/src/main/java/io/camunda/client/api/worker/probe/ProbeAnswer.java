@@ -24,6 +24,9 @@ public final class ProbeAnswer {
   /** The longest message an answer may carry; a longer one is cut. */
   public static final int MAX_MESSAGE_LENGTH = 500;
 
+  /** The message of an {@code ERROR} answer whose message is empty, which the cluster refuses. */
+  public static final String EMPTY_MESSAGE_FALLBACK = "The probe worker failed without a message.";
+
   private final ProbeOutcome outcome;
   private final Object data;
   private final String message;
@@ -52,11 +55,13 @@ public final class ProbeAnswer {
   /**
    * The worker failed to answer.
    *
-   * @param message why, cut to {@value #MAX_MESSAGE_LENGTH} characters; it ends up in front of a
-   *     user, so it must not hold secret values
+   * @param message why, cut to {@value #MAX_MESSAGE_LENGTH} characters, or {@value
+   *     #EMPTY_MESSAGE_FALLBACK} if empty; it ends up in front of a user, so it must not hold
+   *     secret values
    */
   public static ProbeAnswer error(final String message) {
-    final String text = Objects.requireNonNull(message, "message");
+    final String text =
+        Objects.requireNonNull(message, "message").isEmpty() ? EMPTY_MESSAGE_FALLBACK : message;
     return new ProbeAnswer(
         ProbeOutcome.ERROR,
         null,

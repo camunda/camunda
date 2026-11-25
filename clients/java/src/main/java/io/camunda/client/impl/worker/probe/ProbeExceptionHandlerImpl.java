@@ -78,7 +78,7 @@ public final class ProbeExceptionHandlerImpl implements ProbeExceptionHandler {
 
   private static String messageOf(final Exception exception) {
     final String message = exception.getMessage();
-    return message == null ? exception.getClass().getName() : message;
+    return message == null || message.isEmpty() ? exception.getClass().getName() : message;
   }
 
   private static String withoutSecrets(final ActivatedProbe probe, final String text) {

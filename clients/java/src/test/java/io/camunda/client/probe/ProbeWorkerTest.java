@@ -334,6 +334,63 @@ public final class ProbeWorkerTest extends ClientRestTest {
   }
 
   @Test
+  void shouldAnswerErrorWithAFallbackForAnEmptyMessage() {
+    // given - the cluster refuses an ERROR answer with an empty message
+    final long key = nextProbeKey++;
+    activateOnce(probe(key, awsProbeId, "{}", "[]"));
+
+    // when
+    worker =
+        client
+            .newProbeWorker()
+            .probeId(awsProbeId, probe -> ProbeAnswer.error(""))
+            .pollInterval(Duration.ofMillis(10))
+            .open();
+
+    // then
+    await()
+        .untilAsserted(
+            () ->
+                verify(
+                    answerOf(key)
+                        .withRequestBody(
+                            equalToJson(
+                                "{\"outcome\":\"ERROR\",\"message\":\""
+                                    + ProbeAnswer.EMPTY_MESSAGE_FALLBACK
+                                    + "\"}"))));
+  }
+
+  @Test
+  void shouldAnswerErrorWithTheExceptionTypeForAnEmptyExceptionMessage() {
+    // given
+    final long key = nextProbeKey++;
+    activateOnce(probe(key, awsProbeId, "{}", "[]"));
+
+    // when
+    worker =
+        client
+            .newProbeWorker()
+            .probeId(
+                awsProbeId,
+                probe -> {
+                  throw new IllegalStateException("");
+                })
+            .pollInterval(Duration.ofMillis(10))
+            .open();
+
+    // then
+    await()
+        .untilAsserted(
+            () ->
+                verify(
+                    answerOf(key)
+                        .withRequestBody(
+                            equalToJson(
+                                "{\"outcome\":\"ERROR\","
+                                    + "\"message\":\"java.lang.IllegalStateException\"}"))));
+  }
+
+  @Test
   void shouldSendTheAnswerAgainAfterA503() {
     // given
     final long key = nextProbeKey++;
