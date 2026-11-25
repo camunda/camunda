@@ -65,6 +65,9 @@ jobs:
     name: Postgres realistic load test
     needs:
       - test-data
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -76,6 +79,9 @@ jobs:
       scenario: realistic
   setup-realistic-test:
     name: Realistic load test
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     needs:
