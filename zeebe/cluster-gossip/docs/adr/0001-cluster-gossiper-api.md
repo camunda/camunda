@@ -79,9 +79,11 @@ A merge must be commutative, associative and idempotent, because updates arrive 
 than once and along different paths. Two strategies exist:
 
 - `lastWriterWins()` — the gossiper attaches a hidden `(timestamp, writer member id)` header; the
-  highest timestamp wins and ties go to the higher member id. The timestamp is wall-clock time, so
-  under clock skew the member with the faster clock wins. Because the header is hidden, it can move
-  to a hybrid logical clock later without an API change.
+  highest timestamp wins, ties go to the higher member id, and remaining ties to the greater encoded
+  value. The last tie-break keeps the order total when a restarted member reuses a timestamp of its
+  previous run for a different value, which would otherwise leave members disagreeing. The timestamp
+  is wall-clock time, so under clock skew the member with the faster clock wins. Because the header
+  is hidden, it can move to a hybrid logical clock later without an API change.
 - `merging(BinaryOperator<T>)` — merges values only. Any ordering the consumer needs, such as a
   version, lives inside `T`.
 
