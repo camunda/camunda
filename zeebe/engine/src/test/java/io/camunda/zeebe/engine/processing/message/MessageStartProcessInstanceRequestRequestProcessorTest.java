@@ -498,6 +498,67 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
     assertNoOtherReply(MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION);
   }
 
+  @Test
+  public void shouldReplyNoSubscriptionRejectedWhenTargetDefinitionIsSuspended() {
+    // given - a deployed process whose definition is then suspended
+    final var metadata =
+        engine
+            .deployment()
+            .withXmlResource(MESSAGE_START_PROCESS)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+    engine
+        .processDefinitionSuspension()
+        .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+        .suspend();
+
+    // when - a REQUEST arrives for the suspended definition
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                requestWith(BUSINESS_ID, subscriptionKey, metadata.getProcessDefinitionKey())));
+
+    // then - it is rejected as "no subscription" and no PI is activated
+    final var reply =
+        firstReplyCommand(MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION);
+    assertThat(reply.getProcessDefinitionKey()).isEqualTo(metadata.getProcessDefinitionKey());
+    assertThat(reply.getProcessInstanceKey()).isEqualTo(-1L);
+
+    final long startedEvents =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getRecordType() == RecordType.COMMAND
+                        && r.getIntent()
+                            == MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION)
+            .filter(
+                r ->
+                    r.getRecordType() == RecordType.EVENT
+                        && r.getIntent() == MessageStartProcessInstanceRequestIntent.STARTED)
+            .count();
+    assertThat(startedEvents).as("no dedup/STARTED entry for a suspended definition").isZero();
+
+    final long activatedProcesses =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getRecordType() == RecordType.COMMAND
+                        && r.getIntent()
+                            == MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION)
+            .processInstanceRecords()
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(activatedProcesses).as("no PI is activated for a suspended definition").isZero();
+
+    assertNoOtherReply(MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION);
+  }
+
   /**
    * Injects a {@code DRAINING} event directly (applied on the next start via replay), bypassing the
    * deletion processor so the message start-event subscription stays intact. A real deletion cannot
