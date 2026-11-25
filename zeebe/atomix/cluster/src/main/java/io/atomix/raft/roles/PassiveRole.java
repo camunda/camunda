@@ -843,6 +843,10 @@ public class PassiveRole extends InactiveRole {
 
         // Read the previous entry and validate that the term matches the request previous log term.
         final IndexedRaftLogEntry previousEntry = reader.next();
+        if (previousEntry.index() != request.prevLogIndex()) {
+          // the reader skipped to the first entry of the log, which starts after the snapshot
+          return checkPreviousEntryInSnapshot(request, future);
+        }
         if (request.prevLogTerm() != previousEntry.term()) {
           log.debug(
               "Rejected {}: Previous entry term ({}) does not match local log's term for the same entry ({})",
@@ -866,6 +870,27 @@ public class PassiveRole extends InactiveRole {
     return true;
   }
 
+  /**
+   * Checks a previous entry that is not in the log, as the log starts after it, e.g. because it was
+   * replaced by a snapshot. Only the snapshot's own index and term are known; the entries before it
+   * are committed, so the leader has to continue after the snapshot.
+   */
+  private boolean checkPreviousEntryInSnapshot(
+      final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
+    final var snapshot = raft.getCurrentSnapshot();
+    if (snapshot != null && snapshot.getIndex() == request.prevLogIndex()) {
+      return checkPreviousEntry(request, snapshot.getIndex(), snapshot.getTerm(), future);
+    }
+
+    final long snapshotIndex = raft.getCurrentSnapshotIndex();
+    log.debug(
+        "Rejected {}: Previous index ({}) is before the local log, which continues after the snapshot index ({})",
+        request,
+        request.prevLogIndex(),
+        snapshotIndex);
+    return failAppend(snapshotIndex, future);
+  }
+
   /** Appends entries from the given AppendRequest. */
   protected void appendEntries(
       final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
@@ -880,10 +905,12 @@ public class PassiveRole extends InactiveRole {
 
     if (!request.entries().isEmpty()) {
 
-      // If the previous term is zero, that indicates the previous index represents the beginning of
-      // the log.
-      // Reset the log to the previous index plus one.
-      if (request.prevLogTerm() == 0) {
+      // A previous term of zero means the entries start the leader's log. Reset the log only if it
+      // does not start at the same index, e.g. because it was compacted. Otherwise, the entries
+      // are compared below like any others, so that entries this member acknowledged and the
+      // leader may have committed are not deleted.
+      if (request.prevLogTerm() == 0
+          && raft.getLog().getFirstIndex() != request.prevLogIndex() + 1) {
         log.debug("Reset first index to {}", request.prevLogIndex() + 1);
         raft.getLog().reset(request.prevLogIndex() + 1);
       }
