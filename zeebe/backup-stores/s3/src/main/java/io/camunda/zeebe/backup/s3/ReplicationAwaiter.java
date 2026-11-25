@@ -115,7 +115,7 @@ final class ReplicationAwaiter {
         .whenComplete(
             (statuses, error) -> {
               if (error != null) {
-                result.completeExceptionally(unwrap(error));
+                result.completeExceptionally(error);
                 return;
               }
               try {
