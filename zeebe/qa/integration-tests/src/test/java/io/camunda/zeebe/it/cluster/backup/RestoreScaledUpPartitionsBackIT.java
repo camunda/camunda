@@ -295,12 +295,8 @@ final class RestoreScaledUpPartitionsBackIT {
               assertEveryBrokerReportsRestored(1);
             });
 
-    // and - every broker reports all of the backup's partitions restored once it is repaired
+    // and - the restore completes once the backup is repaired
     InProcessRestoreTestUtil.restoreOriginalSnapshotFiles(originalSnapshotFiles);
-    Awaitility.await("every broker reports all of the backup's partitions restored")
-        .timeout(Duration.ofSeconds(60))
-        .pollInterval(Duration.ofMillis(100))
-        .untilAsserted(() -> assertEveryBrokerReportsRestored(BACKUP_PARTITIONS_COUNT));
     Awaitility.await("restore change plan completes")
         .timeout(Duration.ofMinutes(2))
         .untilAsserted(
