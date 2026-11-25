@@ -42,17 +42,25 @@ public class ProcessDefinitionDeletionRequestService {
     this.jobRegistryWriter = jobRegistryWriter;
   }
 
-  public void queueProcessDefinitionDeletion(final String processDefinitionId) {
+  public void queueProcessDefinitionDeletion(
+      final String processDefinitionId, final String requestedBy) {
     LOG.info(
-        "Received request to delete Optimize data for process definition [{}].",
-        processDefinitionId);
+        "Received request to delete Optimize data for process definition [{}] from client [{}].",
+        processDefinitionId,
+        requestedBy);
 
     validateIsNumeric(processDefinitionId);
     validateDefinitionExists(processDefinitionId);
     validateNoBlockingJobExists(processDefinitionId);
 
-    jobRegistryWriter.createJobEntry(
-        JobType.DELETE, EntityType.PROCESS_DEFINITION, processDefinitionId);
+    final JobRegistryEntryDto job =
+        jobRegistryWriter.createJobEntry(
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, processDefinitionId);
+    LOG.info(
+        "Queued deletion job [{}] for process definition [{}] requested by client [{}].",
+        job.getId(),
+        processDefinitionId,
+        requestedBy);
   }
 
   private void validateIsNumeric(final String processDefinitionId) {

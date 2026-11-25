@@ -34,6 +34,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.export.JsonReportResultExportService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.variable.ProcessVariableLabelService;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -41,6 +42,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -83,6 +87,8 @@ public class PublicApiRestService {
   private static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
   private static final String PROCESS_DEFINITION_BY_KEY_PATH =
       PROCESS_DEFINITION_SUB_PATH + "/{processDefinitionKey}";
+  private static final String UNKNOWN_CLIENT_ID = "unknown";
+  private static final Logger LOG = LoggerFactory.getLogger(PublicApiRestService.class);
 
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
@@ -94,6 +100,8 @@ public class PublicApiRestService {
   private final CollectionService collectionService;
   private final CollectionScopeService collectionScopeService;
   private final ProcessDefinitionDeletionRequestService processDefinitionDeletionRequestService;
+  // Only present when CSL is enabled; the legacy security chains have no such bean.
+  private final ObjectProvider<CamundaAuthenticationProvider> authenticationProvider;
 
   public PublicApiRestService(
       final JsonReportResultExportService jsonReportResultExportService,
@@ -105,7 +113,8 @@ public class PublicApiRestService {
       final SettingsService settingsService,
       final CollectionService collectionService,
       final CollectionScopeService collectionScopeService,
-      final ProcessDefinitionDeletionRequestService processDefinitionDeletionRequestService) {
+      final ProcessDefinitionDeletionRequestService processDefinitionDeletionRequestService,
+      final ObjectProvider<CamundaAuthenticationProvider> authenticationProvider) {
     this.jsonReportResultExportService = jsonReportResultExportService;
     this.entityExportService = entityExportService;
     this.entityImportService = entityImportService;
@@ -116,6 +125,7 @@ public class PublicApiRestService {
     this.collectionService = collectionService;
     this.collectionScopeService = collectionScopeService;
     this.processDefinitionDeletionRequestService = processDefinitionDeletionRequestService;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @GetMapping(REPORT_SUB_PATH)
@@ -186,7 +196,30 @@ public class PublicApiRestService {
   @ResponseStatus(HttpStatus.ACCEPTED)
   public void deleteProcessDefinitionData(
       final @PathVariable("processDefinitionKey") String processDefinitionId) {
-    processDefinitionDeletionRequestService.queueProcessDefinitionDeletion(processDefinitionId);
+    processDefinitionDeletionRequestService.queueProcessDefinitionDeletion(
+        processDefinitionId, resolveRequestingClientId());
+  }
+
+  // Resolved here, on the request thread, because the asynchronous job handler has no security
+  // context. An attribution problem must never block a deletion, so any failure yields "unknown".
+  private String resolveRequestingClientId() {
+    try {
+      final var provider = authenticationProvider.getIfAvailable();
+      if (provider == null) {
+        return UNKNOWN_CLIENT_ID;
+      }
+      final var authentication = provider.getCamundaAuthentication();
+      final String clientId =
+          authentication == null ? null : authentication.authenticatedClientId();
+      if (clientId != null && !clientId.isBlank()) {
+        return clientId;
+      }
+      LOG.warn("The public API request carries no client id, recording the requester as unknown.");
+    } catch (final RuntimeException e) {
+      LOG.warn(
+          "Could not resolve the public API client id, recording the requester as unknown.", e);
+    }
+    return UNKNOWN_CLIENT_ID;
   }
 
   @PostMapping(LABELS_SUB_PATH)
