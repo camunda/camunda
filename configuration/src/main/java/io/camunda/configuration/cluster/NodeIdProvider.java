@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.cluster;
 
+import io.camunda.configuration.AcceptsSecretReference;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import java.time.Duration;
@@ -145,14 +146,14 @@ public class NodeIdProvider {
      * credentials will be determined as documented in <a
      * href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain">...</a>
      */
-    private Optional<String> accessKey = Optional.empty();
+    @AcceptsSecretReference private Optional<String> accessKey = Optional.empty();
 
     /**
      * Configure access credentials. If either accessKey or secretKey is not provided, the
      * credentials will be determined as documented in <a
      * href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain">...</a>
      */
-    private Optional<String> secretKey = Optional.empty();
+    @AcceptsSecretReference private Optional<String> secretKey = Optional.empty();
 
     /**
      * Configure a maximum duration for all S3 client API calls. See <a
