@@ -66,8 +66,6 @@ type Props = {
 };
 
 const TABLE_CONTAINER_CLASSES = [
-	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
-	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
 	// Row hover and the ghost icon button hover share a background, so the button needs a stronger one.
 	'[&_[data-slot=icon-button]:hover:not(:disabled)]:bg-[var(--neutral-background-strong)]!',
 ].join(' ');
@@ -520,6 +518,7 @@ const InstancesTable: React.FC<Props> = ({
 					fetchPreviousPage,
 					fetchNextPage,
 				}}
+				borderless
 				className={TABLE_CONTAINER_CLASSES}
 				data-testid="process-instances-table"
 			/>

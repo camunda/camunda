@@ -43,11 +43,6 @@ import type {OperationsLogSearch} from '../operationsLog.schema';
 const DEFAULT_SORT = {field: 'timestamp', order: 'DESC'} as const;
 const sortSearchParamSchema = createSortSearchParamSchema(auditLogSortFieldEnum);
 
-const TABLE_CONTAINER_CLASSES = [
-	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
-	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
-].join(' ');
-
 const combineDefinitionResults = (results: UseQueryResult<GetProcessDefinitionResponseBody>[]) => ({
 	names: Object.fromEntries(
 		results.flatMap(({data: definition}) =>
@@ -291,7 +286,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 					fetchPreviousPage,
 					fetchNextPage,
 				}}
-				className={TABLE_CONTAINER_CLASSES}
+				borderless
 				data-testid="operations-log-table"
 			/>
 			{detailsModal.auditLog && (
