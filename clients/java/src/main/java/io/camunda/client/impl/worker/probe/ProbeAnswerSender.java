@@ -168,10 +168,27 @@ final class ProbeAnswerSender {
         "Failed to answer probe with key {}; retrying in {} ms", probe.getKey(), delay, error);
     try {
       scheduler.schedule(
-          () -> send(probe, request, delay, isFallback), delay, TimeUnit.MILLISECONDS);
+          () -> resend(probe, request, delay, isFallback), delay, TimeUnit.MILLISECONDS);
     } catch (final RejectedExecutionException e) {
       LOG.debug("Failed to schedule the answer to probe with key {} again", probe.getKey(), e);
     }
+  }
+
+  /**
+   * Sends the answer again, unless the scheduler ran this retry after the deadline. The first send
+   * does not check the deadline: it is the broker's clock, and a client clock ahead of it would
+   * drop answers the cluster still takes.
+   */
+  private void resend(
+      final ActivatedProbe probe,
+      final ProbeAnswerRequest request,
+      final long previousDelay,
+      final boolean isFallback) {
+    if (clock.getAsLong() >= probe.getDeadline()) {
+      LOG.warn("Failed to answer probe with key {} before its deadline; giving up", probe.getKey());
+      return;
+    }
+    send(probe, request, previousDelay, isFallback);
   }
 
   private long retryDelay(final long previousDelay) {
