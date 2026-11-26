@@ -92,6 +92,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   PolicyState getPolicyState();
 
+  HubEventState getHubEventState();
+
   RoleState getRoleState();
 
   GroupState getGroupState();

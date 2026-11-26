@@ -8,6 +8,9 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.immutable.HubEventState.HubEventStatus;
+import io.camunda.zeebe.engine.state.immutable.HubEventState.HubEventType;
+import io.camunda.zeebe.engine.state.mutable.MutableHubEventState;
 import io.camunda.zeebe.engine.state.mutable.MutablePolicyState;
 import io.camunda.zeebe.engine.state.mutable.MutablePolicyUpdateState;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
@@ -25,16 +28,22 @@ public final class PolicyUpdateVersionCommittedApplier
 
   private final MutablePolicyState policyState;
   private final MutablePolicyUpdateState policyUpdateState;
+  private final MutableHubEventState hubEventState;
 
   public PolicyUpdateVersionCommittedApplier(
-      final MutablePolicyState policyState, final MutablePolicyUpdateState policyUpdateState) {
+      final MutablePolicyState policyState,
+      final MutablePolicyUpdateState policyUpdateState,
+      final MutableHubEventState hubEventState) {
     this.policyState = policyState;
     this.policyUpdateState = policyUpdateState;
+    this.hubEventState = hubEventState;
   }
 
   @Override
   public void applyState(final long key, final PolicyUpdateRecord value) {
     policyState.commit(value.getPolicyId(), value.getPolicyVersion(), value.getSeqNo());
     policyUpdateState.removeAll();
+    hubEventState.setStatus(
+        value.getSeqNo(), HubEventType.POLICY_UPDATE, HubEventStatus.APPLIED, null);
   }
 }

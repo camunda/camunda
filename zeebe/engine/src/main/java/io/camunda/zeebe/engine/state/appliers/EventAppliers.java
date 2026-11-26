@@ -230,16 +230,21 @@ public final class EventAppliers implements EventApplier {
   private void registerPolicyUpdateAppliers(final MutableProcessingState state) {
     register(
         PolicyUpdateIntent.CHUNK_APPENDED,
-        new PolicyUpdateChunkAppendedApplier(state.getPolicyUpdateState()));
-    register(PolicyUpdateIntent.CHUNK_APPLIED, NOOP_EVENT_APPLIER);
+        new PolicyUpdateChunkAppendedApplier(
+            state.getPolicyUpdateState(), state.getHubEventState()));
+    register(
+        PolicyUpdateIntent.CHUNK_APPLIED,
+        new PolicyUpdateChunkAppliedApplier(state.getHubEventState()));
     register(
         PolicyUpdateIntent.VERSION_COMMITTED,
         new PolicyUpdateVersionCommittedApplier(
-            state.getPolicyState(), state.getPolicyUpdateState()));
+            state.getPolicyState(), state.getPolicyUpdateState(), state.getHubEventState()));
     register(
-        PolicyUpdateIntent.CANCELED, new PolicyUpdateCanceledApplier(state.getPolicyUpdateState()));
+        PolicyUpdateIntent.CANCELED,
+        new PolicyUpdateCanceledApplier(state.getPolicyUpdateState(), state.getHubEventState()));
     register(
-        PolicyUpdateIntent.FAILED, new PolicyUpdateFailedApplier(state.getPolicyUpdateState()));
+        PolicyUpdateIntent.FAILED,
+        new PolicyUpdateFailedApplier(state.getPolicyUpdateState(), state.getHubEventState()));
   }
 
   private void registerProbeAppliers(final MutableProcessingState state) {

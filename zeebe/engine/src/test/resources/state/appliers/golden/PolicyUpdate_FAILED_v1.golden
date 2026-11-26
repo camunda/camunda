@@ -8,6 +8,9 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.immutable.HubEventState.HubEventStatus;
+import io.camunda.zeebe.engine.state.immutable.HubEventState.HubEventType;
+import io.camunda.zeebe.engine.state.mutable.MutableHubEventState;
 import io.camunda.zeebe.engine.state.mutable.MutablePolicyUpdateState;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
@@ -22,13 +25,21 @@ public final class PolicyUpdateFailedApplier
     implements TypedEventApplier<PolicyUpdateIntent, PolicyUpdateRecord> {
 
   private final MutablePolicyUpdateState policyUpdateState;
+  private final MutableHubEventState hubEventState;
 
-  public PolicyUpdateFailedApplier(final MutablePolicyUpdateState policyUpdateState) {
+  public PolicyUpdateFailedApplier(
+      final MutablePolicyUpdateState policyUpdateState, final MutableHubEventState hubEventState) {
     this.policyUpdateState = policyUpdateState;
+    this.hubEventState = hubEventState;
   }
 
   @Override
   public void applyState(final long key, final PolicyUpdateRecord value) {
     policyUpdateState.removeAll();
+    hubEventState.setStatus(
+        value.getSeqNo(),
+        HubEventType.POLICY_UPDATE,
+        HubEventStatus.REJECTED,
+        value.getErrorMessage());
   }
 }
