@@ -33,7 +33,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootVersion;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -116,6 +118,10 @@ class JsonMapperAutoConfigurationTest {
     assertThat(json).isEqualTo("{\"date\":\"2026-11-19T00:00:00.000+00:00\"}");
   }
 
+  static boolean isSpringBoot3() {
+    return SpringBootVersion.getVersion().startsWith("3.");
+  }
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -169,7 +175,13 @@ class JsonMapperAutoConfigurationTest {
     }
   }
 
+  // On 8.9 the Spring Boot 3 starter orders its auto-configuration after Spring Boot's
+  // JacksonAutoConfiguration, so it always used that ObjectMapper and the opt-out keeps it.
   @Nested
+  @DisabledIf(
+      value =
+          "io.camunda.client.spring.configuration.JsonMapperAutoConfigurationTest#isSpringBoot3",
+      disabledReason = "The Spring Boot 3 starter of 8.9 never used the default mapper here")
   @TestPropertySource(properties = "camunda.client.use-bare-object-mapper=true")
   class WithBareObjectMapper {
 
