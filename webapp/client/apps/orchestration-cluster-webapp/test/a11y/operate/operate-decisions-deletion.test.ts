@@ -67,6 +67,6 @@ test('should have no accessibility violations in the delete DRD confirmation mod
 	await expect(operateDecisionsPage.deleteDefinitionDialog.getByText('My DRD', {exact: true})).toBeVisible();
 	await expect(operateDecisionsPage.deleteDefinitionDialog.locator('..')).toHaveCSS('opacity', '1');
 
-	const accessibilityScanResults = await makeAxeBuilder().include('[role="dialog"][aria-label="Delete DRD"]').analyze();
+	const accessibilityScanResults = await makeAxeBuilder().include('[role="dialog"]').analyze();
 	expect(accessibilityScanResults.violations).toEqual([]);
 });
