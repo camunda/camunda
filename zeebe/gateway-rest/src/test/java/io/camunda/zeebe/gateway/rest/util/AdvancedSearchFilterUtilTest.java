@@ -18,6 +18,8 @@ import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilter;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
@@ -180,8 +182,12 @@ class AdvancedSearchFilterUtilTest {
     emptyInAndNotIn.set$In(List.of());
     emptyInAndNotIn.set$NotIn(List.of());
 
+    final var onlyNullIn = new BasicStringFilter();
+    onlyNullIn.set$In(Collections.singletonList(null));
+
     return Stream.of(
         Arguments.of("{\"$in\": []}", onlyEmptyIn),
+        Arguments.of("{\"$in\": [null]}", onlyNullIn),
         Arguments.of("{\"$in\": [], \"$notIn\": []}", emptyInAndNotIn),
         Arguments.of("{}", new BasicStringFilter()));
   }
@@ -201,8 +207,12 @@ class AdvancedSearchFilterUtilTest {
     neqWithEmptyIn.set$Neq("1");
     neqWithEmptyIn.set$In(List.of());
 
+    final var inWithNull = new BasicStringFilter();
+    inWithNull.set$In(Arrays.asList("123", null));
+
     return Stream.of(
         Arguments.of("{\"$eq\": \"123\"}", eq),
+        Arguments.of("{\"$in\": [\"123\", null]}", inWithNull),
         Arguments.of("{\"$in\": [\"1\", \"2\"]}", nonEmptyIn),
         Arguments.of("{\"$exists\": false}", existsFalse),
         Arguments.of("{\"$neq\": \"1\", \"$in\": []}", neqWithEmptyIn),

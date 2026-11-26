@@ -391,7 +391,11 @@ public class SearchQueryFilterMapper {
     if (!emptyPropertyViolations.isEmpty()) {
       return Either.left(emptyPropertyViolations);
     }
-    return toProcessInstanceFilter(filter);
+    final var mapped = toProcessInstanceFilter(filter);
+    if (hasNoCriterion(mapped)) {
+      return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
+    }
+    return mapped;
   }
 
   /** Like {@link #emptyFilterPropertyViolations}, also covering the {@code $or} branches. */
@@ -445,6 +449,23 @@ public class SearchQueryFilterMapper {
     } catch (final ReflectiveOperationException e) {
       throw new IllegalStateException("Failed to read filter property " + property.getName(), e);
     }
+  }
+
+  /**
+   * True when the mapping succeeded but neither the filter's own fields nor any {@code $or} branch
+   * carries a criterion, so it matches every instance. Mapping errors do not count as empty, the
+   * caller reports them.
+   */
+  private static boolean hasNoCriterion(final Either<List<String>, ProcessInstanceFilter> mapped) {
+    if (mapped.isLeft()) {
+      return false;
+    }
+    final var emptyFilter = FilterBuilders.processInstance().build();
+    final var filter = mapped.get();
+    final var orFilters =
+        filter.orFilters() == null ? List.<ProcessInstanceFilter>of() : filter.orFilters();
+    return filter.toBuilder().orFilters(null).build().equals(emptyFilter)
+        && orFilters.stream().allMatch(emptyFilter::equals);
   }
 
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
