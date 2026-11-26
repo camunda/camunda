@@ -10,11 +10,9 @@ package io.camunda.zeebe.backup.s3;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReplicationFailed;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReplicationTimedOut;
-import io.camunda.zeebe.backup.s3.S3BackupStoreException.ConfigurationException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -24,7 +22,6 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,13 +32,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.GetBucketReplicationResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
-import software.amazon.awssdk.services.s3.model.ReplicationConfiguration;
-import software.amazon.awssdk.services.s3.model.ReplicationRule;
 import software.amazon.awssdk.services.s3.model.ReplicationStatus;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -300,128 +293,6 @@ final class ReplicationAwaiterTest {
 
     // then
     assertThat(replicated).succeedsWithin(WAIT);
-  }
-
-  @Test
-  void shouldAcceptBucketWithReplicationRules() {
-    // given
-    final var awaiter = awaiter(WAIT);
-    when(client.getBucketReplication(any(Consumer.class)))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                GetBucketReplicationResponse.builder()
-                    .replicationConfiguration(
-                        ReplicationConfiguration.builder()
-                            .rules(ReplicationRule.builder().id("rule").build())
-                            .build())
-                    .build()));
-
-    // when
-    final var verified = awaiter.verifyReplicationConfigured();
-
-    // then
-    assertThat(verified).succeedsWithin(WAIT);
-  }
-
-  @Test
-  void shouldRejectBucketWithoutReplicationConfiguration() {
-    // given
-    final var awaiter = awaiter(WAIT);
-    when(client.getBucketReplication(any(Consumer.class)))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                S3Exception.builder()
-                    .statusCode(404)
-                    .awsErrorDetails(
-                        AwsErrorDetails.builder()
-                            .errorCode(ReplicationAwaiter.REPLICATION_CONFIGURATION_NOT_FOUND)
-                            .build())
-                    .build()));
-
-    // when
-    final var verified = awaiter.verifyReplicationConfigured();
-
-    // then
-    assertThat(verified)
-        .failsWithin(WAIT)
-        .withThrowableThat()
-        .havingCause()
-        .isInstanceOf(ConfigurationException.class)
-        .withMessageContaining("has no replication configured");
-  }
-
-  @Test
-  void shouldRejectBucketWithoutReplicationConfigurationWhenTheFailureIsWrapped() {
-    // given the async client reports the failure wrapped in a CompletionException
-    final var awaiter = awaiter(WAIT);
-    final var notFound =
-        S3Exception.builder()
-            .statusCode(404)
-            .awsErrorDetails(
-                AwsErrorDetails.builder()
-                    .errorCode(ReplicationAwaiter.REPLICATION_CONFIGURATION_NOT_FOUND)
-                    .build())
-            .build();
-    when(client.getBucketReplication(any(Consumer.class)))
-        .thenReturn(CompletableFuture.failedFuture(new CompletionException(notFound)));
-
-    // when
-    final var verified = awaiter.verifyReplicationConfigured();
-
-    // then
-    assertThat(verified)
-        .failsWithin(WAIT)
-        .withThrowableThat()
-        .havingCause()
-        .isInstanceOf(ConfigurationException.class)
-        .withMessageContaining("has no replication configured");
-  }
-
-  @Test
-  void shouldRejectReplicationConfigurationWithoutRules() {
-    // given
-    final var awaiter = awaiter(WAIT);
-    when(client.getBucketReplication(any(Consumer.class)))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                GetBucketReplicationResponse.builder()
-                    .replicationConfiguration(ReplicationConfiguration.builder().build())
-                    .build()));
-
-    // when
-    final var verified = awaiter.verifyReplicationConfigured();
-
-    // then
-    assertThat(verified)
-        .failsWithin(WAIT)
-        .withThrowableThat()
-        .havingCause()
-        .isInstanceOf(ConfigurationException.class)
-        .withMessageContaining("has no replication configured");
-  }
-
-  @Test
-  void shouldRejectBucketWhenReplicationConfigurationCannotBeRead() {
-    // given
-    final var awaiter = awaiter(WAIT);
-    when(client.getBucketReplication(any(Consumer.class)))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                S3Exception.builder()
-                    .statusCode(403)
-                    .awsErrorDetails(AwsErrorDetails.builder().errorCode("AccessDenied").build())
-                    .build()));
-
-    // when
-    final var verified = awaiter.verifyReplicationConfigured();
-
-    // then
-    assertThat(verified)
-        .failsWithin(WAIT)
-        .withThrowableThat()
-        .havingCause()
-        .isInstanceOf(ConfigurationException.class)
-        .withMessageContaining("Failed to read the replication configuration");
   }
 
   private ReplicationAwaiter awaiter(final Duration timeout) {

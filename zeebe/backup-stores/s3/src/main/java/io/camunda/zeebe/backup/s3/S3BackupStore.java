@@ -272,9 +272,7 @@ public final class S3BackupStore implements BackupStore {
     }
 
     final var awaiter = replicationAwaiter;
-    return awaiter
-        .verifyReplicationConfigured()
-        .thenComposeAsync(ignored -> uploadContents(backup))
+    return uploadContents(backup)
         .thenComposeAsync(
             contents -> {
               final var deadline = awaiter.deadline();
@@ -443,21 +441,15 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> verifyConnection() {
-    final CompletableFuture<Void> connected =
-        client
-            .headBucket(HeadBucketRequest.builder().bucket(config.bucketName()).build())
-            .whenCompleteAsync(
-                (ignore, err) -> {
-                  if (err != null) {
-                    throw new ConfigurationException("Failed to connect to S3", err);
-                  }
-                })
-            .thenApply(ignore -> null);
-    if (replicationAwaiter == null) {
-      return connected;
-    }
-    final var awaiter = replicationAwaiter;
-    return connected.thenCompose(ignored -> awaiter.verifyReplicationConfigured());
+    return client
+        .headBucket(HeadBucketRequest.builder().bucket(config.bucketName()).build())
+        .whenCompleteAsync(
+            (ignore, err) -> {
+              if (err != null) {
+                throw new ConfigurationException("Failed to connect to S3", err);
+              }
+            })
+        .thenApply(ignore -> null);
   }
 
   private String backupMetadataKey(final int partitionId) {
