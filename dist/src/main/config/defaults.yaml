@@ -1733,6 +1733,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         authorizations-cache-ttl: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_AUTHORIZATIONSCACHETTL
         # Configures whether candidate group names are resolved.
         candidate-group-name-resolution: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_CANDIDATEGROUPNAMERESOLUTION
+        # Configures how long a cached deployed resource (process, decision model, form, resource) stays
+        # cached after its last use.
+        deployment-cache-ttl: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_DEPLOYMENTCACHETTL
         # Configures the maximum number of parsed decision requirements graphs to cache.
         drg-cache-capacity: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_DRGCACHECAPACITY
         # Configures the maximum number of parsed forms to cache.

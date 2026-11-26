@@ -207,7 +207,11 @@ public final class DbProcessState implements MutableProcessState {
 
     versionManager =
         new VersionManager(
-            DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.PROCESS_VERSION, transactionContext);
+            DEFAULT_VERSION_VALUE,
+            zeebeDb,
+            ZbColumnFamilies.PROCESS_VERSION,
+            transactionContext,
+            config.getProcessCacheCapacity());
 
     pendingDeletionPartitionId = new DbInt();
     pendingDeletionKey = new DbCompositeKey<>(processDefinitionKey, pendingDeletionPartitionId);
@@ -245,12 +249,19 @@ public final class DbProcessState implements MutableProcessState {
             .build();
     processesByTenantAndProcessIdAndVersionCache = newProcessCacheBuilder(config).build();
     processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+        newBoundedCacheBuilder(config).build();
+  }
+
+  private static CacheBuilder<Object, Object> newBoundedCacheBuilder(
+      final EngineConfiguration config) {
+    return CacheBuilder.newBuilder()
+        .maximumSize(config.getProcessCacheCapacity())
+        .expireAfterAccess(config.getDeploymentCacheTtl());
   }
 
   private static CacheBuilder<Object, Object> newProcessCacheBuilder(
       final EngineConfiguration config) {
-    final var builder = CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity());
+    final var builder = newBoundedCacheBuilder(config);
     // soft values: a cached process is a large object graph (parsed model, compiled FEEL
     // expressions) whose size we can't weigh, so let the GC reclaim entries under heap pressure
     return config.isProcessCacheSoftValues() ? builder.softValues() : builder;
