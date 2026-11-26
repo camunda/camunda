@@ -204,7 +204,7 @@
     <version.java-jwt>4.6.2</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.roaster>2.31.1.Final</version.roaster>
-    <version.postgresql>42.7.14</version.postgresql>
+    <version.postgresql>42.7.15</version.postgresql>
     <version.h2>2.5.252</version.h2>
     <version.aws-advanced-jdbc-wrapper>4.7.0</version.aws-advanced-jdbc-wrapper>
     <version.aws-signing>4.0.1</version.aws-signing>
