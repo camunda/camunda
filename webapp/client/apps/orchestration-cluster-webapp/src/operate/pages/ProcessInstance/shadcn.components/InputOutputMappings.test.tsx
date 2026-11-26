@@ -9,8 +9,7 @@
 import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
-import {HttpResponse, delay, http} from 'msw';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
+import {HttpResponse} from 'msw';
 import {useRouterState} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -51,11 +50,7 @@ afterEach(async () => {
 	localStorage.clear();
 });
 
-function renderMappings(
-	Tab: typeof InputMappingsTab,
-	elementId: string,
-	search = elementId === '' ? '' : `?elementId=${elementId}`,
-) {
+function renderMappings(Tab: typeof InputMappingsTab, search: string) {
 	function Mappings() {
 		const routeSearch = useRouterState({select: (state) => state.location.search});
 		return (
@@ -86,7 +81,7 @@ describe('Input and output mappings (design system)', () => {
 	});
 
 	it('should list the input mappings of the selected element', async () => {
-		const screen = await renderMappings(InputMappingsTab, 'mapped-task');
+		const screen = await renderMappings(InputMappingsTab, '?elementId=mapped-task');
 
 		await expect.element(screen.getByText('Local Variable Name')).toBeVisible();
 		await expect.element(screen.getByText('Variable Assignment Value')).toBeVisible();
@@ -98,7 +93,7 @@ describe('Input and output mappings (design system)', () => {
 	});
 
 	it('should list the output mappings of the selected element', async () => {
-		const screen = await renderMappings(OutputMappingsTab, 'mapped-task');
+		const screen = await renderMappings(OutputMappingsTab, '?elementId=mapped-task');
 
 		await expect.element(screen.getByText('Process Variable Name')).toBeVisible();
 		await expect.element(screen.getByText('processResult')).toBeVisible();
@@ -112,7 +107,7 @@ describe('Input and output mappings (design system)', () => {
 				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
 			}),
 		);
-		const screen = await renderMappings(InputMappingsTab, 'mapped-task');
+		const screen = await renderMappings(InputMappingsTab, '?elementId=mapped-task');
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(screen.getByText('localOrderId')).not.toBeInTheDocument();
@@ -120,24 +115,21 @@ describe('Input and output mappings (design system)', () => {
 
 	it('should show a skeleton while the diagram is loading', async ({worker}) => {
 		worker.use(
-			http.get(endpoints.getProcessDefinitionXml.getUrl({processDefinitionKey: ':processDefinitionKey'}), async () => {
-				await delay('infinite');
-				return HttpResponse.text(PROCESS_XML);
-			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(PROCESS_XML), delay: 'infinite'}),
 		);
-		const screen = await renderMappings(InputMappingsTab, 'mapped-task');
+		const screen = await renderMappings(InputMappingsTab, '?elementId=mapped-task');
 
 		await expect.element(screen.getByText('Loading mappings')).toBeVisible();
 	});
 
 	it('should show an empty message for an element without mappings', async () => {
-		const screen = await renderMappings(InputMappingsTab, 'plain-task');
+		const screen = await renderMappings(InputMappingsTab, '?elementId=plain-task');
 
 		await expect.element(screen.getByText('No input mappings defined')).toBeVisible();
 	});
 
 	it('should show an empty message for output mappings of an element without mappings', async () => {
-		const screen = await renderMappings(OutputMappingsTab, 'plain-task');
+		const screen = await renderMappings(OutputMappingsTab, '?elementId=plain-task');
 
 		await expect.element(screen.getByText('No output mappings defined')).toBeVisible();
 	});
@@ -154,13 +146,13 @@ describe('Input and output mappings (design system)', () => {
 				),
 			}),
 		);
-		const screen = await renderMappings(InputMappingsTab, '', '?elementInstanceKey=2251799813685290');
+		const screen = await renderMappings(InputMappingsTab, '?elementInstanceKey=2251799813685290');
 
 		await expect.element(screen.getByText('localOrderId')).toBeVisible();
 	});
 
 	it('should explain the mappings with a link to the documentation', async () => {
-		const screen = await renderMappings(InputMappingsTab, 'mapped-task');
+		const screen = await renderMappings(InputMappingsTab, '?elementId=mapped-task');
 
 		await expect.element(screen.getByText('Input mappings are defined while modelling the diagram.')).toBeVisible();
 		await expect
@@ -172,11 +164,11 @@ describe('Input and output mappings (design system)', () => {
 	});
 
 	it('should keep the banner closed on the next visit once it was closed', async () => {
-		const screen = await renderMappings(InputMappingsTab, 'mapped-task');
+		const screen = await renderMappings(InputMappingsTab, '?elementId=mapped-task');
 		await userEvent.click(screen.getByRole('button', {name: 'Close'}));
 		await cleanup();
 
-		const revisited = await renderMappings(InputMappingsTab, 'mapped-task');
+		const revisited = await renderMappings(InputMappingsTab, '?elementId=mapped-task');
 
 		await expect.element(revisited.getByText('localOrderId')).toBeVisible();
 		await expect
@@ -185,11 +177,11 @@ describe('Input and output mappings (design system)', () => {
 	});
 
 	it('should keep the output banner when only the input banner was closed', async () => {
-		const inputScreen = await renderMappings(InputMappingsTab, 'mapped-task');
+		const inputScreen = await renderMappings(InputMappingsTab, '?elementId=mapped-task');
 		await userEvent.click(inputScreen.getByRole('button', {name: 'Close'}));
 		await cleanup();
 
-		const outputScreen = await renderMappings(OutputMappingsTab, 'mapped-task');
+		const outputScreen = await renderMappings(OutputMappingsTab, '?elementId=mapped-task');
 
 		await expect
 			.element(outputScreen.getByText('Output mappings are defined while modelling the diagram.'))

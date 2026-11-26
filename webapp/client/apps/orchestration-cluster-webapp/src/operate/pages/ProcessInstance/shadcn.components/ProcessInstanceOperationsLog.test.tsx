@@ -9,25 +9,33 @@
 import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
-import {http, HttpResponse} from 'msw';
+import {HttpResponse} from 'msw';
 import {z} from 'zod';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useRouterState} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockGetElementInstanceEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryAuditLogsEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
+	mockQueryElementInstanceInspectionEndpoint,
 	mockQueryElementInstancesEndpoint,
+	mockQueryJobsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {createQueryJobsResponse} from '#/shared-test-modules/api-mocks/jobs';
+import {createQueryElementInstanceInspectionResponse} from '#/shared-test-modules/api-mocks/element-instance-inspection';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 import {
 	createElementInstance,
 	createQueryElementInstancesResponse,
 } from '#/shared-test-modules/api-mocks/element-instances';
-import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {ProcessInstancePageProvider} from '../ProcessInstancePageProvider';
+import {InstanceHistory} from './InstanceHistory';
+import {ProcessInstanceDetails} from './ProcessInstanceDetails';
 import {ProcessInstanceOperationsLog} from './ProcessInstanceOperationsLog';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
 import {processInstanceOperationsLogSearchSchema} from '../processInstanceOperationsLog.schema';
@@ -36,18 +44,11 @@ const PROCESS_INSTANCE_ID = '2251799813685280';
 
 afterEach(async () => {
 	await cleanup();
+	sessionStorage.clear();
 });
 
 function auditLogsResponse(...items: ReturnType<typeof createAuditLog>[]) {
 	return HttpResponse.json(createQueryAuditLogsResponse({items}));
-}
-
-function createGate() {
-	let open: () => void = () => {};
-	const opened = new Promise<void>((resolve) => {
-		open = resolve;
-	});
-	return {open, opened};
 }
 
 function renderOperationsLog(search = '') {
@@ -67,6 +68,32 @@ function renderOperationsLog(search = '') {
 	}
 
 	return renderWithRouter(OperationsLog, {
+		path: '/operate-preview/processes/$processInstanceId/operations-log',
+		initialEntry: `/operate-preview/processes/${PROCESS_INSTANCE_ID}/operations-log${search}`,
+	});
+}
+
+function renderOperationsLogWithHistory(search: string) {
+	function OperationsLogWithHistory() {
+		const routeSearch = useRouterState({select: (state) => state.location.search});
+		return (
+			<ProcessInstancePageProvider
+				processInstanceId={PROCESS_INSTANCE_ID}
+				processInstance={createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})}
+				search={processInstanceSearchSchema.parse(routeSearch)}
+			>
+				<div style={{height: '300px', display: 'flex', flexDirection: 'column'}}>
+					<InstanceHistory />
+				</div>
+				<ProcessInstanceDetails />
+				<div style={{height: '400px', display: 'flex', flexDirection: 'column'}}>
+					<ProcessInstanceOperationsLog search={processInstanceOperationsLogSearchSchema.parse(routeSearch)} />
+				</div>
+			</ProcessInstancePageProvider>
+		);
+	}
+
+	return renderWithRouter(OperationsLogWithHistory, {
 		path: '/operate-preview/processes/$processInstanceId/operations-log',
 		initialEntry: `/operate-preview/processes/${PROCESS_INSTANCE_ID}/operations-log${search}`,
 	});
@@ -146,34 +173,46 @@ describe('<ProcessInstanceOperationsLog /> (design system)', () => {
 	});
 
 	it('should not show the previous element instance operations while the new scope loads', async ({worker}) => {
-		const gate = createGate();
-		const requested = createGate();
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		const selectedElementInstance = createElementInstance({
+			elementId: 'user-task',
+			elementName: 'Review task',
+			elementInstanceKey: '2251799813685299',
+		});
+		const otherElementInstance = createElementInstance({
+			elementId: 'other-task',
+			elementName: 'Approve task',
+			elementInstanceKey: '2251799813685300',
+		});
 		worker.use(
-			http.get(endpoints.getElementInstance.getUrl({elementInstanceKey: ':elementInstanceKey'}), ({params}) =>
-				HttpResponse.json(createElementInstance({elementInstanceKey: String(params.elementInstanceKey)})),
-			),
-			http.post(endpoints.queryAuditLogs.getUrl(), async ({request}) => {
-				const {filter} = z.object({filter: z.object({elementInstanceKey: z.string()})}).parse(await request.json());
-				if (filter.elementInstanceKey === '2251799813685300') {
-					requested.open();
-					await gate.opened;
-					return auditLogsResponse(createAuditLog({operationType: 'MIGRATE'}));
-				}
-				return auditLogsResponse(createAuditLog({operationType: 'CANCEL'}));
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryElementInstancesResponse([selectedElementInstance, otherElementInstance]),
+				),
 			}),
+			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(selectedElementInstance)}),
+			mockQueryJobsEndpoint({successResponse: HttpResponse.json(createQueryJobsResponse())}),
+			mockQueryElementInstanceInspectionEndpoint({
+				successResponse: HttpResponse.json(createQueryElementInstanceInspectionResponse()),
+			}),
+			mockQueryAuditLogsEndpoint({successResponse: auditLogsResponse(createAuditLog({operationType: 'CANCEL'}))}),
 		);
-		const screen = await renderOperationsLog('?elementId=user-task&elementInstanceKey=2251799813685299');
+		const screen = await renderOperationsLogWithHistory('?elementId=user-task&elementInstanceKey=2251799813685299');
 		await expect.element(screen.getByRole('cell', {name: 'Cancel'})).toBeVisible();
 
-		await screen.router.navigate({
-			to: '.',
-			search: {elementId: 'user-task', elementInstanceKey: '2251799813685300'},
-		});
+		worker.use(
+			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(otherElementInstance)}),
+			mockQueryAuditLogsEndpoint({
+				successResponse: auditLogsResponse(createAuditLog({operationType: 'MIGRATE'})),
+				delay: 'infinite',
+			}),
+		);
+		await userEvent.click(screen.getByRole('treeitem', {name: /Approve task/}));
 
-		await requested.opened;
+		await expect.element(screen.getByRole('row', {name: 'Element Instance Key 2251799813685300'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'Cancel'})).not.toBeInTheDocument();
-		gate.open();
-		await expect.element(screen.getByRole('cell', {name: 'Migrate'})).toBeVisible();
 	});
 
 	it('should apply the operation type, entity type and sort from the URL', async ({worker}) => {

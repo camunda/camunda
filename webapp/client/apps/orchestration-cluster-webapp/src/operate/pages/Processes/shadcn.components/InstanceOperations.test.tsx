@@ -6,18 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {http, HttpResponse} from 'msw';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
+import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {
 	mockGetProcessInstanceCallHierarchyEndpoint,
 	mockGetProcessInstanceEndpoint,
+	mockSuspendProcessInstanceEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
+import {Toaster, toast} from '@camunda/design-system';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {InstanceOperations} from './InstanceOperations';
 
 const PROCESS_INSTANCE_KEY = '2251799813685249';
@@ -33,6 +36,8 @@ function renderInstanceOperations(
 			<div style={{width: 400}}>
 				<InstanceOperations processInstance={processInstance} activeOperations={activeOperations} />
 			</div>
+			<Notifications />
+			<Toaster />
 		</QueryClientProvider>,
 	);
 }
@@ -40,6 +45,11 @@ function renderInstanceOperations(
 describe('<InstanceOperations /> (design system)', () => {
 	it.beforeEach(({worker}) => {
 		worker.use(mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}));
+	});
+
+	afterEach(() => {
+		notificationsStore.reset();
+		toast.dismiss();
 	});
 
 	it('should offer suspend and cancel for an active instance without an incident', async () => {
@@ -114,13 +124,9 @@ describe('<InstanceOperations /> (design system)', () => {
 			.toBeDisabled();
 	});
 
-	it('should send the suspend command for the row instance', async ({worker}) => {
-		const onSuspend = vi.fn();
+	it('should suspend the row instance', async ({worker}) => {
 		worker.use(
-			http.post(endpoints.suspendProcessInstance.getUrl({processInstanceKey: PROCESS_INSTANCE_KEY}), () => {
-				onSuspend();
-				return new HttpResponse(null, {status: 204});
-			}),
+			mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			mockGetProcessInstanceEndpoint({
 				successResponse: HttpResponse.json(
 					createProcessInstance({processInstanceKey: PROCESS_INSTANCE_KEY, state: 'SUSPENDED'}),
@@ -131,12 +137,11 @@ describe('<InstanceOperations /> (design system)', () => {
 			createProcessInstance({processInstanceKey: PROCESS_INSTANCE_KEY, state: 'ACTIVE', hasIncident: false}),
 		);
 
-		screen
-			.getByRole('button', {name: `Suspend instance ${PROCESS_INSTANCE_KEY}`, exact: true})
-			.element()
-			.focus();
+		const suspendButton = screen.getByRole('button', {name: `Suspend instance ${PROCESS_INSTANCE_KEY}`, exact: true});
+		await userEvent.tab();
+		await expect.element(suspendButton).toHaveFocus();
 		await userEvent.keyboard('{Enter}');
 
-		await vi.waitFor(() => expect(onSuspend).toHaveBeenCalledTimes(1));
+		await expect.element(screen.getByText('Instance suspended')).toBeVisible();
 	});
 });

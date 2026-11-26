@@ -9,10 +9,10 @@
 import {format, parseISO} from 'date-fns';
 import {stringifySearchWith, useSearch} from '@tanstack/react-router';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
-import {http, HttpResponse} from 'msw';
+import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
@@ -49,15 +49,14 @@ const AUDIT_LOG_ERROR = new HttpResponse(null, {status: 500});
 const DECISION_LOOKUP_ERROR = new HttpResponse(null, {status: 503});
 // The table loads the next page as soon as its last row is in view, so later pages must come back empty with a terminal total
 function mockAuditLogsFirstPageOnly(items: ReturnType<typeof createAuditLog>[], totalItems: number) {
-	return http.post(endpoints.queryAuditLogs.getUrl(), async ({request}) => {
-		const body = (await request.json()) as {page?: {from?: number}};
-		const isFirstPage = (body.page?.from ?? 0) === 0;
-		return HttpResponse.json(
-			createQueryAuditLogsResponse({
-				items: isFirstPage ? items : [],
-				page: {totalItems: isFirstPage ? totalItems : 0, hasMoreTotalItems: isFirstPage},
-			}),
-		);
+	return mockQueryAuditLogsEndpoint({
+		schema: z.object({page: z.object({from: z.literal(0)})}),
+		successResponse: HttpResponse.json(
+			createQueryAuditLogsResponse({items, page: {totalItems, hasMoreTotalItems: true}}),
+		),
+		failureResponse: HttpResponse.json(
+			createQueryAuditLogsResponse({items: [], page: {totalItems: 0, hasMoreTotalItems: false}}),
+		),
 	});
 }
 
@@ -99,6 +98,7 @@ describe('<OperationsLog />', () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		sessionStorage.clear();
 		notificationsStore.reset();
 		toast.dismiss();
@@ -219,13 +219,13 @@ describe('<OperationsLog />', () => {
 			await expect.element(screen.getByText('No operations match these filters')).not.toBeInTheDocument();
 		});
 
-		it('should offer sorting only once the first audit response has arrived', async ({worker}) => {
+		it('should not offer sorting before the first audit response has arrived', async ({worker}) => {
 			worker.use(
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
 				mockQueryAuditLogsEndpoint({
 					successResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [DECISION_LOG]})),
-					delay: 1000,
+					delay: 'infinite',
 				}),
 			);
 
@@ -233,6 +233,19 @@ describe('<OperationsLog />', () => {
 
 			await expect.element(screen.getByRole('table', {name: 'Operations log'})).toBeVisible();
 			await expect.element(screen.getByRole('button', {name: 'Operation type'})).not.toBeInTheDocument();
+		});
+
+		it('should offer sorting once the first audit response has arrived', async ({worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({
+					successResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [DECISION_LOG]})),
+				}),
+			);
+
+			const screen = await renderPage();
+
 			await expect.element(screen.getByRole('button', {name: 'Operation type'})).toBeVisible();
 		});
 
@@ -273,36 +286,29 @@ describe('<OperationsLog />', () => {
 		});
 
 		it('should notify a failing audit log poll once until it recovers', async ({worker}) => {
-			vi.useFakeTimers({
-				toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
-				shouldAdvanceTime: true,
-			});
-			try {
-				worker.use(
-					mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
-					mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-					mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}),
-				);
-				const screen = await renderPage();
-				const fetchFailedToast = screen
-					.getByRole('region', {name: /notifications/i})
-					.getByText("Couldn't fetch audit logs");
+			vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval']});
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}),
+			);
+			const screen = await renderPage();
+			const fetchFailedToast = screen
+				.getByRole('region', {name: /notifications/i})
+				.getByText("Couldn't fetch audit logs");
 
-				await expect.element(fetchFailedToast).toBeVisible();
-				await vi.advanceTimersByTimeAsync(20_000);
-				await expect.element(fetchFailedToast).not.toBeInTheDocument();
+			await expect.element(fetchFailedToast).toBeVisible();
+			await vi.advanceTimersByTimeAsync(20_000);
+			await expect.element(fetchFailedToast).not.toBeInTheDocument();
 
-				worker.use(mockQueryAuditLogsEndpoint({successResponse: HttpResponse.json(createQueryAuditLogsResponse())}));
-				await vi.advanceTimersByTimeAsync(5_000);
-				await expect.element(screen.getByText('No operation log items yet')).toBeVisible();
+			worker.use(mockQueryAuditLogsEndpoint({successResponse: HttpResponse.json(createQueryAuditLogsResponse())}));
+			await vi.advanceTimersByTimeAsync(5_000);
+			await expect.element(screen.getByText('No operation log items yet')).toBeVisible();
 
-				worker.use(mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}));
-				await vi.advanceTimersByTimeAsync(5_000);
+			worker.use(mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}));
+			await vi.advanceTimersByTimeAsync(5_000);
 
-				await expect.element(fetchFailedToast).toBeVisible();
-			} finally {
-				vi.useRealTimers();
-			}
+			await expect.element(fetchFailedToast).toBeVisible();
 		});
 
 		it('should show an initial fetch error with a notification and recover on retry', async ({worker}) => {

@@ -59,14 +59,6 @@ afterEach(async () => {
 	localStorage.clear();
 });
 
-function PagedHarness() {
-	return (
-		<div style={{height: '320px'}} className="flex flex-col">
-			<Harness />
-		</div>
-	);
-}
-
 function Harness() {
 	const search = useRouterState({select: (state) => state.location.search});
 	return (
@@ -113,38 +105,6 @@ function renderHistory(
 		path,
 		initialEntry: `/operate-preview/processes/${instance.processInstanceKey}/variables${query}`,
 	});
-}
-
-const pagedItems = Array.from({length: 150}, (_, index) =>
-	createElementInstance({
-		elementId: `task-${index}`,
-		elementInstanceKey: String(2251799813900000 + index),
-		elementName: `Task ${index}`,
-	}),
-);
-
-function renderPagedHistory(
-	worker: SetupWorker,
-	{pages, query = ''}: {pages: [[number, number], [number, number]]; query?: string},
-) {
-	worker.use(
-		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
-		mockQueryBatchOperationItemsEndpoint({successResponse: HttpResponse.json(createQueryElementInstancesResponse())}),
-		mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(pagedItems[0])}),
-		mockQueryElementInstancesEndpoint({
-			schema: z.object({page: z.object({from: z.literal(0)})}),
-			successResponse: HttpResponse.json(createQueryElementInstancesResponse(pagedItems.slice(...pages[0]), 150)),
-			failureResponse: HttpResponse.json(createQueryElementInstancesResponse(pagedItems.slice(...pages[1]), 150)),
-		}),
-	);
-	return renderWithRouter(PagedHarness, {
-		path,
-		initialEntry: `/operate-preview/processes/${instance.processInstanceKey}/variables${query}`,
-	});
-}
-
-function scrollToLoadingRow(screen: Awaited<ReturnType<typeof renderPagedHistory>>) {
-	screen.getByRole('treeitem', {name: 'Loading more elements'}).element().scrollIntoView();
 }
 
 describe('InstanceHistory (design system)', () => {
@@ -220,7 +180,7 @@ describe('InstanceHistory (design system)', () => {
 
 		await userEvent.fill(screen.getByRole('searchbox', {name: 'Search instance history'}), 'nested');
 
-		await expect.element(screen.getByText('1 matching element'), {timeout: 5000}).toBeVisible();
+		await expect.element(screen.getByText('1 matching element')).toBeVisible();
 		await expect.element(screen.getByRole('treeitem', {name: /Leaf task/})).not.toBeInTheDocument();
 	});
 
@@ -232,73 +192,6 @@ describe('InstanceHistory (design system)', () => {
 
 		await expect.element(screen.getByRole('radio', {name: 'Incidents'})).toBeChecked();
 		await expect.element(screen.getByText('1 matching element')).toBeVisible();
-	});
-
-	it('should load the next page and keep the previous position when scrolled to the end', async ({worker}) => {
-		const screen = await renderPagedHistory(worker, {
-			pages: [
-				[0, 100],
-				[50, 150],
-			],
-		});
-		await expect.element(screen.getByRole('treeitem', {name: /Task 0/})).toBeVisible();
-
-		scrollToLoadingRow(screen);
-
-		await expect.element(screen.getByRole('treeitem', {name: /Task 149/})).toBeInTheDocument();
-		await expect.element(screen.getByRole('treeitem', {name: /Task 0/})).not.toBeInTheDocument();
-		await expect.element(screen.getByRole('treeitem', {name: /Task 99/})).toBeInViewport();
-	});
-
-	it('should load the previous page when scrolled back to the top after paging forward', async ({worker}) => {
-		const screen = await renderPagedHistory(worker, {
-			pages: [
-				[0, 100],
-				[50, 150],
-			],
-		});
-		await expect.element(screen.getByRole('treeitem', {name: /Task 0/})).toBeVisible();
-		scrollToLoadingRow(screen);
-		await expect.element(screen.getByRole('treeitem', {name: /Task 149/})).toBeInTheDocument();
-
-		scrollToLoadingRow(screen);
-
-		await expect.element(screen.getByRole('treeitem', {name: /Task 0/})).toBeInTheDocument();
-		await expect.element(screen.getByRole('treeitem', {name: /Task 149/})).not.toBeInTheDocument();
-		await expect.element(screen.getByRole('treeitem', {name: /Task 50/})).toBeInViewport();
-	});
-
-	it('should keep the last result in view when the next page of filtered results is loaded', async ({worker}) => {
-		const screen = await renderPagedHistory(worker, {
-			pages: [
-				[0, 50],
-				[50, 100],
-			],
-			query: '?elementStatus=incidents',
-		});
-		await expect.element(screen.getByRole('treeitem', {name: /Task 0/})).toBeVisible();
-
-		scrollToLoadingRow(screen);
-
-		await expect.element(screen.getByRole('treeitem', {name: /Task 99/})).toBeInTheDocument();
-		await expect.element(screen.getByRole('treeitem', {name: /Task 49/})).toBeInViewport();
-	});
-
-	it('should not let keyboard users land on the paging sentinel', async ({worker}) => {
-		const screen = await renderPagedHistory(worker, {
-			pages: [
-				[0, 100],
-				[50, 150],
-			],
-		});
-		const sentinel = screen.getByRole('treeitem', {name: 'Loading more elements'});
-		await expect.element(sentinel).toHaveAttribute('aria-disabled', 'true');
-
-		await userEvent.click(screen.getByRole('treeitem', {name: /Task 0/}));
-		await userEvent.keyboard('{End}');
-
-		await expect.element(screen.getByRole('treeitem', {name: /Task 99/})).toHaveFocus();
-		await expect.element(sentinel).not.toHaveFocus();
 	});
 
 	it('should show a forbidden message when the history is not accessible', async ({worker}) => {

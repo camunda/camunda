@@ -13,6 +13,7 @@ import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
+	mockCreateCancellationBatchOperationEndpoint,
 	mockCreateDeletionBatchOperationEndpoint,
 	mockCreateResumptionBatchOperationEndpoint,
 	mockGetBatchOperationEndpoint,
@@ -52,16 +53,7 @@ const accepted = (
 	batchOperationType: 'CANCEL_PROCESS_INSTANCE' | 'RESUME_PROCESS_INSTANCE' | 'DELETE_PROCESS_INSTANCE',
 ) => HttpResponse.json({batchOperationKey: 'batch-op-1', batchOperationType}, {status: 202});
 
-const requestFor = (keys: [string, ...string[]]) =>
-	z.strictObject({
-		filter: z.looseObject({
-			processInstanceKey: z.strictObject({
-				$in: z.tuple([z.literal(keys[0]), ...keys.slice(1).map((k) => z.literal(k))]),
-			}),
-		}),
-	});
-
-function renderTable() {
+function renderTable(basepath = '') {
 	return renderWithRouter(
 		() => (
 			<div style={{height: '100vh'}}>
@@ -70,7 +62,7 @@ function renderTable() {
 				<Toaster />
 			</div>
 		),
-		{path: '/operate-preview/processes', initialEntry: '/operate-preview/processes'},
+		{path: '/operate-preview/processes', basepath},
 	);
 }
 
@@ -94,6 +86,7 @@ describe('Processes DS bulk actions', () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		sessionStorage.clear();
 		notificationsStore.reset();
 		toast.dismiss();
@@ -120,8 +113,8 @@ describe('Processes DS bulk actions', () => {
 		await userEvent.hover(screen.getByText('1 instance selected', {exact: false}));
 
 		const tooltip = screen.getByRole('tooltip');
-		await expect.poll(() => tooltip.element().textContent).toContain('No finished process instances selected');
-		await expect.poll(() => tooltip.element().textContent).toContain('No suspended process instances selected');
+		await expect.element(tooltip).toMatchTextContent('No finished process instances selected');
+		await expect.element(tooltip).toMatchTextContent('No suspended process instances selected');
 	});
 
 	it('should confirm and submit Resume for the selected suspended instance', async ({worker}) => {
@@ -130,7 +123,9 @@ describe('Processes DS bulk actions', () => {
 				successResponse: HttpResponse.json(createBatchOperation({batchOperationType: 'RESUME_PROCESS_INSTANCE'})),
 			}),
 			mockCreateResumptionBatchOperationEndpoint({
-				schema: requestFor(['5']),
+				schema: z.strictObject({
+					filter: z.looseObject({processInstanceKey: z.strictObject({$in: z.tuple([z.literal('5')])})}),
+				}),
 				successResponse: accepted('RESUME_PROCESS_INSTANCE'),
 				failureResponse: FAILURE_RESPONSE,
 			}),
@@ -158,7 +153,9 @@ describe('Processes DS bulk actions', () => {
 				successResponse: HttpResponse.json(createBatchOperation({batchOperationType: 'DELETE_PROCESS_INSTANCE'})),
 			}),
 			mockCreateDeletionBatchOperationEndpoint({
-				schema: requestFor(['3']),
+				schema: z.strictObject({
+					filter: z.looseObject({processInstanceKey: z.strictObject({$in: z.tuple([z.literal('3')])})}),
+				}),
 				successResponse: accepted('DELETE_PROCESS_INSTANCE'),
 				failureResponse: FAILURE_RESPONSE,
 			}),
@@ -177,6 +174,59 @@ describe('Processes DS bulk actions', () => {
 			.element(screen.getByText('The batch operation "Delete Process Instance" has been started'))
 			.toBeVisible();
 	});
+
+	it('should warn when the progress of a started batch operation cannot be read', async ({worker}) => {
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+		worker.use(
+			mockGetBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 503})}),
+			mockCreateCancellationBatchOperationEndpoint({
+				schema: z.strictObject({
+					filter: z.looseObject({processInstanceKey: z.strictObject({$in: z.tuple([z.literal('1')])})}),
+				}),
+				successResponse: accepted('CANCEL_PROCESS_INSTANCE'),
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+		const screen = await renderTable();
+		await select(screen, '1');
+		await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
+		await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Apply', exact: true}));
+		await expect
+			.element(screen.getByText('The batch operation "Cancel Process Instance" has been started'))
+			.toBeVisible();
+
+		await vi.advanceTimersByTimeAsync(5000);
+		await vi.advanceTimersByTimeAsync(5000);
+
+		await expect.element(screen.getByText('Batch operation progress is temporarily unavailable')).toBeVisible();
+	});
+
+	it.for([{basepath: ''}, {basepath: '/camunda'}, {basepath: '/camunda/physical-tenants/tenant-a'}])(
+		'should open the started batch operation from its notification at basepath "$basepath"',
+		async ({basepath}, {worker}) => {
+			worker.use(
+				mockGetBatchOperationEndpoint({
+					successResponse: HttpResponse.json(createBatchOperation({batchOperationKey: 'batch-op-1', state: 'ACTIVE'})),
+				}),
+				mockCreateCancellationBatchOperationEndpoint({
+					schema: z.strictObject({
+						filter: z.looseObject({processInstanceKey: z.strictObject({$in: z.tuple([z.literal('1')])})}),
+					}),
+					successResponse: accepted('CANCEL_PROCESS_INSTANCE'),
+					failureResponse: FAILURE_RESPONSE,
+				}),
+			);
+			const screen = await renderTable(basepath);
+			await select(screen, '1');
+			await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
+			await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Apply', exact: true}));
+
+			await userEvent.click(screen.getByRole('button', {name: 'Go to operation details'}));
+
+			await expect.element(screen.getByRole('table', {name: 'Process instances'})).not.toBeInTheDocument();
+			expect(screen.router.history.location.href).toBe(`${basepath}/operate-preview/batch-operations/batch-op-1`);
+		},
+	);
 
 	it('should keep the selection when the dialog is dismissed and clear it on Cancel', async () => {
 		const screen = await renderTable();
