@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -188,6 +189,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
   private final ControllableStreamClock clock;
   private final EventDescription currentStateDescription = new EventDescription("idle");
   private final int partitionId;
+  private final PartitionId partition;
   private final EventFilter commandFilter;
   private final @Nullable Tracer tracer;
   // Only set while a command is processed whose metadata carries a sampled trace context
@@ -228,6 +230,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
     this.shouldProcessNext = shouldProcessNext;
 
     partitionId = context.getLogStream().getPartitionId();
+    partition = context.partitionId();
     typedCommand = new TypedRecordImpl(partitionId);
 
     streamProcessorListener = context.getStreamProcessorListener();
@@ -272,7 +275,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
       if (metadata.hasTraceContext()) {
         ProcessingTrace.recordSkipped(
             tracer,
-            partitionId,
+            partition,
             metadata,
             skipped.getPosition(),
             skipped.getKey(),
@@ -372,7 +375,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
       trace =
           ProcessingTrace.tryStart(
               tracer,
-              partitionId,
+              partition,
               metadata,
               loggedEvent.getPosition(),
               loggedEvent.getKey(),

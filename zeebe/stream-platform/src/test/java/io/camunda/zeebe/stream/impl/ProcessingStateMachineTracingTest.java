@@ -17,6 +17,8 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -164,6 +166,8 @@ final class ProcessingStateMachineTracingTest {
     assertThat(root.getParentSpanId()).isEqualTo(PARENT_SPAN_ID);
     assertThat(root.getStatus().getStatusCode()).isNotEqualTo(StatusCode.ERROR);
     assertThat(root.getEvents()).isEmpty();
+    assertThat(root.getAttributes().get(ProcessingTrace.PHYSICAL_TENANT_ID))
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(root.getAttributes().get(ProcessingTrace.PARTITION_ID))
         .isEqualTo((long) partitionId());
     assertThat(root.getAttributes().get(ProcessingTrace.VALUE_TYPE)).isEqualTo("PROCESS_INSTANCE");
@@ -188,6 +192,26 @@ final class ProcessingStateMachineTracingTest {
         .isEqualTo(3L);
     assertThat(child(root, ProcessingTrace.STAGE_AWAIT_COMMIT).getEndEpochNanos())
         .isLessThanOrEqualTo(root.getEndEpochNanos());
+  }
+
+  @Test
+  void shouldRecordConfiguredPhysicalTenantIdOnBrokerSpan() {
+    // given
+    streamPlatform.buildStreamProcessor(
+        streamPlatform.getLogStream(),
+        true,
+        cfg ->
+            cfg.partitionId(new PartitionId("tenant-a", partitionId()))
+                .openTelemetry(OTEL.getOpenTelemetry()));
+
+    // when
+    writeCommand(TRACEPARENT);
+
+    // then
+    final var root = awaitServerSpan();
+    assertThat(root.getAttributes().get(ProcessingTrace.PHYSICAL_TENANT_ID)).isEqualTo("tenant-a");
+    assertThat(root.getAttributes().get(ProcessingTrace.PARTITION_ID))
+        .isEqualTo((long) partitionId());
   }
 
   @Test

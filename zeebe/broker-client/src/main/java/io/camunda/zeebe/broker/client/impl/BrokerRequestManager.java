@@ -59,6 +59,8 @@ final class BrokerRequestManager extends Actor {
               nodeAddressSupplier, BrokerRequestManager::responseValidation, request, timeout);
   private static final TransportRequestSender SENDER_WITHOUT_RETRY = ClientTransport::sendRequest;
   private static final String SPAN_NAME_PREFIX = "zeebe.broker_client ";
+  private static final AttributeKey<String> PHYSICAL_TENANT_ID =
+      AttributeKey.stringKey("zeebe.physical_tenant.id");
   private static final AttributeKey<Long> PARTITION_ID = AttributeKey.longKey("zeebe.partition.id");
   private static final AttributeKey<String> BROKER_ID = AttributeKey.stringKey("zeebe.broker.id");
   private static final AttributeKey<String> VALUE_TYPE = AttributeKey.stringKey("zeebe.value_type");
@@ -160,6 +162,10 @@ final class BrokerRequestManager extends Actor {
                 SPAN_NAME_PREFIX + (separator >= 0 ? requestType.replace('#', ' ') : requestType))
             .setSpanKind(SpanKind.CLIENT)
             .setParent(Context.current());
+    final var physicalTenantId = request.getPartitionGroup();
+    if (physicalTenantId != null) {
+      spanBuilder.setAttribute(PHYSICAL_TENANT_ID, physicalTenantId);
+    }
     if (separator > 0 && separator + 1 < requestType.length()) {
       spanBuilder
           .setAttribute(VALUE_TYPE, requestType.substring(0, separator))

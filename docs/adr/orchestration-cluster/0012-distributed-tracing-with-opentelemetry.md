@@ -52,8 +52,8 @@ seamlessly continue their trace on the new leader after failover.
 
 **Keep broker span cardinality fixed (O(1) per request).** The broker `SERVER` span starts when the
 stream processor begins the command (recording `zeebe.queue.wait_ms` from the log entry timestamp,
-`zeebe.log.position`, `zeebe.partition.id`, `zeebe.value_type`, and `zeebe.intent`) and ends right
-after responses are handed to the transport (or aborts on step-down). Its coarse stage children are
+`zeebe.log.position`, `zeebe.physical_tenant.id`, `zeebe.partition.id`, `zeebe.value_type`, and
+`zeebe.intent`) and ends right after responses are handed to the transport (or aborts on step-down). Its coarse stage children are
 `zeebe.process` (per batch, not per follow-up command), `zeebe.write`, `zeebe.update_state`, and
 `zeebe.await_commit`. Follow-up records do not copy `traceContext` in this first cut, keeping log
 overhead and span volume bounded; forwarding can be enabled later for cross-batch or inter-partition

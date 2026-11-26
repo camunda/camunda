@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -41,6 +42,8 @@ final class ProcessingTrace {
   static final String STAGE_UPDATE_STATE = "zeebe.update_state";
   static final String STAGE_AWAIT_COMMIT = "zeebe.await_commit";
 
+  static final AttributeKey<String> PHYSICAL_TENANT_ID =
+      AttributeKey.stringKey("zeebe.physical_tenant.id");
   static final AttributeKey<Long> PARTITION_ID = AttributeKey.longKey("zeebe.partition.id");
   static final AttributeKey<String> VALUE_TYPE = AttributeKey.stringKey("zeebe.value_type");
   static final AttributeKey<String> INTENT = AttributeKey.stringKey("zeebe.intent");
@@ -85,7 +88,7 @@ final class ProcessingTrace {
    */
   static @Nullable ProcessingTrace tryStart(
       final Tracer tracer,
-      final int partitionId,
+      final PartitionId partitionId,
       final RecordMetadata metadata,
       final long position,
       final long key,
@@ -98,7 +101,7 @@ final class ProcessingTrace {
   /** Emits a failed broker span if a traced command was skipped by the processing filter. */
   static void recordSkipped(
       final Tracer tracer,
-      final int partitionId,
+      final PartitionId partitionId,
       final RecordMetadata metadata,
       final long position,
       final long key,
@@ -113,7 +116,7 @@ final class ProcessingTrace {
 
   private static @Nullable Span startServerSpan(
       final Tracer tracer,
-      final int partitionId,
+      final PartitionId partitionId,
       final RecordMetadata metadata,
       final long position,
       final long key,
@@ -137,7 +140,8 @@ final class ProcessingTrace {
             .spanBuilder(SPAN_NAME_PREFIX + valueType.name() + " " + intentName)
             .setSpanKind(SpanKind.SERVER)
             .setParent(parent)
-            .setAttribute(PARTITION_ID, (long) partitionId)
+            .setAttribute(PHYSICAL_TENANT_ID, partitionId.group())
+            .setAttribute(PARTITION_ID, (long) partitionId.number())
             .setAttribute(VALUE_TYPE, valueType.name())
             .setAttribute(INTENT, intentName)
             .setAttribute(LOG_POSITION, position)

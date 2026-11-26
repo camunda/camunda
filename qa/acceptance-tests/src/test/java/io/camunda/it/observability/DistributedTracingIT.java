@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -120,12 +121,19 @@ final class DistributedTracingIT {
     assertChainIsConnected(chain);
 
     final var brokerClient = chain.get(1);
+    assertThat(brokerClient.getAttributes().get(AttributeKey.stringKey("zeebe.physical_tenant.id")))
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(brokerClient.getAttributes().get(AttributeKey.longKey("zeebe.partition.id")))
         .isEqualTo(1L);
     assertThat(brokerClient.getAttributes().get(AttributeKey.stringKey("zeebe.broker.id")))
         .isNotBlank();
 
     final var brokerRequest = chain.getFirst();
+    assertThat(
+            brokerRequest.getAttributes().get(AttributeKey.stringKey("zeebe.physical_tenant.id")))
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(brokerRequest.getAttributes().get(AttributeKey.longKey("zeebe.partition.id")))
+        .isEqualTo(1L);
     assertThat(brokerRequest.getAttributes().get(AttributeKey.longKey("zeebe.log.position")))
         .isPositive();
     assertThat(brokerRequest.getAttributes().get(AttributeKey.stringKey("zeebe.value_type")))
