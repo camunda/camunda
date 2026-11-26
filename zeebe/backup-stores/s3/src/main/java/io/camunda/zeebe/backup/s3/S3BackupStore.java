@@ -912,9 +912,6 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  /** A manifest as read from the bucket, with the replication status the bucket reported for it. */
-  private record ReadManifest(Manifest manifest, Optional<ReplicationStatus> replicationStatus) {}
-
   <T> CompletableFuture<ValidBackupManifest> updateManifestObject(
       final BackupIdentifier id,
       final Function<Manifest, T> typeExpectation,
@@ -1063,4 +1060,7 @@ public final class S3BackupStore implements BackupStore {
       this.name = name;
     }
   }
+
+  /** A manifest as read from the bucket, with the replication status the bucket reported for it. */
+  private record ReadManifest(Manifest manifest, Optional<ReplicationStatus> replicationStatus) {}
 }

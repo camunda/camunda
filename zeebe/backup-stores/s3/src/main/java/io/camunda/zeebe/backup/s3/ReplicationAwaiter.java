@@ -145,6 +145,44 @@ final class ReplicationAwaiter {
     };
   }
 
+  private static Duration max(final Duration a, final Duration b) {
+    return a.compareTo(b) >= 0 ? a : b;
+  }
+
+  private BackupReplicationTimedOut timedOut(final Set<String> pending) {
+    final var sample = pending.stream().sorted().limit(MAX_KEYS_IN_MESSAGE).toList();
+    return new BackupReplicationTimedOut(
+        "Timed out after %s waiting for replication of %d objects in bucket '%s', for example %s"
+            .formatted(timeout, pending.size(), bucketName, sample));
+  }
+
+  private ConfigurationException replicationCheckFailed(final Throwable error) {
+    if (error instanceof final S3Exception s3Exception
+        && s3Exception.awsErrorDetails() != null
+        && REPLICATION_CONFIGURATION_NOT_FOUND.equals(s3Exception.awsErrorDetails().errorCode())) {
+      return noReplicationConfigured(error);
+    }
+    return new ConfigurationException(
+        ("Failed to read the replication configuration of bucket '%s', which is required to "
+                + "wait for replication")
+            .formatted(bucketName),
+        error);
+  }
+
+  private ConfigurationException noReplicationConfigured(final @Nullable Throwable cause) {
+    return new ConfigurationException(
+        ("The S3 backup store is configured to wait for replication, but bucket '%s' has no "
+                + "replication configured")
+            .formatted(bucketName),
+        cause);
+  }
+
+  private static Throwable unwrap(final Throwable error) {
+    return error instanceof CompletionException && error.getCause() != null
+        ? error.getCause()
+        : error;
+  }
+
   /**
    * One wait for a set of objects. Each round checks the objects that are still pending, with at
    * most {@link #maxInFlight} requests at a time so the checks share the connection pool with
@@ -228,43 +266,5 @@ final class ReplicationAwaiter {
       CompletableFuture.delayedExecutor(pollInterval.toNanos(), TimeUnit.NANOSECONDS)
           .execute(() -> round(stillPending));
     }
-  }
-
-  private static Duration max(final Duration a, final Duration b) {
-    return a.compareTo(b) >= 0 ? a : b;
-  }
-
-  private BackupReplicationTimedOut timedOut(final Set<String> pending) {
-    final var sample = pending.stream().sorted().limit(MAX_KEYS_IN_MESSAGE).toList();
-    return new BackupReplicationTimedOut(
-        "Timed out after %s waiting for replication of %d objects in bucket '%s', for example %s"
-            .formatted(timeout, pending.size(), bucketName, sample));
-  }
-
-  private ConfigurationException replicationCheckFailed(final Throwable error) {
-    if (error instanceof final S3Exception s3Exception
-        && s3Exception.awsErrorDetails() != null
-        && REPLICATION_CONFIGURATION_NOT_FOUND.equals(s3Exception.awsErrorDetails().errorCode())) {
-      return noReplicationConfigured(error);
-    }
-    return new ConfigurationException(
-        ("Failed to read the replication configuration of bucket '%s', which is required to "
-                + "wait for replication")
-            .formatted(bucketName),
-        error);
-  }
-
-  private ConfigurationException noReplicationConfigured(final @Nullable Throwable cause) {
-    return new ConfigurationException(
-        ("The S3 backup store is configured to wait for replication, but bucket '%s' has no "
-                + "replication configured")
-            .formatted(bucketName),
-        cause);
-  }
-
-  private static Throwable unwrap(final Throwable error) {
-    return error instanceof CompletionException && error.getCause() != null
-        ? error.getCause()
-        : error;
   }
 }
