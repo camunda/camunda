@@ -213,3 +213,24 @@ export async function expectAuthorizationCanNotBeFound(
     timeout: 120_000,
   });
 }
+
+/**
+ * Grants a user permissions on user tasks, either for one task key
+ * (`resourceId`) or for tasks whose `assignee`, `candidateUsers` or
+ * `candidateGroups` match the user (`resourcePropertyName`). Returns the
+ * authorization key for cleanup.
+ */
+export async function grantUserTaskAuthorization(
+  request: APIRequestContext,
+  username: string,
+  target: {resourceId: string} | {resourcePropertyName: string},
+  permissionTypes: string[] = ['READ'],
+): Promise<string> {
+  return createComponentAuthorization(request, {
+    ownerId: username,
+    ownerType: 'USER',
+    resourceType: 'USER_TASK',
+    permissionTypes,
+    ...target,
+  });
+}

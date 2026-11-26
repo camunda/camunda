@@ -434,6 +434,21 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/probes': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/probes/activation': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/process-definitions/resumption': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/process-definitions/search': {
     POST: {
       '200': 1,
@@ -445,6 +460,11 @@ export const RESPONSE_INDEX = {
     },
   },
   '/process-definitions/statistics/process-instances': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/process-definitions/suspension': {
     POST: {
       '200': 1,
     },
@@ -830,7 +850,17 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/user-tasks/{userTaskKey}/lookup': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/user-tasks/{userTaskKey}/variables/search': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/variables/history/search': {
     POST: {
       '200': 1,
     },
