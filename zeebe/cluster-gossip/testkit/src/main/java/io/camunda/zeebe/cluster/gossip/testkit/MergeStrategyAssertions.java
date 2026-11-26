@@ -36,22 +36,29 @@ public final class MergeStrategyAssertions {
                   "Expected key '" + key.name() + "' to use a custom merge, but it uses LWW");
         };
 
+    // every merge gets fresh copies of its operands, so a merge that mutates them cannot change
+    // the samples or make both sides of a check the same already-mutated object
+    final BinaryOperator<T> mergeCopies = (x, y) -> merge.apply(copy(key, x), copy(key, y));
     for (final T a : samples) {
-      assertSame(key, "idempotent", merge.apply(a, a), a, a, a);
+      assertSame(key, "idempotent", mergeCopies.apply(a, a), a, a, a);
       for (final T b : samples) {
-        assertSame(key, "commutative", merge.apply(a, b), merge.apply(b, a), a, b);
+        assertSame(key, "commutative", mergeCopies.apply(a, b), mergeCopies.apply(b, a), a, b);
         for (final T c : samples) {
           assertSame(
               key,
               "associative",
-              merge.apply(merge.apply(a, b), c),
-              merge.apply(a, merge.apply(b, c)),
+              mergeCopies.apply(mergeCopies.apply(a, b), c),
+              mergeCopies.apply(a, mergeCopies.apply(b, c)),
               a,
               b,
               c);
         }
       }
     }
+  }
+
+  private static <T> T copy(final GlobalKey<T> key, final T value) {
+    return key.codec().decode(key.codec().encode(value));
   }
 
   @SafeVarargs
