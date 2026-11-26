@@ -117,7 +117,7 @@ jobs:
             [{
                 "id": "camunda-nexus",
                 "name": "Camunda Nexus",
-                "mirrorOf": "camunda-nexus",
+                "mirrorOf": "camunda-nexus,herodevs-nes",
                 "url": "https://repository.nexus.camunda.cloud/content/groups/internal/"
             }]
       - name: Maven Prepare Release
