@@ -189,6 +189,21 @@
     </repository>
   </repositories>
 
+  <pluginRepositories>
+    <!-- Resolve the HeroDevs Spring Boot plugin through CI's authenticated Maven mirror. -->
+    <pluginRepository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>zeebe</id>
+      <name>Zeebe Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io/</url>
+    </pluginRepository>
+  </pluginRepositories>
+
   <build>
     <pluginManagement>
       <plugins>
