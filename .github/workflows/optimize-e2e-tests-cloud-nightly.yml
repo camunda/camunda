@@ -188,15 +188,28 @@ jobs:
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
 
       # stable/8.8 and stable/8.9 still ship the TestCafe suite, newer branches the Playwright one.
+      # `timeout` runs inside the sudo'd root process tree so a slow mirror is cut off and retried.
+      # If nick-fields/retry timed out apt-get itself, it would crash with `kill EPERM` instead of
+      # retrying (https://github.com/nick-fields/retry/issues/124, INC-9306).
+      - name: Install Playwright browser OS dependencies
+        if: ${{ hashFiles('optimize/client/playwright.config.ts') != '' }}
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_seconds: 250
+          shell: bash
+          command: cd optimize/client && sudo timeout 240 env "PATH=$PATH" npx playwright install-deps chromium
+
       - name: Install Playwright browser
         if: ${{ hashFiles('optimize/client/playwright.config.ts') != '' }}
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_wait_seconds: 15
-          timeout_minutes: 6
+          timeout_minutes: 3
           shell: bash
-          command: cd optimize/client && npx playwright install --with-deps chromium
+          command: cd optimize/client && npx playwright install chromium
 
       - name: Run E2E tests
         if: ${{ hashFiles('optimize/client/playwright.config.ts') != '' }}
