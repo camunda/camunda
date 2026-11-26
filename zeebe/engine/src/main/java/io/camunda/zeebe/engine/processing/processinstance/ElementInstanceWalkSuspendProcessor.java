@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -57,7 +58,8 @@ import org.slf4j.Logger;
 @ExcludeAuthorizationCheck
 public final class ElementInstanceWalkSuspendProcessor
     implements TypedRecordProcessor<ElementInstanceWalkRecord>,
-        SuspensionAware<ElementInstanceWalkRecord> {
+        SuspensionAware<ElementInstanceWalkRecord>,
+        StorageOrdinalAware<ElementInstanceWalkRecord> {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 

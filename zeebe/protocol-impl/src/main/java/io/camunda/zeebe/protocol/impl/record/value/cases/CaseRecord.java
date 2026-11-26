@@ -19,6 +19,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -27,7 +28,8 @@ import java.util.List;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public final class CaseRecord extends UnifiedRecordValue implements CaseRecordValue {
+public final class CaseRecord extends UnifiedRecordValue
+    implements CaseRecordValue, MutableStorageOrdinal {
   private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY);
@@ -127,6 +129,7 @@ public final class CaseRecord extends UnifiedRecordValue implements CaseRecordVa
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public CaseRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

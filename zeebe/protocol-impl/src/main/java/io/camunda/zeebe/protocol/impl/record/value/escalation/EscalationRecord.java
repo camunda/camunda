@@ -11,12 +11,14 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class EscalationRecord extends UnifiedRecordValue implements EscalationRecordValue {
+public class EscalationRecord extends UnifiedRecordValue
+    implements EscalationRecordValue, MutableStorageOrdinal {
 
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final StringProperty escalationCodeProp = new StringProperty("escalationCode", "");
@@ -86,6 +88,7 @@ public class EscalationRecord extends UnifiedRecordValue implements EscalationRe
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public EscalationRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

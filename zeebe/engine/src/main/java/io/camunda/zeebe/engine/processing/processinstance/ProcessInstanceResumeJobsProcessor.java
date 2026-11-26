@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -72,7 +73,9 @@ import org.jspecify.annotations.NullMarked;
 @ExcludeAuthorizationCheck
 @NullMarked
 public final class ProcessInstanceResumeJobsProcessor
-    implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
+    implements TypedRecordProcessor<ProcessInstanceRecord>,
+        SuspensionAware<ProcessInstanceRecord>,
+        StorageOrdinalAware<ProcessInstanceRecord> {
 
   private static final String INSTANCE_GONE_MESSAGE =
       "Expected to resume the suspended jobs of process instance '%d', but it no longer exists — "

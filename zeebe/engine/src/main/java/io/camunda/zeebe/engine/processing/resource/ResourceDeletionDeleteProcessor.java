@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.historydeletion.HistoryDeletionBehavio
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -70,7 +71,8 @@ import java.util.function.Function;
 import org.agrona.DirectBuffer;
 
 public class ResourceDeletionDeleteProcessor
-    implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
+    implements DistributedTypedRecordProcessor<ResourceDeletionRecord>,
+        StorageOrdinalAware<ResourceDeletionRecord> {
 
   private static final List<ResourceType> SUPPORTED_HISTORY_DELETION_TYPES =
       List.of(ResourceType.PROCESS_DEFINITION, ResourceType.DECISION_REQUIREMENTS);

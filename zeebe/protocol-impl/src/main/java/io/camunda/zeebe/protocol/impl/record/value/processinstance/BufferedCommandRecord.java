@@ -18,6 +18,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
@@ -25,7 +26,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class BufferedCommandRecord extends UnifiedRecordValue
-    implements BufferedCommandRecordValue {
+    implements BufferedCommandRecordValue, MutableStorageOrdinal {
 
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
@@ -183,6 +184,7 @@ public final class BufferedCommandRecord extends UnifiedRecordValue
     return storageOrdinalProperty.getValue();
   }
 
+  @Override
   public BufferedCommandRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProperty.setValue(storageOrdinal);
     return this;

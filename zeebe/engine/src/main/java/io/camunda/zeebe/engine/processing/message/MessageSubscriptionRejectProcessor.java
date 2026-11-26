@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -29,7 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @ExcludeAuthorizationCheck
 public final class MessageSubscriptionRejectProcessor
-    implements TypedRecordProcessor<MessageSubscriptionRecord> {
+    implements TypedRecordProcessor<MessageSubscriptionRecord>,
+        StorageOrdinalAware<MessageSubscriptionRecord> {
 
   private static final String SUBSCRIPTION_NOT_FOUND =
       "Expected to find subscription for message with name '%s' and correlation key '%s', but none was found.";

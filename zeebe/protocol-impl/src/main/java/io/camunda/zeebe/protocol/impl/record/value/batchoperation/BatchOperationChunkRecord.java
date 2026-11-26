@@ -11,13 +11,14 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public final class BatchOperationChunkRecord extends UnifiedRecordValue
-    implements BatchOperationChunkRecordValue {
+    implements BatchOperationChunkRecordValue, MutableStorageOrdinal {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
@@ -51,6 +52,7 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public BatchOperationChunkRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

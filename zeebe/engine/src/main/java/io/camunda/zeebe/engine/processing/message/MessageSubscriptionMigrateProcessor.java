@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -21,7 +22,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
 public class MessageSubscriptionMigrateProcessor
-    implements DistributedTypedRecordProcessor<MessageSubscriptionRecord> {
+    implements DistributedTypedRecordProcessor<MessageSubscriptionRecord>,
+        StorageOrdinalAware<MessageSubscriptionRecord> {
 
   private final MessageSubscriptionState subscriptionState;
   private final StateWriter stateWriter;

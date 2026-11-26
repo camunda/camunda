@@ -20,6 +20,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -30,7 +31,7 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class DecisionEvaluationRecord extends UnifiedRecordValue
-    implements DecisionEvaluationRecordValue {
+    implements DecisionEvaluationRecordValue, MutableStorageOrdinal {
 
   private static final DirectBuffer NIL_VALUE = BufferUtil.wrapArray(MsgPackHelper.NIL);
 
@@ -375,6 +376,7 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public DecisionEvaluationRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

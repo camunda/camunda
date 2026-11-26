@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusinessIdAssignmentBehavior;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -61,7 +62,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public final class JobCompleteProcessor
-    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
+    implements TypedRecordProcessor<JobRecord>,
+        SuspensionAware<JobRecord>,
+        StorageOrdinalAware<JobRecord> {
 
   private static final String TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE =
       """

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.agenthistorybatch;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -35,7 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @ExcludeAuthorizationCheck
 public final class AgentHistoryBatchCleanUpProcessor
     implements TypedRecordProcessor<AgentHistoryBatchRecord>,
-        SuspensionAware<AgentHistoryBatchRecord> {
+        SuspensionAware<AgentHistoryBatchRecord>,
+        StorageOrdinalAware<AgentHistoryBatchRecord> {
 
   /**
    * Number of history-item ids deleted, combined across the committed and metrics-accumulated

@@ -18,6 +18,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -27,7 +28,7 @@ import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class ConditionalSubscriptionRecord extends UnifiedRecordValue
-    implements ConditionalSubscriptionRecordValue {
+    implements ConditionalSubscriptionRecordValue, MutableStorageOrdinal {
 
   private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
@@ -279,6 +280,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public ConditionalSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

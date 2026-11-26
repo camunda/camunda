@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -51,7 +52,8 @@ import org.agrona.DirectBuffer;
 
 public final class VariableDocumentUpdateProcessor
     implements TypedRecordProcessor<VariableDocumentRecord>,
-        SuspensionAware<VariableDocumentRecord> {
+        SuspensionAware<VariableDocumentRecord>,
+        StorageOrdinalAware<VariableDocumentRecord> {
 
   private static final String ERROR_MESSAGE_SCOPE_NOT_FOUND =
       "Expected to update variables for element with key '%d', but no such element was found";

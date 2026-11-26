@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.incident.RetryTypedRecord;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -49,7 +50,9 @@ import java.util.Set;
 
 @ExcludeAuthorizationCheck
 public class UserTaskProcessor
-    implements TypedRecordProcessor<UserTaskRecord>, SuspensionAware<UserTaskRecord> {
+    implements TypedRecordProcessor<UserTaskRecord>,
+        SuspensionAware<UserTaskRecord>,
+        StorageOrdinalAware<UserTaskRecord> {
 
   private static final String USER_TASK_COMPLETION_REJECTION =
       "Completion of the User Task with key '%d' was denied by Task Listener. Reason to deny: '%s'";

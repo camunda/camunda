@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -37,7 +38,8 @@ import io.camunda.zeebe.util.Either;
 
 public class AdHocSubProcessInstructionActivateProcessor
     implements TypedRecordProcessor<AdHocSubProcessInstructionRecord>,
-        SuspensionAware<AdHocSubProcessInstructionRecord> {
+        SuspensionAware<AdHocSubProcessInstructionRecord>,
+        StorageOrdinalAware<AdHocSubProcessInstructionRecord> {
 
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND =
       "Expected to activate activities for ad-hoc sub-process but no ad-hoc sub-process instance found with key '%s'.";
@@ -104,9 +106,6 @@ public class AdHocSubProcessInstructionActivateProcessor
 
       return;
     }
-
-    final int storageOrdinal = adHocSubProcessElementInstance.getValue().getStorageOrdinal();
-    command.getValue().setStorageOrdinal(storageOrdinal);
 
     final var activateElements =
         command.getValue().activateElements().stream()

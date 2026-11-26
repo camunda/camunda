@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.agenthistory;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -22,7 +23,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 // destroyed without completing, so there is no user to authorize against.
 @ExcludeAuthorizationCheck
 public final class AgentHistoryDiscardProcessor
-    implements TypedRecordProcessor<AgentHistoryRecord>, SuspensionAware<AgentHistoryRecord> {
+    implements TypedRecordProcessor<AgentHistoryRecord>,
+        SuspensionAware<AgentHistoryRecord>,
+        StorageOrdinalAware<AgentHistoryRecord> {
 
   private final StateWriter stateWriter;
   private final AgentHistoryState agentHistoryState;

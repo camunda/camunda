@@ -15,6 +15,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -26,7 +27,6 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -202,9 +202,9 @@ public final class EngineErrorHandlingTest {
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
                       ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                      new TypedRecordProcessor<UnifiedRecordValue>() {
+                      new AwareProcessInstanceProcessor() {
                         @Override
-                        public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
+                        public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
                           processingContext
                               .getWriters()
                               .state()
@@ -384,7 +384,7 @@ public final class EngineErrorHandlingTest {
                   .onCommand(
                       ValueType.MULTI_INSTANCE,
                       MultiInstanceIntent.INPUT_COLLECTION_EVALUATED,
-                      new TypedRecordProcessor<MultiInstanceRecord>() {
+                      new AwareMultiInstanceProcessor() {
                         @Override
                         public void processRecord(final TypedRecord<MultiInstanceRecord> record) {
                           throw new RuntimeException("expected");
@@ -423,9 +423,9 @@ public final class EngineErrorHandlingTest {
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
                       ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                      new TypedRecordProcessor<>() {
+                      new AwareProcessInstanceProcessor() {
                         @Override
-                        public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
+                        public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
                           throw new NullPointerException();
                         }
                       });
@@ -652,7 +652,7 @@ public final class EngineErrorHandlingTest {
     final List<Long> processedInstances = new ArrayList<>();
 
     final TypedRecordProcessor<JobRecord> errorProneProcessor =
-        new TypedRecordProcessor<>() {
+        new AwareJobProcessor() {
           @Override
           public void processRecord(final TypedRecord<JobRecord> record) {
             throw new RuntimeException("expected");
@@ -669,7 +669,7 @@ public final class EngineErrorHandlingTest {
                   .onCommand(
                       ValueType.JOB,
                       JobIntent.THROW_ERROR,
-                      new TypedRecordProcessor<JobRecord>() {
+                      new AwareJobProcessor() {
                         @Override
                         public void processRecord(final TypedRecord<JobRecord> record) {
                           processedInstances.add(record.getValue().getProcessInstanceKey());
@@ -869,8 +869,17 @@ public final class EngineErrorHandlingTest {
         .get();
   }
 
-  protected static class ErrorProneProcessor
-      implements TypedRecordProcessor<ProcessInstanceRecord> {
+  private interface AwareProcessInstanceProcessor
+      extends TypedRecordProcessor<ProcessInstanceRecord>,
+          StorageOrdinalAware<ProcessInstanceRecord> {}
+
+  private interface AwareJobProcessor
+      extends TypedRecordProcessor<JobRecord>, StorageOrdinalAware<JobRecord> {}
+
+  private interface AwareMultiInstanceProcessor
+      extends TypedRecordProcessor<MultiInstanceRecord>, StorageOrdinalAware<MultiInstanceRecord> {}
+
+  protected static class ErrorProneProcessor implements AwareProcessInstanceProcessor {
 
     public final AtomicLong processCount = new AtomicLong(0);
     private final Supplier<? extends Error> errorSupplier;
@@ -897,7 +906,7 @@ public final class EngineErrorHandlingTest {
     }
   }
 
-  protected static class DumpProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
+  protected static class DumpProcessor implements AwareProcessInstanceProcessor {
     final List<Long> processedInstances = new ArrayList<>();
     private final StateWriter stateWriter;
 

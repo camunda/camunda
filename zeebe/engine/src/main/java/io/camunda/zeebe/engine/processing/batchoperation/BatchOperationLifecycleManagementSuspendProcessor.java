@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -41,7 +42,8 @@ import org.slf4j.LoggerFactory;
  */
 @ExcludeAuthorizationCheck
 public final class BatchOperationLifecycleManagementSuspendProcessor
-    implements DistributedTypedRecordProcessor<BatchOperationLifecycleManagementRecord> {
+    implements DistributedTypedRecordProcessor<BatchOperationLifecycleManagementRecord>,
+        StorageOrdinalAware<BatchOperationLifecycleManagementRecord> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationLifecycleManagementSuspendProcessor.class);

@@ -14,11 +14,12 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
 import org.agrona.DirectBuffer;
 
 public class RuntimeInstructionRecord extends UnifiedRecordValue
-    implements RuntimeInstructionRecordValue {
+    implements RuntimeInstructionRecordValue, MutableStorageOrdinal {
 
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1);
@@ -87,6 +88,7 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return storageOrdinalProperty.getValue();
   }
 
+  @Override
   public RuntimeInstructionRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProperty.setValue(storageOrdinal);
     return this;

@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -26,7 +27,7 @@ import org.agrona.DirectBuffer;
 
 @SuppressWarnings("java:S2160")
 public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
-    implements ProcessMessageSubscriptionRecordValue {
+    implements ProcessMessageSubscriptionRecordValue, MutableStorageOrdinal {
 
   // Static StringValue keys for property names
   private static final StringValue SUBSCRIPTION_PARTITION_ID_KEY =
@@ -308,6 +309,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public ProcessMessageSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

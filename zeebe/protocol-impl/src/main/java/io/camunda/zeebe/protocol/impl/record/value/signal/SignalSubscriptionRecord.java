@@ -16,13 +16,14 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
 
 public final class SignalSubscriptionRecord extends UnifiedRecordValue
-    implements SignalSubscriptionRecordValue {
+    implements SignalSubscriptionRecordValue, MutableStorageOrdinal {
 
   // Static StringValue keys for property names
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
@@ -201,6 +202,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public SignalSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

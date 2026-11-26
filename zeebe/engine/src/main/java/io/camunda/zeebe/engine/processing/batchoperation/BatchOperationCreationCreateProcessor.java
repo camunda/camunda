@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalAware;
 import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
@@ -46,7 +47,8 @@ import org.slf4j.LoggerFactory;
  * authorization. This command will be distributed to all other existing partitions.
  */
 public final class BatchOperationCreationCreateProcessor
-    implements DistributedTypedRecordProcessor<BatchOperationCreationRecord> {
+    implements DistributedTypedRecordProcessor<BatchOperationCreationRecord>,
+        StorageOrdinalAware<BatchOperationCreationRecord> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationCreationCreateProcessor.class);

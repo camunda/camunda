@@ -16,13 +16,14 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
 public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
-    implements AdHocSubProcessInstructionRecordValue {
+    implements AdHocSubProcessInstructionRecordValue, MutableStorageOrdinal {
   private static final StringValue AD_HOC_SUB_PROCESS_INSTANCE_KEY =
       new StringValue("adHocSubProcessInstanceKey");
   private static final StringValue ACTIVATE_ELEMENTS = new StringValue("activateElements");
@@ -120,6 +121,7 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public AdHocSubProcessInstructionRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;
