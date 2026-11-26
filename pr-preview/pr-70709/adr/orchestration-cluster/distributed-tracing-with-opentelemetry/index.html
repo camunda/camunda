@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">ADR-0012: Distributed Tracing with OpenTelemetry | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-70709/adr/orchestration-cluster/distributed-tracing-with-opentelemetry/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="ADR-0012: Distributed Tracing with OpenTelemetry | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-70709/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-70709/adr/orchestration-cluster/distributed-tracing-with-opentelemetry/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-70709/adr/orchestration-cluster/distributed-tracing-with-opentelemetry/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-70709/adr/orchestration-cluster/distributed-tracing-with-opentelemetry/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-70709/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-70709/assets/js/runtime~main.cb8c9a6c.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-70709/assets/js/main.a20aa5ac.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-70709/assets/js/runtime~main.c7e1880e.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-70709/assets/js/main.28c0aa21.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -54,8 +54,8 @@ reads it directly. <code>ReplayStateMachine</code> never traces, while unprocess
 seamlessly continue their trace on the new leader after failover.</p>
 <p><strong>Keep broker span cardinality fixed (O(1) per request).</strong> The broker <code>SERVER</code> span starts when the
 stream processor begins the command (recording <code>zeebe.queue.wait_ms</code> from the log entry timestamp,
-<code>zeebe.log.position</code>, <code>zeebe.partition.id</code>, <code>zeebe.value_type</code>, and <code>zeebe.intent</code>) and ends right
-after responses are handed to the transport (or aborts on step-down). Its coarse stage children are
+<code>zeebe.log.position</code>, <code>zeebe.physical_tenant.id</code>, <code>zeebe.partition.id</code>, <code>zeebe.value_type</code>, and
+<code>zeebe.intent</code>) and ends right after responses are handed to the transport (or aborts on step-down). Its coarse stage children are
 <code>zeebe.process</code> (per batch, not per follow-up command), <code>zeebe.write</code>, <code>zeebe.update_state</code>, and
 <code>zeebe.await_commit</code>. Follow-up records do not copy <code>traceContext</code> in this first cut, keeping log
 overhead and span volume bounded; forwarding can be enabled later for cross-batch or inter-partition
