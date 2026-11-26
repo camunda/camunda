@@ -187,10 +187,21 @@
       <name>Elasticsearch Repository</name>
       <url>https://artifacts.elastic.co/maven/</url>
     </repository>
+
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>herodevs-nes</id>
+      <name>HeroDevs NES Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/herodevs-nes</url>
+    </repository>
   </repositories>
 
   <pluginRepositories>
-    <!-- Resolve the HeroDevs Spring Boot plugin through CI's authenticated Maven mirror. -->
     <pluginRepository>
       <releases>
         <enabled>true</enabled>
@@ -198,9 +209,9 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-      <id>zeebe</id>
-      <name>Zeebe Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/zeebe-io/</url>
+      <id>herodevs-nes</id>
+      <name>HeroDevs NES Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/herodevs-nes</url>
     </pluginRepository>
   </pluginRepositories>
 

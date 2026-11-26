@@ -105,7 +105,7 @@ runs:
             "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
             "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
           }]
-        mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
+        mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots,herodevs-nes", "name": "camunda Nexus"}]'
     - name: Configure Maven
       if: inputs.java == 'true'
       uses: ./.github/actions/setup-maven-cache
