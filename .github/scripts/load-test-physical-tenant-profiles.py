@@ -33,8 +33,8 @@ Environment (set by the workflow):
 
 Writes the step outputs `profiles` (the physical_tenant_profiles make variable, one rate:replicas
 entry per tenant), `physical-tenant-count` (the N of pt1..ptN), `default-tenant-flags` (Helm flags of
-the default tenant) and `overload` (true when the tenants together offer at least the cluster
-capacity), and a Markdown table to the step summary.
+the default tenant), and a Markdown table, including the overload or within-capacity run type, to
+the step summary.
 """
 
 from __future__ import annotations
@@ -114,7 +114,9 @@ def compute(
     if tenant_count < 0 or saturating_count < 0:
         raise InputError("tenant-count and saturating-tenant-count must not be negative")
     if saturating_count > tenant_count:
-        raise InputError(f"saturating-tenant-count ({saturating_count}) exceeds the number of physical tenants ({tenant_count})")
+        raise InputError(f"saturating-tenant-count ({saturating_count}) exceeds the number of physical tenants ({tenant_count}, which is tenant-count minus the default tenant)")
+    if not all(math.isfinite(x) for x in (capacity, saturating_multiplier, quiet_multiplier, total_rate)):
+        raise InputError("cluster-capacity-rate, the multipliers and total-rate must be finite numbers")
     if capacity < 1 or saturating_multiplier <= 0 or quiet_multiplier <= 0 or total_rate < 0:
         raise InputError(
             "cluster-capacity-rate must be at least 1, the multipliers above 0 and total-rate not negative"
@@ -146,7 +148,7 @@ def compute(
         pinned_sum = sum(whole_rate(t.rate) for t in tenants if t.pinned)
         free = [t for t in tenants if not t.pinned]
         remaining = int(total_rate) - pinned_sum
-        if not free and not math.isclose(pinned_sum, total_rate, rel_tol=0.01):
+        if not free and pinned_sum != int(total_rate):
             raise InputError(
                 f"all tenants are pinned and offer {pinned_sum} PI/s, which differs from "
                 f"total-rate ({total_rate:g})"
@@ -252,7 +254,6 @@ def main() -> int:
         out.write(f"physical-tenant-count={physical_tenants}\n")
         out.write(f"profiles={profiles}\n")
         out.write(f"default-tenant-flags={default_flags}\n")
-        out.write(f"overload={str(overload).lower()}\n")
     with open(env["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
         api = "REST" if prefer_rest else "gRPC"
         source = "given" if env.get("CAPACITY_RATE", "").strip() else f"{api} estimate, not yet calibrated"

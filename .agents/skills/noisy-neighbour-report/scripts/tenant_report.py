@@ -347,6 +347,8 @@ def classify(tenants: dict[str, Tenant], saturating: list[str] | None) -> None:
         for name in saturating:
             if name not in tenants:
                 raise InputError(f"--saturating: unknown tenant '{name}' (tenants: {', '.join(sorted(tenants))})")
+            if tenants[name].role == "no load":
+                raise InputError(f"--saturating: tenant '{name}' has no load to be saturating")
             tenants[name].role = "saturating"
         return
     offered = [t.offered for t in tenants.values() if t.role != "no load"]
@@ -517,10 +519,12 @@ def render(
         "export": f"export queue clears within {args.lag_seconds:g} s",
     }
     for key, text in labels.items():
-        ok = verdict.passing(key)
-        out.append(f"- **{len(ok)} of {n}** tenants {text}." + ("" if len(ok) == n else f" Not: {', '.join(sorted(set(tenants) - set(ok)))}."))
+        # evaluate() does not check served/response/availability for tenants without load
+        scope = set(tenants) if key == "export" else {name for name, t in tenants.items() if t.role != "no load"}
+        ok = [name for name in verdict.passing(key) if name in scope]
+        out.append(f"- **{len(ok)} of {len(scope)}** tenants {text}." + ("" if len(ok) == len(scope) else f" Not: {', '.join(sorted(scope - set(ok)))}."))
     everything = verdict.passing()
-    out += [f"- **{len(everything)} of {n}** tenants meet all of them.", ""]
+    out += [f"- **{len(everything)} of {n}** tenants meet every target that applies to them.", ""]
     failing_quiet = [t.name for t in quiet if verdict.failing[t.name]]
     if failing_quiet:
         out += ["Quiet tenants that miss a target:", ""]
@@ -667,7 +671,7 @@ def build_report(query: QueryFn, args: argparse.Namespace) -> tuple[str, dict]:
     weights = parse_weights(args.weights, list(tenants))
     for name, weight in weights.items():
         tenants[name].weight = weight
-    classify(tenants, args.saturating.split(",") if args.saturating else None)
+    classify(tenants, [s.strip() for s in args.saturating.split(",") if s.strip()] if args.saturating else None)
     verdict = evaluate(tenants, args.min_service, args.lag_seconds)
     context = collect_context(query, args.namespace, window_s, end)
     for t in tenants.values():

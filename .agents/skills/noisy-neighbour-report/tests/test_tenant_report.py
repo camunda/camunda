@@ -237,7 +237,7 @@ class RenderTest(unittest.TestCase):
             "## Cluster context",
         ):
             self.assertIn(heading, markdown)
-        self.assertIn("**2 of 5** tenants meet all of them", markdown)  # default and pt3
+        self.assertIn("**2 of 5** tenants meet every target that applies to them", markdown)  # default and pt3
         self.assertIn("`pt6`", markdown)  # the lagging tenant is named, although it has no load tester
         self.assertEqual(data["failing"]["pt2"], ["served", "availability", "export"])
 

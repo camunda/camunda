@@ -73,6 +73,8 @@ physical_tenant_count ?= 0
 # entry keeps the scenario defaults. The default tenant is configured via the usual load test flags.
 # Pass directly: make install physical_tenant_count=3 physical_tenant_profiles="150:6 50:3 5:1"
 physical_tenant_profiles ?=
+# Exported so recipes read it from the environment, never pasted into shell source.
+export physical_tenant_profiles
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
 #   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
@@ -169,6 +171,11 @@ metrics_exporter_image_tag = latest
 ifneq ($(physical_tenant_count),0)
 ifneq ($(physical_tenants_supported),true)
 $(error physical_tenant_count > 0 is not supported for this Camunda version)
+endif
+endif
+ifeq ($(physical_tenant_count),0)
+ifneq ($(strip $(physical_tenant_profiles)),)
+$(error physical_tenant_profiles is set but physical_tenant_count is 0)
 endif
 endif
 
@@ -339,7 +346,10 @@ generate-physical-tenant-values:
 # overwrite it instead of adding a new entry — bump this index if that file's list grows.
 .PHONY: install-load-test-physical-tenants
 install-load-test-physical-tenants:
-	@profiles="$(physical_tenant_profiles)"; \
+	@profiles="$$physical_tenant_profiles"; \
+	if [ $$(echo "$$profiles" | wc -w) -gt $(physical_tenant_count) ]; then \
+	  echo "Error: physical_tenant_profiles has more entries than physical_tenant_count ($(physical_tenant_count))" >&2; exit 1; \
+	fi; \
 	for i in $$(seq 1 $(physical_tenant_count)); do \
 	  tenant="pt$$i"; \
 	  profile=$$(echo "$$profiles" | awk -v n="$$i" '{print $$n}'); \
