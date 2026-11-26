@@ -142,7 +142,9 @@ class OperateProcessInstancePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.diagram = page.getByTestId('diagram-canvas');
+    this.diagram = page
+      .getByTestId('diagram-canvas')
+      .or(page.getByRole('region', {name: 'Diagram', exact: true}));
     this.drilldownButton = this.diagram.locator('.bjs-drilldown').first();
     this.completedIcon = page
       .getByTestId('instance-header')

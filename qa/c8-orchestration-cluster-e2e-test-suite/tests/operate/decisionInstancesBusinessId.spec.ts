@@ -197,9 +197,9 @@ test.describe('Decision Instances - Business ID', () => {
 
     await test.step('Verify no decision instances are shown', async () => {
       await expect(
-        operateDecisionsPage.decisionInstancesList.getByRole('link', {
-          name: /View decision instance/,
-        }),
+        operateDecisionsPage.decisionInstanceLinksIn(
+          operateDecisionsPage.decisionInstancesList,
+        ),
       ).toHaveCount(0, {timeout: extendedAssertionOptions.timeout});
     });
   });
@@ -230,7 +230,7 @@ test.describe('Decision Instances - Business ID', () => {
     });
 
     await test.step('Open the matching decision instance detail', async () => {
-      await rowA.getByRole('link', {name: /View decision instance/}).click();
+      await operateDecisionsPage.decisionInstanceLinksIn(rowA).click();
     });
 
     await test.step('Verify the detail header shows the Business ID', async () => {

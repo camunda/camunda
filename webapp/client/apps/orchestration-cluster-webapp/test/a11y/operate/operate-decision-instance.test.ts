@@ -65,6 +65,7 @@ test('should have no accessibility violations on the decision instance page', as
 	await expect(page.getByRole('region', {name: 'decision panel'})).toBeVisible();
 	await expect(page.getByRole('table').first()).toBeVisible();
 	await expect(page.getByRole('region', {name: 'DRD panel'})).toBeVisible();
+	await expect(operateDecisionInstancePage.evaluatedStateOverlay).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);

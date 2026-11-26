@@ -107,8 +107,7 @@ test.describe('Decision Instances', () => {
       ).toBeVisible();
     });
 
-    await test.step('Clear selection and select Decision 2', async () => {
-      await operateDecisionsPage.clearComboBox();
+    await test.step('Select Decision 2', async () => {
       await operateDecisionsPage.selectDecisionName('Decision 2');
       await expect(
         operateDecisionsPage.decisionViewer.getByText('Decision 2'),
