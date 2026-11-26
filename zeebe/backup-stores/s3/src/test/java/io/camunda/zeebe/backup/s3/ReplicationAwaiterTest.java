@@ -315,11 +315,12 @@ final class ReplicationAwaiterTest {
     assertThat(replicated).succeedsWithin(WAIT);
   }
 
-  private ReplicationAwaiter awaiter(final Duration timeout) {
+  private PollingReplicationAwaiter awaiter(final Duration timeout) {
     return awaiter(timeout, 50);
   }
 
-  private ReplicationAwaiter awaiter(final Duration timeout, final int maxConcurrentConnections) {
+  private PollingReplicationAwaiter awaiter(
+      final Duration timeout, final int maxConcurrentConnections) {
     final var config =
         new S3BackupConfig.Builder()
             .withBucketName("bucket")
@@ -328,7 +329,7 @@ final class ReplicationAwaiterTest {
             .withReplicationPollInterval(POLL_INTERVAL)
             .withReplicationTimeout(timeout)
             .build();
-    return new ReplicationAwaiter(client, config);
+    return new PollingReplicationAwaiter(client, config);
   }
 
   private void reportStatuses(final String key, final ReplicationStatus... keyStatuses) {
