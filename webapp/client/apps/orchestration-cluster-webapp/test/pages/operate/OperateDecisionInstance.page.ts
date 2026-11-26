@@ -14,8 +14,16 @@ class OperateDecisionInstancePage extends BasePage {
 		return this.page.goto(`/operate/decisions/${decisionInstanceId}`);
 	}
 
-	async gotoPreview(decisionInstanceId: string) {
-		return this.page.goto(`/operate-preview/decisions/${decisionInstanceId}`);
+	get instanceHeader() {
+		return this.page.getByRole('group', {name: 'Instance header', exact: true});
+	}
+
+	get variablesPanel() {
+		return this.page.getByRole('tabpanel');
+	}
+
+	get evaluatedStateOverlay() {
+		return this.drdPanel.getByRole('img', {name: /: Evaluated$/}).first();
 	}
 
 	get decisionPanel() {
@@ -24,6 +32,10 @@ class OperateDecisionInstancePage extends BasePage {
 
 	get drdPanel() {
 		return this.page.getByRole('region', {name: 'DRD panel'});
+	}
+
+	get drdDiagram() {
+		return this.page.getByTestId('drd');
 	}
 
 	get drdResizeHandle() {

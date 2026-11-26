@@ -102,7 +102,7 @@ test('should delete the selected DRD, refresh decisions and preserve tenant and 
 	await refresh;
 	await expect(page.getByText('Operation created', {exact: true})).toBeVisible();
 	await expect(operateDecisionsPage.deleteDefinitionButton).not.toBeVisible();
-	await expect(page.getByText('There is no Decision selected')).toBeVisible();
+	await expect(operateDecisionsPage.decisionPanel.getByRole('heading', {name: 'Select a decision'})).toBeVisible();
 	await expect(page).toHaveURL(
 		(url) =>
 			!url.searchParams.has('decisionDefinitionId') &&
@@ -111,7 +111,7 @@ test('should delete the selected DRD, refresh decisions and preserve tenant and 
 			url.searchParams.get('businessId') === 'order-1',
 	);
 	await page.reload();
-	await expect(page.getByRole('combobox', {name: 'Name', exact: true})).toHaveValue('');
+	await expect(page.getByRole('combobox', {name: 'Name', exact: true})).toHaveText('Search by decision name');
 	await expect(operateDecisionsPage.deleteDefinitionButton).not.toBeVisible();
 	await page.goBack();
 	await expect(page).toHaveURL(
@@ -162,10 +162,10 @@ test('should open the started batch operation from the decision instance deletio
 
 	await page.getByRole('checkbox', {name: 'Select row 2251799813702856-1'}).check({force: true});
 	await page.getByRole('button', {name: 'Delete', exact: true}).click();
-	await page.getByRole('dialog').getByRole('button', {name: 'Delete', exact: true}).click();
+	await page.getByRole('alertdialog').getByRole('button', {name: 'Delete', exact: true}).click();
 	await page.getByRole('button', {name: 'Go to operation details'}).click();
 
-	await expect(page).toHaveURL('/deployment/operate/batch-operations/decision-deletion-1');
+	await expect(page).toHaveURL('/deployment/operate-preview/batch-operations/decision-deletion-1');
 	await expect(page.getByRole('heading', {name: 'Delete Decision Instance', exact: true})).toBeVisible();
 	await expect(page.getByText('deletion-actor', {exact: true})).toBeVisible();
 });

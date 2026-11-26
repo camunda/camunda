@@ -83,12 +83,12 @@ test('should match the decision instance page snapshot with the matched rule hig
 	operateDecisionInstancePage,
 	page,
 }) => {
-	await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_KEY);
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_KEY);
 
-	await expect(page.getByTestId('instance-header')).toBeVisible();
+	await expect(operateDecisionInstancePage.instanceHeader).toBeVisible();
 	await expect(operateDecisionInstancePage.decisionTableLabel).toBeVisible();
-	await expect(operateDecisionInstancePage.drdPanel.getByTestId('state-overlay-EVALUATED')).toBeVisible();
-	await expect(page.getByTestId('decision-instance-variables-panel').getByText('"manager approval"')).toBeVisible();
+	await expect(operateDecisionInstancePage.evaluatedStateOverlay).toBeVisible();
+	await expect(operateDecisionInstancePage.variablesPanel.getByText('"manager approval"')).toBeVisible();
 	await expect(page).toHaveScreenshot();
 });
 
@@ -96,13 +96,13 @@ test('should match the decision instance page snapshot with the DRD maximized', 
 	operateDecisionInstancePage,
 	page,
 }) => {
-	await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_KEY);
-	await expect(operateDecisionInstancePage.drdPanel.getByTestId('state-overlay-EVALUATED')).toBeVisible();
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_KEY);
+	await expect(operateDecisionInstancePage.evaluatedStateOverlay).toBeVisible();
 
 	await page.getByRole('button', {name: 'Maximize DRD panel'}).click();
 
 	await expect(page.getByRole('button', {name: 'Minimize DRD panel'})).toBeFocused();
-	await expect(page.getByTestId('drd').getByText(DECISION_INSTANCE_KEY)).toBeVisible();
+	await expect(operateDecisionInstancePage.drdDiagram.getByText(DECISION_INSTANCE_KEY)).toBeVisible();
 	await expect(page).toHaveScreenshot();
 });
 
@@ -117,7 +117,7 @@ test('should match the decision instance page snapshot when the decision has no 
 		}),
 	);
 
-	await operateDecisionInstancePage.gotoPreview(DECISION_INSTANCE_KEY);
+	await operateDecisionInstancePage.goto(DECISION_INSTANCE_KEY);
 
 	await expect(page.getByText('No diagram available')).toBeVisible();
 	await expect(page).toHaveScreenshot();
