@@ -20,12 +20,10 @@ import java.util.Collection;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code
+ * Applier for {@code
  * PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation}, operating
- * on a single named {@link PartitionGroupConfiguration} as a whole (not member-scoped). Mirrors the
- * legacy {@code PartitionForceReconfigureApplier} in {@code changes/}, which this does not replace
- * or modify. Force-reconfigures a partition to include only the given members in the replication
- * group.
+ * on a single named {@link PartitionGroupConfiguration} as a whole (not member-scoped).
+ * Force-reconfigures a partition to include only the given members in the replication group.
  */
 public final class PartitionForceReconfigureApplier
     implements PartitionGroupConfigurationChangeApplier {

@@ -30,7 +30,7 @@ import org.jspecify.annotations.Nullable;
 public interface ClusterConfigurationManagerService
     extends ClusterConfigurationUpdateNotifier, AsyncClosable {
 
-  /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
+  /** Starts ClusterConfigurationManager which initializes the cluster configuration */
   ActorFuture<Void> start(
       ActorSchedulingService actorSchedulingService,
       StaticConfiguration staticConfiguration,

@@ -132,9 +132,7 @@ final class GatewayClusterConfigurationServiceTest {
             Map.of("tenanta", tenantGroup),
             PhasedChangeState.empty());
 
-    // when — broker1 gossips the new-model configuration; it must reach broker3 relayed through
-    // the gateway (before this fix, the gateway never populated field 2 at all, so it could only
-    // ever relay a lossy single-group legacy projection)
+    // when — broker1 gossips its configuration; it must reach broker3 relayed through the gateway
     broker1.setCurrentClusterConfiguration(brokerConfiguration);
 
     // then

@@ -16,10 +16,9 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code PartitionGroupOperation.UpdateIncarnationNumberOperation}, operating
- * on a single named {@link PartitionGroupConfiguration} as a whole. Mirrors the legacy {@code
- * UpdateIncarnationNumberApplier} in {@code changes/}, which this does not replace or modify.
- * Increments the group's incarnation number by 1.
+ * Applier for {@code PartitionGroupOperation.UpdateIncarnationNumberOperation}, operating on a
+ * single named {@link PartitionGroupConfiguration} as a whole. Increments the group's incarnation
+ * number by 1.
  *
  * <p>That increment is the group record's own field rather than any one member's, so this is the
  * only whole-group write in a restore. {@code RestoreRequestTransformer} therefore orders it after

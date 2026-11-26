@@ -22,10 +22,8 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code
- * PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion}, operating on a single
- * named {@link PartitionGroupConfiguration} as a whole. Mirrors the legacy {@code
- * AwaitRedistributionCompletionApplier} in {@code changes/}, which this does not replace or modify.
+ * Applier for {@code PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion},
+ * operating on a single named {@link PartitionGroupConfiguration} as a whole.
  */
 public final class AwaitRedistributionCompletionApplier
     implements PartitionGroupConfigurationChangeApplier {

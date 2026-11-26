@@ -9,10 +9,7 @@ package io.camunda.zeebe.dynamic.config.impl.changes;
 
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 
-/**
- * New-model counterpart of {@code ConfigurationChangeAppliers}, dispatching a {@link
- * GlobalChangeOperation} to its {@link GlobalConfigurationChangeApplier}.
- */
+/** Dispatches a {@link GlobalChangeOperation} to its {@link GlobalConfigurationChangeApplier}. */
 @FunctionalInterface
 public interface GlobalConfigurationChangeAppliers {
 

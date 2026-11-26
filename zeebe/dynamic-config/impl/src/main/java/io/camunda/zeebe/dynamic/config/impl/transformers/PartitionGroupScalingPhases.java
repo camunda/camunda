@@ -275,10 +275,9 @@ final class PartitionGroupScalingPhases {
 
   /**
    * The replication factor every partition should keep when the request does not ask for one. Taken
-   * as the minimum currently in use rather than a configured value, mirroring {@code
-   * ClusterConfiguration#minReplicationFactor}: during a configuration change a partition can
-   * temporarily hold more replicas than the cluster is configured for, and treating that as the
-   * target would permanently widen it.
+   * as the minimum currently in use rather than a configured value: during a configuration change a
+   * partition can temporarily hold more replicas than the cluster is configured for, and treating
+   * that as the target would permanently widen it.
    */
   private static int currentReplicationFactor(
       final Map<String, Set<PartitionMetadata>> distributionByGroup) {

@@ -18,10 +18,8 @@ import java.util.function.UnaryOperator;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * New-model applier for {@code GlobalChangeOperation.UpdatePartitionDistributorConfigOperation},
- * operating on {@link GlobalConfiguration}. Mirrors the legacy {@code
- * UpdatePartitionDistributorConfigApplier} in {@code changes/}, which this does not replace or
- * modify.
+ * Applier for {@code GlobalChangeOperation.UpdatePartitionDistributorConfigOperation}, operating on
+ * {@link GlobalConfiguration}.
  */
 @NullMarked
 public final class UpdatePartitionDistributorConfigApplier

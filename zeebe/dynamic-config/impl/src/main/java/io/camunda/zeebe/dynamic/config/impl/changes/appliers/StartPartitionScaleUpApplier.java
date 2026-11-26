@@ -27,10 +27,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * New-model applier for {@code PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp},
- * operating on a single named {@link PartitionGroupConfiguration} as a whole. Mirrors the legacy
- * {@code StartPartitionScaleUpApplier} in {@code changes/}, which this does not replace or modify.
- * Starts the process of scaling up partitions within this group.
+ * Applier for {@code PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp}, operating on
+ * a single named {@link PartitionGroupConfiguration} as a whole. Starts the process of scaling up
+ * partitions within this group.
  */
 public final class StartPartitionScaleUpApplier
     implements PartitionGroupConfigurationChangeApplier {

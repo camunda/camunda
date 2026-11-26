@@ -47,10 +47,7 @@ import org.jspecify.annotations.Nullable;
  * @param incarnationNumber incarnation number of this group, incremented after the data is purged.
  * @param members per-broker partition state within this group
  * @param routingState routing state scoped to this group, if any
- * @param pendingChanges the ongoing change plan for this group, if any. Always a {@link
- *     DependencyChangePlan}, as every sub-configuration's is: the one-at-a-time queue ({@link
- *     ClusterChangePlan}) no longer executes anything, and survives only as the shape the legacy
- *     single-group configuration is encoded as on the wire.
+ * @param pendingChanges the ongoing change plan for this group, if any
  * @param lastChange the last completed change plan for this group, if any
  * @param availability whether this tenant is currently disabled; carries its own version,
  *     independent of {@code version} — see {@link TenantAvailability}
@@ -389,8 +386,7 @@ public record PartitionGroupConfiguration(
   /**
    * Cancels any pending changes, returning a new configuration with the already-applied changes and
    * no pending changes. This is a dangerous operation that can leave the configuration
-   * inconsistent; it should only be used as a last resort when a change is stuck. Mirrors {@code
-   * ClusterConfiguration#cancelPendingChanges()}.
+   * inconsistent; it should only be used as a last resort when a change is stuck.
    */
   public PartitionGroupConfiguration cancelPendingChanges() {
     if (!hasPendingChanges()) {

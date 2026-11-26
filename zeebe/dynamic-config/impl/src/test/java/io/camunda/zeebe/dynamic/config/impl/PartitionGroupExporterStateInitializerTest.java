@@ -564,10 +564,7 @@ final class PartitionGroupExporterStateInitializerTest {
 
   /**
    * Tests {@link PartitionGroupExporterStateInitializer#updateExporterStateInPartition} directly,
-   * as the pure function of a partition's state and the configured exporters that it is. Ported
-   * from the exporter-state-reconciliation cases of the (now removed) legacy {@code
-   * ExporterStateInitializer}, which shared this same static helper before the per-partition-group
-   * variant took it over.
+   * as the pure function of a partition's state and the configured exporters that it is.
    */
   @Nested
   final class ExporterStateReconciliationTest {

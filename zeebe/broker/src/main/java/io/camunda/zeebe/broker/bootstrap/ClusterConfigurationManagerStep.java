@@ -85,7 +85,7 @@ public class ClusterConfigurationManagerStep
    *
    * @param brokerStartupContext the context containing the broker client
    * @param retriesLeft the number of retries left to attempt
-   * @return an ActorFuture that completes with the ClusterConfiguration
+   * @return an ActorFuture that completes with the cluster configuration
    */
   private ActorFuture<CurrentClusterConfiguration> getClusterConfiguration(
       final BrokerStartupContext brokerStartupContext, final int retriesLeft) {

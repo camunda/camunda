@@ -57,13 +57,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Exercises {@link ClusterConfigurationManagerServiceImpl} end-to-end. Assertions read the {@link
- * CurrentClusterConfiguration} directly (via {@link
- * ClusterConfigurationManagerServiceImpl#getClusterConfiguration()}) rather than the legacy compat
- * projection ({@code toLegacyDefault()}), since that projection cannot distinguish "uninitialized"
- * from "initialized but empty" for the new model.
- */
+/** Exercises {@link ClusterConfigurationManagerServiceImpl} end-to-end. */
 class ClusterConfigurationManagementIntegrationTest {
 
   private static final Duration INITIALIZATION_TIMEOUT = Duration.ofSeconds(30);
@@ -288,11 +282,7 @@ class ClusterConfigurationManagementIntegrationTest {
 
   /**
    * Asserts that the configuration is initialized and every static cluster member is visible in
-   * {@link CurrentClusterConfiguration#globalConfiguration()}. Checking {@code
-   * globalConfiguration().members()} directly (rather than the legacy {@code toLegacyDefault()}
-   * projection) is required because that projection's derived {@code version} can never equal the
-   * legacy uninitialized sentinel, so {@code isUninitialized()} on the projection is always {@code
-   * false} — it cannot be used to detect that initialization hasn't happened yet.
+   * {@link CurrentClusterConfiguration#globalConfiguration()}.
    */
   private void assertInitializedWithAllMembers(final CurrentClusterConfiguration configuration) {
     assertThat(configuration.isUninitialized()).isFalse();

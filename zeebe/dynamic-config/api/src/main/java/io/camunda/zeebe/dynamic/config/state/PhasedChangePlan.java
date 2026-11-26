@@ -54,10 +54,9 @@ public record PhasedChangePlan(
   }
 
   /**
-   * Creates a plan migrated from a legacy restore change plan, assigning it {@link
-   * #RESTORED_PLAN_ID} — the legacy sentinel id ({@code ClusterChangePlan.RESTORE_CHANGE_ID = -2})
-   * cannot be preserved as-is since this record requires a non-negative id. See {@link
-   * #hasRestorePlanId()} and {@link CurrentClusterConfiguration#isAfterRestore()}.
+   * Creates the plan a restore writes, assigning it {@link #RESTORED_PLAN_ID} rather than an id
+   * issued by {@link PhasedChangeState}'s counter. See {@link #hasRestorePlanId()} and {@link
+   * CurrentClusterConfiguration#isAfterRestore()}.
    */
   public static PhasedChangePlan initForRestore(final List<Phase> phases, final Instant startedAt) {
     return new PhasedChangePlan(RESTORED_PLAN_ID, 0, phases, startedAt);
@@ -104,8 +103,8 @@ public record PhasedChangePlan(
   }
 
   /**
-   * Returns {@code true} if this plan's id is {@link #RESTORED_PLAN_ID} — i.e. it was migrated from
-   * a legacy restore change plan. Note this is a necessary but not sufficient condition for {@link
+   * Returns {@code true} if this plan's id is {@link #RESTORED_PLAN_ID} — i.e. it was created by
+   * {@link #initForRestore}. Note this is a necessary but not sufficient condition for {@link
    * CurrentClusterConfiguration#isAfterRestore()}, which additionally checks the plan's shape.
    */
   public boolean hasRestorePlanId() {

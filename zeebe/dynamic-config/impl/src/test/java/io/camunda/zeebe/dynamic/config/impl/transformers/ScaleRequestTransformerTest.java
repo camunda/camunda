@@ -514,7 +514,7 @@ class ScaleRequestTransformerTest {
               .phases(configuration);
 
       // then — nothing separates the member join from the scaling callbacks, so one uninterrupted
-      // run of global operations is one phase, exactly as toPhases would produce
+      // run of global operations is one phase
       EitherAssert.assertThat(phases).isRight();
       assertThat(phases.get()).singleElement().isInstanceOf(GlobalPhase.class);
     }

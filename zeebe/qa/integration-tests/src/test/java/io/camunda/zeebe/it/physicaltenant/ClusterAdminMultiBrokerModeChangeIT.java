@@ -222,11 +222,7 @@ final class ClusterAdminMultiBrokerModeChangeIT {
    *
    * <p>A change is rejected with {@code 409} while another one is still pending, and commands start
    * failing as soon as the partitions stop — which is before the change that stopped them has
-   * completed. Waiting for the pending change to clear would be the deterministic alternative, but
-   * a change targeting a non-default physical tenant is not observable: the topology API projects
-   * {@code pendingChanges} from the global configuration and the default partition group only
-   * ({@code CurrentClusterConfiguration#toLegacyDefault}), so a plan scoped to another tenant's
-   * group never appears there. Retry until the platform exposes per-group change status.
+   * completed, so the request is retried until the cluster accepts it.
    */
   private void awaitModeChangeAccepted(final String mode, final String physicalTenantId) {
     Awaitility.await("the cluster accepts the mode change")

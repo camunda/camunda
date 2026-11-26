@@ -20,10 +20,9 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code
+ * Applier for {@code
  * PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation},
- * operating on a single named {@link PartitionGroupConfiguration}. Mirrors the legacy {@code
- * PartitionReconfigurePriorityApplier} in {@code changes/}, which this does not replace or modify.
+ * operating on a single named {@link PartitionGroupConfiguration}.
  */
 public final class PartitionReconfigurePriorityApplier
     implements PartitionGroupConfigurationChangeApplier {

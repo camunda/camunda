@@ -22,16 +22,13 @@ import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code GlobalChangeOperation.MemberLeaveOperation} and {@code
- * MemberRemoveOperation}, operating on {@link GlobalConfiguration}. Mirrors the legacy {@code
- * MemberLeaveApplier} in {@code changes/}, which this does not replace or modify; also reused for
- * both operations, since the only difference between them is which member applies the operation.
+ * Applier for {@code GlobalChangeOperation.MemberLeaveOperation} and {@code MemberRemoveOperation},
+ * operating on {@link GlobalConfiguration}; reused for both operations, since the only difference
+ * between them is which member applies the operation.
  *
- * <p>The legacy applier additionally rejects the operation if the member still has partitions
- * assigned, since the flat {@code ClusterConfiguration} carries both broker lifecycle and partition
- * assignment together. In the new model that assignment is split out per group into {@code
- * PartitionGroupConfiguration}, so this check needs every group, not just one — {@link #init}
- * therefore receives the whole {@link CurrentClusterConfiguration} rather than a single group.
+ * <p>The operation is rejected if the member still has partitions assigned in any partition group,
+ * so {@link #init} receives the whole {@link CurrentClusterConfiguration} rather than a single
+ * group.
  */
 public final class MemberLeaveApplier implements GlobalConfigurationChangeApplier {
 

@@ -171,7 +171,7 @@ The scaling process follows a sequence of intents and events that ensure data co
 
 1. **SCALE_UP** → **SCALING_UP**: Initiates scaling and updates routing state to include desired partitions
 2. **MARK_PARTITION_BOOTSTRAPPED** → **PARTITION_BOOTSTRAPPED**: Marks each new partition as ready after bootstrap and includes them in the active partitions (in the `DbRoutingState` in `RocksDB`)
-3. **SCALED_UP**: Completes the scaling process and activates new partitions for request handling (in the `ClusterConfiguration`)
+3. **SCALED_UP**: Completes the scaling process and activates new partitions for request handling (in the `CurrentClusterConfiguration`)
 
 ### Idempotency and Error Handling
 

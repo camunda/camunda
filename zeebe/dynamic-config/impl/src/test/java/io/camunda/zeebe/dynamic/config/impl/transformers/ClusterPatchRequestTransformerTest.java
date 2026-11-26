@@ -749,7 +749,7 @@ final class ClusterPatchRequestTransformerTest {
         new ClusterPatchRequestTransformer(
             Set.of(id3), Set.of(id3), Optional.empty(), Optional.empty());
 
-    // when — the new-model coordinator plans through phases() alone, so the check has to hold there
+    // when — the coordinator plans through phases() alone, so the check has to hold there
     final var result = transformer.phases(twoTenantCluster());
 
     // then

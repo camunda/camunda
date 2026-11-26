@@ -20,10 +20,9 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code PartitionGroupOperation.ModeChangeOperation} targeting {@link
- * Mode#PROCESSING}, operating on a single named {@link PartitionGroupConfiguration}. Mirrors the
- * legacy {@code ExitRecoveryApplier} in {@code changes/}, which this does not replace or modify.
- * See {@link EnterRecoveryApplier} for the cluster-lifecycle vs. per-group-mode split rationale.
+ * Applier for {@code PartitionGroupOperation.ModeChangeOperation} targeting {@link
+ * Mode#PROCESSING}, operating on a single named {@link PartitionGroupConfiguration}. See {@link
+ * EnterRecoveryApplier} for the cluster-lifecycle vs. per-group-mode split rationale.
  *
  * <p>Writes only {@code memberId}'s own entry. {@link #apply()} sets its mode to {@link
  * Mode#PROCESSING}, and {@link #init} drops the partitions the group does not route over, which a

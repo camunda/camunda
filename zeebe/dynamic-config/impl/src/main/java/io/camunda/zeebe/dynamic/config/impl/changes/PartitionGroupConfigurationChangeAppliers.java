@@ -10,8 +10,8 @@ package io.camunda.zeebe.dynamic.config.impl.changes;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 
 /**
- * New-model counterpart of {@code ConfigurationChangeAppliers}, dispatching a {@link
- * PartitionGroupOperation} to its {@link PartitionGroupConfigurationChangeApplier}.
+ * Dispatches a {@link PartitionGroupOperation} to its {@link
+ * PartitionGroupConfigurationChangeApplier}.
  */
 @FunctionalInterface
 public interface PartitionGroupConfigurationChangeAppliers {
