@@ -53,10 +53,23 @@ public class Export {
   private int migrationStatusScanMaxRecords = DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS;
 
   /**
-   * When enabled, exporters only receive records that are already contained in a confirmed backup.
-   * The exporter reader never advances past the checkpoint position of the latest confirmed backup,
-   * so no record reaches secondary storage before it can be restored from primary storage backups.
-   * Requires backups to be taken regularly, otherwise exporting stalls.
+   * When enabled, exporters only receive records that are already contained in a confirmed backup
+   * common to all partitions of the physical tenant. The exporter reader never advances past this
+   * partition's checkpoint position for that backup, so no record reaches secondary storage before
+   * it can be restored from primary storage backups.
+   *
+   * <p>Requires a configured backup store ({@code camunda.data.primary-storage.backup.store}) and
+   * regular backups; nothing is exported until a backup completes across all partitions, and
+   * exporting stalls whenever backups stop completing.
+   *
+   * <p>Interferes with write-rate throttling ({@code
+   * camunda.processing.flow-control.write.throttle}), because delaying exporting grows the
+   * exporting backlog between backups and can trigger backpressure.
+   *
+   * <p>After restoring from a backup, exporting stalls until a new backup completes across all
+   * partitions. A backup's confirmation record is written after its checkpoint position and is
+   * therefore truncated by the restore, so records already contained in the restored backup are
+   * held back until a new common backup is confirmed.
    */
   private boolean exportOnlyBackedUpRecords = false;
 
