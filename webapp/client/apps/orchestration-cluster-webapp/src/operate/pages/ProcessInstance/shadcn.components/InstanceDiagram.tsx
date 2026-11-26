@@ -261,7 +261,7 @@ const InstanceDiagram: React.FC = () => {
 				const calledDecision = called.items[0];
 				if (called.page.totalItems === 1 && calledDecision) {
 					await navigate({
-						to: '/operate-preview/decisions/$decisionInstanceId',
+						to: '/operate/decisions/$decisionInstanceId',
 						params: {decisionInstanceId: calledDecision.decisionEvaluationInstanceKey},
 					});
 				}

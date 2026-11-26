@@ -43,7 +43,7 @@ describe('<CellEntityKey /> (design system)', () => {
 			entityKey: '2251799813685281',
 			batchOperationKey: null,
 			linkName: 'View decision instance 2251799813685281',
-			href: '/operate-preview/decisions/2251799813685281',
+			href: '/operate/decisions/2251799813685281',
 		},
 		{
 			entityType: 'BATCH',

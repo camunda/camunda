@@ -111,7 +111,7 @@ const CalledDecisionInstanceValue: React.FC<{
 	});
 	return (
 		<RouterLink
-			to={`${OPERATE_BASE}/decisions/$decisionInstanceId` as const}
+			to={'/operate/decisions/$decisionInstanceId'}
 			params={{decisionInstanceId: calledDecisionInstance.decisionEvaluationInstanceKey}}
 			title={label}
 			aria-label={label}

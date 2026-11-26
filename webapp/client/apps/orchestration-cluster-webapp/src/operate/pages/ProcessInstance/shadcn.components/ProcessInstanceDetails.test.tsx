@@ -208,7 +208,7 @@ describe('<ProcessInstanceDetails /> (design system)', () => {
 
 		const link = screen.getByRole('link', {name: 'View Invoice Classification instance 123567'});
 		await expect.element(link).toBeVisible();
-		await expect.element(link).toHaveAttribute('href', '/operate-preview/decisions/123567');
+		await expect.element(link).toHaveAttribute('href', '/operate/decisions/123567');
 	});
 
 	it('should show an error instead of the empty message when the element instance fails to load', async ({worker}) => {
