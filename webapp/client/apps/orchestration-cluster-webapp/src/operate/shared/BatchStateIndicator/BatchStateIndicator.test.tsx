@@ -6,13 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, expect} from 'vitest';
+import {afterEach, describe, expect} from 'vitest';
 import {render} from 'vitest-browser-react';
 import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.11';
+import i18n from 'i18next';
 import {it} from '#/vitest-modules/test-extend';
 import {BatchStateIndicator} from './index';
 
 describe('<BatchStateIndicator />', () => {
+	afterEach(async () => {
+		await i18n.changeLanguage('en');
+	});
+
 	it('should expose a batch-operation-specific status label by default', async () => {
 		const screen = await render(<BatchStateIndicator state="COMPLETED" />);
 
@@ -31,5 +36,13 @@ describe('<BatchStateIndicator />', () => {
 		await expect
 			.element(screen.getByRole('status', {name: 'Batch operation status: UNKNOWN_STATE'}))
 			.toHaveTextContent('UNKNOWN_STATE');
+	});
+
+	it('should translate state labels and aria labels when language changes', async () => {
+		await i18n.changeLanguage('de');
+
+		const screen = await render(<BatchStateIndicator state="FAILED" />);
+
+		await expect.element(screen.getByRole('status', {name: 'Status des Stapelvorgangs: Fehlgeschlagen'})).toBeVisible();
 	});
 });
