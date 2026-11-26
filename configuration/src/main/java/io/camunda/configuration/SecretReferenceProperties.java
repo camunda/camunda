@@ -9,6 +9,8 @@ package io.camunda.configuration;
 
 import io.camunda.search.connect.configuration.ProxyConfiguration;
 import io.camunda.security.api.model.config.KeystoreConfiguration;
+import io.camunda.security.api.model.config.client.OutboundBasicConfiguration;
+import io.camunda.security.api.model.config.client.OutboundOidcConfiguration;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import java.lang.reflect.Field;
@@ -27,14 +29,17 @@ public final class SecretReferenceProperties {
   static final Map<Class<?>, Set<String>> CREDENTIALS_OF_OTHER_MODULES =
       Map.of(
           OidcConfiguration.class, Set.of("clientSecret"),
+          OutboundOidcConfiguration.class, Set.of("clientSecret"),
+          OutboundBasicConfiguration.class, Set.of("password"),
           KeystoreConfiguration.class, Set.of("password", "keyPassword"),
           ConfiguredUser.class, Set.of("password"),
           ProxyConfiguration.class, Set.of("password"));
 
   /**
    * Properties in those classes that accept a reference: the credentials above, except for the OIDC
-   * ones (CSL builds OIDC client registrations from its own binding of the configuration, so cannot
-   * accept a reference yet), and the usernames next to them.
+   * and outbound client ones (CSL builds OIDC client registrations and outbound clients from its
+   * own binding of the configuration, so cannot accept a reference yet), and the usernames next to
+   * them.
    */
   static final Map<Class<?>, Set<String>> REFERENCES_OF_OTHER_MODULES =
       Map.of(

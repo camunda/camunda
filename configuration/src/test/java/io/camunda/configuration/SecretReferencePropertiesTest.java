@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.data.secondarystorage.SecondaryStorageDatabase;
 import io.camunda.security.api.model.config.KeystoreConfiguration;
+import io.camunda.security.api.model.config.client.OutboundBasicConfiguration;
+import io.camunda.security.api.model.config.client.OutboundOidcConfiguration;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import java.lang.reflect.Field;
@@ -40,7 +42,15 @@ final class SecretReferencePropertiesTest {
           Secrets.AzureKeyVaultStore.class, Set.of("containerSecretId"),
           Secrets.GcpSecretManagerStore.class, Set.of("containerSecretId"),
           KeystoreConfiguration.class, Set.of("keyAlias"),
-          OidcConfiguration.class, Set.of("idTokenAlgorithm", "tokenUri"));
+          OidcConfiguration.class, Set.of("idTokenAlgorithm", "tokenUri"),
+          OutboundOidcConfiguration.class, Set.of("tokenUri"));
+
+  /**
+   * Usernames that can't accept a reference: CSL binds the outbound clients itself, so the password
+   * next to it can't accept one either.
+   */
+  private static final Map<Class<?>, Set<String>> USERNAMES_WITHOUT_REFERENCE =
+      Map.of(OutboundBasicConfiguration.class, Set.of("username"));
 
   @Test
   void shouldMarkEveryFieldNamedLikeACredential() {
@@ -76,6 +86,7 @@ final class SecretReferencePropertiesTest {
             .filter(field -> USERNAME_NAME.matcher(field.getName()).matches())
             .filter(SecretReferencePropertiesTest::holdsText)
             .filter(field -> !SecretReferenceProperties.acceptsReference(field))
+            .filter(field -> !listed(USERNAMES_WITHOUT_REFERENCE, field))
             .map(SecretReferencePropertiesTest::name)
             .toList();
 
