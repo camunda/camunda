@@ -19,6 +19,7 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockCreateModificationBatchOperationEndpoint,
+	mockCurrentUserEndpoint,
 	mockGetBatchOperationEndpoint,
 	mockGetProcessDefinitionStatisticsEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
@@ -26,6 +27,7 @@ import {
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
@@ -124,7 +126,7 @@ async function enterMode(screen: Screen) {
 	await selectInstance(screen, '1');
 	await userEvent.click(screen.getByRole('button', {name: 'Move'}));
 	await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Continue'}));
-	await expect.element(screen.getByText('Batch Modification Mode')).toBeVisible();
+	await expect.element(screen.getByText('Batch modification mode')).toBeVisible();
 }
 
 async function clickDiagramElement(elementId: string) {
@@ -175,25 +177,25 @@ describe('<Processes /> batch modification (design system)', () => {
 		await selectInstance(screen, '1');
 
 		await userEvent.click(screen.getByRole('button', {name: 'Move'}));
-		const helper = screen.getByRole('dialog', {name: 'Process instance batch move mode'});
+		const helper = screen.getByRole('dialog', {name: 'Batch modification mode'});
 		await expect.element(helper.getByRole('img', {name: 'A bpmn diagram with a selected element'})).toBeVisible();
 		await userEvent.click(helper.getByRole('button', {name: 'Cancel'}));
 
 		await expect.element(helper).not.toBeInTheDocument();
-		await expect.element(screen.getByText('Batch Modification Mode')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Batch modification mode')).not.toBeInTheDocument();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Move'}));
 		await userEvent.click(helper.getByText("Don't show this message next time"));
 		await userEvent.click(helper.getByRole('button', {name: 'Continue'}));
 
-		await expect.element(screen.getByText('Batch Modification Mode')).toBeVisible();
+		await expect.element(screen.getByText('Batch modification mode')).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Exit'}));
 		await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Exit'}));
-		await expect.element(screen.getByText('Batch Modification Mode')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Batch modification mode')).not.toBeInTheDocument();
 		await userEvent.click(screen.getByRole('button', {name: 'Move'}));
 
-		await expect.element(screen.getByText('Batch Modification Mode')).toBeVisible();
+		await expect.element(screen.getByText('Batch modification mode')).toBeVisible();
 		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
 	});
 
@@ -205,7 +207,7 @@ describe('<Processes /> batch modification (design system)', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Move'}));
 
-		await expect.element(screen.getByText('Batch Modification Mode')).toBeVisible();
+		await expect.element(screen.getByText('Batch modification mode')).toBeVisible();
 		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
 	});
 
@@ -220,6 +222,40 @@ describe('<Processes /> batch modification (design system)', () => {
 		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeDisabled();
 		await expect.element(screen.getByText('Not available in batch modification mode')).toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: 'Review modification'})).toBeDisabled();
+	});
+
+	it('should keep tenant filter enabled while in the mode', async ({worker}) => {
+		sessionStorage.setItem(
+			'clientConfig',
+			JSON.stringify(
+				createSystemConfiguration({
+					deployment: {
+						isMultiTenancyEnabled: true,
+						isTenantsApiEnabled: true,
+						isWaitStatesEnabled: true,
+						maxRequestSize: 0,
+					},
+				}),
+			),
+		);
+		worker.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(
+					createCurrentUser({
+						tenants: [
+							{tenantId: 'tenant-a', name: 'Tenant A', description: null},
+							{tenantId: 'tenant-b', name: 'Tenant B', description: null},
+						],
+					}),
+				),
+			}),
+		);
+		mockPage(worker);
+		const screen = await renderPage();
+
+		await enterMode(screen);
+
+		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toBeEnabled();
 	});
 
 	it('should select a target, show it in the notification, and undo it', async ({worker}) => {
@@ -286,7 +322,7 @@ describe('<Processes /> batch modification (design system)', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Exit'}));
 		await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Exit'}));
 
-		await expect.element(screen.getByText('Batch Modification Mode')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Batch modification mode')).not.toBeInTheDocument();
 		await expect.element(screen.getByLabelText('Name')).toBeEnabled();
 	});
 });

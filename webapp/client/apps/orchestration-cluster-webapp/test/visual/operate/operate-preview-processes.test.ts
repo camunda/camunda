@@ -227,7 +227,7 @@ test('should match the instances table snapshot when the search is forbidden', a
 	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
 });
 
-test.describe('batch move mode', () => {
+test.describe('batch modification mode', () => {
 	test.beforeEach(async ({network, operatePreviewProcessesPage, page}) => {
 		network.use(
 			mockQueryProcessDefinitionsEndpoint({
