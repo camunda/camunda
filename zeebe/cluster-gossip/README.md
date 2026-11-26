@@ -11,5 +11,4 @@ writable by any member — or MEMBER — one value per member, written only by t
 |--------|----------------------------------------------------------------------------------------------------------------|
 | `api/` | `ClusterGossiper`, key descriptors, codecs, merge strategies and listeners. Depends only on `camunda-cluster`. |
 
-Consumers depend on `api/` only. The first implementation carries MEMBER keys over SWIM; GLOBAL keys
-wait for a dedicated transport (ADR 0001, D17).
+Consumers depend on `api/` only.

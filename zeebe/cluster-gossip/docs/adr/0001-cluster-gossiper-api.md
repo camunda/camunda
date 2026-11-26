@@ -98,9 +98,11 @@ A third strategy exposing the gossiper's header to custom merges is deliberately
 `put(key, value)` stores `merge(stored, value)`, or `value` itself if nothing is stored yet: the
 default (D11) is read-only and never merged into a write. Under last-writer-wins a local write always
 replaces the local value (D7), though it can still lose to a concurrent write on another member.
-`update(key, fn)` applies `fn` to the current value and stores the merged result. Storing a value raw
-under a custom merge would be overridden as soon as a peer gossips back, which looks like a lost
-write.
+`update(key, fn)` applies `fn` to the current value and stores the merged result. The alternative,
+storing the written value as is, breaks custom merges: under `max`, writing 5 while another member
+holds 7 would show 5 locally until that member's 7 arrives and is merged back in, so the write seems
+to be undone. Merging on write makes `get` right after a write show what the cluster converges to,
+given what this member knows.
 
 **D9. MEMBER writes target the local member only.**
 `put(MemberKey, value)` takes no member id, so the single-writer rule is enforced by the API rather
@@ -117,7 +119,9 @@ A `GlobalKey` declares a default value, returned by `get` until a value is recei
 never gossiped. This removes the main reason for a consumer to write on startup — writing a default
 while the local view is still empty would, under last-writer-wins, override the value the rest of the
 cluster holds. `get(GlobalKey)` therefore returns `T`, while `get(MemberKey, MemberId)` returns
-`Optional<T>`, because "this member has not written the key" is real information.
+`Optional<T>`, because "this member has not written the key" is real information. A consumer that
+needs to tell "never written" apart from a written value declares the key with a value type that has
+an explicit unset state, such as `Optional<V>` with `Optional.empty()` as the default.
 
 **D12. Writes are fire-and-forget.**
 Writes are non-blocking, thread-safe, visible locally right away and propagated asynchronously. They
@@ -146,42 +150,16 @@ an in-memory, multi-member implementation with controllable delivery, partitions
 consumers can test convergence without starting SWIM, plus helpers to check that a merge function
 satisfies D7.
 
-**D17. The first implementation carries MEMBER keys over SWIM; GLOBAL keys are not supported yet.**
-`zeebe/cluster-gossip/swim` stores each MEMBER value as the property of its owner's SWIM member that
-is named exactly like the key, holding the value in Base64. That is the format components already use
-when they write member properties directly (for example `brokerInfo`), so they can move to the
-gossiper without changing what other members, including older versions during a rolling update,
-read. In return, the gossiper owns no namespace: on any one member, a property must be written either
-through the gossiper or directly, never both; members on different versions may differ. Every GLOBAL operation throws `UnsupportedOperationException`. The
-current use cases only need MEMBER keys, and SWIM already provides their lifetime (D10): SWIM drops a
-member's properties when it leaves or restarts. This makes nothing worse than today — components
-already gossip through SWIM properties, and would keep writing them directly if there were no
-implementation — while putting all such state behind one API, so moving to another transport later
-changes one module instead of every consumer.
-
-A dedicated transport, using SWIM only for membership, is the preferred long-term direction and will
-be evaluated before GLOBAL keys are implemented. A proof of concept on localhost showed why GLOBAL
-keys should not go on SWIM: every member must republish a GLOBAL value for it to outlive its writer,
-and every SWIM probe resends the full properties of both members involved, so in a five-member
-cluster each byte of GLOBAL state cost about 14 bytes per second of background traffic, against
-about 0.5 for a dedicated anti-entropy transport. SWIM's UDP gossip also drops a member's update
-silently once its properties exceed one datagram (about 64 KB); probes and syncs over TCP still
-deliver it, but more slowly.
-
 ## Consequences
 
 - Consumers depend on a small contract and can be tested against the in-memory test kit.
 - The transport can be chosen, and later changed, without touching consumers.
-- Until GLOBAL keys are implemented, consumers can only use MEMBER keys in production; the test kit
-  implements both scopes.
-- MEMBER values add to the size of every SWIM update of their member, so they must stay small.
 - Last-writer-wins on wall-clock time is sensitive to clock skew. This is accepted for now.
 - Large values are sent whole on every change because there are no key families. This is accepted
   until a consumer needs more.
 
 ## Deferred
 
-- **A dedicated transport and GLOBAL keys** (D17).
 - **Deletes.** There is no `remove` in the first version, for either scope. Consumers that want to
   clear a value write an empty value of their own type. Because reads already return `Optional` or a
   default, adding deletes (with tombstones for GLOBAL keys) later is backwards compatible.
@@ -191,11 +169,7 @@ deliver it, but more slowly.
   values, so consumers should keep values small.
 - **A readiness signal** for the first successful sync; defaults (D11) are enough for now.
 - **Migrating existing consumers** of member properties (`TopologyManagerImpl`,
-  `DefaultClusterEventService`) and `ClusterConfigurationGossiper`. Because the SWIM implementation
-  keeps the existing property format (D17), moving a consumer whose property names are fixed is a
-  refactor that older members cannot tell apart. Gateways, however, discover partition groups by
-  scanning every `brokerInfo:<group>` property, which is a key family; migrating them needs either
-  the group names from the cluster configuration or key families in the API.
+  `DefaultClusterEventService`) and `ClusterConfigurationGossiper`.
 
 ## Alternatives considered
 

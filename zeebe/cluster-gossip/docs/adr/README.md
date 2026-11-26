@@ -6,7 +6,7 @@ cross-cutting ADRs.
 
 ## Index
 
-|                 ADR                  |                                            Decision                                             |
-|--------------------------------------|-------------------------------------------------------------------------------------------------|
-| [0001](0001-cluster-gossiper-api.md) | Transport-neutral cluster gossiper API with GLOBAL and MEMBER keys; MEMBER keys over SWIM first |
+|                 ADR                  |                              Decision                              |
+|--------------------------------------|--------------------------------------------------------------------|
+| [0001](0001-cluster-gossiper-api.md) | Transport-neutral cluster gossiper API with GLOBAL and MEMBER keys |
 
