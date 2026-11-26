@@ -87,7 +87,8 @@ public final class GatewayFactory {
 
   /**
    * Builds the gRPC access-token decoders. The CSL scoped decoder checks no SaaS claims, so this
-   * adds the organization and cluster checks of the REST API.
+   * adds the organization and cluster checks of the REST API. Build every gRPC decoder through this
+   * method, not through {@link ScopedJwtDecoderFactory} directly.
    */
   public static Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory(
       final @Nullable ScopedJwtDecoderFactory scopedJwtDecoderFactory,
