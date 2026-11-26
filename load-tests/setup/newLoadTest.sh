@@ -201,9 +201,9 @@ cp -v  "$VERSION_DIR/values/camunda-platform-values-defaults.yaml"              
 cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"   "$TARGET_DIRECTORY/"
 # Optional overlay, only referenced when a run passes `-f camunda-platform-values-standalone-gateway.yaml`
 # as platform-helm-values (not every version has it).
-if [[ -f "$VERSION_DIR/values/camunda-platform-values-standalone-gateway.yaml" ]]; then
-  cp -v "$VERSION_DIR/values/camunda-platform-values-standalone-gateway.yaml"    "$TARGET_DIRECTORY/"
-fi
+for overlay in "$VERSION_DIR"/values/camunda-platform-values-standalone-gateway*.yaml; do
+  [[ -f "$overlay" ]] && cp -v "$overlay" "$TARGET_DIRECTORY/"
+done
 
 # Don't configure Elasticsearch unless specifically enabled (secondary storage,
 # or via Optimize)

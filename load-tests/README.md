@@ -564,6 +564,7 @@ Use the following values directly in the workflow form:
 
    The embedded gateways stay running but get no client traffic. The leader balancer follows the REST address.
    See the header of `setup/main/values/camunda-platform-values-standalone-gateway.yaml` for what the overlay assumes.
+   Use `-f camunda-platform-values-standalone-gateway-clusterip.yaml` instead to get a normal ClusterIP Service in front of the gateways (the default overlay uses a headless Service).
 
 ##### Creating load test for old versions
 
