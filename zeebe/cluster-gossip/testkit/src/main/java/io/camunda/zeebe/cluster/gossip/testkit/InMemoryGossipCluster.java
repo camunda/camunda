@@ -18,6 +18,7 @@ import io.camunda.zeebe.cluster.gossip.MergeStrategy.LastWriterWins;
 import io.camunda.zeebe.cluster.gossip.MergeStrategy.Merging;
 import io.camunda.zeebe.cluster.gossip.Subscription;
 import java.lang.System.Logger.Level;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -50,8 +52,9 @@ import org.jspecify.annotations.Nullable;
  * writes with a timestamp lower than or equal to the one it already holds for that key, so its own
  * write always wins locally even when the clock stands still.
  *
- * <p>All methods are thread-safe. Listener callbacks are handed to the subscriber's executor while
- * holding the cluster's lock, so every listener sees changes in the order they were applied.
+ * <p>All methods are thread-safe. Each listener's callbacks run one at a time on the subscriber's
+ * executor, in the order the changes were applied, even when the executor is multi-threaded or a
+ * listener writes from a direct executor.
  */
 @NullMarked
 public final class InMemoryGossipCluster {
@@ -108,7 +111,7 @@ public final class InMemoryGossipCluster {
    */
   public void removeMember(final MemberId id) {
     synchronized (lock) {
-      requireMember(id).alive = false;
+      requireMember(id).stop();
       members.remove(id);
       members.values().forEach(other -> other.forgetMember(id));
       disconnected.removeIf(link -> link.contains(id));
@@ -353,6 +356,7 @@ public final class InMemoryGossipCluster {
         final var subscription = new GlobalSubscription<>(key, executor, listener);
         globalSubscriptions.add(subscription);
         subscription.notifyChanged();
+        subscription.deliver();
         return subscription;
       }
     }
@@ -364,15 +368,25 @@ public final class InMemoryGossipCluster {
         register(key);
         final var subscription = new MemberSubscription<>(key, executor, listener);
         memberSubscriptions.add(subscription);
-        memberValues.forEach(
-            (member, values) -> {
-              final var entry = values.get(key.name());
-              if (entry != null) {
-                subscription.notifyChanged(member, null, entry.bytes());
-              }
-            });
+        // a listener on a direct executor may write while being replayed to, so iterate a copy
+        List.copyOf(memberValues.entrySet())
+            .forEach(
+                values -> {
+                  final var entry = values.getValue().get(key.name());
+                  if (entry != null) {
+                    subscription.notifyChanged(values.getKey(), null, entry.bytes());
+                  }
+                });
+        subscription.deliver();
         return subscription;
       }
+    }
+
+    /** Ends this run: the gossiper stops working and no further callbacks reach its listeners. */
+    private void stop() {
+      alive = false;
+      globalSubscriptions.forEach(GlobalSubscription::close);
+      memberSubscriptions.forEach(MemberSubscription::close);
     }
 
     /** Registers the key on first use; every public operation starts here. */
@@ -477,16 +491,25 @@ public final class InMemoryGossipCluster {
       return new Merged(key.codec().encode(merged));
     }
 
-    /** Stores a GLOBAL entry and notifies if its value changed. Returns whether it changed. */
+    /**
+     * Stores a GLOBAL entry and notifies if its value changed. Returns whether the entry changed,
+     * which includes a newer last-writer-wins timestamp for the same value: {@link #sync()} must
+     * spread that too, or a later write on a member still holding the older timestamp could lose.
+     */
     private boolean storeGlobal(
         final String name, final @Nullable GlobalEntry current, final GlobalEntry next) {
       globals.put(name, next);
       if (current != null && Arrays.equals(current.bytes(), next.bytes())) {
-        return false;
+        return next instanceof final LastWrite write
+            && current instanceof final LastWrite last
+            && write.isNewerThan(last);
       }
-      globalSubscriptions.stream()
-          .filter(subscription -> subscription.key.name().equals(name))
-          .forEach(GlobalSubscription::notifyChanged);
+      final var affected =
+          globalSubscriptions.stream()
+              .filter(subscription -> subscription.key.name().equals(name))
+              .toList();
+      affected.forEach(GlobalSubscription::notifyChanged);
+      affected.forEach(GlobalSubscription::deliver);
       return true;
     }
 
@@ -519,32 +542,39 @@ public final class InMemoryGossipCluster {
       if (Arrays.equals(before, after)) {
         return;
       }
-      memberSubscriptions.stream()
-          .filter(subscription -> subscription.key.name().equals(name))
-          .forEach(subscription -> subscription.notifyChanged(member, before, after));
+      final var affected =
+          memberSubscriptions.stream()
+              .filter(subscription -> subscription.key.name().equals(name))
+              .toList();
+      affected.forEach(subscription -> subscription.notifyChanged(member, before, after));
+      affected.forEach(MemberSubscription::deliver);
     }
 
     private final class GlobalSubscription<T> implements Subscription {
 
       private final GlobalKey<T> key;
-      private final Executor executor;
+      private final SerialCallbacks callbacks;
       private final GlobalListener<T> listener;
 
       private GlobalSubscription(
           final GlobalKey<T> key, final Executor executor, final GlobalListener<T> listener) {
         this.key = key;
-        this.executor = executor;
+        callbacks = new SerialCallbacks(executor);
         this.listener = listener;
       }
 
       void notifyChanged() {
         final T value = currentGlobal(key);
-        executor.execute(
+        callbacks.enqueue(
             () -> {
               if (globalSubscriptions.contains(this)) {
                 listener.onChange(value);
               }
             });
+      }
+
+      void deliver() {
+        callbacks.deliver();
       }
 
       @Override
@@ -556,13 +586,13 @@ public final class InMemoryGossipCluster {
     private final class MemberSubscription<T> implements Subscription {
 
       private final MemberKey<T> key;
-      private final Executor executor;
+      private final SerialCallbacks callbacks;
       private final MemberListener<T> listener;
 
       private MemberSubscription(
           final MemberKey<T> key, final Executor executor, final MemberListener<T> listener) {
         this.key = key;
-        this.executor = executor;
+        callbacks = new SerialCallbacks(executor);
         this.listener = listener;
       }
 
@@ -573,7 +603,7 @@ public final class InMemoryGossipCluster {
         if (value.isEmpty() && (before == null || tryDecode(key, before).isEmpty())) {
           return;
         }
-        executor.execute(
+        callbacks.enqueue(
             () -> {
               if (memberSubscriptions.contains(this)) {
                 listener.onChange(member, value);
@@ -581,9 +611,73 @@ public final class InMemoryGossipCluster {
             });
       }
 
+      void deliver() {
+        callbacks.deliver();
+      }
+
       @Override
       public void close() {
         memberSubscriptions.remove(this);
+      }
+    }
+  }
+
+  /**
+   * Runs one subscription's callbacks one at a time, in the order they were added, on the
+   * subscriber's executor. Without this, a multi-threaded executor could run an older callback
+   * last, and a listener that writes from a direct executor would deliver the resulting change to
+   * other listeners before the change that triggered it.
+   */
+  private final class SerialCallbacks {
+
+    private final Executor executor;
+    // guarded by the cluster's lock
+    private final Queue<Runnable> pending = new ArrayDeque<>();
+    private boolean draining;
+
+    private SerialCallbacks(final Executor executor) {
+      this.executor = executor;
+    }
+
+    /** Queues a callback without running it. Must be called while holding the cluster's lock. */
+    void enqueue(final Runnable callback) {
+      pending.add(callback);
+    }
+
+    /**
+     * Starts running queued callbacks unless that is already under way. Must be called while
+     * holding the cluster's lock, after a change was queued for every listener it concerns, so a
+     * listener that writes in response cannot overtake the change for the other listeners.
+     */
+    void deliver() {
+      if (!draining && !pending.isEmpty()) {
+        draining = true;
+        executor.execute(this::drain);
+      }
+    }
+
+    private void drain() {
+      while (true) {
+        final Runnable next;
+        synchronized (lock) {
+          next = pending.poll();
+          if (next == null) {
+            draining = false;
+            return;
+          }
+        }
+        boolean completed = false;
+        try {
+          next.run();
+          completed = true;
+        } finally {
+          if (!completed) {
+            // a throwing listener must not stop later callbacks; the next delivery runs the rest
+            synchronized (lock) {
+              draining = false;
+            }
+          }
+        }
       }
     }
   }

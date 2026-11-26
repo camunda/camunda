@@ -134,6 +134,23 @@ final class InMemoryGossipClusterTest {
     }
 
     @Test
+    void shouldSpreadNewerTimestampOfSameValueOnSync() {
+      // given - C rewrites the value everyone holds, which only raises its timestamp
+      a.put(FLAG, "on");
+      cluster.sync();
+      c.put(FLAG, "on");
+      cluster.disconnect(A, C);
+      cluster.sync();
+
+      // when - A writes after the sync, so its write must win
+      a.put(FLAG, "off-again");
+      cluster.sync();
+
+      // then
+      assertThat(List.of(a.get(FLAG), b.get(FLAG), c.get(FLAG))).containsOnly("off-again");
+    }
+
+    @Test
     void shouldLetLocalWriteWinWhileClockStandsStill() {
       // given
       a.put(FLAG, "first");
@@ -455,6 +472,63 @@ final class InMemoryGossipClusterTest {
       assertThat(received).isEmpty();
       queued.forEach(Runnable::run);
       assertThat(received).containsExactly("off", "on");
+    }
+
+    @Test
+    void shouldNotRunQueuedCallbacksOfPreviousRunAfterRestart() {
+      // given
+      final var queued = new ArrayList<Runnable>();
+      final var received = new ArrayList<Optional<String>>();
+      a.subscribe(ROLE, queued::add, (member, value) -> received.add(value));
+      a.put(ROLE, "leader");
+
+      // when
+      cluster.restart(A);
+      queued.forEach(Runnable::run);
+
+      // then
+      assertThat(received).isEmpty();
+    }
+
+    @Test
+    void shouldLetListenerWriteWhileValuesAreReplayed() {
+      // given - B holds A's value but none of its own yet
+      a.put(ROLE, "leader");
+      cluster.sync();
+
+      // when - B reacts to the replayed value by writing its own
+      b.subscribe(
+          ROLE,
+          Runnable::run,
+          (member, value) -> {
+            if (member.equals(A)) {
+              b.put(ROLE, "follower");
+            }
+          });
+
+      // then
+      assertThat(b.get(ROLE, B)).contains("follower");
+    }
+
+    @Test
+    void shouldNotifyEveryListenerInOrderWhenListenerWrites() {
+      // given - the first listener answers "leader" by writing "follower"
+      a.subscribe(
+          ROLE,
+          Runnable::run,
+          (member, value) -> {
+            if (value.equals(Optional.of("leader"))) {
+              a.put(ROLE, "follower");
+            }
+          });
+      final var received = new ArrayList<Optional<String>>();
+      a.subscribe(ROLE, Runnable::run, (member, value) -> received.add(value));
+
+      // when
+      a.put(ROLE, "leader");
+
+      // then
+      assertThat(received).containsExactly(Optional.of("leader"), Optional.of("follower"));
     }
 
     @Test
