@@ -15,6 +15,7 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
@@ -72,6 +73,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private final ServiceRegistry serviceRegistry;
   private final PasswordEncoder passwordEncoder;
   private final ScopedJwtDecoderFactory scopedJwtDecoderFactory;
+  private final CamundaSecurityLibraryProperties securityProperties;
   private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory;
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
@@ -91,6 +93,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final ServiceRegistry serviceRegistry,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      @Autowired(required = false) final CamundaSecurityLibraryProperties securityProperties,
       @Autowired(required = false)
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       final MeterRegistry meterRegistry,
@@ -108,6 +111,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.serviceRegistry = serviceRegistry;
     this.passwordEncoder = passwordEncoder;
     this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
+    this.securityProperties = securityProperties;
     this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.meterRegistry = meterRegistry;
     maxVariableNameLength = gatewayRestConfiguration.getMaxNameFieldLength();
@@ -131,7 +135,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
     final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
-        authConfig -> scopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig);
+        GatewayFactory.jwtDecoderFactory(scopedJwtDecoderFactory, securityProperties);
     final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
         authConfig -> scopedOidcClaimsProviderFactory.buildClaimsProvider(authConfig);
     final Function<String, UserServices> userServicesForTenant =
