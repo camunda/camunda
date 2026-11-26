@@ -105,13 +105,13 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
           brokerShutdownContext
               .getPhysicalTenantActorSchedulers()
               .release(physicalTenantId)
+              // release never completes exceptionally, so only the error of stopping counts
               .whenComplete(
-                  (released, releaseError) ->
+                  (released, ignored) ->
                       concurrencyControl.run(
                           () -> {
-                            final var failure = error != null ? error : releaseError;
-                            if (failure != null) {
-                              shutdownFuture.completeExceptionally(failure);
+                            if (error != null) {
+                              shutdownFuture.completeExceptionally(error);
                             } else {
                               shutdownFuture.complete(brokerShutdownContext);
                             }
