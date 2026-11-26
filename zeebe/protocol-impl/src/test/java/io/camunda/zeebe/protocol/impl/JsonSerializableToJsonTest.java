@@ -138,6 +138,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
 import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -5892,16 +5893,20 @@ final class JsonSerializableToJsonTest {
         (Supplier<CaseRecord>)
             () ->
                 new CaseRecord()
+                    .setCaseKey(124L)
+                    .setState(CaseLifecycleState.ACTIVE)
                     .setProcessInstanceKey(123L)
                     .setProcessDefinitionKey(456L)
                     .setBpmnProcessId("order-process")
                     .setTenantId("tenant-1")
                     .setBusinessId("order-42")
                     .setTitle("Order #42 for ACME")
-                    .addStage("review", CaseStageStatus.ACTIVE)
+                    .addStage("review", "Review", CaseStageStatus.ACTIVE)
                     .setStorageOrdinal(1001),
         """
         {
+          "caseKey": 124,
+          "state": "ACTIVE",
           "processInstanceKey": 123,
           "processDefinitionKey": 456,
           "bpmnProcessId": "order-process",
@@ -5911,6 +5916,7 @@ final class JsonSerializableToJsonTest {
           "stages": [
             {
               "elementId": "review",
+              "name": "Review",
               "status": "ACTIVE"
             }
           ],

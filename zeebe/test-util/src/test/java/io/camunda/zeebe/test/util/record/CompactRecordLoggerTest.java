@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
+import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
 import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentDefinitionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolCallValue;
@@ -174,6 +175,8 @@ class CompactRecordLoggerTest {
               .withValueType(ValueType.CASE)
               .withValue(
                   ImmutableCaseRecordValue.builder()
+                      .withCaseKey(123L)
+                      .withState(CaseLifecycleState.ACTIVE)
                       .withProcessInstanceKey(123L)
                       .withBpmnProcessId("order-process")
                       .withBusinessId("order-42")
@@ -188,7 +191,7 @@ class CompactRecordLoggerTest {
       // then
       assertThat(summary)
           .isEqualTo(
-              "title:Order #42 for ACME in <process \"order-process\"[K123]\"order-42\"> (tenant: tenant-1)");
+              "title:Order #42 for ACME state:ACTIVE in <process \"order-process\"[K123]\"order-42\"> (tenant: tenant-1)");
     }
 
     @Test
@@ -199,6 +202,8 @@ class CompactRecordLoggerTest {
               .withValueType(ValueType.CASE)
               .withValue(
                   ImmutableCaseRecordValue.builder()
+                      .withCaseKey(123L)
+                      .withState(CaseLifecycleState.ACTIVE)
                       .withProcessInstanceKey(123L)
                       .withBpmnProcessId("order-process")
                       .withBusinessId("")
@@ -206,11 +211,13 @@ class CompactRecordLoggerTest {
                       .addStages(
                           ImmutableCaseStageValue.builder()
                               .withElementId("review")
+                              .withName("Review")
                               .withStatus(CaseStageStatus.ACTIVE)
                               .build())
                       .addStages(
                           ImmutableCaseStageValue.builder()
                               .withElementId("approve")
+                              .withName("")
                               .withStatus(CaseStageStatus.NOT_STARTED)
                               .build())
                       .build())
@@ -222,7 +229,8 @@ class CompactRecordLoggerTest {
       // then
       assertThat(summary)
           .isEqualTo(
-              "title:Order #42 for ACME stages:[review=ACTIVE, approve=NOT_STARTED]"
+              "title:Order #42 for ACME state:ACTIVE"
+                  + " stages:[review(Review)=ACTIVE, approve=NOT_STARTED]"
                   + " in <process \"order-process\"[K123]>");
     }
 
