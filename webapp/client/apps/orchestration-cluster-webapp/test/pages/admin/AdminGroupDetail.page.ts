@@ -13,6 +13,10 @@ class AdminGroupDetailPage extends BasePage {
 		return this.page.goto(`/admin/groups/${groupId}${search}`);
 	}
 
+	breadcrumbLink(name: string) {
+		return this.page.getByRole('navigation', {name: 'breadcrumb'}).getByRole('link', {name, exact: true});
+	}
+
 	heading(name: string) {
 		return this.page.getByRole('heading', {name, exact: true});
 	}
@@ -51,6 +55,10 @@ class AdminGroupDetailPage extends BasePage {
 
 	get dialogCombobox() {
 		return this.dialog.getByRole('combobox');
+	}
+
+	get noSuggestions() {
+		return this.page.getByText('No results found', {exact: true});
 	}
 
 	get dialog() {

@@ -69,7 +69,7 @@ describe('<DeleteClusterVariableModal />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 
-		await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+		await expect.poll(() => onClose).toHaveBeenCalledOnce();
 	});
 
 	it('should keep the dialog open when the delete fails', async ({worker}) => {

@@ -11,6 +11,8 @@ import {cleanup, render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {toast} from '@camunda/design-system';
 import {afterEach, describe, expect, vi} from 'vitest';
+import {z} from 'zod';
+import {createGroupRequestBodySchema, updateGroupRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {createAdminPageWrapper} from '#/vitest-modules/admin-page-wrapper';
 import {
@@ -21,9 +23,6 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {createGroup} from '#/shared-test-modules/api-mocks/groups';
 import {AdminGroupsPage, type AdminGroupsPageProps} from './AdminGroupsPage';
-
-const DEBOUNCED = {timeout: 3000};
-const RETRY_BUDGET = {timeout: 10_000};
 
 async function renderPage(overrides: Partial<AdminGroupsPageProps> = {}) {
 	const onSearchChange = vi.fn();
@@ -44,6 +43,7 @@ async function renderPage(overrides: Partial<AdminGroupsPageProps> = {}) {
 
 describe('<AdminGroupsPage />', () => {
 	afterEach(async () => {
+		vi.useRealTimers();
 		await cleanup();
 		toast.dismiss();
 	});
@@ -62,8 +62,8 @@ describe('<AdminGroupsPage />', () => {
 	it('should keep the table when a search finds no groups', async () => {
 		const {screen} = await renderPage({groups: [], totalItems: 0, search: {search: 'nothing'}});
 
-		await expect.element(screen.getByText('No groups created yet')).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+		await expect.element(screen.getByText('No groups created yet')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('No groups found.')).toBeVisible();
 	});
 
@@ -83,10 +83,12 @@ describe('<AdminGroupsPage />', () => {
 
 	it('should search by group ID once the reader stops typing', async () => {
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		await userEvent.fill(screen.getByRole('searchbox'), 'ops');
 
-		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'ops', page: undefined}), DEBOUNCED);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: 'ops', page: undefined});
 	});
 
 	it('should keep what the reader typed while an earlier search is still loading', async () => {
@@ -99,11 +101,10 @@ describe('<AdminGroupsPage />', () => {
 		const screen = await render(<AdminGroupsPage idPattern={null} {...props} search={{}} />, {
 			wrapper: createAdminPageWrapper(),
 		});
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		await userEvent.fill(screen.getByRole('searchbox'), 'ab');
-		await vi.waitFor(
-			() => expect(props.onSearchChange).toHaveBeenCalledWith({search: 'ab', page: undefined}),
-			DEBOUNCED,
-		);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(props.onSearchChange).toHaveBeenCalledWith({search: 'ab', page: undefined});
 
 		// when
 		await userEvent.fill(screen.getByRole('searchbox'), 'abc');
@@ -141,7 +142,11 @@ describe('<AdminGroupsPage />', () => {
 	it('should create a group', async ({worker}) => {
 		const group = createGroup({groupId: 'ops', name: 'Operations'});
 		worker.use(
-			mockCreateGroupEndpoint({successResponse: HttpResponse.json(group, {status: 201})}),
+			mockCreateGroupEndpoint({
+				schema: createGroupRequestBodySchema.extend({groupId: z.literal('ops'), name: z.literal('Operations')}),
+				successResponse: HttpResponse.json(group, {status: 201}),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
 			mockQueryGroupsEndpoint({successResponse: HttpResponse.json({items: [group], page: {totalItems: 1}})}),
 		);
 		const {screen} = await renderPage({groups: []});
@@ -242,7 +247,11 @@ describe('<AdminGroupsPage />', () => {
 		const group = createGroup({groupId: 'ops', name: 'Operations'});
 		const updated = {...group, name: 'Ops team'};
 		worker.use(
-			mockUpdateGroupEndpoint({successResponse: HttpResponse.json(updated)}),
+			mockUpdateGroupEndpoint({
+				schema: updateGroupRequestBodySchema.extend({name: z.literal('Ops team')}),
+				successResponse: HttpResponse.json(updated),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
 			mockQueryGroupsEndpoint({successResponse: HttpResponse.json({items: [updated], page: {totalItems: 1}})}),
 		);
 		const {screen} = await renderPage({groups: [group]});
@@ -285,8 +294,8 @@ describe('<AdminGroupsPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Create group'}).last());
 
 		// then
-		await expect.element(screen.getByText("Couldn't confirm the change took effect"), RETRY_BUDGET).toBeVisible();
-	}, 15_000);
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toBeVisible();
+	});
 
 	it('should disable the delete confirmation while the deletion is pending', async ({worker}) => {
 		worker.use(mockDeleteGroupEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 'infinite'}));

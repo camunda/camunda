@@ -9,12 +9,10 @@
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {TooltipProvider} from '@camunda/design-system';
-import {describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11';
 import {AdminOperationsLogPage, type AdminOperationsLogPageProps} from './AdminOperationsLogPage';
-
-const DEBOUNCED = {timeout: 3000};
 
 function createAuditLog(overrides: Partial<AuditLog> = {}): AuditLog {
 	return {
@@ -73,6 +71,10 @@ async function renderPage(overrides: Partial<AdminOperationsLogPageProps> = {}) 
 }
 
 describe('<AdminOperationsLogPage />', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
 	it('should list the audit log columns', async () => {
 		// when
 		const {screen} = await renderPage();
@@ -285,26 +287,27 @@ describe('<AdminOperationsLogPage />', () => {
 	it('should filter by actor once the reader stops typing', async () => {
 		// given
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		// when
 		await userEvent.fill(screen.getByLabelText('Actor'), 'demo');
 
 		// then
-		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({actor: 'demo', page: undefined}), DEBOUNCED);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({actor: 'demo', page: undefined});
 	});
 
 	it('should filter by owner key once the reader stops typing', async () => {
 		// given
 		const {screen, onSearchChange} = await renderPage({search: {entityType: 'AUTHORIZATION'}});
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		// when
 		await userEvent.fill(screen.getByLabelText('Owner ID'), 'demo-user');
 
 		// then
-		await vi.waitFor(
-			() => expect(onSearchChange).toHaveBeenCalledWith({relatedEntityKey: 'demo-user', page: undefined}),
-			DEBOUNCED,
-		);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({relatedEntityKey: 'demo-user', page: undefined});
 	});
 
 	it('should reverse the sort order when the reader sorts a column', async () => {

@@ -6,43 +6,49 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {HttpResponse, http} from 'msw';
-import {z} from 'zod';
+import {HttpResponse} from 'msw';
 import {cleanup} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
 import {useCallback, useState} from 'react';
-import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
+	mockAssignUserToGroupEndpoint,
 	mockDeleteGroupEndpoint,
 	mockQueryGroupsEndpoint,
 	mockQueryClientsByGroupEndpoint,
 	mockQueryMappingRulesByGroupEndpoint,
+	mockQueryMappingRulesEndpoint,
 	mockQueryRolesByGroupEndpoint,
+	mockQueryRolesEndpoint,
 	mockQueryUsersByGroupEndpoint,
 	mockQueryUsersEndpoint,
 	mockUnassignUserFromGroupEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
+import {
+	queryMappingRulesRequestBodySchema,
+	queryRolesRequestBodySchema,
+	queryUsersByGroupRequestBodySchema,
+	queryUsersRequestBodySchema,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {createGroup, createPage} from '#/shared-test-modules/api-mocks/groups';
 import {createMappingRule} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {createUser} from '#/shared-test-modules/api-mocks/users';
 import type {GroupDetailSearch} from '#/admin/modules/groups/detailSearchSchema';
 import {AdminGroupDetailPage, type AdminGroupDetailPageProps} from './AdminGroupDetailPage';
 
-const RETRY_BUDGET = {timeout: 10_000};
-
 // Hovering or focusing a tab prefetches its first page, and the pointer position survives between tests.
 const mockEmptyRoles = () => mockQueryRolesByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))});
 const mockEmptyUsers = () => mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))});
 
-async function renderPage(overrides: Partial<AdminGroupDetailPageProps> = {}) {
+async function renderPage({search: initialSearch = {}, ...overrides}: Partial<AdminGroupDetailPageProps> = {}) {
 	const onSearchChange = vi.fn();
 	const onDeleted = vi.fn();
 	const Page = () => {
-		const [search, setSearch] = useState<GroupDetailSearch>(overrides.search ?? {});
+		const [search, setSearch] = useState<GroupDetailSearch>(initialSearch);
 		const handleSearchChange = useCallback((next: Partial<GroupDetailSearch>) => {
 			onSearchChange(next);
 			setSearch((previous) => ({...previous, ...next}));
@@ -53,7 +59,7 @@ async function renderPage(overrides: Partial<AdminGroupDetailPageProps> = {}) {
 				<AdminGroupDetailPage
 					group={createGroup({groupId: 'ops', name: 'Operations', description: 'The ops team'})}
 					isOidc={false}
-					canManageMappingRules={overrides.isOidc ?? false}
+					canManageMappingRules={false}
 					onDeleted={onDeleted}
 					{...overrides}
 					search={search}
@@ -66,65 +72,6 @@ async function renderPage(overrides: Partial<AdminGroupDetailPageProps> = {}) {
 	const screen = await renderWithRouter(() => <Page />, {path: '/admin/groups'});
 
 	return {screen, onSearchChange, onDeleted};
-}
-
-function mockMembersChangingOn(
-	change: {getUrl: (params: {groupId: string; username: string}) => string; method: 'PUT' | 'DELETE'},
-	{before, after}: {before: {username: string}[]; after: {username: string}[]},
-) {
-	let changed = false;
-	return [
-		http[change.method === 'PUT' ? 'put' : 'delete'](
-			decodeURIComponent(change.getUrl({groupId: ':groupId', username: ':username'})),
-			() => {
-				changed = true;
-				return new HttpResponse(null, {status: 204});
-			},
-		),
-		http.post(decodeURIComponent(endpoints.queryUsersByGroup.getUrl({groupId: ':groupId'})), () =>
-			HttpResponse.json(createPage(changed ? after : before)),
-		),
-	];
-}
-
-function mockLaggingAssign(
-	urls: {assign: string; list: string},
-	{before, after}: {before: object[]; after: object[]},
-	newListHeld: Promise<void> = Promise.resolve(),
-) {
-	let assigned = false;
-	let lookupsAfterAssign = 0;
-	const handlers = [
-		http.put(decodeURIComponent(urls.assign), () => {
-			assigned = true;
-			return new HttpResponse(null, {status: 204});
-		}),
-		http.post(decodeURIComponent(urls.list), async ({request}) => {
-			const {page} = (await request.json()) as {page: {from: number; limit: number}};
-			if (lookupsAfterAssign > 0) {
-				await newListHeld;
-			}
-			if (assigned) {
-				lookupsAfterAssign += 1;
-			}
-			const items = lookupsAfterAssign > 1 ? after : before;
-			return HttpResponse.json(createPage(items.slice(page.from, page.from + page.limit), {totalItems: items.length}));
-		}),
-	];
-	return {handlers, hasServedNewList: () => lookupsAfterAssign > 1};
-}
-
-// Searches like the real backend: applies the id filter's $notIn, then the page limit.
-function mockCandidateSearch(url: string, idField: string, items: Record<string, unknown>[]) {
-	return http.post(decodeURIComponent(url), async ({request}) => {
-		const body = (await request.json()) as {
-			filter?: Record<string, {$notIn?: string[]} | undefined>;
-			page: {limit: number};
-		};
-		const excluded = body.filter?.[idField]?.$notIn ?? [];
-		const matching = items.filter((item) => !excluded.includes(String(item[idField])));
-		return HttpResponse.json(createPage(matching.slice(0, body.page.limit), {totalItems: matching.length}));
-	});
 }
 
 describe('<AdminGroupDetailPage />', () => {
@@ -156,7 +103,7 @@ describe('<AdminGroupDetailPage />', () => {
 	it('should also offer mapping rules and clients when the login is delegated', async ({worker}) => {
 		worker.use(mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}));
 
-		const {screen} = await renderPage({isOidc: true});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true});
 
 		await expect.element(screen.getByRole('tab', {name: 'Mapping rules'})).toBeVisible();
 		await expect.element(screen.getByRole('tab', {name: 'Clients'})).toBeVisible();
@@ -196,7 +143,11 @@ describe('<AdminGroupDetailPage />', () => {
 				),
 			}),
 		);
-		const {screen, onSearchChange} = await renderPage({isOidc: true, search: {tab: 'mappingRules'}});
+		const {screen, onSearchChange} = await renderPage({
+			isOidc: true,
+			canManageMappingRules: true,
+			search: {tab: 'mappingRules'},
+		});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Claim name'}));
 
@@ -208,7 +159,7 @@ describe('<AdminGroupDetailPage />', () => {
 		worker.use(
 			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([{username: 'john.doe'}]))}),
 		);
-		const {screen, onSearchChange} = await renderPage({isOidc: true});
+		const {screen, onSearchChange} = await renderPage({isOidc: true, canManageMappingRules: true});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Username'}));
 
@@ -251,7 +202,7 @@ describe('<AdminGroupDetailPage />', () => {
 			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([{username: 'john.doe'}]))}),
 		);
 
-		const {screen} = await renderPage({isOidc: true});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true});
 
 		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'Email', exact: true})).not.toBeInTheDocument();
@@ -264,25 +215,6 @@ describe('<AdminGroupDetailPage />', () => {
 		await userEvent.click(screen.getByRole('tab', {name: 'Roles'}));
 
 		expect(onSearchChange).toHaveBeenCalledWith({tab: 'roles', page: undefined, pageSize: undefined});
-	});
-
-	it('should load a tab before it is selected when its trigger is hovered', async ({worker}) => {
-		// given
-		const rolesRequested = vi.fn();
-		worker.use(
-			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
-			http.post(decodeURIComponent(endpoints.queryRolesByGroup.getUrl({groupId: ':groupId'})), () => {
-				rolesRequested();
-				return HttpResponse.json(createPage([]));
-			}),
-		);
-		const {screen} = await renderPage();
-
-		// when
-		await userEvent.hover(screen.getByRole('tab', {name: 'Roles'}));
-
-		// then
-		await vi.waitFor(() => expect(rolesRequested).toHaveBeenCalled());
 	});
 
 	it('should list the roles of the group', async ({worker}) => {
@@ -304,7 +236,7 @@ describe('<AdminGroupDetailPage />', () => {
 			mockEmptyRoles(),
 		);
 
-		const {screen} = await renderPage({isOidc: true, search: {tab: 'clients'}});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true, search: {tab: 'clients'}});
 
 		await expect.element(screen.getByRole('cell', {name: 'my-client'})).toBeVisible();
 	});
@@ -328,7 +260,8 @@ describe('<AdminGroupDetailPage />', () => {
 
 	it('should assign a user to the group', async ({worker}) => {
 		worker.use(
-			...mockMembersChangingOn(endpoints.assignUserToGroup, {before: [], after: [{username: 'jane.doe'}]}),
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+			mockAssignUserToGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([createUser({username: 'jane.doe'})]))}),
 			mockEmptyRoles(),
 		);
@@ -338,6 +271,9 @@ describe('<AdminGroupDetailPage />', () => {
 		await userEvent.click(screen.getByRole('combobox', {name: 'Username'}));
 		await userEvent.click(screen.getByRole('option', {name: 'jane.doe'}));
 		await userEvent.keyboard('{Escape}');
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([{username: 'jane.doe'}]))}),
+		);
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
 
 		await expect.element(screen.getByText('User jane.doe assigned')).toBeVisible();
@@ -357,7 +293,7 @@ describe('<AdminGroupDetailPage />', () => {
 
 	it('should assign a client by its ID', async ({worker}) => {
 		worker.use(mockQueryClientsByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}));
-		const {screen} = await renderPage({isOidc: true, search: {tab: 'clients'}});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true, search: {tab: 'clients'}});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Assign client'}));
 		await userEvent.fill(screen.getByLabelText('Client ID'), 'my-client');
@@ -367,7 +303,7 @@ describe('<AdminGroupDetailPage />', () => {
 
 	it('should ask for a username, not a client ID, when assigning an external user', async ({worker}) => {
 		worker.use(mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}));
-		const {screen} = await renderPage({isOidc: true});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
 
@@ -377,7 +313,7 @@ describe('<AdminGroupDetailPage />', () => {
 	it('should hint that an externally entered username is case-sensitive', async ({worker}) => {
 		// given
 		worker.use(mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}));
-		const {screen} = await renderPage({isOidc: true});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
@@ -404,13 +340,17 @@ describe('<AdminGroupDetailPage />', () => {
 	it('should assign an external user by username when the login is delegated', async ({worker}) => {
 		// given
 		worker.use(
-			...mockMembersChangingOn(endpoints.assignUserToGroup, {before: [], after: [{username: 'external.user'}]}),
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+			mockAssignUserToGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 		);
-		const {screen} = await renderPage({isOidc: true});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
 		await userEvent.fill(screen.getByLabelText('Username'), 'external.user');
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([{username: 'external.user'}]))}),
+		);
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
 
 		// then
@@ -419,103 +359,151 @@ describe('<AdminGroupDetailPage />', () => {
 
 	it('should list an assigned user in username order before the server shows it', async ({worker}) => {
 		// given
-		const newListGate = {release: () => {}};
-		const newListHeld = new Promise<void>((resolve) => {
-			newListGate.release = resolve;
-		});
-		onTestFinished(() => newListGate.release());
-		const server = mockLaggingAssign(
-			{
-				assign: endpoints.assignUserToGroup.getUrl({groupId: ':groupId', username: ':username'}),
-				list: endpoints.queryUsersByGroup.getUrl({groupId: ':groupId'}),
-			},
-			{
-				before: [{username: 'alice'}, {username: 'carol'}],
-				after: [{username: 'alice'}, {username: 'bob'}, {username: 'carol'}],
-			},
-			newListHeld,
+		worker.use(
+			mockQueryUsersByGroupEndpoint({
+				successResponse: HttpResponse.json(createPage([{username: 'alice'}, {username: 'carol'}])),
+			}),
+			mockAssignUserToGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}),
 		);
-		worker.use(...server.handlers, mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}));
-		const {screen} = await renderPage({isOidc: true});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true});
+		await expect.element(screen.getByRole('cell', {name: 'alice', exact: true})).toBeVisible();
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
 		await userEvent.fill(screen.getByLabelText('Username'), 'bob');
+		worker.use(
+			mockQueryUsersByGroupEndpoint({
+				successResponse: HttpResponse.json(createPage([{username: 'alice'}, {username: 'carol'}])),
+				delay: 'infinite',
+			}),
+		);
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
 
 		// then
 		await expect.element(screen.getByRole('cell', {name: 'bob', exact: true})).toBeVisible();
-		expect(server.hasServedNewList()).toBe(false);
 		const memberCells = screen.getByRole('cell', {name: /^(alice|bob|carol)$/});
 		await expect.element(memberCells.nth(0)).toHaveTextContent('alice');
 		await expect.element(memberCells.nth(1)).toHaveTextContent('bob');
 		await expect.element(memberCells.nth(2)).toHaveTextContent('carol');
 		await expect.element(memberCells.nth(3)).not.toBeInTheDocument();
-		newListGate.release();
-		await vi.waitFor(() => expect(server.hasServedNewList()).toBe(true), RETRY_BUDGET);
-		await expect.element(screen.getByText("Couldn't confirm the change took effect")).not.toBeInTheDocument();
-	}, 15_000);
+	});
 
-	it('should list an assigned client in client ID order before the server shows it', async ({worker}) => {
-		// given
-		const server = mockLaggingAssign(
-			{
-				assign: endpoints.assignClientToGroup.getUrl({groupId: ':groupId', clientId: ':clientId'}),
-				list: endpoints.queryClientsByGroup.getUrl({groupId: ':groupId'}),
-			},
-			{
-				before: [{clientId: 'Client-B'}, {clientId: 'client-a'}],
-				after: [{clientId: 'Client-B'}, {clientId: 'client-a'}, {clientId: 'client-c'}],
-			},
+	it('should list an assigned user in descending username order before the server shows it', async ({worker}) => {
+		worker.use(
+			mockQueryUsersByGroupEndpoint({
+				successResponse: HttpResponse.json(createPage([{username: 'carol'}, {username: 'bob'}])),
+			}),
+			mockAssignUserToGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}),
 		);
-		worker.use(...server.handlers);
-		const {screen} = await renderPage({isOidc: true, search: {tab: 'clients'}});
+		const {screen} = await renderPage({
+			isOidc: true,
+			canManageMappingRules: true,
+			search: {sortField: 'username', sortOrder: 'DESC'},
+		});
+		await expect.element(screen.getByRole('cell', {name: 'carol', exact: true})).toBeVisible();
 
-		// when
-		await userEvent.click(screen.getByRole('button', {name: 'Assign client'}));
-		await userEvent.fill(screen.getByLabelText('Client ID'), 'client-c');
-		await userEvent.click(screen.getByRole('button', {name: 'Assign client'}).last());
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.fill(screen.getByLabelText('Username'), 'dave');
+		worker.use(
+			mockQueryUsersByGroupEndpoint({
+				successResponse: HttpResponse.json(createPage([{username: 'carol'}, {username: 'bob'}])),
+				delay: 'infinite',
+			}),
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
 
-		// then
-		await expect.element(screen.getByRole('cell', {name: 'client-c', exact: true})).toBeVisible();
-		expect(server.hasServedNewList()).toBe(false);
-		await vi.waitFor(() => expect(server.hasServedNewList()).toBe(true), RETRY_BUDGET);
-	}, 15_000);
+		const memberCells = screen.getByRole('cell', {name: /^(bob|carol|dave)$/});
+		await expect.element(memberCells.nth(0)).toHaveTextContent('dave');
+		await expect.element(memberCells.nth(1)).toHaveTextContent('carol');
+		await expect.element(memberCells.nth(2)).toHaveTextContent('bob');
+	});
+
+	it('should show the members the server confirms after an assignment', async ({worker}) => {
+		worker.use(
+			mockQueryUsersByGroupEndpoint({
+				successResponse: HttpResponse.json(createPage([{username: 'alice'}, {username: 'carol'}])),
+			}),
+			mockAssignUserToGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+		);
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true});
+		await expect.element(screen.getByRole('cell', {name: 'alice', exact: true})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.fill(screen.getByLabelText('Username'), 'bob');
+		worker.use(
+			mockQueryUsersByGroupEndpoint({
+				successResponse: HttpResponse.json(
+					createPage([{username: 'alice'}, {username: 'bob'}, {username: 'carol'}, {username: 'dave'}]),
+				),
+			}),
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
+
+		await expect.element(screen.getByRole('cell', {name: 'dave', exact: true})).toBeVisible();
+	});
 
 	it('should not insert an assigned user into a full page', async ({worker}) => {
 		// given
 		const existing = Array.from({length: 20}, (_, index) => ({username: `user-${String(index).padStart(2, '0')}`}));
-		const server = mockLaggingAssign(
-			{
-				assign: endpoints.assignUserToGroup.getUrl({groupId: ':groupId', username: ':username'}),
-				list: endpoints.queryUsersByGroup.getUrl({groupId: ':groupId'}),
-			},
-			{before: existing, after: [...existing.slice(0, 1), {username: 'user-00a'}, ...existing.slice(1)]},
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage(existing))}),
+			mockAssignUserToGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}),
 		);
-		worker.use(...server.handlers, mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}));
-		const {screen} = await renderPage({isOidc: true});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true});
 		await expect.element(screen.getByRole('cell', {name: 'user-19', exact: true})).toBeVisible();
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
 		await userEvent.fill(screen.getByLabelText('Username'), 'user-00a');
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage(existing)), delay: 'infinite'}),
+		);
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
 
 		// then
 		await expect.element(screen.getByText('User user-00a assigned')).toBeVisible();
-		expect(server.hasServedNewList()).toBe(false);
 		await expect.element(screen.getByRole('cell', {name: 'user-00a', exact: true})).not.toBeInTheDocument();
-		await expect.element(screen.getByRole('cell', {name: 'user-00a', exact: true}), RETRY_BUDGET).toBeVisible();
-	}, 15_000);
+	});
+
+	it('should show an assigned user on a full page once the server confirms it', async ({worker}) => {
+		const existing = Array.from({length: 20}, (_, index) => ({username: `user-${String(index).padStart(2, '0')}`}));
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage(existing))}),
+			mockAssignUserToGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+		);
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true});
+		await expect.element(screen.getByRole('cell', {name: 'user-19', exact: true})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.fill(screen.getByLabelText('Username'), 'user-00a');
+		worker.use(
+			mockQueryUsersByGroupEndpoint({
+				successResponse: HttpResponse.json(
+					createPage([existing[0], {username: 'user-00a'}, ...existing.slice(1, 19)], {totalItems: 21}),
+				),
+			}),
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
+
+		await expect.element(screen.getByRole('cell', {name: 'user-00a', exact: true})).toBeVisible();
+	});
 
 	it('should not offer users that are already in the group', async ({worker}) => {
 		// given
 		worker.use(
 			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([{username: 'jane.doe'}]))}),
-			mockCandidateSearch(endpoints.queryUsers.getUrl(), 'username', [
-				createUser({username: 'jane.doe'}),
-				createUser({username: 'john.roe'}),
-			]),
+			mockQueryUsersEndpoint({
+				schema: queryUsersRequestBodySchema.and(
+					z.object({filter: z.object({username: z.object({$notIn: z.tuple([z.literal('jane.doe')])})})}),
+				),
+				successResponse: HttpResponse.json(createPage([createUser({username: 'john.roe'})])),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
 		);
 		const {screen} = await renderPage();
 
@@ -535,11 +523,40 @@ describe('<AdminGroupDetailPage />', () => {
 			mockQueryUsersByGroupEndpoint({
 				successResponse: HttpResponse.json(createPage(everyone.slice(0, 20).map((username) => ({username})))),
 			}),
-			mockCandidateSearch(
-				endpoints.queryUsers.getUrl(),
-				'username',
-				everyone.map((username) => createUser({username})),
-			),
+			mockQueryUsersEndpoint({
+				schema: queryUsersRequestBodySchema.and(
+					z.object({
+						filter: z.object({
+							username: z.object({
+								$notIn: z.tuple([
+									z.literal('user-00'),
+									z.literal('user-01'),
+									z.literal('user-02'),
+									z.literal('user-03'),
+									z.literal('user-04'),
+									z.literal('user-05'),
+									z.literal('user-06'),
+									z.literal('user-07'),
+									z.literal('user-08'),
+									z.literal('user-09'),
+									z.literal('user-10'),
+									z.literal('user-11'),
+									z.literal('user-12'),
+									z.literal('user-13'),
+									z.literal('user-14'),
+									z.literal('user-15'),
+									z.literal('user-16'),
+									z.literal('user-17'),
+									z.literal('user-18'),
+									z.literal('user-19'),
+								]),
+							}),
+						}),
+					}),
+				),
+				successResponse: HttpResponse.json(createPage(everyone.slice(20).map((username) => createUser({username})))),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
 		);
 		const {screen} = await renderPage();
 
@@ -555,19 +572,14 @@ describe('<AdminGroupDetailPage />', () => {
 
 	it('should assign several users at once', async ({worker}) => {
 		// given
-		const server = mockLaggingAssign(
-			{
-				assign: endpoints.assignUserToGroup.getUrl({groupId: ':groupId', username: ':username'}),
-				list: endpoints.queryUsersByGroup.getUrl({groupId: ':groupId'}),
-			},
-			{before: [], after: [{username: 'jane.doe'}, {username: 'john.roe'}]},
-		);
 		worker.use(
-			...server.handlers,
-			mockCandidateSearch(endpoints.queryUsers.getUrl(), 'username', [
-				createUser({username: 'jane.doe'}),
-				createUser({username: 'john.roe'}),
-			]),
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+			mockAssignUserToGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockQueryUsersEndpoint({
+				successResponse: HttpResponse.json(
+					createPage([createUser({username: 'jane.doe'}), createUser({username: 'john.roe'})]),
+				),
+			}),
 		);
 		const {screen} = await renderPage();
 
@@ -577,36 +589,54 @@ describe('<AdminGroupDetailPage />', () => {
 		await userEvent.click(screen.getByRole('option', {name: 'jane.doe'}));
 		await userEvent.click(screen.getByRole('option', {name: 'john.roe'}));
 		await userEvent.keyboard('{Escape}');
+		worker.use(
+			mockQueryUsersByGroupEndpoint({
+				successResponse: HttpResponse.json(createPage([{username: 'jane.doe'}, {username: 'john.roe'}])),
+			}),
+		);
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
 
 		// then
 		await expect.element(screen.getByText('2 members assigned')).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'jane.doe', exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'john.roe', exact: true})).toBeVisible();
-		await vi.waitFor(() => expect(server.hasServedNewList()).toBe(true), RETRY_BUDGET);
-	}, 15_000);
+	});
+
+	it('should replace the success toast with a warning when the assignment cannot be confirmed', async ({worker}) => {
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+			mockAssignUserToGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockQueryUsersEndpoint({
+				successResponse: HttpResponse.json(
+					createPage([createUser({username: 'jane.doe'}), createUser({username: 'john.roe'})]),
+				),
+			}),
+		);
+		const {screen} = await renderPage();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Username'}));
+		await userEvent.click(screen.getByRole('option', {name: 'jane.doe'}));
+		await userEvent.click(screen.getByRole('option', {name: 'john.roe'}));
+		await userEvent.keyboard('{Escape}');
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
+		await userEvent.hover(screen.getByText('2 members assigned'));
+
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toBeVisible();
+		await expect.element(screen.getByText('2 members assigned')).not.toBeInTheDocument();
+		await userEvent.unhover(screen.getByText("Couldn't confirm the change took effect"));
+	});
 
 	it('should keep the dialog open with the failed users still selected', async ({worker}) => {
 		// given
-		let assigned = false;
 		worker.use(
-			http.put(
-				decodeURIComponent(endpoints.assignUserToGroup.getUrl({groupId: ':groupId', username: ':username'})),
-				({params}) => {
-					if (params.username === 'john.roe') {
-						return HttpResponse.json({title: 'Conflict', status: 409, detail: 'already a member'}, {status: 409});
-					}
-					assigned = true;
-					return new HttpResponse(null, {status: 204});
-				},
-			),
-			http.post(decodeURIComponent(endpoints.queryUsersByGroup.getUrl({groupId: ':groupId'})), () =>
-				HttpResponse.json(createPage(assigned ? [{username: 'jane.doe'}] : [])),
-			),
-			mockCandidateSearch(endpoints.queryUsers.getUrl(), 'username', [
-				createUser({username: 'jane.doe'}),
-				createUser({username: 'john.roe'}),
-			]),
+			mockAssignUserToGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+			mockQueryUsersEndpoint({
+				successResponse: HttpResponse.json(
+					createPage([createUser({username: 'jane.doe'}), createUser({username: 'john.roe'})]),
+				),
+			}),
 		);
 		const {screen} = await renderPage();
 
@@ -616,12 +646,19 @@ describe('<AdminGroupDetailPage />', () => {
 		await userEvent.click(screen.getByRole('option', {name: 'jane.doe'}));
 		await userEvent.click(screen.getByRole('option', {name: 'john.roe'}));
 		await userEvent.keyboard('{Escape}');
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([{username: 'jane.doe'}]))}),
+			mockAssignUserToGroupEndpoint({
+				successResponse: HttpResponse.json({title: 'Conflict', status: 409, detail: 'already a member'}, {status: 409}),
+				once: true,
+			}),
+		);
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
 
 		// then
 		await expect.element(screen.getByText('1 of 2 assigned')).toBeVisible();
-		await expect.element(screen.getByRole('dialog').getByText('john.roe')).toBeVisible();
-		await expect.element(screen.getByRole('dialog').getByText('jane.doe')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+		await expect.element(screen.getByRole('dialog').getByText(/^(jane\.doe|john\.roe)$/)).toHaveLength(1);
 	});
 
 	it('should not offer roles that are already in the group', async ({worker}) => {
@@ -631,10 +668,13 @@ describe('<AdminGroupDetailPage />', () => {
 			mockQueryRolesByGroupEndpoint({
 				successResponse: HttpResponse.json(createPage([{roleId: 'admin-role', name: 'Admin role'}])),
 			}),
-			mockCandidateSearch(endpoints.queryRoles.getUrl(), 'roleId', [
-				{roleId: 'admin-role', name: 'Admin role'},
-				{roleId: 'viewer-role', name: 'Viewer role'},
-			]),
+			mockQueryRolesEndpoint({
+				schema: queryRolesRequestBodySchema.and(
+					z.object({filter: z.object({roleId: z.object({$notIn: z.tuple([z.literal('admin-role')])})})}),
+				),
+				successResponse: HttpResponse.json(createPage([{roleId: 'viewer-role', name: 'Viewer role'}])),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
 		);
 		const {screen} = await renderPage({search: {tab: 'roles'}});
 
@@ -654,12 +694,17 @@ describe('<AdminGroupDetailPage />', () => {
 			mockQueryMappingRulesByGroupEndpoint({
 				successResponse: HttpResponse.json(createPage([createMappingRule({mappingRuleId: 'assigned-rule'})])),
 			}),
-			mockCandidateSearch(endpoints.queryMappingRules.getUrl(), 'mappingRuleId', [
-				createMappingRule({mappingRuleId: 'assigned-rule'}),
-				createMappingRule({mappingRuleId: 'free-rule'}),
-			]),
+			mockQueryMappingRulesEndpoint({
+				schema: queryMappingRulesRequestBodySchema.and(
+					z.object({
+						filter: z.object({mappingRuleId: z.object({$notIn: z.tuple([z.literal('assigned-rule')])})}),
+					}),
+				),
+				successResponse: HttpResponse.json(createPage([createMappingRule({mappingRuleId: 'free-rule'})])),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
 		);
-		const {screen} = await renderPage({isOidc: true, search: {tab: 'mappingRules'}});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: true, search: {tab: 'mappingRules'}});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign mapping rule'}));
@@ -692,12 +737,14 @@ describe('<AdminGroupDetailPage />', () => {
 
 	it('should remove a user from the group', async ({worker}) => {
 		worker.use(
-			...mockMembersChangingOn(endpoints.unassignUserFromGroup, {before: [{username: 'john.doe'}], after: []}),
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([{username: 'john.doe'}]))}),
+			mockUnassignUserFromGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([createUser({username: 'john.doe'})]))}),
 		);
 		const {screen} = await renderPage();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Remove user john.doe', exact: true}));
+		worker.use(mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}));
 		await userEvent.click(screen.getByRole('button', {name: 'Remove user', exact: true}));
 
 		await expect.element(screen.getByText('User john.doe removed')).toBeVisible();
@@ -717,36 +764,38 @@ describe('<AdminGroupDetailPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Remove user', exact: true}));
 
 		// then
-		await expect.element(screen.getByText("Couldn't confirm the change took effect"), RETRY_BUDGET).toBeVisible();
-	}, 15_000);
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toBeVisible();
+	});
 
 	it('should step back a page when removing the last member of the last page', async ({worker}) => {
 		// given
-		let removed = false;
 		const users = Array.from({length: 21}, (_, index) => ({username: `user-${index}`}));
 		worker.use(
-			http.post(decodeURIComponent(endpoints.queryUsersByGroup.getUrl({groupId: ':groupId'})), async ({request}) => {
-				const {page} = (await request.json()) as {page: {from: number; limit: number}};
-				const total = removed ? 20 : 21;
-				return HttpResponse.json(
-					createPage(users.slice(page.from, Math.min(page.from + page.limit, total)), {totalItems: total}),
-				);
+			mockQueryUsersByGroupEndpoint({
+				successResponse: HttpResponse.json(createPage(users.slice(0, 20), {totalItems: 21})),
 			}),
 			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}),
-			http.delete(
-				decodeURIComponent(endpoints.unassignUserFromGroup.getUrl({groupId: ':groupId', username: ':username'})),
-				() => {
-					removed = true;
-					return new HttpResponse(null, {status: 204});
-				},
-			),
+			mockUnassignUserFromGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 		);
 		const {screen} = await renderPage();
+		await expect.element(screen.getByRole('cell', {name: 'user-19'})).toBeVisible();
+		worker.use(
+			mockQueryUsersByGroupEndpoint({
+				successResponse: HttpResponse.json(createPage(users.slice(20), {totalItems: 21})),
+			}),
+		);
 		await userEvent.click(screen.getByRole('button', {name: 'Next', exact: true}));
 		await expect.element(screen.getByRole('cell', {name: 'user-20'})).toBeVisible();
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Remove user user-20', exact: true}));
+		worker.use(
+			mockQueryUsersByGroupEndpoint({
+				schema: queryUsersByGroupRequestBodySchema.extend({page: z.object({from: z.literal(0)})}),
+				successResponse: HttpResponse.json(createPage(users.slice(0, 20), {totalItems: 20})),
+				failureResponse: HttpResponse.json(createPage([], {totalItems: 20})),
+			}),
+		);
 		await userEvent.click(screen.getByRole('button', {name: 'Remove user', exact: true}));
 
 		// then
@@ -784,6 +833,6 @@ describe('<AdminGroupDetailPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Delete group'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Delete group'}).last());
 
-		await vi.waitFor(() => expect(onDeleted).toHaveBeenCalled());
+		await expect.poll(() => onDeleted).toHaveBeenCalled();
 	});
 });

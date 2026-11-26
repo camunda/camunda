@@ -71,7 +71,7 @@ describe('<EditGlobalTaskListenerModal />', () => {
 			mockUpdateGlobalTaskListenerEndpoint({
 				schema: z.object({
 					type: z.literal('updated-type'),
-					eventTypes: z.array(z.literal('creating')),
+					eventTypes: z.tuple([z.literal('creating')]),
 					retries: z.literal(3),
 					afterNonGlobal: z.literal(false),
 					priority: z.literal(50),
@@ -92,7 +92,7 @@ describe('<EditGlobalTaskListenerModal />', () => {
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Listener type'}), 'updated-type');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
-		await vi.waitFor(() => expect(mockOnClose).toHaveBeenCalledOnce());
+		await expect.poll(() => mockOnClose).toHaveBeenCalledOnce();
 	});
 
 	it('should show validation errors for decimal retries and priority', async () => {

@@ -11,6 +11,8 @@ import {cleanup, render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {toast} from '@camunda/design-system';
 import {afterEach, describe, expect, vi} from 'vitest';
+import {z} from 'zod';
+import {createRoleRequestBodySchema, updateRoleRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {createAdminPageWrapper} from '#/vitest-modules/admin-page-wrapper';
 import {
@@ -21,9 +23,6 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {createRole} from '#/shared-test-modules/api-mocks/roles';
 import {AdminRolesPage, type AdminRolesPageProps} from './AdminRolesPage';
-
-const DEBOUNCED = {timeout: 3000};
-const RETRY_BUDGET = {timeout: 10_000};
 
 async function renderPage(overrides: Partial<AdminRolesPageProps> = {}) {
 	const onSearchChange = vi.fn();
@@ -45,6 +44,7 @@ async function renderPage(overrides: Partial<AdminRolesPageProps> = {}) {
 
 describe('<AdminRolesPage />', () => {
 	afterEach(async () => {
+		vi.useRealTimers();
 		await cleanup();
 		toast.dismiss();
 	});
@@ -70,8 +70,8 @@ describe('<AdminRolesPage />', () => {
 	it('should keep the table when a page past the last one has no roles but others exist', async () => {
 		const {screen} = await renderPage({roles: [], totalItems: 25, search: {page: 2}});
 
-		await expect.element(screen.getByText('No roles created yet')).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+		await expect.element(screen.getByText('No roles created yet')).not.toBeInTheDocument();
 	});
 
 	it('should keep the table when a search finds no roles', async () => {
@@ -105,10 +105,12 @@ describe('<AdminRolesPage />', () => {
 
 	it('should search by role ID once the reader stops typing', async () => {
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		await userEvent.fill(screen.getByRole('searchbox'), 'ops');
 
-		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'ops', page: undefined}), DEBOUNCED);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: 'ops', page: undefined});
 	});
 
 	it('should reverse the role ID order when the reader sorts the column', async () => {
@@ -139,7 +141,11 @@ describe('<AdminRolesPage />', () => {
 	it('should create a role', async ({worker}) => {
 		const role = createRole({roleId: 'ops', name: 'Operations'});
 		worker.use(
-			mockCreateRoleEndpoint({successResponse: HttpResponse.json(role, {status: 201})}),
+			mockCreateRoleEndpoint({
+				schema: createRoleRequestBodySchema.extend({roleId: z.literal('ops'), name: z.literal('Operations')}),
+				successResponse: HttpResponse.json(role, {status: 201}),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
 			mockQueryRolesEndpoint({successResponse: HttpResponse.json({items: [role], page: {totalItems: 1}})}),
 		);
 		const {screen} = await renderPage({roles: []});
@@ -253,7 +259,11 @@ describe('<AdminRolesPage />', () => {
 		const role = createRole({roleId: 'ops', name: 'Operations'});
 		const updated = {...role, name: 'Ops team'};
 		worker.use(
-			mockUpdateRoleEndpoint({successResponse: HttpResponse.json(updated)}),
+			mockUpdateRoleEndpoint({
+				schema: updateRoleRequestBodySchema.extend({name: z.literal('Ops team')}),
+				successResponse: HttpResponse.json(updated),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
 			mockQueryRolesEndpoint({successResponse: HttpResponse.json({items: [updated], page: {totalItems: 1}})}),
 		);
 		const {screen} = await renderPage({roles: [role]});
@@ -296,8 +306,8 @@ describe('<AdminRolesPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Create role'}).last());
 
 		// then
-		await expect.element(screen.getByText("Couldn't confirm the change took effect"), RETRY_BUDGET).toBeVisible();
-	}, 15_000);
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toBeVisible();
+	});
 
 	it('should disable the delete confirmation while the deletion is pending', async ({worker}) => {
 		worker.use(mockDeleteRoleEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 'infinite'}));

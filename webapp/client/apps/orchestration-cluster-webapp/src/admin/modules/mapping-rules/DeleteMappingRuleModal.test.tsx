@@ -67,7 +67,7 @@ describe('<DeleteMappingRuleModal />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 
-		await vi.waitFor(() => expect(mockOnClose).toHaveBeenCalledOnce());
+		await expect.poll(() => mockOnClose).toHaveBeenCalledOnce();
 	});
 
 	it('should keep the dialog open when the delete fails', async ({worker}) => {

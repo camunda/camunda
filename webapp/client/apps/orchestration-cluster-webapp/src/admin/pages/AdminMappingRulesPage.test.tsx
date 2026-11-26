@@ -16,8 +16,6 @@ import type {MappingRule} from '@camunda/camunda-api-zod-schemas/8.11';
 import {createMappingRule} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {AdminMappingRulesPage, type AdminMappingRulesPageProps} from './AdminMappingRulesPage';
 
-const DEBOUNCED = {timeout: 3000};
-
 function getWrapper() {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
 
@@ -50,6 +48,7 @@ async function renderPage(overrides: Partial<AdminMappingRulesPageProps> = {}) {
 
 describe('<AdminMappingRulesPage />', () => {
 	afterEach(async () => {
+		vi.useRealTimers();
 		await cleanup();
 		toast.dismiss();
 	});
@@ -68,8 +67,8 @@ describe('<AdminMappingRulesPage />', () => {
 	it('should keep the table when a search finds no mapping rules', async () => {
 		const {screen} = await renderPage({mappingRules: [], totalItems: 0, search: {search: 'nothing'}});
 
-		await expect.element(screen.getByText('No mapping rules created yet')).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+		await expect.element(screen.getByText('No mapping rules created yet')).not.toBeInTheDocument();
 	});
 
 	it('should list the mapping rules', async () => {
@@ -92,21 +91,22 @@ describe('<AdminMappingRulesPage />', () => {
 
 	it('should search by mapping rule ID once the reader stops typing', async () => {
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		await userEvent.fill(screen.getByRole('searchbox'), 'my-rule');
 
-		await vi.waitFor(
-			() => expect(onSearchChange).toHaveBeenCalledWith({search: 'my-rule', page: undefined}),
-			DEBOUNCED,
-		);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: 'my-rule', page: undefined});
 	});
 
 	it('should not overwrite newer input when a stale search term is applied', async () => {
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		const searchBox = screen.getByRole('searchbox');
 
 		await userEvent.fill(searchBox, 'a');
-		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'a', page: undefined}), DEBOUNCED);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: 'a', page: undefined});
 		await userEvent.fill(searchBox, 'ab');
 
 		// Simulates the route applying the debounced "a" navigation while the reader kept typing.
@@ -125,13 +125,12 @@ describe('<AdminMappingRulesPage />', () => {
 
 	it('should clear the mapping rule ID filter', async () => {
 		const {screen, onSearchChange} = await renderPage({search: {search: 'my-rule'}});
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		await userEvent.click(screen.getByRole('button', {name: /clear/i}));
 
-		await vi.waitFor(
-			() => expect(onSearchChange).toHaveBeenCalledWith({search: undefined, page: undefined}),
-			DEBOUNCED,
-		);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: undefined, page: undefined});
 	});
 
 	it('should reverse the mapping rule ID order when the reader sorts the column', async () => {

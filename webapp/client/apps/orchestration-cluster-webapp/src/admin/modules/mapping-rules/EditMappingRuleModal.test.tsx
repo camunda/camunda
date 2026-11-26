@@ -79,7 +79,7 @@ describe('<EditMappingRuleModal />', () => {
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'Updated name');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
-		await vi.waitFor(() => expect(mockOnClose).toHaveBeenCalledOnce());
+		await expect.poll(() => mockOnClose).toHaveBeenCalledOnce();
 	});
 
 	it('should keep the dialog open when the update fails', async ({worker}) => {

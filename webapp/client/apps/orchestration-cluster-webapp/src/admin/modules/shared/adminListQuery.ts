@@ -19,4 +19,4 @@ function adminListQuery<T extends {staleTime?: unknown}>(options: T): T & {stale
 	return {...options, staleTime: ADMIN_LIST_STALE_TIME_MS};
 }
 
-export {ADMIN_LIST_STALE_TIME_MS, adminListQuery};
+export {adminListQuery};

@@ -31,6 +31,7 @@ import {
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryGroupsResponse} from '#/shared-test-modules/api-mocks/groups';
 import {createMembersPage, createQueryRolesResponse, createRole} from '#/shared-test-modules/api-mocks/roles';
 import {createUser} from '#/shared-test-modules/api-mocks/users';
 
@@ -234,6 +235,55 @@ test.describe('Admin roles', () => {
 		await expect(adminRolesPage.alertDialog).toBeHidden();
 		await expect(adminRolesPage.cell('developers')).toBeHidden();
 		await expect(adminRolesPage.cell('operators')).toBeVisible();
+	});
+
+	test('should keep a deleted role off the list on a quick return and refresh the list later', async ({
+		adminRolesPage,
+		adminIndexPage,
+		network,
+		page,
+	}) => {
+		await page.clock.setFixedTime(new Date('2026-01-01T10:00:00Z'));
+		network.use(
+			mockDeleteRoleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockGetRoleEndpoint({successResponse: HttpResponse.json(ROLES[0]!)}),
+			mockQueryGroupsEndpoint({successResponse: HttpResponse.json(createQueryGroupsResponse())}),
+		);
+
+		await test.step('delete a role the search index still lists', async () => {
+			await adminRolesPage.goto();
+			await adminRolesPage.deleteRole('developers');
+			await adminRolesPage.alertDialogButton('Delete role').click();
+
+			await expect(adminRolesPage.alertDialog).toBeHidden();
+			await expect(adminRolesPage.cell('developers')).toBeHidden();
+		});
+
+		await test.step('keep it off the list when returning right away', async () => {
+			await adminIndexPage.navItem('Groups').click();
+			await expect(adminIndexPage.sectionHeading('Groups')).toBeVisible();
+			await adminIndexPage.navItem('Roles').click();
+
+			await expect(adminRolesPage.cell('operators')).toBeVisible();
+			await expect(adminRolesPage.cell('developers')).toBeHidden();
+		});
+
+		await test.step('show the search index again when returning after a few seconds', async () => {
+			await page.clock.setFixedTime(new Date('2026-01-01T10:00:06Z'));
+			network.use(
+				mockQueryRolesEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryRolesResponse({items: [...ROLES, createRole({roleId: 'support', name: 'Support'})]}),
+					),
+				}),
+			);
+
+			await adminIndexPage.navItem('Groups').click();
+			await expect(adminIndexPage.sectionHeading('Groups')).toBeVisible();
+			await adminIndexPage.navItem('Roles').click();
+
+			await expect(adminRolesPage.cell('support')).toBeVisible();
+		});
 	});
 
 	test('should fall back to the last page when the requested page no longer exists', async ({

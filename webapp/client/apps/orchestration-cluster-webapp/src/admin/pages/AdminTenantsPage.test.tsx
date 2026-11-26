@@ -15,8 +15,6 @@ import {userEvent} from 'vitest/browser';
 import {createTenant} from '#/shared-test-modules/api-mocks/tenants';
 import {AdminTenantsPage, type AdminTenantsPageProps} from './AdminTenantsPage';
 
-const DEBOUNCED = {timeout: 3000};
-
 async function renderPage(overrides: Partial<AdminTenantsPageProps> = {}) {
 	const onSearchChange = vi.fn();
 	const screen = await render(
@@ -35,6 +33,7 @@ async function renderPage(overrides: Partial<AdminTenantsPageProps> = {}) {
 
 describe('<AdminTenantsPage />', () => {
 	afterEach(async () => {
+		vi.useRealTimers();
 		await cleanup();
 		toast.dismiss();
 	});
@@ -53,8 +52,8 @@ describe('<AdminTenantsPage />', () => {
 	it('should keep the table when a search finds no tenants', async () => {
 		const {screen} = await renderPage({tenants: [], totalItems: 0, search: {search: 'nothing'}});
 
-		await expect.element(screen.getByText('No tenants created yet')).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+		await expect.element(screen.getByText('No tenants created yet')).not.toBeInTheDocument();
 	});
 
 	it('should list the tenants', async () => {
@@ -74,21 +73,22 @@ describe('<AdminTenantsPage />', () => {
 
 	it('should search by tenant ID once the reader stops typing', async () => {
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		await userEvent.fill(screen.getByRole('searchbox'), 'tenant-a');
 
-		await vi.waitFor(
-			() => expect(onSearchChange).toHaveBeenCalledWith({search: 'tenant-a', page: undefined}),
-			DEBOUNCED,
-		);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: 'tenant-a', page: undefined});
 	});
 
 	it('should not overwrite newer input when a stale search term is applied', async () => {
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		const searchBox = screen.getByRole('searchbox');
 
 		await userEvent.fill(searchBox, 'a');
-		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'a', page: undefined}), DEBOUNCED);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: 'a', page: undefined});
 		await userEvent.fill(searchBox, 'ab');
 
 		await screen.rerender(

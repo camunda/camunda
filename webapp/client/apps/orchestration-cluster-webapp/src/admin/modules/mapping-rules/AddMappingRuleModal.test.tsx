@@ -71,7 +71,7 @@ describe('<AddMappingRuleModal />', () => {
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Claim value'}), 'demo@example.com');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
-		await vi.waitFor(() => expect(mockOnClose).toHaveBeenCalledOnce());
+		await expect.poll(() => mockOnClose).toHaveBeenCalledOnce();
 	});
 
 	it('should show validation errors when submitting with empty fields', async () => {
@@ -223,6 +223,28 @@ describe('<AddMappingRuleModal />', () => {
 				),
 			)
 			.toBeVisible();
+	});
+
+	it('should warn once when a created mapping rule cannot be confirmed on the server', async ({worker}) => {
+		worker.use(
+			mockCreateMappingRuleEndpoint({
+				successResponse: HttpResponse.json(createMappingRule({mappingRuleId: 'my-rule'})),
+			}),
+			mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
+		);
+		const screen = await render(<AddMappingRuleModal idPattern={null} isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
+
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Mapping rule ID'}), 'my-rule');
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'My rule');
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Claim name'}), 'email');
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Claim value'}), 'demo@example.com');
+		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+		await expect.element(screen.getByText('Mapping rule created')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toHaveLength(1);
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toBeVisible();
 	});
 
 	it('should call onClose when cancelled', async () => {

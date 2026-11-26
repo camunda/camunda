@@ -65,7 +65,7 @@ describe('<AddGlobalTaskListenerModal />', () => {
 		await userEvent.keyboard('{Escape}');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
-		await vi.waitFor(() => expect(mockOnClose).toHaveBeenCalledOnce());
+		await expect.poll(() => mockOnClose).toHaveBeenCalledOnce();
 	});
 
 	it('should show validation errors when submitting with empty fields', async () => {
@@ -203,9 +203,9 @@ describe('<AddGlobalTaskListenerModal />', () => {
 
 		// then
 		await expect.element(screen.getByText('Global task listener created')).toBeVisible();
-		await expect.element(screen.getByText("Couldn't confirm the change took effect"), {timeout: 10_000}).toBeVisible();
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toBeVisible();
 		await expect.element(screen.getByText('Refresh the page to see the latest state.')).toBeVisible();
-	}, 15_000);
+	});
 
 	it('should call onClose when cancelled', async () => {
 		const mockOnClose = vi.fn();

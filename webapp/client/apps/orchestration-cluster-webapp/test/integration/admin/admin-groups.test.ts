@@ -31,6 +31,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createGroup, createPage, createQueryGroupsResponse} from '#/shared-test-modules/api-mocks/groups';
+import {createQueryRolesResponse} from '#/shared-test-modules/api-mocks/roles';
 import {createUser} from '#/shared-test-modules/api-mocks/users';
 
 const GROUPS = [
@@ -232,6 +233,55 @@ test.describe('Admin groups', () => {
 		await expect(adminGroupsPage.alertDialog).toBeHidden();
 		await expect(adminGroupsPage.cell('engineering')).toBeHidden();
 		await expect(adminGroupsPage.cell('operations')).toBeVisible();
+	});
+
+	test('should keep a deleted group off the list on a quick return and refresh the list later', async ({
+		adminGroupsPage,
+		adminIndexPage,
+		network,
+		page,
+	}) => {
+		await page.clock.setFixedTime(new Date('2026-01-01T10:00:00Z'));
+		network.use(
+			mockDeleteGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockGetGroupEndpoint({successResponse: HttpResponse.json(GROUPS[0]!)}),
+			mockQueryRolesEndpoint({successResponse: HttpResponse.json(createQueryRolesResponse())}),
+		);
+
+		await test.step('delete a group the search index still lists', async () => {
+			await adminGroupsPage.goto();
+			await adminGroupsPage.deleteGroup('engineering');
+			await adminGroupsPage.alertDialogButton('Delete group').click();
+
+			await expect(adminGroupsPage.alertDialog).toBeHidden();
+			await expect(adminGroupsPage.cell('engineering')).toBeHidden();
+		});
+
+		await test.step('keep it off the list when returning right away', async () => {
+			await adminIndexPage.navItem('Roles').click();
+			await expect(adminIndexPage.sectionHeading('Roles')).toBeVisible();
+			await adminIndexPage.navItem('Groups').click();
+
+			await expect(adminGroupsPage.cell('operations')).toBeVisible();
+			await expect(adminGroupsPage.cell('engineering')).toBeHidden();
+		});
+
+		await test.step('show the search index again when returning after a few seconds', async () => {
+			await page.clock.setFixedTime(new Date('2026-01-01T10:00:06Z'));
+			network.use(
+				mockQueryGroupsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryGroupsResponse({items: [...GROUPS, createGroup({groupId: 'support', name: 'Support'})]}),
+					),
+				}),
+			);
+
+			await adminIndexPage.navItem('Roles').click();
+			await expect(adminIndexPage.sectionHeading('Roles')).toBeVisible();
+			await adminIndexPage.navItem('Groups').click();
+
+			await expect(adminGroupsPage.cell('support')).toBeVisible();
+		});
 	});
 
 	test('should report a load failure instead of an empty list', async ({adminGroupsPage, network}) => {

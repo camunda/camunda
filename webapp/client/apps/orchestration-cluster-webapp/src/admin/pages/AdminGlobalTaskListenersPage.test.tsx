@@ -16,8 +16,6 @@ import type {GlobalTaskListener} from '@camunda/camunda-api-zod-schemas/8.11';
 import {createGlobalTaskListener} from '#/shared-test-modules/api-mocks/global-task-listeners';
 import {AdminGlobalTaskListenersPage, type AdminGlobalTaskListenersPageProps} from './AdminGlobalTaskListenersPage';
 
-const DEBOUNCED = {timeout: 3000};
-
 function getWrapper() {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
 
@@ -50,6 +48,7 @@ async function renderPage(overrides: Partial<AdminGlobalTaskListenersPageProps> 
 
 describe('<AdminGlobalTaskListenersPage />', () => {
 	afterEach(async () => {
+		vi.useRealTimers();
 		await cleanup();
 		toast.dismiss();
 	});
@@ -68,8 +67,8 @@ describe('<AdminGlobalTaskListenersPage />', () => {
 	it('should keep the table when a search finds no global task listeners', async () => {
 		const {screen} = await renderPage({globalTaskListeners: [], totalItems: 0, search: {search: 'nothing'}});
 
-		await expect.element(screen.getByText('No global task listeners created yet')).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+		await expect.element(screen.getByText('No global task listeners created yet')).not.toBeInTheDocument();
 	});
 
 	it('should list the global task listeners', async () => {
@@ -104,24 +103,22 @@ describe('<AdminGlobalTaskListenersPage />', () => {
 
 	it('should search by listener ID once the reader stops typing', async () => {
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		await userEvent.fill(screen.getByRole('searchbox'), 'my-listener');
 
-		await vi.waitFor(
-			() => expect(onSearchChange).toHaveBeenCalledWith({search: 'my-listener', page: undefined}),
-			DEBOUNCED,
-		);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: 'my-listener', page: undefined});
 	});
 
 	it('should clear the listener ID filter', async () => {
 		const {screen, onSearchChange} = await renderPage({search: {search: 'my-listener'}});
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		await userEvent.click(screen.getByRole('button', {name: /clear/i}));
 
-		await vi.waitFor(
-			() => expect(onSearchChange).toHaveBeenCalledWith({search: undefined, page: undefined}),
-			DEBOUNCED,
-		);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: undefined, page: undefined});
 	});
 
 	it('should sort by listener ID, type, execution order, or priority when the reader sorts those columns', async () => {

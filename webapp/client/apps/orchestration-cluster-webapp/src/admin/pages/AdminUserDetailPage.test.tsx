@@ -68,6 +68,6 @@ describe('<AdminUserDetailPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Delete user'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Delete user'}).last());
 
-		await vi.waitFor(() => expect(onDeleted).toHaveBeenCalled());
+		await expect.poll(() => onDeleted).toHaveBeenCalled();
 	});
 });
