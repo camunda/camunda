@@ -10,6 +10,10 @@ import {describe, it, expect, beforeEach} from 'vitest';
 import i18n from 'i18next';
 import {enUS, fr, de, es} from 'date-fns/locale';
 import {languageItems, translationResources, getCurrentDateLocale} from '.';
+import enTranslation from './locales/en.json';
+import frTranslation from './locales/fr.json';
+import deTranslation from './locales/de.json';
+import esTranslation from './locales/es.json';
 import '#/vitest-modules/i18n-setup';
 
 describe('i18n module', () => {
@@ -29,6 +33,20 @@ describe('i18n module', () => {
 
 	it('should contain resources for all supported languages', () => {
 		expect(Object.keys(translationResources)).toEqual(['en', 'fr', 'de', 'es']);
+	});
+
+	it.for([
+		{language: 'fr', locale: frTranslation},
+		{language: 'de', locale: deTranslation},
+		{language: 'es', locale: esTranslation},
+	])('should define every English operate key in $language', ({locale}) => {
+		const flattenKeys = (node: object, prefix = ''): string[] =>
+			Object.entries(node).flatMap(([key, value]) =>
+				typeof value === 'object' ? flattenKeys(value, `${prefix}${key}.`) : [`${prefix}${key}`],
+			);
+		const operateKeys = (file: {translation: {operate: object}}) => flattenKeys(file.translation.operate).sort();
+
+		expect(operateKeys(locale)).toEqual(operateKeys(enTranslation));
 	});
 
 	it('should include translation keys in each resource', () => {

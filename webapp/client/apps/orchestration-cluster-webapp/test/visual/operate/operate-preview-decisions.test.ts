@@ -29,25 +29,27 @@ import {
 } from '#/shared-test-modules/api-mocks/decision-definitions';
 import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 
-test.beforeEach(({network}) => {
-	network.use(
-		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
-		}),
-		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
-		}),
-		mockLicenseEndpoint({
-			successResponse: HttpResponse.json(createLicense()),
-		}),
-		mockQueryDecisionDefinitionsEndpoint({
-			successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []})),
-		}),
-		mockQueryDecisionInstancesEndpoint({
-			successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
-		}),
-	);
-});
+const defaultOperatePreviewDecisionsVisualHandlers = [
+	mockCurrentUserEndpoint({
+		successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+	}),
+	mockSystemConfigurationEndpoint({
+		successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+	}),
+	mockLicenseEndpoint({
+		successResponse: HttpResponse.json(createLicense()),
+	}),
+	mockQueryDecisionDefinitionsEndpoint({
+		successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []})),
+	}),
+	mockQueryDecisionInstancesEndpoint({
+		successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
+	}),
+];
+
+export {defaultOperatePreviewDecisionsVisualHandlers};
+
+test.use({handlers: [defaultOperatePreviewDecisionsVisualHandlers, {scope: 'test'}]});
 
 test('should match the resized decisions panels snapshot after dragging the resize handle', async ({
 	operatePreviewDecisionsPage,
@@ -95,6 +97,21 @@ test('should match the evaluation date range field snapshot', async ({operatePre
 	await expect(dateRange).toBeVisible();
 
 	await expect(dateRange).toHaveScreenshot();
+});
+
+test('should match the evaluation date range picker snapshot when open', async ({
+	operatePreviewDecisionsPage,
+	page,
+}) => {
+	await page.clock.setFixedTime(new Date('2026-10-14T12:00:00.000Z'));
+	await operatePreviewDecisionsPage.goto();
+	await operatePreviewDecisionsPage.moreFiltersButton.click();
+	await page.getByRole('menuitem', {name: 'Evaluation date range'}).click();
+	await page.getByRole('button', {name: 'Evaluation date range', exact: true}).click();
+	const picker = page.getByRole('dialog');
+	await expect(picker).toBeVisible();
+
+	await expect(picker).toHaveScreenshot();
 });
 
 test('should match the instances table snapshot with evaluated and failed instances', async ({
@@ -149,19 +166,28 @@ test('should match the instances table snapshot when no instances match', async 
 
 test('should match the instances table snapshot when loading fails', async ({
 	network,
-	operatePreviewDecisionsPage,
 	page,
+	operatePreviewDecisionsPage,
 }) => {
 	network.use(
 		mockQueryDecisionInstancesEndpoint({
 			successResponse: new HttpResponse(null, {status: 500}),
 		}),
 	);
+	const waitForRetriedFailures = (async () => {
+		for (const _ of [1, 2, 3, 4]) {
+			await page.waitForResponse(
+				(response) =>
+					response.request().method() === 'POST' &&
+					response.url().endsWith('/v2/decision-instances/search') &&
+					response.status() === 500,
+			);
+		}
+	})();
 	await page.goto(`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true`);
+	await waitForRetriedFailures;
 
-	await expect(operatePreviewDecisionsPage.instancesTable.getByText("Couldn't fetch data")).toBeVisible({
-		timeout: 30_000,
-	});
+	await expect(operatePreviewDecisionsPage.instancesTable.getByText("Couldn't fetch data")).toBeVisible();
 	await expect(operatePreviewDecisionsPage.instancesTable).toHaveScreenshot();
 });
 

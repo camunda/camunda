@@ -8,6 +8,7 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
+import {subHours} from 'date-fns';
 import {
 	mockCreateDecisionInstancesDeletionBatchOperationEndpoint,
 	mockCurrentUserEndpoint,
@@ -33,28 +34,30 @@ import {
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
-test.beforeEach(({network}) => {
-	network.use(
-		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
-		}),
-		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
-		}),
-		mockLicenseEndpoint({
-			successResponse: HttpResponse.json(createLicense()),
-		}),
-		mockGetProcessDefinitionInstanceStatisticsEndpoint({
-			successResponse: HttpResponse.json(createPaginatedResponse()),
-		}),
-		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
-			successResponse: HttpResponse.json(createPaginatedResponse()),
-		}),
-		mockQueryDecisionDefinitionsEndpoint({
-			successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
-		}),
-	);
-});
+const defaultOperatePreviewDecisionsHandlers = [
+	mockCurrentUserEndpoint({
+		successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+	}),
+	mockSystemConfigurationEndpoint({
+		successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+	}),
+	mockLicenseEndpoint({
+		successResponse: HttpResponse.json(createLicense()),
+	}),
+	mockGetProcessDefinitionInstanceStatisticsEndpoint({
+		successResponse: HttpResponse.json(createPaginatedResponse()),
+	}),
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+		successResponse: HttpResponse.json(createPaginatedResponse()),
+	}),
+	mockQueryDecisionDefinitionsEndpoint({
+		successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
+	}),
+];
+
+export {defaultOperatePreviewDecisionsHandlers};
+
+test.use({handlers: [defaultOperatePreviewDecisionsHandlers, {scope: 'test'}]});
 
 test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () => {
 	test('should render the placeholder shell', async ({network, operatePreviewDecisionsPage, page}) => {
@@ -166,11 +169,15 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		operatePreviewDecisionsPage,
 		page,
 	}) => {
+		const fixedTime = new Date('2026-10-14T12:00:00.000Z');
+		const expectedRequestFrom = subHours(fixedTime, 24).toISOString();
+		const expectedRequestTo = fixedTime.toISOString();
 		network.use(
 			mockQueryDecisionInstancesEndpoint({
 				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
 			}),
 		);
+		await page.clock.setFixedTime(fixedTime);
 		await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
 		await operatePreviewDecisionsPage.moreFiltersButton.click();
 		await page.getByRole('menuitem', {name: 'Evaluation date range'}).click();
@@ -181,14 +188,19 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 				request.url().includes('decision-instances/search') &&
 				request.postDataJSON()?.filter?.evaluationDate !== undefined,
 		);
-		await page.getByLabel('From', {exact: true}).fill('2024-01-01 00:00:00');
-		await page.getByLabel('To', {exact: true}).fill('2024-01-02 00:00:00');
+		await page
+			.getByRole('group', {name: 'Evaluation date range'})
+			.getByRole('button', {name: 'Evaluation date range', exact: true})
+			.click();
+		await page.getByRole('button', {name: 'Last 24 hours'}).click();
+		await page.getByRole('button', {name: 'Apply'}).click();
 
-		expect((await filteredRequest).postDataJSON().filter.evaluationDate).toMatchObject({
-			$gt: expect.stringContaining('2024-01-01'),
-			$lt: expect.stringContaining('2024-01-02'),
-		});
-		await expect(page).toHaveURL(/evaluationDateFrom=2024-01-01/);
+		const {$gt, $lt} = (await filteredRequest).postDataJSON().filter.evaluationDate;
+		expect($gt).toBe(expectedRequestFrom);
+		expect($lt).toBe(expectedRequestTo);
+		const searchParams = new URL(page.url()).searchParams;
+		expect(new Date(searchParams.get('evaluationDateFrom') ?? '').toISOString()).toBe(expectedRequestFrom);
+		expect(new Date(searchParams.get('evaluationDateTo') ?? '').toISOString()).toBe(expectedRequestTo);
 	});
 
 	test('should collapse and expand the filter sidebar', async ({network, operatePreviewDecisionsPage, page}) => {

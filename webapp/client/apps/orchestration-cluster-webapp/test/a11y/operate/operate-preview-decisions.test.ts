@@ -29,36 +29,38 @@ import {
 import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
-test.beforeEach(({network}) => {
-	network.use(
-		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
-		}),
-		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
-		}),
-		mockLicenseEndpoint({
-			successResponse: HttpResponse.json(createLicense()),
-		}),
-		mockQueryDecisionDefinitionsEndpoint({
-			successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
-		}),
-		mockQueryDecisionInstancesEndpoint({
-			successResponse: HttpResponse.json(
-				createQueryDecisionInstancesResponse({
-					items: [
-						createDecisionInstance({decisionEvaluationInstanceKey: '1', decisionDefinitionName: 'Invoice Approval'}),
-						createDecisionInstance({
-							decisionEvaluationInstanceKey: '2',
-							state: 'FAILED',
-							processInstanceKey: undefined,
-						}),
-					],
-				}),
-			),
-		}),
-	);
-});
+const defaultOperatePreviewDecisionsA11yHandlers = [
+	mockCurrentUserEndpoint({
+		successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+	}),
+	mockSystemConfigurationEndpoint({
+		successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+	}),
+	mockLicenseEndpoint({
+		successResponse: HttpResponse.json(createLicense()),
+	}),
+	mockQueryDecisionDefinitionsEndpoint({
+		successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
+	}),
+	mockQueryDecisionInstancesEndpoint({
+		successResponse: HttpResponse.json(
+			createQueryDecisionInstancesResponse({
+				items: [
+					createDecisionInstance({decisionEvaluationInstanceKey: '1', decisionDefinitionName: 'Invoice Approval'}),
+					createDecisionInstance({
+						decisionEvaluationInstanceKey: '2',
+						state: 'FAILED',
+						processInstanceKey: undefined,
+					}),
+				],
+			}),
+		),
+	}),
+];
+
+export {defaultOperatePreviewDecisionsA11yHandlers};
+
+test.use({handlers: [defaultOperatePreviewDecisionsA11yHandlers, {scope: 'test'}]});
 
 test('should have no accessibility violations in the decisions shell with the instances table', async ({
 	page,
@@ -201,8 +203,11 @@ test('should have no accessibility violations with the evaluation date picker op
 	await page.goto(
 		`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z`,
 	);
-	await page.getByLabel('From', {exact: true}).click();
-	await expect(page.getByRole('grid')).toBeVisible();
+	await page
+		.getByRole('group', {name: 'Evaluation date range'})
+		.getByRole('button', {name: 'Evaluation date range', exact: true})
+		.click();
+	await expect(page.getByRole('grid').first()).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);

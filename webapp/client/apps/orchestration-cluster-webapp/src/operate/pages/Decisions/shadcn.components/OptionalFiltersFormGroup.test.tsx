@@ -9,7 +9,7 @@
 import {useState} from 'react';
 import {Form} from 'react-final-form';
 import {render} from 'vitest-browser-react';
-import {describe, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import type {OptionalFilter, OptionalFilterValues} from '../optionalFilters';
@@ -23,7 +23,7 @@ const Harness: React.FC<{
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>(initialVisible);
 
 	return (
-		<Form<OptionalFilterValues> onSubmit={onSubmit} initialValues={initialValues}>
+		<Form<OptionalFilterValues> onSubmit={(values) => onSubmit(values)} initialValues={initialValues}>
 			{({handleSubmit, values}) => (
 				<form onSubmit={handleSubmit}>
 					<OptionalFiltersFormGroup
@@ -59,7 +59,6 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 		await expect.element(screen.getByLabelText('Process instance key')).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
-		await expect.element(screen.getByRole('menuitem', {name: 'Business ID'})).toBeVisible();
 		await expect.element(screen.getByRole('menuitem', {name: 'Process instance key'})).not.toBeInTheDocument();
 	});
 
@@ -78,7 +77,6 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 			const screen = await render(<Harness initialValues={initialValues} />);
 
 			await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
-			await expect.element(screen.getByRole('menuitem', {name: 'Business ID'})).toBeVisible();
 			await expect.element(screen.getByRole('menuitem', {name: 'Evaluation date range'})).not.toBeInTheDocument();
 		},
 	);
@@ -90,11 +88,7 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 		await userEvent.fill(screen.getByLabelText('Process instance key'), '2251799813688001');
 		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
 
-		expect(onSubmit).toHaveBeenCalledWith(
-			expect.objectContaining({processInstanceKey: '2251799813688001'}),
-			expect.anything(),
-			expect.anything(),
-		);
+		expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({processInstanceKey: '2251799813688001'}));
 	});
 
 	it('should show a validation error for invalid keys', async () => {
@@ -120,61 +114,197 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 
 		await expect.element(screen.getByLabelText('Process instance key')).not.toBeInTheDocument();
 		expect(onSubmit).toHaveBeenCalledTimes(1);
-		expect(onSubmit.mock.calls[0]?.[0].processInstanceKey).toBeUndefined();
+		expect(onSubmit).toHaveBeenCalledWith(expect.not.objectContaining({processInstanceKey: expect.anything()}));
 	});
 
-	it('should show the from, to and quick range fields when selecting the evaluation date range', async () => {
+	it('should show the date range picker when selecting the evaluation date range', async () => {
 		const screen = await render(<Harness />);
 
 		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Evaluation date range'}));
 
-		await expect.element(screen.getByRole('textbox', {name: 'From'})).toBeVisible();
-		await expect.element(screen.getByRole('textbox', {name: 'To'})).toBeVisible();
-		await expect.element(screen.getByRole('combobox', {name: 'Quick ranges'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /^Evaluation date range/})).toBeVisible();
 	});
 
-	it('should show a validation error for a malformed date and time', async () => {
-		const screen = await render(<Harness initialVisible={['evaluationDateRange']} />);
+	it('should not submit and should show an error when the end is before the start', async () => {
+		const onSubmit = vi.fn();
+		const screen = await render(
+			<Harness
+				initialVisible={['evaluationDateRange']}
+				initialValues={{
+					evaluationDateFrom: '2026-10-14T00:00:00.000+00:00',
+					evaluationDateTo: '2026-10-07T00:00:00.000+00:00',
+				}}
+				onSubmit={onSubmit}
+			/>,
+		);
 
-		await userEvent.fill(screen.getByRole('textbox', {name: 'From'}), '2026-13-45 99:00');
-		await userEvent.tab();
+		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
 
-		await expect.element(screen.getByRole('textbox', {name: 'From'})).toHaveAttribute('aria-invalid', 'true');
-		await expect.element(screen.getByText('Enter a date and time as YYYY-MM-DD HH:mm:ss')).toBeVisible();
+		expect(onSubmit).not.toHaveBeenCalled();
+		await expect
+			.element(screen.getByRole('alert').filter({hasText: 'The end must not be before the start'}))
+			.toBeInTheDocument();
 	});
 
-	it('should keep the picker closed after picking a date and clicking outside', async () => {
-		const screen = await render(<Harness initialVisible={['evaluationDateRange']} />);
-
-		await userEvent.click(screen.getByRole('textbox', {name: 'From'}));
-		await userEvent.click(screen.getByRole('gridcell', {name: /15/}).getByRole('button').first());
-		await userEvent.click(screen.getByText('Evaluation date range'));
-
-		await expect.element(screen.getByRole('grid')).not.toBeInTheDocument();
-	});
-
-	it('should show an error on the empty field when only one end of the range is set', async () => {
+	it('should submit a range that has only a start', async () => {
+		const onSubmit = vi.fn();
 		const screen = await render(
 			<Harness
 				initialVisible={['evaluationDateRange']}
 				initialValues={{evaluationDateFrom: '2026-10-07T00:00:00.000+00:00'}}
+				onSubmit={onSubmit}
 			/>,
 		);
 
-		await expect.element(screen.getByRole('textbox', {name: 'To'})).toHaveAttribute('aria-invalid', 'true');
-		await expect.element(screen.getByText('Enter a date and time')).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+
+		expect(onSubmit).toHaveBeenCalledWith(
+			expect.objectContaining({evaluationDateFrom: '2026-10-07T00:00:00.000+00:00'}),
+		);
 	});
 
-	it('should replace malformed text when selecting a quick range', async () => {
-		const screen = await render(<Harness initialVisible={['evaluationDateRange']} />);
+	it.for([
+		{key: 'evaluationDateFrom', value: 'not-a-date'},
+		{key: 'evaluationDateFrom', value: '2026-10-07'},
+		{key: 'evaluationDateTo', value: '20261014T000000Z'},
+	])('should not submit $key when it is $value', async ({key, value}) => {
+		const onSubmit = vi.fn();
+		const screen = await render(
+			<Harness initialVisible={['evaluationDateRange']} initialValues={{[key]: value}} onSubmit={onSubmit} />,
+		);
 
-		await userEvent.fill(screen.getByRole('textbox', {name: 'From'}), 'not a date');
-		await userEvent.tab();
-		await userEvent.click(screen.getByRole('combobox', {name: 'Quick ranges'}));
-		await userEvent.click(screen.getByRole('option', {name: 'Last 1 hour'}));
+		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
 
-		await expect.element(screen.getByRole('textbox', {name: 'From'})).toHaveAttribute('aria-invalid', 'false');
-		await expect.element(screen.getByRole('textbox', {name: 'From'})).not.toHaveValue('not a date');
+		expect(onSubmit).toHaveBeenCalledWith(expect.not.objectContaining({[key]: value}));
+	});
+
+	it('should submit a custom range with exact bounds including seconds', async () => {
+		const onSubmit = vi.fn();
+		const screen = await render(
+			<Harness
+				initialVisible={['evaluationDateRange']}
+				initialValues={{
+					evaluationDateFrom: '2026-10-07T00:00:00.000+00:00',
+					evaluationDateTo: '2026-10-14T00:00:00.000+00:00',
+				}}
+				onSubmit={onSubmit}
+			/>,
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: /^Evaluation date range/}));
+		await userEvent.fill(screen.getByLabelText('From time'), '08:30:15');
+		await userEvent.fill(screen.getByLabelText('To time'), '17:45:30');
+		await userEvent.click(screen.getByRole('button', {name: 'Apply'}));
+		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+
+		expect(onSubmit).toHaveBeenCalledWith(
+			expect.objectContaining({
+				evaluationDateFrom: expect.stringMatching(/T08:30:15\.000/),
+				evaluationDateTo: expect.stringMatching(/T17:45:30\.000/),
+			}),
+		);
+	});
+
+	describe('with a fixed current date', () => {
+		beforeEach(() => {
+			vi.useFakeTimers({toFake: ['Date'], now: new Date(2026, 9, 15, 12, 0, 0, 0)});
+		});
+
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it('should fill the evaluation date range when selecting a quick range', async () => {
+			const onSubmit = vi.fn();
+			const screen = await render(<Harness initialVisible={['evaluationDateRange']} onSubmit={onSubmit} />);
+
+			await userEvent.click(screen.getByRole('button', {name: /^Evaluation date range/}));
+			await userEvent.click(screen.getByRole('button', {name: 'Last 3 hours'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Apply'}));
+			await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+
+			expect(onSubmit).toHaveBeenCalledWith(
+				expect.objectContaining({
+					evaluationDateFrom: expect.stringMatching(/^2026-10-15T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{4}$/),
+					evaluationDateTo: expect.stringMatching(/^2026-10-15T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{4}$/),
+				}),
+			);
+		});
+
+		it('should submit a range picked from the calendar starting empty', async () => {
+			const onSubmit = vi.fn();
+			const screen = await render(<Harness initialVisible={['evaluationDateRange']} onSubmit={onSubmit} />);
+
+			await userEvent.click(screen.getByRole('button', {name: /^Evaluation date range/}));
+			await userEvent.click(screen.getByRole('button', {name: /October 10(st|nd|rd|th)/}));
+			await userEvent.click(screen.getByRole('button', {name: /October 20(st|nd|rd|th)/}));
+			await userEvent.click(screen.getByRole('button', {name: 'Apply'}));
+			await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+
+			expect(onSubmit).toHaveBeenCalledWith(
+				expect.objectContaining({
+					evaluationDateFrom: expect.stringMatching(/^2026-10-10T00:00:00\.000/),
+					evaluationDateTo: expect.stringMatching(/^2026-10-20T23:59:59\.000/),
+				}),
+			);
+		});
+	});
+
+	it('should keep the submitted range when cancelling draft edits', async () => {
+		const onSubmit = vi.fn();
+		const initialValues = {
+			evaluationDateFrom: '2026-10-07T08:30:15.000+00:00',
+			evaluationDateTo: '2026-10-14T17:45:00.000+00:00',
+		};
+		const screen = await render(
+			<Harness initialVisible={['evaluationDateRange']} initialValues={initialValues} onSubmit={onSubmit} />,
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: /^Evaluation date range/}));
+		await userEvent.click(screen.getByRole('button', {name: 'Last 3 hours'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+
+		expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining(initialValues));
+	});
+
+	it('should clear both bounds when clearing a populated range', async () => {
+		const onSubmit = vi.fn();
+		const screen = await render(
+			<Harness
+				initialVisible={['evaluationDateRange']}
+				initialValues={{
+					evaluationDateFrom: '2026-10-07T08:30:15.000+00:00',
+					evaluationDateTo: '2026-10-14T17:45:00.000+00:00',
+				}}
+				onSubmit={onSubmit}
+			/>,
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Clear date and time range'}));
+		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+
+		expect(onSubmit).toHaveBeenCalledWith(
+			expect.not.objectContaining({evaluationDateFrom: expect.anything(), evaluationDateTo: expect.anything()}),
+		);
+	});
+
+	it('should show the existing evaluation date range', async () => {
+		const evaluationDateFrom = new Date(2026, 9, 7, 8, 30, 15, 0).toISOString();
+		const evaluationDateTo = new Date(2026, 9, 14, 17, 45, 0, 0).toISOString();
+		const screen = await render(
+			<Harness
+				initialVisible={['evaluationDateRange']}
+				initialValues={{
+					evaluationDateFrom,
+					evaluationDateTo,
+				}}
+			/>,
+		);
+
+		await expect
+			.element(screen.getByRole('button', {name: /^Evaluation date range/}))
+			.toMatchTextContent(/Oct\s7,\s2026.*Oct\s14,\s2026/);
 	});
 });
