@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,7 +59,7 @@ final class ReplicationAwaiterTest {
   private final Set<String> hangingHeads = ConcurrentHashMap.newKeySet();
 
   /** When set, HEAD responses arrive asynchronously after this delay. */
-  private volatile @Nullable Duration headDelay;
+  private volatile Duration headDelay;
 
   private final AtomicInteger headsInFlight = new AtomicInteger();
   private final AtomicInteger maxHeadsInFlight = new AtomicInteger();
