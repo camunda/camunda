@@ -23,7 +23,6 @@ import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.api.ListOptions.Order;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
-import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.IOException;
@@ -98,13 +97,13 @@ final class S3BackupStoreListTest {
               readManifests.add(id);
               final var noBackup = new NoBackupManifest(BackupIdentifierImpl.from(id));
               if (vanishedManifests.contains(id)) {
-                return CompletableFuture.completedFuture(noBackup);
+                return CompletableFuture.completedFuture(noBackup.toStatus());
               }
               return CompletableFuture.completedFuture(
-                  (Manifest) noBackup.asInProgress(backupWithId(id)));
+                  noBackup.asInProgress(backupWithId(id)).toStatus());
             })
         .when(store)
-        .readManifestObject(any());
+        .readStatus(any());
   }
 
   @Test
@@ -346,7 +345,7 @@ final class S3BackupStoreListTest {
     // given
     vanishedManifests.addAll(List.of(id(0, 700), id(2, 700)));
     final var failure = new RuntimeException("Cannot read manifest");
-    doReturn(CompletableFuture.failedFuture(failure)).when(store).readManifestObject(id(0, 500));
+    doReturn(CompletableFuture.failedFuture(failure)).when(store).readStatus(id(0, 500));
 
     // when
     final var page =

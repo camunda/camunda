@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +62,16 @@ final class FileSetManager {
             Thread.ofVirtual().name("zeebe-backup-s3-", 0).factory());
   }
 
+  /** Returns the key of the object that holds the named file of a file set under the prefix. */
+  static String objectKey(final String prefix, final String fileName) {
+    return prefix + fileName;
+  }
+
+  /** Returns the keys of the objects that hold the files of a file set under the prefix. */
+  static Stream<String> objectKeys(final String prefix, final FileSet files) {
+    return files.names().stream().map(fileName -> objectKey(prefix, fileName));
+  }
+
   CompletableFuture<FileSet> save(final String prefix, final NamedFileSet files) {
     LOG.debug("Saving {} files to prefix {}", files.files().size(), prefix);
     return CompletableFutureUtils.mapAsync(
@@ -83,7 +94,7 @@ final class FileSetManager {
       try {
         client
             .putObject(
-                put -> put.bucket(config.bucketName()).key(prefix + fileName),
+                put -> put.bucket(config.bucketName()).key(objectKey(prefix, fileName)),
                 AsyncRequestBody.fromFile(compressedFile))
             .join();
       } finally {
@@ -98,7 +109,7 @@ final class FileSetManager {
         final var fileSize = Files.size(filePath);
         client
             .putObject(
-                put -> put.bucket(config.bucketName()).key(prefix + fileName),
+                put -> put.bucket(config.bucketName()).key(objectKey(prefix, fileName)),
                 AsyncRequestBody.fromInputStream(inputStream, fileSize, schedulerExecutor))
             .join();
       } catch (final IOException e) {
@@ -189,7 +200,7 @@ final class FileSetManager {
         final var compressed = Files.createTempFile(TMP_DECOMPRESSION_PREFIX, null);
         client
             .getObject(
-                req -> req.bucket(config.bucketName()).key(sourcePrefix + fileName),
+                req -> req.bucket(config.bucketName()).key(objectKey(sourcePrefix, fileName)),
                 AsyncResponseTransformer.toFile(
                     compressed,
                     cfg ->
@@ -206,7 +217,8 @@ final class FileSetManager {
     LOG.trace("Restoring file {} from prefix {} to {}", fileName, sourcePrefix, targetFolder);
     final var path = targetFolder.resolve(fileName);
     client
-        .getObject(req -> req.bucket(config.bucketName()).key(sourcePrefix + fileName), path)
+        .getObject(
+            req -> req.bucket(config.bucketName()).key(objectKey(sourcePrefix, fileName)), path)
         .join();
     return path;
   }
