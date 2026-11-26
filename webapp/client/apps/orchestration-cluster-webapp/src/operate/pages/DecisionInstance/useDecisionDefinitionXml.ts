@@ -11,7 +11,7 @@ import {fetchDecisionDefinitionXml} from '#/operate/pages/Decisions/useDecisionD
 
 function useDecisionDefinitionXml(decisionDefinitionKey?: string) {
 	return useQuery<string>({
-		queryKey: ['decisionDefinitionXml', decisionDefinitionKey] as const,
+		queryKey: ['decisionInstanceDefinitionXml', decisionDefinitionKey] as const,
 		queryFn: decisionDefinitionKey === undefined ? skipToken : () => fetchDecisionDefinitionXml(decisionDefinitionKey),
 		staleTime: 'static',
 		retry: false,
