@@ -448,6 +448,11 @@ jobs:
           # Business ID uniqueness enforcement toggle
           export CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED="true"
 
+          # Gateway response validation: contract-violating responses become 5xx.
+          # On across the suite; this job starts the binary directly rather than
+          # via docker-compose, so set it explicitly here.
+          export CAMUNDA_REST_RESPONSEVALIDATION_ENABLED="true"
+
           dev-dist/bin/camunda > dev-dist/camunda.log 2>&1 &
           echo $! > dev-dist/camunda.pid
           echo "Camunda starting (PID $(cat dev-dist/camunda.pid))..."

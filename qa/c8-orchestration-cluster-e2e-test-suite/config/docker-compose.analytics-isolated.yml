@@ -44,6 +44,9 @@ x-camunda-analytics-isolated-base-env: &camunda-analytics-isolated-base-env
   CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME: sa
   CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD: ''
   CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_AUTO_DDL: 'true'
+  # Gateway response validation: contract-violating responses become 5xx. These
+  # isolated services have their own env and do not inherit docker-compose.yml.
+  CAMUNDA_REST_RESPONSEVALIDATION_ENABLED: ${CAMUNDA_REST_RESPONSEVALIDATION_ENABLED:-true}
 
 services:
   camunda-analytics-isolated:
