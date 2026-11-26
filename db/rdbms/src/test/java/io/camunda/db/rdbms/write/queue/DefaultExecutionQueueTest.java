@@ -609,6 +609,31 @@ class DefaultExecutionQueueTest {
   }
 
   @Test
+  public void shouldOrderByStatementTypeBeforeExplicitOrder() {
+    // given - an INSERT with a high explicit order and an UPDATE with the default order. The
+    // statement IDs are chosen so that the ID alone would run the UPDATE first.
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE, WriteStatementType.UPDATE, 1L, "a.update", "update"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "z.insert",
+            "insert",
+            Integer.MAX_VALUE));
+
+    // when
+    executionQueue.flush();
+
+    // then - the statement type wins over the explicit order, which only breaks ties within a type
+    final var inOrder = Mockito.inOrder(session);
+    inOrder.verify(session).update("z.insert", "insert");
+    inOrder.verify(session).update("a.update", "update");
+  }
+
+  @Test
   public void shouldGroupUserTaskStatementsOfDifferentUserTasksByStatementId() {
     // given - three user task updates, each queuing update, deleteCandidateUsers and
     // deleteCandidateGroups, as UserTaskWriter#update does
