@@ -3375,6 +3375,44 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(expectedBody, JsonCompareMode.STRICT);
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"[{}]", "[null]", "[{}, null]", "[{}, {}]"})
+  void shouldRejectCancelProcessInstanceBatchOperationWhenOrHasNoBranchWithCriteria(
+      final String orBranches) {
+    // given - an OR without any criterion matches every instance, like an empty filter does
+    final var request =
+        """
+        {
+          "filter": { "$or": %s }
+        }"""
+            .formatted(orBranches);
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/process-instances/cancellation"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
   @Test
   void shouldRejectCancelProcessInstanceBatchOperationWithEmptyFilter() {
     // given
@@ -3762,6 +3800,41 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             ]
           }
         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{\"$or\": [{\"state\": \"ACTIVE\"}, {}]}",
+        "{\"$or\": [null, {\"state\": \"ACTIVE\"}]}",
+        "{\"state\": \"ACTIVE\", \"$or\": [{}]}",
+        "{\"state\": \"ACTIVE\", \"$or\": [null]}"
+      })
+  void shouldAcceptCancelProcessInstanceBatchOperationWhenACriterionSitsNextToAnEmptyOrBranch(
+      final String filter) {
+    // given - only an $or without any criterion at all is rejected
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    when(processInstanceServices.cancelProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request = "{\"filter\": %s}".formatted(filter);
 
     // when / then
     webClient
