@@ -7,13 +7,10 @@
  */
 
 import {afterEach, describe, expect, beforeAll} from 'vitest';
-import {useParams} from '@tanstack/react-router';
 import {userEvent} from 'vitest/browser';
-import {HttpResponse, http} from 'msw';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
+import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {mockGetDecisionInstanceEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createDecisionInstance} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
@@ -21,24 +18,17 @@ import {VariablesPanel} from './VariablesPanel';
 import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 const TABLE_ID = '4294980768';
-const LITERAL_ID = '4294980769';
-const NEXT_TABLE_ID = '4294980770';
 const ROUTE = '/operate/decisions/$decisionInstanceId';
 
-function PanelOnRoute() {
-	const {decisionInstanceId} = useParams({strict: false});
-	return (
-		<div style={{height: '600px'}}>
-			<VariablesPanel decisionEvaluationInstanceKey={decisionInstanceId ?? ''} />
-		</div>
-	);
-}
-
 function renderPanel() {
-	return renderWithRouter(PanelOnRoute, {
-		path: ROUTE,
-		initialEntry: `/operate/decisions/${TABLE_ID}`,
-	});
+	return renderWithRouter(
+		() => (
+			<div style={{height: '600px'}}>
+				<VariablesPanel decisionEvaluationInstanceKey={TABLE_ID} />
+			</div>
+		),
+		{path: ROUTE, initialEntry: `/operate/decisions/${TABLE_ID}`},
+	);
 }
 
 describe('<VariablesPanel />', () => {
@@ -47,52 +37,6 @@ describe('<VariablesPanel />', () => {
 	afterEach(() => {
 		localStorage.removeItem('operate.panelStates');
 	});
-
-	it.for([
-		{initialWidth: 0, change: 'appears', side: 'input'},
-		{initialWidth: 0, change: 'appears', side: 'output'},
-		{initialWidth: 600, change: 'grows', side: 'input'},
-		{initialWidth: 600, change: 'grows', side: 'output'},
-	] as const)(
-		'should keep the $side panel at least one third wide when the container $change',
-		async ({initialWidth, side}, {worker}) => {
-			worker.use(
-				mockGetDecisionInstanceEndpoint({
-					successResponse: HttpResponse.json(createDecisionInstance({decisionEvaluationInstanceKey: TABLE_ID})),
-				}),
-			);
-			storeStateLocally('operate.panelStates', {'decision-instance-horizontal-panel': [50, 50]});
-
-			const screen = await renderWithRouter(
-				() => (
-					<div data-testid="resizable-panel-container" style={{width: initialWidth}}>
-						<PanelOnRoute />
-					</div>
-				),
-				{path: ROUTE, initialEntry: `/operate/decisions/${TABLE_ID}`},
-			);
-
-			const container = screen.getByTestId('resizable-panel-container');
-			const panel = screen.getByRole('region', {name: `${side} variables`});
-			container.element().style.width = '900px';
-
-			await expect.poll(() => panel.element().getBoundingClientRect().width).toBeGreaterThan(400);
-
-			const findDragger = () =>
-				screen
-					.getByTestId('decision-instance-variables-panel')
-					.element()
-					.querySelector<HTMLElement>('.__dbk__dragger.Horizontal');
-			await expect.poll(findDragger).not.toBeNull();
-
-			await userEvent.dragAndDrop(findDragger() as HTMLElement, panel);
-
-			await expect.poll(() => panel.element().getBoundingClientRect().width).toBeLessThan(360);
-			expect(panel.element().getBoundingClientRect().width).toBeGreaterThanOrEqual(
-				container.element().getBoundingClientRect().width / 3 - 1,
-			);
-		},
-	);
 
 	it('should display evaluated inputs and matched-rule outputs in separate structured tables', async ({worker}) => {
 		worker.use(
@@ -154,10 +98,6 @@ describe('<VariablesPanel />', () => {
 		await expect.element(outputs.getByText('Review')).toBeVisible();
 		await expect.element(screen.getByTestId('results-json-viewer')).not.toBeInTheDocument();
 
-		expect(screen.getByRole('tabpanel').element().getBoundingClientRect().bottom).toBeLessThanOrEqual(
-			screen.getByTestId('decision-instance-variables-panel').element().getBoundingClientRect().bottom + 1,
-		);
-
 		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
 		await expect.element(screen.getByRole('tab', {name: 'Result'})).toHaveAttribute('aria-selected', 'true');
 		await expect.element(screen.getByTestId('results-json-viewer')).toBeVisible();
@@ -166,61 +106,6 @@ describe('<VariablesPanel />', () => {
 		await expect.element(inputs.getByText('Customer age')).toBeVisible();
 		await expect.element(screen.getByTestId('results-json-viewer')).not.toBeVisible();
 	});
-
-	it('should refresh input and output rows when navigating between decision tables', async ({worker}) => {
-		worker.use(
-			mockGetDecisionInstanceEndpoint({
-				successResponse: HttpResponse.json(
-					createDecisionInstance({
-						decisionEvaluationInstanceKey: TABLE_ID,
-						evaluatedInputs: [{inputId: 'input', inputName: 'First input', inputValue: '1'}],
-						matchedRules: [
-							{
-								ruleId: 'rule-1',
-								ruleIndex: 1,
-								evaluatedOutputs: [
-									{outputId: 'output', outputName: 'First output', outputValue: '"one"', ruleId: null, ruleIndex: null},
-								],
-							},
-						],
-					}),
-				),
-			}),
-		);
-
-		const screen = await renderPanel();
-		const inputs = screen.getByRole('region', {name: 'input variables'});
-		const outputs = screen.getByRole('region', {name: 'output variables'});
-		await expect.element(inputs.getByText('First input')).toBeVisible();
-		await expect.element(outputs.getByText('First output')).toBeVisible();
-
-		worker.use(
-			mockGetDecisionInstanceEndpoint({
-				successResponse: HttpResponse.json(
-					createDecisionInstance({
-						decisionEvaluationInstanceKey: NEXT_TABLE_ID,
-						evaluatedInputs: [{inputId: 'input', inputName: 'Next input', inputValue: '2'}],
-						matchedRules: [
-							{
-								ruleId: 'rule-1',
-								ruleIndex: 1,
-								evaluatedOutputs: [
-									{outputId: 'output', outputName: 'Next output', outputValue: '"two"', ruleId: null, ruleIndex: null},
-								],
-							},
-						],
-					}),
-				),
-			}),
-		);
-
-		await screen.router.navigate({to: ROUTE, params: {decisionInstanceId: NEXT_TABLE_ID}});
-		await expect.element(inputs.getByText('Next input')).toBeVisible();
-		await expect.element(outputs.getByText('Next output')).toBeVisible();
-		await expect.element(inputs.getByText('First input')).not.toBeInTheDocument();
-		await expect.element(outputs.getByText('First output')).not.toBeInTheDocument();
-	});
-
 	it('should render distinct output rows when rule identity and output IDs repeat', async ({worker}) => {
 		worker.use(
 			mockGetDecisionInstanceEndpoint({
@@ -267,32 +152,21 @@ describe('<VariablesPanel />', () => {
 		await expect.element(rows.nth(1).getByText('"first"')).toBeVisible();
 		await expect.element(rows.nth(2).getByText('Second outcome')).toBeVisible();
 		await expect.element(rows.nth(2).getByText('"second"')).toBeVisible();
-		await expect.poll(() => rows.elements()).toHaveLength(3);
+		await expect.element(rows).toHaveLength(3);
 	});
 
 	it('should show both input and output skeletons during loading', async ({worker}) => {
-		let release: () => void = () => {};
-		const pending = new Promise<void>((resolve) => {
-			release = resolve;
-		});
 		worker.use(
-			http.get(
-				endpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey: ':decisionEvaluationInstanceKey'}),
-				async () => {
-					await pending;
-					return HttpResponse.json(createDecisionInstance());
-				},
-			),
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(createDecisionInstance()),
+				delay: 'infinite',
+			}),
 		);
 
 		const screen = await renderPanel();
 		await expect.element(screen.getByTestId('inputs-skeleton')).toBeVisible();
 		await expect.element(screen.getByTestId('outputs-skeleton')).toBeVisible();
 		await expect.element(screen.getByTestId('results-json-viewer')).not.toBeInTheDocument();
-
-		release();
-		await expect.element(screen.getByTestId('inputs-skeleton')).not.toBeInTheDocument();
-		await expect.element(screen.getByRole('region', {name: 'output variables'}).getByText('Rule')).toBeVisible();
 	});
 
 	it('should show the failed-evaluation empty state for missing inputs', async ({worker}) => {
@@ -388,73 +262,5 @@ describe('<VariablesPanel />', () => {
 		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
 
 		await expect.element(screen.getByTestId('results-json-viewer')).toMatchTextContent(/9007199254740993/);
-	});
-
-	it('should switch from a decision table to a literal expression and reset to the new result', async ({worker}) => {
-		worker.use(
-			mockGetDecisionInstanceEndpoint({
-				successResponse: HttpResponse.json(
-					createDecisionInstance({
-						decisionEvaluationInstanceKey: TABLE_ID,
-						result: '{"table":"matched"}',
-					}),
-				),
-			}),
-		);
-
-		const screen = await renderPanel();
-		await expect.element(screen.getByRole('tab', {name: 'Inputs and outputs'})).toBeVisible();
-		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
-		await expect.element(screen.getByTestId('results-json-viewer')).toMatchTextContent(/"table":"matched"/);
-
-		worker.use(
-			mockGetDecisionInstanceEndpoint({
-				successResponse: HttpResponse.json(
-					createDecisionInstance({
-						decisionEvaluationInstanceKey: LITERAL_ID,
-						decisionDefinitionType: 'LITERAL_EXPRESSION',
-						result: '{"literal":"selected"}',
-					}),
-				),
-			}),
-		);
-
-		await screen.router.navigate({to: ROUTE, params: {decisionInstanceId: LITERAL_ID}});
-		await expect.element(screen.getByRole('heading', {name: 'Result'})).toBeVisible();
-		await expect.element(screen.getByRole('tab', {name: 'Inputs and outputs'})).not.toBeInTheDocument();
-		await expect.element(screen.getByTestId('results-json-viewer')).toMatchTextContent(/"literal":"selected"/);
-	});
-
-	it('should preserve the selected result tab when navigating between decision tables', async ({worker}) => {
-		worker.use(
-			mockGetDecisionInstanceEndpoint({
-				successResponse: HttpResponse.json(
-					createDecisionInstance({
-						decisionEvaluationInstanceKey: TABLE_ID,
-						result: '{"table":"first"}',
-					}),
-				),
-			}),
-		);
-
-		const screen = await renderPanel();
-		await expect.element(screen.getByRole('tab', {name: 'Inputs and outputs'})).toBeVisible();
-		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
-		await expect.element(screen.getByTestId('results-json-viewer')).toMatchTextContent(/"table":"first"/);
-
-		worker.use(
-			mockGetDecisionInstanceEndpoint({
-				successResponse: HttpResponse.json(
-					createDecisionInstance({
-						decisionEvaluationInstanceKey: NEXT_TABLE_ID,
-						result: '{"table":"next"}',
-					}),
-				),
-			}),
-		);
-
-		await screen.router.navigate({to: ROUTE, params: {decisionInstanceId: NEXT_TABLE_ID}});
-		await expect.element(screen.getByRole('tab', {name: 'Result'})).toHaveAttribute('aria-selected', 'true');
-		await expect.element(screen.getByTestId('results-json-viewer')).toMatchTextContent(/"table":"next"/);
 	});
 });

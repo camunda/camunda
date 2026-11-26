@@ -143,14 +143,11 @@ describe('<DecisionFilters /> (design system)', () => {
 		await expect.element(screen.getByLabelText('Version')).toBeEnabled();
 		await userEvent.click(screen.getByLabelText('Version'));
 
-		await expect
-			.poll(() =>
-				screen
-					.getByRole('option')
-					.elements()
-					.map((option) => option.textContent),
-			)
-			.toEqual(['All versions', '7', '3', '1']);
+		await expect.element(screen.getByRole('option')).toHaveLength(4);
+		await expect.element(screen.getByRole('option').nth(0)).toHaveTextContent('All versions');
+		await expect.element(screen.getByRole('option').nth(1)).toHaveTextContent('7');
+		await expect.element(screen.getByRole('option').nth(2)).toHaveTextContent('3');
+		await expect.element(screen.getByRole('option').nth(3)).toHaveTextContent('1');
 	});
 
 	it('should remove the version from the URL when all versions are selected', async () => {

@@ -106,6 +106,7 @@ describe('<BatchOperation />', () => {
 
 		const screen = await renderPage();
 
+		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate-preview/batch-operations');
 		await expect.element(screen.getByText('Summary of items')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Failed to load batch operation details')).not.toBeInTheDocument();
 	});

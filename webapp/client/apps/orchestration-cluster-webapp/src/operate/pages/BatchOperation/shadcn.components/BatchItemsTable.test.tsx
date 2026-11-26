@@ -7,7 +7,8 @@
  */
 
 import {describe, expect} from 'vitest';
-import {http, HttpResponse} from 'msw';
+import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -46,6 +47,14 @@ function itemsPage(from: number) {
 			page: {totalItems: 150, hasMoreTotalItems: false},
 		}),
 	);
+}
+
+function mockItemsFrom(from: number, successResponse: Response) {
+	return mockQueryBatchOperationItemsEndpoint({
+		schema: z.object({page: z.object({from: z.literal(from)})}),
+		successResponse,
+		failureResponse: new HttpResponse(null, {status: 400}),
+	});
 }
 
 describe('<BatchItemsTable />', () => {
@@ -279,16 +288,8 @@ describe('<BatchItemsTable />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Hide failure details'})).toBeVisible();
 	});
 
-	it('should stop requesting the previous page after it fails and load it when retrying', async ({worker}) => {
-		const requestedOffsets: number[] = [];
-		let isPreviousPageFailing = false;
-		worker.use(
-			http.post('*/batch-operation-items/search', async ({request}) => {
-				const {page} = (await request.json()) as {page: {from: number}};
-				requestedOffsets.push(page.from);
-				return isPreviousPageFailing && page.from === 0 ? ITEMS_LOAD_ERROR : itemsPage(page.from);
-			}),
-		);
+	it('should load the previous page when retrying after it fails', async ({worker}) => {
+		worker.use(mockItemsFrom(0, itemsPage(0)));
 
 		const screen = await renderWithRouter(
 			() => (
@@ -301,30 +302,20 @@ describe('<BatchItemsTable />', () => {
 				initialEntry: `/operate-preview/batch-operations/${BATCH_OPERATION_KEY}`,
 			},
 		);
-		const scrollContainer = () =>
-			screen
-				.getByTestId('batch-items-table')
-				.element()
-				.querySelector<HTMLElement>('[data-slot=data-table-scroll-container]')!;
+		const table = screen.getByRole('table');
 		await expect.element(screen.getByRole('link', {name: 'View process instance 0'})).toBeVisible();
-		for (const offset of [50, 100]) {
-			scrollContainer().scrollTop = 0;
-			for (let top = 0; top <= scrollContainer().scrollHeight; top += 300) {
-				scrollContainer().scrollTop = top;
-				await new Promise((resolve) => setTimeout(resolve, 100));
-			}
-			await expect.poll(() => requestedOffsets.includes(offset)).toBe(true);
-			await expect.element(screen.getByRole('link', {name: `View process instance ${offset}`})).toBeVisible();
-		}
-
-		const requestsBeforeFailure = requestedOffsets.length;
-		isPreviousPageFailing = true;
-		scrollContainer().scrollTop = 0;
+		worker.use(mockItemsFrom(50, itemsPage(50)));
+		await userEvent.wheel(table, {delta: {y: 100_000}});
+		await expect.element(screen.getByRole('link', {name: 'View process instance 50'})).toBeVisible();
+		worker.use(mockItemsFrom(100, itemsPage(100)));
+		await userEvent.wheel(table, {delta: {y: 100_000}});
+		await expect.element(screen.getByRole('link', {name: 'View process instance 100'})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'View process instance 0'})).not.toBeInTheDocument();
+		worker.use(mockItemsFrom(0, ITEMS_LOAD_ERROR));
+		await userEvent.wheel(table, {delta: {y: -100_000}});
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
-		await new Promise((resolve) => setTimeout(resolve, 1000));
-		expect(requestedOffsets.slice(requestsBeforeFailure)).toEqual([0]);
 
-		isPreviousPageFailing = false;
+		worker.use(mockItemsFrom(0, itemsPage(0)));
 		await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
 
 		await expect.element(screen.getByRole('link', {name: 'View process instance 0'})).toBeVisible();

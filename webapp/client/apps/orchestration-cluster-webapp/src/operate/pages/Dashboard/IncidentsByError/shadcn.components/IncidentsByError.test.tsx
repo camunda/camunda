@@ -8,7 +8,6 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {setUpFakeIntersectionObserver} from '#/vitest-modules/fake-intersection-observer';
 import {afterEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
@@ -26,8 +25,6 @@ import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {IncidentsByError} from './IncidentsByError';
-
-const {getObserver} = setUpFakeIntersectionObserver();
 
 const REQUEST_SCHEMA = z.object({
 	page: z.object({
@@ -109,30 +106,26 @@ describe('<IncidentsByError />', () => {
 		await expect.element(screen.getByText('Beta Null Pointer')).toBeVisible();
 	});
 
-	it('should fetch the next page when scrolled to the bottom', async ({worker}) => {
+	it('should fetch the next page when the bottom of the list is visible', async ({worker}) => {
 		worker.use(
 			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
-				schema: REQUEST_SCHEMA,
+				once: true,
+				schema: z.object({page: z.object({from: z.literal(0), limit: z.literal(50)})}),
 				successResponse: PAGE_1_OF_2_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				once: true,
+				schema: z.object({page: z.object({from: z.literal(2), limit: z.literal(50)})}),
+				successResponse: PAGE_2_RESPONSE,
 				failureResponse: FAILURE_RESPONSE,
 			}),
 		);
 
 		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
-
-		worker.use(
-			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
-				schema: REQUEST_SCHEMA,
-				successResponse: PAGE_2_RESPONSE,
-				failureResponse: FAILURE_RESPONSE,
-			}),
-		);
-
-		getObserver().intersect(screen.getByTestId('incidents-by-error-list-bottom-sentinel').element());
-
 		await expect.element(screen.getByText('Page Two Only Error')).toBeVisible();
+		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
 	});
 
 	it('should distinguish similar incident messages by hash in drill-down links', async ({worker}) => {
@@ -222,19 +215,22 @@ describe('<IncidentsByError />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Expand row'})).toBeVisible();
 		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
 
-		for (const [name, tenant] of [
-			['Tenant A', '<tenant-A>'],
-			['Tenant B', '<tenant-B>'],
-		] as const) {
-			await expect
-				.element(screen.getByRole('link', {name: new RegExp(name)}))
-				.toHaveAttribute(
-					'href',
-					expect.stringContaining(
-						`process=orders&version=2&errorMessage=Connection+timeout&incidentErrorHashCode=-481&tenantId=${encodeURIComponent(tenant)}`,
-					),
-				);
-		}
+		await expect
+			.element(screen.getByRole('link', {name: /Tenant A/}))
+			.toHaveAttribute(
+				'href',
+				expect.stringContaining(
+					'process=orders&version=2&errorMessage=Connection+timeout&incidentErrorHashCode=-481&tenantId=%3Ctenant-A%3E',
+				),
+			);
+		await expect
+			.element(screen.getByRole('link', {name: /Tenant B/}))
+			.toHaveAttribute(
+				'href',
+				expect.stringContaining(
+					'process=orders&version=2&errorMessage=Connection+timeout&incidentErrorHashCode=-481&tenantId=%3Ctenant-B%3E',
+				),
+			);
 	});
 
 	it('should show an error state when the request fails', async ({worker}) => {

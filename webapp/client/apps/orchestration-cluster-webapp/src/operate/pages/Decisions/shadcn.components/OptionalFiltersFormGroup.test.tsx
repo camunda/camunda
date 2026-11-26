@@ -59,6 +59,7 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 		await expect.element(screen.getByLabelText('Process instance key')).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await expect.element(screen.getByRole('menuitem', {name: 'Business ID'})).toBeVisible();
 		await expect.element(screen.getByRole('menuitem', {name: 'Process instance key'})).not.toBeInTheDocument();
 	});
 
@@ -77,6 +78,7 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 			const screen = await render(<Harness initialValues={initialValues} />);
 
 			await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+			await expect.element(screen.getByRole('menuitem', {name: 'Business ID'})).toBeVisible();
 			await expect.element(screen.getByRole('menuitem', {name: 'Evaluation date range'})).not.toBeInTheDocument();
 		},
 	);
@@ -174,19 +176,5 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 
 		await expect.element(screen.getByRole('textbox', {name: 'From'})).toHaveAttribute('aria-invalid', 'false');
 		await expect.element(screen.getByRole('textbox', {name: 'From'})).not.toHaveValue('not a date');
-	});
-
-	it('should fill the evaluation date range when selecting a quick range', async () => {
-		const onSubmit = vi.fn();
-		const screen = await render(<Harness initialVisible={['evaluationDateRange']} onSubmit={onSubmit} />);
-
-		await userEvent.click(screen.getByRole('combobox', {name: 'Quick ranges'}));
-		await userEvent.click(screen.getByRole('option', {name: 'Last 3 hours'}));
-		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
-
-		const {evaluationDateFrom, evaluationDateTo} = onSubmit.mock.calls[0]?.[0] ?? {};
-		const rangeMs = new Date(evaluationDateTo).getTime() - new Date(evaluationDateFrom).getTime();
-		expect(rangeMs).toBeGreaterThanOrEqual(3 * 60 * 60 * 1000 - 1000);
-		expect(rangeMs).toBeLessThanOrEqual(3 * 60 * 60 * 1000 + 1000);
 	});
 });

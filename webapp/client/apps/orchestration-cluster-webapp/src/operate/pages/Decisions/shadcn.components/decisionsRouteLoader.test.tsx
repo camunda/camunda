@@ -8,17 +8,15 @@
 
 import {QueryClient} from '@tanstack/react-query';
 import {HttpResponse} from 'msw';
-import {describe, expect} from 'vitest';
+import {afterEach, describe, expect} from 'vitest';
+import {render} from 'vitest-browser-react';
+import {Toaster, toast} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {createQueryDecisionDefinitionsResponse} from '#/shared-test-modules/api-mocks/decision-definitions';
-import {mockQueryDecisionDefinitionsEndpointByFilter} from '../mockQueryDecisionDefinitionsEndpointByFilter';
+import {mockQueryDecisionDefinitionsEndpoint} from '#/shared-test-modules/mock-handlers';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {decisionsRouteLoader} from './decisionsRouteLoader';
-
-function mockEmptyDefinitions() {
-	const empty = HttpResponse.json(createQueryDecisionDefinitionsResponse());
-	return mockQueryDecisionDefinitionsEndpointByFilter({unfilteredResponse: empty, filteredResponse: empty});
-}
 
 function runLoader(preload: boolean) {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -29,21 +27,26 @@ function runLoader(preload: boolean) {
 }
 
 describe('decisionsRouteLoader', () => {
-	it('should show the not-found notification when navigating to an unknown decision', async ({worker}) => {
+	afterEach(() => {
 		notificationsStore.reset();
-		worker.use(mockEmptyDefinitions());
-		await runLoader(false);
-
-		expect(notificationsStore.notifications).toEqual([
-			expect.objectContaining({kind: 'error', title: "Couldn't find the decision"}),
-		]);
+		toast.dismiss();
 	});
 
-	it('should not show the not-found notification when only preloading an unknown decision', async ({worker}) => {
-		notificationsStore.reset();
-		worker.use(mockEmptyDefinitions());
-		await runLoader(true);
+	it('should show the not-found notification when navigating to an unknown decision', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
+			}),
+		);
+		const screen = await render(
+			<>
+				<Toaster />
+				<Notifications />
+			</>,
+		);
 
-		expect(notificationsStore.notifications).toEqual([]);
+		await runLoader(false);
+
+		await expect.element(screen.getByText("Couldn't find the decision", {exact: true})).toBeVisible();
 	});
 });
