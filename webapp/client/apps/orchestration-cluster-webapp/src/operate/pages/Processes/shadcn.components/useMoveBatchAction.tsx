@@ -44,7 +44,7 @@ function useMoveBatchAction({
 	const restriction = getMoveSourceRestriction(source);
 	const disabledReason =
 		mode !== 'list'
-			? t('operate.processes.toolbar.actionMode')
+			? t('operate.processes.toolbar.actionModeDs')
 			: restriction === 'selectElement'
 				? t('operate.processes.batchModification.selectElement')
 				: restriction === 'unsupportedType'

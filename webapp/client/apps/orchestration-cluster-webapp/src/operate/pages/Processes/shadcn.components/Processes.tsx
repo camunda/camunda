@@ -7,6 +7,7 @@
  */
 
 import {useEffect, useMemo, useRef, useState} from 'react';
+import isEqual from 'lodash/isEqual';
 import type {Decorator, FormApi} from 'final-form';
 import {useTranslation} from 'react-i18next';
 import {useBlocker, useLocation, useNavigate} from '@tanstack/react-router';
@@ -16,7 +17,7 @@ import {FilterSidebar} from '#/operate/shared/FilterSidebar/shadcn.components/Fi
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {Frame} from '#/operate/shared/Frame/shadcn.components/Frame';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
-import type {ProcessesSearch} from '../processesFilter';
+import {processesSearchSchema, type ProcessesSearch} from '../processesFilter';
 import type {BatchModificationScope} from '../useBatchModificationStatistics';
 import {setVariableConditions, useVariableConditions} from '../VariablesFilter/variableFilterStore';
 import type {OptionalFilter, OptionalFilterValues} from './optionalFilters';
@@ -26,6 +27,7 @@ import {InstancesTable} from './InstancesTable';
 import {DiagramPanel} from './DiagramPanel';
 import {useProcessFilterOptions} from './useProcessFilterOptions';
 import {MigrationView} from './MigrationView';
+import {getBatchModificationLockedFilterValues} from './batchModificationLockedFilters';
 import {ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
 import {getInstanceMigration} from '../instanceMigration';
 import type {ProcessesMode} from './processesMode';
@@ -35,6 +37,47 @@ type FilterFormValues = OptionalFilterValues & {tenantId?: string};
 type Props = {
 	search: ProcessesSearch;
 };
+
+function isHistorySearchAction(action: string) {
+	return action === 'BACK' || action === 'FORWARD' || action === 'GO';
+}
+
+function normalizeLockedFilterValue(value: unknown): string | undefined {
+	if (value === undefined || value === null || value === '') {
+		return undefined;
+	}
+
+	return String(value);
+}
+
+function normalizeLockedFilterValues(search: Record<string, unknown>) {
+	const values = getBatchModificationLockedFilterValues(search);
+	return {
+		process: normalizeLockedFilterValue(values.process),
+		version: normalizeLockedFilterValue(values.version),
+		elementId: normalizeLockedFilterValue(values.elementId),
+	};
+}
+
+function parseProcessesSearch(rawSearch: Record<string, unknown>) {
+	const parsedSearch = {
+		process: rawSearch['process'],
+		version: rawSearch['version'],
+		processDefinitionId: rawSearch['processDefinitionId'],
+		processDefinitionVersion: rawSearch['processDefinitionVersion'],
+		elementId: rawSearch['elementId'],
+	};
+	const result = processesSearchSchema.safeParse(parsedSearch);
+	return result.success ? result.data : rawSearch;
+}
+
+function normalizeProcessesSearch(search: unknown): Record<string, unknown> {
+	if (!search || typeof search !== 'object') {
+		return {};
+	}
+
+	return parseProcessesSearch(search as Record<string, unknown>);
+}
 
 const Processes: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
@@ -63,7 +106,21 @@ const Processes: React.FC<Props> = ({search}) => {
 	const [footerSlot, setFooterSlot] = useState<HTMLDivElement | null>(null);
 	const isBatchModification = mode === 'batch-modification';
 	const blocker = useBlocker({
-		shouldBlockFn: ({current, next}) => current.pathname !== next.pathname,
+		shouldBlockFn: ({current, next, action}) => {
+			if (current.routeId !== next.routeId || current.pathname !== next.pathname) {
+				return true;
+			}
+
+			if (!isHistorySearchAction(action)) {
+				return false;
+			}
+
+			const currentSearch = normalizeProcessesSearch(current.search);
+			const nextSearch = normalizeProcessesSearch(next.search);
+			const currentLockedFilters = normalizeLockedFilterValues(currentSearch);
+			const nextLockedFilters = normalizeLockedFilterValues(nextSearch);
+			return !isEqual(currentLockedFilters, nextLockedFilters);
+		},
 		withResolver: true,
 		disabled: !isBatchModification,
 	});
@@ -184,7 +241,9 @@ const Processes: React.FC<Props> = ({search}) => {
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
-			<Frame frame={{isVisible: isBatchModification, headerTitle: t('operate.processes.batchModification.frameTitle')}}>
+			<Frame
+				frame={{isVisible: isBatchModification, headerTitle: t('operate.processes.batchModification.frameTitleDs')}}
+			>
 				<div className="flex h-full min-h-0 flex-1 overflow-hidden">
 					<Heading as="h1" className="sr-only">
 						{t('operate.processes.title')}

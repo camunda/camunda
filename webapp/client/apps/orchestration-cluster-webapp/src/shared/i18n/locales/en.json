@@ -1352,7 +1352,11 @@
 					"helperReviewDs": "2. Click “Review modification”.",
 					"exitDescriptionDs": "Exiting discards your planned move.",
 					"exitDescriptionEmptyDs": "Exit batch modification mode.",
-					"undoAriaDs": "Undo move to “{{target}}”"
+					"undoAriaDs": "Undo move to “{{target}}”",
+					"frameTitleDs": "Batch modification mode",
+					"helperTitleDs": "Batch modification mode",
+					"summaryTitleDs": "Apply modifications",
+					"summaryHeadingDs": "Element modifications"
 				},
 				"toolbar": {
 					"delete": "Delete",
@@ -1384,6 +1388,7 @@
 					"noIncidents": "No process instances with an incident selected. Select at least one process instance with an incident to retry.",
 					"noSuspended": "No suspended process instances selected. Select at least one suspended process instance to resume.",
 					"actionMode": "Not available in batch modification mode",
+					"actionModeDs": "Not available in batch modification mode",
 					"started": "The batch operation \"{{operationType}}\" has been started",
 					"progressSubtitle": "You can track its progress in the Batch Operation page",
 					"details": "Go to operation details",

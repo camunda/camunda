@@ -1340,7 +1340,11 @@
 					"helperReviewDs": "2. Haga clic en «Revisar modificación».",
 					"exitDescriptionDs": "Al salir se descarta el movimiento planificado.",
 					"exitDescriptionEmptyDs": "Salir del modo de modificación por lotes.",
-					"undoAriaDs": "Deshacer el movimiento a «{{target}}»"
+					"undoAriaDs": "Deshacer el movimiento a «{{target}}»",
+					"frameTitleDs": "Modo de modificación por lotes",
+					"helperTitleDs": "Modo de modificación por lotes",
+					"summaryTitleDs": "Aplicar modificaciones",
+					"summaryHeadingDs": "Modificaciones de elementos"
 				},
 				"toolbar": {
 					"delete": "Eliminar",
@@ -1372,6 +1376,7 @@
 					"noIncidents": "No se han seleccionado instancias de proceso con incidente. Seleccione al menos una instancia con incidente para reintentar.",
 					"noSuspended": "No se han seleccionado instancias de proceso suspendidas. Seleccione al menos una instancia suspendida para reanudarla.",
 					"actionMode": "No disponible en el modo de modificación por lotes",
+					"actionModeDs": "No disponible en el modo de modificación por lotes",
 					"started": "Se ha iniciado la operación por lotes «{{operationType}}»",
 					"progressSubtitle": "Puede seguir su progreso en la página de la operación por lotes",
 					"details": "Ir a los detalles de la operación",

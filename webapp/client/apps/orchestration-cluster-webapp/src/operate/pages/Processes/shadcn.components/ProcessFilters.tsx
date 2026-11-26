@@ -29,6 +29,7 @@ import {TenantField} from '#/operate/shared/TenantField/shadcn.components/Tenant
 import {StateIcon} from '#/operate/shared/StateIcon/shadcn.components/StateIcon';
 import type {ProcessesSearch} from '../processesFilter';
 import type {ProcessFilterOptions} from './useProcessFilterOptions';
+import {getBatchModificationLockedFilterLocks} from './batchModificationLockedFilters';
 
 const LockedField: React.FC<{lockedTitle?: string; children: React.ReactNode}> = ({lockedTitle, children}) => {
 	const field = (
@@ -133,6 +134,7 @@ const ProcessFilters: React.FC<Props> = ({
 		refetchDiagramXml,
 		isMultiTenancyEnabled,
 	} = options;
+	const lockedFilters = getBatchModificationLockedFilterLocks(isLocked);
 	const lockedTitle = isLocked ? t('operate.processes.batchModification.notChangeable') : undefined;
 	const selectedVersion = process ? String(version ?? ALL_VERSIONS) : '';
 	const isRunningAll = active && incidents && suspended;
@@ -179,7 +181,7 @@ const ProcessFilters: React.FC<Props> = ({
 							size="sm"
 							options={processOptions}
 							value={selectedProcess?.id ?? ''}
-							disabled={isLocked || (isMultiTenancyEnabled && tenantId === undefined)}
+							disabled={lockedFilters.process || (isMultiTenancyEnabled && tenantId === undefined)}
 							placeholder={t('operate.processes.ds.filters.searchByName')}
 							searchPlaceholder={t('operate.processes.ds.filters.searchByName')}
 							onValueChange={selectProcess}
@@ -189,7 +191,7 @@ const ProcessFilters: React.FC<Props> = ({
 						<Label htmlFor="process-version-filter">{t('operate.processes.filters.version')}</Label>
 						<Select
 							value={selectedVersion}
-							disabled={isLocked || !areDefinitionsReady || versionNumbers.length === 0}
+							disabled={lockedFilters.version || !areDefinitionsReady || versionNumbers.length === 0}
 							onValueChange={selectVersion}
 						>
 							<SelectTrigger id="process-version-filter" size="sm" className="w-full">
@@ -215,7 +217,7 @@ const ProcessFilters: React.FC<Props> = ({
 							size="sm"
 							options={elementOptions}
 							value={selectedElement?.id ?? ''}
-							disabled={isLocked || isElementDisabled}
+							disabled={lockedFilters.elementId || isElementDisabled}
 							placeholder={t('operate.processes.ds.filters.searchByElement')}
 							searchPlaceholder={t('operate.processes.ds.filters.searchByElement')}
 							onValueChange={selectElement}
@@ -225,7 +227,12 @@ const ProcessFilters: React.FC<Props> = ({
 						<LoadError error={xmlError} onRetry={() => void refetchDiagramXml()} />
 					)}
 					{isElementDisabled && elementId && (
-						<Button variant="ghost" size="sm" disabled={isLocked} onClick={() => selectElement(undefined)}>
+						<Button
+							variant="ghost"
+							size="sm"
+							disabled={lockedFilters.elementId}
+							onClick={() => selectElement(undefined)}
+						>
 							{t('operate.processes.filters.clearElement')}
 						</Button>
 					)}

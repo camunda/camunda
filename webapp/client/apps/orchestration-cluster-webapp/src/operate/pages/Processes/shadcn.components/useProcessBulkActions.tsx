@@ -74,7 +74,7 @@ function useProcessBulkActions({selection, isSubmitting, onSubmit, migration, mo
 		...(ENABLE_PROCESS_MIGRATION ? [migrationAction] : []),
 	];
 	const unavailableReasons = isActionMode
-		? [t('operate.processes.toolbar.actionMode')]
+		? [t('operate.processes.toolbar.actionModeDs')]
 		: [
 				...(moveAction?.disabledReason === undefined ? [] : [moveAction.disabledReason]),
 				...ACTIONS.filter(({action: operation}) => !eligibility[operation]).map(({action: operation}) =>
