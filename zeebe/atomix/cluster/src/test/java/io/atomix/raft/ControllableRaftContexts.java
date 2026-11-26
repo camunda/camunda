@@ -116,6 +116,7 @@ public final class ControllableRaftContexts {
   private final Map<MemberId, TestFileBasedSnapshotStore> snapshotStores = new HashMap<>();
   private final Map<MemberId, MeterRegistry> meterRegistries = new HashMap<>();
   private final Map<MemberId, AtomicBoolean> failFlushes = new HashMap<>();
+  private final Map<MemberId, RaftStorage> storages = new HashMap<>();
   private final Map<MemberId, AtomicBoolean> failNextMetaStoreWrite = new HashMap<>();
   private boolean metaStoreWritesFailable;
   private Duration electionTimeout;
@@ -277,6 +278,7 @@ public final class ControllableRaftContexts {
 
   public RaftContext createRaftContext(
       final MemberId memberId, final Random random, final RaftStorage storage) {
+    storages.put(memberId, storage);
     final var partitionConfig = new RaftPartitionConfig();
     partitionConfigurator.accept(partitionConfig);
     final var raft =
@@ -308,7 +310,8 @@ public final class ControllableRaftContexts {
               m ->
                   (DeterministicSingleThreadContext)
                       DeterministicSingleThreadContext.createContext(memberId));
-      context.setUncaughtExceptionHandler(uncaughtExceptionHandler);
+      context.setUncaughtExceptionHandler(
+          uncaughtExceptionHandler, () -> storages.get(memberId).syncFailure().get() != null);
       return context;
     };
   }
@@ -532,7 +535,10 @@ public final class ControllableRaftContexts {
       @Override
       public void flush(final Journal journal) throws FlushException {
         if (failing.get()) {
-          throw new FlushException(new IOException("Injected flush failure"));
+          // like the journal, which records a failed flush before throwing it
+          final var failure = new FlushException(new IOException("Injected flush failure"));
+          storages.get(memberId).syncFailure().record(failure);
+          throw failure;
         }
         journal.flush();
       }

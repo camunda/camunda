@@ -25,6 +25,7 @@ import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.concurrent.ThreadContextFactory;
+import io.camunda.zeebe.journal.StickySyncFailure;
 import io.camunda.zeebe.journal.file.SegmentAllocator;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
@@ -68,6 +69,7 @@ public final class RaftStorage {
   private final SegmentAllocator segmentAllocator;
   private final MeterRegistry meterRegistry;
   private final RaftLogFlusher.Factory flusherFactory;
+  private final StickySyncFailure syncFailure = new StickySyncFailure();
 
   private RaftStorage(
       final String prefix,
@@ -199,8 +201,17 @@ public final class RaftStorage {
         .withJournalIndexDensity(journalIndexDensity)
         .withSegmentAllocator(segmentAllocator)
         .withMetaStore(metaStore)
+        .withSyncFailure(syncFailure)
         .withFlusher(flusherFactory.createFlusher(threadFactory))
         .build();
+  }
+
+  /**
+   * Returns the first failed sync of this partition's data, shared by its log and its meta store:
+   * after it, none of them can persist anything anymore.
+   */
+  public StickySyncFailure syncFailure() {
+    return syncFailure;
   }
 
   @Override

@@ -26,6 +26,7 @@ import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.serializer.MetaEncoder;
 import io.atomix.raft.storage.serializer.MetaStoreSerializer;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.journal.StickySyncFailure;
 import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -35,8 +36,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.Objects;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,9 +60,8 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   private volatile long lastFlushedIndex;
   private volatile long commitIndex;
 
-  // the first failed write, after which every write fails; see writeToFile
-  private volatile IOException writeFailure;
-  private volatile Consumer<Throwable> writeFailureListener = error -> {};
+  // the first failed sync of the partition's data, after which every write fails; see writeToFile
+  private final StickySyncFailure syncFailure;
 
   public MetaStore(final RaftStorage storage, final MeterRegistry meterRegistry)
       throws IOException {
@@ -79,6 +77,7 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     }
 
     metrics = new MetaStoreMetrics(String.valueOf(storage.partitionId()), meterRegistry);
+    syncFailure = storage.syncFailure();
 
     // Note that for raft safety, irrespective of the storage level, <term, vote> metadata is always
     // persisted on disk.
@@ -306,37 +305,25 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   }
 
   /**
-   * Sets the listener to notify when a write fails. Every later write fails too, but the caller
-   * that gets the failure may not propagate it, e.g. when it runs in a future's callback; the
-   * listener always learns of it.
-   *
-   * @param listener called with the failure
-   */
-  public void setWriteFailureListener(final Consumer<Throwable> listener) {
-    writeFailureListener = Objects.requireNonNull(listener, "must specify a listener");
-  }
-
-  /**
    * Writes the buffer, which holds the whole content, to the file and syncs it.
    *
    * <p>After a failed write or sync, the file's pages may hold data that is not on disk, and the
    * kernel reports the error only once: a later write may seem to succeed without that data
-   * reaching the disk. Every write after a failed one fails, so nothing written since is treated as
-   * persisted.
+   * reaching the disk. Every write after a failed sync of the partition's data fails, so nothing
+   * written since is treated as persisted.
    */
   private void writeToFile(final ByteBuffer buffer, final FileChannel file, final boolean force) {
-    final var previousFailure = writeFailure;
+    final var previousFailure = syncFailure.get();
     if (previousFailure != null) {
       throw new StorageException(
-          "Expected to write to the meta store, but a previous write failed", previousFailure);
+          "Expected to write to the meta store, but a previous sync failed", previousFailure);
     }
 
     try {
       write(buffer, file, force);
     } catch (final IOException e) {
-      writeFailure = e;
       final var failure = new StorageException("Failed to write to the meta store", e);
-      writeFailureListener.accept(failure);
+      syncFailure.record(failure);
       throw failure;
     }
   }

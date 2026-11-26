@@ -20,6 +20,7 @@ import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.journal.StickySyncFailure;
 import io.camunda.zeebe.journal.file.SegmentAllocator;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
@@ -150,6 +151,16 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
    */
   public RaftLogBuilder withMetaStore(final JournalMetaStore metaStore) {
     journalBuilder.withMetaStore(metaStore);
+    return this;
+  }
+
+  /**
+   * @param syncFailure where the journal records its first failed sync, see {@link
+   *     SegmentedJournalBuilder#withSyncFailure(StickySyncFailure)}
+   * @return this builder for chaining
+   */
+  public RaftLogBuilder withSyncFailure(final StickySyncFailure syncFailure) {
+    journalBuilder.withSyncFailure(syncFailure);
     return this;
   }
 

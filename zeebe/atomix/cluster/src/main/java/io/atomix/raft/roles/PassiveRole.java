@@ -1007,7 +1007,7 @@ public class PassiveRole extends InactiveRole {
     } catch (final Exception e) {
       log.warn("Failed to flush appended entries to the log, so they are not acknowledged", e);
       // The journal fails every later flush too, so these entries are never acknowledged; the
-      // server fails once the journal reports the failure (RaftContext#onStorageFailure).
+      // server fails, as the journal recorded the failure (RaftStorage#syncFailure).
       failAppend(request.prevLogIndex(), future);
       return;
     }

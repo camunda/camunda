@@ -16,13 +16,13 @@
 package io.atomix.raft;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.raft.impl.RaftContext;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ScheduledFutureImpl;
 import io.atomix.utils.concurrent.ThreadContext;
 import java.time.Duration;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.jmock.lib.concurrent.DeterministicScheduler;
@@ -38,6 +38,7 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
   private final DeterministicScheduler deterministicScheduler;
   private final MemberId memberId;
   private volatile Consumer<Throwable> uncaughtExceptionHandler;
+  private volatile BooleanSupplier storageFailed = () -> false;
 
   public DeterministicSingleThreadContext(
       final DeterministicScheduler executor, final MemberId memberId) {
@@ -46,11 +47,14 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
   }
 
   /**
-   * Sets the handler that a task's storage failure is passed to, like a real thread context does
-   * with every uncaught exception. Any other uncaught exception still fails the test.
+   * Sets the handler that a task's uncaught exception is passed to once the member's storage
+   * failed, like a real thread context does with every uncaught exception: the exception most
+   * likely stems from that failure. Any other uncaught exception still fails the test.
    */
-  public void setUncaughtExceptionHandler(final Consumer<Throwable> handler) {
+  public void setUncaughtExceptionHandler(
+      final Consumer<Throwable> handler, final BooleanSupplier storageFailed) {
     uncaughtExceptionHandler = handler;
+    this.storageFailed = storageFailed;
   }
 
   public DeterministicScheduler getDeterministicScheduler() {
@@ -129,7 +133,7 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
         command.run();
       } catch (final Exception e) {
         final var handler = uncaughtExceptionHandler;
-        if (handler != null && RaftContext.isStorageFailure(e)) {
+        if (handler != null && storageFailed.getAsBoolean()) {
           handler.accept(e);
           return;
         }

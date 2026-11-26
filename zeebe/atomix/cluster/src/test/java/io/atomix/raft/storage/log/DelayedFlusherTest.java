@@ -8,7 +8,6 @@
 package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.Scheduler;
@@ -16,7 +15,6 @@ import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +66,7 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldNotScheduleIfAlreadyScheduled() throws CheckedJournalException {
+  void shouldNotScheduleIfAlreadyScheduled() {
     // given
     final var journal = Mockito.mock(Journal.class);
     Mockito.when(journal.getLastIndex()).thenReturn(5L);
@@ -85,7 +83,7 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldCancelScheduledFlushOnClose() throws CheckedJournalException {
+  void shouldCancelScheduledFlushOnClose() {
     // given
     final var journal = Mockito.mock(Journal.class);
 
@@ -114,7 +112,7 @@ final class DelayedFlusherTest {
 
   @Test
   void shouldNotRetryFailedFlush() throws CheckedJournalException {
-    // given
+    // given - a retry would succeed without writing what failed to be flushed
     final var journal = Mockito.mock(Journal.class);
     Mockito.doThrow(new FlushException(new IOException("Input/output error")))
         .when(journal)
@@ -127,58 +125,6 @@ final class DelayedFlusherTest {
     // then
     assertThat(scheduler.operations).isEmpty();
     Mockito.verify(journal, Mockito.times(1)).flush();
-  }
-
-  @Test
-  void shouldFailLaterFlushesAfterFailedFlush() throws CheckedJournalException {
-    // given
-    final var journal = Mockito.mock(Journal.class);
-    final var error = new FlushException(new IOException("Input/output error"));
-    Mockito.doThrow(error).when(journal).flush();
-    flusher.flush(journal);
-    scheduler.runNext();
-
-    // when
-    final var thrown = catchThrowable(() -> flusher.flush(journal));
-
-    // then
-    assertThat(thrown).isInstanceOf(FlushException.class).hasCause(error);
-    assertThat(scheduler.operations).isEmpty();
-  }
-
-  @Test
-  void shouldReportFailedFlushToListener() throws CheckedJournalException {
-    // given
-    final var journal = Mockito.mock(Journal.class);
-    final var error = new FlushException(new IOException("Input/output error"));
-    Mockito.doThrow(error).when(journal).flush();
-    final var reported = new ArrayList<Throwable>();
-    flusher.setAsyncFailureListener(reported::add);
-
-    // when
-    flusher.flush(journal);
-    scheduler.runNext();
-
-    // then
-    assertThat(reported).containsExactly(error);
-  }
-
-  @Test
-  void shouldReportUncheckedFlushErrorToListener() throws CheckedJournalException {
-    // given - e.g. the meta store failing to store the last flushed index
-    final var journal = Mockito.mock(Journal.class);
-    final var error = new UncheckedIOException(new IOException("Input/output error"));
-    Mockito.doThrow(error).when(journal).flush();
-    final var reported = new ArrayList<Throwable>();
-    flusher.setAsyncFailureListener(reported::add);
-
-    // when
-    flusher.flush(journal);
-    scheduler.runNext();
-
-    // then
-    assertThat(reported).containsExactly(error);
-    assertThat(scheduler.operations).isEmpty();
   }
 
   private static final class TestScheduled implements Scheduled {

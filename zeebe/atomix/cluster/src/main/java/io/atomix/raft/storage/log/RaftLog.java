@@ -27,14 +27,10 @@ import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
-import io.camunda.zeebe.journal.JournalException;
-import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.Closeable;
-import java.util.Objects;
-import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +45,6 @@ public final class RaftLog implements Closeable {
   private final RaftLogMetrics metrics;
   private IndexedRaftLogEntry lastAppendedEntry;
   private volatile long commitIndex;
-  private volatile Consumer<Throwable> storageFailureListener = error -> {};
 
   RaftLog(final Journal journal, final RaftLogFlusher flusher, final RaftLogMetrics metrics) {
     this.journal = journal;
@@ -113,12 +108,7 @@ public final class RaftLog implements Closeable {
    * @return true if anything was deleted, false otherwise
    */
   public boolean deleteUntil(final long index) {
-    try {
-      return journal.deleteUntil(index);
-    } catch (final SyncFailed e) {
-      reportStorageFailure(e);
-      throw e;
-    }
+    return journal.deleteUntil(index);
   }
 
   /**
@@ -173,28 +163,17 @@ public final class RaftLog implements Closeable {
   }
 
   public IndexedRaftLogEntry append(final RaftLogEntry entry) {
-    final JournalRecord journalRecord;
-    try {
-      journalRecord =
-          journal.append(
-              entry.getLowestAsqn().orElse(ASQN_IGNORE),
-              entry.entry().toSerializable(entry.term(), serializer));
-    } catch (final SyncFailed e) {
-      reportStorageFailure(e);
-      throw e;
-    }
+    final JournalRecord journalRecord =
+        journal.append(
+            entry.getLowestAsqn().orElse(ASQN_IGNORE),
+            entry.entry().toSerializable(entry.term(), serializer));
 
     lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), entry.entry(), journalRecord);
     return lastAppendedEntry;
   }
 
   public IndexedRaftLogEntry append(final PersistedRaftRecord entry) {
-    try {
-      journal.append(entry);
-    } catch (final SyncFailed e) {
-      reportStorageFailure(e);
-      throw e;
-    }
+    journal.append(entry);
 
     final RaftLogEntry raftEntry = serializer.readRaftLogEntry(entry.data());
     lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), raftEntry.entry(), entry);
@@ -202,13 +181,7 @@ public final class RaftLog implements Closeable {
   }
 
   public IndexedRaftLogEntry append(final ReplicatableJournalRecord entry) {
-    final JournalRecord writtenRecord;
-    try {
-      writtenRecord = journal.append(entry.checksum(), entry.serializedJournalRecord());
-    } catch (final SyncFailed e) {
-      reportStorageFailure(e);
-      throw e;
-    }
+    final var writtenRecord = journal.append(entry.checksum(), entry.serializedJournalRecord());
 
     final RaftLogEntry raftEntry = serializer.readRaftLogEntry(writtenRecord.data());
     lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), raftEntry.entry(), writtenRecord);
@@ -226,12 +199,7 @@ public final class RaftLog implements Closeable {
                This situation probably requires manual intervention to resume operations""",
               index, commitIndex));
     }
-    try {
-      journal.reset(index);
-    } catch (final JournalException e) {
-      reportStorageFailure(e);
-      throw e;
-    }
+    journal.reset(index);
     lastAppendedEntry = null;
   }
 
@@ -246,12 +214,7 @@ public final class RaftLog implements Closeable {
                This situation probably requires manual intervention to resume operations""",
               index, commitIndex));
     }
-    try {
-      journal.deleteAfter(index);
-    } catch (final JournalException e) {
-      reportStorageFailure(e);
-      throw e;
-    }
+    journal.deleteAfter(index);
     lastAppendedEntry = null;
 
     // we have to flush here to ensure the truncated log is represented properly
@@ -263,29 +226,7 @@ public final class RaftLog implements Closeable {
    * the configured {@link RaftLogFlusher}.
    */
   public void flush() throws FlushException {
-    try {
-      flusher.flush(journal);
-    } catch (final FlushException e) {
-      reportStorageFailure(e);
-      throw e;
-    }
-  }
-
-  /**
-   * Sets the listener to notify when a write to the journal may not have reached the disk: a flush
-   * failed, including a delayed one, or syncing a write failed. The journal rejects every later
-   * write and flush, but the caller that gets the failure may not propagate it, e.g. when it runs
-   * in a future's callback; the listener always learns of it.
-   *
-   * @param listener called with the failure, possibly from another thread
-   */
-  public void setStorageFailureListener(final Consumer<Throwable> listener) {
-    storageFailureListener = Objects.requireNonNull(listener, "must specify a listener");
-    flusher.setAsyncFailureListener(listener);
-  }
-
-  private void reportStorageFailure(final Throwable failure) {
-    storageFailureListener.accept(failure);
+    flusher.flush(journal);
   }
 
   /**
@@ -296,12 +237,7 @@ public final class RaftLog implements Closeable {
    * guarantees are required.
    */
   public void forceFlush() throws FlushException {
-    try {
-      Factory.DIRECT.flush(journal);
-    } catch (final FlushException e) {
-      reportStorageFailure(e);
-      throw e;
-    }
+    Factory.DIRECT.flush(journal);
   }
 
   @Override

@@ -14,7 +14,6 @@ import io.camunda.zeebe.journal.Journal;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,9 +26,8 @@ import org.slf4j.LoggerFactory;
  * to flush.
  *
  * <p>A failed flush is not retried, as a retry would succeed without writing the data that failed
- * to be flushed (see {@link Journal#flush()}). Instead, the failure is reported to the {@link
- * #setAsyncFailureListener(Consumer) failure listener}, and every later call to {@link
- * #flush(Journal)} fails with it.
+ * to be flushed. The journal records the failure and fails every later flush (see {@link
+ * Journal#flush()}).
  *
  * <p>NOTE: this class is not thread safe, and is expected to run from the same thread as the
  * journal write path, e.g. the Raft thread.
@@ -46,8 +44,6 @@ public final class DelayedFlusher implements RaftLogFlusher {
   private boolean closed;
   // held while flushing, so that closing can wait for a running flush instead of interrupting it
   private final ReentrantLock flushLock = new ReentrantLock();
-  private volatile Throwable failure;
-  private volatile Consumer<Throwable> failureListener = error -> {};
 
   public DelayedFlusher(final Scheduler scheduler, final Duration delayTime) {
     this.scheduler = Objects.requireNonNull(scheduler, "must specify a scheduler");
@@ -55,19 +51,8 @@ public final class DelayedFlusher implements RaftLogFlusher {
   }
 
   @Override
-  public void flush(final Journal journal) throws FlushException {
-    final var previousFailure = failure;
-    if (previousFailure != null) {
-      throw new FlushException(
-          "Expected to flush the journal, but a previous delayed flush failed", previousFailure);
-    }
-
+  public void flush(final Journal journal) {
     scheduleFlush(journal);
-  }
-
-  @Override
-  public void setAsyncFailureListener(final Consumer<Throwable> listener) {
-    failureListener = Objects.requireNonNull(listener, "must specify a failure listener");
   }
 
   @Override
@@ -125,9 +110,7 @@ public final class DelayedFlusher implements RaftLogFlusher {
       try {
         journal.flush();
       } catch (final FlushException | RuntimeException e) {
-        LOGGER.error("Failed to flush journal, will not flush it again", e);
-        failure = e;
-        failureListener.accept(e);
+        LOGGER.error("Failed to flush journal, will not retry the flush", e);
       }
     } finally {
       flushLock.unlock();

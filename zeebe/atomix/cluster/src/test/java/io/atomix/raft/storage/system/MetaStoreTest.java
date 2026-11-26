@@ -346,20 +346,31 @@ class MetaStoreTest {
   final class WriteFailureTest {
 
     @Test
-    void shouldReportFailedWrite() throws IOException {
+    void shouldRecordFailedWriteForThePartition() throws IOException {
       // given - the caller may swallow the exception, e.g. in a future's callback
       final var failingStore = spy(metaStore);
       final var error = new IOException("Input/output error");
       doThrow(error).when(failingStore).write(any(), any(), anyBoolean());
-      final var reported = new ArrayList<Throwable>();
-      failingStore.setWriteFailureListener(reported::add);
 
       // when
       final var thrown = catchThrowable(() -> failingStore.storeTerm(2L));
 
       // then
       assertThat(thrown).isInstanceOf(StorageException.class).hasCause(error);
-      assertThat(reported).containsExactly(thrown);
+      assertThat(storage.syncFailure().get()).isSameAs(thrown);
+    }
+
+    @Test
+    void shouldFailWritesAfterAnotherSyncOfThePartitionFailed() {
+      // given - e.g. flushing the journal failed
+      storage.syncFailure().record(new IOException("Input/output error"));
+
+      // when
+      final var thrown = catchThrowable(() -> metaStore.storeTerm(2L));
+
+      // then
+      assertThat(thrown).isInstanceOf(StorageException.class);
+      assertThat(metaStore.loadTerm()).isZero();
     }
 
     @Test
@@ -374,7 +385,7 @@ class MetaStoreTest {
       final var thrown = catchThrowable(() -> failingStore.storeVote(MemberId.from("1")));
 
       // then - no later write is attempted, so none can seem to succeed
-      assertThat(thrown).isInstanceOf(StorageException.class).hasCause(error);
+      assertThat(thrown).isInstanceOf(StorageException.class).hasRootCause(error);
       verify(failingStore, times(1)).write(any(), any(), anyBoolean());
     }
   }
