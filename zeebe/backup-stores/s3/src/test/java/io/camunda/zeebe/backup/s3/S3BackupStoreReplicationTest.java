@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,7 +82,7 @@ final class S3BackupStoreReplicationTest {
   private final Map<String, Integer> polls = new ConcurrentHashMap<>();
 
   /** Replication status the bucket reports when a manifest is read, or null for none. */
-  private volatile @Nullable ReplicationStatus manifestReplicationStatus;
+  private volatile ReplicationStatus manifestReplicationStatus;
 
   private S3BackupStore store;
 
