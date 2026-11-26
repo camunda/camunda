@@ -113,7 +113,7 @@ runs:
 
     - name: Check if cache is enabled
       id: is-cache-enabled
-      uses: camunda/infra-global-github-actions/is-cache-enabled@main
+      uses: camunda/infra-global-github-actions/is-cache-enabled@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # is-cache-enabled-1.0.0
 
     - name: Locate Go module cache
       id: go-mod-cache
@@ -161,7 +161,7 @@ runs:
       with:
         node-version: 26
 
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
       if: ${{ inputs.source-build == 'true' }}
       with:
         directory: identity/client
