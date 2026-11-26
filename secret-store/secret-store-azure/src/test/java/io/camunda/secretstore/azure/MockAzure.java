@@ -250,6 +250,16 @@ final class MockAzure implements AutoCloseable {
         .toList();
   }
 
+  /** The bearer tokens the vault {@code vaultHost} answered with 401, in order. */
+  List<String> rejectedTokens(final String vaultHost) {
+    return server.getAllServeEvents().reversed().stream()
+        .filter(event -> vaultHost.equals(event.getRequest().getHeader(ORIGINAL_HOST)))
+        .filter(event -> event.getResponse().getStatus() == 401)
+        .filter(event -> event.getRequest().containsHeader("Authorization"))
+        .map(event -> event.getRequest().getHeader("Authorization").substring("Bearer ".length()))
+        .toList();
+  }
+
   /**
    * The vault {@code vaultHost} challenges unauthenticated calls for a token of {@code tenantId}
    * and refuses {@code token} with 403, as for an identity without a role on the vault.

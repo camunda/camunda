@@ -15,8 +15,6 @@ import com.azure.core.http.netty.NettyAsyncHttpClientBuilder;
 import com.azure.core.util.Configuration;
 import com.azure.core.util.Context;
 import io.netty.handler.ssl.SslContextBuilder;
-import java.io.UncheckedIOException;
-import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -29,17 +27,24 @@ import reactor.core.publisher.Mono;
  * The SDK's own Netty HTTP client, trusting only the {@link TestCertificate}, with every request to
  * Azure sent to the {@link MockAzure} endpoints instead.
  *
- * <p>Only the socket destination changes: the request keeps Azure's host names, so the SDK's checks
- * on them run as in production. Key Vault's challenge policy, for example, accepts only a vault
- * host under the challenge's resource ({@code *.vault.azure.net}). The original host travels in
- * {@link #ORIGINAL_HOST}, for the mocks to match on. A host the mocks don't serve fails to connect,
- * so no test ever reaches the internet.
+ * <p>The SDK's pipeline keeps Azure's host names, so its checks on them run as in production: Key
+ * Vault's challenge policy, for example, accepts only a vault host under the challenge's resource
+ * ({@code *.vault.azure.net}). On the wire, requests go to {@code localhost}, so the Host header,
+ * SNI and hostname verification use it. The original host travels in {@link #ORIGINAL_HOST}, for
+ * the mocks to match on. A host the mocks don't serve fails the test at once, with an error the SDK
+ * doesn't retry, so no test ever reaches the internet.
  */
 final class RoutedHttpClient implements HttpClient {
 
   static final String ORIGINAL_HOST = "X-Test-Original-Host";
   static final String VAULT_DOMAIN = ".vault.azure.net";
+
+  /**
+   * Not the SDK's default authority ({@code login.microsoftonline.com}), so a token request
+   * reaching it proves the store's {@code authority-host} setting is used.
+   */
   static final String AUTHORITY_HOST = "login.microsoftonline.us";
+
   static final String IMDS_HOST = "169.254.169.254";
 
   private final HttpClient netty;
@@ -87,8 +92,8 @@ final class RoutedHttpClient implements HttpClient {
     } else if (host.equals(IMDS_HOST)) {
       target = "http://localhost:" + httpPort;
     } else {
-      throw new UncheckedIOException(
-          new ConnectException("Not routed to a mock, refusing to connect: " + host));
+      // an Error, as azure-core's RetryPolicy retries every Exception with backoff
+      throw new AssertionError("Not routed to a mock, refusing to connect: " + host);
     }
     return request
         .copy()
