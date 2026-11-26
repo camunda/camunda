@@ -10,16 +10,31 @@ package io.camunda.zeebe.engine.state.immutable;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.RuntimeInstructionValue;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public interface ElementInstanceState {
 
-  ElementInstance getInstance(long key);
+  @Nullable ElementInstance getInstance(long key);
+
+  /**
+   * Returns the state of the element instance with the given key, without creating an {@link
+   * ElementInstance}. Prefer it over {@link #getInstance(long)} when only the state is needed.
+   *
+   * <p>Do not call it from an {@code updateInstance(key, modifier)} modifier, both read through one
+   * shared value.
+   *
+   * @return the state, or {@code null} if there is no such instance
+   */
+  @Nullable ProcessInstanceIntent getInstanceState(long key);
 
   List<ElementInstance> getChildren(long parentKey);
 
@@ -71,7 +86,8 @@ public interface ElementInstanceState {
       BiFunction<Long, ElementInstance, Boolean> visitor,
       Predicate<ElementInstance> filter);
 
-  AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(long processInstanceKey);
+  @Nullable AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(
+      long processInstanceKey);
 
   /**
    * Returns the number of the taken sequence flows that are connected to the given (joining)
