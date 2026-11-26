@@ -26,7 +26,9 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.test.TestPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryRequest;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -36,10 +38,11 @@ import io.camunda.zeebe.transport.RequestHandler;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerTransport;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -172,6 +175,31 @@ public class CommandApiServiceImplTest {
         .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
   }
 
+  @Test
+  public void shouldReturnLeaderMismatchForQueryAfterNoLongerLeader() {
+    // given
+    when(queryApi.isEnabled()).thenReturn(true);
+    when(logStream.newLogStreamWriter()).thenReturn(mock());
+    commandApiService.registerHandlers(1, logStream, mock());
+    scheduler.workUntilDone();
+    final var queryHandler = ArgumentCaptor.forClass(RequestHandler.class);
+    verify(serverTransport)
+        .subscribe(eq(PARTITION_ID), eq(RequestType.QUERY), queryHandler.capture());
+
+    // when
+    commandApiService.onNoLongerLeader(1);
+    final var errorCode =
+        sendRequest(
+            queryHandler.getValue(),
+            new ExecuteQueryRequest().setPartitionId(1).setKey(1).setValueType(ValueType.JOB));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(errorCode)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
+  }
+
   @RegressionTest("https://github.com/camunda/camunda/issues/25897")
   @Timeout(value = 10)
   public void shouldUnsubscribeOnceWhenTransitioningFromFollowerToInactive() {
@@ -235,8 +263,12 @@ public class CommandApiServiceImplTest {
     final var request =
         new TestPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
     request.serializeValue();
-    final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
-    request.write(requestBuffer, 0);
+    return sendRequest(handler, request);
+  }
+
+  private CompletableFuture<ErrorCode> sendRequest(
+      final RequestHandler handler, final BufferWriter request) {
+    final var requestBuffer = BufferUtil.createCopy(request);
 
     final var errorCode = new CompletableFuture<ErrorCode>();
     final ServerOutput output =
@@ -251,7 +283,7 @@ public class CommandApiServiceImplTest {
             errorCode.completeExceptionally(new AssertionError("Expected an error response"));
           }
         };
-    handler.onRequest(output, 1, 0, requestBuffer, 0, request.getLength());
+    handler.onRequest(output, 1, 0, requestBuffer, 0, requestBuffer.capacity());
     return errorCode;
   }
 }
