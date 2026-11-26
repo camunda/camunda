@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
@@ -58,15 +59,19 @@ final class DeploymentCacheBoundsTest {
   @Test
   void shouldReloadFormWhenTtlHasElapsed() {
     // given
-    final var formState = newFormState(expiringImmediately());
+    final var formState = newFormState(expiringQuickly());
     storeForm(formState);
 
     // when
     final var first = formState.findLatestFormById("ttl-form", TENANT_ID).orElseThrow();
-    final var second = formState.findLatestFormById("ttl-form", TENANT_ID).orElseThrow();
 
     // then
-    assertThat(second).isNotSameAs(first).isEqualTo(first);
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(formState.findLatestFormById("ttl-form", TENANT_ID).orElseThrow())
+                    .isNotSameAs(first)
+                    .isEqualTo(first));
   }
 
   @Test
@@ -86,15 +91,22 @@ final class DeploymentCacheBoundsTest {
   @Test
   void shouldReloadDecisionRequirementsWhenTtlHasElapsed() {
     // given
-    final var decisionState = newDecisionState(expiringImmediately());
+    final var decisionState = newDecisionState(expiringQuickly());
     decisionState.storeDecisionRequirements(drgRecord());
 
     // when
-    final var first = decisionState.findDecisionRequirementsByTenantAndKey(TENANT_ID, 1L);
-    final var second = decisionState.findDecisionRequirementsByTenantAndKey(TENANT_ID, 1L);
+    final var first =
+        decisionState.findDecisionRequirementsByTenantAndKey(TENANT_ID, 1L).orElseThrow();
 
     // then
-    assertThat(second.orElseThrow()).isNotSameAs(first.orElseThrow());
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        decisionState
+                            .findDecisionRequirementsByTenantAndKey(TENANT_ID, 1L)
+                            .orElseThrow())
+                    .isNotSameAs(first));
   }
 
   @Test
@@ -115,16 +127,21 @@ final class DeploymentCacheBoundsTest {
   @Test
   void shouldReloadResourceWhenTtlHasElapsed() {
     // given
-    final var resourceState = newResourceState(expiringImmediately());
+    final var resourceState = newResourceState(expiringQuickly());
     storeResource(resourceState);
 
     // when
     final var first = resourceState.findLatestResourceById("ttl-resource", TENANT_ID).orElseThrow();
-    final var second =
-        resourceState.findLatestResourceById("ttl-resource", TENANT_ID).orElseThrow();
 
     // then
-    assertThat(second).isNotSameAs(first);
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        resourceState
+                            .findLatestResourceById("ttl-resource", TENANT_ID)
+                            .orElseThrow())
+                    .isNotSameAs(first));
   }
 
   @Test
@@ -144,15 +161,18 @@ final class DeploymentCacheBoundsTest {
   @Test
   void shouldReloadProcessWhenTtlHasElapsed() {
     // given
-    final var key = storeProcess(expiringImmediately());
+    final var key = storeProcess(expiringQuickly());
 
     // when
     final var first = lastProcessState.getProcessByKeyAndTenant(key, processTenantId);
-    final var second = lastProcessState.getProcessByKeyAndTenant(key, processTenantId);
 
     // then
     assertThat(first).isNotNull();
-    assertThat(second).isNotSameAs(first);
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(lastProcessState.getProcessByKeyAndTenant(key, processTenantId))
+                    .isNotSameAs(first));
   }
 
   @Test
@@ -206,8 +226,8 @@ final class DeploymentCacheBoundsTest {
     return processRecord.getKey();
   }
 
-  private static EngineConfiguration expiringImmediately() {
-    return new EngineConfiguration().setDeploymentCacheTtl(Duration.ZERO);
+  private static EngineConfiguration expiringQuickly() {
+    return new EngineConfiguration().setDeploymentCacheTtl(Duration.ofMillis(1));
   }
 
   private DbFormState newFormState(final EngineConfiguration config) {
