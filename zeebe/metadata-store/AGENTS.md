@@ -22,6 +22,7 @@ mutates each module's own package only.
     `Entry` a write commits, and `EntryApplier`, the pure function that applies an entry and
     reports its changes.
   - `write` — `WriteEvaluator`, which turns a batch into an entry, or no entry, or an error.
+  - `watch` — `WatchRegistry` and the per-subscription delivery queue.
 
 A new type belongs in `api/` when code outside the module must reference it; otherwise it goes in
 `impl/` if every store uses it, or in the module of the one store that does. Keep `api/` free of
