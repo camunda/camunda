@@ -16,6 +16,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATIO
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_EXECUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_INITIALIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
+import static io.camunda.zeebe.protocol.record.ValueType.CASE;
 import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE;
 import static io.camunda.zeebe.protocol.record.ValueType.CONDITIONAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
@@ -442,7 +443,8 @@ public class CamundaExporter implements Exporter {
             AGENT_DEFINITION,
             TIMER,
             SIGNAL_SUBSCRIPTION,
-            CONDITIONAL_SUBSCRIPTION);
+            CONDITIONAL_SUBSCRIPTION,
+            CASE);
 
     @Override
     public boolean acceptType(final RecordType recordType) {
