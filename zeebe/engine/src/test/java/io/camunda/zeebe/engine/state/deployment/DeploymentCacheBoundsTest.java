@@ -9,9 +9,13 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
@@ -166,6 +170,30 @@ final class DeploymentCacheBoundsTest {
 
     // then
     assertThat(boundedManager.getLatestResourceVersion("evicted", TENANT_ID)).isEqualTo(5);
+  }
+
+  @Test
+  void shouldKeepDatabaseReadFailureRecoverable() {
+    // given
+    final var readFailure = new ZeebeDbException("expected", new RuntimeException());
+    final var failingContext =
+        new TransactionContext() {
+          @Override
+          public void runInTransaction(final TransactionOperation operations) {
+            throw readFailure;
+          }
+
+          @Override
+          public ZeebeDbTransaction getCurrentTransaction() {
+            throw readFailure;
+          }
+        };
+    final var manager =
+        new VersionManager(0, zeebeDb, ZbColumnFamilies.PROCESS_VERSION, failingContext, 1);
+
+    // when / then
+    assertThatThrownBy(() -> manager.getLatestResourceVersion("unknown", TENANT_ID))
+        .isSameAs(readFailure);
   }
 
   private long storeProcess(final EngineConfiguration config) {
