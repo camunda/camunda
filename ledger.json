@@ -642,5 +642,18 @@
     "updated_at": "2026-11-23T07:30:25Z",
     "cooldown_until": "2026-12-07T07:30:25Z",
     "pr": "https://github.com/camunda/camunda/pull/70497"
+  },
+  "51aad969": {
+    "version": "8.8",
+    "file": "tasklist/task-details.spec.ts",
+    "titlePath": [
+      "task details page",
+      "task completion with number form by buttons"
+    ],
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 20 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/45768308004",
+    "updated_at": "2026-11-26T06:39:55Z",
+    "cooldown_until": "2026-11-29T06:39:55Z"
   }
 }
