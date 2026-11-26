@@ -134,7 +134,7 @@ function renderEntityKey(
 	if (auditLog.entityType === 'DECISION' && auditLog.operationType === 'EVALUATE') {
 		return (
 			<EntityLink
-				to={`${OPERATE_BASE}/decisions/$decisionInstanceId` as const}
+				to={'/operate/decisions/$decisionInstanceId'}
 				params={{decisionInstanceId: auditLog.entityKey}}
 				title={entityKeyData.linkLabel}
 				aria-label={entityKeyData.linkLabel}

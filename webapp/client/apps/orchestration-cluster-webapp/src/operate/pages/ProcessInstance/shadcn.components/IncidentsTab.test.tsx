@@ -259,13 +259,13 @@ describe('<IncidentsTab /> (design system)', () => {
 
 		await expect
 			.element(screen.getByRole('link', {name: 'Invoice Classification - 123567'}))
-			.toHaveAttribute('href', '/operate-preview/decisions/123567?tenantId=tenant-a');
+			.toHaveAttribute('href', '/operate/decisions/123567?tenantId=tenant-a');
 		await expect
 			.element(screen.getByRole('link', {name: 'child-task - Child Process - 9001'}))
 			.toHaveAttribute('href', '/operate-preview/processes/9001?elementId=child-task&tenantId=tenant-a');
 		await expect
 			.element(screen.getByRole('link', {name: 'Child Decision - 123570'}))
-			.toHaveAttribute('href', '/operate-preview/decisions/123570?tenantId=tenant-a');
+			.toHaveAttribute('href', '/operate/decisions/123570?tenantId=tenant-a');
 		expect(screen.getByRole('button', {name: 'Retry Incident'}).elements()).toHaveLength(1);
 	});
 
@@ -392,7 +392,7 @@ describe('<IncidentsTab /> (design system)', () => {
 
 		await expect
 			.element(screen.getByRole('link', {name: 'View in Failing Decision'}))
-			.toHaveAttribute('href', '/operate-preview/decisions/123567');
+			.toHaveAttribute('href', '/operate/decisions/123567');
 	});
 
 	it('should retry an incident by restoring its job retries and resolving it', async ({worker}) => {

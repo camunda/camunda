@@ -125,7 +125,7 @@ describe('<ProcessInstanceOperationsLog /> (design system)', () => {
 			.toHaveAttribute('href', '/operate-preview/processes/9001?tenantId=tenant-a');
 		await expect
 			.element(screen.getByRole('link', {name: 'View decision instance 9002'}))
-			.toHaveAttribute('href', '/operate-preview/decisions/9002?tenantId=tenant-a');
+			.toHaveAttribute('href', '/operate/decisions/9002?tenantId=tenant-a');
 	});
 
 	it('should scope the operations to the selected element instance', async ({worker}) => {

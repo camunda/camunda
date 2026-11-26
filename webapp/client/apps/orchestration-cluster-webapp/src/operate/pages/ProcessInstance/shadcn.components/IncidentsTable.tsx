@@ -67,7 +67,7 @@ const ElementName: React.FC<{
 		const label = `${decisionInstance.decisionDefinitionName} - ${decisionInstance.decisionInstanceKey}`;
 		return (
 			<Link
-				to="/operate-preview/decisions/$decisionInstanceId"
+				to="/operate/decisions/$decisionInstanceId"
 				params={{decisionInstanceId: decisionInstance.decisionInstanceKey}}
 				search={{tenantId}}
 				className={cn(linkVariants(), 'block min-w-0')}
@@ -204,7 +204,7 @@ const IncidentsTable: React.FC<Props> = ({
 						</Link>
 					) : (
 						<Link
-							to="/operate-preview/decisions/$decisionInstanceId"
+							to="/operate/decisions/$decisionInstanceId"
 							params={{decisionInstanceId: key}}
 							search={{tenantId}}
 							title={label}
