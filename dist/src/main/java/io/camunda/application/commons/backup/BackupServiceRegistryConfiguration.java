@@ -35,6 +35,7 @@ import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.index.AgentDefinitionIndex;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.index.CaseIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
@@ -269,6 +270,7 @@ public class BackupServiceRegistryConfiguration {
             new ClusterVariableIndex(indexPrefix, isElasticsearch),
             new DeployedResourceIndex(indexPrefix, isElasticsearch),
             new GlobalListenerIndex(indexPrefix, isElasticsearch),
+            new CaseIndex(indexPrefix, isElasticsearch),
             new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
             // VARIABLE HISTORY
             new VariableHistoryTemplate(indexPrefix, isElasticsearch),

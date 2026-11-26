@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.descriptors;
 import io.camunda.webapps.schema.descriptors.index.AgentDefinitionIndex;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.index.CaseIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
@@ -98,6 +99,7 @@ public class IndexDescriptors {
                 new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
                 new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
                 new GlobalListenerIndex(indexPrefix, isElasticsearch),
+                new CaseIndex(indexPrefix, isElasticsearch),
                 new DeployedResourceIndex(indexPrefix, isElasticsearch),
                 new AgentInstanceTemplate(indexPrefix, isElasticsearch),
                 new AgentHistoryTemplate(indexPrefix, isElasticsearch),

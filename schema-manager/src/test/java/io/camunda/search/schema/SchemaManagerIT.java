@@ -1156,6 +1156,7 @@ public class SchemaManagerIT {
             newPrefix + "-camunda-cluster-variable-8.9.0_",
             newPrefix + "-camunda-correlated-message-subscription-8.8.0_",
             newPrefix + "-camunda-global-listener-8.9.0_",
+            newPrefix + "-camunda-case-8.11.0_",
             newPrefix + "-camunda-group-8.8.0_",
             newPrefix + "-camunda-mapping-rule-8.8.0_",
             newPrefix + "-camunda-role-8.8.0_",
