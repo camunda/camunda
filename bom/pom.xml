@@ -180,7 +180,35 @@
       <name>Camunda BPM Snapshot Repository</name>
       <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
     </repository>
+
+    <!-- HeroDevs Never-Ending Support (NES) -->
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>herodevs-nes</id>
+      <name>HeroDevs NES Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/herodevs-nes/</url>
+    </repository>
   </repositories>
+
+  <pluginRepositories>
+    <!-- The Spring Boot Maven plugin uses the same NES version as the BOM. -->
+    <pluginRepository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>herodevs-nes</id>
+      <name>HeroDevs NES Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/herodevs-nes/</url>
+    </pluginRepository>
+  </pluginRepositories>
 
   <build>
     <pluginManagement>
