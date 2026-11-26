@@ -88,6 +88,21 @@ polling cursor advances in the same step as the version.
   may be stuck in the buffer forever because the missing chunks are never sent. The new leader can
   cancel that pending update and start a new one.
 
+**D11. A rejected identity command fails its policy update, unless it asks for what is already the
+case.**
+
+- The identity commands of an update carry the update's key as internal operation reference, so
+  the identity processors know which update a command belongs to.
+- At each rejection, the processor decides what it means for the update. A command that cannot be
+  applied, like adding a member to a missing role, fails the update. A command that asks for what
+  is already the case, like deleting a missing entity, only warns, and the update goes on.
+- An unexpected error while processing an identity command also fails the update.
+- A failed update is not committed: its remaining identity commands, chunks and version commit are
+  rejected. Its earlier identity commands stay applied, also on the partitions they were
+  distributed to; making the update atomic is left for later.
+- This only works on partition 1, which applies the update; distributed commands don't carry the
+  reference.
+
 ## Alternatives considered
 
 - **Separate column families for hub-managed mode, selected by a setting.** Leaves the local path
@@ -124,13 +139,12 @@ polling cursor advances in the same step as the version.
 - **Hub-client reads current policyVersion and sequenceNo** How can this hub-client component get to
   know this sequence number to receive the correct updates?
   - https://github.com/camunda/pdp-initiative-ea-identity--access-at-scale/issues/52
-- **React on rejected identity commands** The identity processors can reject commands if they are invalid. The chunk processors never notice. Currently we do a full pre-validation but there is still a small risk.
-  - https://github.com/camunda/camunda-security-library/issues/801
 
 ## Source
 
 - [ADR for Identity Policy fan-out in broker (camunda/camunda#67237)](https://github.com/camunda/camunda/issues/67237)
 - [Hub-managed identity data](../../../docs/zeebe/hub-identity.md)
+- [React on rejected identity commands (camunda/camunda-security-library#801)](https://github.com/camunda/camunda-security-library/issues/801)
 - [Policy change-set model and
   `PolicyProjectionPort` (camunda-security-library ADR-0035, camunda/camunda-security-library#729)](https://github.com/camunda/camunda-security-library/pull/729)
 
