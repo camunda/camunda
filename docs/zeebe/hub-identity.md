@@ -334,33 +334,6 @@ The committed policy of a partition is stored in the `POLICY` column family unde
 | `policyVersion` | The current policy version of the partition. |
 | `seqNo`         | The Hub sequence of that version.            |
 
-### Handled Hub sequence
-
-Partition 1 stores the Hub events it has handled in the `HUB_EVENT` column family, keyed by their
-Hub sequence. Every Hub event up to the last applied sequence is applied, and a chunk at or below it
-is rejected. It is not specific to policy updates: Hub sends events of
-every type in one sequence, and each type marks its events as handled from its own event appliers.
-
-| Property |                       Content                        |
-|----------|------------------------------------------------------|
-| `seqNo`  | The Hub sequence of the event; also the key.         |
-| `result` | Whether the event was `APPLIED` or `REJECTED`.       |
-| `reason` | Why the event was rejected; empty if it was applied. |
-
-It keeps the last handled event and, if that one was rejected, the last applied one. So after an
-applied event there is one entry, and after a rejected one there are at most two: marking an event
-removes every other entry, except the last applied one when the new event is rejected. An event at
-or below the last applied sequence is ignored. A rejected event may be tried again, so the event
-marked last replaces a rejected one, even if it has a lower sequence.
-
-For policy updates, `VERSION_COMMITTED` marks the update's sequence as applied, and `FAILED` marks
-it as rejected with the update's error message. The state is rebuilt from the log, so a new leader
-of partition 1 knows the last applied event, and the last handled one with its outcome, even if it
-was rejected.
-
-Only partition 1 receives Hub events, so only it records them. `VERSION_COMMITTED` also runs on the
-other partitions, which leave `HUB_EVENT` empty.
-
 ### Cleanup
 
 #### PolicyUpdate State
