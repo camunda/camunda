@@ -72,6 +72,8 @@ Use selectors in this order:
 | Interactive element or semantic element | `getByRole` |
 | Form control | `getByLabelText` |
 | Independent static text | `getByText` |
+| Input with a placeholder and no label | `getByPlaceholder` |
+| Image | `getByAltText` |
 | Existing `title` attribute | `getByTitle` |
 | No suitable user-facing selector | `getByTestId` |
 
@@ -214,7 +216,9 @@ await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 await userEvent.click(screen.getByRole('button', {name: 'Save'}).element());
 ```
 
-Do not use Locator `.click()` or `.fill()` methods. Use `userEvent`.
+Do not use Locator `.click()` or `.fill()` methods; use `userEvent` for one consistent style. Never
+call DOM methods on a resolved node (`.element().click()`, `.focus()`, `dispatchEvent`): they skip
+actionability checks and cause focus races.
 
 Await every interaction.
 
