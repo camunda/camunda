@@ -2,10 +2,11 @@
 
 Downloads an artifact already produced by the current run's `build-distball` job:
 
-|   Artifact   |        GCS object        |        GitHub artifact name         | GCS timeout per attempt |
-|--------------|--------------------------|-------------------------------------|-------------------------|
-| distball     | `camunda-zeebe-*.tar.gz` | `distball-${{ github.run_id }}`     | 2 minutes               |
-| m2-installed | `m2-installed.tar`       | `m2-installed-${{ github.run_id }}` | 1 minute                |
+|   Artifact             |        GCS objects        |          GitHub artifact name           | GCS timeout per attempt |
+|------------------------|---------------------------|-----------------------------------------|-------------------------|
+| distball               | `camunda-zeebe-*.tar.gz`  | `distball-${{ github.run_id }}`         | 2 minutes               |
+| m2-installed           | `m2-installed.tar`        | `m2-installed-${{ github.run_id }}`     | 1 minute                |
+| gradle-parity-inputs   | `gradle-distribution.tar`<br>`gradle-dist-dependencies.json` | `gradle-parity-inputs-${{ github.run_id }}` | 2 minutes |
 
 Non-fork runs use the run-scoped GCS prefix. Fork PRs use the GitHub artifact API,
 because they cannot authenticate to GCS. GCS downloads retain the existing policy
@@ -16,6 +17,9 @@ of five attempts with ten seconds between attempts.
 - Unified CI's integration-test job downloads the distball to `dist/target`.
 - Unified CI's Gradle distribution parity check downloads the distball to
   `${{ runner.temp }}/maven-distball` and compares its TAR.GZ with Gradle's `distTar` output.
+- Unified CI's Gradle distribution parity check downloads the Gradle parity inputs
+  (Gradle `distTar` archive + dependency report, uploaded by `gradle-compile-check`)
+  to `${{ runner.temp }}/gradle-parity-inputs`.
 - [`restore-shared-m2`](../restore-shared-m2) downloads the SNAPSHOT archive and
   extracts it into the local Maven repository for integration and unit tests.
 

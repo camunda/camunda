@@ -1,12 +1,14 @@
 # owner: @camunda/engineering-operations
 name: Download shared build artifact
 description: >-
-  Download this run's distball or installed Maven SNAPSHOT archive from GCS,
-  falling back to the GitHub artifact for fork PRs. GCS authentication must
-  already be configured by the calling workflow.
+  Download this run's distball, installed Maven SNAPSHOT archive, or Gradle
+  parity inputs from GCS, falling back to the GitHub artifact for fork PRs.
+  GCS authentication must already be configured by the calling workflow.
 inputs:
   artifact:
-    description: Shared artifact to download (distball or m2-installed)
+    description: >-
+      Shared artifact to download (distball, m2-installed, or
+      gradle-parity-inputs)
     required: true
   path:
     description: Destination directory
@@ -35,8 +37,14 @@ runs:
             object='m2-installed.tar'
             timeout_minutes=1
             ;;
+          gradle-parity-inputs)
+            # Object names must match the upload side exactly; no rename on either
+            # hop so producer and consumer never have to keep a mapping in sync.
+            object='gradle-distribution.tar gradle-dist-dependencies.json'
+            timeout_minutes=2
+            ;;
           *)
-            echo "::error::Expected artifact to be distball or m2-installed"
+            echo "::error::Expected artifact to be distball, m2-installed, or gradle-parity-inputs"
             exit 1
             ;;
         esac
@@ -55,7 +63,13 @@ runs:
         shell: bash
         command: |
           set -euo pipefail
-          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/${ARTIFACT_OBJECT}" "${DOWNLOAD_PATH}/"
+          # An artifact may resolve to several objects; build one URL per name
+          # (gcloud expands wildcards server-side) and copy them in one call.
+          urls=()
+          for object in $ARTIFACT_OBJECT; do
+            urls+=("gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/${object}")
+          done
+          gcloud storage cp "${urls[@]}" "${DOWNLOAD_PATH}/"
     - name: Download from GitHub for fork PRs
       if: github.event.pull_request.head.repo.fork == true
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
