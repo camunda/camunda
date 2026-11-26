@@ -73,6 +73,7 @@ final class SaasTokenValidatorsTest {
   }
 
   @Test
+<<<<<<< HEAD
   void shouldAcceptTokenWithoutOrganizationAndClusterClaims() {
     // given
     final var decoder = SaasTokenValidators.withSaasValidation(decoderReturning(Map.of()), saas());
@@ -87,6 +88,8 @@ final class SaasTokenValidatorsTest {
   }
 
   @Test
+=======
+>>>>>>> dfc0b495 (fix: check SaaS organization and cluster claims on gRPC tokens)
   void shouldPropagateDecoderFailure() {
     // given
     final JwtDecoder failing =

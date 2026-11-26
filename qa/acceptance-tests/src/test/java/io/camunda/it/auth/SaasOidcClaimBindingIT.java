@@ -15,11 +15,16 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+<<<<<<< HEAD
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
+=======
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+>>>>>>> dfc0b495 (fix: check SaaS organization and cluster claims on gRPC tokens)
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
@@ -35,7 +40,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+<<<<<<< HEAD
 import org.junit.jupiter.params.provider.EnumSource;
+=======
+import org.junit.jupiter.params.provider.ValueSource;
+>>>>>>> dfc0b495 (fix: check SaaS organization and cluster claims on gRPC tokens)
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -69,6 +78,7 @@ final class SaasOidcClaimBindingIT {
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC);
 
+<<<<<<< HEAD
   // Checks tokens without a broker, so it needs no cluster.
   @TestZeebe(autoStart = false, purgeAfterEach = false)
   private static final TestStandaloneGateway GATEWAY =
@@ -80,6 +90,12 @@ final class SaasOidcClaimBindingIT {
 
   @BeforeAll
   static void start() {
+=======
+  @TempDir private static Path credentialsCacheDir;
+
+  @BeforeAll
+  static void startBroker() {
+>>>>>>> dfc0b495 (fix: check SaaS organization and cluster claims on gRPC tokens)
     configureRealm();
     BROKER.withSecurityConfig(
         c -> {
@@ -94,6 +110,7 @@ final class SaasOidcClaimBindingIT {
         .withProperty("camunda.security.saas.cluster-id", OWN_CLUSTER_ID);
     BROKER.start();
 
+<<<<<<< HEAD
     GATEWAY.withUnifiedConfig(
         c -> {
           c.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
@@ -122,11 +139,27 @@ final class SaasOidcClaimBindingIT {
   void shouldAcceptTokenOfOwnOrganizationAndCluster(final Api api) {
     // given
     try (final var client = client(OWN_CLIENT, api)) {
+=======
+    try (final var client = client(OWN_CLIENT, false)) {
+      Awaitility.await("broker ready")
+          .atMost(Duration.ofSeconds(60))
+          .ignoreExceptions()
+          .untilAsserted(() -> client.newTopologyRequest().send().join());
+    }
+  }
+
+  @ParameterizedTest(name = "over REST = {0}")
+  @ValueSource(booleans = {true, false})
+  void shouldAcceptTokenOfOwnOrganizationAndCluster(final boolean rest) {
+    // given
+    try (final var client = client(OWN_CLIENT, rest)) {
+>>>>>>> dfc0b495 (fix: check SaaS organization and cluster claims on gRPC tokens)
       // when / then
       assertThatNoException().isThrownBy(() -> client.newTopologyRequest().send().join());
     }
   }
 
+<<<<<<< HEAD
   @ParameterizedTest(name = "{0} over {1}")
   @CsvSource({
     FOREIGN_CLUSTER_CLIENT + ",REST",
@@ -141,6 +174,20 @@ final class SaasOidcClaimBindingIT {
     try (final var client = client(clientId, api)) {
       // when / then
       if (api == Api.REST) {
+=======
+  @ParameterizedTest(name = "{0} over REST = {1}")
+  @CsvSource({
+    FOREIGN_CLUSTER_CLIENT + ",true",
+    FOREIGN_CLUSTER_CLIENT + ",false",
+    FOREIGN_ORGANIZATION_CLIENT + ",true",
+    FOREIGN_ORGANIZATION_CLIENT + ",false"
+  })
+  void shouldRejectTokenOfAnotherOrganizationOrCluster(final String clientId, final boolean rest) {
+    // given
+    try (final var client = client(clientId, rest)) {
+      // when / then
+      if (rest) {
+>>>>>>> dfc0b495 (fix: check SaaS organization and cluster claims on gRPC tokens)
         assertThatThrownBy(() -> client.newTopologyRequest().send().join())
             .isInstanceOfSatisfying(
                 ClientHttpException.class, e -> assertThat(e.code()).isEqualTo(401));
@@ -205,11 +252,18 @@ final class SaasOidcClaimBindingIT {
     return mapper;
   }
 
+<<<<<<< HEAD
   private static CamundaClient client(final String clientId, final Api api) {
     final TestGateway<?> gateway = api == Api.STANDALONE_GATEWAY_GRPC ? GATEWAY : BROKER;
     return gateway
         .newClientBuilder()
         .preferRestOverGrpc(api == Api.REST)
+=======
+  private static CamundaClient client(final String clientId, final boolean rest) {
+    return BROKER
+        .newClientBuilder()
+        .preferRestOverGrpc(rest)
+>>>>>>> dfc0b495 (fix: check SaaS organization and cluster claims on gRPC tokens)
         .credentialsProvider(
             new OAuthCredentialsProviderBuilder()
                 .clientId(clientId)
@@ -220,6 +274,7 @@ final class SaasOidcClaimBindingIT {
                         + "/realms/"
                         + REALM
                         + "/protocol/openid-connect/token")
+<<<<<<< HEAD
                 .credentialsCachePath(credentialsCacheDir.resolve(clientId + "-" + api).toString())
                 .build())
         .build();
@@ -230,4 +285,10 @@ final class SaasOidcClaimBindingIT {
     EMBEDDED_GATEWAY_GRPC,
     STANDALONE_GATEWAY_GRPC
   }
+=======
+                .credentialsCachePath(credentialsCacheDir.resolve(clientId + "-" + rest).toString())
+                .build())
+        .build();
+  }
+>>>>>>> dfc0b495 (fix: check SaaS organization and cluster claims on gRPC tokens)
 }

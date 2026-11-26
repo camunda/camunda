@@ -12,9 +12,12 @@ import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.application.commons.security.EngineSecurityConfigFactory;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+<<<<<<< HEAD
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
+=======
+>>>>>>> dfc0b495 (fix: check SaaS organization and cluster claims on gRPC tokens)
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
@@ -154,8 +157,17 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             userServicesForTenant,
             passwordEncoder,
             meterRegistry,
+<<<<<<< HEAD
             maxVariableNameLength,
             physicalTenantIds);
+=======
+            gatewayRestConfiguration.getMaxNameFieldLength(),
+            serviceRegistry,
+            scopedJwtDecoderFactory,
+            securityProperties,
+            scopedOidcClaimsProviderFactory,
+            observationRegistry);
+>>>>>>> dfc0b495 (fix: check SaaS organization and cluster claims on gRPC tokens)
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStatesSupplier(this::clusterStatesByPhysicalTenant);
     springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);

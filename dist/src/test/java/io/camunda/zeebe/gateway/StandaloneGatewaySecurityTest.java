@@ -286,6 +286,7 @@ final class StandaloneGatewaySecurityTest {
     final var camunda = new Camunda();
     camunda.getSecurity().getAuthentication().setUnprotectedApi(true);
 
+<<<<<<< HEAD
     return new GatewayModuleConfiguration(
         gatewayConfig,
         PhysicalTenantResolver.of(new MockEnvironment(), camunda),
@@ -302,5 +303,24 @@ final class StandaloneGatewaySecurityTest {
         new SimpleMeterRegistry(),
         gatewayRestConfiguration,
         PhysicalTenantIds.DEFAULT);
+=======
+    return new GatewayModuleConfiguration()
+        .gateway(
+            gatewayConfig,
+            PhysicalTenantResolver.of(new MockEnvironment(), camunda),
+            new SpringGatewayBridge(),
+            GatewayActorScheduler.shared(actorScheduler),
+            atomixCluster,
+            brokerClient,
+            jobStreamClient,
+            null,
+            null,
+            null,
+            null,
+            null,
+            new SimpleMeterRegistry(),
+            gatewayRestConfiguration,
+            null);
+>>>>>>> dfc0b495 (fix: check SaaS organization and cluster claims on gRPC tokens)
   }
 }
