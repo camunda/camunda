@@ -14,10 +14,10 @@ on:
         required: true
         default: "main"
       response_validation:
-        description: "Enable gateway response validation (turns contract-violating API responses into 5xx). Off by default."
+        description: "Run with gateway response validation (contract-violating API responses become 5xx). On by default; uncheck to disable for a debugging run."
         required: false
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: read
@@ -172,7 +172,8 @@ jobs:
 
       - name: Start Camunda
         # docker-compose.yml interpolates CAMUNDA_REST_RESPONSEVALIDATION_ENABLED
-        # from this step's environment, defaulting to false when the input is off.
+        # from this step's environment; the input is on by default, unchecking it
+        # disables validation for the run.
         env:
           CAMUNDA_REST_RESPONSEVALIDATION_ENABLED: ${{ github.event.inputs.response_validation }}
         run: |
