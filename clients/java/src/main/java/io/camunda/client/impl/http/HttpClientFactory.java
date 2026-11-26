@@ -75,16 +75,6 @@ public class HttpClientFactory {
    */
   static final TimeValue DEFAULT_CONNECTION_TIME_TO_LIVE = TimeValue.ofSeconds(60);
 
-  /**
-   * Maximum time to establish one TCP connection to one resolved address. httpclient5 defaults to 3
-   * minutes, so in practice the operating system gives up first (about 127 seconds on Linux), and
-   * the client tries every resolved address one after the other. When a server pod is replaced, its
-   * address stops answering, the connect attempt hangs, and a job worker waiting for that poll does
-   * nothing for minutes, since neither the response timeout nor the response deadline cover the
-   * connect.
-   */
-  static final Timeout DEFAULT_CONNECT_TIMEOUT = Timeout.ofSeconds(10);
-
   private static final String PHYSICAL_TENANT_PATH_SEGMENT = "/physical-tenants/";
 
   /**
@@ -104,7 +94,6 @@ public class HttpClientFactory {
   private final CamundaClientConfiguration config;
   private final Duration responseDeadlineMargin;
   private final TimeValue connectionTimeToLive;
-  private final Timeout connectTimeout;
 
   public HttpClientFactory(final CamundaClientConfiguration config) {
     this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN, DEFAULT_CONNECTION_TIME_TO_LIVE);
@@ -115,19 +104,9 @@ public class HttpClientFactory {
       final CamundaClientConfiguration config,
       final Duration responseDeadlineMargin,
       final TimeValue connectionTimeToLive) {
-    this(config, responseDeadlineMargin, connectionTimeToLive, DEFAULT_CONNECT_TIMEOUT);
-  }
-
-  /** Lets tests shorten the connect timeout as well. */
-  HttpClientFactory(
-      final CamundaClientConfiguration config,
-      final Duration responseDeadlineMargin,
-      final TimeValue connectionTimeToLive,
-      final Timeout connectTimeout) {
     this.config = config;
     this.responseDeadlineMargin = responseDeadlineMargin;
     this.connectionTimeToLive = connectionTimeToLive;
-    this.connectTimeout = connectTimeout;
   }
 
   public HttpClient createClient() {
@@ -168,6 +147,10 @@ public class HttpClientFactory {
             .setSslContext(createSslContext())
             .setHostnameVerifier(hostnameVerifier)
             .build();
+    // httpclient5 waits up to 3 minutes per resolved address, so an address that does not answer,
+    // like the one of a deleted pod, would block a request, and a job worker's poll, for minutes.
+    // The response timeout and the response deadline only start once the connection exists.
+    final Timeout connectTimeout = Timeout.of(config.getConnectTimeout());
     final PoolingAsyncClientConnectionManagerBuilder connectionManagerBuilder =
         PoolingAsyncClientConnectionManagerBuilder.create()
             .setTlsStrategy(tlsStrategy)

@@ -20,8 +20,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.impl.CamundaClientBuilderImpl;
-import io.camunda.client.impl.CamundaClientImpl;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -32,7 +30,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.hc.core5.util.Timeout;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -124,19 +121,11 @@ class HttpClientConnectTimeoutTest {
 
   private CamundaClient buildClient() throws Exception {
     final InetSocketAddress address = (InetSocketAddress) server.getLocalSocketAddress();
-    final CamundaClientBuilderImpl configuration =
-        (CamundaClientBuilderImpl)
-            CamundaClient.newClientBuilder()
-                .applyEnvironmentVariableOverrides(false)
-                .preferRestOverGrpc(true)
-                .restAddress(new URI("http://127.0.0.1:" + address.getPort()));
-    final HttpClientFactory factory =
-        new HttpClientFactory(
-            configuration,
-            ResponseDeadlineChainHandler.DEFAULT_MARGIN,
-            HttpClientFactory.DEFAULT_CONNECTION_TIME_TO_LIVE,
-            Timeout.ofMilliseconds(CONNECT_TIMEOUT.toMillis()));
-    return new CamundaClientImpl(
-        configuration, CamundaClientImpl.buildChannel(configuration), factory.createClient());
+    return CamundaClient.newClientBuilder()
+        .applyEnvironmentVariableOverrides(false)
+        .preferRestOverGrpc(true)
+        .restAddress(new URI("http://127.0.0.1:" + address.getPort()))
+        .connectTimeout(CONNECT_TIMEOUT)
+        .build();
   }
 }

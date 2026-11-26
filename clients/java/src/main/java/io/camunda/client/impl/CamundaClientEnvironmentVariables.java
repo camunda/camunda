@@ -34,6 +34,7 @@ public final class CamundaClientEnvironmentVariables {
   public static final String MTLS_TRUSTSTORE_PASSWORD_VAR = "CAMUNDA_MTLS_TRUSTSTORE_PASSWORD";
 
   public static final String KEEP_ALIVE_VAR = "CAMUNDA_KEEP_ALIVE";
+  public static final String CONNECT_TIMEOUT_VAR = "CAMUNDA_CONNECT_TIMEOUT";
   public static final String OVERRIDE_AUTHORITY_VAR = "CAMUNDA_OVERRIDE_AUTHORITY";
   public static final String CAMUNDA_CLIENT_WORKER_STREAM_ENABLED =
       "CAMUNDA_CLIENT_WORKER_STREAM_ENABLED";

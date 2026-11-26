@@ -203,6 +203,13 @@ public interface CamundaClientConfiguration {
   Duration getKeepAlive();
 
   /**
+   * @see CamundaClientBuilder#connectTimeout(Duration)
+   */
+  default Duration getConnectTimeout() {
+    return Duration.ofSeconds(10);
+  }
+
+  /**
    * @see CamundaClientBuilder#withInterceptors(ClientInterceptor...)
    */
   List<ClientInterceptor> getInterceptors();

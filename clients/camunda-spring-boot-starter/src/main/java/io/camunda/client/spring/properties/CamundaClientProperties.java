@@ -77,6 +77,13 @@ public class CamundaClientProperties {
   private Duration keepAlive = DEFAULT_KEEP_ALIVE;
 
   /**
+   * The maximum time to establish a connection to one address of the REST API. An address that does
+   * not answer, for example the one of a deleted pod, blocks a request until this time has passed.
+   * The same limit applies to the TLS handshake that follows. Does not apply to gRPC.
+   */
+  private Duration connectTimeout = DEFAULT_CONNECT_TIMEOUT;
+
+  /**
    * Overrides the authority used with TLS virtual hosting to change hostname verification during
    * the TLS handshake. It does not change the actual host connected to.
    */
@@ -233,6 +240,14 @@ public class CamundaClientProperties {
     this.keepAlive = keepAlive;
   }
 
+  public Duration getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  public void setConnectTimeout(final Duration connectTimeout) {
+    this.connectTimeout = connectTimeout;
+  }
+
   public String getOverrideAuthority() {
     return overrideAuthority;
   }
@@ -371,6 +386,8 @@ public class CamundaClientProperties {
         + '\''
         + ", keepAlive="
         + keepAlive
+        + ", connectTimeout="
+        + connectTimeout
         + ", overrideAuthority='"
         + overrideAuthority
         + '\''
