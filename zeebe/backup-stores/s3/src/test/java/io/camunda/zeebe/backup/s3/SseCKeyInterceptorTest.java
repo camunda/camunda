@@ -22,6 +22,7 @@ import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.UploadPartCopyRequest;
@@ -57,6 +58,20 @@ final class SseCKeyInterceptorTest {
 
     // when
     final var modified = (GetObjectRequest) modify(get);
+
+    // then
+    assertThat(modified.sseCustomerAlgorithm()).isEqualTo("AES256");
+    assertThat(modified.sseCustomerKey()).isEqualTo(KEY_BASE64);
+    assertThat(modified.sseCustomerKeyMD5()).isEqualTo(expectedKeyMd5Base64());
+  }
+
+  @Test
+  void shouldAttachSseCHeadersToHeadObjectRequest() {
+    // given
+    final var head = HeadObjectRequest.builder().bucket("bucket").key("key").build();
+
+    // when
+    final var modified = (HeadObjectRequest) modify(head);
 
     // then
     assertThat(modified.sseCustomerAlgorithm()).isEqualTo("AES256");
