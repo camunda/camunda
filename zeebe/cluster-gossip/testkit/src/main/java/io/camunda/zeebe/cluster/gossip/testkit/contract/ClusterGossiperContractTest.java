@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -360,6 +362,52 @@ public abstract class ClusterGossiperContractTest {
 
       // when
       gossiper(0).put(SUBSCRIBED_ROLE, "leader");
+
+      // then
+      assertThat(received).containsExactly(Optional.of("leader"), Optional.of("follower"));
+    }
+
+    @Test
+    void shouldKeepNotifyingWhenListenerThrows() {
+      // given
+      final var failures = new CopyOnWriteArrayList<Optional<String>>();
+      gossiper(0)
+          .subscribe(
+              SUBSCRIBED_ROLE,
+              Runnable::run,
+              (member, value) -> {
+                failures.add(value);
+                throw new IllegalStateException("listener failure");
+              });
+      final var received = new CopyOnWriteArrayList<Optional<String>>();
+      gossiper(0).subscribe(SUBSCRIBED_ROLE, Runnable::run, (member, value) -> received.add(value));
+
+      // when
+      gossiper(0).put(SUBSCRIBED_ROLE, "leader");
+      gossiper(0).put(SUBSCRIBED_ROLE, "follower");
+
+      // then
+      assertThat(received).containsExactly(Optional.of("leader"), Optional.of("follower"));
+      assertThat(failures).containsExactly(Optional.of("leader"), Optional.of("follower"));
+    }
+
+    @Test
+    void shouldDeliverAgainAfterExecutorRejectedCallback() {
+      // given - an executor that rejects its first task
+      final var rejectNext = new AtomicBoolean(true);
+      final Executor executor =
+          task -> {
+            if (rejectNext.getAndSet(false)) {
+              throw new RejectedExecutionException("busy");
+            }
+            task.run();
+          };
+      final var received = new CopyOnWriteArrayList<Optional<String>>();
+      gossiper(0).subscribe(SUBSCRIBED_ROLE, executor, (member, value) -> received.add(value));
+      gossiper(0).put(SUBSCRIBED_ROLE, "leader");
+
+      // when
+      gossiper(0).put(SUBSCRIBED_ROLE, "follower");
 
       // then
       assertThat(received).containsExactly(Optional.of("leader"), Optional.of("follower"));

@@ -652,7 +652,13 @@ public final class InMemoryGossipCluster {
     void deliver() {
       if (!draining && !pending.isEmpty()) {
         draining = true;
-        executor.execute(this::drain);
+        try {
+          executor.execute(this::drain);
+        } catch (final RuntimeException e) {
+          // the queued callbacks stay queued and are handed over again with the next change
+          draining = false;
+          LOG.log(Level.WARNING, "Failed to hand gossip notifications to an executor", e);
+        }
       }
     }
 
@@ -670,9 +676,13 @@ public final class InMemoryGossipCluster {
         try {
           next.run();
           completed = true;
+        } catch (final RuntimeException e) {
+          // a failing listener must not keep later notifications from this or other listeners
+          completed = true;
+          LOG.log(Level.WARNING, "A gossip listener failed to handle a notification", e);
         } finally {
           if (!completed) {
-            // a throwing listener must not stop later callbacks; the next delivery runs the rest
+            // an Error ends this drain; the next delivery runs the remaining callbacks
             synchronized (lock) {
               draining = false;
             }
