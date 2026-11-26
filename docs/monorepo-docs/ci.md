@@ -484,7 +484,6 @@ Workflows log in to Vault with JWT/OIDC. AppRole (`VAULT_ROLE_ID` / `VAULT_SECRE
       secrets: |
         secret/data/products/camunda/ci/github-actions MY_SECRET;
   ```
-
 * The shared actions (`setup-build`, `observe-build-status`, `gcs-build-cache-auth`, …) take the JWT inputs `vault-jwt-role` / `vault-jwt-path` / `vault-jwt-audience` (or `secret_vault_jwtRole` / `secret_vault_jwtPath` / `secret_vault_jwtAudience`), on `main` and all `stable/*` branches.
 * A job that runs an AI agent never holds `id-token: write`. A separate job logs in and hands the agent its secrets through [`vault-wrapped-secrets`](https://docs.int.camunda.com/docs/vault/vault-secrets-in-agentic-workflows).
 
