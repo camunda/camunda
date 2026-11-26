@@ -15,8 +15,11 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
@@ -32,7 +35,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -66,10 +69,17 @@ final class SaasOidcClaimBindingIT {
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC);
 
+  // Checks tokens without a broker, so it needs no cluster.
+  @TestZeebe(autoStart = false, purgeAfterEach = false)
+  private static final TestStandaloneGateway GATEWAY =
+      new TestStandaloneGateway()
+          .withAuthenticatedAccess()
+          .withAuthenticationMethod(AuthenticationMethod.OIDC);
+
   @TempDir private static Path credentialsCacheDir;
 
   @BeforeAll
-  static void startBroker() {
+  static void start() {
     configureRealm();
     BROKER.withSecurityConfig(
         c -> {
@@ -84,36 +94,53 @@ final class SaasOidcClaimBindingIT {
         .withProperty("camunda.security.saas.cluster-id", OWN_CLUSTER_ID);
     BROKER.start();
 
-    try (final var client = client(OWN_CLIENT, false)) {
-      Awaitility.await("broker ready")
-          .atMost(Duration.ofSeconds(60))
-          .ignoreExceptions()
-          .untilAsserted(() -> client.newTopologyRequest().send().join());
+    GATEWAY.withUnifiedConfig(
+        c -> {
+          c.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+          final var oidc = c.getSecurity().getAuthentication().getOidc();
+          oidc.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + REALM);
+          oidc.setClientId(OWN_CLIENT);
+          oidc.setRedirectUri("{baseUrl}/sso-callback");
+        });
+    GATEWAY
+        .withProperty("camunda.security.saas.organization-id", OWN_ORGANIZATION_ID)
+        .withProperty("camunda.security.saas.cluster-id", OWN_CLUSTER_ID);
+    GATEWAY.start();
+
+    for (final var api : Api.values()) {
+      try (final var client = client(OWN_CLIENT, api)) {
+        Awaitility.await(api + " ready")
+            .atMost(Duration.ofSeconds(60))
+            .ignoreExceptions()
+            .untilAsserted(() -> client.newTopologyRequest().send().join());
+      }
     }
   }
 
-  @ParameterizedTest(name = "over REST = {0}")
-  @ValueSource(booleans = {true, false})
-  void shouldAcceptTokenOfOwnOrganizationAndCluster(final boolean rest) {
+  @ParameterizedTest
+  @EnumSource(Api.class)
+  void shouldAcceptTokenOfOwnOrganizationAndCluster(final Api api) {
     // given
-    try (final var client = client(OWN_CLIENT, rest)) {
+    try (final var client = client(OWN_CLIENT, api)) {
       // when / then
       assertThatNoException().isThrownBy(() -> client.newTopologyRequest().send().join());
     }
   }
 
-  @ParameterizedTest(name = "{0} over REST = {1}")
+  @ParameterizedTest(name = "{0} over {1}")
   @CsvSource({
-    FOREIGN_CLUSTER_CLIENT + ",true",
-    FOREIGN_CLUSTER_CLIENT + ",false",
-    FOREIGN_ORGANIZATION_CLIENT + ",true",
-    FOREIGN_ORGANIZATION_CLIENT + ",false"
+    FOREIGN_CLUSTER_CLIENT + ",REST",
+    FOREIGN_CLUSTER_CLIENT + ",EMBEDDED_GATEWAY_GRPC",
+    FOREIGN_CLUSTER_CLIENT + ",STANDALONE_GATEWAY_GRPC",
+    FOREIGN_ORGANIZATION_CLIENT + ",REST",
+    FOREIGN_ORGANIZATION_CLIENT + ",EMBEDDED_GATEWAY_GRPC",
+    FOREIGN_ORGANIZATION_CLIENT + ",STANDALONE_GATEWAY_GRPC"
   })
-  void shouldRejectTokenOfAnotherOrganizationOrCluster(final String clientId, final boolean rest) {
+  void shouldRejectTokenOfAnotherOrganizationOrCluster(final String clientId, final Api api) {
     // given
-    try (final var client = client(clientId, rest)) {
+    try (final var client = client(clientId, api)) {
       // when / then
-      if (rest) {
+      if (api == Api.REST) {
         assertThatThrownBy(() -> client.newTopologyRequest().send().join())
             .isInstanceOfSatisfying(
                 ClientHttpException.class, e -> assertThat(e.code()).isEqualTo(401));
@@ -178,10 +205,11 @@ final class SaasOidcClaimBindingIT {
     return mapper;
   }
 
-  private static CamundaClient client(final String clientId, final boolean rest) {
-    return BROKER
+  private static CamundaClient client(final String clientId, final Api api) {
+    final TestGateway<?> gateway = api == Api.STANDALONE_GATEWAY_GRPC ? GATEWAY : BROKER;
+    return gateway
         .newClientBuilder()
-        .preferRestOverGrpc(rest)
+        .preferRestOverGrpc(api == Api.REST)
         .credentialsProvider(
             new OAuthCredentialsProviderBuilder()
                 .clientId(clientId)
@@ -192,8 +220,14 @@ final class SaasOidcClaimBindingIT {
                         + "/realms/"
                         + REALM
                         + "/protocol/openid-connect/token")
-                .credentialsCachePath(credentialsCacheDir.resolve(clientId + "-" + rest).toString())
+                .credentialsCachePath(credentialsCacheDir.resolve(clientId + "-" + api).toString())
                 .build())
         .build();
+  }
+
+  enum Api {
+    REST,
+    EMBEDDED_GATEWAY_GRPC,
+    STANDALONE_GATEWAY_GRPC
   }
 }
