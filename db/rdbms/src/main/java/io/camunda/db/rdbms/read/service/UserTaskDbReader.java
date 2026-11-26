@@ -57,30 +57,11 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
-    // ID-based authorization
-    final var resourceIdsByType = resourceAccessChecks.getAuthorizedResourceIdsByType();
-    final var processDefinitionIds =
-        resourceIdsByType.getOrDefault(PROCESS_DEFINITION.name(), List.of());
-    // resource IDs that are not numbers cannot match a user task key and are dropped
-    final var userTaskKeys =
-        NumberParsingUtil.parseLongs(resourceIdsByType.getOrDefault(USER_TASK.name(), List.of()));
+    final var grants = resolveGrants(resourceAccessChecks);
 
-    // Property-based authorization
-    final var userTaskPropertyNames =
-        resourceAccessChecks
-            .getAuthorizedResourcePropertyNamesByType()
-            .getOrDefault(USER_TASK.name(), Set.of());
-    final var authorizationProperties =
-        resolveAuthorizationProperties(userTaskPropertyNames, resourceAccessChecks);
-
-    // Grants can match no user task: property grants that resolve to no value for this caller
-    // (e.g. no username or no groups) and user task IDs that are not numbers. Without any other
-    // grant, no authorization predicate would be rendered and the query would be unrestricted, so
-    // fail closed like the Elasticsearch/OpenSearch search does.
-    if (resourceAccessChecks.authorizationCheck().enabled()
-        && processDefinitionIds.isEmpty()
-        && userTaskKeys.isEmpty()
-        && !authorizationProperties.hasAnyProperty()) {
+    // The mapper renders the authorization predicate only from the resolved grants. If none is
+    // left, it would render no predicate and return every user task of the caller's tenants.
+    if (resourceAccessChecks.authorizationCheck().enabled() && grants.matchNoUserTask()) {
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
@@ -89,10 +70,10 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
         UserTaskDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedProcessDefinitionIds(processDefinitionIds)
-                    .authorizedUserTaskKeys(userTaskKeys)
+                    .authorizedProcessDefinitionIds(grants.processDefinitionIds())
+                    .authorizedUserTaskKeys(grants.userTaskKeys())
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
-                    .authorizationProperties(authorizationProperties)
+                    .authorizationProperties(grants.properties())
                     .sort(dbSort)
                     .page(dbPage));
 
@@ -115,9 +96,33 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
   }
 
   /**
-   * Resolves property-based authorization by extracting authorized property names and mapping them
-   * to user identity values from authentication context.
+   * Resolves the caller's grants to the values a user task can match:
+   *
+   * <ul>
+   *   <li>process definition grants match by process definition ID;
+   *   <li>user task grants match by user task key, so IDs that are not numbers match no task and
+   *       are dropped;
+   *   <li>property grants match by the caller's username or groups, so a property without a value
+   *       for this caller (e.g. no username or no groups) is dropped.
+   * </ul>
    */
+  private UserTaskGrants resolveGrants(final ResourceAccessChecks resourceAccessChecks) {
+    final var resourceIdsByType = resourceAccessChecks.getAuthorizedResourceIdsByType();
+    final var processDefinitionIds =
+        resourceIdsByType.getOrDefault(PROCESS_DEFINITION.name(), List.of());
+    final var userTaskIds = resourceIdsByType.getOrDefault(USER_TASK.name(), List.of());
+    final var userTaskKeys = NumberParsingUtil.parseLongs(userTaskIds);
+
+    final var propertyNames =
+        resourceAccessChecks
+            .getAuthorizedResourcePropertyNamesByType()
+            .getOrDefault(USER_TASK.name(), Set.of());
+    final var properties = resolveAuthorizationProperties(propertyNames, resourceAccessChecks);
+
+    return new UserTaskGrants(processDefinitionIds, userTaskKeys, properties);
+  }
+
+  /** Maps the authorized property names to the caller's username and groups. */
   private UserTaskAuthorizationProperties resolveAuthorizationProperties(
       final Set<String> userTaskPropertyNames, final ResourceAccessChecks resourceAccessChecks) {
 
@@ -170,5 +175,18 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
     }
 
     return builder.build();
+  }
+
+  /** The caller's grants, resolved to the values the user task query can match. */
+  private record UserTaskGrants(
+      List<String> processDefinitionIds,
+      List<Long> userTaskKeys,
+      UserTaskAuthorizationProperties properties) {
+
+    boolean matchNoUserTask() {
+      return processDefinitionIds.isEmpty()
+          && userTaskKeys.isEmpty()
+          && !properties.hasAnyProperty();
+    }
   }
 }
