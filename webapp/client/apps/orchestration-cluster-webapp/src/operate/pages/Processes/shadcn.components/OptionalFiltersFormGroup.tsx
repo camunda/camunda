@@ -15,7 +15,7 @@ import {
 	OptionalFiltersFormGroup as SharedOptionalFiltersFormGroup,
 	type OptionalFilterDefinition,
 } from '#/operate/shared/OptionalFiltersFormGroup/shadcn.components/OptionalFiltersFormGroup';
-import {DateTimeRangeField} from '#/operate/shared/DateTimeRangeField/shadcn.components/DateTimeRangeField';
+import {DateTimeRangePickerField} from '#/operate/shared/DateTimeRangePickerField/shadcn.components/DateTimeRangePickerField';
 import {mergeValidators} from '#/operate/shared/utils/mergeValidators';
 import {
 	validateIdsCharacters,
@@ -81,7 +81,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 			type: 'custom',
 			render: (removeButton) => (
 				<FilterGroup id={id} label={label} removeButton={removeButton}>
-					<DateTimeRangeField idPrefix={`optional-filter-${id}`} fromKey={fromKey} toKey={toKey} />
+					<DateTimeRangePickerField id={`optional-filter-${id}`} label={label} fromKey={fromKey} toKey={toKey} />
 				</FilterGroup>
 			),
 		});

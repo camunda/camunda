@@ -39,7 +39,6 @@ import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import {TenantField} from '#/operate/shared/TenantField/shadcn.components/TenantField';
 import {TextInputField} from '#/operate/shared/TextInputField/shadcn.components/TextInputField';
 import {formatISODate} from '#/operate/shared/DateRangeField/formatDate';
-import {getTimeZoneLabel} from '#/operate/shared/DateRangeField/getTimeZoneLabel';
 import {getCurrentDateLocale} from '#/shared/i18n';
 import {FilterMultiSelect} from '#/operate/shared/FilterMultiSelect/shadcn.components/FilterMultiSelect';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
@@ -50,6 +49,7 @@ import {
 } from '#/operate/shared/queries/processDefinitions.queries';
 import type {OperationsLogSearch} from '../operationsLog.schema';
 import {DefinitionAlert} from './DefinitionAlert';
+import {getDateTimeRangePickerMessages} from '#/operate/shared/DateTimeRangePickerField/shadcn.components/getDateTimeRangePickerMessages';
 
 const ALL_VERSIONS = 'all';
 const ALL_RESULTS = 'all';
@@ -97,26 +97,16 @@ const TimestampRangeField: React.FC = () => {
 	const after = useField<string | undefined>('timestampAfter').input.value;
 	const before = useField<string | undefined>('timestampBefore').input.value;
 	const value = useMemo(() => ({from: toDate(after), to: toDate(before)}), [after, before]);
+	const locale = getCurrentDateLocale();
+	const messages = getDateTimeRangePickerMessages({t});
 
 	return (
 		<DateTimeRangePicker
 			id="timestamp-range"
 			label={t('operate.operationsLog.filters.timestampDateRange')}
 			value={value}
-			locale={getCurrentDateLocale()}
-			messages={{
-				placeholder: t('operate.shared.dateRangeField.enterDateRange'),
-				fromTime: t('operate.shared.dateRangeField.fromTime'),
-				toTime: t('operate.shared.dateRangeField.toTime'),
-				timeZone: t('operate.shared.dateTimeRangeField.timeZone', {timeZone: getTimeZoneLabel()}),
-				endBeforeStart: t('operate.shared.dateTimeRangeField.endBeforeStart'),
-				apply: t('operate.shared.dateRangeField.apply'),
-				cancel: t('operate.shared.dateRangeField.cancel'),
-				clearRange: t('operate.shared.dateTimeRangePicker.clearRange'),
-				selectEndDate: t('operate.shared.dateTimeRangePicker.selectEndDate'),
-				pickDayFirst: t('operate.shared.dateTimeRangePicker.pickDayFirst'),
-				pickEndDay: t('operate.shared.dateTimeRangePicker.pickEndDay'),
-			}}
+			locale={locale}
+			messages={messages}
 			onChange={(range) => {
 				form.change('timestampAfter', range.from ? formatISODate(range.from) : undefined);
 				form.change('timestampBefore', range.to ? formatISODate(range.to) : undefined);

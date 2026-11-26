@@ -2589,28 +2589,19 @@
 					"cancel": "Abbrechen",
 					"apply": "Anwenden"
 				},
-				"dateTimeRangeField": {
-					"requiredDateTime": "Datum und Uhrzeit eingeben",
+				"dateTimeRangePicker": {
 					"endBeforeStart": "Das Ende darf nicht vor dem Beginn liegen",
 					"timeZone": "Zeitzone: {{timeZone}}",
-					"invalidDateTime": "Datum und Uhrzeit im Format YYYY-MM-DD HH:mm:ss eingeben",
-					"from": "Von",
-					"to": "Bis",
-					"time": "Uhrzeit",
+					"clearRange": "Datums- und Zeitbereich löschen",
+					"selectEndDate": "Enddatum wählen",
+					"pickDayFirst": "Zuerst ein Datum wählen",
 					"quickRanges": "Schnellauswahl",
-					"selectQuickRange": "Schnellauswahl wählen",
 					"lastMinutes_one": "Letzte {{count}} Minute",
 					"lastMinutes_other": "Letzte {{count}} Minuten",
 					"lastHours_one": "Letzte {{count}} Stunde",
 					"lastHours_other": "Letzte {{count}} Stunden",
 					"lastDays_one": "Letzter {{count}} Tag",
 					"lastDays_other": "Letzte {{count}} Tage"
-				},
-				"dateTimeRangePicker": {
-					"clearRange": "Datums- und Zeitbereich löschen",
-					"selectEndDate": "Enddatum wählen",
-					"pickDayFirst": "Zuerst ein Datum wählen",
-					"pickEndDay": "Enddatum wählen"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "ist gleich",

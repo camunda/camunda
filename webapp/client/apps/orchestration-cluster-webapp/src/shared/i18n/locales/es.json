@@ -2589,28 +2589,19 @@
 					"cancel": "Cancelar",
 					"apply": "Aplicar"
 				},
-				"dateTimeRangeField": {
-					"requiredDateTime": "Introduzca una fecha y hora",
+				"dateTimeRangePicker": {
 					"endBeforeStart": "El fin no puede ser anterior al inicio",
 					"timeZone": "Zona horaria: {{timeZone}}",
-					"invalidDateTime": "Introduzca una fecha y hora con el formato YYYY-MM-DD HH:mm:ss",
-					"from": "Desde",
-					"to": "Hasta",
-					"time": "Hora",
+					"clearRange": "Borrar el intervalo de fecha y hora",
+					"selectEndDate": "Elegir la fecha de fin",
+					"pickDayFirst": "Elija primero una fecha",
 					"quickRanges": "Rangos rápidos",
-					"selectQuickRange": "Seleccionar un rango rápido",
 					"lastMinutes_one": "Último {{count}} minuto",
 					"lastMinutes_other": "Últimos {{count}} minutos",
 					"lastHours_one": "Última {{count}} hora",
 					"lastHours_other": "Últimas {{count}} horas",
 					"lastDays_one": "Último {{count}} día",
 					"lastDays_other": "Últimos {{count}} días"
-				},
-				"dateTimeRangePicker": {
-					"clearRange": "Borrar el intervalo de fecha y hora",
-					"selectEndDate": "Elegir la fecha de fin",
-					"pickDayFirst": "Elija primero una fecha",
-					"pickEndDay": "Elegir la fecha de fin"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "es igual a",
