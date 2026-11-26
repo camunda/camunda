@@ -142,8 +142,11 @@ public class ExecutionListenerTest {
     when(camundaContainerRuntime.getCamundaGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
     when(camundaContainerRuntime.getCamundaRestApiAddress()).thenReturn(REST_API_ADDRESS);
     when(camundaContainerRuntime.getCamundaClientBuilderFactory())
-        .thenReturn(
-            () ->
+        .thenReturn(camundaClientBuilderFactory);
+    lenient()
+        .when(camundaClientBuilderFactory.get())
+        .thenAnswer(
+            invocation ->
                 CamundaClient.newClientBuilder()
                     .grpcAddress(GRPC_API_ADDRESS)
                     .restAddress(REST_API_ADDRESS));
