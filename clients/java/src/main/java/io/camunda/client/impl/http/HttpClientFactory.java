@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.backpressure.BackpressureController;
 import io.camunda.client.impl.search.filter.StringFilterPropertyModule;
 import io.camunda.client.impl.tls.TlsContexts;
 import io.camunda.client.impl.util.AddressUtil;
@@ -113,15 +114,29 @@ public class HttpClientFactory {
     return createClient(createConnectionManager());
   }
 
+  /**
+   * @param backpressure the backpressure handling to share with other transports of the client
+   */
+  public HttpClient createClient(final BackpressureController backpressure) {
+    return createClient(createConnectionManager(), backpressure);
+  }
+
   /** Lets tests keep a handle on the connection pool to observe it. */
   HttpClient createClient(final PoolingAsyncClientConnectionManager connectionManager) {
+    return createClient(
+        connectionManager, BackpressureController.create(config.getBackpressureProfile()));
+  }
+
+  private HttpClient createClient(
+      final PoolingAsyncClientConnectionManager connectionManager,
+      final BackpressureController backpressure) {
     final RequestConfig defaultRequestConfig = defaultClientRequestConfigBuilder().build();
     final CredentialsProvider credentialsProvider =
         config.getCredentialsProvider() != null
             ? config.getCredentialsProvider()
             : new NoopCredentialsProvider();
     final CloseableHttpAsyncClient client =
-        defaultClientBuilder(credentialsProvider, connectionManager)
+        defaultClientBuilder(credentialsProvider, connectionManager, backpressure)
             .setDefaultRequestConfig(defaultRequestConfig)
             .build();
     final URI gatewayAddress = buildGatewayAddress();
@@ -136,7 +151,8 @@ public class HttpClientFactory {
         defaultRequestConfig,
         config.getMaxMessageSize(),
         TimeValue.ofSeconds(15),
-        credentialsProvider);
+        credentialsProvider,
+        backpressure);
   }
 
   PoolingAsyncClientConnectionManager createConnectionManager() {
@@ -220,7 +236,8 @@ public class HttpClientFactory {
 
   private HttpAsyncClientBuilder defaultClientBuilder(
       final CredentialsProvider credentialsProvider,
-      final PoolingAsyncClientConnectionManager connectionManager) {
+      final PoolingAsyncClientConnectionManager connectionManager,
+      final BackpressureController backpressure) {
     final Header acceptHeader =
         new BasicHeader(
             HttpHeaders.ACCEPT,
@@ -238,7 +255,9 @@ public class HttpClientFactory {
             .setCharCodingConfig(
                 CharCodingConfig.custom().setCharset(StandardCharsets.UTF_8).build())
             .evictIdleConnections(TimeValue.ofSeconds(30))
-            .setRetryStrategy(new HttpRetryStrategy())
+            // the client retries 429 and 503 itself, taking the response body into account,
+            // unless it was told not to handle backpressure
+            .setRetryStrategy(new HttpRetryStrategy(!backpressure.isEnabled()))
             .useSystemProperties(); // allow users to customize via system properties
 
     // Register a request-level interceptor that injects the Authorization header at the

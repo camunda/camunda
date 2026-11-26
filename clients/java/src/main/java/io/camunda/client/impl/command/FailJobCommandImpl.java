@@ -23,6 +23,7 @@ import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.backpressure.BackpressureScope;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.FailJobResponseImpl;
@@ -128,7 +129,8 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   }
 
   private CamundaFuture<FailJobResponse> sendRestRequest() {
-    final HttpCamundaFuture<FailJobResponse> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<FailJobResponse> result =
+        new HttpCamundaFuture<>(BackpressureScope.UNGATED);
     httpClient.post(
         "/jobs/" + jobKey + "/failure",
         objectMapper.toJson(httpRequestObject),

@@ -226,6 +226,8 @@ import io.camunda.client.api.statistics.request.ProcessInstanceWaitStateStatisti
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.impl.backpressure.BackpressureClientInterceptor;
+import io.camunda.client.impl.backpressure.BackpressureController;
 import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandImpl;
 import io.camunda.client.impl.command.AddClockCommandImpl;
 import io.camunda.client.impl.command.AssignClientToGroupCommandImpl;
@@ -472,7 +474,26 @@ public final class CamundaClientImpl implements CamundaClient {
 
   public CamundaClientImpl(
       final CamundaClientConfiguration configuration, final ManagedChannel channel) {
-    this(configuration, channel, buildGatewayStub(channel, configuration));
+    this(
+        configuration,
+        channel,
+        BackpressureController.create(configuration.getBackpressureProfile()));
+  }
+
+  /**
+   * The gRPC calls and the HTTP requests of the client share its backpressure handling, so that it
+   * reacts to the pressure on the cluster as a whole, whatever transport its requests use.
+   */
+  private CamundaClientImpl(
+      final CamundaClientConfiguration configuration,
+      final ManagedChannel channel,
+      final BackpressureController backpressure) {
+    this(
+        configuration,
+        channel,
+        buildGatewayStub(channel, configuration, backpressure),
+        buildExecutorService(configuration),
+        buildHttpClient(configuration, backpressure));
   }
 
   public CamundaClientImpl(
@@ -526,6 +547,11 @@ public final class CamundaClientImpl implements CamundaClient {
 
   private static HttpClient buildHttpClient(final CamundaClientConfiguration config) {
     return new HttpClientFactory(config).createClient();
+  }
+
+  private static HttpClient buildHttpClient(
+      final CamundaClientConfiguration config, final BackpressureController backpressure) {
+    return new HttpClientFactory(config).createClient(backpressure);
   }
 
   public static ManagedChannel buildChannel(final CamundaClientConfiguration config) {
@@ -601,11 +627,28 @@ public final class CamundaClientImpl implements CamundaClient {
 
   public static GatewayStub buildGatewayStub(
       final ManagedChannel channel, final CamundaClientConfiguration config) {
+    return buildGatewayStub(channel, config, null);
+  }
+
+  /**
+   * @param backpressure the backpressure handling that the calls of the stub take part in, {@code
+   *     null} for none
+   */
+  public static GatewayStub buildGatewayStub(
+      final ManagedChannel channel,
+      final CamundaClientConfiguration config,
+      final BackpressureController backpressure) {
     final CallCredentials credentials = buildCallCredentials(config);
     final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
     final List<ClientInterceptor> allInterceptors = new ArrayList<>(config.getInterceptors());
     if (config.getPhysicalTenantId() != null) {
       allInterceptors.add(new PhysicalTenantInterceptor(config.getPhysicalTenantId()));
+    }
+    if (backpressure != null && backpressure.isEnabled()) {
+      // added last, so that it is the outermost one: every attempt runs through all the others.
+      // If the channel retries on its own already, the calls are only limited, not retried again
+      allInterceptors.add(
+          new BackpressureClientInterceptor(backpressure, !config.useDefaultRetryPolicy()));
     }
     if (!allInterceptors.isEmpty()) {
       return gatewayStub.withInterceptors(allInterceptors.toArray(new ClientInterceptor[] {}));
@@ -692,6 +735,14 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public CamundaClientConfiguration getConfiguration() {
     return config;
+  }
+
+  /**
+   * @return the backpressure handling of this client, for diagnostics and tests; not part of the
+   *     public API
+   */
+  public BackpressureController backpressure() {
+    return httpClient.backpressure();
   }
 
   @Override

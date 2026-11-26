@@ -15,6 +15,7 @@
  */
 package io.camunda.client;
 
+import static io.camunda.client.ClientProperties.BACKPRESSURE_PROFILE;
 import static io.camunda.client.ClientProperties.CLOUD_REGION;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
@@ -34,6 +35,7 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRE
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MAX_HTTP_CONNECTIONS;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MESSAGE_TTL;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BACKPRESSURE_PROFILE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR;
@@ -57,6 +59,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.client.api.BackpressureProfile;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.enums.TenantFilter;
@@ -130,6 +133,7 @@ public final class CamundaClientTest {
           .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
       assertThat(configuration.preferRestOverGrpc()).isTrue();
       assertThat(configuration.getMaxHttpConnections()).isEqualTo(DEFAULT_MAX_HTTP_CONNECTIONS);
+      assertThat(configuration.getBackpressureProfile()).isEqualTo(BackpressureProfile.BALANCED);
       assertThat(configuration.jobHandlingExecutor()).isNull();
       assertThat(configuration.jobWorkerSchedulingExecutor()).isNull();
     }
@@ -1563,6 +1567,77 @@ public final class CamundaClientTest {
   }
 
   @Test
+  public void shouldUseTheBalancedBackpressureProfileByDefault() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.build().close();
+
+    // then
+    assertThat(builder.getBackpressureProfile()).isEqualTo(BackpressureProfile.BALANCED);
+  }
+
+  @Test
+  public void shouldSetTheBackpressureProfile() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.backpressureProfile(BackpressureProfile.DISABLED);
+
+    // when
+    builder.build().close();
+
+    // then
+    assertThat(builder.getBackpressureProfile()).isEqualTo(BackpressureProfile.DISABLED);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {BACKPRESSURE_PROFILE_VAR})
+  public void shouldOverrideTheBackpressureProfileWithEnvVar(final String envName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.backpressureProfile(BackpressureProfile.BALANCED);
+    Environment.system().put(envName, "conservative");
+
+    // when
+    builder.build().close();
+
+    // then
+    assertThat(builder.getBackpressureProfile()).isEqualTo(BackpressureProfile.CONSERVATIVE);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {BACKPRESSURE_PROFILE})
+  public void shouldOverrideTheBackpressureProfileWithProperty(final String propertyName) {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.backpressureProfile(BackpressureProfile.BALANCED);
+    properties.setProperty(propertyName, "AGGRESSIVE");
+    builder.withProperties(properties);
+
+    // when
+    builder.build().close();
+
+    // then
+    assertThat(builder.getBackpressureProfile()).isEqualTo(BackpressureProfile.AGGRESSIVE);
+  }
+
+  @Test
+  public void shouldRejectAnUnknownBackpressureProfile() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty(BACKPRESSURE_PROFILE, "fast");
+
+    // when / then
+    assertThatThrownBy(() -> new CamundaClientBuilderImpl().withProperties(properties))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("backpressure profile")
+        .hasMessageContaining("BALANCED")
+        .hasMessageContaining("'fast'");
+  }
+
+  @Test
   void shouldPreserveConfigurationViaWithConfiguration() {
     // given — a configuration with every property set to a non-default value
     final CredentialsProvider credentialsProvider = new NoopCredentialsProvider();
@@ -1756,6 +1831,11 @@ public final class CamundaClientTest {
             public boolean useClientSideLoadBalancing() {
               return true;
             }
+
+            @Override
+            public BackpressureProfile getBackpressureProfile() {
+              return BackpressureProfile.CONSERVATIVE;
+            }
           };
 
       // when
@@ -1797,6 +1877,7 @@ public final class CamundaClientTest {
       assertThat(builder.useDefaultRetryPolicy()).isEqualTo(source.useDefaultRetryPolicy());
       assertThat(builder.useClientSideLoadBalancing())
           .isEqualTo(source.useClientSideLoadBalancing());
+      assertThat(builder.getBackpressureProfile()).isEqualTo(source.getBackpressureProfile());
       // non-property fields
       assertThat(builder.getCredentialsProvider()).isSameAs(credentialsProvider);
       assertThat(builder.getJsonMapper()).isSameAs(jsonMapper);

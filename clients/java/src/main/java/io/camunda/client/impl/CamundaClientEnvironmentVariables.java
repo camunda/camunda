@@ -54,6 +54,9 @@ public final class CamundaClientEnvironmentVariables {
   public static final String USE_CLIENT_SIDE_LOAD_BALANCING_VAR =
       "CAMUNDA_CLIENT_USE_CLIENT_SIDE_LOAD_BALANCING";
 
+  /** Aligned with the other Camunda SDKs. */
+  public static final String BACKPRESSURE_PROFILE_VAR = "CAMUNDA_SDK_BACKPRESSURE_PROFILE";
+
   /** OAuth Environment Variables */
   public static final String OAUTH_ENV_CLIENT_ID = "CAMUNDA_CLIENT_ID";
 

@@ -15,6 +15,7 @@
  */
 package io.camunda.client;
 
+import io.camunda.client.api.BackpressureProfile;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.enums.TenantFilter;
@@ -429,6 +430,35 @@ public interface CamundaClientBuilder {
 
   /** Sets the maximum number of concurrent HTTP connections the client can open. */
   CamundaClientBuilder maxHttpConnections(int maxConnections);
+
+  /**
+   * Sets how the client reacts when the cluster rejects a request because it is temporarily
+   * overloaded (backpressure), i.e. with an HTTP 429, an HTTP 503 or 500 with the title or detail
+   * {@code RESOURCE_EXHAUSTED}, or a gRPC status {@code RESOURCE_EXHAUSTED}.
+   *
+   * <p>By default ({@link BackpressureProfile#BALANCED}) the client retries a rejected request up
+   * to two more times, after a delay that grows exponentially and is randomized, as long as the
+   * request timeout allows it, and limits the number of requests running concurrently while the
+   * cluster is under pressure. A request that is rejected for the last time fails as it did before.
+   * Use {@link BackpressureProfile#DISABLED} to turn this off.
+   *
+   * <p>A request that waits for the concurrency limit counts against its request timeout, and the
+   * retries of a request do not take longer than the request timeout either. The retry is only made
+   * for rejections that the cluster issues before it processes a command, so it never runs a
+   * command twice; timeouts, broken connections and a 503 that does not carry {@code
+   * RESOURCE_EXHAUSTED} are not retried.
+   *
+   * <p>Default is {@link BackpressureProfile#BALANCED}. Can be overridden with the property {@code
+   * camunda.client.backpressure.profile} or the environment variable {@code
+   * CAMUNDA_SDK_BACKPRESSURE_PROFILE}.
+   *
+   * <p>If {@link #useDefaultRetryPolicy(boolean)} is enabled, rejected gRPC calls are retried by
+   * the gRPC channel and the client only limits their concurrency.
+   *
+   * @param backpressureProfile the profile to use
+   * @return this builder for chaining
+   */
+  CamundaClientBuilder backpressureProfile(BackpressureProfile backpressureProfile);
 
   /**
    * A custom retryBackoffSupplier allows the client to determine the default retry backoff strategy

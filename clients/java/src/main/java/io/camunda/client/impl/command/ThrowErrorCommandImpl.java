@@ -23,6 +23,7 @@ import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
 import io.camunda.client.api.response.ThrowErrorResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.backpressure.BackpressureScope;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ThrowErrorResponseImpl;
@@ -121,7 +122,8 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
   }
 
   private CamundaFuture<ThrowErrorResponse> sendRestRequest() {
-    final HttpCamundaFuture<ThrowErrorResponse> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<ThrowErrorResponse> result =
+        new HttpCamundaFuture<>(BackpressureScope.UNGATED);
     httpClient.post(
         "/jobs/" + jobKey + "/error",
         objectMapper.toJson(httpRequestObject),

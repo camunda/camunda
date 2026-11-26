@@ -25,6 +25,7 @@ import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsComman
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.impl.RetriableStreamingFutureImpl;
+import io.camunda.client.impl.backpressure.BackpressureScope;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ActivateJobsResponseImpl;
@@ -187,7 +188,8 @@ public final class ActivateJobsCommandImpl
   }
 
   private CamundaFuture<ActivateJobsResponse> sendRestRequest() {
-    final HttpCamundaFuture<ActivateJobsResponse> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<ActivateJobsResponse> result =
+        new HttpCamundaFuture<>(BackpressureScope.UNMANAGED);
     final ActivateJobsResponseImpl response = new ActivateJobsResponseImpl(jsonMapper);
     httpClient.post(
         "/jobs/activation",
