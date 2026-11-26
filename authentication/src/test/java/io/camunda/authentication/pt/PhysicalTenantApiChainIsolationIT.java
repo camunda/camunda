@@ -8,7 +8,6 @@
 package io.camunda.authentication.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
@@ -37,7 +36,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.client.HttpServerErrorException;
 
 /**
  * Integration test for per-physical-tenant API security-chain isolation.
@@ -417,15 +415,18 @@ class PhysicalTenantApiChainIsolationIT {
                   .isEqualTo(200);
 
               // when PT-B presents a token of its own unreachable issuer
-              final var ptbToken =
-                  JwksTestServer.signForIssuer(serverB, serverB.unreachableIssuerUri(), List.of());
+              final var ptbResponse =
+                  callWithToken(
+                      proxy,
+                      PATH_PT_B,
+                      JwksTestServer.signForIssuer(
+                          serverB, serverB.unreachableIssuerUri(), List.of()));
 
               // then only that tenant fails, and it fails as an outage rather than as a rejected
-              // credential: the chain lets the failure through instead of calling the entry point,
-              // which a servlet container renders as a 500
-              assertThatThrownBy(() -> callWithToken(proxy, PATH_PT_B, ptbToken))
-                  .rootCause()
-                  .isInstanceOf(HttpServerErrorException.InternalServerError.class);
+              // credential
+              assertThat(ptbResponse.getStatus())
+                  .as("PT-B token on PT-B path while PT-B's provider is down")
+                  .isEqualTo(503);
             });
   }
 
