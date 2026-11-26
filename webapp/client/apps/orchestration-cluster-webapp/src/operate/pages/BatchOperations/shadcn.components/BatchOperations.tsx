@@ -32,11 +32,6 @@ type Props = {
 const PAGE_SIZES = [20, 50, 100];
 const DEFAULT_PAGE_SIZE = 20;
 
-const TABLE_CONTAINER_CLASSES = [
-	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
-	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
-].join(' ');
-
 const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link {...props} />;
 const BatchOperationLink = createLink(TableLink);
 
@@ -177,7 +172,7 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 						isFetching={isLoading}
 						emptyState={emptyState}
 						hideHeaderWhenEmpty={!isLoading && !query.isError}
-						className={TABLE_CONTAINER_CLASSES}
+						borderless
 						data-testid="batch-operations-table"
 					/>
 				</div>

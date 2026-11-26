@@ -27,8 +27,6 @@ type Props = {
 };
 
 const TABLE_CONTAINER_CLASSES = [
-	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
-	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
 	'[&_tr:has([data-item-outcome=failed])>td:first-child]:[box-shadow:inset_3px_0_0_var(--danger-border-strong)]',
 	'[&_tr:has([data-item-outcome=failed])+tr[data-slot=data-table-expansion-row]>td:first-child]:[box-shadow:inset_3px_0_0_var(--danger-border-strong)]',
 	'[&_tr:has([data-item-outcome=completed])>td:first-child]:[box-shadow:inset_3px_0_0_var(--success-border-strong)]',
@@ -252,6 +250,7 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 							fetchPreviousPage,
 							fetchNextPage,
 						}}
+						borderless
 						className={TABLE_CONTAINER_CLASSES}
 						data-testid="batch-items-table"
 					/>

@@ -68,8 +68,8 @@ type BaseProps<TRow> = {
 	hideHeaderWhenEmpty?: boolean;
 	/**
 	 * Extra classes for the outer wrapper. Use descendant selectors (e.g.
-	 * `[&_[data-slot=table-container]]:rounded-none`) to restyle the design system's own table
-	 * container, which `DataTable` does not expose.
+	 * `[&_[data-slot=icon-button]]:size-6`) to restyle the design system's own table parts, which
+	 * `DataTable` does not expose. Use `borderless` instead of overriding the container border.
 	 */
 	className?: string;
 	borderless?: boolean;

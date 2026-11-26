@@ -29,11 +29,6 @@ type Props = {
 	search: DecisionsSearch;
 };
 
-const TABLE_CONTAINER_CLASSES = [
-	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
-	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
-].join(' ');
-
 const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link {...props} />;
 const ProcessInstanceLink = createLink(TableLink);
 const DecisionInstanceLink = createLink(TableLink);
@@ -219,7 +214,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 					fetchPreviousPage,
 					fetchNextPage,
 				}}
-				className={TABLE_CONTAINER_CLASSES}
+				borderless
 				data-testid="decision-instances-table"
 			/>
 			<BulkDeleteDialog {...bulkDelete.dialogProps} />
