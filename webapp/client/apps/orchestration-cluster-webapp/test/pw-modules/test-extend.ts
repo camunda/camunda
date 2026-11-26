@@ -103,7 +103,8 @@ const test = base.extend<Fixtures>({
 		await use(page);
 	},
 	makeAxeBuilder: async ({page}, use) => {
-		const makeAxeBuilder = () => new AxeBuilder({page});
+		// TODO: drop the exclusion once https://github.com/camunda/design-system/issues/1114 is fixed
+		const makeAxeBuilder = () => new AxeBuilder({page}).exclude('[data-slot="user-menu-trigger"]');
 		await use(makeAxeBuilder);
 	},
 	loginPage: async ({page}, use) => {
