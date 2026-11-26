@@ -41,7 +41,7 @@ public final class PolicyUpdateCommitVersionTest {
   @Test
   public void shouldCommitThePolicyVersionOfTheAppliedUpdate() {
     // given
-    final var chunk = chunk().setSeqNo(42);
+    final var chunk = chunk();
 
     // when
     apply(ENGINE, chunk);
@@ -50,7 +50,7 @@ public final class PolicyUpdateCommitVersionTest {
     final var committed = versionCommitted(chunk.getUpdateId()).getValue();
     assertThat(committed.getPolicyId()).isEqualTo(chunk.getPolicyId());
     assertThat(committed.getPolicyVersion()).isEqualTo(chunk.getPolicyVersion());
-    assertThat(committed.getSeqNo()).isEqualTo(42);
+    assertThat(committed.getSeqNo()).isEqualTo(chunk.getSeqNo());
   }
 
   @Test

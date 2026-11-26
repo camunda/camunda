@@ -33,7 +33,8 @@ public final class PolicyUpdateProcessors {
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPEND_CHUNK,
-            new PolicyUpdateAppendChunkProcessor(policyUpdateState, keyGenerator, writers))
+            new PolicyUpdateAppendChunkProcessor(
+                policyUpdateState, processingState.getHubEventState(), keyGenerator, writers))
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPLY_CHUNK,
