@@ -10,7 +10,6 @@ package io.camunda.application.initializers;
 import static io.camunda.application.Profile.CONSOLIDATED_AUTH;
 import static io.camunda.application.Profile.INSECURE;
 import static io.camunda.application.Profile.getWebappProfiles;
-import static io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled.AnyHttpGatewayEnabledCondition.isAnyHttpGatewayEnabled;
 
 import java.util.Map;
 import java.util.Set;
@@ -20,10 +19,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.MutablePropertySources;
 
-/**
- * Adds the "consolidated-auth" profile when a webapp or an HTTP gateway is active and the profile
- * is not already set.
- */
+/** Adds the "consolidated-auth" profile when a webapp is active and the profile is not set. */
 public class DefaultAuthenticationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -49,8 +45,8 @@ public class DefaultAuthenticationInitializer
 
   protected boolean shouldApplyDefaultAuthenticationProfile(final Environment environment) {
     final Set<String> activeProfiles = Set.of(environment.getActiveProfiles());
-    return !consolidatedAuthProfileIsPresent(activeProfiles)
-        && (webappProfileIsPresent(activeProfiles) || isAnyHttpGatewayEnabled(environment));
+    return webappProfileIsPresent(activeProfiles)
+        && !consolidatedAuthProfileIsPresent(activeProfiles);
   }
 
   private boolean webappProfileIsPresent(final Set<String> activeProfiles) {

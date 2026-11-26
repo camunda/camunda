@@ -51,37 +51,10 @@ class DefaultAuthenticationInitializerTest {
   }
 
   @Test
-  void shouldAddConsolidatedAuthWhenOnlyBrokerProfileIsActive() {
-    // given — the embedded gateway serves the REST API by default
-    final var context = contextWith(Map.of(), Profile.BROKER);
-
-    // when
-    new DefaultAuthenticationInitializer().initialize(context);
-
-    // then
-    assertThat(context.getEnvironment().getActiveProfiles()).contains(CONSOLIDATED_AUTH);
-  }
-
-  @Test
-  void shouldAddConsolidatedAuthWhenOnlyGatewayProfileIsActive() {
+  void shouldNotAddConsolidatedAuthWithoutWebappProfile() {
     // given
-    final var context = contextWith(Map.of(AUTHENTICATION_METHOD, "oidc"), Profile.GATEWAY);
-
-    // when
-    new DefaultAuthenticationInitializer().initialize(context);
-
-    // then
-    assertThat(context.getEnvironment().getActiveProfiles()).contains(CONSOLIDATED_AUTH);
-  }
-
-  @Test
-  void shouldNotAddConsolidatedAuthWhenBrokerServesNoHttpApi() {
-    // given — a broker whose embedded gateway is disabled serves no HTTP API
     final var context =
-        contextWith(
-            Map.of("zeebe.broker.gateway.enable", "false", AUTHENTICATION_METHOD, "oidc"),
-            Profile.BROKER,
-            Profile.STANDALONE);
+        contextWith(Map.of(AUTHENTICATION_METHOD, "oidc"), Profile.BROKER, Profile.STANDALONE);
 
     // when
     new DefaultAuthenticationInitializer().initialize(context);
