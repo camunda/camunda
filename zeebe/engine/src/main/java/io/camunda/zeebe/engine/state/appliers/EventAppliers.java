@@ -153,7 +153,7 @@ public final class EventAppliers implements EventApplier {
     registerUserTaskAppliers(state);
     registerUserTaskLookupAppliers();
 
-    registerCaseAppliers();
+    registerCaseAppliers(state);
 
     registerSignalAppliers(state);
 
@@ -1003,8 +1003,9 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskLookupIntent.FETCHED, NOOP_EVENT_APPLIER);
   }
 
-  private void registerCaseAppliers() {
-    register(CaseIntent.CREATED, NOOP_EVENT_APPLIER);
+  private void registerCaseAppliers(final MutableProcessingState state) {
+    register(CaseIntent.CREATED, new CaseCreatedApplier(state));
+    register(CaseIntent.BUSINESS_ID_ASSIGNED, new CaseBusinessIdAssignedApplier(state));
     register(CaseIntent.STAGE_UPDATED, NOOP_EVENT_APPLIER);
     register(CaseIntent.COMPLETED, NOOP_EVENT_APPLIER);
     register(CaseIntent.TERMINATED, NOOP_EVENT_APPLIER);
