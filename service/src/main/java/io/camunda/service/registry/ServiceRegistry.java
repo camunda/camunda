@@ -14,6 +14,7 @@ import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
+import io.camunda.service.CaseServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterExportingServices;
 import io.camunda.service.ClusterHistoryBackupServices;
@@ -153,6 +154,8 @@ public interface ServiceRegistry {
   VariableServices variableServices(String physicalTenantId);
 
   VariableHistoryServices variableHistoryServices(String physicalTenantId);
+
+  CaseServices caseServices(String physicalTenantId);
 
   // -- cluster-wide --
 

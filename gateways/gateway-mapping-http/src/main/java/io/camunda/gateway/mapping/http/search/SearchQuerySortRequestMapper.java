@@ -256,6 +256,11 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
+  static List<SearchQuerySortRequest<CaseSearchQuerySortRequest.FieldEnum>>
+      fromCaseSearchQuerySortRequest(final List<CaseSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
   static List<SearchQuerySortRequest<VariableHistoryItemSearchQuerySortRequest.FieldEnum>>
       fromVariableHistoryItemSearchQuerySortRequest(
           final List<VariableHistoryItemSearchQuerySortRequest> requests) {
@@ -929,6 +934,27 @@ public class SearchQuerySortRequestMapper {
         case TENANT_ID -> builder.tenantId();
         case TIMESTAMP -> builder.timestamp();
         case USER_TASK_KEY -> builder.userTaskKey();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<String> applyCaseSortField(
+      final CaseSearchQuerySortRequest.FieldEnum field,
+      final io.camunda.search.sort.CaseSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case CASE_KEY -> builder.caseKey();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case BUSINESS_ID -> builder.businessId();
+        case TITLE -> builder.title();
+        case STATE -> builder.state();
+        case START_DATE -> builder.startDate();
+        case END_DATE -> builder.endDate();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

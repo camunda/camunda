@@ -1,0 +1,246 @@
+## Endpoint definitions
+
+paths:
+  /cases/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Case
+      operationId: searchCases
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Search cases
+      description: |-
+        Search for cases based on given criteria. A case is a process instance of a case
+        process definition, returned together with its stages and their current states.
+
+        Results are sorted by `caseKey` ascending by default.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaseSearchQuery'
+      responses:
+        "200":
+          description: The case search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
+## Schema definitions
+
+components:
+  schemas:
+    CaseSearchQuerySortRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - caseKey
+            - processDefinitionId
+            - businessId
+            - title
+            - state
+            - startDate
+            - endDate
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    CaseSearchQuery:
+      description: Case search query request.
+      additionalProperties: false
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseSearchQuerySortRequest'
+        filter:
+          description: The case search filters.
+          allOf:
+            - $ref: '#/components/schemas/CaseFilter'
+
+    CaseFilter:
+      description: Case filter request.
+      type: object
+      properties:
+        caseKey:
+          description: The key of the case.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+        processDefinitionKey:
+          description: The key of the process definition of the case.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+        processDefinitionId:
+          description: The id of the process definition of the case.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        businessId:
+          description: The business id of the case.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        title:
+          description: The title of the case.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        state:
+          description: The state of the case. Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/CaseStateEnum'
+        tenantId:
+          description: The tenant id of the case.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+
+    CaseSearchQueryResult:
+      description: Case search query response.
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching cases.
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseResult'
+
+    CaseResult:
+      description: Case search response item.
+      type: object
+      required:
+        - caseKey
+        - processInstanceKey
+        - processDefinitionKey
+        - processDefinitionId
+        - businessId
+        - title
+        - state
+        - startDate
+        - endDate
+        - tenantId
+        - startElementIds
+        - stages
+      properties:
+        caseKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/CaseKey'
+          description: The key of the case.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of the process instance that runs the case.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition of the case.
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          description: The id of the process definition of the case.
+        businessId:
+          description: The business id of the case, if any.
+          type: string
+          nullable: true
+        title:
+          description: The title of the case, if any.
+          type: string
+          nullable: true
+        state:
+          $ref: '#/components/schemas/CaseStateEnum'
+        startDate:
+          description: The start date of the case.
+          type: string
+          format: date-time
+        endDate:
+          description: The end date of the case, if it has ended.
+          type: string
+          format: date-time
+          nullable: true
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant id of the case.
+        startElementIds:
+          description: The element ids of the stages in which the case can start.
+          type: array
+          items:
+            type: string
+        stages:
+          description: The stages of the case, including their order and current states.
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseStageResult'
+
+    CaseStageResult:
+      description: A stage of a case.
+      type: object
+      required:
+        - elementId
+        - name
+        - alternative
+        - state
+        - nextElementIds
+      properties:
+        elementId:
+          description: The model-defined id of the stage element.
+          type: string
+        name:
+          description: The name of the stage, if any.
+          type: string
+          nullable: true
+        alternative:
+          description: Whether the stage is an alternative stage, which is not part of the regular flow of the case.
+          type: boolean
+        state:
+          $ref: '#/components/schemas/CaseStageStateEnum'
+        nextElementIds:
+          description: The element ids of the stages that can follow this stage.
+          type: array
+          items:
+            type: string
+
+    ## Enums
+
+    CaseStateEnum:
+      type: string
+      description: The state of a case.
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - TERMINATED
+
+    CaseStageStateEnum:
+      type: string
+      description: The state of a stage of a case.
+      enum:
+        - NOT_STARTED
+        - ACTIVE
+        - COMPLETED
+        - TERMINATED

@@ -107,6 +107,15 @@ public final class SearchQueryBuilders {
     return fn.apply(formSearchQuery()).build();
   }
 
+  public static CaseQuery.Builder caseSearchQuery() {
+    return new CaseQuery.Builder();
+  }
+
+  public static CaseQuery caseSearchQuery(
+      final Function<CaseQuery.Builder, ObjectBuilder<CaseQuery>> fn) {
+    return fn.apply(caseSearchQuery()).build();
+  }
+
   public static VariableHistoryItemQuery.Builder variableHistoryItemSearchQuery() {
     return new VariableHistoryItemQuery.Builder();
   }
