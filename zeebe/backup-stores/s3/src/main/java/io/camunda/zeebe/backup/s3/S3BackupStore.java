@@ -25,7 +25,6 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
-import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
@@ -52,6 +51,7 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -128,8 +128,7 @@ public final class S3BackupStore implements BackupStore {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
-    replicationAwaiter =
-        config.waitForReplication() ? new ReplicationAwaiter(client, config) : null;
+    replicationAwaiter = ReplicationAwaiter.of(client, config);
     final var basePath = config.basePath();
     final var basePrefix = basePath.map(base -> base + "/").map(Pattern::quote).orElse("");
     final var identifierSuffix =
@@ -267,21 +266,16 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<ValidBackupManifest> saveContents(final Backup backup) {
-    if (replicationAwaiter == null) {
-      return uploadContents(backup).thenComposeAsync(this::markCompleted);
-    }
-
-    final var awaiter = replicationAwaiter;
     return uploadContents(backup)
         .thenComposeAsync(
             contents -> {
-              final var deadline = awaiter.deadline();
-              return awaiter
+              final var deadline = replicationAwaiter.deadline();
+              return replicationAwaiter
                   .awaitReplication(contents.objectKeys(), deadline)
                   .thenComposeAsync(ignored -> markCompleted(contents))
                   .thenComposeAsync(
                       completed ->
-                          awaiter
+                          replicationAwaiter
                               .awaitReplication(List.of(manifestKey(completed)), deadline)
                               .thenApply(ignored -> completed));
             });
@@ -309,7 +303,7 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
-    return readManifestForStatus(id).thenApply(this::reportedStatus);
+    return readStatus(id);
   }
 
   /**
@@ -613,14 +607,12 @@ public final class S3BackupStore implements BackupStore {
     }
     final var selected = candidates.subList(0, Math.min(remaining, candidates.size()));
     return resolveIdentifiers(wildcard, keys, selected)
-        .thenCompose(this::readManifestObjects)
+        .thenCompose(this::readStatuses)
         .thenCompose(
-            manifests -> {
+            read -> {
               final var existing =
-                  manifests.stream()
-                      .filter(
-                          read -> read.manifest().statusCode() != BackupStatusCode.DOES_NOT_EXIST)
-                      .map(this::reportedStatus)
+                  read.stream()
+                      .filter(status -> status.statusCode() != BackupStatusCode.DOES_NOT_EXIST)
                       .toList();
               statuses.addAll(existing);
               // Legacy prefixes may have no matching broker or only content left after deletion.
@@ -693,11 +685,10 @@ public final class S3BackupStore implements BackupStore {
         .thenApply(ignored -> members);
   }
 
-  private CompletableFuture<List<ReadManifest>> readManifestObjects(
-      final List<BackupIdentifier> ids) {
-    final var manifests = new AsyncAggregatingSubscriber<ReadManifest>(SCAN_PARALLELISM);
-    SdkPublisher.fromIterable(ids).map(this::readManifestForStatus).subscribe(manifests);
-    return manifests.result().thenApply(List::copyOf);
+  private CompletableFuture<List<BackupStatus>> readStatuses(final List<BackupIdentifier> ids) {
+    final var statuses = new AsyncAggregatingSubscriber<BackupStatus>(SCAN_PARALLELISM);
+    SdkPublisher.fromIterable(ids).map(this::readStatus).subscribe(statuses);
+    return statuses.result().thenApply(List::copyOf);
   }
 
   /** Requests the pages of a listing one after another and hands each page to the consumer. */
@@ -783,61 +774,23 @@ public final class S3BackupStore implements BackupStore {
   }
 
   CompletableFuture<Manifest> readManifestObject(final BackupIdentifier id) {
-    return readManifestWithReplicationStatus(id).thenApply(ReadManifest::manifest);
+    return readManifest(id, (manifest, replicationStatus) -> manifest);
   }
 
   /**
-   * The status reported to readers. With {@code waitForReplication}, a completed manifest that has
-   * not replicated yet is reported as in progress, and one whose replication failed as failed: the
-   * backup only counts as completed once the replica site has its completed manifest too. Manifests
-   * without a replication status, for example ones written before replication was set up, are
-   * reported as they are.
+   * Reads the status of a backup as reported to readers. The bucket returns the manifest's
+   * replication status on the same request, so taking replication into account costs nothing extra.
    */
-  private BackupStatus reportedStatus(final ReadManifest read) {
-    final var status = read.manifest().toStatus();
-    if (replicationAwaiter == null
-        || status.statusCode() != BackupStatusCode.COMPLETED
-        || read.replicationStatus().isEmpty()) {
-      return status;
-    }
-    return switch (read.replicationStatus().get()) {
-      case COMPLETED, COMPLETE, REPLICA -> status;
-      case FAILED ->
-          withStatus(
-              status,
-              BackupStatusCode.FAILED,
-              Optional.of("The backup's manifest failed to replicate to the replica site."));
-      default -> withStatus(status, BackupStatusCode.IN_PROGRESS, Optional.empty());
-    };
+  CompletableFuture<BackupStatus> readStatus(final BackupIdentifier id) {
+    return readManifest(
+        id,
+        (manifest, replicationStatus) ->
+            replicationAwaiter.reportedStatus(manifest.toStatus(), replicationStatus));
   }
 
-  private static BackupStatus withStatus(
-      final BackupStatus status,
-      final BackupStatusCode statusCode,
-      final Optional<String> failureReason) {
-    return new BackupStatusImpl(
-        status.id(),
-        status.descriptor(),
-        statusCode,
-        failureReason,
-        status.created(),
-        status.lastModified());
-  }
-
-  /**
-   * Reads a manifest for reporting its status. The replication status the bucket reports for it is
-   * only needed, and only read, when waiting for replication.
-   */
-  private CompletableFuture<ReadManifest> readManifestForStatus(final BackupIdentifier id) {
-    if (replicationAwaiter == null) {
-      return readManifestObject(id)
-          .thenApply(manifest -> new ReadManifest(manifest, Optional.empty()));
-    }
-    return readManifestWithReplicationStatus(id);
-  }
-
-  private CompletableFuture<ReadManifest> readManifestWithReplicationStatus(
-      final BackupIdentifier id) {
+  private <T> CompletableFuture<T> readManifest(
+      final BackupIdentifier id,
+      final BiFunction<Manifest, Optional<ReplicationStatus>, T> mapper) {
     return findManifestForBackup(id)
         .thenApply(
             response -> {
@@ -847,7 +800,7 @@ public final class S3BackupStore implements BackupStore {
                     (Manifest)
                         MAPPER.readValue(response.asInputStream(), ValidBackupManifest.class);
                 final var getResponse = response.response();
-                return new ReadManifest(
+                return mapper.apply(
                     manifest,
                     Optional.ofNullable(getResponse).map(GetObjectResponse::replicationStatus));
               } catch (final IOException e) {
@@ -865,7 +818,7 @@ public final class S3BackupStore implements BackupStore {
               // throwable is a `CompletionException`, `getCause` to handle the underlying exception
               if (throwable.getCause() instanceof NoSuchKeyException) {
                 LOG.atTrace().addKeyValue("backup", id).setMessage("Found no manifest").log();
-                return new ReadManifest(
+                return mapper.apply(
                     new NoBackupManifest(BackupIdentifierImpl.from(id)), Optional.empty());
               } else if (throwable.getCause() instanceof final S3BackupStoreException e) {
                 LOG.atError()
@@ -1018,9 +971,8 @@ public final class S3BackupStore implements BackupStore {
       BackupIdentifier id, String contentsPrefix, FileSet snapshotFiles, FileSet segmentFiles) {
     List<String> objectKeys() {
       return Stream.concat(
-              snapshotFiles.names().stream().map(name -> SNAPSHOT_PREFIX + name),
-              segmentFiles.names().stream().map(name -> SEGMENTS_PREFIX + name))
-          .map(name -> contentsPrefix + name)
+              FileSetManager.objectKeys(contentsPrefix + SNAPSHOT_PREFIX, snapshotFiles),
+              FileSetManager.objectKeys(contentsPrefix + SEGMENTS_PREFIX, segmentFiles))
           .toList();
     }
   }
@@ -1035,7 +987,4 @@ public final class S3BackupStore implements BackupStore {
       this.name = name;
     }
   }
-
-  /** A manifest as read from the bucket, with the replication status the bucket reported for it. */
-  private record ReadManifest(Manifest manifest, Optional<ReplicationStatus> replicationStatus) {}
 }
