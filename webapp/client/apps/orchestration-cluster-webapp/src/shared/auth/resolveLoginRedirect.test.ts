@@ -19,6 +19,13 @@ describe('resolveLoginRedirect', () => {
 		expect(resolveLoginRedirect(at('/tasklist/processes')).to).toBe('/tasklist/login');
 	});
 
+	it('should send DS Operate pages to the Operate login and preserve the requested URL', () => {
+		expect(resolveLoginRedirect(at('/operate/decisions/123?tenantId=a'))).toEqual({
+			to: '/operate/login',
+			search: {redirect: '/operate/decisions/123?tenantId=a'},
+		});
+	});
+
 	it('should preserve the requested URL so login can return to it', () => {
 		expect(resolveLoginRedirect(at('/admin/users?page=2'))).toEqual({
 			to: '/admin/login',
@@ -41,7 +48,7 @@ describe('resolveLoginRedirect', () => {
 
 	it('should omit the redirect outside any known app, which no login page would accept', () => {
 		expect(resolveLoginRedirect(at('/')).search).toEqual({});
-		expect(resolveLoginRedirect(at('/operate/processes')).search).toEqual({});
+		expect(resolveLoginRedirect(at('/operate-preview/processes')).search).toEqual({});
 	});
 });
 

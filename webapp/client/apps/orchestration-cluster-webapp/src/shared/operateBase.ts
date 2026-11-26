@@ -8,4 +8,6 @@
 
 const OPERATE_BASE = '/operate-preview' as const;
 
-export {OPERATE_BASE};
+const OPERATE_DECISIONS_BASE = '/operate/decisions' as const;
+
+export {OPERATE_BASE, OPERATE_DECISIONS_BASE};

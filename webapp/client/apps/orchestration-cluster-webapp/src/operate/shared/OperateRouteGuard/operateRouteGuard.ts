@@ -1,0 +1,25 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import type {QueryClient} from '@tanstack/react-query';
+import {assertComponentAccessible} from '#/shared/componentAccess';
+import {queries} from '#/shared/http/queries';
+import {OperateNotFound, OperateRouteError} from './OperateRouteStates';
+
+async function assertOperateAccessible({context: {queryClient}}: {context: {queryClient: QueryClient}}) {
+	const {authorizedComponents} = await queryClient.ensureQueryData(queries.getCurrentUser());
+	assertComponentAccessible('operate', authorizedComponents);
+}
+
+const operateRouteGuard = {
+	beforeLoad: assertOperateAccessible,
+	errorComponent: OperateRouteError,
+	notFoundComponent: OperateNotFound,
+};
+
+export {operateRouteGuard};

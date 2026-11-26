@@ -16,9 +16,9 @@ import {
 import {DateTimeRangeField} from '#/operate/shared/DateTimeRangeField/shadcn.components/DateTimeRangeField';
 import {mergeValidators} from '#/operate/shared/utils/mergeValidators';
 import {
-	validateIdsCharacters,
-	validateIdsLength,
-	validatesIdsComplete,
+	validateDecisionIdsCharacters,
+	validateDecisionIdsLength,
+	validatesDecisionIdsComplete,
 	validateParentInstanceIdCharacters,
 	validateParentInstanceIdComplete,
 	validateParentInstanceIdNotTooLong,
@@ -44,7 +44,11 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 				type: 'multiline',
 				placeholder: t('operate.decisions.filters.decisionInstanceKeyPlaceholder'),
 				rows: 1,
-				validate: mergeValidators(validateIdsCharacters, validateIdsLength, validatesIdsComplete),
+				validate: mergeValidators(
+					validateDecisionIdsCharacters,
+					validateDecisionIdsLength,
+					validatesDecisionIdsComplete,
+				),
 			},
 			{
 				id: 'processInstanceKey',

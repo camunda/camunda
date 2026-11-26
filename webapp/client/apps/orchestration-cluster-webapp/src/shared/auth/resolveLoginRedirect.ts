@@ -13,8 +13,9 @@ type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 
 const TASKLIST_LOGIN = {home: '/tasklist', login: '/tasklist/login'} as const;
 const ADMIN_LOGIN = {home: '/admin', login: '/admin/login'} as const;
+const OPERATE_LOGIN = {home: '/operate', login: '/operate/login'} as const;
 
-const APP_LOGINS = [ADMIN_LOGIN, TASKLIST_LOGIN] as const satisfies ReadonlyArray<{
+const APP_LOGINS = [ADMIN_LOGIN, OPERATE_LOGIN, TASKLIST_LOGIN] as const satisfies ReadonlyArray<{
 	home: FileRouteTypes['to'];
 	login: FileRouteTypes['to'];
 }>;

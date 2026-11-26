@@ -22,7 +22,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {validateDecisionsSearch} from '../decisionsSearch';
 import {DecisionFilters} from './DecisionFilters';
 
-const PATH = '/operate-preview/decisions';
+const PATH = '/operate/decisions';
 
 const Harness = () => {
 	const search = validateDecisionsSearch(useSearch({strict: false}));
@@ -112,11 +112,11 @@ describe('<DecisionFilters /> (design system)', () => {
 		await expect.element(screen.getByLabelText('Name')).not.toHaveTextContent('Invoice');
 	});
 
-	it('should clear the version when a different decision is selected', async ({worker}) => {
+	it('should select the latest version when a different decision is selected', async ({worker}) => {
 		worker.use(
 			mockDefinitions([
 				INVOICE_V1,
-				createDecisionDefinition({decisionDefinitionId: 'order', name: 'Order', version: 1}),
+				createDecisionDefinition({decisionDefinitionId: 'order', name: 'Order', version: 3}),
 			]),
 		);
 		const screen = await renderWithRouter(Harness, {
@@ -127,8 +127,30 @@ describe('<DecisionFilters /> (design system)', () => {
 		await userEvent.click(screen.getByLabelText('Name'));
 		await userEvent.click(screen.getByRole('option', {name: 'Order'}));
 
-		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionId: 'order'});
-		expect(screen.router.state.location.search).not.toHaveProperty('decisionDefinitionVersion');
+		await expect
+			.poll(() => screen.router.state.location.search)
+			.toMatchObject({decisionDefinitionId: 'order', decisionDefinitionVersion: 3});
+	});
+
+	it('should keep all versions when the same decision has different latest versions across tenants', async ({
+		worker,
+	}) => {
+		worker.use(
+			mockDefinitions([
+				INVOICE_V1,
+				createDecisionDefinition({decisionDefinitionId: 'order', name: 'Order', version: 3, tenantId: 'tenant-a'}),
+				createDecisionDefinition({decisionDefinitionId: 'order', name: 'Order', version: 5, tenantId: 'tenant-b'}),
+			]),
+		);
+		const screen = await renderWithRouter(Harness, {
+			path: PATH,
+			initialEntry: `${PATH}?decisionDefinitionId=invoice&decisionDefinitionVersion=1`,
+		});
+
+		await userEvent.click(screen.getByLabelText('Name'));
+		await userEvent.click(screen.getByRole('option', {name: 'Order'}));
+
+		await expect.poll(() => screen.router.state.location.search).toEqual({decisionDefinitionId: 'order'});
 	});
 
 	it('should list versions newest first, including a selected version missing from the loaded definitions', async ({

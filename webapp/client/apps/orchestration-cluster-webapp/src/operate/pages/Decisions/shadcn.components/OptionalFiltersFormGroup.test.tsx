@@ -106,6 +106,15 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 		await expect.element(screen.getByLabelText('Process instance key')).toHaveAttribute('aria-invalid', 'true');
 	});
 
+	it('should accept a composite decision instance key', async () => {
+		const screen = await render(<Harness initialVisible={['decisionEvaluationInstanceKey']} />);
+
+		await userEvent.fill(screen.getByLabelText('Decision instance key(s)'), '2251799813684367-1');
+		await userEvent.tab();
+
+		await expect.element(screen.getByLabelText('Decision instance key(s)')).not.toHaveAttribute('aria-invalid', 'true');
+	});
+
 	it('should remove a filter, clear its value and submit', async () => {
 		const onSubmit = vi.fn();
 		const screen = await render(

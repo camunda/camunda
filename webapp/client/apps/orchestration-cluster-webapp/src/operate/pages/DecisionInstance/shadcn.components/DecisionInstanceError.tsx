@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {OPERATE_BASE} from '#/shared/operateBase';
 import {useEffect, useRef} from 'react';
 import {useLocation, useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
@@ -45,7 +44,7 @@ const DecisionInstanceError: React.FC<Props> = ({error, decisionInstanceId, onRe
 			autoRemove: false,
 		});
 		void navigate({
-			to: `${OPERATE_BASE}/decisions` as const,
+			to: '/operate/decisions',
 			search: {evaluated: true, failed: true},
 			replace: true,
 			state: (state) => ({

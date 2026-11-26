@@ -41,7 +41,7 @@ const DecisionFilters: React.FC<Props> = ({
 }) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
-	const {decisionOptions, versions} = useDecisionFilterOptions({
+	const {decisionOptions, versions, latestVersions} = useDecisionFilterOptions({
 		decisionDefinitionId,
 		decisionDefinitionVersion,
 		tenantId,
@@ -84,7 +84,8 @@ const DecisionFilters: React.FC<Props> = ({
 									search: (prev) => ({
 										...prev,
 										decisionDefinitionId: value,
-										decisionDefinitionVersion: value === decisionDefinitionId ? decisionDefinitionVersion : undefined,
+										decisionDefinitionVersion:
+											value === decisionDefinitionId ? decisionDefinitionVersion : latestVersions.get(value ?? ''),
 									}),
 								});
 							}}

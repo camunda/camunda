@@ -66,7 +66,20 @@ function useDecisionFilterOptions({decisionDefinitionId, decisionDefinitionVersi
 		return [...versionSet].sort((a, b) => b - a);
 	}, [definitions, decisionDefinitionId, decisionDefinitionVersion]);
 
-	return {decisionOptions, versions};
+	const latestVersions = useMemo(() => {
+		const byId = new Map<string, number>();
+		const ambiguousIds = new Set<string>();
+		for (const {decisionDefinitionId: id, version} of definitionsQuery.data ?? []) {
+			if (byId.has(id) && byId.get(id) !== version) {
+				ambiguousIds.add(id);
+			}
+			byId.set(id, version);
+		}
+		ambiguousIds.forEach((id) => byId.delete(id));
+		return byId;
+	}, [definitionsQuery.data]);
+
+	return {decisionOptions, versions, latestVersions};
 }
 
 export {useDecisionFilterOptions};

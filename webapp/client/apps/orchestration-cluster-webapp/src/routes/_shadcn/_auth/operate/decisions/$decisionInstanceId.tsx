@@ -19,7 +19,7 @@ import {getHeaderColumns} from '#/operate/pages/DecisionInstance/shadcn.componen
 import {decisionInstanceQuery} from '#/operate/pages/DecisionInstance/decisionInstance.queries';
 import {InstanceHeaderSkeleton} from '#/operate/shared/InstanceHeader/shadcn.components/InstanceHeaderSkeleton';
 
-export const Route = createFileRoute('/_shadcn/_auth/operate-preview/decisions/$decisionInstanceId')({
+export const Route = createFileRoute('/_shadcn/_auth/operate/decisions/$decisionInstanceId')({
 	loader: ({context: {queryClient}, params: {decisionInstanceId}}) =>
 		queryClient.ensureQueryData(decisionInstanceQuery(decisionInstanceId)),
 	head: ({loaderData, params: {decisionInstanceId}}) => ({
