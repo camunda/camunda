@@ -11,6 +11,7 @@ import io.camunda.zeebe.backup.client.api.BackupApi;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
 import io.camunda.zeebe.backup.client.api.PartitionBackupStatus;
 import io.camunda.zeebe.backup.client.api.State;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.util.Collection;
@@ -69,73 +70,93 @@ public final class CommonBackupPositionSource implements BackedUpPositionSource 
     }
     return backupApi
         .getCheckpointState(physicalTenantId)
-        .thenCompose(
-            response -> {
-              final var partitions = partitionsOfTenant.get();
-              if (partitions.isEmpty()) {
-                return CompletableFuture.completedFuture(OptionalLong.empty());
-              }
+        .thenCompose(this::resolveFromCheckpointState);
+  }
 
-              final var backupsByPartition = indexByPartition(response.getBackupStates());
-              long minCheckpointId = Long.MAX_VALUE;
-              long maxCheckpointId = Long.MIN_VALUE;
-              for (final int partition : partitions) {
-                final var backup = backupsByPartition.get(partition);
-                if (backup == null) {
-                  confirmed = null;
-                  return CompletableFuture.completedFuture(OptionalLong.of(-1));
-                }
-                final long checkpointId = backup.checkpointId();
-                minCheckpointId = Math.min(minCheckpointId, checkpointId);
-                maxCheckpointId = Math.max(maxCheckpointId, checkpointId);
-              }
+  private CompletionStage<OptionalLong> resolveFromCheckpointState(
+      final CheckpointStateResponse response) {
+    final var partitions = partitionsOfTenant.get();
+    if (partitions.isEmpty()) {
+      return CompletableFuture.completedFuture(OptionalLong.empty());
+    }
 
-              final var ownBackup = backupsByPartition.get(partitionId);
-              if (ownBackup == null) {
-                confirmed = null;
-                return CompletableFuture.completedFuture(OptionalLong.of(-1));
-              }
+    final var backupsByPartition = indexByPartition(response.getBackupStates());
+    final var bounds = checkpointBounds(backupsByPartition, partitions);
+    if (bounds == null) {
+      confirmed = null;
+      return CompletableFuture.completedFuture(OptionalLong.of(-1));
+    }
 
-              if (minCheckpointId == maxCheckpointId) {
-                final long ownPosition = ownBackup.checkpointPosition();
-                confirmed = new ConfirmedBackup(minCheckpointId, ownPosition);
-                return CompletableFuture.completedFuture(OptionalLong.of(ownPosition));
-              }
+    if (bounds.unanimous()) {
+      return confirmUnanimousBackup(bounds.min(), backupsByPartition);
+    }
+    return confirmCandidateBackup(bounds.min(), partitions);
+  }
 
-              final var previous = confirmed;
-              if (previous != null && previous.checkpointId() == minCheckpointId) {
-                return CompletableFuture.completedFuture(OptionalLong.of(previous.position()));
-              }
+  private CompletionStage<OptionalLong> confirmUnanimousBackup(
+      final long checkpointId, final Map<Integer, PartitionCheckpointState> backupsByPartition) {
+    final var ownBackup = backupsByPartition.get(partitionId);
+    if (ownBackup == null) {
+      confirmed = null;
+      return CompletableFuture.completedFuture(OptionalLong.of(-1));
+    }
+    final long ownPosition = ownBackup.checkpointPosition();
+    confirmed = new ConfirmedBackup(checkpointId, ownPosition);
+    return CompletableFuture.completedFuture(OptionalLong.of(ownPosition));
+  }
 
-              final long candidate = minCheckpointId;
-              final boolean regressed = previous != null && candidate < previous.checkpointId();
-              return backupApi
-                  .getStatus(physicalTenantId, candidate)
-                  .thenApply(
-                      status -> {
-                        final var position =
-                            ownPositionIfCompletedEverywhere(status, partitionId, partitions);
-                        if (position.isPresent()) {
-                          confirmed = new ConfirmedBackup(candidate, position.getAsLong());
-                          return position;
-                        }
-                        if (regressed) {
-                          confirmed = null;
-                          return OptionalLong.of(-1);
-                        }
-                        return OptionalLong.empty();
-                      });
-            });
+  private CompletionStage<OptionalLong> confirmCandidateBackup(
+      final long candidate, final Collection<Integer> partitions) {
+    final var previous = confirmed;
+    if (previous != null && previous.checkpointId() == candidate) {
+      return CompletableFuture.completedFuture(OptionalLong.of(previous.position()));
+    }
+
+    final boolean regressed = previous != null && candidate < previous.checkpointId();
+    return backupApi
+        .getStatus(physicalTenantId, candidate)
+        .thenApply(status -> applyCandidateStatus(candidate, status, partitions, regressed));
+  }
+
+  private OptionalLong applyCandidateStatus(
+      final long candidate,
+      final BackupStatus status,
+      final Collection<Integer> partitions,
+      final boolean regressed) {
+    final var position = ownPositionIfCompletedEverywhere(status, partitionId, partitions);
+    if (position.isPresent()) {
+      confirmed = new ConfirmedBackup(candidate, position.getAsLong());
+      return position;
+    }
+    if (regressed) {
+      confirmed = null;
+      return OptionalLong.of(-1);
+    }
+    return OptionalLong.empty();
+  }
+
+  private static @Nullable CheckpointBounds checkpointBounds(
+      final Map<Integer, PartitionCheckpointState> backupsByPartition,
+      final Collection<Integer> partitions) {
+    long min = Long.MAX_VALUE;
+    long max = Long.MIN_VALUE;
+    for (final int partition : partitions) {
+      final var backup = backupsByPartition.get(partition);
+      if (backup == null) {
+        return null;
+      }
+      final long checkpointId = backup.checkpointId();
+      min = Math.min(min, checkpointId);
+      max = Math.max(max, checkpointId);
+    }
+    return new CheckpointBounds(min, max);
   }
 
   private static Map<Integer, PartitionCheckpointState> indexByPartition(
       final Set<PartitionCheckpointState> latestBackups) {
     final var byPartition = new HashMap<Integer, PartitionCheckpointState>(latestBackups.size());
     for (final var backup : latestBackups) {
-      byPartition.merge(
-          backup.partitionId(),
-          backup,
-          (first, second) -> first.checkpointId() >= second.checkpointId() ? first : second);
+      byPartition.put(backup.partitionId(), backup);
     }
     return byPartition;
   }
@@ -163,6 +184,12 @@ public final class CommonBackupPositionSource implements BackedUpPositionSource 
         .filter(OptionalLong::isPresent)
         .mapToLong(OptionalLong::getAsLong)
         .findFirst();
+  }
+
+  private record CheckpointBounds(long min, long max) {
+    boolean unanimous() {
+      return min == max;
+    }
   }
 
   private record ConfirmedBackup(long checkpointId, long position) {}
