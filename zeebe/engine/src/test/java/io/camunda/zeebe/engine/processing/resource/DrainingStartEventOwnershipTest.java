@@ -113,6 +113,40 @@ public class DrainingStartEventOwnershipTest {
     assertNotStartedByTrigger(Set.of(v1Key, v2Key));
   }
 
+  @Test
+  public void shouldCloseStartEventOfOlderVersionWhenDrainingVersionLacksIt() {
+    // given - v2 has no such start event, so v1 got it back when v2 started draining
+    final var processId = Strings.newRandomValidBpmnId();
+    final long v1Key = deploy(processId, "task-v1");
+    final long v2Key = deployWithoutTriggeredStart(processId, "task-v2");
+    createInstanceAndAwaitJob(processId, 2);
+    deleteAndAwait(v2Key, ProcessIntent.DRAINING);
+
+    // when
+    final long v3Key = deploy(processId, "task-v3");
+    startEventType.trigger(engine, processId);
+
+    // then - only the new version holds the start event
+    assertThat(startedByTrigger(v3Key)).describedAs("v3 is started by the trigger").isTrue();
+    assertNotStartedByTrigger(Set.of(v1Key));
+  }
+
+  private long deployWithoutTriggeredStart(final String processId, final String taskId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent(NONE_START_ID)
+                .serviceTask(taskId, t -> t.zeebeJobType(JOB_TYPE))
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .getFirst()
+        .getProcessDefinitionKey();
+  }
+
   // A none start event creates the instances that keep a version draining. Each version gets a
   // distinct task id so every deployment creates a new version.
   private long deploy(final String processId, final String taskId) {
