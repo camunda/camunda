@@ -46,6 +46,8 @@ extensions.configure<SpotlessExtension> {
           "**/target/**",
           "**/node_modules/**",
           "**/build/**",
+          "**/.gradle/**",
+          ".claude/worktrees/**",
           "operate/client/**",
           "webapp/client/**",
         )
