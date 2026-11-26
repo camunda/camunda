@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -26,7 +26,7 @@ import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public class MappingRuleUpdateProcessor
-    implements DistributedTypedRecordProcessor<MappingRuleRecord> {
+    extends AbstractIdentityCommandProcessor<MappingRuleRecord> {
   private static final String MAPPING_RULE_NULL_VALUE_ERROR_MESSAGE =
       "Expected to update mapping rule with claimName '%s' and claimValue '%s' and name '%s' and mappingRuleId '%s', but at least one of them is null.";
   private static final String MAPPING_RULE_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE =
@@ -47,7 +47,9 @@ public class MappingRuleUpdateProcessor
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     this.mappingRuleState = mappingRuleState;
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
@@ -58,7 +60,7 @@ public class MappingRuleUpdateProcessor
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<MappingRuleRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<MappingRuleRecord> command) {
 
     final var record = command.getValue();
     final var mappingRuleId = record.getMappingRuleId();

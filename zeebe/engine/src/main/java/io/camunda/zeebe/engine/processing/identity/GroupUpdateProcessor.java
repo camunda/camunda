@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -26,7 +26,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
+public class GroupUpdateProcessor extends AbstractIdentityCommandProcessor<GroupRecord> {
 
   private final GroupState groupState;
   private final KeyGenerator keyGenerator;
@@ -41,7 +41,9 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       final KeyGenerator keyGenerator,
       final PermissionsBehavior permissionsBehavior,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     this.groupState = groupState;
     this.keyGenerator = keyGenerator;
     this.permissionsBehavior = permissionsBehavior;
@@ -52,7 +54,7 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<GroupRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
     final var groupId = record.getGroupId();
 

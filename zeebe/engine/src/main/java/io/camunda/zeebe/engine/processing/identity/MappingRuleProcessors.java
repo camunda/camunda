@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -26,6 +27,8 @@ public class MappingRuleProcessors {
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
+    final var policyUpdateBehavior =
+        new PolicyUpdateBehavior(processingState.getPolicyUpdateState(), writers.state());
     final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
     typedRecordProcessors.onCommand(
         ValueType.MAPPING_RULE,
@@ -35,7 +38,8 @@ public class MappingRuleProcessors {
             permissionsBehavior,
             keyGenerator,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            policyUpdateBehavior));
     typedRecordProcessors.onCommand(
         ValueType.MAPPING_RULE,
         MappingRuleIntent.DELETE,
@@ -44,7 +48,8 @@ public class MappingRuleProcessors {
             permissionsBehavior,
             keyGenerator,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            policyUpdateBehavior));
     typedRecordProcessors.onCommand(
         ValueType.MAPPING_RULE,
         MappingRuleIntent.UPDATE,
@@ -53,6 +58,7 @@ public class MappingRuleProcessors {
             permissionsBehavior,
             keyGenerator,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            policyUpdateBehavior));
   }
 }

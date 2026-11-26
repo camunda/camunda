@@ -121,6 +121,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -161,10 +162,12 @@ public class CommandDistributionIdempotencyTest {
       new HashSet<>(
           ReflectionSupport.findAllClassesInPackage(
               "io.camunda.zeebe.engine.processing",
-              c -> {
-                final var interfaces = c.getInterfaces();
-                return Arrays.asList(interfaces).contains(DistributedTypedRecordProcessor.class);
-              },
+              // also the processors that extend an abstract distributed processor, like the
+              // identity processors
+              c ->
+                  DistributedTypedRecordProcessor.class.isAssignableFrom(c)
+                      && !c.isInterface()
+                      && !Modifier.isAbstract(c.getModifiers()),
               ignored -> true));
 
   @Rule

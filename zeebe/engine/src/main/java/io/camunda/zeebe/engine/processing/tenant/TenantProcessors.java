@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -31,6 +32,8 @@ public class TenantProcessors {
       final EngineSecurityConfig securityConfig,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter,
       final MembershipStateAdapter membershipStateAdapter) {
+    final var policyUpdateBehavior =
+        new PolicyUpdateBehavior(processingState.getPolicyUpdateState(), writers.state());
     typedRecordProcessors
         .onCommand(
             ValueType.TENANT,
@@ -40,7 +43,8 @@ public class TenantProcessors {
                 permissionsBehavior,
                 keyGenerator,
                 writers,
-                commandDistributionBehavior))
+                commandDistributionBehavior,
+                policyUpdateBehavior))
         .onCommand(
             ValueType.TENANT,
             TenantIntent.UPDATE,
@@ -49,7 +53,8 @@ public class TenantProcessors {
                 permissionsBehavior,
                 keyGenerator,
                 writers,
-                commandDistributionBehavior))
+                commandDistributionBehavior,
+                policyUpdateBehavior))
         .onCommand(
             ValueType.TENANT,
             TenantIntent.ADD_ENTITY,
@@ -60,7 +65,8 @@ public class TenantProcessors {
                 writers,
                 commandDistributionBehavior,
                 securityConfig,
-                membershipStateAdapter))
+                membershipStateAdapter,
+                policyUpdateBehavior))
         .onCommand(
             ValueType.TENANT,
             TenantIntent.REMOVE_ENTITY,
@@ -70,7 +76,8 @@ public class TenantProcessors {
                 keyGenerator,
                 writers,
                 commandDistributionBehavior,
-                membershipStateAdapter))
+                membershipStateAdapter,
+                policyUpdateBehavior))
         .onCommand(
             ValueType.TENANT,
             TenantIntent.DELETE,
@@ -81,6 +88,7 @@ public class TenantProcessors {
                 writers,
                 commandDistributionBehavior,
                 authorizationScopeStateAdapter,
-                membershipStateAdapter));
+                membershipStateAdapter,
+                policyUpdateBehavior));
   }
 }
