@@ -63,7 +63,9 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
     final var resourceIdsByType = resourceAccessChecks.getAuthorizedResourceIdsByType();
     final var processDefinitionIds =
         resourceIdsByType.getOrDefault(PROCESS_DEFINITION.name(), List.of());
-    final var userTaskKeys = resourceIdsByType.getOrDefault(USER_TASK.name(), List.of());
+    // resource IDs that are not numbers cannot match a user task key and are dropped
+    final var userTaskKeys =
+        NumberParsingUtil.parseLongs(resourceIdsByType.getOrDefault(USER_TASK.name(), List.of()));
 
     // Property-based authorization
     final var userTaskPropertyNames =
@@ -73,10 +75,11 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
     final var authorizationProperties =
         resolveAuthorizationProperties(userTaskPropertyNames, resourceAccessChecks);
 
-    // Property grants that resolve to no value for this caller (e.g. no username or no groups)
-    // grant nothing. Without any other grant, no authorization predicate would be rendered and the
-    // query would be unrestricted, so fail closed like the Elasticsearch/OpenSearch search does.
-    if (!userTaskPropertyNames.isEmpty()
+    // Grants can match no user task: property grants that resolve to no value for this caller
+    // (e.g. no username or no groups) and user task IDs that are not numbers. Without any other
+    // grant, no authorization predicate would be rendered and the query would be unrestricted, so
+    // fail closed like the Elasticsearch/OpenSearch search does.
+    if (resourceAccessChecks.authorizationCheck().enabled()
         && processDefinitionIds.isEmpty()
         && userTaskKeys.isEmpty()
         && !authorizationProperties.hasAnyProperty()) {
@@ -89,7 +92,7 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
             b ->
                 b.filter(query.filter())
                     .authorizedProcessDefinitionIds(processDefinitionIds)
-                    .authorizedUserTaskKeys(NumberParsingUtil.parseLongs(userTaskKeys))
+                    .authorizedUserTaskKeys(userTaskKeys)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .authorizationProperties(authorizationProperties)
                     .sort(dbSort)

@@ -54,6 +54,10 @@ class UserTaskCandidateGroupAuthorizationIT {
   private static final String PROCESS_ID_WITH_GROUP_NAME = "processWithGroupName";
   private static final String USER_IN_MIGRATED_GROUP = "userInMigratedGroup";
   private static final String USER_WITHOUT_GROUP = "userWithoutGroup";
+  private static final String USER_WITH_NON_NUMERIC_TASK_ID = "userWithNonNumericTaskId";
+  private static final String USER_WITH_NON_NUMERIC_TASK_ID_AND_NO_GROUP =
+      "userWithNonNumericTaskIdAndNoGroup";
+  private static final String NON_NUMERIC_TASK_ID = "abc";
 
   // Simulating 8.7→8.8 migration: groupId is slugified, name is the original
   private static final String GROUP_ID = "front_support_retail_ch"; // slugified ID
@@ -75,6 +79,25 @@ class UserTaskCandidateGroupAuthorizationIT {
           "password",
           List.of(
               // the only permission is property-based, and the user is a member of no group
+              Permissions.withPropertyName(USER_TASK, READ, "candidateGroups")));
+
+  @UserDefinition
+  private static final TestUser USER_WITH_NON_NUMERIC_TASK_ID_USER =
+      new TestUser(
+          USER_WITH_NON_NUMERIC_TASK_ID,
+          "password",
+          List.of(
+              // the authorization API accepts any string as a user task resource ID
+              Permissions.withResourceId(USER_TASK, READ, NON_NUMERIC_TASK_ID)));
+
+  @UserDefinition
+  private static final TestUser USER_WITH_NON_NUMERIC_TASK_ID_AND_NO_GROUP_USER =
+      new TestUser(
+          USER_WITH_NON_NUMERIC_TASK_ID_AND_NO_GROUP,
+          "password",
+          List.of(
+              Permissions.withResourceId(USER_TASK, READ, NON_NUMERIC_TASK_ID),
+              // resolves to nothing, as the user is a member of no group
               Permissions.withPropertyName(USER_TASK, READ, "candidateGroups")));
 
   @GroupDefinition
@@ -141,6 +164,36 @@ class UserTaskCandidateGroupAuthorizationIT {
     final var result = camundaClient.newUserTaskSearchRequest().send().join();
 
     // then - the permission resolves to no group, so nothing is accessible
+    assertThat(result.items()).isEmpty();
+    assertThat(result.page().totalItems()).isZero();
+  }
+
+  @Test
+  void shouldNotFindTasksWhenUserHasOnlyNonNumericUserTaskPermission(
+      @Authenticated(USER_WITH_NON_NUMERIC_TASK_ID) final CamundaClient camundaClient) {
+    // given - a task exists
+    // and - the user's only permission is READ on a user task ID that is not a task key
+
+    // when
+    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+
+    // then - no task has that key, so nothing is accessible
+    assertThat(result.items()).isEmpty();
+    assertThat(result.page().totalItems()).isZero();
+  }
+
+  @Test
+  void shouldNotFindTasksWhenUserHasNonNumericUserTaskPermissionAndNoGroups(
+      @Authenticated(USER_WITH_NON_NUMERIC_TASK_ID_AND_NO_GROUP)
+          final CamundaClient camundaClient) {
+    // given - a task with a candidate group exists
+    // and - the user has READ on a user task ID that is not a task key
+    // and - READ on candidateGroups, without any group membership
+
+    // when
+    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+
+    // then - neither permission matches a task, so nothing is accessible
     assertThat(result.items()).isEmpty();
     assertThat(result.page().totalItems()).isZero();
   }
