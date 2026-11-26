@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -84,7 +85,10 @@ public class AdvancedSearchFilterUtil {
   private static boolean hasUsableValue(final Method getter, final Object filter) {
     try {
       final var operand = getter.invoke(filter);
-      return operand != null && !(operand instanceof final List<?> list && list.isEmpty());
+      // an empty or null-only list is dropped by the mapping and selects nothing; a list that
+      // still holds a value keeps it, as nulls are removed individually
+      return operand != null
+          && !(operand instanceof final List<?> list && list.stream().allMatch(Objects::isNull));
     } catch (final InvocationTargetException | IllegalAccessException e) {
       LOG.error(e.getMessage(), e);
       return false;

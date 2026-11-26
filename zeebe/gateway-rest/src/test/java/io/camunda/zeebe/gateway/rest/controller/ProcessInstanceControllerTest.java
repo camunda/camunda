@@ -1587,6 +1587,41 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class));
   }
 
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{\"$or\": [{\"state\": \"ACTIVE\"}, {}]}",
+        "{\"$or\": [null, {\"state\": \"ACTIVE\"}]}",
+        "{\"state\": \"ACTIVE\", \"$or\": [{}]}",
+        "{\"state\": \"ACTIVE\", \"$or\": [null]}"
+      })
+  void shouldAcceptCancelProcessInstanceBatchOperationWhenACriterionSitsNextToAnEmptyOrBranch(
+      final String filter) {
+    // given - only an $or without any criterion at all is rejected
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    when(processInstanceServices.cancelProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class)))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request = "{\"filter\": %s}".formatted(filter);
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class));
+  }
+
   @Test
   void shouldModifyProcessInstanceBatchOperation() {
     // given
@@ -1934,6 +1969,44 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(expectedBody, JsonCompareMode.STRICT);
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"[{}]", "[null]", "[{}, null]", "[{}, {}]"})
+  void shouldRejectCancelProcessInstanceBatchOperationWhenOrHasNoBranchWithCriteria(
+      final String orBranches) {
+    // given - an OR without any criterion matches every instance, like an empty filter does
+    final var request =
+        """
+        {
+          "filter": { "$or": %s }
+        }"""
+            .formatted(orBranches);
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/process-instances/cancellation"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
   @Test
   void shouldRejectCancelProcessInstanceBatchOperationWithEmptyFilter() {
     // given
@@ -2010,7 +2083,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"{\"$in\": []}", "{\"$in\": [], \"$notIn\": []}"})
+  @ValueSource(strings = {"{\"$in\": []}", "{\"$in\": [], \"$notIn\": []}", "{\"$in\": [null]}"})
   void shouldRejectProcessInstanceBatchOperationWhenAKeyFilterHasNoUsableValue(
       final String keyFilter) {
     // given - the mapping drops an empty list, which would widen the batch
@@ -2081,6 +2154,47 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "instance":"/v2/process-instances/cancellation"
              }"""
             .formatted(property);
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectProcessInstanceBatchOperationWhenAnOrBranchHasANullOnlyInList() {
+    // given - a list holding only null is dropped on mapping like an empty one, so the branch
+    // would match every active instance
+    final var request =
+        """
+        {
+          "filter": {
+            "state": "ACTIVE",
+            "$or": [
+              { "processDefinitionId": { "$in": [null] } }
+            ]
+          }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The filter property 'processDefinitionId' must contain at least one value.",
+                "instance":"/v2/process-instances/cancellation"
+             }""";
 
     // when / then
     webClient
