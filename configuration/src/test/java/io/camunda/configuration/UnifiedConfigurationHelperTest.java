@@ -186,7 +186,7 @@ class UnifiedConfigurationHelperTest {
                 UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
                     NEW_PROPERTY, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES))
         .withMessageContaining("Ambiguous configuration")
-        .withMessageNotContaining("is not set");
+        .withMessageNotContaining("conflicts with the default");
   }
 
   @Test
@@ -206,7 +206,7 @@ class UnifiedConfigurationHelperTest {
                     NEW_PROPERTY, defaultValue, String.class, mode, SINGLE_LEGACY_PROPERTY))
         .withMessageContaining("Ambiguous configuration")
         .withMessageContaining("conflicts")
-        .withMessageContaining("is not set")
+        .withMessageContaining("conflicts with the default")
         .withMessageContaining("Set " + NEW_PROPERTY + "=legacyValue");
   }
 
@@ -228,7 +228,7 @@ class UnifiedConfigurationHelperTest {
                     NumberOfShardsPerIndex.class,
                     mode,
                     SINGLE_LEGACY_PROPERTY))
-        .withMessageContaining("is not set")
+        .withMessageContaining("conflicts with the default")
         .withMessageContaining(NEW_PROPERTY + " to the value of the legacy properties")
         .withMessageNotContaining(NEW_PROPERTY + "=");
   }
@@ -247,7 +247,7 @@ class UnifiedConfigurationHelperTest {
             () ->
                 UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
                     NEW_PROPERTY, "defaultSecret", String.class, mode, SINGLE_LEGACY_PROPERTY))
-        .withMessageContaining("is not set")
+        .withMessageContaining("conflicts with the default")
         .withMessageContaining(NEW_PROPERTY + " to the value of the legacy properties")
         .withMessageNotContaining(NEW_PROPERTY + "=")
         .withMessageNotContaining("legacySecret")

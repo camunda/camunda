@@ -583,18 +583,23 @@ public class UnifiedConfigurationHelper {
                   displayValue(legacyValue, isSensitiveData),
                   String.join(", ", legacyProperties))
               : String.format(
-                  "Ambiguous configuration. The legacy properties %s set '%s', which conflicts with the default '%s' of '%s'. '%s' is not set, so its default was used. Set %s, or remove the legacy properties %s.",
+                  "Ambiguous configuration. The legacy properties %s set '%s', which conflicts with the default '%s' of '%s'. %s, or remove the legacy properties %s.",
                   String.join(", ", legacyProperties),
                   displayValue(legacyValue, isSensitiveData),
                   displayValue(newValue, isSensitiveData),
                   newProperty,
-                  newProperty,
-                  !isSensitiveData && isScalar(legacyValue)
-                      ? newProperty + "=" + legacyValue
-                      : newProperty + " to the value of the legacy properties",
+                  legacyValueHint(newProperty, legacyValue, isSensitiveData),
                   String.join(", ", legacyProperties));
       throw new UnifiedConfigurationException(errorMessage);
     }
+  }
+
+  private static String legacyValueHint(
+      final String newProperty, final Object legacyValue, final boolean isSensitiveData) {
+    if (!isSensitiveData && isScalar(legacyValue)) {
+      return "Set " + newProperty + "=" + legacyValue;
+    }
+    return "Set " + newProperty + " to the value of the legacy properties";
   }
 
   /**

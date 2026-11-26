@@ -67,7 +67,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               .rootCause()
               .hasMessageContaining("Ambiguous configuration")
               .hasMessageContaining("conflicts")
-              .hasMessageContaining("is not set")
+              .hasMessageContaining("conflicts with the default")
               .hasMessageContaining("camunda.data.secondary-storage.type=opensearch");
         });
   }
@@ -88,7 +88,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               assertThat(context.getStartupFailure())
                   .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
                   .rootCause()
-                  .hasMessageContaining("is not set")
+                  .hasMessageContaining("conflicts with the default")
                   .hasMessageContaining(
                       "camunda.data.secondary-storage.elasticsearch.security.enabled=true");
             });
@@ -104,7 +104,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
               .rootCause()
               .hasMessageContaining("Ambiguous configuration")
               .hasMessageContaining("conflicts")
-              .hasMessageContaining("is not set")
+              .hasMessageContaining("conflicts with the default")
               .hasMessageContaining(
                   "camunda.data.secondary-storage.elasticsearch.url=http://some-legacy-url:/1234");
         });
