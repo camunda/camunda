@@ -7,7 +7,16 @@
  */
 
 import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {operateRouteGuard} from '#/operate/shared/OperateRouteGuard/operateRouteGuard';
 
-export const Route = createFileRoute('/_shadcn/_auth/operate-preview/decisions')({
+export const Route = createFileRoute('/_shadcn/_auth/operate/decisions')({
+	...operateRouteGuard,
 	component: () => <Outlet />,
+	head: () => ({
+		meta: [
+			{
+				title: 'Operate - Camunda',
+			},
+		],
+	}),
 });

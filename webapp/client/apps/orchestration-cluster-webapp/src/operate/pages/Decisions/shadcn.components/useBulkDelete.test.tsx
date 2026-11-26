@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {userEvent} from 'vitest/browser';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
@@ -59,7 +60,7 @@ async function renderHarness(props: Partial<HarnessProps> = {}) {
 				<Notifications />
 			</>
 		),
-		{path: '/operate-preview/decisions'},
+		{path: '/operate/decisions'},
 	);
 	return {screen, onDeleted, onDiscard};
 }
@@ -108,6 +109,34 @@ describe('useBulkDelete (shadcn)', () => {
 			.toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
 		expect(onDeleted).toHaveBeenCalledOnce();
+	});
+
+	it('should close the confirmation when the selection is cleared', async () => {
+		const ClearableHarness: React.FC = () => {
+			const [selectedCount, setSelectedCount] = useState(2);
+			return (
+				<>
+					<Harness
+						selectedCount={selectedCount}
+						includedIds={[]}
+						excludedIds={[]}
+						filter={FILTER}
+						onDeleted={vi.fn()}
+						onDiscard={vi.fn()}
+					/>
+					<button type="button" onClick={() => setSelectedCount(0)}>
+						Clear selection
+					</button>
+				</>
+			);
+		};
+		const screen = await renderWithRouter(() => <ClearableHarness />, {path: '/operate/decisions'});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
+		await expect.element(screen.getByRole('alertdialog')).toBeVisible();
+		(screen.getByText('Clear selection').element() as HTMLElement).click();
+
+		await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument();
 	});
 
 	it.for([

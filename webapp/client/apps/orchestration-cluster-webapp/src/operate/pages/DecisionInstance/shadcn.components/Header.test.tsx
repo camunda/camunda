@@ -22,8 +22,8 @@ function renderHeader(isDrdOpen = false) {
 	return renderWithRouter(
 		() => <Header decisionEvaluationInstanceKey={DECISION_INSTANCE_ID} onOpenDrd={() => {}} isDrdOpen={isDrdOpen} />,
 		{
-			path: '/operate-preview/decisions/$decisionInstanceId',
-			initialEntry: `/operate-preview/decisions/${DECISION_INSTANCE_ID}`,
+			path: '/operate/decisions/$decisionInstanceId',
+			initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`,
 		},
 	);
 }
@@ -91,5 +91,65 @@ describe('<Header /> (design system) - process instance and DRD button', () => {
 		await expect
 			.element(screen.getByRole('button', {name: 'Open decision requirements diagram'}))
 			.not.toBeInTheDocument();
+	});
+});
+
+describe('<Header /> (design system) - Business ID and tenant', () => {
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
+	it('should render the Business ID when present', async ({worker}) => {
+		// given
+		enableMultiTenancy();
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER_WITH_TENANTS}),
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(createDecisionInstance({businessId: 'order-12345'})),
+			}),
+		);
+
+		// when
+		const screen = await renderHeader();
+
+		// then
+		await expect.element(screen.getByText('Business ID')).toBeVisible();
+		await expect.element(screen.getByText('order-12345')).toBeVisible();
+	});
+
+	it('should not render a Business ID when it is null', async ({worker}) => {
+		// given
+		enableMultiTenancy();
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER_WITH_TENANTS}),
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(createDecisionInstance({businessId: null})),
+			}),
+		);
+
+		// when
+		const screen = await renderHeader();
+
+		// then
+		await expect.element(screen.getByText('Version')).toBeVisible();
+		await expect.element(screen.getByText('Business ID')).not.toBeInTheDocument();
+	});
+
+	it('should render the tenant name when multi-tenancy is enabled', async ({worker}) => {
+		// given
+		enableMultiTenancy();
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER_WITH_TENANTS}),
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(createDecisionInstance({tenantId: 'tenant-a'})),
+			}),
+		);
+
+		// when
+		const screen = await renderHeader();
+
+		// then
+		await expect.element(screen.getByText('Tenant')).toBeVisible();
+		await expect.element(screen.getByText('Tenant A')).toBeVisible();
 	});
 });

@@ -22,6 +22,7 @@ import {DecisionFilters} from './DecisionFilters';
 import {DecisionPanel} from './DecisionPanel';
 import {InstancesTable} from './InstancesTable';
 import {DecisionOperations} from '../DecisionOperations/shadcn.components/DecisionOperations';
+import {useHideOptionalFiltersRequest} from '#/operate/shared/hooks/useHideOptionalFiltersRequest';
 import {useDecisionDefinitionSelection} from './useDecisionDefinitionSelection';
 
 type FilterFormValues = OptionalFilterValues & {tenantId?: string};
@@ -43,6 +44,7 @@ const Decisions: React.FC<Props> = ({search}) => {
 		}
 	}, [state.operateDecisionFocus]);
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+	useHideOptionalFiltersRequest(() => setVisibleFilters([]));
 	const preservingFormRef = useRef<FormApi<OptionalFilterValues> | null>(null);
 	const selection = useDecisionDefinitionSelection({
 		decisionDefinitionId: search.decisionDefinitionId,
