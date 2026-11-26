@@ -98,14 +98,14 @@ runs:
         echo "Generated $(wc -l < "${TEST_RESULTS_FILE}") test results"
 
     - name: Submit test results
-      uses: camunda/infra-global-github-actions/submit-test-status@main
+      uses: camunda/infra-global-github-actions/submit-test-status@27a95a659819d7317727d64b169fecd9780a11b2 # submit-test-status-1.1.0
       if: ${{ (inputs.detailed_junit_tests == 'true') && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         test_results_file_path: "${{ steps.get-detailed-junit-tests.outputs.test_results_file }}"
         job_name_override: "${{ inputs.job_name }}"
         gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
    ######################## Report build result #############################
-    - uses: camunda/infra-global-github-actions/submit-build-status@main
+    - uses: camunda/infra-global-github-actions/submit-build-status@27a95a659819d7317727d64b169fecd9780a11b2 # submit-build-status-1.4.0
       if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         job_name_override: "${{ inputs.job_name }}"

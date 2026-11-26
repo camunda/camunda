@@ -48,6 +48,10 @@ rules:
         actions/*: ref-pin
         github/*: ref-pin
 
+        # Pin as `@<sha> # <family>-X.Y.Z` so Renovate tracks it; keep above `camunda/*` (first match wins).
+        # We enforce hash-pin here, overriding the `camunda/*` ref-pin below.
+        camunda/infra-global-github-actions/*: hash-pin
+
         # Camunda-owned actions and reusable workflows. Includes:
         #   - camunda/infra-global-github-actions/* (maintained by infra
         #     team; intentionally consumed at @main)
