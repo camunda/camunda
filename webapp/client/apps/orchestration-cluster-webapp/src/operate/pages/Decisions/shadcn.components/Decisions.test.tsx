@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {useSearch} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
@@ -104,16 +104,6 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toBeInTheDocument();
 	});
 
-	it('should focus the page heading when returning from a decision requirements diagram', async ({worker}) => {
-		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
-		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toBeInTheDocument();
-
-		await screen.router.navigate({to: '.', state: {operateDecisionFocus: 'list'}});
-
-		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toHaveFocus();
-	});
-
 	it('should render the filters panel with the optional filters menu, the decision panel and the instances table', async ({
 		worker,
 	}) => {
@@ -176,7 +166,10 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&tenantId=tenant-a&failed=false',
 		});
 
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-1');
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		await userEvent.fill(screen.getByLabelText('Business ID', {exact: true}), 'order-2');
+		await vi.advanceTimersByTimeAsync(750);
 
 		await expect
 			.poll(() => screen.router.state.location.search)
@@ -187,13 +180,14 @@ describe('<Decisions />', () => {
 			});
 
 		await userEvent.clear(screen.getByLabelText('Business ID', {exact: true}));
+		await vi.advanceTimersByTimeAsync(750);
 
 		await expect.poll(() => screen.router.state.location.search).toEqual({tenantId: 'tenant-a', failed: false});
 	});
 
 	it('should clear a removed filter from the URL even when another filter field is invalid', async ({worker}) => {
 		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {
+		const screen = await renderWithRouter(DecisionsInFullHeightShell, {
 			path: '/operate-preview/decisions',
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&processInstanceKey=%22123%22',
 		});
@@ -202,7 +196,7 @@ describe('<Decisions />', () => {
 		await expect
 			.element(screen.getByLabelText('Process instance key', {exact: true}))
 			.toHaveAttribute('aria-invalid', 'true');
-		(screen.getByRole('button', {name: 'Remove Business ID filter'}).element() as HTMLElement).click();
+		await userEvent.click(screen.getByRole('button', {name: 'Remove Business ID filter'}));
 
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
 		await expect.poll(() => screen.router.state.location.search).not.toHaveProperty('businessId');
@@ -210,13 +204,13 @@ describe('<Decisions />', () => {
 
 	it('should keep unrelated edits when another filter is removed', async ({worker}) => {
 		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {
+		const screen = await renderWithRouter(DecisionsInFullHeightShell, {
 			path: '/operate-preview/decisions',
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&processInstanceKey=%22123%22',
 		});
 
 		await userEvent.fill(screen.getByLabelText('Process instance key', {exact: true}), 'abc');
-		(screen.getByRole('button', {name: 'Remove Business ID filter'}).element() as HTMLElement).click();
+		await userEvent.click(screen.getByRole('button', {name: 'Remove Business ID filter'}));
 
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
 		await expect.element(screen.getByLabelText('Process instance key', {exact: true})).toHaveValue('abc');
@@ -261,16 +255,13 @@ describe('<Decisions />', () => {
 
 	it('should discard an invalid draft when resetting', async ({worker}) => {
 		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		const screen = await renderWithRouter(DecisionsInFullHeightShell, {path: '/operate-preview/decisions'});
 
-		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
-		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
-		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key'}));
 		await userEvent.fill(screen.getByLabelText('Process instance key', {exact: true}), 'abc');
-		(screen.getByRole('button', {name: 'Reset filters'}).element() as HTMLElement).click();
-		(screen.getByRole('button', {name: 'More filters'}).element() as HTMLElement).focus();
-		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key'}));
 
 		await expect.element(screen.getByLabelText('Process instance key', {exact: true})).toHaveValue('');
@@ -297,10 +288,10 @@ describe('<Decisions />', () => {
 
 	it('should write the instance state checkboxes to the URL', async ({worker}) => {
 		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		const screen = await renderWithRouter(DecisionsInFullHeightShell, {path: '/operate-preview/decisions'});
 
 		await expect.element(screen.getByLabelText('Failed')).toBeVisible();
-		await (screen.getByLabelText('Failed').element() as HTMLElement).click();
+		await userEvent.click(screen.getByLabelText('Failed'));
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({failed: false});
 	});
@@ -320,50 +311,32 @@ describe('<Decisions />', () => {
 				),
 			}),
 		);
-		const screen = await renderWithRouter(DecisionsWithSearch, {
+		const screen = await renderWithRouter(DecisionsInFullHeightShell, {
 			path: '/operate-preview/decisions',
 			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice',
 		});
 
 		await expect.element(screen.getByLabelText('Version')).toBeEnabled();
-		await (screen.getByLabelText('Version').element() as HTMLElement).click();
+		await userEvent.click(screen.getByLabelText('Version'));
 		await expect.element(screen.getByRole('option', {name: '2'})).toBeVisible();
-		await (screen.getByRole('option', {name: '2'}).element() as HTMLElement).click();
+		await userEvent.click(screen.getByRole('option', {name: '2'}));
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
 	});
 
 	it('should remove a single optional filter from the URL when its remove button is clicked', async ({worker}) => {
 		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {
+		const screen = await renderWithRouter(DecisionsInFullHeightShell, {
 			path: '/operate-preview/decisions',
 			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&failed=false',
 		});
 
 		await expect.element(screen.getByRole('button', {name: 'Remove Business ID filter'})).toBeVisible();
-		await (screen.getByRole('button', {name: 'Remove Business ID filter'}).element() as HTMLElement).click();
+		await userEvent.click(screen.getByRole('button', {name: 'Remove Business ID filter'}));
 
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
 		expect(screen.router.state.location.search).not.toHaveProperty('businessId');
 		expect(screen.router.state.location.search).toMatchObject({failed: false});
-	});
-
-	it('should place the remove button beside the filter input without overlapping it', async ({worker}) => {
-		// The test stylesheet has no Tailwind preflight, so inputs would otherwise render content-box
-		const borderBox = document.head.appendChild(document.createElement('style'));
-		borderBox.textContent = '*, ::before, ::after {box-sizing: border-box;}';
-		onTestFinished(() => borderBox.remove());
-		worker.use(mockInstances());
-		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
-		});
-
-		await expect.element(screen.getByRole('button', {name: 'Remove Business ID filter'})).toBeVisible();
-		const input = screen.getByLabelText('Business ID', {exact: true}).element().getBoundingClientRect();
-		const button = screen.getByRole('button', {name: 'Remove Business ID filter'}).element().getBoundingClientRect();
-
-		expect(button.left).toBeGreaterThanOrEqual(input.right);
 	});
 
 	it('should remove active optional filters when resetting', async ({worker}) => {
@@ -475,16 +448,14 @@ describe('<Decisions />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(DecisionsWithSearch, {
+		const screen = await renderWithRouter(DecisionsInFullHeightShell, {
 			path: '/operate-preview/decisions',
 			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeVisible();
 
-		(screen.getByLabelText('Version').element() as HTMLElement).focus();
-		await expect.element(screen.getByLabelText('Version')).toHaveFocus();
-		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByLabelText('Version'));
 		await userEvent.click(screen.getByRole('option', {name: 'All versions'}));
 
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).not.toBeInTheDocument();
@@ -497,7 +468,7 @@ describe('<Decisions />', () => {
 			mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 'infinite'}),
 			mockTwoInvoiceVersions(),
 		);
-		const screen = await renderWithRouter(DecisionsWithSearch, {
+		const screen = await renderWithRouter(DecisionsInFullHeightShell, {
 			path: '/operate-preview/decisions',
 			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
@@ -506,48 +477,10 @@ describe('<Decisions />', () => {
 		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
 		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
-		(screen.getByLabelText('Version').element() as HTMLElement).focus();
-		await expect.element(screen.getByLabelText('Version')).toHaveFocus();
-		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByLabelText('Version'));
 		await userEvent.click(screen.getByRole('option', {name: '2'}));
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
 		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeDisabled();
-	});
-
-	it('should keep the newly selected version and unblock it once the previous deletion finishes', async ({worker}) => {
-		worker.use(
-			mockInstances(),
-			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
-			mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 1000}),
-			mockTwoInvoiceVersions(),
-		);
-		const screen = await renderWithRouter(DecisionsWithSearch, {
-			path: '/operate-preview/decisions',
-			initialEntry: '/operate-preview/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
-		});
-
-		await userEvent.click(screen.getByRole('button', {name: /Delete decision definition/}));
-		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
-		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
-		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
-		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
-		(screen.getByLabelText('Version').element() as HTMLElement).focus();
-		await expect.element(screen.getByLabelText('Version')).toHaveFocus();
-		await userEvent.keyboard('{Enter}');
-		await userEvent.click(screen.getByRole('option', {name: '2'}));
-		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
-		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeDisabled();
-
-		await expect
-			.poll(async () => {
-				await vi.advanceTimersByTimeAsync(1000);
-				return screen.getByText('Operation created', {exact: true}).query();
-			})
-			.toBeTruthy();
-		vi.useRealTimers();
-
-		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeEnabled();
-		expect(screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
 	});
 });

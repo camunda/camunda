@@ -175,6 +175,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 			const screen = await renderInstancesTable();
 
+			await expect.element(screen.getByRole('checkbox', {name: 'Select row 1'})).toBeVisible();
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
 
 			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 1'}));
@@ -197,6 +198,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 			const screen = await renderInstancesTable();
 
+			await expect.element(screen.getByRole('checkbox', {name: 'Select row 2'})).toBeVisible();
 			await userEvent.click(screen.getByRole('checkbox', {name: 'Select all rows'}));
 
 			await expect.element(screen.getByText('2 items selected')).toBeVisible();

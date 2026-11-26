@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, expect} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {HttpResponse} from 'msw';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
@@ -28,7 +28,7 @@ const BATCH_OPERATION_KEY = 'batch-op-1';
 
 type State = NonNullable<Parameters<typeof createBatchOperation>[0]>['state'];
 
-function mockBatchOperation(state: State, options?: {once?: boolean; delay?: number}) {
+function mockBatchOperation(state: State, options?: {once?: boolean; delay?: 'infinite'}) {
 	return mockGetBatchOperationEndpoint({
 		successResponse: HttpResponse.json(createBatchOperation({batchOperationKey: BATCH_OPERATION_KEY, state})),
 		...options,
@@ -43,6 +43,11 @@ function renderPage() {
 }
 
 describe('<BatchOperationActions />', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+		sessionStorage.clear();
+	});
+
 	it.for(['CREATED', 'ACTIVE'] as const)(
 		'should show suspend and cancel for a %s batch operation',
 		async (state, {worker}) => {
@@ -95,11 +100,32 @@ describe('<BatchOperationActions />', () => {
 		},
 	);
 
-	it('should suspend an active batch operation and disable the button until it is suspended', async ({worker}) => {
+	it('should disable the suspend button until the batch operation is suspended', async ({worker}) => {
 		worker.use(
 			mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 			mockBatchOperation('ACTIVE', {once: true}),
-			mockBatchOperation('SUSPENDED', {delay: 500}),
+			mockBatchOperation('SUSPENDED', {delay: 'infinite'}),
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse()),
+			}),
+		);
+
+		const screen = await renderPage();
+		await expect.element(screen.getByRole('button', {name: 'Suspend'})).toBeEnabled();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+		await userEvent.click(screen.getByRole('button', {name: 'Suspend'}));
+
+		await expect.element(screen.getByRole('button', {name: 'Suspend'})).toBeDisabled();
+		worker.use(mockBatchOperation('SUSPENDED'));
+		await vi.advanceTimersByTimeAsync(11_000);
+		await expect.element(screen.getByRole('status', {name: 'Batch operation status: Suspended'})).toBeVisible();
+	});
+
+	it('should suspend an active batch operation', async ({worker}) => {
+		worker.use(
+			mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockBatchOperation('ACTIVE', {once: true}),
+			mockBatchOperation('SUSPENDED'),
 			mockQueryBatchOperationItemsEndpoint({
 				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse()),
 			}),
@@ -108,7 +134,6 @@ describe('<BatchOperationActions />', () => {
 		const screen = await renderPage();
 		await userEvent.click(screen.getByRole('button', {name: 'Suspend'}));
 
-		await expect.element(screen.getByRole('button', {name: 'Suspend'})).toBeDisabled();
 		await expect.element(screen.getByRole('button', {name: 'Resume'})).toBeVisible();
 		await expect.element(screen.getByRole('status', {name: 'Batch operation status: Suspended'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Suspend'})).not.toBeInTheDocument();

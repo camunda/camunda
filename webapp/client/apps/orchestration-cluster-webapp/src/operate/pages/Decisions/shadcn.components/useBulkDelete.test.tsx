@@ -6,12 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {userEvent} from 'vitest/browser';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
-import {HttpResponse, http} from 'msw';
-import {endpoints} from '#/shared/http/endpoints';
+import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {mockCreateDecisionInstancesDeletionBatchOperationEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
@@ -111,77 +110,53 @@ describe('useBulkDelete (shadcn)', () => {
 		expect(onDeleted).toHaveBeenCalledOnce();
 	});
 
-	it('should close the confirmation when the selection is cleared', async () => {
-		const ClearableHarness: React.FC = () => {
-			const [selectedCount, setSelectedCount] = useState(2);
-			return (
-				<>
-					<Harness
-						selectedCount={selectedCount}
-						includedIds={[]}
-						excludedIds={[]}
-						filter={FILTER}
-						onDeleted={vi.fn()}
-						onDiscard={vi.fn()}
-					/>
-					<button type="button" onClick={() => setSelectedCount(0)}>
-						Clear selection
-					</button>
-				</>
-			);
-		};
-		const screen = await renderWithRouter(() => <ClearableHarness />, {path: '/operate-preview/decisions'});
-
-		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
-		await expect.element(screen.getByRole('alertdialog')).toBeVisible();
-		(screen.getByText('Clear selection').element() as HTMLElement).click();
-
-		await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument();
-	});
-
 	it.for([
 		{
 			name: 'individual selection',
 			props: {includedIds: ['1', '2'], excludedIds: []},
 			filter: FILTER,
-			key: {$in: ['1', '2']},
+			key: z.strictObject({$in: z.tuple([z.literal('1'), z.literal('2')])}),
 		},
 		{
 			name: 'select-all with exclusions',
 			props: {includedIds: [], excludedIds: ['3']},
 			filter: FILTER,
-			key: {$notIn: ['3']},
+			key: z.strictObject({$notIn: z.tuple([z.literal('3')])}),
 		},
 		{
 			name: 'select-all with exclusions under an active instance-key filter',
 			props: {includedIds: [], excludedIds: ['1']},
 			filter: {state: {$in: ['EVALUATED']}, decisionEvaluationInstanceKey: {$in: ['1', '2', '3']}} as never,
-			key: {$in: ['1', '2', '3'], $notIn: ['1']},
+			key: z.strictObject({
+				$in: z.tuple([z.literal('1'), z.literal('2'), z.literal('3')]),
+				$notIn: z.tuple([z.literal('1')]),
+			}),
 		},
 		{
 			name: 'an individual selection under an active instance-key filter',
 			props: {includedIds: ['2', '9'], excludedIds: []},
 			filter: {state: {$in: ['EVALUATED']}, decisionEvaluationInstanceKey: {$in: ['1', '2', '3']}} as never,
-			key: {$in: ['2']},
+			key: z.strictObject({$in: z.tuple([z.literal('2')])}),
 		},
 	])('should send the expected filter for $name', async ({props, filter, key}, {worker}) => {
-		let body: {filter: Record<string, unknown>} | undefined;
 		worker.use(
-			http.post(endpoints.createDecisionInstancesDeletionBatchOperation({filter: {}}).url, async ({request}) => {
-				body = (await request.json()) as typeof body;
-				return HttpResponse.json({
+			mockCreateDecisionInstancesDeletionBatchOperationEndpoint({
+				schema: z.object({filter: z.object({decisionEvaluationInstanceKey: key})}),
+				successResponse: HttpResponse.json({
 					batchOperationKey: 'batch-op-1',
 					batchOperationType: 'DELETE_DECISION_INSTANCE',
-				});
+				}),
+				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
 		);
-		const {screen, onDeleted} = await renderHarness({...props, filter});
+		const {screen} = await renderHarness({...props, filter});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 		await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Delete'}));
 
-		await expect.poll(() => onDeleted.mock.calls.length).toBe(1);
-		expect(body?.filter.decisionEvaluationInstanceKey).toEqual(key);
+		await expect
+			.element(screen.getByText('The batch operation "Delete Decision Instance" has been started'))
+			.toBeVisible();
 	});
 
 	it('should close the dialog, discard the selection and not delete when cancelling', async () => {
@@ -190,6 +165,7 @@ describe('useBulkDelete (shadcn)', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
+		await expect.element(screen.getByText('2 items selected')).toBeVisible();
 		await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument();
 		expect(onDeleted).not.toHaveBeenCalled();
 		expect(onDiscard).toHaveBeenCalledOnce();

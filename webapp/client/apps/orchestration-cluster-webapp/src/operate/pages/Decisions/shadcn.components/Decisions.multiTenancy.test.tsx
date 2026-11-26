@@ -10,6 +10,7 @@ import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {useSearch} from '@tanstack/react-router';
 import {z} from 'zod';
+import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -130,8 +131,8 @@ describe('Multi tenancy', () => {
 		const screen = await renderDecisionsPage();
 		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
 
-		await screen.getByRole('combobox', {name: 'Select a tenant'}).click();
-		await screen.getByRole('option', {name: 'All tenants'}).click();
+		await userEvent.click(screen.getByRole('combobox', {name: 'Select a tenant'}));
+		await userEvent.click(screen.getByRole('option', {name: 'All tenants'}));
 
 		await expect.poll(() => getSearch().tenantId).toBe('all');
 	});
@@ -153,8 +154,8 @@ describe('Multi tenancy', () => {
 
 		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toMatchTextContent('Invoice Approval');
 
-		await screen.getByRole('combobox', {name: 'Select a tenant'}).click();
-		await screen.getByRole('option', {name: 'Tenant A'}).click();
+		await userEvent.click(screen.getByRole('combobox', {name: 'Select a tenant'}));
+		await userEvent.click(screen.getByRole('option', {name: 'Tenant A'}));
 
 		await expect.poll(() => getSearch().tenantId).toBe('<tenant-A>');
 		expect(getSearch().decisionDefinitionId).toBeUndefined();
@@ -174,7 +175,7 @@ describe('Multi tenancy', () => {
 
 		const screen = await renderDecisionsPage({tenantId: '<tenant-A>'});
 
-		await screen.getByRole('combobox', {name: 'Name'}).click();
+		await userEvent.click(screen.getByRole('combobox', {name: 'Name'}));
 		await expect.element(screen.getByRole('option', {name: 'Invoice Approval'})).toBeVisible();
 	});
 
@@ -191,7 +192,7 @@ describe('Multi tenancy', () => {
 
 		const screen = await renderDecisionsPage({tenantId: 'all'});
 
-		await screen.getByRole('combobox', {name: 'Name'}).click();
+		await userEvent.click(screen.getByRole('combobox', {name: 'Name'}));
 		await expect.element(screen.getByRole('option', {name: 'Invoice Approval'})).toBeVisible();
 	});
 });
