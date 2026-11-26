@@ -1539,6 +1539,44 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldReportExportingMigrationInProgressWithDetailWhenGatedByBackup() {
+    // given - backup gating holds back a previous-version record until a common backup completes
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> CompletableFuture.completedFuture(OptionalLong.of(-1))));
+    startExporterDirector(exporterDescriptors);
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED, new DeploymentRecord(), oneMinorBehindTheCurrentVersion());
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+    assertThat(status.detail()).contains("waiting for a common backup").contains("-1");
+  }
+
+  @Test
+  public void shouldReportMigratedWhenGatedByBackupButNothingIsBehind() {
+    // given - backup gating alone does not create a previous-version backlog
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> CompletableFuture.completedFuture(OptionalLong.of(-1))));
+    startExporterDirector(exporterDescriptors);
+    writeEvent();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
   public void shouldReportExportingMigrationStatusInPassiveModeUsingItsOwnFreshReader() {
     // given - passive mode never opens the shared, ACTIVE-only logStreamReader field; this must
     // still answer correctly using its own throwaway reader over the same log
