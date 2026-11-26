@@ -153,6 +153,9 @@ final class PhysicalTenantOverridePolicyValidation {
               "security.authentication.unprotected-api",
               "security.authentication.webapp-enabled",
               "security.authentication.catch-all-unhandled-paths-enabled",
+              // outbound clients are named per target, so a name already selects the credentials
+              // of a physical tenant
+              "security.client",
               "security.csrf",
               "security.http-headers",
               // forward declaration — property lands with #54898
