@@ -941,6 +941,10 @@ jobs:
             # rather than the first-dispatched bucket cooling down the others.
             bucket=$(echo "$d" | jq -r '.cost_bucket // "wf"')
             ledger_key="${version}::${bucket}"
+            # Reuse/reopen is scoped to this version AND bucket, matching the slot
+            # the fix workflow names its branch with, so a cheap and an rdbms
+            # dispatch never share a PR.
+            slot_prefix="fix/nightly-${version}-${bucket}-"
             specs=$(echo "$d" | jq -c '.test_specs')
             e2e=$(echo "$d"   | jq -r '.e2e_run_id')
             api_es=$(echo "$d" | jq -r '.api_es_run_id')
@@ -996,7 +1000,7 @@ jobs:
             # close, a vanished branch, a branch far behind main, the reopen
             # cap), and each falls back to the agent opening a fresh PR.
             if { [ "$REOPEN_CLOSED_PRS" = "true" ] || [ "$REOPEN_DRY_RUN" = "true" ]; } \
-               && ! open_pr_exists "fix/nightly-${version}-"; then
+               && ! open_pr_exists "$slot_prefix"; then
               # Spec files only — overlap on a shared helper or page object would
               # match almost any fix PR for this version and adopt unrelated work.
               #
@@ -1020,7 +1024,7 @@ jobs:
                 echo "    reopen: skip ${version} — dispatch carries no spec files to match on"
                 reopen_pick_out=""
               else
-                reopen_pick_out=$(reopen_pick "fix/nightly-${version}-" "$version_specs" || true)
+                reopen_pick_out=$(reopen_pick "$slot_prefix" "$version_specs" || true)
               fi
               if [ -n "$reopen_pick_out" ] && [ "$REOPEN_DRY_RUN" = "true" ]; then
                 echo "    reopen: DRY RUN — would reopen #$(printf '%s' "$reopen_pick_out" | cut -f1) for ${version}; not committing"
@@ -1056,6 +1060,7 @@ jobs:
               -f e2e_run_id="$e2e" \
               -f api_es_run_id="$api_es" \
               -f api_rdbms_run_id="$api_rdbms" \
+              -f cost_bucket="$bucket" \
               -f triage_run_url="$TRIAGE_RUN_URL" \
               -f slack_thread_ts="$SLACK_THREAD_TS" \
               -f slack_channel="$SLACK_CHANNEL" \
