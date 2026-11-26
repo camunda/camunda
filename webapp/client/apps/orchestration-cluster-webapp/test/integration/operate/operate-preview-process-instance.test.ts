@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {readFile} from 'node:fs/promises';
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {
 	mockCurrentUserEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
@@ -75,6 +77,23 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
 		await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Incidents: 1')).toBeVisible();
 		await expect(operatePreviewProcessInstancePage.variablesTab).toBeVisible();
+	});
+
+	test('should download the BPMN of the instance as a named file', async ({
+		operatePreviewProcessInstancePage,
+		page,
+	}, testInfo) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await expect(operatePreviewProcessInstancePage.diagram).toBeVisible();
+
+		const downloadEvent = page.waitForEvent('download');
+		await operatePreviewProcessInstancePage.diagramPanel.getByRole('button', {name: 'Download XML'}).click();
+		const download = await downloadEvent;
+
+		expect(download.suggestedFilename()).toBe('my-process_v1.bpmn');
+		const savedPath = testInfo.outputPath(download.suggestedFilename());
+		await download.saveAs(savedPath);
+		expect(await readFile(savedPath, 'utf8')).toBe(BPMN_XML);
 	});
 
 	test('should list the variables of the process instance in the Variables tab', async ({
