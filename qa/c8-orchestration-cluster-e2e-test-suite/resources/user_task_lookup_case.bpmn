@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_user_task_lookup_case" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.39.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.11.0">
+  <bpmn:process id="user_task_lookup_case" name="User task lookup case" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:case title="caseTitle" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="case_start">
+      <bpmn:outgoing>case_flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="case_flow_1" sourceRef="case_start" targetRef="intake_stage" />
+    <bpmn:subProcess id="intake_stage" name="Intake">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:incoming>case_flow_1</bpmn:incoming>
+      <bpmn:outgoing>case_flow_2</bpmn:outgoing>
+      <bpmn:startEvent id="stage_start">
+        <bpmn:outgoing>stage_flow_1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="stage_flow_1" sourceRef="stage_start" targetRef="stage_task" />
+      <bpmn:userTask id="stage_task" name="Check application">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+        </bpmn:extensionElements>
+        <bpmn:incoming>stage_flow_1</bpmn:incoming>
+        <bpmn:outgoing>stage_flow_2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="stage_flow_2" sourceRef="stage_task" targetRef="stage_end" />
+      <bpmn:endEvent id="stage_end">
+        <bpmn:incoming>stage_flow_2</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="case_flow_2" sourceRef="intake_stage" targetRef="call_child" />
+    <bpmn:callActivity id="call_child" name="Call child">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="user_task_lookup_child" propagateAllChildVariables="false" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>case_flow_2</bpmn:incoming>
+      <bpmn:outgoing>case_flow_3</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="case_flow_3" sourceRef="call_child" targetRef="case_end" />
+    <bpmn:endEvent id="case_end">
+      <bpmn:incoming>case_flow_3</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="user_task_lookup_case">
+      <bpmndi:BPMNShape id="case_start_di" bpmnElement="case_start">
+        <dc:Bounds x="152" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="intake_stage_di" bpmnElement="intake_stage" isExpanded="true">
+        <dc:Bounds x="240" y="100" width="350" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="stage_start_di" bpmnElement="stage_start">
+        <dc:Bounds x="280" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="stage_task_di" bpmnElement="stage_task">
+        <dc:Bounds x="360" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="stage_end_di" bpmnElement="stage_end">
+        <dc:Bounds x="512" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="call_child_di" bpmnElement="call_child">
+        <dc:Bounds x="640" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="case_end_di" bpmnElement="case_end">
+        <dc:Bounds x="792" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="case_flow_1_di" bpmnElement="case_flow_1">
+        <di:waypoint x="188" y="200" />
+        <di:waypoint x="240" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="stage_flow_1_di" bpmnElement="stage_flow_1">
+        <di:waypoint x="316" y="200" />
+        <di:waypoint x="360" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="stage_flow_2_di" bpmnElement="stage_flow_2">
+        <di:waypoint x="460" y="200" />
+        <di:waypoint x="512" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="case_flow_2_di" bpmnElement="case_flow_2">
+        <di:waypoint x="590" y="200" />
+        <di:waypoint x="640" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="case_flow_3_di" bpmnElement="case_flow_3">
+        <di:waypoint x="740" y="200" />
+        <di:waypoint x="792" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

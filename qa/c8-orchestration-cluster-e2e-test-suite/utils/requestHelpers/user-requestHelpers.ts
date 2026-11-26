@@ -12,6 +12,7 @@ import {
   assertRequiredFields,
   assertStatusCode,
   buildUrl,
+  encode,
   jsonHeaders,
 } from '../http';
 import {expect} from '@playwright/test';
@@ -102,4 +103,16 @@ export function assertUserInResponse(
   expect(matchingItem).toBeDefined();
   assertRequiredFields(matchingItem, userRequiredFields);
   assertEqualsForKeys(matchingItem, expectedBody, userRequiredFields);
+}
+
+/**
+ * Creates a user and returns it with JSON request headers that authenticate
+ * as that user.
+ */
+export async function createUserWithHeaders(request: APIRequestContext) {
+  const user = await createUser(request);
+  return {
+    ...user,
+    headers: jsonHeaders(encode(`${user.username}:${user.password}`)),
+  };
 }

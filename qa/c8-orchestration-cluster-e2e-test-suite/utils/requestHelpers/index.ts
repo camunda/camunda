@@ -43,12 +43,13 @@ export {createGroupAndStoreResponseFields} from './group-requestHelpers';
 export {DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT} from '../beans/requestBeans';
 export {assertUserInResponse} from './user-requestHelpers';
 export {assertUserNameInResponse} from './user-requestHelpers';
-export {createUser} from './user-requestHelpers';
+export {createUser, createUserWithHeaders} from './user-requestHelpers';
 export {assignRoleToUsers} from './user-requestHelpers';
 export {createUsersAndStoreResponseFields} from './user-requestHelpers';
 export {
   createComponentAuthorization,
   grantUserResourceAuthorization,
+  grantUserTaskAuthorization,
   cleanupAuthorizations,
   expectAuthorizationCanBeFound,
   verifyAuthorizationFields,
@@ -71,6 +72,7 @@ export {
   activateFirstJobVariables,
   activateJobWithLease,
   completeJob,
+  completeJobWithResult,
   countJobsByType,
   expectJobsByType,
   getLast24HoursRange,
