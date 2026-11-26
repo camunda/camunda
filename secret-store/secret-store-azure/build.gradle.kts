@@ -16,6 +16,7 @@ dependencies {
   testImplementation(project(":zeebe-test-util"))
   testImplementation(libs.org.apache.logging.log4j.log4j.api)
   testImplementation(libs.org.awaitility.awaitility)
+  testImplementation(libs.org.wiremock.wiremock.standalone)
 }
 
 description = "Camunda Secret Store Azure Key Vault Implementation"
