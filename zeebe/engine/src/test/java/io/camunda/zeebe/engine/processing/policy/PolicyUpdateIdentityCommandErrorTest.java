@@ -96,6 +96,7 @@ public final class PolicyUpdateIdentityCommandErrorTest {
                       PolicyUpdateIntent.APPLY_CHUNK,
                       new PolicyUpdateApplyChunkProcessor(
                           policyUpdateState,
+                          new PolicyUpdateBehavior(policyUpdateState, writers.state()),
                           new PolicyUpdateCommandMapper(state),
                           state.getKeyGenerator(),
                           writers))

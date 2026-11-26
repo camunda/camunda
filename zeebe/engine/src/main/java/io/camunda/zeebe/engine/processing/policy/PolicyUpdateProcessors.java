@@ -29,6 +29,7 @@ public final class PolicyUpdateProcessors {
       final CommandDistributionBehavior distributionBehavior) {
     final var policyUpdateState = processingState.getPolicyUpdateState();
     final var commandMapper = new PolicyUpdateCommandMapper(processingState);
+    final var policyUpdateBehavior = new PolicyUpdateBehavior(policyUpdateState, writers.state());
     typedRecordProcessors
         .onCommand(
             ValueType.POLICY_UPDATE,
@@ -38,11 +39,11 @@ public final class PolicyUpdateProcessors {
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPLY_CHUNK,
             new PolicyUpdateApplyChunkProcessor(
-                policyUpdateState, commandMapper, keyGenerator, writers))
+                policyUpdateState, policyUpdateBehavior, commandMapper, keyGenerator, writers))
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.COMMIT_VERSION,
             new PolicyUpdateCommitVersionProcessor(
-                policyUpdateState, keyGenerator, distributionBehavior, writers));
+                policyUpdateBehavior, keyGenerator, distributionBehavior, writers));
   }
 }

@@ -43,6 +43,7 @@ public final class PolicyUpdateApplyChunkProcessor
     implements TypedRecordProcessor<PolicyUpdateRecord> {
 
   private final PolicyUpdateState policyUpdateState;
+  private final PolicyUpdateBehavior policyUpdateBehavior;
   private final PolicyUpdateCommandMapper commandMapper;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -51,10 +52,12 @@ public final class PolicyUpdateApplyChunkProcessor
 
   public PolicyUpdateApplyChunkProcessor(
       final PolicyUpdateState policyUpdateState,
+      final PolicyUpdateBehavior policyUpdateBehavior,
       final PolicyUpdateCommandMapper commandMapper,
       final KeyGenerator keyGenerator,
       final Writers writers) {
     this.policyUpdateState = policyUpdateState;
+    this.policyUpdateBehavior = policyUpdateBehavior;
     this.commandMapper = commandMapper;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -71,10 +74,7 @@ public final class PolicyUpdateApplyChunkProcessor
     }
 
     final var update = command.getValue();
-    final var openUpdate =
-        policyUpdateState
-            .getOpenUpdate()
-            .filter(open -> open.getUpdate().getUpdateId().equals(update.getUpdateId()));
+    final var openUpdate = policyUpdateBehavior.findOpenUpdate(update.getUpdateId());
     if (openUpdate.isEmpty()) {
       rejectionWriter.appendRejection(
           command,

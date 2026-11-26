@@ -102,6 +102,16 @@ public final class PolicyUpdateBehavior {
             });
   }
 
+  /**
+   * The open update with the given id. It is absent if the update failed, was committed or was
+   * never appended, or if another update is open.
+   */
+  public Optional<PersistedPolicyUpdate> findOpenUpdate(final String updateId) {
+    return policyUpdateState
+        .getOpenUpdate()
+        .filter(update -> update.getUpdate().getUpdateId().equals(updateId));
+  }
+
   private Optional<PersistedPolicyUpdate> findOpenUpdate(final TypedRecord<?> command) {
     if (!isPartOfPolicyUpdate(command)) {
       return Optional.empty();
