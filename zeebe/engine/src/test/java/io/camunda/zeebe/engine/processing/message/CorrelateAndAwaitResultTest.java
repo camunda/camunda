@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
@@ -218,10 +220,15 @@ public final class CorrelateAndAwaitResultTest {
     // then
     verify(writer, timeout(5000).times(1)).tryWriteResponse(12, 16L);
     verify(writer, timeout(5000)).rejectionType(RejectionType.INVALID_ARGUMENT);
+    final var rejection =
+        RecordingExporter.messageCorrelationRecords()
+            .onlyCommandRejections()
+            .withIntent(MessageCorrelationIntent.CORRELATE_AND_AWAIT_RESULT)
+            .getFirst();
     assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withElementType(BpmnElementType.PROCESS)
-                .limit(0))
+            RecordingExporter.records()
+                .between(0L, rejection.getPosition())
+                .filter(record -> record.getValueType() == ValueType.PROCESS_INSTANCE))
         .isEmpty();
   }
 
