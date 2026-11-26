@@ -133,9 +133,7 @@ public final class SegmentedJournal implements Journal {
             assertNoSyncFailure();
             writer.deleteAfter(indexExclusive, hasConcurrentReaderPast(indexExclusive));
             readers.forEach(reader -> reader.onTruncatedAfter(indexExclusive));
-          } catch (final RuntimeException e) {
-            // deleting segments may have failed half-way, e.g. failing to rename one, leaving the
-            // log in a state that a flush must not publish
+          } catch (final SyncFailed e) {
             syncFailure.record(e);
             throw e;
           } finally {
@@ -169,9 +167,7 @@ public final class SegmentedJournal implements Journal {
       // with a greater index than what we previously had. it's fine if the stored last flushed
       // index is lower than the real flushed index. every thing will be treated as a partial write
       // until the next flush, which is fine
-    } catch (final RuntimeException e) {
-      // deleting segments may have failed half-way, e.g. failing to rename one, after the ones
-      // behind it were deleted already; flushing would then publish an index the log lost
+    } catch (final SyncFailed e) {
       syncFailure.record(e);
       throw e;
     } finally {

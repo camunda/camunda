@@ -143,6 +143,26 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldNotStopJournalWhenResetFailsToRenameSegment() throws Exception {
+    // given - a reset that fails to rename the first segment, without syncing anything
+    journalFactory = new TestJournalFactory(5);
+    final var segments = journalFactory.segmentsManager(directory);
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+    final var renameTarget = segments.getFirstSegment().file().getFileMarkedForDeletion();
+    Files.createFile(renameTarget);
+    assertThatThrownBy(() -> journal.reset(101))
+        .hasRootCauseInstanceOf(FileAlreadyExistsException.class);
+
+    // when
+    final var flushFailure = catchThrowable(journal::flush);
+
+    // then - only a failed sync stops the journal
+    assertThat(flushFailure).isNull();
+    assertThat(segments.syncFailure().get()).isNull();
+  }
+
+  @Test
   void shouldNotPublishDeletedRecordsWhenResetFailsHalfWay() throws Exception {
     // given - three flushed records in three segments, and a second one that cannot be renamed
     journalFactory = new TestJournalFactory(1);
