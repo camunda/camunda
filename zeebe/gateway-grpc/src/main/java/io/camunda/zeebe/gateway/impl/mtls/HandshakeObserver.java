@@ -96,7 +96,7 @@ public final class HandshakeObserver extends ChannelInboundHandlerAdapter {
       return;
     }
 
-    final var identity = PeerCertificateTrustManager.identityOf(leaf, peer);
+    final var identity = PeerIdentity.of(leaf, peer);
     final var matched = trustManager.matchingIdentity(identity).orElse("?");
     logger.debug(
         "Accepted client certificate {} matching allowed identity '{}'", identity, matched);

@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.api;
 
+import io.camunda.configuration.api.rest.ClientCertificate;
 import io.camunda.configuration.api.rest.ClusterVariable;
 import io.camunda.configuration.api.rest.Executor;
 import io.camunda.configuration.api.rest.Filter;
@@ -28,6 +29,10 @@ public class Rest {
 
   /** Set the cluster variable configuration */
   @NestedConfigurationProperty private ClusterVariable clusterVariable = new ClusterVariable();
+
+  /** Mutual TLS: which client certificates may use the REST API and web applications. */
+  @NestedConfigurationProperty
+  private ClientCertificate clientCertificate = new ClientCertificate();
 
   public ClusterVariable getClusterVariable() {
     return clusterVariable;
@@ -59,5 +64,13 @@ public class Rest {
 
   public void setExecutor(final Executor executor) {
     this.executor = executor;
+  }
+
+  public ClientCertificate getClientCertificate() {
+    return clientCertificate;
+  }
+
+  public void setClientCertificate(final ClientCertificate clientCertificate) {
+    this.clientCertificate = clientCertificate;
   }
 }

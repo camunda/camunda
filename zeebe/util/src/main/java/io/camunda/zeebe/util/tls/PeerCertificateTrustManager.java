@@ -20,19 +20,12 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateNotYetValidException;
-import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import javax.naming.NamingException;
-import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509ExtendedTrustManager;
@@ -60,16 +53,8 @@ import org.jspecify.annotations.Nullable;
  */
 public final class PeerCertificateTrustManager extends X509ExtendedTrustManager {
 
-  private static final int SAN_EMAIL = 1;
-  private static final int SAN_DNS = 2;
-  private static final int SAN_URI = 6;
-  private static final int SAN_IP = 7;
-  private static final String ANY_IDENTITY = "*";
-  private static final String SAN_EXTENSION_OID = "2.5.29.17";
-
   private final X509ExtendedTrustManager delegate;
-  private final Set<String> allowedIdentities;
-  private final boolean commonNameFallback;
+  private final PeerIdentityMatcher matcher;
   private final boolean enforce;
   private final boolean advertiseTrustedIssuers;
   private final PeerVerificationListener listener;
@@ -82,11 +67,7 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
       final boolean advertiseTrustedIssuers,
       final PeerVerificationListener listener) {
     this.delegate = delegate;
-    this.allowedIdentities =
-        allowedIdentities.stream()
-            .map(PeerCertificateTrustManager::normalizeAllowedIdentity)
-            .collect(Collectors.toUnmodifiableSet());
-    this.commonNameFallback = commonNameFallback;
+    matcher = new PeerIdentityMatcher(allowedIdentities, commonNameFallback);
     this.enforce = enforce;
     this.advertiseTrustedIssuers = advertiseTrustedIssuers;
     this.listener = listener;
@@ -207,7 +188,7 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
    * when it is not allowed. Bounded by configuration, so usable as a metric tag.
    */
   public Optional<String> matchingIdentity(final PeerIdentity identity) {
-    return matchIdentity(identity);
+    return matcher.match(identity);
   }
 
   private void verify(
@@ -222,7 +203,7 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
     }
 
     final var leaf = chain[0];
-    final var identity = identityOf(leaf, peerAddress);
+    final var identity = PeerIdentity.of(leaf, peerAddress);
     if (identity.malformed()) {
       reject(
           identity,
@@ -257,11 +238,11 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
       return;
     }
 
-    final var matched = matchIdentity(identity);
+    final var matched = matcher.match(identity);
     if (matched.isEmpty()) {
       final var detail =
           "none of the certificate's identities %s are allowed"
-              .formatted(candidateIdentities(identity));
+              .formatted(matcher.candidates(identity));
       reject(identity, RejectionReason.IDENTITY_NOT_ALLOWED, detail, null);
       return;
     }
@@ -291,109 +272,6 @@ public final class PeerCertificateTrustManager extends X509ExtendedTrustManager 
     }
     failure.addSuppressed(rejection);
     throw failure;
-  }
-
-  private Optional<String> matchIdentity(final PeerIdentity identity) {
-    if (allowedIdentities.isEmpty()) {
-      return Optional.of(ANY_IDENTITY);
-    }
-
-    return candidateIdentities(identity).stream()
-        // fold ASCII case only: Unicode folding maps look-alikes (e.g. KELVIN SIGN) onto ASCII
-        .filter(PeerCertificateTrustManager::isAscii)
-        .map(s -> s.toLowerCase(Locale.ROOT))
-        .filter(allowedIdentities::contains)
-        .findFirst();
-  }
-
-  /**
-   * The SANs, or the CN when fallback is enabled and the certificate has no SAN extension at all;
-   * as in RFC 6125/9525, a CN is never considered next to SANs, which are the vetted field.
-   */
-  private List<String> candidateIdentities(final PeerIdentity identity) {
-    if (commonNameFallback
-        && !identity.hasSubjectAlternativeNameExtension()
-        && identity.commonName() != null) {
-      return List.of(identity.commonName());
-    }
-    return identity.subjectAlternativeNames();
-  }
-
-  private static String normalizeAllowedIdentity(final String identity) {
-    final var trimmed = identity == null ? "" : identity.trim();
-    if (trimmed.isEmpty() || !isAscii(trimmed) || ANY_IDENTITY.equals(trimmed)) {
-      throw new IllegalArgumentException(
-          "Expected allowed identities to be non-blank ASCII SAN values (DNS name, IP, URI or"
-              + " email), but got '%s'; leave the list empty to allow any trusted certificate"
-                  .formatted(identity));
-    }
-    return trimmed.toLowerCase(Locale.ROOT);
-  }
-
-  private static boolean isAscii(final String value) {
-    return value.chars().allMatch(c -> c < 0x80);
-  }
-
-  public static PeerIdentity identityOf(
-      final X509Certificate certificate, final @Nullable String peerAddress) {
-    final var subject = certificate.getSubjectX500Principal().getName();
-    final var hasSanExtension = certificate.getExtensionValue(SAN_EXTENSION_OID) != null;
-    final var sans = subjectAlternativeNames(certificate);
-    final var commonNames = commonNames(subject);
-    // an unparseable SAN extension could hide the identities it holds; an ambiguous CN (several,
-    // or an unparseable subject) only means the CN fallback cannot match
-    final var malformed = hasSanExtension && sans == null;
-    return new PeerIdentity(
-        subject,
-        sans == null ? List.of() : sans,
-        hasSanExtension,
-        commonNames != null && commonNames.size() == 1 ? commonNames.getFirst() : null,
-        malformed,
-        peerAddress);
-  }
-
-  /** Null when the extension cannot be parsed: dropping it would hide identities. */
-  private static @Nullable List<String> subjectAlternativeNames(final X509Certificate certificate) {
-    final Collection<List<?>> entries;
-    try {
-      entries = certificate.getSubjectAlternativeNames();
-    } catch (final CertificateParsingException e) {
-      return null;
-    }
-    if (entries == null) {
-      return List.of();
-    }
-
-    final var names = new ArrayList<String>();
-    for (final var entry : entries) {
-      final var type = (Integer) entry.get(0);
-      if ((type == SAN_DNS || type == SAN_IP || type == SAN_URI || type == SAN_EMAIL)
-          && entry.get(1) instanceof final String name) {
-        names.add(name);
-      }
-    }
-    return List.copyOf(names);
-  }
-
-  /**
-   * All CN values, including those in multi-valued RDNs; null when the subject cannot be parsed.
-   * Several CNs are ambiguous (tools disagree on which one is the identity), so none is used.
-   */
-  private static @Nullable List<String> commonNames(final String subject) {
-    try {
-      final var names = new ArrayList<String>();
-      for (final Rdn rdn : new LdapName(subject).getRdns()) {
-        final var attributes = rdn.toAttributes().get("CN");
-        if (attributes != null) {
-          for (var i = 0; i < attributes.size(); i++) {
-            names.add(String.valueOf(attributes.get(i)));
-          }
-        }
-      }
-      return names;
-    } catch (final NamingException e) {
-      return null;
-    }
   }
 
   private static @Nullable String peerOf(final @Nullable SSLEngine engine) {
