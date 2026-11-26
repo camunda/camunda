@@ -7,9 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -30,7 +29,7 @@ public final class VersionManager {
   private final DbString tenantIdKey;
   private final DbTenantAwareKey<DbString> tenantAwareIdKey;
   private final VersionInfo versionInfo = new VersionInfo();
-  private final LoadingCache<TenantIdAndResourceId, VersionInfo> versionByTenantCache;
+  private final Cache<TenantIdAndResourceId, VersionInfo> versionByTenantCache;
 
   public VersionManager(
       final long initialValue,
@@ -47,27 +46,21 @@ public final class VersionManager {
         zeebeDb.createColumnFamily(columnFamily, transactionContext, tenantAwareIdKey, versionInfo);
     // Keeps the version info of recently used resource ids in memory to skip RocksDB reads,
     // dropping the least recently used ones so old ids don't stay in heap forever.
-    versionByTenantCache =
-        CacheBuilder.newBuilder()
-            .maximumSize(cacheCapacity)
-            .build(
-                new CacheLoader<>() {
-                  @Override
-                  public VersionInfo load(final TenantIdAndResourceId key) {
-                    final var persistedVersionInfo = versionInfoColumnFamily.get(tenantAwareIdKey);
-
-                    if (persistedVersionInfo == null) {
-                      return new VersionInfo().setHighestVersionIfHigher(initialValue);
-                    } else {
-                      return new VersionInfo(persistedVersionInfo);
-                    }
-                  }
-                });
+    versionByTenantCache = CacheBuilder.newBuilder().maximumSize(cacheCapacity).build();
   }
 
   private VersionInfo getVersionInfo() {
-    return versionByTenantCache.getUnchecked(
-        new TenantIdAndResourceId(tenantIdKey.toString(), idKey.toString()));
+    final var key = new TenantIdAndResourceId(tenantIdKey.toString(), idKey.toString());
+    var cachedVersionInfo = versionByTenantCache.getIfPresent(key);
+    if (cachedVersionInfo == null) {
+      final var persistedVersionInfo = versionInfoColumnFamily.get(tenantAwareIdKey);
+      cachedVersionInfo =
+          persistedVersionInfo == null
+              ? new VersionInfo().setHighestVersionIfHigher(initialValue)
+              : new VersionInfo(persistedVersionInfo);
+      versionByTenantCache.put(key, cachedVersionInfo);
+    }
+    return cachedVersionInfo;
   }
 
   public void addResourceVersion(final String resourceId, final long value, final String tenantId) {
