@@ -106,13 +106,13 @@ export function assertUserInResponse(
 }
 
 /**
- * Creates a user and returns it with JSON request headers that authenticate
- * as that user.
+ * Creates a user and returns its username with JSON request headers that
+ * authenticate as that user. The password stays inside the headers.
  */
 export async function createUserWithHeaders(request: APIRequestContext) {
-  const user = await createUser(request);
+  const {username, password} = await createUser(request);
   return {
-    ...user,
-    headers: jsonHeaders(encode(`${user.username}:${user.password}`)),
+    username,
+    headers: jsonHeaders(encode(`${username}:${password}`)),
   };
 }
