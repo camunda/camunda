@@ -18,6 +18,7 @@ package io.camunda.client.spring.configuration;
 import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.BackpressureProfile;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.NoopCredentialsProvider;
@@ -82,6 +83,22 @@ public class SpringCamundaClientConfigurationTest {
     final CredentialsProvider credentialsProvider1 = configuration.getCredentialsProvider();
     final CredentialsProvider credentialsProvider2 = configuration.getCredentialsProvider();
     assertThat(credentialsProvider1).isSameAs(credentialsProvider2);
+  }
+
+  @Test
+  void shouldUseTheBalancedBackpressureProfileByDefault() {
+    final SpringCamundaClientConfiguration configuration =
+        new SpringCamundaClientConfiguration(properties(), null, null, null, null, null, null);
+    assertThat(configuration.getBackpressureProfile()).isEqualTo(BackpressureProfile.BALANCED);
+  }
+
+  @Test
+  void shouldPassTheBackpressureProfileOn() {
+    final CamundaClientProperties properties = properties();
+    properties.getBackpressure().setProfile(BackpressureProfile.DISABLED);
+    final SpringCamundaClientConfiguration configuration =
+        new SpringCamundaClientConfiguration(properties, null, null, null, null, null, null);
+    assertThat(configuration.getBackpressureProfile()).isEqualTo(BackpressureProfile.DISABLED);
   }
 
   @Test

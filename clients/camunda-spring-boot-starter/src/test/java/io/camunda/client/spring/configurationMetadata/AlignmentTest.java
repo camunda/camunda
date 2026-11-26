@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -67,6 +68,9 @@ public class AlignmentTest {
           entry(
               "camunda.client.use-client-side-load-balancing",
               new Getter(CamundaClientProperties::isUseClientSideLoadBalancing)),
+          entry(
+              "camunda.client.backpressure.profile",
+              new Getter(p -> p.getBackpressure().getProfile().name().toLowerCase(Locale.ROOT))),
           entry(
               "camunda.client.execution-threads",
               new Getter(CamundaClientProperties::getExecutionThreads)),

@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.BackpressureProfile;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
 import java.net.URI;
@@ -40,6 +41,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "camunda.client.grpcAddress=https://localhost:1234",
       "camunda.client.restAddress=https://localhost:8080",
       "camunda.client.max-http-connections=1234",
+      "camunda.client.backpressure.profile=conservative",
       "camunda.client.worker.defaults.poll-interval=99s",
       "camunda.client.worker.defaults.name=testName",
       "camunda.client.auth.client-secret=processOrchestration"
@@ -62,6 +64,12 @@ public class JavaClientPropertiesTest {
   @Test
   public void hasMaxHttpConnections() {
     assertThat(properties.getMaxHttpConnections()).isEqualTo(1234);
+  }
+
+  @Test
+  public void hasBackpressureProfile() {
+    assertThat(properties.getBackpressure().getProfile())
+        .isEqualTo(BackpressureProfile.CONSERVATIVE);
   }
 
   @Test
