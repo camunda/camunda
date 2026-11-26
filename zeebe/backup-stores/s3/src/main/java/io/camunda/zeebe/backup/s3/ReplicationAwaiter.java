@@ -10,17 +10,18 @@ package io.camunda.zeebe.backup.s3;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReplicationFailed;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReplicationTimedOut;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ConfigurationException;
-import io.camunda.zeebe.backup.s3.util.CompletableFutureUtils;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,18 +37,21 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
  * only observes it.
  *
  * <p>Polling never blocks a thread: each round issues HEAD requests for the objects that are still
- * pending and schedules the next round on a delayed executor.
+ * pending, a bounded number at a time, and schedules the next round on a delayed executor.
  */
 final class ReplicationAwaiter {
 
   static final String REPLICATION_CONFIGURATION_NOT_FOUND = "ReplicationConfigurationNotFoundError";
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationAwaiter.class);
   private static final int MAX_KEYS_IN_MESSAGE = 10;
+  // Time given to the single check made when the deadline has already passed
+  private static final Duration FINAL_CHECK_GRACE = Duration.ofSeconds(5);
 
   private final S3AsyncClient client;
   private final String bucketName;
   private final Duration pollInterval;
   private final Duration timeout;
+  private final int maxInFlight;
   private volatile boolean replicationConfigured;
 
   ReplicationAwaiter(final S3AsyncClient client, final S3BackupConfig config) {
@@ -55,6 +59,8 @@ final class ReplicationAwaiter {
     bucketName = config.bucketName();
     pollInterval = config.replicationPollInterval();
     timeout = config.replicationTimeout();
+    // Same share of the connection pool as uploads, see FileSetManager
+    maxInFlight = Math.max(1, config.maxConcurrentConnections() / 2);
   }
 
   /** Returns the point in time after which {@link #awaitReplication} gives up. */
@@ -94,11 +100,11 @@ final class ReplicationAwaiter {
    * pending at the deadline.
    */
   CompletableFuture<Void> awaitReplication(final Collection<String> keys, final Instant deadline) {
-    final var result = new CompletableFuture<Void>();
     final var startedAt = Instant.now();
     LOG.debug("Waiting for replication of {} objects in bucket {}", keys.size(), bucketName);
-    poll(Set.copyOf(keys), deadline, result);
-    return result.whenComplete(
+    final var wait = new ReplicationWait(Set.copyOf(keys));
+    wait.start(deadline);
+    return wait.result.whenComplete(
         (ignored, error) -> {
           if (error == null) {
             LOG.debug(
@@ -109,39 +115,6 @@ final class ReplicationAwaiter {
         });
   }
 
-  private void poll(
-      final Set<String> pending, final Instant deadline, final CompletableFuture<Void> result) {
-    CompletableFutureUtils.mapAsync(pending, this::replicationStatus)
-        .whenComplete(
-            (statuses, error) -> {
-              if (error != null) {
-                result.completeExceptionally(error);
-                return;
-              }
-              try {
-                final var stillPending = stillPending(statuses);
-                if (stillPending.isEmpty()) {
-                  result.complete(null);
-                  return;
-                }
-                final var now = Instant.now();
-                if (!now.isBefore(deadline)) {
-                  result.completeExceptionally(timedOut(stillPending));
-                  return;
-                }
-                // Poll once more right at the deadline rather than overshooting it by a full
-                // interval, so that a short timeout is honored precisely.
-                final var untilDeadline = Duration.between(now, deadline);
-                final var delay =
-                    untilDeadline.compareTo(pollInterval) < 0 ? untilDeadline : pollInterval;
-                CompletableFuture.delayedExecutor(delay.toNanos(), TimeUnit.NANOSECONDS)
-                    .execute(() -> poll(stillPending, deadline, result));
-              } catch (final RuntimeException e) {
-                result.completeExceptionally(e);
-              }
-            });
-  }
-
   /** Empty if the object has no replication status, because no replication rule covers it. */
   private CompletableFuture<Optional<ReplicationStatus>> replicationStatus(final String key) {
     return client
@@ -149,29 +122,116 @@ final class ReplicationAwaiter {
         .thenApply(response -> Optional.ofNullable(response.replicationStatus()));
   }
 
-  private Set<String> stillPending(final Map<String, Optional<ReplicationStatus>> statuses) {
-    final var stillPending = new HashSet<String>();
-    for (final var entry : statuses.entrySet()) {
-      final var key = entry.getKey();
-      final var status = entry.getValue().orElse(null);
-      if (status == null) {
-        throw new BackupReplicationFailed(
-            ("Object '%s' in bucket '%s' has no replication status. Check that the bucket's "
-                    + "replication rules cover all backup objects.")
-                .formatted(key, bucketName));
+  /**
+   * Returns whether the object still waits for replication, or throws {@link
+   * BackupReplicationFailed} if it never will.
+   */
+  private boolean isStillPending(final String key, final Optional<ReplicationStatus> status) {
+    if (status.isEmpty()) {
+      throw new BackupReplicationFailed(
+          ("Object '%s' in bucket '%s' has no replication status. Check that the bucket's "
+                  + "replication rules cover all backup objects.")
+              .formatted(key, bucketName));
+    }
+    return switch (status.get()) {
+      // Both spellings are in use across S3 and MinIO versions. A REPLICA was written at
+      // another site and replicated here, so it exists there too.
+      case COMPLETED, COMPLETE, REPLICA -> false;
+      case FAILED ->
+          throw new BackupReplicationFailed(
+              "Replication of object '%s' in bucket '%s' failed.".formatted(key, bucketName));
+      // PENDING, or a status this SDK version does not know: keep waiting until the deadline
+      default -> true;
+    };
+  }
+
+  /**
+   * One wait for a set of objects. Each round checks the objects that are still pending, with at
+   * most {@link #maxInFlight} requests at a time so the checks share the connection pool with
+   * uploads instead of queuing behind it. Every response is inspected as it arrives, so a failed
+   * replication or request ends the wait right away. The deadline is enforced by its own timer,
+   * independently of requests that are still outstanding.
+   */
+  private final class ReplicationWait {
+    private final CompletableFuture<Void> result = new CompletableFuture<>();
+    private volatile Set<String> pending;
+
+    private ReplicationWait(final Set<String> keys) {
+      pending = keys;
+    }
+
+    private void start(final Instant deadline) {
+      final var now = Instant.now();
+      // If the deadline has already passed, check once more instead of failing without looking:
+      // the manifest's wait shares the deadline of the contents and may start right at it.
+      final var enforcedDeadline =
+          deadline.isAfter(now) ? deadline : now.plus(max(pollInterval, FINAL_CHECK_GRACE));
+      CompletableFuture.delayedExecutor(
+              Duration.between(now, enforcedDeadline).toNanos(), TimeUnit.NANOSECONDS)
+          .execute(() -> result.completeExceptionally(timedOut(pending)));
+      round(pending);
+    }
+
+    private void round(final Set<String> keys) {
+      if (result.isDone()) {
+        return;
       }
-      switch (status) {
-        // Both spellings are in use across S3 and MinIO versions. A REPLICA was written at
-        // another site and replicated here, so it exists there too.
-        case COMPLETED, COMPLETE, REPLICA -> {}
-        case FAILED ->
-            throw new BackupReplicationFailed(
-                "Replication of object '%s' in bucket '%s' failed.".formatted(key, bucketName));
-        // PENDING, or a status this SDK version does not know: keep waiting until the deadline
-        default -> stillPending.add(key);
+      if (keys.isEmpty()) {
+        result.complete(null);
+        return;
+      }
+      final var queue = new ConcurrentLinkedQueue<>(keys);
+      final Set<String> stillPending = ConcurrentHashMap.newKeySet();
+      final var outstanding = new AtomicInteger(keys.size());
+      for (int i = 0; i < Math.min(maxInFlight, keys.size()); i++) {
+        checkNext(queue, stillPending, outstanding);
       }
     }
-    return stillPending;
+
+    private void checkNext(
+        final Queue<String> queue,
+        final Set<String> stillPending,
+        final AtomicInteger outstanding) {
+      final var key = queue.poll();
+      if (key == null || result.isDone()) {
+        return;
+      }
+      replicationStatus(key)
+          .whenComplete(
+              (status, error) -> {
+                try {
+                  if (error != null) {
+                    result.completeExceptionally(error);
+                    return;
+                  }
+                  if (isStillPending(key, status)) {
+                    stillPending.add(key);
+                  }
+                } catch (final RuntimeException e) {
+                  result.completeExceptionally(e);
+                  return;
+                }
+                if (outstanding.decrementAndGet() == 0) {
+                  roundCompleted(Set.copyOf(stillPending));
+                } else {
+                  checkNext(queue, stillPending, outstanding);
+                }
+              });
+    }
+
+    private void roundCompleted(final Set<String> stillPending) {
+      pending = stillPending;
+      if (stillPending.isEmpty()) {
+        result.complete(null);
+        return;
+      }
+      CompletableFuture.delayedExecutor(pollInterval.toNanos(), TimeUnit.NANOSECONDS)
+          .execute(() -> round(stillPending));
+    }
+  }
+
+  private static Duration max(final Duration a, final Duration b) {
+    return a.compareTo(b) >= 0 ? a : b;
   }
 
   private BackupReplicationTimedOut timedOut(final Set<String> pending) {

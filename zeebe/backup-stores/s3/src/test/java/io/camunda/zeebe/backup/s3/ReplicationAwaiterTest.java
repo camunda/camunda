@@ -22,10 +22,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,6 +63,15 @@ final class ReplicationAwaiterTest {
   /** Keys whose HEAD request fails with the given exception. */
   private final Map<String, Throwable> failingHeads = new ConcurrentHashMap<>();
 
+  /** Keys whose HEAD request never returns. */
+  private final Set<String> hangingHeads = ConcurrentHashMap.newKeySet();
+
+  /** When set, HEAD responses arrive asynchronously after this delay. */
+  private volatile @Nullable Duration headDelay;
+
+  private final AtomicInteger headsInFlight = new AtomicInteger();
+  private final AtomicInteger maxHeadsInFlight = new AtomicInteger();
+
   @BeforeEach
   void setUp() {
     lenient()
@@ -74,11 +87,26 @@ final class ReplicationAwaiterTest {
               if (failure != null) {
                 return CompletableFuture.failedFuture(failure);
               }
+              if (hangingHeads.contains(key)) {
+                return new CompletableFuture<HeadObjectResponse>();
+              }
               final var queued = statuses.get(key);
               final var status = queued.size() > 1 ? queued.poll() : queued.peek();
               final var response = HeadObjectResponse.builder();
               status.ifPresent(response::replicationStatus);
-              return CompletableFuture.completedFuture(response.build());
+              final var delay = headDelay;
+              if (delay == null) {
+                return CompletableFuture.completedFuture(response.build());
+              }
+              maxHeadsInFlight.accumulateAndGet(headsInFlight.incrementAndGet(), Math::max);
+              final var delayed = new CompletableFuture<HeadObjectResponse>();
+              CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS)
+                  .execute(
+                      () -> {
+                        headsInFlight.decrementAndGet();
+                        delayed.complete(response.build());
+                      });
+              return delayed;
             });
   }
 
@@ -165,6 +193,60 @@ final class ReplicationAwaiterTest {
         .withThrowableThat()
         .havingCause()
         .isSameAs(headFailure);
+  }
+
+  @Test
+  void shouldTimeOutWhileAStatusCheckIsStillOutstanding() {
+    // given
+    final var awaiter = awaiter(Duration.ofMillis(100));
+    reportStatuses("a", ReplicationStatus.COMPLETED);
+    hangingHeads.add("slow");
+
+    // when
+    final var replicated = awaiter.awaitReplication(List.of("a", "slow"), awaiter.deadline());
+
+    // then
+    assertThat(replicated)
+        .failsWithin(WAIT)
+        .withThrowableThat()
+        .havingCause()
+        .isInstanceOf(BackupReplicationTimedOut.class);
+  }
+
+  @Test
+  void shouldFailWithoutWaitingForOutstandingChecksWhenAnObjectFails() {
+    // given
+    final var awaiter = awaiter(WAIT);
+    hangingHeads.add("slow");
+    reportStatuses("b", ReplicationStatus.FAILED);
+
+    // when
+    final var replicated = awaiter.awaitReplication(List.of("slow", "b"), awaiter.deadline());
+
+    // then
+    assertThat(replicated)
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .havingCause()
+        .isInstanceOf(BackupReplicationFailed.class)
+        .withMessageContaining("'b'");
+  }
+
+  @Test
+  void shouldLimitConcurrentStatusChecksToHalfTheConnectionPool() {
+    // given a pool of 4 connections, of which uploads and checks each use half
+    final var awaiter = awaiter(WAIT, 4);
+    headDelay = Duration.ofMillis(20);
+    final var keys = List.of("a", "b", "c", "d", "e", "f");
+    keys.forEach(key -> reportStatuses(key, ReplicationStatus.COMPLETED));
+
+    // when
+    final var replicated = awaiter.awaitReplication(keys, awaiter.deadline());
+
+    // then
+    assertThat(replicated).succeedsWithin(WAIT);
+    assertThat(heads).containsOnlyKeys(keys);
+    assertThat(maxHeadsInFlight).hasValue(2);
   }
 
   @Test
@@ -343,9 +425,14 @@ final class ReplicationAwaiterTest {
   }
 
   private ReplicationAwaiter awaiter(final Duration timeout) {
+    return awaiter(timeout, 50);
+  }
+
+  private ReplicationAwaiter awaiter(final Duration timeout, final int maxConcurrentConnections) {
     final var config =
         new S3BackupConfig.Builder()
             .withBucketName("bucket")
+            .withMaxConcurrentConnections(maxConcurrentConnections)
             .withWaitForReplication(true)
             .withReplicationPollInterval(POLL_INTERVAL)
             .withReplicationTimeout(timeout)
