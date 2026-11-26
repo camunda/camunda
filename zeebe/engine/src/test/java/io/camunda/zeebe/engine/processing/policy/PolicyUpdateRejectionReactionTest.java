@@ -229,6 +229,12 @@ public final class PolicyUpdateRejectionReactionTest {
                     ids -> deletes(delete(PolicyUpdateEntityType.ROLE, DefaultRole.ADMIN.getId())))
                 .rejects(RoleIntent.DELETE, RejectionType.INVALID_STATE)),
         fails(
+            // not the admin role, which the authorization row below creates
+            "role UPDATE of a default role",
+            Scenario.given(ids -> defaultRole(DefaultRole.RPA))
+                .when(ids -> defaultRole(DefaultRole.RPA))
+                .rejects(RoleIntent.UPDATE, RejectionType.INVALID_STATE)),
+        fails(
             "authorization DELETE of an authorization of a default role",
             Scenario.given(
                     ids ->
@@ -306,6 +312,14 @@ public final class PolicyUpdateRejectionReactionTest {
     return record.getRecordType() == RecordType.EVENT
         && record.getIntent() == intent
         && ((PolicyUpdateRecordValue) record.getValue()).getUpdateId().equals(update.getUpdateId());
+  }
+
+  /** Upserts the role: creates it if it is missing, else updates it. */
+  private static PolicyUpdateRecord defaultRole(final DefaultRole role) {
+    return chunk()
+        .setRoles(
+            List.<RoleRecordValue>of(
+                new RoleRecord().setRoleId(role.getId()).setName(role.getId())));
   }
 
   /** A role, a group and a tenant, and a mapping rule that can become their member. */
