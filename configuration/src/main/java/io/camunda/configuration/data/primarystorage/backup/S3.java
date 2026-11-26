@@ -9,6 +9,7 @@ package io.camunda.configuration.data.primarystorage.backup;
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import java.time.Duration;
 import java.util.LinkedHashSet;
@@ -189,7 +190,7 @@ public class S3 {
    * the bucket's own replication (S3 replication or MinIO bucket replication) to the replica site,
    * as reported by each object's replication status. If replication of an object fails, or does not
    * complete within replication-timeout, the backup fails. Requires replication to be configured on
-   * the bucket, and permission to read the bucket's replication configuration.
+   * the bucket.
    */
   private boolean waitForReplication = false;
 
@@ -197,13 +198,13 @@ public class S3 {
    * How often to check the replication status of backup objects that are still pending replication.
    * Only used when wait-for-replication is enabled.
    */
-  private Duration replicationPollInterval = Duration.ofSeconds(5);
+  private Duration replicationPollInterval = S3BackupConfig.DEFAULT_REPLICATION_POLL_INTERVAL;
 
   /**
    * How long to wait for all objects of a backup to be replicated before the backup fails. Only
    * used when wait-for-replication is enabled.
    */
-  private Duration replicationTimeout = Duration.ofMinutes(15);
+  private Duration replicationTimeout = S3BackupConfig.DEFAULT_REPLICATION_TIMEOUT;
 
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
