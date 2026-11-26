@@ -101,14 +101,12 @@ test.describe.parallel('User Task Lookup API', () => {
     test('Every visible variable is returned without a body, with an empty body and with an empty fetchVariables', async ({
       request,
     }) => {
-      // given
       const {userTaskKey} = await startTwoUserTaskInstance(
         request,
         instancesToCancel,
         APPLICANT_VARIABLES,
       );
 
-      // when
       const withoutBody = await lookupUserTaskAndExpectFound(
         request,
         userTaskKey,
@@ -124,7 +122,6 @@ test.describe.parallel('User Task Lookup API', () => {
         {fetchVariables: []},
       );
 
-      // then
       expect(withoutBody.state).toBe('CREATED');
       expect(Object.keys(withoutBody.variables).sort()).toEqual(
         Object.keys(APPLICANT_VARIABLES).sort(),
@@ -136,14 +133,12 @@ test.describe.parallel('User Task Lookup API', () => {
     test('fetchVariables returns only the named variables and leaves out unknown names', async ({
       request,
     }) => {
-      // given
       const {userTaskKey} = await startTwoUserTaskInstance(
         request,
         instancesToCancel,
         APPLICANT_VARIABLES,
       );
 
-      // when
       const named = await lookupUserTaskAndExpectFound(request, userTaskKey, {
         fetchVariables: ['amount', 'doesNotExist', 'applicant'],
       });
@@ -153,7 +148,6 @@ test.describe.parallel('User Task Lookup API', () => {
         {fetchVariables: ['doesNotExist']},
       );
 
-      // then
       expect(named.variables).toEqual({
         amount: APPLICANT_VARIABLES.amount,
         applicant: APPLICANT_VARIABLES.applicant,
@@ -164,24 +158,20 @@ test.describe.parallel('User Task Lookup API', () => {
     test('Variables keep their JSON types and nested values', async ({
       request,
     }) => {
-      // given
       const {userTaskKey} = await startTwoUserTaskInstance(
         request,
         instancesToCancel,
         APPLICANT_VARIABLES,
       );
 
-      // when
       const task = await lookupUserTaskAndExpectFound(request, userTaskKey);
 
-      // then
       expect(task.variables).toEqual(APPLICANT_VARIABLES);
     });
 
     test('A large value is returned whole while variable search truncates it', async ({
       request,
     }) => {
-      // given
       const contractText = 'x'.repeat(50_000);
       const {userTaskKey} = await startTwoUserTaskInstance(
         request,
@@ -189,12 +179,10 @@ test.describe.parallel('User Task Lookup API', () => {
         {...APPLICANT_VARIABLES, contractText},
       );
 
-      // when
       const task = await lookupUserTaskAndExpectFound(request, userTaskKey, {
         fetchVariables: ['contractText'],
       });
 
-      // then
       expect(task.variables.contractText).toBe(contractText);
       await expect(async () => {
         const res = await request.post(
@@ -211,7 +199,6 @@ test.describe.parallel('User Task Lookup API', () => {
     });
 
     test('The task fields match the user task endpoint', async ({request}) => {
-      // given
       const {userTaskKey} = await startTwoUserTaskInstance(
         request,
         instancesToCancel,
@@ -247,10 +234,8 @@ test.describe.parallel('User Task Lookup API', () => {
         expect(exported.priority).toBe(70);
       }).toPass(extendedAssertionOptions);
 
-      // when
       const task = await lookupUserTaskAndExpectFound(request, userTaskKey);
 
-      // then
       for (const field of [
         'userTaskKey',
         'elementId',
@@ -280,7 +265,6 @@ test.describe.parallel('User Task Lookup API', () => {
     test('The innermost scope wins and each multi-instance task sees its own element', async ({
       request,
     }) => {
-      // given
       const documents = ['doc-1.pdf', 'doc-2.pdf', 'doc-3.pdf'];
       const childId = await deployProcessModel('user_task_lookup_child');
       const processDefinitionId = await deployProcessModel(
@@ -301,7 +285,6 @@ test.describe.parallel('User Task Lookup API', () => {
         extendedAssertionOptions,
       );
 
-      // when
       const inner = await lookupUserTaskAndExpectFound(request, innerTaskKey);
       await assertStatusCode(
         await completeUserTask(request, innerTaskKey),
@@ -316,7 +299,6 @@ test.describe.parallel('User Task Lookup API', () => {
         miTaskKeys.map((key) => lookupUserTaskAndExpectFound(request, key)),
       );
 
-      // then
       expect(inner.variables.status).toBe('sub');
       expect(inner.variables.amount).toBe(100);
       expect(miTasks.map((task) => task.variables.document).sort()).toEqual(
@@ -330,7 +312,6 @@ test.describe.parallel('User Task Lookup API', () => {
     test('A task in a called process sees only the variables mapped into it', async ({
       request,
     }) => {
-      // given
       const childId = await deployProcessModel('user_task_lookup_child');
       const processDefinitionId = await deployProcessModel(
         'user_task_lookup_scopes',
@@ -355,10 +336,8 @@ test.describe.parallel('User Task Lookup API', () => {
       );
       const childTaskKey = await findChildTaskKey(request, processInstanceKey);
 
-      // when
       const child = await lookupUserTaskAndExpectFound(request, childTaskKey);
 
-      // then
       expect(child.variables).toEqual({amount: 100});
       expect(child.rootProcessInstanceKey).toBe(processInstanceKey);
       expect(child.processInstanceKey).not.toBe(processInstanceKey);
@@ -367,20 +346,17 @@ test.describe.parallel('User Task Lookup API', () => {
     test('Every partition serves the lookup of its own tasks', async ({
       request,
     }) => {
-      // given
       const tasksByPartition = await startTwoUserTaskInstanceOnEveryPartition(
         request,
         instancesToCancel,
       );
 
-      // when
       const found = await Promise.all(
         [...tasksByPartition.values()].map((key) =>
           lookupUserTaskAndExpectFound(request, key),
         ),
       );
 
-      // then
       expect(found.map((task) => task.userTaskKey).sort()).toEqual(
         [...tasksByPartition.values()].sort(),
       );
@@ -391,14 +367,12 @@ test.describe.parallel('User Task Lookup API', () => {
     test('The next task carries the variables the previous task completed with', async ({
       request,
     }) => {
-      // given
       const {processInstanceKey, userTaskKey} = await startTwoUserTaskInstance(
         request,
         instancesToCancel,
         APPLICANT_VARIABLES,
       );
 
-      // when
       await assertStatusCode(
         await completeUserTask(request, userTaskKey, {
           variables: {recommendation: 'approve', reviewer: 'qa-user-a'},
@@ -414,7 +388,6 @@ test.describe.parallel('User Task Lookup API', () => {
       );
       const next = await lookupUserTaskAndExpectFound(request, nextTaskKey);
 
-      // then
       expect(next.variables.recommendation).toBe('approve');
       expect(next.variables.reviewer).toBe('qa-user-a');
       expect(
@@ -423,16 +396,13 @@ test.describe.parallel('User Task Lookup API', () => {
     });
 
     test('A task of a canceled instance is not found', async ({request}) => {
-      // given
       const {processInstanceKey, userTaskKey} = await startTwoUserTaskInstance(
         request,
         instancesToCancel,
       );
 
-      // when
       await cancelProcessInstance(processInstanceKey, {ignoreNotFound: false});
 
-      // then
       // The cancellation is acknowledged before the task is terminated.
       await expect(async () => {
         expect(
@@ -446,7 +416,6 @@ test.describe.parallel('User Task Lookup API', () => {
     test('A task waiting on its creating listener is CREATING', async ({
       request,
     }) => {
-      // given
       const {processInstanceKey, userTaskKey, jobType} =
         await startUserTaskWithListener(request, 'creating', instancesToCancel);
       const jobKey = await activateSingleJob(
@@ -455,11 +424,9 @@ test.describe.parallel('User Task Lookup API', () => {
         processInstanceKey,
       );
 
-      // when
       const held = await lookupUserTaskAndExpectFound(request, userTaskKey);
       await completeJob(request, jobKey);
 
-      // then
       expect(held.state).toBe('CREATING');
       await expectLookupState(request, userTaskKey, 'CREATED');
     });
@@ -467,7 +434,6 @@ test.describe.parallel('User Task Lookup API', () => {
     test('ASSIGNING keeps the previous assignee until the listener completes', async ({
       request,
     }) => {
-      // given
       const {processInstanceKey, userTaskKey, jobType} =
         await startUserTaskWithListener(
           request,
@@ -482,7 +448,6 @@ test.describe.parallel('User Task Lookup API', () => {
         'qa-user-a',
       );
 
-      // when
       const assignment = assignUserTask(request, userTaskKey, 'qa-user-b');
       const jobKey = await activateSingleJob(
         request,
@@ -493,7 +458,6 @@ test.describe.parallel('User Task Lookup API', () => {
       await completeJob(request, jobKey);
       await assertStatusCode(await assignment, 204);
 
-      // then
       expect(held.state).toBe('ASSIGNING');
       expect(held.assignee).toBe('qa-user-a');
       const released = await expectLookupState(request, userTaskKey, 'CREATED');
@@ -501,7 +465,6 @@ test.describe.parallel('User Task Lookup API', () => {
     });
 
     test('A claim in progress is reported as ASSIGNING', async ({request}) => {
-      // given
       const {processInstanceKey, userTaskKey, jobType} =
         await startUserTaskWithListener(
           request,
@@ -509,7 +472,6 @@ test.describe.parallel('User Task Lookup API', () => {
           instancesToCancel,
         );
 
-      // when
       // With authorizations on, a claim must name the calling user.
       const claim = request.post(
         buildUrl('/user-tasks/{userTaskKey}/assignment', {userTaskKey}),
@@ -527,7 +489,6 @@ test.describe.parallel('User Task Lookup API', () => {
       await completeJob(request, jobKey);
       await assertStatusCode(await claim, 204);
 
-      // then
       expect(held.state).toBe('ASSIGNING');
       expect(held.assignee).toBeNull();
       const released = await expectLookupState(request, userTaskKey, 'CREATED');
@@ -537,12 +498,10 @@ test.describe.parallel('User Task Lookup API', () => {
     test('UPDATING keeps the previous priority until the listener completes', async ({
       request,
     }) => {
-      // given
       const {processInstanceKey, userTaskKey, jobType} =
         await startUserTaskWithListener(request, 'updating', instancesToCancel);
       const before = await lookupUserTaskAndExpectFound(request, userTaskKey);
 
-      // when
       const update = request.patch(
         buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
         {headers: jsonHeaders(), data: {changeset: {priority: 80}}},
@@ -556,7 +515,6 @@ test.describe.parallel('User Task Lookup API', () => {
       await completeJob(request, jobKey);
       await assertStatusCode(await update, 204);
 
-      // then
       expect(held.state).toBe('UPDATING');
       expect(held.priority).toBe(before.priority);
       const released = await expectLookupState(request, userTaskKey, 'CREATED');
@@ -566,7 +524,6 @@ test.describe.parallel('User Task Lookup API', () => {
     test('COMPLETING leaves out the completion variables and the task is gone afterwards', async ({
       request,
     }) => {
-      // given
       const {processInstanceKey, userTaskKey, jobType} =
         await startUserTaskWithListener(
           request,
@@ -574,7 +531,6 @@ test.describe.parallel('User Task Lookup API', () => {
           instancesToCancel,
         );
 
-      // when
       const completion = completeUserTask(request, userTaskKey, {
         variables: {decision: 'reject'},
       });
@@ -587,7 +543,6 @@ test.describe.parallel('User Task Lookup API', () => {
       await completeJob(request, jobKey);
       await assertStatusCode(await completion, 204);
 
-      // then
       expect(held.state).toBe('COMPLETING');
       expect(held.variables).not.toHaveProperty('decision');
       expect(
@@ -598,7 +553,6 @@ test.describe.parallel('User Task Lookup API', () => {
     test('CANCELING is returned until the canceling listener completes', async ({
       request,
     }) => {
-      // given
       const {processInstanceKey, userTaskKey, jobType} =
         await startUserTaskWithListener(
           request,
@@ -607,7 +561,6 @@ test.describe.parallel('User Task Lookup API', () => {
         );
       cancelingListeners.set(processInstanceKey, jobType);
 
-      // when
       const cancellation = cancelProcessInstance(processInstanceKey, {
         ignoreNotFound: false,
       });
@@ -620,7 +573,6 @@ test.describe.parallel('User Task Lookup API', () => {
       await completeJob(request, jobKey);
       await cancellation;
 
-      // then
       expect(held.state).toBe('CANCELING');
       await expect(async () => {
         expect(
@@ -632,7 +584,6 @@ test.describe.parallel('User Task Lookup API', () => {
     test('A denied assignment keeps the previous assignee', async ({
       request,
     }) => {
-      // given
       const {processInstanceKey, userTaskKey, jobType} =
         await startUserTaskWithListener(
           request,
@@ -647,7 +598,6 @@ test.describe.parallel('User Task Lookup API', () => {
         'qa-user-a',
       );
 
-      // when
       const assignment = assignUserTask(request, userTaskKey, 'qa-user-b');
       const jobKey = await activateSingleJob(
         request,
@@ -660,7 +610,6 @@ test.describe.parallel('User Task Lookup API', () => {
       });
       await assertStatusCode(await assignment, 409);
 
-      // then
       const task = await expectLookupState(request, userTaskKey, 'CREATED');
       expect(task.assignee).toBe('qa-user-a');
     });
@@ -668,7 +617,6 @@ test.describe.parallel('User Task Lookup API', () => {
     test('Listener corrections are returned once applied', async ({
       request,
     }) => {
-      // given
       const {processInstanceKey, userTaskKey, jobType} =
         await startUserTaskWithListener(
           request,
@@ -676,7 +624,6 @@ test.describe.parallel('User Task Lookup API', () => {
           instancesToCancel,
         );
 
-      // when
       const assignment = assignUserTask(request, userTaskKey, 'qa-user-b');
       const jobKey = await activateSingleJob(
         request,
@@ -689,7 +636,6 @@ test.describe.parallel('User Task Lookup API', () => {
       });
       await assertStatusCode(await assignment, 204);
 
-      // then
       const task = await expectLookupState(request, userTaskKey, 'CREATED');
       expect(task.assignee).toBe('qa-user-c');
       expect(task.priority).toBe(90);
@@ -708,7 +654,6 @@ test.describe.parallel('User Task Lookup API', () => {
     test('Process instance and element instance keys are not found', async ({
       request,
     }) => {
-      // given
       const {processInstanceKey, userTaskKey} = await startTwoUserTaskInstance(
         request,
         instancesToCancel,
@@ -718,7 +663,6 @@ test.describe.parallel('User Task Lookup API', () => {
         userTaskKey,
       );
 
-      // then
       expect(
         await lookupUserTaskNotFoundDetail(request, processInstanceKey),
       ).toContain(NOT_FOUND_DETAIL);
@@ -732,7 +676,6 @@ test.describe.parallel('User Task Lookup API', () => {
     test('A task in a case stage is looked up like any other task', async ({
       request,
     }) => {
-      // given
       const businessId = `QA-CASE-${Date.now()}`;
       const {processInstanceKey, userTaskKey} = await startCaseInstance(
         request,
@@ -745,14 +688,12 @@ test.describe.parallel('User Task Lookup API', () => {
         instancesToCancel,
       );
 
-      // when
       const caseTask = await lookupUserTaskAndExpectFound(request, userTaskKey);
       const plainTask = await lookupUserTaskAndExpectFound(
         request,
         plainTaskKey,
       );
 
-      // then
       expect(Object.keys(caseTask).sort()).toEqual(
         Object.keys(plainTask).sort(),
       );
@@ -767,7 +708,6 @@ test.describe.parallel('User Task Lookup API', () => {
     test('A task in a process called by a case points to the case root', async ({
       request,
     }) => {
-      // given
       const {processInstanceKey, userTaskKey} = await startCaseInstance(
         request,
         `QA-CASE-${Date.now()}`,
@@ -776,10 +716,8 @@ test.describe.parallel('User Task Lookup API', () => {
       await assertStatusCode(await completeUserTask(request, userTaskKey), 204);
       const childTaskKey = await findChildTaskKey(request, processInstanceKey);
 
-      // when
       const child = await lookupUserTaskAndExpectFound(request, childTaskKey);
 
-      // then
       expect(child.rootProcessInstanceKey).toBe(processInstanceKey);
       expect(child.processInstanceKey).not.toBe(processInstanceKey);
     });
