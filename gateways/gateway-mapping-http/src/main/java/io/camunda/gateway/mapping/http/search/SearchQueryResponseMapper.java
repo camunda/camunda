@@ -180,6 +180,7 @@ import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.gateway.protocol.model.UserTaskWaitStateDetails;
 import io.camunda.gateway.protocol.model.VariableHistoryItemActorTypeEnum;
 import io.camunda.gateway.protocol.model.VariableHistoryItemOperationTypeEnum;
+import io.camunda.gateway.protocol.model.VariableHistoryItemResult;
 import io.camunda.gateway.protocol.model.VariableHistoryItemSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableHistoryItemSearchResult;
 import io.camunda.gateway.protocol.model.VariableHistoryItemVariableOperationTypeEnum;
@@ -1889,6 +1890,38 @@ public final class SearchQueryResponseMapper {
         .value(returnFull ? fullValue : item.value())
         .isTruncated(item.isPreview() && !returnFull)
         .build();
+  }
+
+  public static VariableHistoryItemResult toVariableHistoryItemResult(
+      final VariableHistoryItemEntity item) {
+    return VariableHistoryItemResult.Builder.create()
+        .variableHistoryItemKey(keyToString(item.variableHistoryItemKey()))
+        .variableKey(keyToString(item.variableKey()))
+        .name(item.name())
+        .scopeKey(keyToString(item.scopeKey()))
+        .elementInstanceKey(keyToStringOrNull(item.elementInstanceKey()))
+        .elementId(item.elementId())
+        .processInstanceKey(keyToString(item.processInstanceKey()))
+        .rootProcessInstanceKey(keyToStringOrNull(item.rootProcessInstanceKey()))
+        .processDefinitionKey(keyToString(item.processDefinitionKey()))
+        .processDefinitionId(item.processDefinitionId())
+        .tenantId(item.tenantId())
+        .timestamp(formatDate(item.timestamp()))
+        .operationType(VariableHistoryItemOperationTypeEnum.fromValue(item.operationType().name()))
+        .variableOperationType(
+            VariableHistoryItemVariableOperationTypeEnum.fromValue(
+                item.variableOperationType().name()))
+        .actorType(VariableHistoryItemActorTypeEnum.fromValue(item.actorType().name()))
+        .actorId(item.actorId())
+        .agentElementId(item.agentElementId())
+        .value(fullValueOf(item))
+        .build();
+  }
+
+  // The get response has no isTruncated, so a preview without a full value must fail instead of
+  // returning a cut value.
+  private static String fullValueOf(final VariableHistoryItemEntity item) {
+    return item.isPreview() ? requireNonNull(item.fullValue(), "fullValue") : item.value();
   }
 
   public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
