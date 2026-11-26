@@ -77,7 +77,7 @@ jobs:
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
       load-test-k6-changes: ${{ steps.filter.outputs.load-test-k6-changes }}
-      gradle-changes: ${{ steps.filter.outputs.gradle-changes == 'true' }}
+      gradle-changes: ${{ steps.filter.outputs.gradle-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -643,7 +643,9 @@ jobs:
       needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 30
+    # Observed runs land at 3-20 minutes depending on cache state; 20 keeps headroom
+    # for a cold-cache full compile without masking a hung build for half an hour.
+    timeout-minutes: 20
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
@@ -678,14 +680,6 @@ jobs:
                 )
               )
             }}
-      - name: Authenticate to GCS build-cache
-        timeout-minutes: 3
-        uses: ./.github/actions/gcs-build-cache-auth
-        if: needs.detect-changes.outputs.gradle-changes == 'true' && github.event.pull_request.head.repo.fork != true
-        with:
-          vault-addr: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Compile
         run: |
           ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
@@ -722,7 +716,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/gradle-parity-inputs"
           cp "${gradle_tars[0]}" "$RUNNER_TEMP/gradle-parity-inputs/gradle-distribution.tar"
           cp "$gradle_report" "$RUNNER_TEMP/gradle-parity-inputs/dist-dependencies.json"
-      - name: Refresh GCS authentication for Gradle artifact upload
+      # Authenticated here rather than at job start: the WIF credentials expire during
+      # long compile steps, so the upload needs a freshly minted token.
+      - name: Authenticate to GCS build-cache
         if: needs.detect-changes.outputs.gradle-changes == 'true' && github.event.pull_request.head.repo.fork != true
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
