@@ -34,9 +34,13 @@ The broker creates the scheduler when the first actor of the tenant starts on th
 that has no partitions on the broker gets no threads. The broker stops the scheduler when the
 partition manager of the tenant stops.
 
-**D3. One broker setting sets the size of the pools of all tenants.**
-A tenant cannot set a different size for its pool. A later decision about CPU allocation will add
-sizes for each tenant.
+**D3. Broker settings set the default size of each tenant's pool; a tenant can override its own
+CPU and IO thread counts.** The broker-wide actor-pool enablement switch and the default CPU and IO
+thread counts are configured under `camunda.system.actor-pool.*`. A tenant can
+override the counts under
+`camunda.physical-tenants.<id>.system.actor-pool.*`. The broker-wide enablement
+switch cannot be overridden per tenant. Thread counts size pools; they do not assign a CPU quota or
+limit how much CPU a tenant can use. A later decision about CPU allocation will define that policy.
 
 **D4. A Java thread group identifies the threads of a tenant.**
 The broker creates the actor threads of a tenant in a thread group for that tenant. A thread that
@@ -76,7 +80,8 @@ virtual threads.
 ## Consequences
 
 - When the tenant pools are on, the broker has more threads. The shared pool keeps its size, so
-  operators must make the shared pool smaller to keep the same number of threads.
+  operators must make the shared pool smaller to keep the same number of threads. Tenant-specific
+  thread counts can further change the total number of actor threads on the broker.
 - If all partitions of a tenant leave the broker at run time, the pool of the tenant stays until
   the partition manager of the tenant stops.
 - A tenant can use CPU that the broker does not charge, through threads that are not in its group.

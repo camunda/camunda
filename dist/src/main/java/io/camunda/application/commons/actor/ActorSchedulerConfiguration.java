@@ -74,7 +74,7 @@ public final class ActorSchedulerConfiguration {
    * scheduler of the broker. Otherwise each tenant gets a scheduler of its own, named after the
    * broker-wide one and the tenant, when its first partition actor is submitted.
    */
-  @Bean(destroyMethod = "close")
+  @Bean
   public PhysicalTenantActorSchedulers physicalTenantActorSchedulers(
       final ActorScheduler scheduler) {
     if (!schedulerConfiguration.tenantActorPool().enabled()) {

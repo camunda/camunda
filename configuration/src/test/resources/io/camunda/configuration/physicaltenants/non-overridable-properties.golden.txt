@@ -151,15 +151,13 @@ security.transport-layer-security.cluster.certificate-private-key-path
 security.transport-layer-security.cluster.enabled
 security.transport-layer-security.cluster.key-store.file-path
 security.transport-layer-security.cluster.key-store.password
+system.actor-pool.enabled
 system.actor.idle.max-park-period
 system.actor.idle.max-spins
 system.actor.idle.max-yields
 system.actor.idle.min-park-period
 system.cpu-thread-count
 system.io-thread-count
-system.physical-tenants.actor-pool.cpu-thread-count
-system.physical-tenants.actor-pool.enabled
-system.physical-tenants.actor-pool.io-thread-count
 system.restore.ignore-files-in-target
 system.restore.validate-config
 system.upgrade.enable-version-check

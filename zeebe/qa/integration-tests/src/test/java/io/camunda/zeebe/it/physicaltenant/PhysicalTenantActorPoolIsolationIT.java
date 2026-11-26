@@ -52,7 +52,7 @@ final class PhysicalTenantActorPoolIsolationIT {
           .configure(new TestStandaloneBroker().withUnauthenticatedAccess())
           .withUnifiedConfig(
               camunda -> {
-                final var tenantPool = camunda.getSystem().getPhysicalTenants().getActorPool();
+                final var tenantPool = camunda.getSystem().getActorPool();
                 tenantPool.setEnabled(true);
                 tenantPool.setCpuThreadCount(1);
               });

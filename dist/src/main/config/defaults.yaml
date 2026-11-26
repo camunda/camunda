@@ -2023,33 +2023,38 @@ camunda: # Type: io.camunda.configuration.Camunda
         max-yields: null # Type: Long, Env: CAMUNDA_SYSTEM_ACTOR_IDLE_MAXYIELDS
         min-park-period: null # Type: Duration, Env: CAMUNDA_SYSTEM_ACTOR_IDLE_MINPARKPERIOD
     
+    actor-pool: # Type: io.camunda.configuration.system.ActorPool
+      # The default number of CPU-bound actor threads in each physical tenant's pool. A physical tenant can
+      # override this value in its own configuration. Must be positive when the pool is enabled.
+      # Experimental.
+      cpu-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_ACTORPOOL_CPUTHREADCOUNT
+      # Whether each physical tenant with partitions on this broker gets its own actor thread pool, in
+      # addition to the shared pool sized by cpu-thread-count and io-thread-count of the system. This switch
+      # applies to the whole broker. Experimental.
+      enabled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_ACTORPOOL_ENABLED
+      # The default number of IO-bound actor threads in each physical tenant's pool. A physical tenant can
+      # override this value in its own configuration. Must be positive when the pool is enabled.
+      # Experimental.
+      io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_ACTORPOOL_IOTHREADCOUNT
+
     # Controls whether the system clock or mutable one. When enabled, time progression can be controlled
     # programmatically for testing purposes.
     clock-controlled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_CLOCKCONTROLLED
-    # Controls the number of non-blocking CPU threads to be used. WARNING: You should never specify a
-    # value that is larger than the number of physical cores available. Good practice is to leave 1-2
-    # cores for IO threads and the operating system (it has to run somewhere). For example, when running
-    # Zeebe on a machine which has 4 cores, a good value would be 2.
+    # Controls the number of non-blocking CPU threads in the broker-wide actor pool. When
+    # `camunda.system.actor-pool.enabled` is true, this still sizes the shared pool for actors that are
+    # not specific to a physical tenant; each tenant's pool is additional. WARNING: You should never
+    # specify a value that is larger than the number of physical cores available. Good practice is to
+    # leave 1-2 cores for IO threads and the operating system (it has to run somewhere). For example, when
+    # running Zeebe on a machine which has 4 cores, a good value would be 2.
     cpu-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_CPUTHREADCOUNT
-    # Controls the number of io threads to be used. These threads are used for workloads that write data
-    # to disk. While writing, these threads are blocked which means that they yield the CPU.
+    # Controls the number of IO threads in the broker-wide actor pool. These threads are used for
+    # workloads that write data to disk. While writing, these threads are blocked which means that they
+    # yield the CPU. When `camunda.system.actor-pool.enabled` is true, this still sizes the shared pool
+    # for actors that are not specific to a physical tenant; each tenant's pool is additional.
     io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_IOTHREADCOUNT
     legacy-query-api: # Type: io.camunda.configuration.system.LegacyQueryApi  
       # Enables the broker's internal legacy query API.
       enabled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_LEGACYQUERYAPI_ENABLED
-    
-    physical-tenants: # Type: io.camunda.configuration.system.PhysicalTenants  
-      actor-pool: # Type: io.camunda.configuration.system.ActorPool  
-        # The number of CPU-bound actor threads of the pool of each physical tenant with partitions on this
-        # broker. Only used when the pool is enabled. Experimental.
-        cpu-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_PHYSICALTENANTS_ACTORPOOL_CPUTHREADCOUNT
-        # Whether each physical tenant with partitions on this broker gets its own actor thread pool, in
-        # addition to the shared pool sized by cpu-thread-count and io-thread-count of the system.
-        # Experimental.
-        enabled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_PHYSICALTENANTS_ACTORPOOL_ENABLED
-        # The number of IO-bound actor threads of the pool of each physical tenant with partitions on this
-        # broker. Only used when the pool is enabled. Experimental.
-        io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_PHYSICALTENANTS_ACTORPOOL_IOTHREADCOUNT
     
     restore: # Type: io.camunda.configuration.system.Restore  
       ignore-files-in-target: null # Type: List<String>, Env: CAMUNDA_SYSTEM_RESTORE_IGNOREFILESINTARGET

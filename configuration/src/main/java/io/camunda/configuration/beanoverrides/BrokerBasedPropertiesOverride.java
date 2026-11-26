@@ -810,7 +810,8 @@ public class BrokerBasedPropertiesOverride {
     final var threadsCfg = new ThreadsCfg();
     threadsCfg.setCpuThreadCount(system.getCpuThreadCount());
     threadsCfg.setIoThreadCount(system.getIoThreadCount());
-    final var tenantPool = system.getPhysicalTenants().getActorPool();
+    final var tenantPool = system.getActorPool();
+    tenantPool.validate();
     threadsCfg.setPhysicalTenantActorPool(
         new TenantActorPoolCfg(
             tenantPool.isEnabled(), tenantPool.getCpuThreadCount(), tenantPool.getIoThreadCount()));

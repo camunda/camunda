@@ -47,9 +47,9 @@ public class SystemPropertiesTest {
         "camunda.system.actor.idle.min-park-period=10ms",
         "camunda.system.actor.idle.max-park-period=100ms",
         "camunda.system.legacy-query-api.enabled=true",
-        "camunda.system.physical-tenants.actor-pool.enabled=true",
-        "camunda.system.physical-tenants.actor-pool.cpu-thread-count=3",
-        "camunda.system.physical-tenants.actor-pool.io-thread-count=5"
+        "camunda.system.actor-pool.enabled=true",
+        "camunda.system.actor-pool.cpu-thread-count=3",
+        "camunda.system.actor-pool.io-thread-count=5"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
