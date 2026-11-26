@@ -28,12 +28,13 @@ import org.jspecify.annotations.NullMarked;
 public final class CaseStageRecord extends ObjectValue implements CaseStageValue {
 
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY);
+  private final StringProperty nameProp = new StringProperty("name", "");
   private final EnumProperty<CaseStageStatus> statusProp =
       new EnumProperty<>("status", CaseStageStatus.class, CaseStageStatus.NOT_STARTED);
 
   public CaseStageRecord() {
-    super(2);
-    declareProperty(elementIdProp).declareProperty(statusProp);
+    super(3);
+    declareProperty(elementIdProp).declareProperty(nameProp).declareProperty(statusProp);
   }
 
   @Override
@@ -43,6 +44,16 @@ public final class CaseStageRecord extends ObjectValue implements CaseStageValue
 
   public CaseStageRecord setElementId(final String elementId) {
     elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  @Override
+  public String getName() {
+    return BufferUtil.bufferAsString(nameProp.getValue());
+  }
+
+  public CaseStageRecord setName(final String name) {
+    nameProp.setValue(name);
     return this;
   }
 

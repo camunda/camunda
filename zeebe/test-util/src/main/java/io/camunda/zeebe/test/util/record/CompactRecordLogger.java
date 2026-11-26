@@ -1146,13 +1146,22 @@ public class CompactRecordLogger {
 
   String summarizeCase(final Record<?> record) {
     final var value = (CaseRecordValue) record.getValue();
-    final var result = new StringBuilder("title:").append(value.getTitle());
+    final var result =
+        new StringBuilder("title:")
+            .append(value.getTitle())
+            .append(" state:")
+            .append(value.getState());
     if (!value.getStages().isEmpty()) {
       result
           .append(" stages:")
           .append(
               value.getStages().stream()
-                  .map(stage -> stage.getElementId() + "=" + stage.getStatus())
+                  .map(
+                      stage ->
+                          stage.getElementId()
+                              + (stage.getName().isEmpty() ? "" : "(" + stage.getName() + ")")
+                              + "="
+                              + stage.getStatus())
                   .collect(Collectors.joining(", ", "[", "]")));
     }
     return result
