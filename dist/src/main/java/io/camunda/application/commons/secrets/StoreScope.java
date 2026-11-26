@@ -24,12 +24,12 @@ import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The secret ids a store can reach: a secret name is appended to the store's prefix, so a store
- * reaches every id that starts with its prefix, or only its container secret if it has one.
+ * The secret ids a store can read: every id that starts with its prefix, or only its container
+ * secret if it has one.
  *
- * @param backend the backend the store reads, such as an AWS region; {@code null} when it is left
- *     to the environment, so it may be the same as any other
- * @param prefix the prefix of every secret id the store reaches
+ * @param backend the backend the store reads, such as an AWS region; {@code null} if left to the
+ *     environment, which may match any other
+ * @param prefix the prefix of every secret id the store reads
  * @param container the one secret the store reads, if it reads secrets out of a container
  */
 record StoreScope(@Nullable String backend, String prefix, @Nullable String container) {
@@ -51,8 +51,7 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
   }
 
   /**
-   * A blank region is left to the environment, as the store leaves it. A secret id can be an ARN as
-   * well as a name, so an ARN is compared as the name it ends with.
+   * A blank region is left to the environment. An ARN is compared as the secret name it ends with.
    */
   static StoreScope of(final AwsSecretsManagerStore store) {
     final var region = store.getRegion();
@@ -101,9 +100,8 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
   }
 
   /**
-   * The directory a file store reads, with symlinks resolved as the store resolves them. Only the
-   * part of the path that exists can be resolved, so the rest is kept as written. A {@code ..} is
-   * only collapsed after the symlinks before it are resolved, as the filesystem does.
+   * The directory a file store reads, with symlinks resolved. Only the part that exists can be
+   * resolved, and a {@code ..} is only collapsed after the symlinks before it.
    */
   private static Path realPath(final Path directory) {
     final var absolute = directory.toAbsolutePath();
@@ -121,33 +119,28 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
     }
   }
 
-  /** The secret name in an AWS secret id, which may be written as an ARN. */
   private static String secretName(final String secretId) {
     final var arn = SECRET_ARN.matcher(secretId);
     return arn.matches() ? arn.group(1) : secretId;
   }
 
-  /**
-   * The name of an AWS container secret. A full ARN ends in a random suffix that isn't part of the
-   * name, so the suffix is dropped.
-   */
+  /** The secret name in a container secret id, without the random suffix a full ARN ends in. */
   private static String containerName(final String secretId) {
     final var arn = SECRET_ARN.matcher(secretId);
     return arn.matches() ? ARN_SUFFIX.matcher(arn.group(1)).replaceFirst("") : secretId;
   }
 
   /**
-   * The project a GCP store reads, or {@code null} if it may be any project: a project number names
-   * the same project as a project id, and the two can't be matched here.
+   * The project a GCP store reads, or {@code null} for a project number, which can't be matched to
+   * a project id.
    */
   private static @Nullable String project(final @Nullable String projectId) {
     return projectId == null || PROJECT_NUMBER.matcher(projectId).matches() ? null : projectId;
   }
 
   /**
-   * The vault a URL names, as its host and port, so that URLs that differ only in case or in an
-   * explicit default port name the same vault. A URL that doesn't parse is kept as written, to be
-   * rejected when its store is built.
+   * The vault's host and port, so that URLs differing only in case or an explicit default port
+   * match. A URL that doesn't parse is kept as written, and building its store rejects it.
    */
   private static String vault(final String vaultUrl) {
     final URI uri;

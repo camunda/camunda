@@ -50,8 +50,8 @@ final class PhysicalTenantSecretConfigurations {
   private PhysicalTenantSecretConfigurations() {}
 
   /**
-   * Gives the tenant its own configuration secrets store in place of the root's, if it configures
-   * one. Bound over the root's, a store of another type would sit next to the inherited one.
+   * Replaces the root's configuration secrets store with the tenant's own, if it configures one.
+   * Binding over the root's would keep a root store of another type alongside it.
    */
   static void replaceInternalConfig(
       final Camunda physicalTenant, final String physicalTenantId, final Binder binder) {

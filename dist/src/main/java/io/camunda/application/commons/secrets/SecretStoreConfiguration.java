@@ -65,8 +65,7 @@ public class SecretStoreConfiguration {
 
   /**
    * One entry per supported secret store type. Adding a new backend means adding a single binding
-   * here (plus its factory method and scope) — the per-tenant count checks and the registration of
-   * job and configuration secrets stores below are type-agnostic and never need to change.
+   * here (plus its factory method and scope); the code below doesn't need to change.
    */
   static final List<StoreBinding<?>> STORE_BINDINGS =
       List.of(
@@ -167,10 +166,9 @@ public class SecretStoreConfiguration {
   }
 
   /**
-   * The secrets configuration of every physical tenant, with the default tenant first: it is the
-   * root configuration itself, which every other tenant inherits, so an invalid root value fails
-   * under the root property the operator wrote rather than under the first declared tenant's
-   * property, where it was only inherited.
+   * The secrets configuration of every physical tenant, default first: every tenant inherits the
+   * root configuration, so an invalid root value is reported under the root property, where the
+   * operator wrote it.
    */
   static Map<String, Secrets> secretsDefaultFirst(final PhysicalTenantResolver resolver) {
     final var secrets = new LinkedHashMap<String, Secrets>();
@@ -183,9 +181,8 @@ public class SecretStoreConfiguration {
   }
 
   /**
-   * Fails if a job store of any tenant can reach the secrets of a tenant's configuration secrets
-   * store: environment variables and the filesystem are shared by every tenant on the node, and
-   * cloud stores of several tenants may share an account.
+   * Fails if any tenant's job store can read a tenant's configuration secrets. Tenants share the
+   * node's environment and filesystem, and their cloud stores may share an account.
    */
   static void requireConfigurationStoresApart(final Map<String, Secrets> secretsByTenant) {
     secretsByTenant.forEach(
@@ -542,7 +539,7 @@ public class SecretStoreConfiguration {
    *     configuration error can name the exact property the operator has to change
    * @param displayName human-readable store type name used in log messages
    * @param selector reads this type's {@code storeId -> config} entries from the tenant's stores
-   * @param configurationSelector reads this type's configuration secrets store, if it is one
+   * @param configurationSelector reads the configuration secrets store, if it is of this type
    * @param factory builds a store from one entry, applying any per-type validation
    * @param scope the secret ids a store of this type can reach
    */
@@ -558,10 +555,6 @@ public class SecretStoreConfiguration {
       return configurationSelector.apply(config) != null;
     }
 
-    /**
-     * Builds the configuration secrets store of this type, after checking that none of the tenant's
-     * own job stores can reach its secrets.
-     */
     private SecretStore buildConfigurationStore(
         final String tenantId,
         final String property,
@@ -574,13 +567,13 @@ public class SecretStoreConfiguration {
           tenantId,
           property + "." + propertyKey,
           entry,
-          // not published yet: only the Azure store has meters, and it reads no vault yet
+          // meters of configuration secrets stores aren't published
           CompositeMeterRegistry::new);
     }
 
     /**
-     * Fails if a job store of this type, of the given job tenant, can reach a secret of the
-     * configuration secrets store of the given tenant, or the other way round.
+     * Fails if one of the job tenant's stores of this type can read the tenant's configuration
+     * secrets.
      */
     private void requireApart(
         final String tenantId,

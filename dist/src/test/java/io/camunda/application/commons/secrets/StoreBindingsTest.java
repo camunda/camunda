@@ -30,7 +30,6 @@ import org.springframework.mock.env.MockEnvironment;
 /** Keeps the store types of the configuration and of {@code STORE_BINDINGS} in step. */
 class StoreBindingsTest {
 
-  /** The least configuration of a store of each type. */
   private static final Map<String, Map<String, Object>> MINIMAL_CONFIGURATION =
       Map.of(
           "file", Map.of("path", "/etc/camunda/config-secrets"),

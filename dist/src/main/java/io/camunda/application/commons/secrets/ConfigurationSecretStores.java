@@ -56,8 +56,8 @@ public final class ConfigurationSecretStores implements AutoCloseable {
   }
 
   /**
-   * Builds the store of the given physical tenant and puts it in place of its current store, which
-   * is then closed. If the new store fails to build, the current one stays in place.
+   * Replaces the tenant's store with a newly built one, or removes it if the tenant no longer
+   * configures one, and closes the old store. If the build fails, the old store stays.
    */
   void put(final String physicalTenantId, final Secrets secrets) {
     final var store = factory.apply(physicalTenantId, secrets);

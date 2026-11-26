@@ -262,10 +262,9 @@ public class Secrets {
   }
 
   /**
-   * The store that configuration values refer to as {@code secret:<name>}, configured apart from
-   * the stores that processes and jobs read. At most one type can be configured, and no job store
-   * of the same type, of any tenant, may reach its secrets. A tenant that configures its own
-   * replaces the root's as a whole.
+   * The store that configuration values refer to as {@code secret:<name>}, kept apart from the job
+   * secret stores: startup fails if a job store of any tenant can read its secrets. Only one store
+   * type can be configured, and a tenant that configures its own replaces the root's.
    */
   public static class InternalConfig {
 
@@ -330,7 +329,6 @@ public class Secrets {
       this.azure = azure;
     }
 
-    /** Whether a store is configured. */
     public boolean isConfigured() {
       return file != null || aws != null || gcp != null || env != null || azure != null;
     }
