@@ -20,7 +20,6 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterM
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -134,9 +133,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .partitionMessagingService(context.getMessagingService())
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)
-            .exportOnlyBackedUpRecords(exportingCfg.exportOnlyBackedUpRecords())
             .backedUpPositionSource(
-                backedUpPositionSource(context, brokerCfg, exporterMode, tenantName))
+                backedUpPositionSource(context, exportingCfg, exporterMode, tenantName))
             .positionsToSkipFilter(exporterFilter)
             .meterRegistry(context.getPartitionTransitionMeterRegistry())
             .clusterId(
@@ -182,12 +180,10 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
 
   private static @Nullable CommonBackupPositionSource backedUpPositionSource(
       final PartitionTransitionContext context,
-      final BrokerCfg brokerCfg,
+      final ExportingCfg exportingCfg,
       final ExporterMode exporterMode,
       final String physicalTenantId) {
-    if (exporterMode != ExporterMode.ACTIVE
-        || !brokerCfg.getExporting().exportOnlyBackedUpRecords()
-        || brokerCfg.getData().getBackup().getStore() == BackupStoreType.NONE) {
+    if (exporterMode != ExporterMode.ACTIVE || !exportingCfg.exportOnlyBackedUpRecords()) {
       return null;
     }
     final var brokerClient = context.getBrokerClient();

@@ -48,9 +48,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.OptionalLong;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -110,14 +108,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private boolean idle;
   private final InstantSource clock;
   private final RecordMetadataBlock skipRecordDecoder = new RecordMetadataBlock();
-  private final boolean exportOnlyBackedUpRecords;
-  private final @Nullable BackedUpPositionSource backedUpPositionSource;
-  private final Duration backedUpPositionPollInterval;
-  private @Nullable ScheduledTimer backedUpPositionTimer;
-  private boolean backedUpPositionRequestInFlight;
-  private boolean lastBackedUpPositionPollFailed;
-  // Highest log position a restore would contain; only read when exportOnlyBackedUpRecords is set
-  private long backedUpPosition = -1;
+  private final @Nullable BackedUpPositionGate backedUpPositionGate;
 
   public ExporterDirector(
       final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
@@ -173,9 +164,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     distributionInterval = context.getDistributionInterval();
     migrationStatusScanMaxRecords = context.getMigrationStatusScanMaxRecords();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
-    exportOnlyBackedUpRecords = context.isExportOnlyBackedUpRecords();
-    backedUpPositionSource = context.getBackedUpPositionSource();
-    backedUpPositionPollInterval = context.getBackedUpPositionPollInterval();
+    final var backedUpPositionSource = context.getBackedUpPositionSource();
+    backedUpPositionGate =
+        backedUpPositionSource != null
+            ? new BackedUpPositionGate(
+                backedUpPositionSource,
+                context.getBackedUpPositionPollInterval(),
+                actor,
+                this::readNextEvent)
+            : null;
 
     // needs name to be initialized
     healthReport = HealthReport.healthy(this);
@@ -459,6 +456,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   protected void onActorCloseRequested() {
     isOpened.set(false);
+    if (backedUpPositionGate != null) {
+      backedUpPositionGate.stop();
+    }
     containers.forEach(ExporterContainer::close);
     exporterDistributionService.close();
   }
@@ -590,11 +590,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       exporterDistributionTimer.cancel();
       exporterDistributionTimer = null;
     }
-    if (backedUpPositionTimer != null) {
-      backedUpPositionTimer.cancel();
-      backedUpPositionTimer = null;
+    if (backedUpPositionGate != null) {
+      backedUpPositionGate.stop();
     }
-    backedUpPosition = -1;
     if (logStreamReader != null) {
       // We have to close it, otherwise it will prevent journal segment deletion
       logStreamReader.close();
@@ -714,81 +712,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     exporterDistributionTimer =
         actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
-    startPollingBackedUpPosition();
-  }
-
-  private void startPollingBackedUpPosition() {
-    if (!exportOnlyBackedUpRecords) {
-      return;
-    }
-    if (backedUpPositionSource == null) {
-      LOG.warn(
-          "Exporting is restricted to backed-up records, but no backup information is available."
-              + " No records will be exported.");
-      return;
-    }
-    if (backedUpPositionTimer != null) {
-      backedUpPositionTimer.cancel();
-    }
-    refreshBackedUpPosition();
-    backedUpPositionTimer =
-        actor.runAtFixedRate(backedUpPositionPollInterval, this::refreshBackedUpPosition);
-  }
-
-  private void refreshBackedUpPosition() {
-    if (backedUpPositionSource == null || backedUpPositionRequestInFlight) {
-      return;
-    }
-    backedUpPositionRequestInFlight = true;
-    final CompletionStage<OptionalLong> positionFuture;
-    try {
-      positionFuture = backedUpPositionSource.backedUpPosition();
-    } catch (final Exception e) {
-      backedUpPositionRequestInFlight = false;
-      logBackedUpPositionPollFailure(e);
-      return;
-    }
-    positionFuture.whenCompleteAsync(
-        (position, error) -> {
-          backedUpPositionRequestInFlight = false;
-          if (isClosed() || idle) {
-            return;
-          }
-          if (error != null) {
-            logBackedUpPositionPollFailure(error);
-          } else {
-            if (lastBackedUpPositionPollFailed) {
-              lastBackedUpPositionPollFailed = false;
-              LOG.info("Resumed polling the backed-up position for exporting");
-            }
-            position.ifPresent(this::updateBackedUpPosition);
-          }
-        },
-        actor);
-  }
-
-  private void logBackedUpPositionPollFailure(final Throwable error) {
-    if (!lastBackedUpPositionPollFailed) {
-      lastBackedUpPositionPollFailed = true;
-      LOG.warn(
-          "Failed to determine the backed-up position; keeping current export boundary {}",
-          backedUpPosition,
-          error);
-    } else {
-      LOG.debug("Failed to determine the backed-up position", error);
-    }
-  }
-
-  private void updateBackedUpPosition(final long position) {
-    if (position == backedUpPosition) {
-      return;
-    }
-    LOG.debug(
-        "Records up to position {} are backed up on all partitions and may be exported", position);
-    final boolean advanced = position > backedUpPosition;
-    backedUpPosition = position;
-    if (advanced) {
-      readNextEvent();
+    if (backedUpPositionGate != null) {
+      backedUpPositionGate.start();
     }
   }
 
@@ -856,8 +781,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private boolean isNextRecordBackedUp() {
-    return !exportOnlyBackedUpRecords
-        || logStreamReader.peekNext().getPosition() <= backedUpPosition;
+    return backedUpPositionGate == null
+        || backedUpPositionGate.isAllowed(logStreamReader.peekNext().getPosition());
   }
 
   private void exportEvent(final LoggedEvent event) {
