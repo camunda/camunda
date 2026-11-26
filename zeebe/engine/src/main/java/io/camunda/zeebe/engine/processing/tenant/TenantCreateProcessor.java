@@ -129,7 +129,6 @@ public class TenantCreateProcessor extends AbstractIdentityCommandProcessor<Tena
       final TypedRecord<TenantRecord> command,
       final RejectionType type,
       final String errorMessage) {
-    rejectionWriter.appendRejection(command, type, errorMessage);
-    responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
+    rejectNewCommand(command, type, errorMessage);
   }
 }

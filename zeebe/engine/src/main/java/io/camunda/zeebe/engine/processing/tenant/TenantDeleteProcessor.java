@@ -88,7 +88,7 @@ public class TenantDeleteProcessor extends AbstractIdentityCommandProcessor<Tena
     final var persistedTenantRecord = tenantState.getTenantById(tenantId);
 
     if (persistedTenantRecord.isEmpty()) {
-      rejectCommand(
+      rejectNewCommandAsAlreadyApplied(
           command, RejectionType.NOT_FOUND, TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantId));
       return;
     }
@@ -131,7 +131,7 @@ public class TenantDeleteProcessor extends AbstractIdentityCommandProcessor<Tena
               invalidateAuthorizationCaches();
             },
             () ->
-                rejectCommand(
+                rejectionWriter.appendRejection(
                     command,
                     RejectionType.NOT_FOUND,
                     TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(record.getTenantId())));
@@ -148,8 +148,7 @@ public class TenantDeleteProcessor extends AbstractIdentityCommandProcessor<Tena
       final TypedRecord<TenantRecord> command,
       final RejectionType type,
       final String errorMessage) {
-    rejectionWriter.appendRejection(command, type, errorMessage);
-    responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
+    rejectNewCommand(command, type, errorMessage);
   }
 
   private void distributeCommand(final TypedRecord<TenantRecord> command) {

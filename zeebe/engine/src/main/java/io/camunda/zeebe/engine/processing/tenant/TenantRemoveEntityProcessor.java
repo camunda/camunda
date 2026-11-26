@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapte
 import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
@@ -43,7 +42,6 @@ public class TenantRemoveEntityProcessor extends AbstractIdentityCommandProcesso
   private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final SideEffectWriter sideEffectWriter;
@@ -64,7 +62,6 @@ public class TenantRemoveEntityProcessor extends AbstractIdentityCommandProcesso
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
-    rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
@@ -87,7 +84,7 @@ public class TenantRemoveEntityProcessor extends AbstractIdentityCommandProcesso
     final var persistedTenant = tenantState.getTenantById(tenantId);
 
     if (persistedTenant.isEmpty()) {
-      rejectCommand(
+      rejectNewCommandAsAlreadyApplied(
           command,
           RejectionType.NOT_FOUND,
           "Expected to remove entity from tenant '%s', but no tenant with this ID exists."
@@ -156,7 +153,7 @@ public class TenantRemoveEntityProcessor extends AbstractIdentityCommandProcesso
       final String entityId,
       final EntityType entityType,
       final String tenantId) {
-    rejectCommand(
+    rejectNewCommandAsAlreadyApplied(
         command,
         RejectionType.NOT_FOUND,
         formatErrorMessage(entityType, entityId, tenantId, "doesn't exists"));
@@ -167,7 +164,7 @@ public class TenantRemoveEntityProcessor extends AbstractIdentityCommandProcesso
       final String entityId,
       final EntityType entityType,
       final String tenantId) {
-    rejectCommand(
+    rejectNewCommandAsAlreadyApplied(
         command,
         RejectionType.NOT_FOUND,
         formatErrorMessage(entityType, entityId, tenantId, "is not assigned to this tenant"));
@@ -192,10 +189,7 @@ public class TenantRemoveEntityProcessor extends AbstractIdentityCommandProcesso
       final TypedRecord<TenantRecord> command,
       final RejectionType type,
       final String errorMessage) {
-    rejectionWriter.appendRejection(command, type, errorMessage);
-    if (command.hasRequestMetadata()) {
-      responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
-    }
+    rejectNewCommand(command, type, errorMessage);
   }
 
   private void distributeCommand(final TypedRecord<TenantRecord> command) {

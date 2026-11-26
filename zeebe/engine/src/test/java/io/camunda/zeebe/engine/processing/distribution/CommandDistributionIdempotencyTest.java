@@ -1100,8 +1100,9 @@ public class CommandDistributionIdempotencyTest {
   }
 
   /**
-   * Writes the commit like the apply processor does, as a new command without request metadata on
-   * partition 1, because a policy update cannot be sent through the command API.
+   * Appends a policy update of one chunk, as the broker does, because a policy update cannot be
+   * sent through the command API. Applying the chunk writes the commit, which only commits an open
+   * update.
    */
   private static Record<PolicyUpdateRecordValue> commitPolicyVersion() {
     final var update =
@@ -1112,9 +1113,7 @@ public class CommandDistributionIdempotencyTest {
             .setChunkIndex(0)
             .setChunkCount(1);
     ENGINE.writeRecords(
-        RecordToWrite.commandWithoutClaims()
-            .key(-1L)
-            .policyUpdate(PolicyUpdateIntent.COMMIT_VERSION, update));
+        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPEND_CHUNK, update));
     return RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.VERSION_COMMITTED)
         .withPartitionId(1)
         .filter(record -> record.getValue().getUpdateId().equals(update.getUpdateId()))

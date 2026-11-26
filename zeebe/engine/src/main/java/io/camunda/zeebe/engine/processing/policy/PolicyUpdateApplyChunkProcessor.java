@@ -26,10 +26,10 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Applies one buffered chunk of a policy update, once all its chunks are buffered. The chunk is
  * turned into identity commands, which the identity processors apply and distribute to the other
- * partitions. Each identity processor validates its own command, so an entry that cannot be
- * applied, for example a delete of a missing role, is rejected on its own while the other entries
- * of the chunk apply. The commands carry the update's key as internal operation reference, which
- * links them to the update.
+ * partitions. Each identity processor validates its own command. The commands carry the update's
+ * key as reference, so if one cannot be applied, for example adding a member to a missing role, the
+ * update fails and its remaining commands are rejected; see {@link PolicyUpdateBehavior}. The
+ * commands applied before the failure are not undone.
  *
  * <p>The processor then writes the command for the next chunk. Its identity commands are written
  * after those of this chunk, so the chunks are applied in order. After the last chunk, it instead

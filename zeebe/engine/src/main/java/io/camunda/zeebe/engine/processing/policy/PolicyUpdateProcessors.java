@@ -42,6 +42,7 @@ public final class PolicyUpdateProcessors {
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.COMMIT_VERSION,
-            new PolicyUpdateCommitVersionProcessor(keyGenerator, distributionBehavior, writers));
+            new PolicyUpdateCommitVersionProcessor(
+                policyUpdateState, keyGenerator, distributionBehavior, writers));
   }
 }

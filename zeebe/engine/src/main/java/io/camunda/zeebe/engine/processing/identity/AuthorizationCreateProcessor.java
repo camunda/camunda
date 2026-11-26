@@ -85,9 +85,7 @@ public class AuthorizationCreateProcessor
             authorizationRecord -> writeEventAndDistribute(command, command.getValue()),
             (rejection) -> {
               LOG.debug("Rejecting CREATE authorization command: {}", rejection.reason());
-              rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectedResponseOnCommand(
-                  command, rejection.type(), rejection.reason());
+              rejectNewCommand(command, rejection.type(), rejection.reason());
             });
   }
 

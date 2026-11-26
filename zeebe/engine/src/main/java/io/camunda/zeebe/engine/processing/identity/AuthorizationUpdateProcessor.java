@@ -90,9 +90,7 @@ public class AuthorizationUpdateProcessor
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
               LOG.debug("Rejecting UPDATE authorization command: {}", rejection.reason());
-              rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectedResponseOnCommand(
-                  command, rejection.type(), rejection.reason());
+              rejectNewCommand(command, rejection.type(), rejection.reason());
             });
   }
 

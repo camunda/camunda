@@ -89,24 +89,20 @@ public class RoleDeleteProcessor extends AbstractIdentityCommandProcessor<RoleRe
 
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
     if (roleId != null && DefaultRole.ids().contains(roleId)) {
       final var errorMessage = ROLE_PROTECTED_ERROR_MESSAGE.formatted(roleId);
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.INVALID_STATE, errorMessage);
+      rejectNewCommand(command, RejectionType.INVALID_STATE, errorMessage);
       return;
     }
 
     final var persistedRecord = roleState.getRole(roleId);
     if (persistedRecord.isEmpty()) {
       final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(roleId);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommandAsAlreadyApplied(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 

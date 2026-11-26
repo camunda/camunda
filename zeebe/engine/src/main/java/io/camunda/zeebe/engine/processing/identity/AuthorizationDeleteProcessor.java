@@ -79,21 +79,29 @@ public class AuthorizationDeleteProcessor
     LOG.debug(
         "Processing DELETE authorization command for key {}",
         command.getValue().getAuthorizationKey());
-    permissionsBehavior
-        .isAuthorized(command, PermissionType.DELETE)
-        .flatMap(
-            authorizationRecord ->
-                permissionsBehavior.authorizationExists(
-                    authorizationRecord, AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION))
+    final var isAuthorized = permissionsBehavior.isAuthorized(command, PermissionType.DELETE);
+    if (isAuthorized.isLeft()) {
+      rejectNewCommand(command, isAuthorized.getLeft().type(), isAuthorized.getLeft().reason());
+      return;
+    }
+
+    final var persistedAuthorization =
+        permissionsBehavior.authorizationExists(
+            isAuthorized.get(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION);
+    if (persistedAuthorization.isLeft()) {
+      final var rejection = persistedAuthorization.getLeft();
+      rejectNewCommandAsAlreadyApplied(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    persistedAuthorization
         .flatMap(AuthorizationDeleteProcessor::rejectIfProtectedRoleOwner)
         .map(PersistedAuthorization::getAuthorizationKey)
         .ifRightOrLeft(
             authorizationKey -> writeEventAndDistribute(command, authorizationKey),
             (rejection) -> {
               LOG.debug("Rejecting DELETE authorization command: {}", rejection.reason());
-              rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectedResponseOnCommand(
-                  command, rejection.type(), rejection.reason());
+              rejectNewCommand(command, rejection.type(), rejection.reason());
             });
   }
 
