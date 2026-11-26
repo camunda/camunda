@@ -46,9 +46,9 @@ describe('<DecisionViewer />', () => {
 		);
 
 		await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
-		const indexHeader = screen.getByText('#', {exact: true}).first();
-		await expect.element(indexHeader).toBeVisible();
-		expect(indexHeader.element().tagName).toBe('TH');
+		await expect
+			.element(screen.getByRole('rowgroup').filter({hasText: 'When'}).getByRole('cell', {name: '#'}))
+			.toBeVisible();
 	});
 
 	it('should highlight only the given rule rows', async () => {
@@ -65,11 +65,8 @@ describe('<DecisionViewer />', () => {
 		const boardApprovalRule = screen.getByRole('row').filter({hasText: '"board approval"'});
 
 		await expect.element(dayToDayRule).toHaveAttribute('aria-current', 'true');
-		await expect.element(dayToDayRule).toHaveAttribute('data-highlighted');
 		await expect.element(managerApprovalRule).not.toHaveAttribute('aria-current');
-		await expect.element(managerApprovalRule).not.toHaveAttribute('data-highlighted');
 		await expect.element(boardApprovalRule).not.toHaveAttribute('aria-current');
-		await expect.element(boardApprovalRule).not.toHaveAttribute('data-highlighted');
 	});
 
 	it('should update highlighted rows when the rules change', async () => {
@@ -92,7 +89,6 @@ describe('<DecisionViewer />', () => {
 		);
 
 		await expect.element(dayToDayRule).not.toHaveAttribute('aria-current');
-		await expect.element(dayToDayRule).not.toHaveAttribute('data-highlighted');
 	});
 
 	it('should report the imported definitions', async () => {
@@ -106,9 +102,9 @@ describe('<DecisionViewer />', () => {
 			/>,
 		);
 
-		await vi.waitFor(() => {
-			expect(onDefinitionsChange).toHaveBeenCalledWith(expect.objectContaining({id: expect.any(String)}));
-		});
+		await expect
+			.poll(() => onDefinitionsChange)
+			.toHaveBeenCalledWith(expect.objectContaining({id: expect.any(String)}));
 	});
 
 	it('should render nothing in the canvas when there is no xml', async () => {

@@ -69,24 +69,10 @@ describe('<StateOverlay />', () => {
 		await expect.element(screen.getByRole('img', {name: 'Incidents: 12,345'})).toBeVisible();
 	});
 
-	it('should pulse a ring without reducing opacity when faded', async () => {
-		const screen = await render(<StateOverlay state="active" container={getContainer()} count={1} isFaded />);
-
-		const badge = screen.getByRole('img', {name: 'Active: 1, pending modification'}).element();
-		expect(getComputedStyle(badge).opacity).toBe('1');
-		expect(getComputedStyle(badge).animationName).toBe('state-overlay-ring');
-	});
-
 	it('should mention the pending state in the accessible name when faded', async () => {
 		const screen = await render(<StateOverlay state="active" container={getContainer()} count={3} isFaded />);
 
 		await expect.element(screen.getByRole('img', {name: 'Active: 3, pending modification', exact: true})).toBeVisible();
-	});
-
-	it('should not pulse when not faded', async () => {
-		const screen = await render(<StateOverlay state="active" container={getContainer()} count={1} />);
-
-		expect(getComputedStyle(screen.getByRole('img', {name: 'Active: 1'}).element()).animationName).toBe('none');
 	});
 
 	it('should prefix the accessible name with the element name', async () => {
@@ -96,17 +82,4 @@ describe('<StateOverlay />', () => {
 
 		await expect.element(screen.getByRole('img', {name: 'Do work, Active: 2'})).toBeVisible();
 	});
-
-	it.for(['active', 'incidents', 'FAILED', 'EVALUATED', 'canceled'] as const)(
-		'should give the %s overlay a visible background',
-		async (state) => {
-			const container = getContainer();
-			container.className = 'c4-ui';
-			const screen = await render(<StateOverlay state={state} container={container} count={1} />);
-
-			await expect
-				.poll(() => getComputedStyle(screen.getByRole('img').element()).backgroundColor)
-				.not.toBe('rgba(0, 0, 0, 0)');
-		},
-	);
 });

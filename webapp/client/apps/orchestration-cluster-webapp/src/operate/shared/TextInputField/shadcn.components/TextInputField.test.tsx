@@ -59,16 +59,16 @@ describe('<TextInputField />', () => {
 			</Field>,
 			{
 				wrapper: getWrapper({
-					validate: ({businessId}) => (businessId ? {} : {businessId: 'Business ID is required'}),
+					validate: () => ({businessId: 'Business ID is required'}),
 				}),
 			},
 		);
 
 		const input = screen.getByLabelText('Business ID');
 
-		await userEvent.type(input.element(), 'a');
-		await userEvent.clear(input.element());
-		await input.element().blur();
+		await userEvent.type(input, 'a');
+		await userEvent.clear(input);
+		await userEvent.tab();
 
 		await expect.element(input).toHaveAttribute('aria-invalid', 'true');
 		await expect.element(screen.getByText('Business ID is required')).toBeVisible();

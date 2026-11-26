@@ -63,8 +63,8 @@ describe('<AdvancedStringFilter />', () => {
 			{wrapper: getWrapper({onSubmit})},
 		);
 
-		await userEvent.type(screen.getByLabelText('Business ID', {exact: true}).element(), 'abc');
-		await screen.getByRole('button', {name: 'submit'}).click();
+		await userEvent.type(screen.getByLabelText('Business ID', {exact: true}), 'abc');
+		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
 
 		expect(onSubmit).toHaveBeenCalledWith(
 			expect.objectContaining({businessId: 'eq_abc'}),
@@ -87,7 +87,7 @@ describe('<AdvancedStringFilter />', () => {
 
 		await userEvent.click(screen.getByRole('combobox'));
 		await userEvent.click(screen.getByRole('option', {name: 'contains'}));
-		await screen.getByRole('button', {name: 'submit'}).click();
+		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
 
 		expect(onSubmit).toHaveBeenCalledWith(
 			expect.objectContaining({businessId: 'like_abc'}),
@@ -108,8 +108,8 @@ describe('<AdvancedStringFilter />', () => {
 			},
 		);
 
-		await userEvent.clear(screen.getByLabelText('Business ID', {exact: true}).element());
-		await screen.getByRole('button', {name: 'submit'}).click();
+		await userEvent.clear(screen.getByLabelText('Business ID', {exact: true}));
+		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
 
 		expect(onSubmit).toHaveBeenLastCalledWith({}, expect.anything(), expect.anything());
 	});
@@ -120,7 +120,7 @@ describe('<AdvancedStringFilter />', () => {
 			{wrapper: getWrapper({initialValues: {businessId: 'like_order-123'}})},
 		);
 
-		await userEvent.clear(screen.getByLabelText('Business ID', {exact: true}).element());
+		await userEvent.clear(screen.getByLabelText('Business ID', {exact: true}));
 
 		await expect.element(screen.getByRole('combobox')).toMatchTextContent('contains');
 	});

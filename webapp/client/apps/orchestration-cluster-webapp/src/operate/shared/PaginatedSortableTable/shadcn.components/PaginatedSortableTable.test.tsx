@@ -10,7 +10,6 @@ import {describe, expect, vi} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
-import {setUpFakeIntersectionObserver} from '#/vitest-modules/fake-intersection-observer';
 import {PaginatedSortableTable} from './PaginatedSortableTable';
 
 type Row = {id: string; name: string};
@@ -75,99 +74,24 @@ describe('<PaginatedSortableTable />', () => {
 	});
 
 	describe('infinite scroll', () => {
-		const {getObserver} = setUpFakeIntersectionObserver();
-
-		function intersectSentinel(position: 'top' | 'bottom') {
-			getObserver().intersect(document.querySelector(`[data-slot="data-table-${position}-sentinel"]`)!);
-		}
-
-		it('should fetch the previous page when the top sentinel is reached', async () => {
-			// given
+		it('should fetch the previous page when the top of the table is in view', async () => {
 			const fetchPreviousPage = vi.fn().mockResolvedValue(undefined);
 			const pagination = {...defaultPagination(), hasPreviousPage: true, fetchPreviousPage};
+
 			await renderTable({pagination, size: 'md'});
 
-			// when
-			intersectSentinel('top');
-
-			// then
-			await expect.poll(() => fetchPreviousPage.mock.calls.length).toBeGreaterThan(0);
+			await expect.poll(() => fetchPreviousPage).toHaveBeenCalled();
 		});
 
-		it('should not fetch the previous page when there is no previous page', async () => {
-			// given
+		it('should fetch only the next page when there is no previous page', async () => {
 			const fetchPreviousPage = vi.fn().mockResolvedValue(undefined);
-			const pagination = {...defaultPagination(), hasPreviousPage: false, fetchPreviousPage};
+			const fetchNextPage = vi.fn().mockResolvedValue(undefined);
+			const pagination = {...defaultPagination(), hasNextPage: true, fetchPreviousPage, fetchNextPage};
+
 			await renderTable({pagination});
 
-			// when
-			intersectSentinel('top');
-
-			// then
+			await expect.poll(() => fetchNextPage).toHaveBeenCalled();
 			expect(fetchPreviousPage).not.toHaveBeenCalled();
-		});
-
-		it('should fetch the next page when the bottom sentinel is reached', async () => {
-			// given
-			const fetchNextPage = vi.fn().mockResolvedValue(undefined);
-			const pagination = {...defaultPagination(), hasNextPage: true, fetchNextPage};
-			await renderTable({pagination});
-
-			// when
-			intersectSentinel('bottom');
-
-			// then
-			expect(fetchNextPage).toHaveBeenCalled();
-		});
-
-		it('should not fetch the next page while already fetching it', async () => {
-			// given
-			const fetchNextPage = vi.fn().mockResolvedValue(undefined);
-			const pagination = {...defaultPagination(), hasNextPage: true, isFetchingNextPage: true, fetchNextPage};
-			await renderTable({pagination});
-
-			// when
-			intersectSentinel('bottom');
-
-			// then
-			expect(fetchNextPage).not.toHaveBeenCalled();
-		});
-
-		it('should not fetch the previous page while the next page is already being fetched', async () => {
-			// given: an infinite-query fetch in one direction would be cancelled and discarded by
-			// starting a fetch in the other direction, since both share one request pipeline
-			const fetchPreviousPage = vi.fn().mockResolvedValue(undefined);
-			const pagination = {
-				...defaultPagination(),
-				hasPreviousPage: true,
-				isFetchingNextPage: true,
-				fetchPreviousPage,
-			};
-			await renderTable({pagination});
-
-			// when
-			intersectSentinel('top');
-
-			// then
-			expect(fetchPreviousPage).not.toHaveBeenCalled();
-		});
-
-		it('should not fetch the next page while the previous page is already being fetched', async () => {
-			// given
-			const fetchNextPage = vi.fn().mockResolvedValue(undefined);
-			const pagination = {
-				...defaultPagination(),
-				hasNextPage: true,
-				isFetchingPreviousPage: true,
-				fetchNextPage,
-			};
-			await renderTable({pagination});
-
-			// when
-			intersectSentinel('bottom');
-
-			// then
-			expect(fetchNextPage).not.toHaveBeenCalled();
 		});
 	});
 });

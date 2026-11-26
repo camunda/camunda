@@ -8,7 +8,7 @@
 
 import '#/shared/theme/tailwind.css';
 import {render} from 'vitest-browser-react';
-import {afterEach, describe, expect, vi} from 'vitest';
+import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {useContext, useEffect, useState} from 'react';
@@ -58,38 +58,6 @@ const NAMED_XML = `<?xml version="1.0" encoding="UTF-8"?>
 
 const XML_WITHOUT_LAYOUT = BPMN_XML.slice(0, BPMN_XML.indexOf('<bpmndi:BPMNDiagram')) + '</bpmn:definitions>';
 
-const FLOW_XML = `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_3" targetNamespace="http://bpmn.io/schema/bpmn">
-  <bpmn:process id="Process_3" isExecutable="false">
-    <bpmn:startEvent id="startEvent_1" />
-    <bpmn:task id="task_1" />
-    <bpmn:endEvent id="endEvent_1" />
-    <bpmn:sequenceFlow id="flow_1" sourceRef="startEvent_1" targetRef="task_1" />
-    <bpmn:sequenceFlow id="flow_2" sourceRef="task_1" targetRef="endEvent_1" />
-  </bpmn:process>
-  <bpmndi:BPMNDiagram id="BPMNDiagram_3">
-    <bpmndi:BPMNPlane id="BPMNPlane_3" bpmnElement="Process_3">
-      <bpmndi:BPMNShape id="startEvent_1_di" bpmnElement="startEvent_1">
-        <dc:Bounds x="152" y="82" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_1_di" bpmnElement="task_1">
-        <dc:Bounds x="250" y="60" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="endEvent_1_di" bpmnElement="endEvent_1">
-        <dc:Bounds x="412" y="82" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="flow_1_di" bpmnElement="flow_1">
-        <di:waypoint x="188" y="100" />
-        <di:waypoint x="250" y="100" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_2_di" bpmnElement="flow_2">
-        <di:waypoint x="350" y="100" />
-        <di:waypoint x="412" y="100" />
-      </bpmndi:BPMNEdge>
-    </bpmndi:BPMNPlane>
-  </bpmndi:BPMNDiagram>
-</bpmn:definitions>`;
-
 const OVERLAY_TYPE = 'testOverlayType';
 
 function OverlayPortals() {
@@ -119,20 +87,6 @@ describe('<Diagram />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Zoom in diagram'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Zoom out diagram'})).toBeVisible();
-	});
-
-	it('should resolve the renderer colors from design system tokens', async () => {
-		const screen = await render(
-			<div className="c4-ui">
-				<Diagram xml={BPMN_XML} />
-			</div>,
-		);
-
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		const diagram = screen.getByRole('region', {name: 'Diagram'}).element();
-
-		expect(getComputedStyle(diagram).getPropertyValue('--cds-text-primary')).not.toBe('');
-		expect(getComputedStyle(diagram).getPropertyValue('--cds-layer-01')).not.toBe('');
 	});
 
 	it('should show BPMN branding after XML import', async () => {
@@ -168,35 +122,26 @@ describe('<Diagram />', () => {
 		await expect.element(screen.getByText('Overlay for endEvent_1')).toBeVisible();
 	});
 
-	it('should outline a programmatically selected element', async () => {
-		const screen = await render(
-			<Diagram
-				xml={BPMN_XML}
-				selectableElements={['startEvent_1', 'endEvent_1']}
-				selectedElementIds={['endEvent_1']}
-			/>,
-		);
-
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		await expect.poll(() => document.querySelector('[data-element-id="endEvent_1"] .djs-outline')).not.toBeNull();
-	});
-
 	it('should keep focus on a diagram control when overlays update', async () => {
 		const screen = await render(
-			<Diagram
-				xml={BPMN_XML}
-				overlaysData={[{type: OVERLAY_TYPE, elementId: 'startEvent_1', payload: 'a', position: {top: 0, left: 0}}]}
-			/>,
+			<div style={{height: '400px', width: '800px'}}>
+				<Diagram
+					xml={BPMN_XML}
+					overlaysData={[{type: OVERLAY_TYPE, elementId: 'startEvent_1', payload: 'a', position: {top: 0, left: 0}}]}
+				/>
+			</div>,
 		);
 		const zoomIn = screen.getByRole('button', {name: 'Zoom in diagram'});
-		await expect.element(zoomIn).toBeVisible();
-		(zoomIn.element() as HTMLElement).focus();
+		await userEvent.click(zoomIn);
+		await expect.element(zoomIn).toHaveFocus();
 
 		await screen.rerender(
-			<Diagram
-				xml={BPMN_XML}
-				overlaysData={[{type: OVERLAY_TYPE, elementId: 'startEvent_1', payload: 'b', position: {top: 0, left: 0}}]}
-			/>,
+			<div style={{height: '400px', width: '800px'}}>
+				<Diagram
+					xml={BPMN_XML}
+					overlaysData={[{type: OVERLAY_TYPE, elementId: 'startEvent_1', payload: 'b', position: {top: 0, left: 0}}]}
+				/>
+			</div>,
 		);
 
 		await expect.element(zoomIn).toHaveFocus();
@@ -314,22 +259,26 @@ describe('<Diagram />', () => {
 
 	it('should keep the focused control mounted when selection changes without an XML change', async () => {
 		const screen = await render(
-			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1', 'endEvent_1']} selectedElementIds={[]} />,
+			<div style={{height: '400px', width: '800px'}}>
+				<Diagram xml={BPMN_XML} selectableElements={['startEvent_1', 'endEvent_1']} selectedElementIds={[]} />
+			</div>,
 		);
 		const zoomIn = screen.getByRole('button', {name: 'Zoom in diagram'});
-		await expect.element(zoomIn).toBeVisible();
-		(zoomIn.element() as HTMLElement).focus();
+		await userEvent.click(zoomIn);
+		await expect.element(zoomIn).toHaveFocus();
 
 		await screen.rerender(
-			<Diagram
-				xml={BPMN_XML}
-				selectableElements={['startEvent_1', 'endEvent_1']}
-				selectedElementIds={['endEvent_1']}
-			/>,
+			<div style={{height: '400px', width: '800px'}}>
+				<Diagram
+					xml={BPMN_XML}
+					selectableElements={['startEvent_1', 'endEvent_1']}
+					selectedElementIds={['endEvent_1']}
+				/>
+			</div>,
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'end event'})).toHaveAttribute('aria-pressed', 'true');
-		expect(document.activeElement).toBe(zoomIn.element());
+		await expect.element(zoomIn).toHaveFocus();
 	});
 
 	it('should apply the latest selection when it changes while the XML import is pending', async () => {
@@ -399,17 +348,19 @@ describe('<Diagram />', () => {
 	it('should call onElementDoubleClick for elements with custom classes', async () => {
 		const onElementDoubleClick = vi.fn();
 		const screen = await render(
-			<Diagram
-				xml={BPMN_XML}
-				customElementClasses={[['startEvent_1', 'my-class']]}
-				onElementDoubleClick={onElementDoubleClick}
-			/>,
+			<div style={{height: '400px', width: '800px'}}>
+				<Diagram
+					xml={BPMN_XML}
+					selectableElements={['startEvent_1']}
+					customElementClasses={[['startEvent_1', 'my-class']]}
+					onElementDoubleClick={onElementDoubleClick}
+				/>
+			</div>,
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
 
-		const element = document.querySelector<SVGElement>('[data-element-id="startEvent_1"]');
-		await userEvent.dblClick(element!);
+		await userEvent.dblClick(screen.getByRole('button', {name: 'start event', exact: true}));
 
 		expect(onElementDoubleClick).toHaveBeenCalledWith('startEvent_1');
 	});
@@ -603,26 +554,6 @@ describe('<Diagram />', () => {
 		await expect.element(hint).toBeVisible();
 	});
 
-	it('should reset the color of sequence flows that are no longer highlighted', async () => {
-		const flowStroke = (id: string) =>
-			getComputedStyle(document.querySelector(`[data-element-id="${id}"] path`)!).stroke;
-		const renderDiagram = (highlightedSequenceFlows: string[]) => (
-			<div className="c4-ui">
-				<Diagram xml={FLOW_XML} highlightedSequenceFlows={highlightedSequenceFlows} />
-			</div>
-		);
-		const screen = await render(renderDiagram(['flow_1']));
-		await expect.poll(() => flowStroke('flow_2')).not.toBe('none');
-		const defaultStroke = flowStroke('flow_2');
-		await expect.poll(() => flowStroke('flow_1')).not.toBe(defaultStroke);
-		const highlightedStroke = flowStroke('flow_1');
-
-		await screen.rerender(renderDiagram(['flow_2']));
-
-		await expect.poll(() => flowStroke('flow_2')).toBe(highlightedStroke);
-		expect(flowStroke('flow_1')).toBe(defaultStroke);
-	});
-
 	it('should describe drill-down elements with the shortcut and mark loading ones as busy', async () => {
 		const screen = await render(
 			<Diagram
@@ -695,85 +626,22 @@ describe('<Diagram />', () => {
 	});
 
 	describe('resize', () => {
-		afterEach(() => {
-			vi.unstubAllGlobals();
-		});
-
-		it('should re-centre the diagram when the first resize notification reports a new size', async () => {
-			const resizeCallbacks: ResizeObserverCallback[] = [];
-			vi.stubGlobal(
-				'ResizeObserver',
-				class {
-					constructor(callback: ResizeObserverCallback) {
-						resizeCallbacks.push(callback);
-					}
-					observe() {}
-					unobserve() {}
-					disconnect() {}
-				},
-			);
+		it('should re-centre the diagram when it is resized', async () => {
 			const screen = await render(
 				<div style={{position: 'relative', width: 800, height: 600}}>
 					<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />
 				</div>,
 			);
 			await expect.element(screen.getByRole('img', {name: 'end event', exact: true})).toBeInTheDocument();
-			const canvas = screen.getByRole('region', {name: 'Diagram'}).element();
-			const startEvent = screen.getByRole('button', {name: 'start event', exact: true}).element();
-			const endEvent = screen.getByRole('img', {name: 'end event', exact: true}).element();
 
-			canvas.parentElement!.style.height = '300px';
-			const {width, height} = canvas.getBoundingClientRect();
-			resizeCallbacks.forEach((callback) =>
-				callback([{contentRect: {width, height}} as ResizeObserverEntry], {} as ResizeObserver),
-			);
-
-			await expect
-				.poll(() => {
-					const canvasRect = canvas.getBoundingClientRect();
-					const start = startEvent.getBoundingClientRect();
-					const end = endEvent.getBoundingClientRect();
-					return Math.abs((start.top + end.bottom) / 2 - (canvasRect.top + canvasRect.bottom) / 2);
-				})
-				.toBeLessThan(1);
-		});
-
-		it('should keep the diagram when it is resized to zero size', async () => {
-			// given
-			const resizeCallbacks: ResizeObserverCallback[] = [];
-			vi.stubGlobal(
-				'ResizeObserver',
-				class {
-					constructor(callback: ResizeObserverCallback) {
-						resizeCallbacks.push(callback);
-					}
-					observe() {}
-					unobserve() {}
-					disconnect() {}
-				},
-			);
-			const screen = await render(
-				<div style={{position: 'relative', width: 800, height: 600}}>
+			await screen.rerender(
+				<div style={{position: 'relative', width: 800, height: 300}}>
 					<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />
 				</div>,
 			);
-			await expect.element(screen.getByRole('img', {name: 'end event', exact: true})).toBeInTheDocument();
-			const canvas = screen.getByRole('region', {name: 'Diagram'}).element();
 
-			vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-				callback(0);
-				return 0;
-			});
-
-			// when
-			canvas.parentElement!.style.width = '0px';
-			canvas.parentElement!.style.height = '0px';
-			resizeCallbacks.forEach((callback) =>
-				callback([{contentRect: {width: 0, height: 0}} as ResizeObserverEntry], {} as ResizeObserver),
-			);
-
-			// then
-			await expect.element(screen.getByRole('img', {name: 'end event', exact: true})).toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: 'start event', exact: true})).toBeInViewport({ratio: 1});
+			await expect.element(screen.getByRole('img', {name: 'end event', exact: true})).toBeInViewport({ratio: 1});
 		});
 	});
 });

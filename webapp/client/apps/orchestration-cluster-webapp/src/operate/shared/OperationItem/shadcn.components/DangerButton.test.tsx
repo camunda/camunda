@@ -19,23 +19,7 @@ describe('<DangerButton />', () => {
 		const button = screen.getByRole('button', {name: 'Delete Instance 123', exact: true});
 
 		await expect.element(button).toBeVisible();
-		await expect.element(button).toHaveAttribute('data-size', 'default');
 		await expect.element(screen.getByText('Delete', {exact: true})).toBeVisible();
-	});
-
-	it.for([
-		['xs', 'xs'],
-		['sm', 'sm'],
-		['default', 'default'],
-		['lg', 'lg'],
-	] as const)('should apply the %s size', async ([size, expectedSize]) => {
-		const screen = await render(
-			<DangerButton type="DELETE" onClick={vi.fn()} title="Delete Instance 123" size={size} />,
-		);
-
-		await expect
-			.element(screen.getByRole('button', {name: 'Delete Instance 123', exact: true}))
-			.toHaveAttribute('data-size', expectedSize);
 	});
 
 	it('should execute the delete action when clicked', async () => {

@@ -30,7 +30,7 @@ describe('<FilterMultiSelect />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await screen.getByRole('combobox', {name: 'Operation type'}).click();
+		await userEvent.click(screen.getByRole('combobox', {name: 'Operation type'}));
 
 		await expect.element(screen.getByRole('option', {name: 'Create'})).toBeVisible();
 		await expect.element(screen.getByRole('option', {name: 'Update'})).toBeVisible();
@@ -76,8 +76,8 @@ describe('<FilterMultiSelect />', () => {
 			{wrapper: Wrapper},
 		);
 
-		await screen.getByRole('combobox', {name: 'Operation type'}).click();
-		await userEvent.click(screen.getByRole('option', {name: 'Create'}).element());
+		await userEvent.click(screen.getByRole('combobox', {name: 'Operation type'}));
+		await userEvent.click(screen.getByRole('option', {name: 'Create'}));
 
 		expect(onValues).toHaveBeenLastCalledWith(['CREATE']);
 	});
@@ -103,7 +103,7 @@ describe('<FilterMultiSelect />', () => {
 			{wrapper: Wrapper},
 		);
 
-		await userEvent.click(screen.getByRole('button', {name: /remove/i}).element());
+		await userEvent.click(screen.getByRole('button', {name: /remove/i}));
 
 		expect(onValues).toHaveBeenLastCalledWith(undefined);
 	});

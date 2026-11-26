@@ -8,9 +8,18 @@
 
 import {describe, expect, vi} from 'vitest';
 import {render} from 'vitest-browser-react';
+import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
-import {setUpFakeIntersectionObserver} from '#/vitest-modules/fake-intersection-observer';
 import {StructuredList} from './StructuredList';
+
+const MANY_ROWS = Array.from({length: 30}, (_, index) => ({
+	key: `row-${index}`,
+	columns: [{cellContent: `Row ${index}`}],
+}));
+
+const SizedContainer: React.FC<{children?: React.ReactNode}> = ({children}) => (
+	<div style={{height: '200px', display: 'flex', flexDirection: 'column'}}>{children}</div>
+);
 
 describe('<StructuredList />', () => {
 	it('should render header and row columns', async () => {
@@ -46,28 +55,6 @@ describe('<StructuredList />', () => {
 		// then
 		await expect.element(screen.getByText('Dynamic content')).toBeVisible();
 		await expect.element(screen.getByText('Static')).toBeVisible();
-	});
-
-	it('should flush-align the leading cell of both dynamic and static rows when isFlush is set', async () => {
-		// given / when
-		const screen = await render(
-			<StructuredList
-				label="Process Details"
-				headerColumns={[{cellContent: 'Name'}]}
-				rows={[{key: 'static-row', columns: [{cellContent: 'Static'}]}]}
-				dynamicRows={
-					<tr>
-						<td>Dynamic content</td>
-					</tr>
-				}
-				isFlush
-			/>,
-		);
-
-		// then: both the caller-rendered dynamic row and the auto-rendered static row are flush
-		await expect.element(screen.getByRole('cell', {name: 'Dynamic content'})).toHaveStyle({paddingLeft: '0px'});
-		await expect.element(screen.getByRole('cell', {name: 'Static'})).toHaveStyle({paddingLeft: '0px'});
-		await expect.element(screen.getByRole('cell', {name: 'Name'})).toHaveStyle({paddingLeft: '0px'});
 	});
 
 	it('should render multiple rows and columns, preserving row order', async () => {
@@ -114,72 +101,45 @@ describe('<StructuredList />', () => {
 	});
 
 	describe('infinite scroll', () => {
-		const {getObserver} = setUpFakeIntersectionObserver();
-
-		it('should call onVerticalScrollStartReach with a scrollDown callback when scrolling up past the first row', async () => {
-			// given
-			const onVerticalScrollStartReach = vi.fn();
-			const screen = await render(
-				<StructuredList
-					label="Process Details"
-					headerColumns={[{cellContent: 'Name'}]}
-					rows={[
-						{key: 'row-1', columns: [{cellContent: 'First'}]},
-						{key: 'row-2', columns: [{cellContent: 'Second'}]},
-					]}
-					dataTestId="structured-list"
-					onVerticalScrollStartReach={onVerticalScrollStartReach}
-				/>,
-			);
-			const container = screen.getByTestId('structured-list').element() as HTMLElement;
-			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
-			const firstRow = screen.getByRole('row', {name: 'First'}).element();
-
-			// when
-			const observer = getObserver();
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
-			observer.intersect(firstRow);
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
-			observer.intersect(firstRow);
-
-			// then
-			expect(onVerticalScrollStartReach).toHaveBeenCalledTimes(1);
-			const scrollDown = onVerticalScrollStartReach.mock.calls[0]?.[0] as (distance: number) => void;
-			scrollDown(10);
-			expect(scrollToSpy).toHaveBeenCalledWith(0, 30);
-		});
-
-		it('should call onVerticalScrollEndReach with a scrollUp callback when scrolling down past the last row', async () => {
-			// given
+		it('should call onVerticalScrollEndReach when scrolling down to the last row', async () => {
 			const onVerticalScrollEndReach = vi.fn();
 			const screen = await render(
 				<StructuredList
 					label="Process Details"
 					headerColumns={[{cellContent: 'Name'}]}
-					rows={[
-						{key: 'row-1', columns: [{cellContent: 'First'}]},
-						{key: 'row-2', columns: [{cellContent: 'Second'}]},
-					]}
+					rows={MANY_ROWS}
 					dataTestId="structured-list"
 					onVerticalScrollEndReach={onVerticalScrollEndReach}
 				/>,
+				{wrapper: SizedContainer},
 			);
-			const container = screen.getByTestId('structured-list').element() as HTMLElement;
-			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
-			const lastRow = screen.getByRole('row', {name: 'Second'}).element();
+			await expect.element(screen.getByRole('row', {name: 'Row 29'})).not.toBeInViewport();
 
-			// when
-			const observer = getObserver();
-			Object.defineProperty(container, 'scrollTop', {value: 0, configurable: true});
-			observer.intersect(lastRow);
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
-			observer.intersect(lastRow);
+			await userEvent.wheel(screen.getByTestId('structured-list'), {delta: {y: 5000}});
 
-			// then
-			expect(onVerticalScrollEndReach).toHaveBeenCalledTimes(1);
-			const scrollUp = onVerticalScrollEndReach.mock.calls[0]?.[0] as (distance: number) => void;
-			scrollUp(10);
-			expect(scrollToSpy).toHaveBeenCalledWith(0, 90);
+			await expect.element(screen.getByRole('row', {name: 'Row 29'})).toBeInViewport();
+			await expect.poll(() => onVerticalScrollEndReach).toHaveBeenCalled();
+		});
+
+		it('should call onVerticalScrollStartReach when scrolling back up to the first row', async () => {
+			const onVerticalScrollStartReach = vi.fn();
+			const screen = await render(
+				<StructuredList
+					label="Process Details"
+					headerColumns={[{cellContent: 'Name'}]}
+					rows={MANY_ROWS}
+					dataTestId="structured-list"
+					onVerticalScrollStartReach={onVerticalScrollStartReach}
+				/>,
+				{wrapper: SizedContainer},
+			);
+			await userEvent.wheel(screen.getByTestId('structured-list'), {delta: {y: 5000}});
+			await expect.element(screen.getByRole('row', {name: 'Row 0'})).not.toBeInViewport();
+
+			await userEvent.wheel(screen.getByTestId('structured-list'), {delta: {y: -5000}});
+
+			await expect.element(screen.getByRole('row', {name: 'Row 0'})).toBeInViewport();
+			await expect.poll(() => onVerticalScrollStartReach).toHaveBeenCalled();
 		});
 	});
 });

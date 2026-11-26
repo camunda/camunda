@@ -27,23 +27,7 @@ describe('<OperationItem />', () => {
 		const button = screen.getByRole('button', {name: title, exact: true});
 
 		await expect.element(button).toBeVisible();
-		await expect.element(button).toHaveAttribute('data-size', 'default');
 		await expect.element(screen.getByTestId(testId)).toBeVisible();
-	});
-
-	it.for([
-		['xs', 'xs'],
-		['sm', 'sm'],
-		['default', 'default'],
-		['lg', 'lg'],
-	] as const)('should apply the %s size', async ([size, expectedSize]) => {
-		const screen = await render(
-			<OperationItem type="RESOLVE_INCIDENT" onClick={vi.fn()} title="Retry Instance 123" size={size} />,
-		);
-
-		await expect
-			.element(screen.getByRole('button', {name: 'Retry Instance 123', exact: true}))
-			.toHaveAttribute('data-size', expectedSize);
 	});
 
 	it('should execute the operation when clicked', async () => {

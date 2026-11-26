@@ -9,7 +9,7 @@
 import {useState} from 'react';
 import {Form} from 'react-final-form';
 import {render} from 'vitest-browser-react';
-import {describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {formatISODate} from '#/operate/shared/DateRangeField/formatDate';
@@ -19,6 +19,7 @@ type Values = {from?: string; to?: string};
 
 const FROM = formatISODate(new Date(2026, 9, 7, 8, 30, 15));
 const TO = formatISODate(new Date(2026, 9, 14, 17, 45, 0));
+const NOW = new Date(2026, 6, 20, 12, 0, 0);
 
 const Harness: React.FC<{initialValues?: Values; onSubmit?: (values: Values) => void}> = ({
 	initialValues = {},
@@ -70,11 +71,6 @@ const ExternalChangeHarness: React.FC = () => (
 	</Form>
 );
 
-const submitted = async (onSubmit: ReturnType<typeof vi.fn>, screen: Awaited<ReturnType<typeof render>>) => {
-	await userEvent.click(screen.getByRole('button', {name: 'submit'}));
-	return onSubmit.mock.calls.at(-1)?.[0] as Values;
-};
-
 describe('<DateTimeRangeField /> (design system)', () => {
 	describe('rendering', () => {
 		it('should render labelled From, To and Quick ranges controls', async () => {
@@ -96,6 +92,7 @@ describe('<DateTimeRangeField /> (design system)', () => {
 		it('should not open the picker on initial render', async () => {
 			const screen = await render(<Harness />);
 
+			await expect.element(screen.getByRole('textbox', {name: 'From'})).toBeVisible();
 			await expect.element(screen.getByRole('grid')).not.toBeInTheDocument();
 		});
 	});
@@ -107,7 +104,8 @@ describe('<DateTimeRangeField /> (design system)', () => {
 
 			await userEvent.fill(screen.getByRole('textbox', {name: 'From'}), '2026-10-07 08:30:15');
 
-			expect((await submitted(onSubmit, screen)).from).toBe(FROM);
+			await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+			expect(onSubmit).toHaveBeenLastCalledWith({from: FROM, to: TO}, expect.anything(), expect.anything());
 		});
 
 		it('should clear the value when the field is emptied', async () => {
@@ -117,9 +115,8 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			await userEvent.clear(screen.getByRole('textbox', {name: 'From'}));
 			await userEvent.clear(screen.getByRole('textbox', {name: 'To'}));
 
-			const values = await submitted(onSubmit, screen);
-			expect(values.from).toBeUndefined();
-			expect(values.to).toBeUndefined();
+			await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+			expect(onSubmit).toHaveBeenLastCalledWith({}, expect.anything(), expect.anything());
 		});
 
 		it.for([
@@ -198,7 +195,8 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			await userEvent.tab();
 
 			await expect.element(from).toHaveAttribute('aria-invalid', 'false');
-			expect((await submitted(onSubmit, screen)).from).toBe(FROM);
+			await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+			expect(onSubmit).toHaveBeenLastCalledWith({from: FROM, to: TO}, expect.anything(), expect.anything());
 		});
 
 		it('should require the other end of the range', async () => {
@@ -248,7 +246,12 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			await userEvent.click(screen.getByRole('button', {name: /October 9th, 2026/}));
 
 			await expect.element(screen.getByRole('textbox', {name: 'From'})).toHaveValue('2026-10-09 08:30:15');
-			expect((await submitted(onSubmit, screen)).from).toBe(formatISODate(new Date(2026, 9, 9, 8, 30, 15)));
+			await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+			expect(onSubmit).toHaveBeenLastCalledWith(
+				{from: formatISODate(new Date(2026, 9, 9, 8, 30, 15)), to: TO},
+				expect.anything(),
+				expect.anything(),
+			);
 		});
 
 		it('should default the time to the start of the day for From and the end of the day for To', async () => {
@@ -273,7 +276,12 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			await userEvent.fill(screen.getByLabelText('Time'), '10:11:12');
 
 			await expect.element(screen.getByRole('textbox', {name: 'From'})).toHaveValue('2026-10-07 10:11:12');
-			expect((await submitted(onSubmit, screen)).from).toBe(formatISODate(new Date(2026, 9, 7, 10, 11, 12)));
+			await userEvent.click(screen.getByRole('button', {name: 'submit'}));
+			expect(onSubmit).toHaveBeenLastCalledWith(
+				{from: formatISODate(new Date(2026, 9, 7, 10, 11, 12)), to: TO},
+				expect.anything(),
+				expect.anything(),
+			);
 		});
 
 		it('should treat a time without seconds as starting at second zero', async () => {
@@ -311,6 +319,7 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			const from = screen.getByRole('textbox', {name: 'From'});
 
 			await userEvent.click(from);
+			await expect.element(screen.getByRole('grid')).toBeVisible();
 			await userEvent.keyboard('{Escape}');
 
 			await expect.element(screen.getByRole('grid')).not.toBeInTheDocument();
@@ -329,23 +338,25 @@ describe('<DateTimeRangeField /> (design system)', () => {
 	});
 
 	describe('quick ranges', () => {
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
 		it.for([
-			{label: 'Last 5 minutes', minutes: 5},
-			{label: 'Last 1 hour', minutes: 60},
-			{label: 'Last 24 hours', minutes: 1440},
-			{label: 'Last 2 days', minutes: 2880},
-			{label: 'Last 30 days', minutes: 43200},
-		])('should fill the range for "$label"', async ({label, minutes}) => {
-			const onSubmit = vi.fn();
-			const screen = await render(<Harness onSubmit={onSubmit} />);
+			{label: 'Last 5 minutes', from: '2026-07-20 11:55:00'},
+			{label: 'Last 1 hour', from: '2026-07-20 11:00:00'},
+			{label: 'Last 24 hours', from: '2026-07-19 12:00:00'},
+			{label: 'Last 2 days', from: '2026-07-18 12:00:00'},
+			{label: 'Last 30 days', from: '2026-06-20 12:00:00'},
+		])('should fill the range for "$label"', async ({label, from}) => {
+			vi.useFakeTimers({toFake: ['Date'], now: NOW});
+			const screen = await render(<Harness />);
 
 			await userEvent.click(screen.getByRole('combobox', {name: 'Quick ranges'}));
 			await userEvent.click(screen.getByRole('option', {name: label}));
 
-			const {from, to} = await submitted(onSubmit, screen);
-			const rangeMs = new Date(to as string).getTime() - new Date(from as string).getTime();
-			expect(Math.abs(rangeMs - minutes * 60_000)).toBeLessThanOrEqual(1000);
-			expect(Math.abs(Date.now() - new Date(to as string).getTime())).toBeLessThan(10_000);
+			await expect.element(screen.getByRole('textbox', {name: 'From'})).toHaveValue(from);
+			await expect.element(screen.getByRole('textbox', {name: 'To'})).toHaveValue('2026-07-20 12:00:00');
 		});
 
 		it('should stop showing a quick range once the bounds are replaced from outside', async () => {
@@ -356,7 +367,7 @@ describe('<DateTimeRangeField /> (design system)', () => {
 			await expect.element(screen.getByRole('combobox', {name: 'Quick ranges'})).toHaveTextContent('Last 1 hour');
 
 			// when
-			(screen.getByRole('button', {name: 'navigate back'}).element() as HTMLButtonElement).click();
+			await userEvent.click(screen.getByRole('button', {name: 'navigate back'}));
 
 			// then
 			await expect
