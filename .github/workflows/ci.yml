@@ -266,7 +266,7 @@ jobs:
     runs-on: ubuntu-latest
     # Leaves room for checkout plus apt-install's full retry budget (~6.5 min), so an
     # Ubuntu mirror outage fails with the apt error instead of a job-timeout cancel.
-    timeout-minutes: 15
+    timeout-minutes: 25
     permissions:
       id-token: write # Vault JWT login
     steps:
@@ -289,9 +289,11 @@ jobs:
           vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
           vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
           vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
-      - name: Bootstrap reactor and generate flattened POMs
+      - name: Bootstrap reactor, generate flattened POMs and Javadoc
         # quickly=false default → flatten.skip=false → flatten-maven-plugin runs during `process-resources` of `install`.
-        run: ./mvnw clean install -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true -PskipFrontendBuild
+        # compile/source:jar/javadoc:jar mirror deploy-snapshots and the release, which fail on any module
+        # Javadoc rejects (e.g. one without public classes); catch that here instead of after merge.
+        run: ./mvnw clean compile source:jar javadoc:jar install -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true -PskipFrontendBuild
       - name: Validate flattened POM metadata
         uses: ./.github/actions/validate-pom-metadata
       - name: Observe build status
