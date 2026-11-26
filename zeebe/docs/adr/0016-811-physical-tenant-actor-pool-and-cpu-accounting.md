@@ -49,10 +49,13 @@ In each period, the sampler reads the CPU time of the threads in each registered
 time, not wall time. The sampler identifies a group with an ID. It does not know about tenants, so
 it stays in the scheduler module.
 
-**D6. The budget of a period is the period multiplied by the CPU quota of the group.**
-The caller gives the quota as a number of CPUs, for example 1.5. CPU time above the budget becomes
-debt for the next periods. The sampler does not keep budget that a group did not use, so a group
-cannot save idle time and use it later.
+**D6. The budget of a sample is the time since the last read of the group, multiplied by the CPU
+quota of the group.**
+The caller gives the quota as a number of CPUs, for example 1.5. The sampler starts one sample in
+each period, but a sample can start late, or start after a sample that failed. The budget of that
+sample covers all the time that its CPU time covers, so the delay does not create debt. CPU time
+above the budget becomes debt for the next samples. The sampler does not keep budget that a group
+did not use, so a group cannot save idle time and use it later.
 
 **D7. The broker does not charge threads that are not in a tenant group.**
 These threads include Netty threads, garbage collection, the JIT compiler, RocksDB threads, and
