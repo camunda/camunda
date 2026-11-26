@@ -8,7 +8,7 @@
 
 import {Fragment, useState} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
-import {useRouter} from '@tanstack/react-router';
+import {createLink} from '@tanstack/react-router';
 import {
 	Alert,
 	Button,
@@ -29,7 +29,7 @@ import {
 	TableRow,
 } from '@camunda/design-system';
 import {ChevronDown, ChevronRight} from '@camunda/design-system/icons';
-import type {CallHierarchy} from '@camunda/camunda-api-zod-schemas/8.11';
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
 import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {RichTextEditor} from '#/operate/shared/Editors/shadcn.components/RichTextEditor';
@@ -47,9 +47,10 @@ type Props = {
 	onClose: () => void;
 };
 
+const ProcessInstanceLink = createLink(Link);
+
 const ChildInstanceError: React.FC = () => {
 	const {t} = useTranslation();
-	const router = useRouter();
 	const {parentProcess, rootProcess} = useChildInstanceErrorProcesses();
 
 	if (parentProcess === undefined || rootProcess === undefined) {
@@ -61,12 +62,6 @@ const ChildInstanceError: React.FC = () => {
 			/>
 		);
 	}
-
-	const getLink = ({processInstanceKey}: CallHierarchy) =>
-		router.buildLocation({
-			to: '/operate-preview/processes/$processInstanceId',
-			params: {processInstanceId: processInstanceKey},
-		}).href;
 
 	return (
 		<Alert
@@ -80,8 +75,20 @@ const ChildInstanceError: React.FC = () => {
 						rootProcess: getCallHierarchyLabel(rootProcess),
 					}}
 					components={{
-						parentLink: <Link href={getLink(parentProcess)} target="_blank" />,
-						rootLink: <Link href={getLink(rootProcess)} target="_blank" />,
+						parentLink: (
+							<ProcessInstanceLink
+								to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
+								params={{processInstanceId: parentProcess.processInstanceKey}}
+								target="_blank"
+							/>
+						),
+						rootLink: (
+							<ProcessInstanceLink
+								to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
+								params={{processInstanceId: rootProcess.processInstanceKey}}
+								target="_blank"
+							/>
+						),
 					}}
 				/>
 			}
