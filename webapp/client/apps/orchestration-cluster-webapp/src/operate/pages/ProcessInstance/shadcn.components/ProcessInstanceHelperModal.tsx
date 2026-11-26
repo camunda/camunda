@@ -18,6 +18,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
+	useResolvedTheme,
 } from '@camunda/design-system';
 import {themeStore} from '#/shared/theme/theme';
 import previewLight from '#/operate/assets/process-instance-details-ds-light.png';
@@ -28,6 +29,7 @@ const ProcessInstanceHelperModal: React.FC = observer(() => {
 	const {t} = useTranslation();
 	const [isOpen, setIsOpen] = useState(() => !isProcessInstanceHelperHidden());
 	const gotItButtonRef = useRef<HTMLButtonElement>(null);
+	const resolvedTheme = useResolvedTheme(themeStore.selectedTheme);
 
 	if (!isOpen) {
 		return null;
@@ -61,7 +63,7 @@ const ProcessInstanceHelperModal: React.FC = observer(() => {
 						))}
 					</ul>
 					<img
-						src={themeStore.actualTheme === 'light' ? previewLight : previewDark}
+						src={resolvedTheme === 'light' ? previewLight : previewDark}
 						alt={t('operate.processInstance.helper.imageAlt')}
 						className="h-auto w-full"
 					/>
