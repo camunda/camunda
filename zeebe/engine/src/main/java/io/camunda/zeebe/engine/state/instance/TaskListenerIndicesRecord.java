@@ -13,7 +13,9 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class TaskListenerIndicesRecord extends UnpackedObject implements DbValue {
 
   private final IntegerProperty creatingTaskListenerIndexProp =
