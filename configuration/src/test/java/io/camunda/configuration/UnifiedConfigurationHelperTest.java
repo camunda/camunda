@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.data.secondarystorage.documentbased.NumberOfShardsPerIndex;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
@@ -184,7 +185,73 @@ class UnifiedConfigurationHelperTest {
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
                     NEW_PROPERTY, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES))
-        .withMessageContaining("Ambiguous configuration");
+        .withMessageContaining("Ambiguous configuration")
+        .withMessageNotContaining("conflicts with the default");
+  }
+
+  @Test
+  void testErrorExplainsDefaultWhenNewPropertyIsNotSet() {
+    // given: the unified value only comes from a default, the operator did not set the key
+    final String defaultValue = "defaultValue";
+    final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
+
+    // when
+    setPropertyValues("legacy.prop1", "legacyValue");
+
+    // then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () ->
+                UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+                    NEW_PROPERTY, defaultValue, String.class, mode, SINGLE_LEGACY_PROPERTY))
+        .withMessageContaining("Ambiguous configuration")
+        .withMessageContaining("conflicts")
+        .withMessageContaining("conflicts with the default")
+        .withMessageContaining("Set " + NEW_PROPERTY + "=legacyValue");
+  }
+
+  @Test
+  void testErrorForDefaultedObjectPropertyDoesNotSuggestKeyValueLine() {
+    // given
+    final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
+
+    // when
+    setPropertyValues("legacy.prop1.form", "2");
+
+    // then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () ->
+                UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+                    NEW_PROPERTY,
+                    new NumberOfShardsPerIndex(),
+                    NumberOfShardsPerIndex.class,
+                    mode,
+                    SINGLE_LEGACY_PROPERTY))
+        .withMessageContaining("conflicts with the default")
+        .withMessageContaining(NEW_PROPERTY + " to the value of the legacy properties")
+        .withMessageNotContaining(NEW_PROPERTY + "=");
+  }
+
+  @Test
+  void testErrorForDefaultedNewPropertyDoesNotShowSensitiveValues() {
+    // given
+    final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
+
+    // when
+    setPropertyValues("legacy.prop1", "legacySecret");
+
+    // then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () ->
+                UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
+                    NEW_PROPERTY, "defaultSecret", String.class, mode, SINGLE_LEGACY_PROPERTY))
+        .withMessageContaining("conflicts with the default")
+        .withMessageContaining(NEW_PROPERTY + " to the value of the legacy properties")
+        .withMessageNotContaining(NEW_PROPERTY + "=")
+        .withMessageNotContaining("legacySecret")
+        .withMessageNotContaining("defaultSecret");
   }
 
   @Test
