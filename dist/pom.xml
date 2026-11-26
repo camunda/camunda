@@ -1015,10 +1015,7 @@
           <assembleDirectory>${project.build.directory}/camunda-zeebe</assembleDirectory>
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
-          <!-- -XX:-UseBASE64Intrinsics mitigates CVE-2026-114938 (Java4Shell) on JDKs older than
-               21.0.13.1 / 25.0.5.1. Remove it once the minimum supported JDK contains the fix. -->
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
-            -XX:-UseBASE64Intrinsics
             -Dfile.encoding=UTF-8 -Xshare:auto
             ${jvm.module.opens}</extraJvmArguments>
           <!-- Custom templates add optional @argfile support via config/jvm.options -->
