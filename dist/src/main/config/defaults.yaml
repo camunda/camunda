@@ -547,7 +547,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           # bucket's own replication (S3 replication or MinIO bucket replication) to the replica site, as
           # reported by each object's replication status. If replication of an object fails, or does not
           # complete within replication-timeout, the backup fails. Requires replication to be configured on the
-          # bucket, and permission to read the bucket's replication configuration.
+          # bucket.
           wait-for-replication: false # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_WAITFORREPLICATION
         
         schedule: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_SCHEDULE

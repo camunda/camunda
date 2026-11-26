@@ -179,7 +179,7 @@ public class S3 {
    * the bucket's own replication (S3 replication or MinIO bucket replication) to the replica site,
    * as reported by each object's replication status. If replication of an object fails, or does not
    * complete within replication-timeout, the backup fails. Requires replication to be configured on
-   * the bucket, and permission to read the bucket's replication configuration.
+   * the bucket.
    */
   private boolean waitForReplication = false;
 
