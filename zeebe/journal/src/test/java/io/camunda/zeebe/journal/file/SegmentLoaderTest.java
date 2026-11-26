@@ -8,11 +8,16 @@
 package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
+import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -49,6 +54,36 @@ final class SegmentLoaderTest {
 
     // then
     PosixPathAssert.assertThat(segmentFile).hasRealSize(segmentSize);
+  }
+
+  @Test
+  void shouldFailToCreateSegmentWhenItsDirectoryFailsToSync(final @TempDir Path tmpDir) {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var descriptor =
+        SegmentDescriptor.builder().withId(1).withIndex(1).withMaxSegmentSize(segmentSize).build();
+    final var segmentLoader =
+        new SegmentLoader(
+            segmentSize * 2,
+            new JournalMetrics(meterRegistry),
+            SegmentAllocator.defaultAllocator());
+    final var segmentFile = tmpDir.resolve("segment.log");
+
+    // when
+    final Throwable failure;
+    try (final var fileUtil = mockStatic(FileUtil.class, CALLS_REAL_METHODS)) {
+      fileUtil
+          .when(() -> FileUtil.flushDirectory(tmpDir))
+          .thenThrow(new IOException("Input/output error"));
+      failure =
+          catchThrowable(
+              () ->
+                  segmentLoader.createSegment(
+                      segmentFile, descriptor, 0, new SparseJournalIndex(1)));
+    }
+
+    // then - the new file may not be in the directory on disk, so the journal must stop
+    assertThat(failure).isInstanceOf(SyncFailed.class);
   }
 
   @Test
