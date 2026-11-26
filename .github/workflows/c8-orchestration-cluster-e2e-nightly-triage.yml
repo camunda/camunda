@@ -33,8 +33,8 @@ on:
         default: true
         required: false
       daily_cap:
-        description: 'Max fix-agent dispatches this run (default: 5 -- one per supported version)'
-        default: '5'
+        description: 'Max fix-agent dispatches this run (default: 10 -- up to two per supported version: a cheap e2e/api-es bucket and a separate rdbms bucket)'
+        default: '10'
         required: false
       send_slack_notification:
         description: 'Post triage summary and fix-agent replies to Slack (always true for scheduled runs)'
@@ -305,7 +305,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           REPO:     ${{ github.repository }}
-          DAILY_CAP: ${{ github.event.inputs.daily_cap || '5' }}
+          DAILY_CAP: ${{ github.event.inputs.daily_cap || '10' }}
         run: |
           set -euo pipefail
 
@@ -489,11 +489,21 @@ jobs:
             jq --slurpfile run_ids /tmp/run_ids.json \
                --argjson covered "$covered_files_map" \
                --argjson cap "${DAILY_CAP}" '
-              # group failures by version
-              sort_by(.version) | group_by(.version)
+              # Group failures by version AND environment-cost bucket so one dispatch
+              # covers only one kind of setup. An api failure flagged for a non-
+              # Elasticsearch database ("rdbms") drives the from-source Maven build in
+              # the Live Docker Verify loop -- by far the most expensive step -- while e2e
+              # and Elasticsearch api failures share the cheap docker-compose setup.
+              # Mixing them forced one agent invocation to pay for both; keeping rdbms
+              # in its own dispatch lets the cheap bucket skip the Maven build.
+              map(. + {cost_bucket: (
+                  if .test_type == "api"
+                     and .database != null and .database != "" and .database != "elasticsearch"
+                  then "rdbms" else "cheap" end)})
+              | sort_by(.version, .cost_bucket) | group_by([.version, .cost_bucket])
               | map({
                   version: .[0].version,
-                  test_specs: (map(del(.version)) | .[0:50]),
+                  test_specs: (map(del(.version) | del(.cost_bucket)) | .[0:50]),
                   ref: (if .[0].version == "main" then "main" else ("stable/" + .[0].version) end)
                 })
               | map(select(.test_specs | length > 0))
