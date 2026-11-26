@@ -73,6 +73,20 @@ final class SaasTokenValidatorsTest {
   }
 
   @Test
+  void shouldAcceptTokenWithoutOrganizationAndClusterClaims() {
+    // given
+    final var decoder = SaasTokenValidators.withSaasValidation(decoderReturning(Map.of()), saas());
+
+    // when
+    final var jwt = decoder.decode("token");
+
+    // then
+    assertThat(jwt.getClaims())
+        .doesNotContainKeys(CLUSTER_CLAIM_KEY, ORGANIZATION_CLAIM_KEY)
+        .containsEntry("sub", "client");
+  }
+
+  @Test
   void shouldPropagateDecoderFailure() {
     // given
     final JwtDecoder failing =
