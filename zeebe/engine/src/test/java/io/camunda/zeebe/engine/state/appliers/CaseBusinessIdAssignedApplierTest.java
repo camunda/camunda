@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.cases.CaseRecord;
 import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +62,6 @@ public class CaseBusinessIdAssignedApplierTest {
         .setProcessDefinitionKey(456L)
         .setBpmnProcessId("loan-process")
         .setTitle("Loan for ACME")
-        .addStage("review", "Review", CaseStageStatus.NOT_STARTED);
+        .addStage("review", "Review", CaseStageState.NOT_STARTED);
   }
 }

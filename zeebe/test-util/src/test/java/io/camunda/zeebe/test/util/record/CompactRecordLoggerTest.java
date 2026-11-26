@@ -16,7 +16,7 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentDefinitionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolCallValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
@@ -212,13 +212,13 @@ class CompactRecordLoggerTest {
                           ImmutableCaseStageValue.builder()
                               .withElementId("review")
                               .withName("Review")
-                              .withStatus(CaseStageStatus.ACTIVE)
+                              .withState(CaseStageState.ACTIVE)
                               .build())
                       .addStages(
                           ImmutableCaseStageValue.builder()
                               .withElementId("approve")
                               .withName("")
-                              .withStatus(CaseStageStatus.NOT_STARTED)
+                              .withState(CaseStageState.NOT_STARTED)
                               .build())
                       .build())
               .build();

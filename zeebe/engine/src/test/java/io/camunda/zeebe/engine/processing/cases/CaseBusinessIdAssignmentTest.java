@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.CaseIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue.CaseStageValue;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import io.camunda.zeebe.protocol.record.value.ImmutableCaseRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -75,9 +75,8 @@ public final class CaseBusinessIdAssignmentTest {
                 .withBusinessId(created.getValue().getBusinessId()))
         .isEqualTo(ImmutableCaseRecordValue.copyOf(created.getValue()));
     assertThat(assigned.getValue().getStages())
-        .extracting(
-            CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getStatus)
-        .containsExactly(tuple("stage-a", "Stage A", CaseStageStatus.NOT_STARTED));
+        .extracting(CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getState)
+        .containsExactly(tuple("stage-a", "Stage A", CaseStageState.NOT_STARTED));
   }
 
   @Test

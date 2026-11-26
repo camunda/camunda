@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
-/** The status of a stage of a case. */
-public enum CaseStageStatus {
+/** The state of a stage of a case. */
+public enum CaseStageState {
   /** The stage has not started yet. */
   NOT_STARTED,
 

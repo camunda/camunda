@@ -22,7 +22,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -146,8 +146,8 @@ public final class CaseRecord extends UnifiedRecordValue implements CaseRecordVa
   }
 
   public CaseRecord addStage(
-      final String elementId, final String name, final CaseStageStatus status) {
-    stagesProp.add().setElementId(elementId).setName(name).setStatus(status);
+      final String elementId, final String name, final CaseStageState state) {
+    stagesProp.add().setElementId(elementId).setName(name).setState(state);
     return this;
   }
 

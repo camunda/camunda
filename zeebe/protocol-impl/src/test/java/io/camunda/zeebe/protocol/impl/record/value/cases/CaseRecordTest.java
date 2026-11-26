@@ -12,7 +12,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue.CaseStageValue;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -26,8 +26,8 @@ final class CaseRecordTest {
             .setProcessInstanceKey(123L)
             .setProcessDefinitionKey(456L)
             .setBpmnProcessId("order-process")
-            .addStage("review", "Review", CaseStageStatus.ACTIVE)
-            .addStage("ship", "Ship", CaseStageStatus.NOT_STARTED);
+            .addStage("review", "Review", CaseStageState.ACTIVE)
+            .addStage("ship", "Ship", CaseStageState.NOT_STARTED);
 
     // when
     final var buffer = new UnsafeBuffer(new byte[original.getLength()]);
@@ -37,11 +37,10 @@ final class CaseRecordTest {
 
     // then
     assertThat(copy.getStages())
-        .extracting(
-            CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getStatus)
+        .extracting(CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getState)
         .containsExactly(
-            tuple("review", "Review", CaseStageStatus.ACTIVE),
-            tuple("ship", "Ship", CaseStageStatus.NOT_STARTED));
+            tuple("review", "Review", CaseStageState.ACTIVE),
+            tuple("ship", "Ship", CaseStageState.NOT_STARTED));
   }
 
   @Test
@@ -60,7 +59,7 @@ final class CaseRecordTest {
     final var record = new CaseRecord();
 
     // when
-    record.addStage("stage-a", "Stage A", CaseStageStatus.NOT_STARTED);
+    record.addStage("stage-a", "Stage A", CaseStageState.NOT_STARTED);
 
     // then
     assertThat(record.getStages())
@@ -69,7 +68,7 @@ final class CaseRecordTest {
             stage -> {
               assertThat(stage.getElementId()).isEqualTo("stage-a");
               assertThat(stage.getName()).isEqualTo("Stage A");
-              assertThat(stage.getStatus()).isEqualTo(CaseStageStatus.NOT_STARTED);
+              assertThat(stage.getState()).isEqualTo(CaseStageState.NOT_STARTED);
             });
   }
 

@@ -14,7 +14,7 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue.CaseStageValue;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
@@ -29,12 +29,12 @@ public final class CaseStageRecord extends ObjectValue implements CaseStageValue
 
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY);
   private final StringProperty nameProp = new StringProperty("name", "");
-  private final EnumProperty<CaseStageStatus> statusProp =
-      new EnumProperty<>("status", CaseStageStatus.class, CaseStageStatus.NOT_STARTED);
+  private final EnumProperty<CaseStageState> stateProp =
+      new EnumProperty<>("state", CaseStageState.class, CaseStageState.NOT_STARTED);
 
   public CaseStageRecord() {
     super(3);
-    declareProperty(elementIdProp).declareProperty(nameProp).declareProperty(statusProp);
+    declareProperty(elementIdProp).declareProperty(nameProp).declareProperty(stateProp);
   }
 
   @Override
@@ -58,12 +58,12 @@ public final class CaseStageRecord extends ObjectValue implements CaseStageValue
   }
 
   @Override
-  public CaseStageStatus getStatus() {
-    return Objects.requireNonNull(statusProp.getValue());
+  public CaseStageState getState() {
+    return Objects.requireNonNull(stateProp.getValue());
   }
 
-  public CaseStageRecord setStatus(final CaseStageStatus status) {
-    statusProp.setValue(status);
+  public CaseStageRecord setState(final CaseStageState state) {
+    stateProp.setValue(state);
     return this;
   }
 }

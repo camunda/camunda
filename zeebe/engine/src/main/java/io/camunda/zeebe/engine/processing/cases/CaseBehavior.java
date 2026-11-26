@@ -14,7 +14,7 @@ import io.camunda.zeebe.protocol.impl.record.value.cases.CaseRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.CaseIntent;
 import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Objects;
@@ -29,7 +29,7 @@ import org.jspecify.annotations.NullMarked;
  * <p>The event is written in the same processing step that creates the process instance, before the
  * instance is activated, so the case exists for every event that follows. It carries the full case:
  * state {@link CaseLifecycleState#ACTIVE} and every stage of the process as {@link
- * CaseStageStatus#NOT_STARTED}.
+ * CaseStageState#NOT_STARTED}.
  *
  * <p>The title is the value of the variable named by the {@code zeebe:case} title, taken from the
  * top-level variables the instance is created with. Only a non-blank string counts; in every other
@@ -88,7 +88,7 @@ public final class CaseBehavior {
         .stages()
         .forEach(
             stage ->
-                caseRecord.addStage(stage.elementId(), stage.name(), CaseStageStatus.NOT_STARTED));
+                caseRecord.addStage(stage.elementId(), stage.name(), CaseStageState.NOT_STARTED));
     stateWriter.appendFollowUpEvent(caseKey, CaseIntent.CREATED, caseRecord);
   }
 

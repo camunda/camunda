@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.cases.CaseRecord;
 import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue.CaseStageValue;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,11 +55,10 @@ public class DbCaseStateTest {
     assertThat(stored.getTitle()).isEqualTo("Loan for ACME");
     assertThat(stored.getStorageOrdinal()).isEqualTo(7);
     assertThat(stored.getStages())
-        .extracting(
-            CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getStatus)
+        .extracting(CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getState)
         .containsExactly(
-            tuple("review", "Review", CaseStageStatus.NOT_STARTED),
-            tuple("ship", "Ship", CaseStageStatus.NOT_STARTED));
+            tuple("review", "Review", CaseStageState.NOT_STARTED),
+            tuple("ship", "Ship", CaseStageState.NOT_STARTED));
   }
 
   @Test
@@ -144,11 +143,10 @@ public class DbCaseStateTest {
     assertThat(stored.getBusinessId()).isEqualTo("B-1");
     assertThat(stored.getTitle()).isEqualTo("Loan for ACME");
     assertThat(stored.getStages())
-        .extracting(
-            CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getStatus)
+        .extracting(CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getState)
         .containsExactly(
-            tuple("review", "Review", CaseStageStatus.NOT_STARTED),
-            tuple("ship", "Ship", CaseStageStatus.NOT_STARTED));
+            tuple("review", "Review", CaseStageState.NOT_STARTED),
+            tuple("ship", "Ship", CaseStageState.NOT_STARTED));
   }
 
   private static CaseRecord newCase(final long caseKey, final long processInstanceKey) {
@@ -160,8 +158,8 @@ public class DbCaseStateTest {
         .setBpmnProcessId("loan-process")
         .setTenantId("tenant-1")
         .setTitle("Loan for ACME")
-        .addStage("review", "Review", CaseStageStatus.NOT_STARTED)
-        .addStage("ship", "Ship", CaseStageStatus.NOT_STARTED)
+        .addStage("review", "Review", CaseStageState.NOT_STARTED)
+        .addStage("ship", "Ship", CaseStageState.NOT_STARTED)
         .setStorageOrdinal(7);
   }
 }

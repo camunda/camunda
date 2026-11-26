@@ -63,7 +63,7 @@ public interface CaseRecordValue extends RecordValue, ProcessInstanceRelated, Te
 
   /**
    * Returns the stages of the case. Every case event carries the full case, including all of its
-   * stages with their current status.
+   * stages with their current state.
    *
    * @return the stages, or an empty list if none
    */
@@ -85,8 +85,8 @@ public interface CaseRecordValue extends RecordValue, ProcessInstanceRelated, Te
     String getName();
 
     /**
-     * @return the status of the stage
+     * @return the state of the stage
      */
-    CaseStageStatus getStatus();
+    CaseStageState getState();
   }
 }

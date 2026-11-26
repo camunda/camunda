@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.cases.CaseRecord;
 import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue.CaseStageValue;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +49,7 @@ public class CaseCreatedApplierTest {
             .setProcessDefinitionKey(456L)
             .setBpmnProcessId("loan-process")
             .setTitle("Loan for ACME")
-            .addStage("review", "Review", CaseStageStatus.NOT_STARTED);
+            .addStage("review", "Review", CaseStageState.NOT_STARTED);
 
     // when
     applier.applyState(caseKey, record);
@@ -61,8 +61,7 @@ public class CaseCreatedApplierTest {
     assertThat(stored.getBpmnProcessId()).isEqualTo("loan-process");
     assertThat(stored.getTitle()).isEqualTo("Loan for ACME");
     assertThat(stored.getStages())
-        .extracting(
-            CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getStatus)
-        .containsExactly(tuple("review", "Review", CaseStageStatus.NOT_STARTED));
+        .extracting(CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getState)
+        .containsExactly(tuple("review", "Review", CaseStageState.NOT_STARTED));
   }
 }

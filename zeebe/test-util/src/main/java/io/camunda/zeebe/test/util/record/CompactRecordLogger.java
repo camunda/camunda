@@ -1161,7 +1161,7 @@ public class CompactRecordLogger {
                           stage.getElementId()
                               + (stage.getName().isEmpty() ? "" : "(" + stage.getName() + ")")
                               + "="
-                              + stage.getStatus())
+                              + stage.getState())
                   .collect(Collectors.joining(", ", "[", "]")));
     }
     return result

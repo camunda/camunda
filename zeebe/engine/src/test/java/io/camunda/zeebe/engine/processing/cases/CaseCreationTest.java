@@ -25,7 +25,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue.CaseStageValue;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
@@ -48,8 +48,8 @@ public final class CaseCreationTest {
 
   /** The stages of the process that is built by {@link #caseProcess}. */
   private static final Tuple[] STAGES = {
-    tuple("stage-a", "Stage A", CaseStageStatus.NOT_STARTED),
-    tuple("stage-b", "Stage B", CaseStageStatus.NOT_STARTED)
+    tuple("stage-a", "Stage A", CaseStageState.NOT_STARTED),
+    tuple("stage-b", "Stage B", CaseStageState.NOT_STARTED)
   };
 
   private static final Tuple[] NO_STAGES = {};
@@ -88,11 +88,10 @@ public final class CaseCreationTest {
     // then
     final var created = awaitCaseCreated(processInstanceKey);
     assertThat(created.getValue().getStages())
-        .extracting(
-            CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getStatus)
+        .extracting(CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getState)
         .containsExactly(
-            tuple("stage-a", "Stage A", CaseStageStatus.NOT_STARTED),
-            tuple("stage-b", "Stage B", CaseStageStatus.NOT_STARTED));
+            tuple("stage-a", "Stage A", CaseStageState.NOT_STARTED),
+            tuple("stage-b", "Stage B", CaseStageState.NOT_STARTED));
   }
 
   @Test
@@ -747,8 +746,7 @@ public final class CaseCreationTest {
             title,
             processInstance.getStorageOrdinal());
     assertThat(created.getValue().getStages())
-        .extracting(
-            CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getStatus)
+        .extracting(CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getState)
         .containsExactly(stages);
   }
 

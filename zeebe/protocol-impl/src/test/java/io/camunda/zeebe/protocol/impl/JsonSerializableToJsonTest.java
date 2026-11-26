@@ -139,7 +139,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -5901,7 +5901,7 @@ final class JsonSerializableToJsonTest {
                     .setTenantId("tenant-1")
                     .setBusinessId("order-42")
                     .setTitle("Order #42 for ACME")
-                    .addStage("review", "Review", CaseStageStatus.ACTIVE)
+                    .addStage("review", "Review", CaseStageState.ACTIVE)
                     .setStorageOrdinal(1001),
         """
         {
@@ -5917,7 +5917,7 @@ final class JsonSerializableToJsonTest {
             {
               "elementId": "review",
               "name": "Review",
-              "status": "ACTIVE"
+              "state": "ACTIVE"
             }
           ],
           "storageOrdinal": 1001
