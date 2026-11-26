@@ -53,9 +53,11 @@ function renderOperations(instance: ProcessInstance) {
 	});
 }
 
+const PROCESS_INSTANCE_KEY = '2251799813685249';
+
 function createInstance(state: ProcessInstance['state'], hasIncident = false) {
 	return createProcessInstance({
-		processInstanceKey: String(2251799813680000 + Math.floor(Math.random() * 100000)),
+		processInstanceKey: PROCESS_INSTANCE_KEY,
 		state,
 		hasIncident,
 	});
@@ -83,6 +85,7 @@ describe('<ProcessInstanceOperations /> (DS)', () => {
 
 	afterEach(async () => {
 		await cleanup();
+		vi.useRealTimers();
 		vi.restoreAllMocks();
 		notificationsStore.reset();
 		authenticationStore.reset();
@@ -91,29 +94,53 @@ describe('<ProcessInstanceOperations /> (DS)', () => {
 	});
 
 	it.for([
-		{state: 'ACTIVE', hasIncident: true, actions: ['Retry', 'Suspend', 'Cancel']},
-		{state: 'ACTIVE', hasIncident: false, actions: ['Suspend', 'Cancel']},
-		{state: 'SUSPENDED', hasIncident: false, actions: ['Resume', 'Cancel']},
-		{state: 'COMPLETED', hasIncident: false, actions: ['Delete']},
-		{state: 'TERMINATED', hasIncident: false, actions: ['Delete']},
-	] as const)('should show $actions for $state with incident=$hasIncident', async ({state, hasIncident, actions}) => {
-		const instance = createInstance(state, hasIncident);
+		{state: 'ACTIVE', hasIncident: true, action: 'Retry'},
+		{state: 'ACTIVE', hasIncident: true, action: 'Suspend'},
+		{state: 'ACTIVE', hasIncident: true, action: 'Cancel'},
+		{state: 'ACTIVE', hasIncident: false, action: 'Suspend'},
+		{state: 'ACTIVE', hasIncident: false, action: 'Cancel'},
+		{state: 'SUSPENDED', hasIncident: false, action: 'Resume'},
+		{state: 'SUSPENDED', hasIncident: false, action: 'Cancel'},
+		{state: 'COMPLETED', hasIncident: false, action: 'Delete'},
+		{state: 'TERMINATED', hasIncident: false, action: 'Delete'},
+	] as const)('should offer $action for $state with incident=$hasIncident', async ({state, hasIncident, action}) => {
+		const screen = await renderOperations(createInstance(state, hasIncident));
 
-		const screen = await renderOperations(instance);
-
-		const buttonFor = (action: string) =>
-			screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`});
-		const hiddenActions = ['Retry', 'Suspend', 'Resume', 'Cancel', 'Delete'].filter(
-			(action) => !(actions as readonly string[]).includes(action),
-		);
-
-		for (const action of actions) {
-			await expect.element(buttonFor(action)).toBeEnabled();
-		}
-		for (const action of hiddenActions) {
-			await expect.element(buttonFor(action)).not.toBeInTheDocument();
-		}
+		await expect
+			.element(screen.getByRole('button', {name: `${action} Instance ${PROCESS_INSTANCE_KEY}`}))
+			.toBeEnabled();
 	});
+
+	it.for([
+		{state: 'ACTIVE', hasIncident: true, shown: 'Suspend', action: 'Resume'},
+		{state: 'ACTIVE', hasIncident: true, shown: 'Suspend', action: 'Delete'},
+		{state: 'ACTIVE', hasIncident: false, shown: 'Suspend', action: 'Retry'},
+		{state: 'ACTIVE', hasIncident: false, shown: 'Suspend', action: 'Resume'},
+		{state: 'ACTIVE', hasIncident: false, shown: 'Suspend', action: 'Delete'},
+		{state: 'SUSPENDED', hasIncident: false, shown: 'Resume', action: 'Retry'},
+		{state: 'SUSPENDED', hasIncident: false, shown: 'Resume', action: 'Suspend'},
+		{state: 'SUSPENDED', hasIncident: false, shown: 'Resume', action: 'Delete'},
+		{state: 'COMPLETED', hasIncident: false, shown: 'Delete', action: 'Retry'},
+		{state: 'COMPLETED', hasIncident: false, shown: 'Delete', action: 'Suspend'},
+		{state: 'COMPLETED', hasIncident: false, shown: 'Delete', action: 'Resume'},
+		{state: 'COMPLETED', hasIncident: false, shown: 'Delete', action: 'Cancel'},
+		{state: 'TERMINATED', hasIncident: false, shown: 'Delete', action: 'Retry'},
+		{state: 'TERMINATED', hasIncident: false, shown: 'Delete', action: 'Suspend'},
+		{state: 'TERMINATED', hasIncident: false, shown: 'Delete', action: 'Resume'},
+		{state: 'TERMINATED', hasIncident: false, shown: 'Delete', action: 'Cancel'},
+	] as const)(
+		'should not offer $action for $state with incident=$hasIncident',
+		async ({state, hasIncident, shown, action}) => {
+			const screen = await renderOperations(createInstance(state, hasIncident));
+
+			await expect
+				.element(screen.getByRole('button', {name: `${shown} Instance ${PROCESS_INSTANCE_KEY}`}))
+				.toBeEnabled();
+			await expect
+				.element(screen.getByRole('button', {name: `${action} Instance ${PROCESS_INSTANCE_KEY}`}))
+				.not.toBeInTheDocument();
+		},
+	);
 
 	it('should offer migration for active instances only', async () => {
 		const active = createInstance('ACTIVE');
@@ -161,20 +188,17 @@ describe('<ProcessInstanceOperations /> (DS)', () => {
 
 	it('should only cancel after the confirmation', async ({worker}) => {
 		const instance = createInstance('ACTIVE');
-		const onRequest = vi.fn();
-		worker.events.on('request:start', ({request}) => onRequest(request.url));
-		worker.use(
-			mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
-			mockCancelProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: 'TERMINATED'})}),
-		);
+		worker.use(mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}));
 		const screen = await renderOperations(instance);
 
 		await userEvent.click(screen.getByRole('button', {name: `Cancel Instance ${instance.processInstanceKey}`}));
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
+		await expect.element(screen.getByRole('button', {name: 'Apply'})).not.toBeInTheDocument();
 
-		expect(onRequest).not.toHaveBeenCalledWith(expect.stringContaining('/cancellation'));
-
+		worker.use(
+			mockCancelProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: 'TERMINATED'})}),
+		);
 		await userEvent.click(screen.getByRole('button', {name: `Cancel Instance ${instance.processInstanceKey}`}));
 		await userEvent.click(screen.getByRole('button', {name: 'Apply'}));
 
@@ -188,9 +212,10 @@ describe('<ProcessInstanceOperations /> (DS)', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Actions'}));
 
-		for (const label of ['Retry', 'Suspend', 'Cancel', 'Migrate']) {
-			await expect.element(screen.getByRole('menuitem', {name: label})).toBeEnabled();
-		}
+		await expect.element(screen.getByRole('menuitem', {name: 'Retry'})).toBeEnabled();
+		await expect.element(screen.getByRole('menuitem', {name: 'Suspend'})).toBeEnabled();
+		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).toBeEnabled();
+		await expect.element(screen.getByRole('menuitem', {name: 'Migrate'})).toBeEnabled();
 		await userEvent.keyboard('{Escape}');
 		await expect.element(screen.getByRole('button', {name: 'Actions'})).toHaveFocus();
 	});
@@ -214,6 +239,7 @@ describe('<ProcessInstanceOperations /> (DS)', () => {
 
 	it('should show the failed state and an error notification when an operation fails', async ({worker}) => {
 		mockViewport(true);
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		const instance = createInstance('ACTIVE');
 		worker.use(
 			mockSuspendProcessInstanceEndpoint({

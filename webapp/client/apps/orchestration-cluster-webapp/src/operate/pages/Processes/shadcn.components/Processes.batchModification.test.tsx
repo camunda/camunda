@@ -127,12 +127,6 @@ async function enterMode(screen: Screen) {
 	await expect.element(screen.getByText('Batch Modification Mode')).toBeVisible();
 }
 
-async function clickDiagramElement(elementId: string) {
-	const selector = `[data-element-id="${elementId}"]`;
-	await expect.poll(() => document.querySelectorAll(selector).length, {timeout: 10_000}).toBe(1);
-	await Promise.all(Array.from(document.querySelectorAll(selector), (element) => userEvent.click(element)));
-}
-
 describe('<Processes /> batch modification (design system)', () => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
@@ -227,7 +221,7 @@ describe('<Processes /> batch modification (design system)', () => {
 		const screen = await renderPage();
 		await enterMode(screen);
 
-		await clickDiagramElement('end_event');
+		await userEvent.click(screen.getByRole('button', {name: 'end event'}));
 
 		await expect.element(screen.getByRole('button', {name: 'Review modification'})).toBeEnabled();
 		await expect
@@ -268,7 +262,7 @@ describe('<Processes /> batch modification (design system)', () => {
 		);
 		const screen = await renderPage();
 		await enterMode(screen);
-		await clickDiagramElement('end_event');
+		await userEvent.click(screen.getByRole('button', {name: 'end event'}));
 
 		await userEvent.click(screen.getByRole('button', {name: 'Review modification'}));
 		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply'}));

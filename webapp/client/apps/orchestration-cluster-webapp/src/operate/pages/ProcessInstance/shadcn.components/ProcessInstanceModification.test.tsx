@@ -7,10 +7,12 @@
  */
 
 import {useReducer} from 'react';
-import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
+import {Toaster, toast} from '@camunda/design-system';
+import {z} from 'zod';
 import {useRouterState} from '@tanstack/react-router';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
@@ -35,6 +37,7 @@ import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {storeSessionState} from '#/shared/browser-storage/session-storage';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {ProcessInstancePageProvider} from '../ProcessInstancePageProvider';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
 import {modificationReducer, type Modification, type ModificationState} from '../modifications/modificationReducer';
@@ -43,8 +46,6 @@ import {addToken, cancelToken, createModificationState, variable} from '../modif
 import {InstanceDiagram} from './InstanceDiagram';
 import {InstanceHistory} from './InstanceHistory';
 import {ProcessInstanceModificationFooter} from './ProcessInstanceModificationFooter';
-
-vi.mock('#/operate/shared/Editors/LazyMonacoEditor', () => import('#/shared-test-modules/lazy-monaco-editor'));
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const PROCESS_XML = `<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -126,13 +127,17 @@ async function renderModificationPage({
 } = {}) {
 	const screen = await renderWithRouter(
 		() => (
-			<ModificationPage
-				initialState={createModificationState(modifications, state)}
-				processInstance={createProcessInstance({
-					processInstanceKey: PROCESS_INSTANCE_ID,
-					processDefinitionId: 'Process_1',
-				})}
-			/>
+			<>
+				<ModificationPage
+					initialState={createModificationState(modifications, state)}
+					processInstance={createProcessInstance({
+						processInstanceKey: PROCESS_INSTANCE_ID,
+						processDefinitionId: 'Process_1',
+					})}
+				/>
+				<Notifications />
+				<Toaster />
+			</>
 		),
 		{
 			path: '/operate-preview/processes/$processInstanceId/details',
@@ -150,6 +155,7 @@ beforeEach(() => {
 afterEach(async () => {
 	await cleanup();
 	notificationsStore.reset();
+	toast.dismiss();
 });
 
 describe('DS process instance token modifications', () => {
@@ -312,7 +318,15 @@ describe('DS process instance modification footer', () => {
 	it('should apply the modifications and leave modification mode', async ({worker}) => {
 		worker.use(
 			...handlers(),
-			mockModifyProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockModifyProcessInstanceEndpoint({
+				schema: z.object({
+					activateInstructions: z.tuple([]),
+					moveInstructions: z.tuple([]),
+					terminateInstructions: z.tuple([z.strictObject({elementId: z.literal('task_1')})]),
+				}),
+				successResponse: new HttpResponse(null, {status: 204}),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
 		);
 		const screen = await renderModificationPage({modifications: [cancelToken({elementId: 'task_1'})]});
 
@@ -321,6 +335,7 @@ describe('DS process instance modification footer', () => {
 			screen.getByRole('dialog', {name: 'Apply Modifications'}).getByRole('button', {name: 'Apply'}),
 		);
 
+		await expect.element(screen.getByText('Modifications applied')).toBeVisible();
 		await expect.element(screen.getByText('Modification status: disabled, 0 staged')).toBeVisible();
 	});
 });

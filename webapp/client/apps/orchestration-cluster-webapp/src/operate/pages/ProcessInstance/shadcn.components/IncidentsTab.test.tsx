@@ -80,14 +80,6 @@ function incidentRow(screen: Awaited<ReturnType<typeof renderIncidents>>, errorM
 	return screen.getByRole('row').filter({hasText: errorMessage});
 }
 
-function incidentMessages(screen: Awaited<ReturnType<typeof renderIncidents>>) {
-	return screen
-		.getByRole('row')
-		.elements()
-		.map((row) => row.textContent ?? '')
-		.flatMap((text) => ['Newer incident', 'Older incident'].filter((message) => text.includes(message)));
-}
-
 function renderIncidents(search = '', processInstance: Partial<ProcessInstance> = {}) {
 	function Incidents() {
 		const routeSearch = useRouterState({select: (state) => state.location.search});
@@ -266,7 +258,7 @@ describe('<IncidentsTab /> (design system)', () => {
 		await expect
 			.element(screen.getByRole('link', {name: 'Child Decision - 123570'}))
 			.toHaveAttribute('href', '/operate-preview/decisions/123570?tenantId=tenant-a');
-		expect(screen.getByRole('button', {name: 'Retry Incident'}).elements()).toHaveLength(1);
+		await expect.element(screen.getByRole('button', {name: 'Retry Incident'})).toHaveLength(1);
 	});
 
 	it('should point to the called instance when the selected call activity has no own incidents', async ({worker}) => {
@@ -347,11 +339,13 @@ describe('<IncidentsTab /> (design system)', () => {
 		);
 		const screen = await renderIncidents();
 		await expect.element(incidentRow(screen, 'Newer incident')).toBeVisible();
-		await expect.poll(() => incidentMessages(screen)).toEqual(['Newer incident', 'Older incident']);
+		await expect.element(screen.getByRole('row').nth(1)).toMatchTextContent('Newer incident');
+		await expect.element(screen.getByRole('row').nth(2)).toMatchTextContent('Older incident');
 
 		await userEvent.click(screen.getByRole('button', {name: 'Type'}));
 
-		await expect.poll(() => incidentMessages(screen)).toEqual(['Older incident', 'Newer incident']);
+		await expect.element(screen.getByRole('row').nth(1)).toMatchTextContent('Older incident');
+		await expect.element(screen.getByRole('row').nth(2)).toMatchTextContent('Newer incident');
 	});
 
 	it('should point to the failed decision when the selected business rule task has no own incidents', async ({
@@ -437,7 +431,10 @@ describe('<IncidentsTab /> (design system)', () => {
 		worker.use(
 			mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidentsResponse([createIncident({jobKey: null})])}),
 			mockResolveIncidentEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetIncidentEndpoint({successResponse: HttpResponse.json(createIncident({state: 'ACTIVE'}))}),
+			mockGetIncidentEndpoint({
+				successResponse: HttpResponse.json(createIncident({state: 'ACTIVE'})),
+				delay: 'infinite',
+			}),
 		);
 		const screen = await renderIncidents();
 
@@ -452,7 +449,10 @@ describe('<IncidentsTab /> (design system)', () => {
 		worker.use(
 			mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidentsResponse([createIncident({jobKey: null})])}),
 			mockResolveIncidentEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetIncidentEndpoint({successResponse: HttpResponse.json(createIncident({state: 'ACTIVE'}))}),
+			mockGetIncidentEndpoint({
+				successResponse: HttpResponse.json(createIncident({state: 'ACTIVE'})),
+				delay: 'infinite',
+			}),
 		);
 		const screen = await renderIncidents();
 

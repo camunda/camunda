@@ -7,11 +7,11 @@
  */
 
 import {Suspense} from 'react';
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {useSearch} from '@tanstack/react-router';
-import {queryProcessInstancesRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -30,7 +30,10 @@ import {
 	createGetProcessDefinitionStatisticsResponse,
 	createProcessDefinitionStatistic,
 } from '#/shared-test-modules/api-mocks/process-definition-statistics';
-import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
+import {
+	createProcessInstance,
+	createQueryProcessInstancesResponse,
+} from '#/shared-test-modules/api-mocks/process-instances';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {setVariableConditions} from '../VariablesFilter/variableFilterStore';
@@ -80,10 +83,14 @@ describe('<Processes /> (design system)', () => {
 			mockQueryBatchOperationItemsEndpoint({
 				successResponse: HttpResponse.json({items: [], page: {totalItems: 0}}),
 			}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
 		);
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		sessionStorage.clear();
 	});
 
@@ -124,11 +131,13 @@ describe('<Processes /> (design system)', () => {
 	});
 
 	it('should add an optional filter from the menu and serialize it to the URL', async () => {
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 
 		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Error message'}));
 		await userEvent.fill(screen.getByLabelText('Error message'), 'timeout');
+		await vi.advanceTimersByTimeAsync(750);
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({errorMessage: 'timeout'});
 	});
@@ -198,7 +207,6 @@ describe('<Processes /> (design system)', () => {
 	it('should select and clear a diagram element in the URL, filter instances by it and restore it through history', async ({
 		worker,
 	}) => {
-		const requestBodies: unknown[] = [];
 		worker.use(
 			mockGetProcessDefinitionStatisticsEndpoint({
 				successResponse: HttpResponse.json(
@@ -206,14 +214,6 @@ describe('<Processes /> (design system)', () => {
 						createProcessDefinitionStatistic({elementId: 'start', active: 1}),
 					]),
 				),
-			}),
-			mockQueryProcessInstancesEndpoint({
-				schema: queryProcessInstancesRequestBodySchema.refine((body) => {
-					requestBodies.push(body);
-					return true;
-				}),
-				successResponse: HttpResponse.json(createQueryProcessInstancesResponse({items: []})),
-				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
 		);
 		const screen = await renderWithRouter(Harness, {
@@ -223,13 +223,27 @@ describe('<Processes /> (design system)', () => {
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
 		const startNode = screen.getByRole('button', {name: 'Start (start event)'});
 
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				schema: z.object({filter: z.object({elementId: z.strictObject({$eq: z.literal('start')})})}),
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '2251799813685249'})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
 		await userEvent.click(startNode);
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({elementId: 'start'});
-		await expect
-			.poll(() => requestBodies.some((body) => JSON.stringify(body).includes('"elementId":{"$eq":"start"}')))
-			.toBe(true);
+		await expect.element(screen.getByRole('link', {name: /View instance 2251799813685249/})).toBeVisible();
 
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessInstancesResponse({items: []})),
+			}),
+		);
 		await userEvent.click(startNode);
 
 		await expect.poll(() => screen.router.state.location.search).not.toHaveProperty('elementId');
@@ -270,6 +284,7 @@ describe('<Processes /> (design system)', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Remove filter: Error message'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
 
+		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
 		await expect.element(screen.getByLabelText('Process instance key(s)')).not.toBeInTheDocument();
 	});
 
@@ -327,9 +342,16 @@ describe('<Processes /> (design system)', () => {
 	});
 
 	it('should warn about filtering by many variable conditions', async () => {
-		setVariableConditions(
-			Array.from({length: 8}, (_, index) => ({name: `variable${index}`, operator: 'equals', value: '1'})),
-		);
+		setVariableConditions([
+			{name: 'variable0', operator: 'equals', value: '1'},
+			{name: 'variable1', operator: 'equals', value: '1'},
+			{name: 'variable2', operator: 'equals', value: '1'},
+			{name: 'variable3', operator: 'equals', value: '1'},
+			{name: 'variable4', operator: 'equals', value: '1'},
+			{name: 'variable5', operator: 'equals', value: '1'},
+			{name: 'variable6', operator: 'equals', value: '1'},
+			{name: 'variable7', operator: 'equals', value: '1'},
+		]);
 
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 
@@ -343,22 +365,26 @@ describe('<Processes /> (design system)', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
 
+		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
 		await expect.element(screen.getByRole('list', {name: 'Active variable filters'})).not.toBeInTheDocument();
 	});
 
 	it('should send the variable conditions in the instances request until the filters are reset', async ({worker}) => {
-		const requestBodies: string[] = [];
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
-				schema: queryProcessInstancesRequestBodySchema.refine((body) => {
-					requestBodies.push(JSON.stringify(body));
-					return true;
+				schema: z.object({
+					filter: z.object({
+						variables: z.tuple([
+							z.strictObject({name: z.literal('status'), value: z.strictObject({$eq: z.literal('"open"')})}),
+						]),
+					}),
 				}),
-				successResponse: HttpResponse.json(createQueryProcessInstancesResponse({items: []})),
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '2251799813685249'})],
+					}),
+				),
 				failureResponse: new HttpResponse(null, {status: 400}),
-			}),
-			mockGetProcessDefinitionStatisticsEndpoint({
-				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
 			}),
 		);
 		setVariableConditions([{name: 'status', operator: 'equals', value: '"open"'}]);
@@ -366,13 +392,21 @@ describe('<Processes /> (design system)', () => {
 			path: PATH,
 			initialEntry: `${PATH}?process=order&version=2&active=true`,
 		});
-		await expect.poll(() => requestBodies.some((body) => body.includes('"name":"status"'))).toBe(true);
-		const requestsBeforeReset = requestBodies.length;
+		await expect.element(screen.getByRole('link', {name: /View instance 2251799813685249/})).toBeVisible();
 
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				schema: z.object({filter: z.object({variables: z.never().optional()})}),
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '2251799813685250'})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
 		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
 
-		await expect
-			.poll(() => requestBodies.slice(requestsBeforeReset).some((body) => !body.includes('"variables"')))
-			.toBe(true);
+		await expect.element(screen.getByRole('link', {name: /View instance 2251799813685250/})).toBeVisible();
 	});
 });

@@ -12,11 +12,8 @@ import {render} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
 import {TooltipProvider} from '@camunda/design-system';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {
-	deleteResourceRequestBodySchema,
-	queryProcessInstancesRequestBodySchema,
-	type ProcessDefinition,
-} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -54,14 +51,16 @@ function mockDrainingDefinitions(items: ProcessDefinition[] = []) {
 
 function mockRunningInstancesCount(totalItems: number) {
 	return mockQueryProcessInstancesEndpoint({
-		schema: queryProcessInstancesRequestBodySchema.refine(
-			({filter, page}) =>
-				JSON.stringify(filter) ===
-					JSON.stringify({
-						processDefinitionKey: {$eq: DEFINITION.processDefinitionKey},
-						$or: [{state: {$eq: 'ACTIVE'}}, {hasIncident: true}],
-					}) && page?.limit === 0,
-		),
+		schema: z.strictObject({
+			filter: z.strictObject({
+				processDefinitionKey: z.strictObject({$eq: z.literal(DEFINITION.processDefinitionKey)}),
+				$or: z.tuple([
+					z.strictObject({state: z.strictObject({$eq: z.literal('ACTIVE')})}),
+					z.strictObject({hasIncident: z.literal(true)}),
+				]),
+			}),
+			page: z.strictObject({from: z.literal(0), limit: z.literal(0)}),
+		}),
 		successResponse: HttpResponse.json(createQueryProcessInstancesResponse({page: {totalItems}})),
 		failureResponse: new HttpResponse(null, {status: 400}),
 	});
@@ -79,9 +78,13 @@ function renderOperations(definition: ProcessDefinition = DEFINITION) {
 	);
 }
 
-async function confirmDeletion(screen: Awaited<ReturnType<typeof renderOperations>>, actionName = ACTION_NAME) {
+async function confirmDeletion(
+	screen: Awaited<ReturnType<typeof renderOperations>>,
+	actionName = ACTION_NAME,
+	confirmation = CONFIRMATION,
+) {
 	await userEvent.click(screen.getByRole('button', {name: actionName}));
-	await userEvent.click(screen.getByText(actionName === ACTION_NAME ? CONFIRMATION : HISTORY_CONFIRMATION));
+	await userEvent.click(screen.getByText(confirmation));
 	await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
 }
 
@@ -246,9 +249,14 @@ describe('<ProcessOperations /> (design system)', () => {
 	});
 
 	it.for([
-		{name: 'definition', definition: DEFINITION, actionName: ACTION_NAME},
-		{name: 'history', definition: DELETED_DEFINITION, actionName: HISTORY_ACTION_NAME},
-	])('should disable $name deletion while pending', async ({definition, actionName}, {worker}) => {
+		{name: 'definition', definition: DEFINITION, actionName: ACTION_NAME, confirmation: CONFIRMATION},
+		{
+			name: 'history',
+			definition: DELETED_DEFINITION,
+			actionName: HISTORY_ACTION_NAME,
+			confirmation: HISTORY_CONFIRMATION,
+		},
+	])('should disable $name deletion while pending', async ({definition, actionName, confirmation}, {worker}) => {
 		worker.use(
 			mockDrainingDefinitions(),
 			mockRunningInstancesCount(0),
@@ -259,28 +267,33 @@ describe('<ProcessOperations /> (design system)', () => {
 		);
 		const screen = await renderOperations(definition);
 
-		await confirmDeletion(screen, actionName);
+		await confirmDeletion(screen, actionName, confirmation);
 
 		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: actionName})).toBeDisabled();
 	});
 
 	it.for([
-		{name: 'definition', definition: DEFINITION, actionName: ACTION_NAME},
-		{name: 'history', definition: DELETED_DEFINITION, actionName: HISTORY_ACTION_NAME},
-	])('should notify once $name deletion is created', async ({definition, actionName}, {worker}) => {
+		{name: 'definition', definition: DEFINITION, actionName: ACTION_NAME, confirmation: CONFIRMATION},
+		{
+			name: 'history',
+			definition: DELETED_DEFINITION,
+			actionName: HISTORY_ACTION_NAME,
+			confirmation: HISTORY_CONFIRMATION,
+		},
+	])('should notify once $name deletion is created', async ({definition, actionName, confirmation}, {worker}) => {
 		worker.use(
 			mockDrainingDefinitions(),
 			mockRunningInstancesCount(0),
 			mockDeleteResourceEndpoint({
-				schema: deleteResourceRequestBodySchema.refine((body) => body?.deleteHistory === true),
+				schema: z.strictObject({deleteHistory: z.literal(true)}),
 				successResponse: HttpResponse.json({resourceKey: DEFINITION.processDefinitionKey, batchOperation: null}),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
 		);
 		const screen = await renderOperations(definition);
 
-		await confirmDeletion(screen, actionName);
+		await confirmDeletion(screen, actionName, confirmation);
 
 		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: actionName})).toBeEnabled();

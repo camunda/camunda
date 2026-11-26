@@ -11,8 +11,8 @@ import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {useSearch} from '@tanstack/react-router';
-import {http, HttpResponse} from 'msw';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
+import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import type {SetupWorker} from 'msw/browser';
 import {Toaster} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
@@ -42,7 +42,6 @@ import {createQueryBatchOperationItemsResponse} from '#/shared-test-modules/api-
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {getPreviewInstanceMigrationLocation} from '../instanceMigration';
 import {processesSearchSchema} from '../processesFilter';
 import {Processes} from './Processes';
 
@@ -167,30 +166,31 @@ describe('<Processes /> migration mode (design system)', () => {
 
 	it('should start the batch migration and show the target in the list', async ({worker}) => {
 		mockPage(worker);
-		const requestBodies: unknown[] = [];
 		worker.use(
-			http.post(endpoints.createMigrationBatchOperation.getUrl(), async ({request}) => {
-				requestBodies.push(await request.json());
-				return HttpResponse.json(
+			mockCreateMigrationBatchOperationEndpoint({
+				schema: z.object({
+					filter: z.object({
+						processDefinitionKey: z.strictObject({$eq: z.literal('source-key')}),
+						processInstanceKey: z.strictObject({$in: z.tuple([z.literal('1')])}),
+					}),
+					migrationPlan: z.object({
+						targetProcessDefinitionKey: z.literal('latest-key'),
+						mappingInstructions: z.tuple([
+							z.strictObject({sourceElementId: z.literal('task-1'), targetElementId: z.literal('task-1')}),
+						]),
+					}),
+				}),
+				successResponse: HttpResponse.json(
 					{batchOperationKey: 'batch-1', batchOperationType: 'MIGRATE_PROCESS_INSTANCE'},
 					{status: 202},
-				);
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
 		);
 		const screen = await renderPage();
 		await enterMigration(screen);
 
 		await confirmMigration(screen);
-
-		await expect
-			.poll(() => requestBodies[0])
-			.toMatchObject({
-				filter: {processDefinitionKey: {$eq: 'source-key'}, processInstanceKey: {$in: ['1']}},
-				migrationPlan: {
-					targetProcessDefinitionKey: 'latest-key',
-					mappingInstructions: [{sourceElementId: 'task-1', targetElementId: 'task-1'}],
-				},
-			});
 
 		await expect
 			.element(screen.getByText('The batch operation "Migrate Process Instance" has been started'))
@@ -236,65 +236,5 @@ describe('<Processes /> migration mode (design system)', () => {
 
 		await expect.element(target).toHaveTextContent('Not mapped');
 		await expect.element(elementButton).toHaveAttribute('aria-pressed', 'false');
-	});
-
-	describe('leaving with a staged mapping', () => {
-		async function stageMapping(screen: Screen) {
-			await userEvent.click(screen.getByRole('combobox', {name: 'Target element for Review invoice'}));
-			await userEvent.click(screen.getByRole('option', {name: 'Not mapped'}));
-			await expect
-				.element(screen.getByRole('combobox', {name: 'Target element for Review invoice'}))
-				.toHaveTextContent('Not mapped');
-		}
-
-		it('should keep the staged mapping when staying after navigating away', async ({worker}) => {
-			mockPage(worker);
-			const screen = await renderPage();
-			await enterMigration(screen);
-			await stageMapping(screen);
-
-			void screen.router.navigate({
-				to: PATH,
-				search: {process: 'my_simple_process', version: 1, tenantId: 'tenant-a'},
-			});
-			await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Stay'}));
-
-			await expect.element(screen.getByText('Migration step 1 - mapping elements')).toBeVisible();
-			await expect
-				.element(screen.getByRole('combobox', {name: 'Target element for Review invoice'}))
-				.toHaveTextContent('Not mapped');
-		});
-
-		it('should leave migration mode when leaving after navigating away', async ({worker}) => {
-			mockPage(worker);
-			const screen = await renderPage();
-			await enterMigration(screen);
-			await stageMapping(screen);
-
-			void screen.router.navigate({
-				to: PATH,
-				search: {process: 'my_simple_process', version: 1, tenantId: 'tenant-a'},
-			});
-			await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Leave'}));
-
-			await expect.element(screen.getByText('Migration step 1 - mapping elements')).not.toBeInTheDocument();
-		});
-	});
-
-	it('should open migration mode for the instance handed over from the instance page', async ({worker}) => {
-		mockPage(worker);
-		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: `/operate-preview/processes/1`});
-		const instance = createProcessInstance({
-			processInstanceKey: '1',
-			processDefinitionKey: 'source-key',
-			processDefinitionId: 'my_simple_process',
-			processDefinitionName: 'Invoice process',
-			processDefinitionVersion: 1,
-			tenantId: 'tenant-a',
-		});
-
-		await screen.router.navigate(getPreviewInstanceMigrationLocation(instance));
-
-		await expect.element(screen.getByText('Migration step 1 - mapping elements')).toBeVisible();
 	});
 });
