@@ -7,6 +7,7 @@ dependencies {
   api(project(":zeebe-atomix-utils"))
   implementation(libs.org.slf4j.slf4j.api)
   implementation(libs.org.jspecify.jspecify)
+  testImplementation(project(":zeebe-cluster-gossip-testkit"))
   testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(libs.io.micrometer.micrometer.core)

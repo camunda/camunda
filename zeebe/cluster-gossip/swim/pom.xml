@@ -51,6 +51,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-gossip-testkit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-atomix-cluster</artifactId>
       <scope>test</scope>
     </dependency>
