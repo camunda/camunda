@@ -32,6 +32,13 @@ jobs:
       id-token: write
     name: E2E Tests (${{ inputs.branch }}${{ inputs.tasklist_mode && format(' - Tasklist {0} mode', inputs.tasklist_mode) || '' }})
     runs-on: ubuntu-latest
+    # Backstop above the Playwright globalTimeout (C8E2E_GLOBAL_TIMEOUT_MIN on
+    # "Run E2E tests"): the suite normally finishes in ~20 min, so a job that
+    # reaches this bound is a hang the globalTimeout should already have caught
+    # and reported. Without a bound a hung run instead starves the hosted runner
+    # until it loses communication with the server, crashing the job with no
+    # report at all.
+    timeout-minutes: 75
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -316,6 +323,12 @@ jobs:
         shell: bash
         env:
           LOCAL_TEST: "false"
+          # Cap the run so a hanging suite stops itself and still writes its
+          # JSON/HTML report (uploaded by the always() steps below), surfacing
+          # the hang as a test result instead of letting it run unbounded until
+          # the hosted runner dies. ~20 min is the normal runtime; 40 leaves
+          # ample headroom while firing well before the job timeout-minutes.
+          C8E2E_GLOBAL_TIMEOUT_MIN: "40"
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
