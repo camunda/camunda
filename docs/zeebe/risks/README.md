@@ -41,7 +41,7 @@ Before you change an area of the engine, check which risks apply to it.
 Do not read every file in full, and do not read only the first lines of each: the **front matter** of each file, the part between the two `---` lines at the top, has everything needed to decide whether the file concerns your change.
 The body below it is additional detail.
 
-1. List the files directly in this folder and read the front matter of each, for example `sed -n '2,/^---$/p' <file>`.
+1. List the files directly in this folder (not in `resolved/`) and read the front matter of each, for example `sed -n '2,/^---$/p' <file>`.
 2. Compare `applies_when` and `does_not_apply_when` with what you are changing, using the `summary` to understand the risk.
 3. If the file applies, or you are not sure, read the whole file and follow **What to do**.
    If it does not apply, stop reading that file.
@@ -49,6 +49,14 @@ The body below it is additional detail.
 5. Make sure the tests and checks in **How to detect** pass, and add the ones the **Coverage bar** asks for if your change is the one that introduces them.
 
 If a risk is unclear, or you found one that is missing, ask in [#top-c8-engine-governance](https://camunda.slack.com/archives/C0BPZFRT19N) or open an issue with the "Engine risk" template.
+
+### Resolved risks
+
+A risk is resolved when the code was changed so the mistake can no longer be written.
+Its file moves to `resolved/`, with the same name, and stays there as history.
+
+- Do not check your change against the files in `resolved/`. They no longer apply, and the same goes for reviewers and agents that review a pull request.
+- Read them when you handle a new risk, or look for a structural fix: they show which risks we already handled and how.
 
 ## How to document a risk
 
@@ -60,6 +68,7 @@ Anyone can document a risk with a pull request that adds a file to this folder.
 For example `54823-released-record-properties.md`.
 The number makes the file easy to match with its issue.
 Files whose name starts with `_` are not risks.
+When a risk is resolved, its file moves to `resolved/` and keeps its name.
 
 ### Format
 
