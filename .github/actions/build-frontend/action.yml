@@ -31,7 +31,7 @@ runs:
       shell: bash
       run: npm install -g yarn
 
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
       if: ${{ inputs.package-manager == 'yarn' }}
       with:
         directory: ${{ inputs.directory }}

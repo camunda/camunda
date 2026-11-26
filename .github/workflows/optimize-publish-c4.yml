@@ -26,7 +26,7 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
         with:
           directory: optimize/c4
       - name: Install
