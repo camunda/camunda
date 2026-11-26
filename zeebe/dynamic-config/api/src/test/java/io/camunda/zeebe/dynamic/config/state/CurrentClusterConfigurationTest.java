@@ -1041,6 +1041,69 @@ class CurrentClusterConfigurationTest {
   }
 
   @Nested
+  class GroupView {
+
+    private static final String GROUP = "tenant";
+
+    private static CurrentClusterConfiguration config(
+        final long globalVersion, final long groupVersion) {
+      return new CurrentClusterConfiguration(
+          CurrentClusterConfiguration.INITIAL_VERSION,
+          global(globalVersion, Map.of(MEMBER_0, broker(1, BrokerState.State.ACTIVE))),
+          Map.of(GROUP, group(groupVersion, Map.of(MEMBER_0, brokerPartition(1)))),
+          PhasedChangeState.empty());
+    }
+
+    @Test
+    void shouldReportTheHigherOfGlobalAndGroupVersion() {
+      // when - then
+      assertThat(config(3, 7).versionOf(GROUP)).isEqualTo(7);
+      assertThat(config(9, 7).versionOf(GROUP)).isEqualTo(9);
+    }
+
+    @Test
+    void shouldReportTheGlobalVersionForAnUnknownGroup() {
+      // when - then
+      assertThat(config(3, 7).versionOf("unknown")).isEqualTo(3);
+    }
+
+    @Test
+    void shouldReportNoPendingChangesWhenNothingRuns() {
+      // when - then
+      assertThat(config(1, 1).pendingChangesOf(GROUP)).isEmpty();
+    }
+
+    @Test
+    void shouldReportTheGroupsPendingChanges() {
+      // given
+      final var config =
+          config(1, 1)
+              .initPlan(
+                  List.of(
+                      PartitionGroupPhase.sequential(
+                          Map.of(GROUP, List.of(new DeleteHistoryOperation(MEMBER_0))))));
+
+      // when - then
+      assertThat(config.pendingChangesOf(GROUP))
+          .isEqualTo(config.partitionGroup(GROUP).pendingChanges());
+      assertThat(config.pendingChangesOf("unknown")).isEmpty();
+    }
+
+    @Test
+    void shouldPreferTheGlobalPendingChanges() {
+      // given
+      final var config =
+          config(1, 1)
+              .initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)))));
+
+      // when - then
+      assertThat(config.pendingChangesOf(GROUP))
+          .isPresent()
+          .isEqualTo(config.globalConfiguration().pendingChanges());
+    }
+  }
+
+  @Nested
   class Updates {
 
     @Test

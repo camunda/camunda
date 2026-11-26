@@ -14,7 +14,6 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.util.micrometer.EnumMeter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -61,26 +60,9 @@ public final class TopologyMetrics {
    * that one plan is the cluster's change.
    */
   public void updateFromTopology(final CurrentClusterConfiguration topology) {
-    final var globalConfiguration = topology.globalConfiguration();
-    final var defaultGroup =
-        topology
-            .partitionGroups()
-            .getOrDefault(
-                CurrentClusterConfiguration.DEFAULT_GROUP,
-                PartitionGroupConfiguration.empty(topology.version()));
-    topologyVersion.set(Math.max(globalConfiguration.version(), defaultGroup.version()));
+    topologyVersion.set(topology.versionOf(CurrentClusterConfiguration.DEFAULT_GROUP));
 
-    final var pendingChanges =
-        globalConfiguration
-            .pendingChanges()
-            .<ChangePlan>map(plan -> plan)
-            .filter(ChangePlan::hasPendingChanges)
-            .or(
-                () ->
-                    defaultGroup
-                        .pendingChanges()
-                        .<ChangePlan>map(plan -> plan)
-                        .filter(ChangePlan::hasPendingChanges));
+    final var pendingChanges = topology.pendingChangesOf(CurrentClusterConfiguration.DEFAULT_GROUP);
     changeStatus.state(
         pendingChanges
             .map(ChangePlan::status)
