@@ -48,7 +48,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -113,6 +115,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final Duration backedUpPositionPollInterval;
   private @Nullable ScheduledTimer backedUpPositionTimer;
   private boolean backedUpPositionRequestInFlight;
+  private boolean lastBackedUpPositionPollFailed;
   // Highest log position a restore would contain; only read when exportOnlyBackedUpRecords is set
   private long backedUpPosition = -1;
 
@@ -591,6 +594,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       backedUpPositionTimer.cancel();
       backedUpPositionTimer = null;
     }
+    backedUpPosition = -1;
     if (logStreamReader != null) {
       // We have to close it, otherwise it will prevent journal segment deletion
       logStreamReader.close();
@@ -736,19 +740,43 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return;
     }
     backedUpPositionRequestInFlight = true;
-    backedUpPositionSource
-        .backedUpPosition()
-        .whenComplete(
-            (position, error) ->
-                actor.run(
-                    () -> {
-                      backedUpPositionRequestInFlight = false;
-                      if (error != null) {
-                        LOG.debug("Failed to determine the backed-up position", error);
-                      } else {
-                        position.ifPresent(this::updateBackedUpPosition);
-                      }
-                    }));
+    final CompletionStage<OptionalLong> positionFuture;
+    try {
+      positionFuture = backedUpPositionSource.backedUpPosition();
+    } catch (final Exception e) {
+      backedUpPositionRequestInFlight = false;
+      logBackedUpPositionPollFailure(e);
+      return;
+    }
+    positionFuture.whenCompleteAsync(
+        (position, error) -> {
+          backedUpPositionRequestInFlight = false;
+          if (isClosed() || idle) {
+            return;
+          }
+          if (error != null) {
+            logBackedUpPositionPollFailure(error);
+          } else {
+            if (lastBackedUpPositionPollFailed) {
+              lastBackedUpPositionPollFailed = false;
+              LOG.info("Resumed polling the backed-up position for exporting");
+            }
+            position.ifPresent(this::updateBackedUpPosition);
+          }
+        },
+        actor);
+  }
+
+  private void logBackedUpPositionPollFailure(final Throwable error) {
+    if (!lastBackedUpPositionPollFailed) {
+      lastBackedUpPositionPollFailed = true;
+      LOG.warn(
+          "Failed to determine the backed-up position; keeping current export boundary {}",
+          backedUpPosition,
+          error);
+    } else {
+      LOG.debug("Failed to determine the backed-up position", error);
+    }
   }
 
   private void updateBackedUpPosition(final long position) {

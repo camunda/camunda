@@ -24,6 +24,7 @@ public final class ExporterDirectorContext {
 
   public static final Duration DEFAULT_DISTRIBUTION_INTERVAL = Duration.ofSeconds(15);
   public static final int DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS = 100_000;
+  public static final Duration DEFAULT_BACKED_UP_POSITION_POLL_INTERVAL = Duration.ofSeconds(5);
 
   private int id;
   private PartitionId partitionId;
@@ -43,7 +44,7 @@ public final class ExporterDirectorContext {
   private boolean receiveOnLegacySubject = true;
   private boolean exportOnlyBackedUpRecords;
   private @Nullable BackedUpPositionSource backedUpPositionSource;
-  private Duration backedUpPositionPollInterval = Duration.ofSeconds(5);
+  private Duration backedUpPositionPollInterval = DEFAULT_BACKED_UP_POSITION_POLL_INTERVAL;
 
   public int getId() {
     return id;
