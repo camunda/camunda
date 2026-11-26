@@ -126,7 +126,7 @@ runs:
       with:
         node-version: "20"
 
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
       if: ${{ inputs.source-build == 'true' }}
       with:
         directory: ./tasklist/client
@@ -137,12 +137,12 @@ runs:
       shell: bash
       run: yarn
 
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
       if: ${{ inputs.source-build == 'true' }}
       with:
         directory: ./operate/client
 
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
       if: ${{ inputs.source-build == 'true' }}
       with:
         directory: identity/client
