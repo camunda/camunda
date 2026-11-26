@@ -303,6 +303,23 @@ final class ReplicationAwaiterTest {
   }
 
   @Test
+  void shouldTimeOutAtTheDeadlineRatherThanAfterTheFinalCheckGrace() {
+    // given a deadline well below the grace a final check gets when the deadline already passed
+    final var awaiter = awaiter(Duration.ofMillis(100));
+    reportStatuses("a", ReplicationStatus.PENDING);
+
+    // when
+    final var replicated = awaiter.awaitReplication(List.of("a"), awaiter.deadline());
+
+    // then
+    assertThat(replicated)
+        .failsWithin(Duration.ofSeconds(2))
+        .withThrowableThat()
+        .havingCause()
+        .isInstanceOf(BackupReplicationTimedOut.class);
+  }
+
+  @Test
   void shouldCheckStatusOnceMoreWhenDeadlineHasAlreadyPassed() {
     // given
     final var awaiter = awaiter(WAIT);
