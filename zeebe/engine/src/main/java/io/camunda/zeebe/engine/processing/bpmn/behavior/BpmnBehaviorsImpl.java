@@ -205,7 +205,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnIncidentBehavior(
             processingState, processingState.getKeyGenerator(), writers.state(), incidentMetrics);
 
-    caseBehavior = new CaseBehavior(writers.state(), processingState.getKeyGenerator());
+    caseBehavior =
+        new CaseBehavior(
+            writers.state(), processingState.getKeyGenerator(), processingState.getCaseState());
 
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(

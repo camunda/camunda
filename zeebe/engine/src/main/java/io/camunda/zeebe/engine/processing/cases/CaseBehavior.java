@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.cases;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.immutable.CaseState;
 import io.camunda.zeebe.protocol.impl.record.value.cases.CaseRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.CaseIntent;
@@ -39,11 +40,14 @@ public final class CaseBehavior {
 
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
+  private final CaseState caseState;
   private final CaseRecord caseRecord = new CaseRecord();
 
-  public CaseBehavior(final StateWriter stateWriter, final KeyGenerator keyGenerator) {
+  public CaseBehavior(
+      final StateWriter stateWriter, final KeyGenerator keyGenerator, final CaseState caseState) {
     this.stateWriter = stateWriter;
     this.keyGenerator = keyGenerator;
+    this.caseState = caseState;
   }
 
   /**
@@ -86,6 +90,24 @@ public final class CaseBehavior {
             stage ->
                 caseRecord.addStage(stage.elementId(), stage.name(), CaseStageStatus.NOT_STARTED));
     stateWriter.appendFollowUpEvent(caseKey, CaseIntent.CREATED, caseRecord);
+  }
+
+  /**
+   * Writes the {@link CaseIntent#BUSINESS_ID_ASSIGNED} event, carrying the full case with the
+   * assigned business ID, if the process instance is a case. Does nothing otherwise.
+   *
+   * @param processInstanceKey the key of the root process instance the business ID is assigned to
+   * @param businessId the assigned business ID
+   */
+  public void assignBusinessId(final long processInstanceKey, final String businessId) {
+    final var storedCase = caseState.getCaseByProcessInstanceKey(processInstanceKey);
+    if (storedCase == null) {
+      return;
+    }
+
+    storedCase.setBusinessId(businessId);
+    stateWriter.appendFollowUpEvent(
+        storedCase.getCaseKey(), CaseIntent.BUSINESS_ID_ASSIGNED, storedCase);
   }
 
   /** The process name, or the BPMN process ID if the process has no name. */

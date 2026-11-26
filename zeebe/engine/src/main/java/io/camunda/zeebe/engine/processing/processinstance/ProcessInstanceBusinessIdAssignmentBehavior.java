@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.cases.CaseBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
@@ -41,11 +42,15 @@ public final class ProcessInstanceBusinessIdAssignmentBehavior {
       "Expected to assign a business id to process instance with key '%d', but it already has a business id assigned";
 
   private final StateWriter stateWriter;
+  private final CaseBehavior caseBehavior;
   private final boolean businessIdUniquenessEnabled;
 
   public ProcessInstanceBusinessIdAssignmentBehavior(
-      final StateWriter stateWriter, final boolean businessIdUniquenessEnabled) {
+      final StateWriter stateWriter,
+      final CaseBehavior caseBehavior,
+      final boolean businessIdUniquenessEnabled) {
     this.stateWriter = stateWriter;
+    this.caseBehavior = caseBehavior;
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
   }
 
@@ -123,10 +128,15 @@ public final class ProcessInstanceBusinessIdAssignmentBehavior {
         .setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
-  /** Appends the {@code ASSIGNED} follow-up event for the given, already enriched value. */
+  /**
+   * Appends the {@code ASSIGNED} follow-up event for the given, already enriched value. If the
+   * process instance is a case, the {@code CASE.BUSINESS_ID_ASSIGNED} event follows in the same
+   * step, carrying the full case with the assigned business ID.
+   */
   public void appendAssignedEvent(
       final long processInstanceKey, final ProcessInstanceBusinessIdRecord value) {
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceBusinessIdIntent.ASSIGNED, value);
+    caseBehavior.assignBusinessId(processInstanceKey, value.getBusinessId());
   }
 }

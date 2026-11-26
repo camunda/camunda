@@ -73,6 +73,7 @@ public final class JobEventProcessors {
                 tenantCheck,
                 bpmnBehaviors.agentDefinitionBehavior(),
                 bpmnBehaviors.variableBehavior(),
+                bpmnBehaviors.caseBehavior(),
                 config.isIncludeVariablesInJobCompletedEvent(),
                 config.isBusinessIdUniquenessEnabled()))
         .onCommand(
