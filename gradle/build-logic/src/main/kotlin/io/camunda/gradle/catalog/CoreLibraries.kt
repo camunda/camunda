@@ -101,6 +101,8 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
   library("commons-validator-commons-validator", "commons-validator", "commons-validator")
     .versionRef("commons-validator")
   library("info-picocli-picocli", "info.picocli", "picocli").versionRef("info-picocli-picocli")
+  library("io-camunda-fanout-fanout-protocol", "io.camunda.fanout", "fanout-protocol")
+    .versionRef("io-camunda-fanout")
   library("io-github-classgraph-classgraph", "io.github.classgraph", "classgraph")
     .versionRef("classgraph")
   library(

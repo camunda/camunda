@@ -96,6 +96,7 @@ internal fun VersionCatalogBuilder.catalogVersions(
   // from parent/pom.xml
   version("info-picocli-picocli", pomVersion("version.picocli"))
   version("instancio", pomVersion("version.instancio"))
+  version("io-camunda-fanout", pomVersion("version.camunda-fanout"))
   version("io-camunda-security-library-api", pomVersion("version.camunda-security-library"))
   version(
     "io-github-acm19-aws-request-signing-apache-interceptor",

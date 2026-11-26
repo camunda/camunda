@@ -16,6 +16,12 @@ dependencies {
   implementation(libs.io.camunda.security.library.validation)
   implementation(libs.io.camunda.security.library.api)
   implementation(libs.io.camunda.security.library.core)
+  implementation(libs.io.camunda.fanout.fanout.protocol) {
+    // as in pom.xml: only the generated models, not the JSON reader and writer
+    exclude(group = "tools.jackson.core")
+    exclude(group = "com.networknt", module = "json-schema-validator")
+    exclude(group = "org.jruby.joni", module = "joni")
+  }
   implementation(project(":camunda-secret-store-api"))
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)
