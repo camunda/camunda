@@ -830,7 +830,7 @@
 		"@kubb/cli": "5.23.4",
 		"@kubb/core": "5.23.4",
 		"@kubb/parser-ts": "5.23.4",
-		"@kubb/plugin-ts": "5.6.1",
+		"@kubb/plugin-ts": "5.7.0",
 		"@kubb/plugin-zod": "5.11.2",
 		"@types/node": "26.6.6",
 		"changelogen": "0.6.2",
