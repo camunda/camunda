@@ -13,15 +13,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.ConfigurationChangeInProgressException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.NotCoordinatorException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.RebalanceInProgressException;
@@ -535,11 +535,7 @@ final class RebalanceCoordinatorTest {
             nextRebalanceId::getAndIncrement,
             stepClock,
             new ClusterRebalanceMetrics(new SimpleMeterRegistry()));
-    coordinator.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
-                .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()))));
+    coordinator.onClusterConfigurationUpdated(bothMembers());
     coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
 
     // when
@@ -786,49 +782,43 @@ final class RebalanceCoordinatorTest {
 
   private void configurationWithARecoveringMember(final RebalanceCoordinator coordinator) {
     coordinator.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(
-            partitionedMemberStates().updateMember(OTHER_MEMBER, MemberState::toRecovering)));
+        partitionedMemberStates()
+            .updateMember(OTHER_MEMBER, member -> member.setMode(Mode.RECOVERING))
+            .configuration());
   }
 
   private void configurationWithEveryMemberRecovering(final RebalanceCoordinator coordinator) {
     coordinator.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(
-            partitionedMemberStates()
-                .updateMember(LOWEST_ID_MEMBER, MemberState::toRecovering)
-                .updateMember(OTHER_MEMBER, MemberState::toRecovering)));
-  }
-
-  private static ClusterConfiguration bothMemberStates() {
-    return ClusterConfiguration.init()
-        .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
-        .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of()));
-  }
-
-  private static ClusterConfiguration partitionedMemberStates() {
-    return ClusterConfiguration.init()
-        .addMember(
-            LOWEST_ID_MEMBER,
-            MemberState.initializeAsActive(
-                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))))
-        .addMember(
-            OTHER_MEMBER,
-            MemberState.initializeAsActive(
-                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))));
+        partitionedMemberStates()
+            .updateMember(LOWEST_ID_MEMBER, member -> member.setMode(Mode.RECOVERING))
+            .updateMember(OTHER_MEMBER, member -> member.setMode(Mode.RECOVERING))
+            .configuration());
   }
 
   private static CurrentClusterConfiguration bothMembers() {
-    return CurrentClusterConfiguration.fromLegacy(bothMemberStates());
+    return DefaultTenantConfiguration.init()
+        .addMember(LOWEST_ID_MEMBER)
+        .addMember(OTHER_MEMBER)
+        .configuration();
+  }
+
+  private static DefaultTenantConfiguration partitionedMemberStates() {
+    return DefaultTenantConfiguration.init()
+        .addMember(
+            LOWEST_ID_MEMBER, Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init())))
+        .addMember(
+            OTHER_MEMBER, Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())));
   }
 
   private static CurrentClusterConfiguration partitionedMembers() {
-    return CurrentClusterConfiguration.fromLegacy(partitionedMemberStates());
+    return partitionedMemberStates().configuration();
   }
 
   private static CurrentClusterConfiguration aNewLowestIdMember() {
-    return CurrentClusterConfiguration.fromLegacy(
-        ClusterConfiguration.init()
-            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()))
-            .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of())));
+    return DefaultTenantConfiguration.init()
+        .addMember(MemberId.from("0"))
+        .addMember(LOWEST_ID_MEMBER)
+        .configuration();
   }
 
   private static CurrentClusterConfiguration withRecoveringTenant(
@@ -857,27 +847,22 @@ final class RebalanceCoordinatorTest {
   private void configurationWithADisabledDefaultPhysicalTenant(
       final RebalanceCoordinator coordinator) {
     coordinator.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(
-                ClusterConfiguration.init()
-                    .addMember(LOWEST_ID_MEMBER, MemberState.initializeAsActive(Map.of()))
-                    .addMember(OTHER_MEMBER, MemberState.initializeAsActive(Map.of())))
+        bothMembers()
             .updatePartitionGroupConfig(
                 PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
                 PartitionGroupConfiguration::disable));
   }
 
   private void configurationWithAPendingChange(final RebalanceCoordinator coordinator) {
-    final var members = bothMemberStates();
     coordinator.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.builder()
-                .from(members)
-                .pendingChanges(
-                    Optional.of(
-                        DependencyChangePlan.sequential(
-                            members.version() + 1,
-                            List.of(new PartitionLeaveOperation(OTHER_MEMBER, 1, 1)))))
-                .build()));
+        partitionedMembers()
+            .initPlan(
+                List.of(
+                    new PartitionGroupPhase(
+                        Map.of(
+                            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                            OperationGraph.sequential(
+                                List.of(new PartitionLeaveOperation(OTHER_MEMBER, 1, 1))))))));
   }
 
   private void configurationWithANewLowestIdMember(final RebalanceCoordinator coordinator) {

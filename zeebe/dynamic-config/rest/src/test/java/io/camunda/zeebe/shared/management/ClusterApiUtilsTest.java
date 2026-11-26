@@ -19,7 +19,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.Le
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
@@ -36,7 +35,6 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOp
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
@@ -77,6 +75,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ConfigurationChange;
 import io.camunda.zeebe.management.cluster.Error;
@@ -865,20 +864,17 @@ final class ClusterApiUtilsTest {
   void shouldUseBrokerIdAsStringInTopologyResponseForZoneAwareBrokers() {
     // given
     final var config =
-        ClusterConfiguration.init()
+        DefaultTenantConfiguration.init()
             .addMember(
                 MemberId.from("zone-a", 0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
             .addMember(
                 MemberId.from("zone-b", 0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
+                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init())))
+            .configuration();
 
     // when
-    final var response =
-        ClusterApiUtils.mapClusterTopologyResponse(
-            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(200);
@@ -893,20 +889,17 @@ final class ClusterApiUtilsTest {
   void shouldUseBrokerIdAsIntegerInTopologyResponseForNonZoneAwareBrokers() {
     // given
     final var config =
-        ClusterConfiguration.init()
+        DefaultTenantConfiguration.init()
             .addMember(
                 MemberId.from("0"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
             .addMember(
                 MemberId.from("1"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
+                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init())))
+            .configuration();
 
     // when
-    final var response =
-        ClusterApiUtils.mapClusterTopologyResponse(
-            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(200);
@@ -922,18 +915,14 @@ final class ClusterApiUtilsTest {
   void shouldMapRecoveringPartitionState() {
     // given
     final var config =
-        ClusterConfiguration.init()
+        DefaultTenantConfiguration.init()
             .addMember(
                 MemberId.from("0"),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(1, DynamicPartitionConfig.init()).toRecovering())));
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()).toRecovering()))
+            .configuration();
 
     // when
-    final var response =
-        ClusterApiUtils.mapClusterTopologyResponse(
-            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
 
     // then
     final var body = (GetTopologyResponse) response.getBody();
@@ -968,21 +957,18 @@ final class ClusterApiUtilsTest {
       default -> throw new IllegalArgumentException("Invalid type: " + type);
     }
     final var config =
-        ClusterConfiguration.init()
+        DefaultTenantConfiguration.init()
             .addMember(
                 MemberId.from("0"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
             .addMember(
                 MemberId.from("1"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))))
-            .setPartitionDistributorConfig(partitionDistributorConfig);
+                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init())))
+            .setPartitionDistributorConfig(partitionDistributorConfig)
+            .configuration();
 
     // when
-    final var response =
-        ClusterApiUtils.mapClusterTopologyResponse(
-            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(200);
@@ -1134,39 +1120,22 @@ final class ClusterApiUtilsTest {
                     new ExporterState(0, exporterState, Optional.empty()),
                     "exporter-2",
                     new ExporterState(0, exporterState, Optional.empty()))));
-    final var globalConfiguration =
-        GlobalConfiguration.init()
-            .addMember(
-                member(1), io.camunda.zeebe.dynamic.config.state.BrokerState.initializeAsActive())
-            .addMember(
-                member(2), io.camunda.zeebe.dynamic.config.state.BrokerState.initializeAsActive());
-    final var defaultGroup =
-        new PartitionGroupConfiguration(
-            PartitionGroupConfiguration.INITIAL_VERSION,
-            PartitionGroupConfiguration.INITIAL_INCARNATION_NUMBER,
+    return DefaultTenantConfiguration.init()
+        .addMember(
+            member(1),
             Map.of(
-                member(1),
-                BrokerPartitionState.initialize(
-                    Map.of(
-                        1,
-                        PartitionState.active(1, partitionConfig),
-                        2,
-                        PartitionState.active(2, partitionConfig))),
-                member(2),
-                BrokerPartitionState.initialize(
-                    Map.of(
-                        1,
-                        PartitionState.active(2, partitionConfig),
-                        2,
-                        PartitionState.active(2, partitionConfig)))),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty());
-    return new CurrentClusterConfiguration(
-        CurrentClusterConfiguration.INITIAL_VERSION,
-        globalConfiguration,
-        Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, defaultGroup),
-        PhasedChangeState.empty());
+                1,
+                PartitionState.active(1, partitionConfig),
+                2,
+                PartitionState.active(2, partitionConfig)))
+        .addMember(
+            member(2),
+            Map.of(
+                1,
+                PartitionState.active(2, partitionConfig),
+                2,
+                PartitionState.active(2, partitionConfig)))
+        .configuration();
   }
 
   private static CurrentClusterConfiguration updateExporterState(

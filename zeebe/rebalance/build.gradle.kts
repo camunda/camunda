@@ -26,6 +26,7 @@ dependencies {
   testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
   testRuntimeOnly(libs.org.junit.jupiter.junit.jupiter.engine)
   testImplementation(libs.org.assertj.assertj.core)
+  testImplementation(projectArtifact(":zeebe-cluster-config-api", ArtifactKind.TESTS))
   testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-test-util"))
 }

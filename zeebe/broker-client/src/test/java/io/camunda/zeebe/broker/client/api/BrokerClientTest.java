@@ -28,11 +28,10 @@ import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ErrorCode;
@@ -119,13 +118,11 @@ public final class BrokerClientTest {
     atomixCluster.getMembershipService().addListener(topologyManager);
 
     final var clusterTopology =
-        ClusterConfiguration.init()
-            .addMember(
-                broker.member().id(),
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, null))));
+        DefaultTenantConfiguration.init()
+            .addMember(broker.member().id(), Map.of(1, PartitionState.active(1, null)))
+            .configuration();
 
-    topologyManager.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(clusterTopology));
+    topologyManager.onClusterConfigurationUpdated(clusterTopology);
     topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, broker.member()));
     Awaitility.await("Topology is updated")
         .untilAsserted(
