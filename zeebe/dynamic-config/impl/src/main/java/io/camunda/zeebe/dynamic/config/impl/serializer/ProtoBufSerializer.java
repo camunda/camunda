@@ -54,7 +54,6 @@ import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer
 import io.camunda.zeebe.dynamic.config.serializer.DecodingFailed;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -1372,7 +1371,7 @@ public class ProtoBufSerializer
   // Additive encode/decode for CurrentClusterConfiguration and its sub-types. These are not yet
   // wired into gossip or persistence; they exist for the Phase-3 handoff.
 
-  private Topology.ChangeStatus fromTopologyChangeStatus(final ClusterChangePlan.Status status) {
+  private Topology.ChangeStatus fromTopologyChangeStatus(final DependencyChangePlan.Status status) {
     return switch (status) {
       case IN_PROGRESS -> Topology.ChangeStatus.IN_PROGRESS;
       case COMPLETED -> Topology.ChangeStatus.COMPLETED;
@@ -1381,12 +1380,12 @@ public class ProtoBufSerializer
     };
   }
 
-  private ClusterChangePlan.Status toChangeStatus(final Topology.ChangeStatus status) {
+  private DependencyChangePlan.Status toChangeStatus(final Topology.ChangeStatus status) {
     return switch (status) {
-      case IN_PROGRESS -> ClusterChangePlan.Status.IN_PROGRESS;
-      case COMPLETED -> ClusterChangePlan.Status.COMPLETED;
-      case FAILED -> ClusterChangePlan.Status.FAILED;
-      case CANCELLED -> ClusterChangePlan.Status.CANCELLED;
+      case IN_PROGRESS -> DependencyChangePlan.Status.IN_PROGRESS;
+      case COMPLETED -> DependencyChangePlan.Status.COMPLETED;
+      case FAILED -> DependencyChangePlan.Status.FAILED;
+      case CANCELLED -> DependencyChangePlan.Status.CANCELLED;
       default -> throw new IllegalStateException("Unknown status: " + status);
     };
   }

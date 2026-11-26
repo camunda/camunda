@@ -10,7 +10,6 @@ package io.camunda.zeebe.dynamic.config.util;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
@@ -392,7 +391,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   private Arbitrary<DependencyChangePlan> dependencyChangePlansOver(
       final Arbitrary<OperationGraph> graphs) {
     final var id = Arbitraries.longs().between(0, 500);
-    final var status = Arbitraries.of(ClusterChangePlan.Status.values());
+    final var status = Arbitraries.of(DependencyChangePlan.Status.values());
     return Combinators.combine(id, status, nanoPrecisionInstants(), graphs)
         .as(PartialDependencyChangePlan::new)
         .flatMap(ClusterTopologyDomain::withCompletedOperations);
@@ -512,5 +511,5 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   }
 
   private record PartialDependencyChangePlan(
-      long id, ClusterChangePlan.Status status, Instant startedAt, OperationGraph graph) {}
+      long id, DependencyChangePlan.Status status, Instant startedAt, OperationGraph graph) {}
 }

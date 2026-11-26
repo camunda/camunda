@@ -17,8 +17,8 @@ import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus.BrokerRestoreStatus;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus.PartitionRestoreStatus;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -154,7 +154,7 @@ public final class RecoveryController {
   }
 
   private static RestoreStatusResponse.StatusEnum mapStatusEnum(
-      final ClusterChangePlan.Status status) {
+      final DependencyChangePlan.Status status) {
     return switch (status) {
       case IN_PROGRESS -> RestoreStatusResponse.StatusEnum.IN_PROGRESS;
       case COMPLETED -> RestoreStatusResponse.StatusEnum.COMPLETED;

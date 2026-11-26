@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
-import io.camunda.zeebe.dynamic.config.state.ChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.CompletedOperation;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
@@ -36,10 +36,10 @@ import org.jspecify.annotations.Nullable;
  * {@link PartitionRestoreOperation} or {@link PartitionPreRestoreOperation}. There is at most one
  * restore in flight at any time.
  */
-public record RestoreStatus(ChangePlan plan, List<BrokerRestoreStatus> brokers) {
+public record RestoreStatus(DependencyChangePlan plan, List<BrokerRestoreStatus> brokers) {
 
   /** Derives {@code brokers} from the plan once, rather than recomputing it on every access. */
-  public RestoreStatus(final ChangePlan plan) {
+  public RestoreStatus(final DependencyChangePlan plan) {
     this(plan, mapBrokers(plan));
   }
 
@@ -62,7 +62,7 @@ public record RestoreStatus(ChangePlan plan, List<BrokerRestoreStatus> brokers) 
     return plan.startedAt();
   }
 
-  private static boolean isRestoreInProgress(final ChangePlan plan) {
+  private static boolean isRestoreInProgress(final DependencyChangePlan plan) {
     final var pending = plan.pendingOperations();
     if (pending.stream().anyMatch(RestoreStatus::isRestoreOperation)) {
       return true;
@@ -89,7 +89,7 @@ public record RestoreStatus(ChangePlan plan, List<BrokerRestoreStatus> brokers) 
     };
   }
 
-  private static List<BrokerRestoreStatus> mapBrokers(final ChangePlan plan) {
+  private static List<BrokerRestoreStatus> mapBrokers(final DependencyChangePlan plan) {
     // Sorted by broker, then by partition, so the report has a stable order.
     final SortedMap<String, SortedMap<Integer, PartitionAccumulator>> brokerPartitionMap =
         new TreeMap<>();

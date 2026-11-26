@@ -10,8 +10,6 @@ package io.camunda.zeebe.dynamic.config.state;
 import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,8 +41,7 @@ public record DependencyChangePlan(
     Status status,
     Instant startedAt,
     OperationGraph graph,
-    SortedMap<OperationId, Instant> completed)
-    implements ChangePlan {
+    SortedMap<OperationId, Instant> completed) {
 
   public DependencyChangePlan {
     completed = Collections.unmodifiableSortedMap(new TreeMap<>(completed));
@@ -110,7 +107,6 @@ public record DependencyChangePlan(
     return runnable;
   }
 
-  @Override
   public boolean hasPendingChanges() {
     return completed.size() < graph.size();
   }
@@ -119,7 +115,6 @@ public record DependencyChangePlan(
    * The operations still to run, in operation-id order. Ordering is positional rather than by
    * arrival so that two brokers rendering the same converged plan produce identical lists.
    */
-  @Override
   public List<ClusterConfigurationChangeOperation> pendingOperations() {
     final var pending = new ArrayList<ClusterConfigurationChangeOperation>();
     graph
@@ -134,7 +129,6 @@ public record DependencyChangePlan(
   }
 
   /** The operations already run, in operation-id order. See {@link #pendingOperations()}. */
-  @Override
   public List<CompletedOperation> completedOperations() {
     final var done = new ArrayList<CompletedOperation>();
     graph
@@ -149,9 +143,17 @@ public record DependencyChangePlan(
     return List.copyOf(done);
   }
 
-  @Override
   public CompletedChange cancel() {
     return new CompletedChange(id, Status.CANCELLED, startedAt, Instant.now());
+  }
+
+  /**
+   * How far the change has got, as one plus the number of operations already run. For reporting
+   * only: two brokers running disjoint operations concurrently each report a value the other never
+   * held, so it cannot order two copies of the plan — {@link #merge} unions completions instead.
+   */
+  public int version() {
+    return 1 + completed.size();
   }
 
   /**
@@ -257,5 +259,15 @@ public record DependencyChangePlan(
             graph.operations().get(operationId),
             () -> "%s is not part of this plan".formatted(operationId))
         .operation();
+  }
+
+  public record CompletedOperation(
+      ClusterConfigurationChangeOperation operation, Instant completedAt) {}
+
+  public enum Status {
+    IN_PROGRESS,
+    COMPLETED,
+    FAILED,
+    CANCELLED;
   }
 }

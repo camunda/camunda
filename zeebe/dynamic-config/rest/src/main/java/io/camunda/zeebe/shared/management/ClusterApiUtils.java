@@ -15,12 +15,11 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
-import io.camunda.zeebe.dynamic.config.state.ChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
@@ -365,7 +364,7 @@ final class ClusterApiUtils {
   private static void splitSubConfigOperations(
       final @Nullable String physicalTenantId,
       final List<? extends ClusterConfigurationChangeOperation> phaseOperations,
-      final Optional<? extends ChangePlan> subConfigPlan,
+      final Optional<DependencyChangePlan> subConfigPlan,
       final List<CompletedOperationProgress> completed,
       final List<Operation> pending) {
     if (subConfigPlan.isEmpty()) {

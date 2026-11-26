@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.CompletedOperation;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph.PlannedOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
@@ -280,6 +280,24 @@ final class DependencyChangePlanTest {
       // then
       assertThat(byOne).isEqualTo(byAnother);
       assertThat(byOne.completedAt()).isEqualTo(plan.completed().get(second));
+    }
+
+    @Test
+    void shouldReportOnePlusTheCompletedOperationsAsVersion() {
+      // given — the version is what the cluster change version gauge reports
+      final var builder = OperationGraph.builder();
+      final var first = builder.add(op(0, 1));
+      final var second = builder.add(op(1, 1));
+      var plan = DependencyChangePlan.init(PLAN_ID, builder.build());
+
+      // when / then — it starts at 1 and counts each completed operation once
+      assertThat(plan.version()).isEqualTo(1);
+      plan = plan.completeOperation(first);
+      assertThat(plan.version()).isEqualTo(2);
+      plan = plan.completeOperation(first);
+      assertThat(plan.version()).isEqualTo(2);
+      plan = plan.completeOperation(second);
+      assertThat(plan.version()).isEqualTo(3);
     }
   }
 

@@ -1370,7 +1370,7 @@ final class ClusterConfigurationManagerImplTest {
 
     // when
     manager
-        .start(new StaticInitializer<>(staticConfiguration::generateCurrentClusterConfiguration))
+        .start(new StaticInitializer(staticConfiguration::generateCurrentClusterConfiguration))
         .join();
 
     // then — the generated multi-group configuration was persisted and is retrievable
@@ -1406,7 +1406,7 @@ final class ClusterConfigurationManagerImplTest {
   void shouldFailToStartIfInitializationThrowsError() {
     // given
     final var manager = newManager(MEMBER_0);
-    final ClusterConfigurationInitializer<CurrentClusterConfiguration> failingInitializer =
+    final ClusterConfigurationInitializer failingInitializer =
         () -> CompletableActorFuture.completedExceptionally(new RuntimeException("Expected"));
 
     // when
@@ -1420,7 +1420,7 @@ final class ClusterConfigurationManagerImplTest {
   void shouldFailToStartIfConfigurationIsNotInitialized() {
     // given
     final var manager = newManager(MEMBER_0);
-    final ClusterConfigurationInitializer<CurrentClusterConfiguration> uninitializedInitializer =
+    final ClusterConfigurationInitializer uninitializedInitializer =
         () -> CompletableActorFuture.completed(CurrentClusterConfiguration.uninitialized());
 
     // when
@@ -1955,7 +1955,7 @@ final class ClusterConfigurationManagerImplTest {
 
     // when
     manager
-        .start(new StaticInitializer<>(staticConfiguration::generateCurrentClusterConfiguration))
+        .start(new StaticInitializer(staticConfiguration::generateCurrentClusterConfiguration))
         .join();
 
     // then — the id is generated once and surfaces in the view the Hub ping waits on

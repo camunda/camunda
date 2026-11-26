@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.Status;
 import java.time.Instant;
 import java.util.Optional;
 
