@@ -133,10 +133,13 @@ final class ReplicationAwaiter {
    */
   private final class ReplicationWait {
     private final CompletableFuture<Void> result = new CompletableFuture<>();
-    private volatile Set<String> pending;
+    private final Set<String> keys;
+    // Objects not reported as replicated yet, updated as each response arrives
+    private final Set<String> notReplicated = ConcurrentHashMap.newKeySet();
 
     private ReplicationWait(final Set<String> keys) {
-      pending = keys;
+      this.keys = keys;
+      notReplicated.addAll(keys);
     }
 
     private void start(final Instant deadline) {
@@ -145,10 +148,13 @@ final class ReplicationAwaiter {
       // the manifest's wait shares the deadline of the contents and may start right at it.
       final var enforcedDeadline =
           deadline.isAfter(now) ? deadline : now.plus(max(pollInterval, FINAL_CHECK_GRACE));
-      CompletableFuture.delayedExecutor(
-              Duration.between(now, enforcedDeadline).toNanos(), TimeUnit.NANOSECONDS)
-          .execute(() -> result.completeExceptionally(timedOut(pending)));
-      round(pending);
+      round(keys);
+      if (!result.isDone()) {
+        final var untilDeadline =
+            max(Duration.between(Instant.now(), enforcedDeadline), Duration.ZERO);
+        CompletableFuture.delayedExecutor(untilDeadline.toNanos(), TimeUnit.NANOSECONDS)
+            .execute(() -> result.completeExceptionally(timedOut(Set.copyOf(notReplicated))));
+      }
     }
 
     private void round(final Set<String> keys) {
@@ -185,6 +191,8 @@ final class ReplicationAwaiter {
                   }
                   if (isStillPending(key, status)) {
                     stillPending.add(key);
+                  } else {
+                    notReplicated.remove(key);
                   }
                 } catch (final RuntimeException e) {
                   result.completeExceptionally(e);
@@ -199,7 +207,6 @@ final class ReplicationAwaiter {
     }
 
     private void roundCompleted(final Set<String> stillPending) {
-      pending = stillPending;
       if (stillPending.isEmpty()) {
         result.complete(null);
         return;
