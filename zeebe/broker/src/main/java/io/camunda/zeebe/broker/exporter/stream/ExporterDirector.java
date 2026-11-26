@@ -908,7 +908,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
       final long lowestExportedPosition = state.getLowestPosition();
       final var status = scanUnexportedRecordsForPreviousVersion(lowestExportedPosition);
-      return explainIfPaused(status);
+      return explainIfBlocked(status);
     } catch (final Exception e) {
       LOG.warn(
           "Failed to determine partition {}'s exporting migration status", partitionId.number(), e);
@@ -922,22 +922,34 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   /**
-   * Names a pause as the reason exporting hasn't caught up yet, since the operator's fix for that
-   * ({@code resume exporting}) is different from the fix for a genuine backlog. Left as-is for
-   * MIGRATED/UNKNOWN -- the peek that produced {@code status} already reflects the log's true
-   * content regardless of pause, so a pause never turns an otherwise-safe MIGRATED into something
-   * unsafe, and only naming it when the result is MIGRATION_IN_PROGRESS avoids reporting "not
-   * ready" for a pause that isn't actually blocking anything (e.g. nothing written since is on an
-   * old version).
+   * Names a pause or backup gate as the reason exporting hasn't caught up yet, since the operator's
+   * fix for those ({@code resume exporting} or taking/completing a backup) is different from the
+   * fix for a genuine backlog. Left as-is for MIGRATED/UNKNOWN -- the peek that produced {@code
+   * status} already reflects the log's true content regardless of pause or gating, so neither ever
+   * turns an otherwise-safe MIGRATED into something unsafe, and only naming them when the result is
+   * MIGRATION_IN_PROGRESS avoids reporting "not ready" when nothing old-version is actually
+   * blocked.
    */
-  private PartitionMigrationStatus explainIfPaused(final PartitionMigrationStatus status) {
-    if (status.code() != MigrationStatusCode.MIGRATION_IN_PROGRESS
-        || (exporterPhase != ExporterPhase.PAUSED && exporterPhase != ExporterPhase.SOFT_PAUSED)) {
+  private PartitionMigrationStatus explainIfBlocked(final PartitionMigrationStatus status) {
+    if (status.code() != MigrationStatusCode.MIGRATION_IN_PROGRESS) {
       return status;
     }
-    return new PartitionMigrationStatus(
-        MigrationStatusCode.MIGRATION_IN_PROGRESS,
-        status.detail() + "; exporting is " + exporterPhase + ", resume it to continue");
+    var detail = status.detail();
+    if (exporterPhase == ExporterPhase.PAUSED || exporterPhase == ExporterPhase.SOFT_PAUSED) {
+      detail += "; exporting is " + exporterPhase + ", resume it to continue";
+    }
+    if (backedUpPositionGate != null
+        && logStreamReader != null
+        && logStreamReader.hasNext()
+        && !backedUpPositionGate.isAllowed(logStreamReader.peekNext().getPosition())) {
+      detail +=
+          "; exporting is waiting for a common backup (backed up up to position "
+              + backedUpPositionGate.backedUpPosition()
+              + ")";
+    }
+    return detail.equals(status.detail())
+        ? status
+        : new PartitionMigrationStatus(MigrationStatusCode.MIGRATION_IN_PROGRESS, detail);
   }
 
   /**
