@@ -22,6 +22,9 @@ interface SearchParams {
   [key: string]: string | undefined;
 }
 
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 class OperateDecisionsPage {
   private page: Page;
   readonly viewDecisionInstanceLink: (decisionInstanceId: string) => Locator;
@@ -30,7 +33,6 @@ class OperateDecisionsPage {
   readonly decisionViewer: Locator;
   readonly decisionInstanceKeysFilter: Locator;
   readonly filterRegion: Locator;
-  readonly clearSelectedItemButton: Locator;
   readonly moreFiltersButton: Locator;
   readonly evaluatedCheckbox: Locator;
   readonly failedCheckbox: Locator;
@@ -43,7 +45,8 @@ class OperateDecisionsPage {
     this.page = page;
     this.viewDecisionInstanceLink = (decisionInstanceId: string) =>
       page.getByRole('link', {
-        name: `View decision instance ${decisionInstanceId}`,
+        name: decisionInstanceId,
+        exact: true,
       });
 
     this.decisionNameFilter = page.getByRole('combobox', {
@@ -57,17 +60,16 @@ class OperateDecisionsPage {
     );
     this.decisionViewer = page.getByTestId('decision-viewer');
     this.filterRegion = page.getByRole('region', {name: /filter/i});
-    this.clearSelectedItemButton = page.getByRole('button', {
-      name: 'Clear selected item',
+    this.moreFiltersButton = page.getByRole('button', {
+      name: /^more filters$/i,
     });
-    this.moreFiltersButton = page.getByRole('button', {name: 'More Filters'});
     this.evaluatedCheckbox = page.getByRole('checkbox', {name: 'Evaluated'});
     this.failedCheckbox = page.getByRole('checkbox', {name: 'Failed'});
     this.decisionInstancesList = page
       .getByRole('table')
       .filter({
         has: page.getByRole('columnheader', {
-          name: /^(Sort by )?Decision Instance Key$/,
+          name: /^(Sort by )?Decision Instance Key$/i,
         }),
       })
       .getByRole('rowgroup')
@@ -80,7 +82,11 @@ class OperateDecisionsPage {
       name: 'Business ID filter type',
     });
     this.getOptionByName = (name: string, exact = true) =>
-      this.filterRegion.getByRole('option', {name, exact});
+      this.page.getByRole('option', {name, exact});
+  }
+
+  decisionInstanceLinksIn(scope: Locator): Locator {
+    return scope.getByRole('link', {name: /^\d+-\d+$/});
   }
 
   async clickViewDecisionInstanceLink(
@@ -119,13 +125,11 @@ class OperateDecisionsPage {
 
   async assertDecisionNameOptionVisible(option: string): Promise<void> {
     await this.decisionNameFilter.click();
-    await this.decisionNameFilter.fill(option);
+    await this.page
+      .getByPlaceholder('Search by decision name', {exact: true})
+      .fill(option);
     await expect(this.getOptionByName(option)).toBeVisible({timeout: 10_000});
     await this.page.keyboard.press('Escape');
-  }
-
-  async clearComboBox(): Promise<void> {
-    await this.clearSelectedItemButton.click();
   }
 
   async clickEvaluatedCheckbox(): Promise<void> {
@@ -143,7 +147,9 @@ class OperateDecisionsPage {
   }
 
   async displayOptionalFilter(filterName: OptionalFilter): Promise<void> {
-    const menuItem = this.page.getByRole('menuitem', {name: filterName});
+    const menuItem = this.page.getByRole('menuitem', {
+      name: new RegExp(`^${escapeRegExp(filterName)}$`, 'i'),
+    });
     // The "More Filters" click can be dropped under load, leaving the menu
     // closed so the item never renders; reopen until it is present, but do not
     // re-click once the menu is already open (that would toggle it shut).
