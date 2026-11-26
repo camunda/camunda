@@ -16,6 +16,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -103,6 +104,7 @@ public class PartitionStartupAndTransitionContextImpl
   private InterPartitionCommandReceiverActor interPartitionCommandReceiver;
   private InterPartitionCommandSenderService interPartitionCommandSender;
   private final AtomixServerTransport gatewayBrokerTransport;
+  private final BrokerClient brokerClient;
   private BackupApiRequestHandler backupApiRequestHandler;
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
@@ -134,6 +136,7 @@ public class PartitionStartupAndTransitionContextImpl
       final PersistedSnapshotStore persistedSnapshotStore,
       final SnapshotCopy snapshotCopy,
       final SnapshotApiRequestHandler snapshotApiRequestHandler,
+      final BrokerClient brokerClient,
       final StateController stateController,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
       final ExporterRepository exporterRepository,
@@ -151,6 +154,7 @@ public class PartitionStartupAndTransitionContextImpl
     messagingService = partitionCommunicationService;
     this.brokerCfg = brokerCfg;
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+    this.brokerClient = brokerClient;
     this.stateController = stateController;
     this.snapshotCopy = snapshotCopy;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
@@ -474,6 +478,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public SnapshotApiRequestHandler getSnapshotApiRequestHandler() {
     return snapshotApiRequestHandler;
+  }
+
+  @Override
+  public BrokerClient getBrokerClient() {
+    return brokerClient;
   }
 
   @Override

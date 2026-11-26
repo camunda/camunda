@@ -126,6 +126,7 @@ public final class PartitionManagerImpl
             localBroker,
             commandApiService,
             snapshotApiRequestHandler,
+            brokerClient,
             clusterServices,
             exporterRepository,
             diskSpaceUsageMonitor,
