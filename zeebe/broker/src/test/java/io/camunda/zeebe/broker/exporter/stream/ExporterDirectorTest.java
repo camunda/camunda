@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter;
 import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfiguration;
@@ -53,7 +54,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -486,6 +489,304 @@ public final class ExporterDirectorTest {
                 assertThat(exporters.get(1).getExportedRecords())
                     .extracting(Record::getPosition)
                     .containsExactly(2L));
+  }
+
+  @Test
+  public void shouldOnlyExportRecordsCoveredByCommonBackup() {
+    // given
+    final var backedUpPosition = new AtomicReference<OptionalLong>(OptionalLong.empty());
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> CompletableFuture.completedFuture(backedUpPosition.get())));
+    startExporterDirector(exporterDescriptors);
+    final long first = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    final long second = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    final long third = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+
+    // when
+    backedUpPosition.set(OptionalLong.of(second));
+
+    // then
+    Awaitility.await("exporter has exported records up to the backed-up position")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(0).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(first, second));
+
+    // when the partitions disagree for a while, the director keeps the previous position
+    backedUpPosition.set(OptionalLong.empty());
+
+    // then
+    Awaitility.await("exporter does not export beyond the backed-up position")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(exporters.get(0).getExportedRecords()).hasSize(2));
+
+    // when
+    backedUpPosition.set(OptionalLong.of(third));
+
+    // then
+    Awaitility.await("exporter continues once a newer backup is common to all partitions")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(0).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(first, second, third));
+  }
+
+  @Test
+  public void shouldNotExportWithoutBackedUpPosition() {
+    // given
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> CompletableFuture.completedFuture(OptionalLong.of(-1))));
+    startExporterDirector(exporterDescriptors);
+
+    // when
+    rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+
+    // then
+    Awaitility.await("exporter does not export records that are not backed up")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(exporters.get(0).getExportedRecords()).isEmpty());
+  }
+
+  @Test
+  public void shouldNotExportBeforeFirstBackupIsConfirmed() {
+    // given
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> CompletableFuture.completedFuture(OptionalLong.empty())));
+    startExporterDirector(exporterDescriptors);
+
+    // when
+    rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+
+    // then
+    Awaitility.await("exporter does not export while backed-up position is unknown")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(exporters.get(0).getExportedRecords()).isEmpty());
+  }
+
+  @Test
+  public void shouldGateSkippedRecordsBehindBackedUpPosition() {
+    // given both exporters only accept deployment commands, so incident events are skipped
+    exporters.forEach(
+        e ->
+            e.onConfigure(withFilter(List.of(RecordType.COMMAND), List.of(ValueType.DEPLOYMENT)))
+                .shouldAutoUpdatePosition(true));
+    final var backedUpPosition = new AtomicReference<>(OptionalLong.of(-1));
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> CompletableFuture.completedFuture(backedUpPosition.get())));
+    startExporterDirector(exporterDescriptors);
+    final ExportersState state = rule.getExportersState();
+
+    final long first = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    final long skipped = rule.writeEvent(IncidentIntent.CREATED, new IncidentRecord());
+    final long third = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+
+    // when only the first record is backed up
+    backedUpPosition.set(OptionalLong.of(first));
+
+    // then the first record is exported, while the skipped record does not advance exporter state
+    Awaitility.await("exporters have exported and acknowledged the first record")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              assertThat(exporters.get(0).getExportedRecords())
+                  .extracting(Record::getPosition)
+                  .containsExactly(first);
+              assertThat(state.getPosition(EXPORTER_ID_1)).isEqualTo(first);
+              assertThat(state.getPosition(EXPORTER_ID_2)).isEqualTo(first);
+            });
+    Awaitility.await("skipped record beyond backed-up position does not advance exporter position")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              assertThat(state.getPosition(EXPORTER_ID_1)).isEqualTo(first);
+              assertThat(state.getPosition(EXPORTER_ID_2)).isEqualTo(first);
+            });
+
+    // when the skipped record is backed up
+    backedUpPosition.set(OptionalLong.of(skipped));
+
+    // then the skipped record advances exporter state while the third record stays gated
+    Awaitility.await("skipped record advances exporter state once backed up")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              assertThat(state.getPosition(EXPORTER_ID_1)).isEqualTo(skipped);
+              assertThat(state.getPosition(EXPORTER_ID_2)).isEqualTo(skipped);
+            });
+    assertThat(exporters.get(0).getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(first);
+
+    // when the third record is backed up
+    backedUpPosition.set(OptionalLong.of(third));
+
+    // then
+    Awaitility.await("third record is exported once backed up")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(0).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(first, third));
+  }
+
+  @Test
+  public void shouldStopExportingBeyondLoweredBackedUpPosition() {
+    // given a paused director that first observes a higher backed-up position
+    final var backedUpPosition = new AtomicReference<>(OptionalLong.empty());
+    final var pollCount = new AtomicInteger();
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> {
+                      pollCount.incrementAndGet();
+                      return CompletableFuture.completedFuture(backedUpPosition.get());
+                    }));
+    rule.startExporterDirector(exporterDescriptors, ExporterPhase.PAUSED);
+
+    final long first = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    final long third = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+
+    backedUpPosition.set(OptionalLong.of(third));
+    final int pollsAfterHigh = pollCount.get();
+    Awaitility.await("director has polled the higher backed-up position")
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> pollCount.get() >= pollsAfterHigh + 2);
+
+    // when the latest backup is deleted and the backed-up position drops to the first record
+    backedUpPosition.set(OptionalLong.of(first));
+    final int pollsAfterDrop = pollCount.get();
+    Awaitility.await("director has polled the lowered backed-up position")
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> pollCount.get() >= pollsAfterDrop + 2);
+
+    rule.getDirector().resumeExporting().join();
+
+    // then only the first record is exported, never records beyond the lowered boundary
+    Awaitility.await("exporter exports up to the lowered backed-up position")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(0).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(first));
+    Awaitility.await("exporter stops at the lowered backed-up position")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(exporters.get(0).getExportedRecords()).hasSize(1));
+  }
+
+  @Test
+  public void shouldRecoverFromBackedUpPositionPollFailures() {
+    // given the source fails synchronously once, then asynchronously once, then succeeds
+    final var attempt = new AtomicInteger();
+    final var targetPosition = new AtomicLong(-1);
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> {
+                      final int n = attempt.incrementAndGet();
+                      if (n == 1) {
+                        throw new RuntimeException("sync failure");
+                      }
+                      if (n == 2) {
+                        return CompletableFuture.failedFuture(
+                            new RuntimeException("async failure"));
+                      }
+                      return CompletableFuture.completedFuture(
+                          OptionalLong.of(targetPosition.get()));
+                    }));
+    startExporterDirector(exporterDescriptors);
+
+    // when
+    final long first = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    targetPosition.set(first);
+
+    // then polling recovers and exports the record
+    Awaitility.await("exporter recovers after transient poll failures")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(0).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(first));
+  }
+
+  @Test
+  public void shouldResetBackedUpPositionWhenBecomingIdle() {
+    // given
+    final var nextPoll =
+        new AtomicReference<CompletableFuture<OptionalLong>>(
+            CompletableFuture.completedFuture(OptionalLong.empty()));
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(nextPoll::get));
+    startExporterDirector(exporterDescriptors);
+
+    final long first = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    final long second = rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    nextPoll.set(CompletableFuture.completedFuture(OptionalLong.of(second)));
+    Awaitility.await("exporters export initial records")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(exporters.get(0).getExportedRecords()).hasSize(2));
+
+    // when all exporters are removed (director goes idle), then a new exporter is enabled before
+    // the fresh backup poll completes
+    rule.getDirector().removeExporter(EXPORTER_ID_1).join();
+    rule.getDirector().removeExporter(EXPORTER_ID_2).join();
+
+    final var pendingFreshPoll = new CompletableFuture<OptionalLong>();
+    nextPoll.set(pendingFreshPoll);
+
+    final var newExporter = spy(new ControlledTestExporter());
+    final var newDescriptor =
+        spy(new ExporterDescriptor("exporter-3", newExporter.getClass(), Map.of()));
+    doAnswer(c -> newExporter).when(newDescriptor).newInstance();
+    rule.getDirector()
+        .enableExporter("exporter-3", new ExporterInitializationInfo(0, null), newDescriptor)
+        .join();
+
+    // then the stale backed-up position from before idle is NOT used
+    Awaitility.await("new exporter waits for fresh backed-up position poll")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(newExporter.getExportedRecords()).isEmpty());
+
+    // when the fresh poll completes with the first record only
+    pendingFreshPoll.complete(OptionalLong.of(first));
+
+    // then only the first record is exported
+    Awaitility.await("new exporter exports up to fresh backed-up position")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(newExporter.getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(first));
   }
 
   @Test
@@ -1229,6 +1530,44 @@ public final class ExporterDirectorTest {
     startExporterDirector(exporterDescriptors);
     writeEvent();
     rule.getDirector().softPauseExporting().join();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
+  public void shouldReportExportingMigrationInProgressWithDetailWhenGatedByBackup() {
+    // given - backup gating holds back a previous-version record until a common backup completes
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> CompletableFuture.completedFuture(OptionalLong.of(-1))));
+    startExporterDirector(exporterDescriptors);
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED, new DeploymentRecord(), oneMinorBehindTheCurrentVersion());
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+    assertThat(status.detail()).contains("waiting for a common backup").contains("-1");
+  }
+
+  @Test
+  public void shouldReportMigratedWhenGatedByBackupButNothingIsBehind() {
+    // given - backup gating alone does not create a previous-version backlog
+    rule.withExporterDirectorContextConfigurator(
+        ctx ->
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
+                .backedUpPositionSource(
+                    () -> CompletableFuture.completedFuture(OptionalLong.of(-1))));
+    startExporterDirector(exporterDescriptors);
+    writeEvent();
 
     // when
     final var status = rule.getDirector().getExportingMigrationStatus().join();

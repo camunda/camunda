@@ -105,6 +105,24 @@ public class DataExportTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.export.export-only-backed-up-records=true",
+      })
+  class WithExportOnlyBackedUpRecordsSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithExportOnlyBackedUpRecordsSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetExportOnlyBackedUpRecords() {
+      assertThat(brokerCfg.getExporting().exportOnlyBackedUpRecords()).isTrue();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
         "camunda.data.export.skip-records.1=10,20",
         "camunda.data.export.skip-records.2=30",
       })
