@@ -11,6 +11,7 @@ import type {editor} from 'monaco-editor';
 import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
 import {flushSync} from 'react-dom';
 import {observer} from 'mobx-react-lite';
+import {useResolvedTheme} from '@camunda/design-system';
 import {useTranslation} from 'react-i18next';
 import {themeStore} from '#/shared/theme/theme';
 import {applyDsTheme, defineDsTheme, getMonacoThemeName, type EditorTheme} from './dsMonacoTheme';
@@ -53,7 +54,8 @@ const MonacoEditor = observer(
 		theme = 'stock',
 	}: Props) => {
 		const {t} = useTranslation();
-		const colorMode = themeStore.actualTheme;
+		const dsColorMode = useResolvedTheme(themeStore.selectedTheme);
+		const colorMode = theme === 'ds' ? dsColorMode : themeStore.actualTheme;
 		const modelId = useId();
 		const modelPath = `inmemory://operate-editor/${modelId}`;
 		const schemaUri = `${modelPath}.schema.json`;
