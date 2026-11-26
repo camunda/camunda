@@ -289,6 +289,14 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	createAdminUser: (body: CreateUserRequestBody) =>
+		new Request(getFullURL('/v2/setup/user'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'POST',
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
 	updateUser: ({username, ...body}: Pick<User, 'username'> & UpdateUserRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.updateUser.getUrl({username: encodeURIComponent(username)})), {
 			...BASE_REQUEST_OPTIONS,
