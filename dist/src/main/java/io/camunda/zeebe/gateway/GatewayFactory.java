@@ -8,9 +8,11 @@
 package io.camunda.zeebe.gateway;
 
 import io.camunda.application.commons.security.EngineSecurityConfigFactory;
+import io.camunda.authentication.config.SaasTokenValidators;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
@@ -55,11 +57,10 @@ public final class GatewayFactory {
       final int maxVariableNameLength,
       final @Nullable ServiceRegistry serviceRegistry,
       final @Nullable ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      final @Nullable CamundaSecurityLibraryProperties securityProperties,
       final @Nullable ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory) {
     final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
-        authConfig ->
-            required(scopedJwtDecoderFactory, "ScopedJwtDecoderFactory")
-                .buildIssuerAwareDecoder(authConfig);
+        jwtDecoderFactory(scopedJwtDecoderFactory, securityProperties);
     final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
         authConfig ->
             required(scopedOidcClaimsProviderFactory, "ScopedOidcClaimsProviderFactory")
@@ -82,6 +83,20 @@ public final class GatewayFactory {
         meterRegistry,
         maxVariableNameLength,
         physicalTenantResolver);
+  }
+
+  /**
+   * Builds the gRPC access-token decoders. The CSL scoped decoder checks no SaaS claims, so this
+   * adds the organization and cluster checks of the REST API.
+   */
+  public static Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory(
+      final @Nullable ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      final @Nullable CamundaSecurityLibraryProperties securityProperties) {
+    return authConfig ->
+        SaasTokenValidators.withSaasValidation(
+            required(scopedJwtDecoderFactory, "ScopedJwtDecoderFactory")
+                .buildIssuerAwareDecoder(authConfig),
+            required(securityProperties, "CamundaSecurityLibraryProperties").getSaas());
   }
 
   /**
