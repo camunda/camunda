@@ -769,4 +769,49 @@ public class DataBackupS3Test {
           .isEqualTo(DefaultsMode.STANDARD);
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.s3.bucket-name=test-bucket",
+      })
+  class WithoutReplicationSettings {
+    final BrokerBasedProperties brokerCfg;
+
+    WithoutReplicationSettings(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldNotWaitForReplicationByDefault() {
+      final var s3 = brokerCfg.getData().getBackup().getS3();
+      assertThat(s3.isWaitForReplication()).isFalse();
+      assertThat(s3.getReplicationPollInterval()).isEqualTo(Duration.ofSeconds(5));
+      assertThat(s3.getReplicationTimeout()).isEqualTo(Duration.ofMinutes(15));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.s3.bucket-name=test-bucket",
+        "camunda.data.primary-storage.backup.s3.wait-for-replication=true",
+        "camunda.data.primary-storage.backup.s3.replication-poll-interval=2s",
+        "camunda.data.primary-storage.backup.s3.replication-timeout=30m",
+      })
+  class WithReplicationSettings {
+    final BrokerBasedProperties brokerCfg;
+
+    WithReplicationSettings(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetReplicationSettings() {
+      final var s3 = brokerCfg.getData().getBackup().getS3();
+      assertThat(s3.isWaitForReplication()).isTrue();
+      assertThat(s3.getReplicationPollInterval()).isEqualTo(Duration.ofSeconds(2));
+      assertThat(s3.getReplicationTimeout()).isEqualTo(Duration.ofMinutes(30));
+    }
+  }
 }
