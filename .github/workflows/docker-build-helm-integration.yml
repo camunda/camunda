@@ -610,7 +610,13 @@ jobs:
     # success() keeps the implicit needs-succeeded gate that a custom `if` would
     # otherwise drop (on merge_group build-and-push is continue-on-error, so it
     # still reports success and only the empty-tag check applies there).
-    if: success() && needs.build-and-push.outputs.image-tag != ''
+    #
+    # TEMPORARY: paused while camunda-platform-helm#8033 is open. Its reusable
+    # integration-test workflow lost the rotated distro-ci GitHub App token
+    # (INC-9412), so every run fails on cluster auth, not the product. To re-enable,
+    # restore: if: success() && needs.build-and-push.outputs.image-tag != ''
+    # https://github.com/camunda/camunda-platform-helm/pull/8033
+    if: false
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
