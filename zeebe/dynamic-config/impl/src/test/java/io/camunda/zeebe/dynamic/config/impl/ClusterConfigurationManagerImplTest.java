@@ -1964,8 +1964,7 @@ final class ClusterConfigurationManagerImplTest {
     // then — the id is generated once and surfaces in the view the Hub ping waits on
     final var config = configuration(manager);
     assertThat(config.globalConfiguration().clusterId()).isPresent();
-    assertThat(config.toLegacyDefault().clusterId())
-        .isEqualTo(config.globalConfiguration().clusterId());
+    assertThat(config.clusterId()).isEqualTo(config.globalConfiguration().clusterId());
   }
 
   private static final class FailingExecutor

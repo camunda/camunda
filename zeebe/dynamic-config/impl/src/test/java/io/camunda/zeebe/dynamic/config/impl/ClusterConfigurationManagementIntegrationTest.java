@@ -32,6 +32,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantPhases;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -203,7 +204,7 @@ class ClusterConfigurationManagementIntegrationTest {
         .applyOperations(
             ignore ->
                 Either.right(
-                    CurrentClusterConfiguration.toPhases(
+                    DefaultTenantPhases.of(
                         List.of(
                             new PartitionJoinOperation(MEMBER_0, 2, 1, true),
                             new PartitionLeaveOperation(MEMBER_1, 1, 1)))))
@@ -236,7 +237,7 @@ class ClusterConfigurationManagementIntegrationTest {
         .applyOperations(
             ignore ->
                 Either.right(
-                    CurrentClusterConfiguration.toPhases(
+                    DefaultTenantPhases.of(
                         List.of(
                             new ModeChangeOperation(MEMBER_0, Mode.RECOVERING),
                             new ModeChangeOperation(MEMBER_1, Mode.RECOVERING),
@@ -266,7 +267,7 @@ class ClusterConfigurationManagementIntegrationTest {
         .applyOperations(
             ignore ->
                 Either.right(
-                    CurrentClusterConfiguration.toPhases(
+                    DefaultTenantPhases.of(
                         List.of(
                             new PartitionJoinOperation(MEMBER_0, 2, 1, true),
                             new PartitionLeaveOperation(MEMBER_1, 1, 1),
