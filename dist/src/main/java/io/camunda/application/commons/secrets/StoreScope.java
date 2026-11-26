@@ -38,6 +38,7 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
   private static final Pattern PROJECT_NUMBER = Pattern.compile("[0-9]+");
   private static final Pattern SECRET_ARN =
       Pattern.compile("arn:[^:]+:secretsmanager:[^:]*:[^:]*:secret:(.*)");
+  private static final Pattern ARN_SUFFIX = Pattern.compile("-[0-9A-Za-z]{6}$");
 
   static StoreScope of(final FileStore store) {
     final var directory = realPath(Path.of(store.getPath())).toString();
@@ -60,7 +61,7 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
     final var prefix = pathPrefix == null || pathPrefix.isBlank() ? "" : pathPrefix;
     final var backend = region == null || region.isBlank() ? null : region;
     if (prefix.isEmpty() && container != null) {
-      return new StoreScope(backend, "", secretName(container));
+      return new StoreScope(backend, "", containerName(container));
     }
     return new StoreScope(backend, secretName(prefix), container);
   }
@@ -124,6 +125,15 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
   private static String secretName(final String secretId) {
     final var arn = SECRET_ARN.matcher(secretId);
     return arn.matches() ? arn.group(1) : secretId;
+  }
+
+  /**
+   * The name of an AWS container secret. A full ARN ends in a random suffix that isn't part of the
+   * name, so the suffix is dropped.
+   */
+  private static String containerName(final String secretId) {
+    final var arn = SECRET_ARN.matcher(secretId);
+    return arn.matches() ? ARN_SUFFIX.matcher(arn.group(1)).replaceFirst("") : secretId;
   }
 
   /**

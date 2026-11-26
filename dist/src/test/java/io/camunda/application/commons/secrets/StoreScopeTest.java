@@ -183,6 +183,10 @@ class StoreScopeTest {
             + " true",
         "-, arn:aws:secretsmanager:eu-west-1:123456789012:secret:camunda/config, camunda/, -, true",
         "arn:aws:secretsmanager:eu-west-1:123456789012:secret:camunda/jobs/, -, camunda/config/, -,"
+            + " false",
+        "-, arn:aws:secretsmanager:eu-west-1:123456789012:secret:app-config-AbCdEf, -, app-config,"
+            + " true",
+        "-, arn:aws:secretsmanager:eu-west-1:123456789012:secret:app-config-AbCdEf, -, app-jobs,"
             + " false"
       })
   void shouldCompareAnAwsArnAsTheSecretNameItHolds(
