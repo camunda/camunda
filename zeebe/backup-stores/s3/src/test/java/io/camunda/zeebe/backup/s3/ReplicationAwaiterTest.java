@@ -120,14 +120,15 @@ final class ReplicationAwaiterTest {
   }
 
   @Test
-  void shouldAcceptBothSpellingsOfCompletedStatus() {
-    // given
+  void shouldAcceptEveryStatusThatMeansReplicated() {
+    // given both spellings of completed, and a replica written at another site
     final var awaiter = awaiter(WAIT);
     reportStatuses("a", ReplicationStatus.COMPLETE);
     reportStatuses("b", ReplicationStatus.COMPLETED);
+    reportStatuses("c", ReplicationStatus.REPLICA);
 
     // when
-    final var replicated = awaiter.awaitReplication(List.of("a", "b"), awaiter.deadline());
+    final var replicated = awaiter.awaitReplication(List.of("a", "b", "c"), awaiter.deadline());
 
     // then
     assertThat(replicated).succeedsWithin(WAIT);
