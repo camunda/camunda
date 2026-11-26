@@ -1059,7 +1059,8 @@ public final class EngineProcessors {
             cslCheck,
             tenantCheck,
             bpmnBehaviors.variableBehavior(),
-            bpmnBehaviors.storageOrdinalProvider());
+            bpmnBehaviors.storageOrdinalProvider(),
+            bpmnBehaviors.caseBehavior());
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
   }
@@ -1081,7 +1082,8 @@ public final class EngineProcessors {
             cslCheck,
             tenantCheck,
             bpmnBehaviors.expressionProcessor(),
-            bpmnBehaviors.storageOrdinalProvider());
+            bpmnBehaviors.storageOrdinalProvider(),
+            bpmnBehaviors.caseBehavior());
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_EVALUATION,
         ConditionalEvaluationIntent.EVALUATE,

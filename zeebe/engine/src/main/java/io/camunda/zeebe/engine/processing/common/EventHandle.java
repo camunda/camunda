@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.common;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.cases.CaseBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
@@ -55,6 +56,7 @@ public final class EventHandle {
 
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
+  private final CaseBehavior caseBehavior;
   private final EventTriggerBehavior eventTriggerBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final StorageOrdinalProvider storageOrdinalProvider;
@@ -66,7 +68,8 @@ public final class EventHandle {
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
-      final StorageOrdinalProvider storageOrdinalProvider) {
+      final StorageOrdinalProvider storageOrdinalProvider,
+      final CaseBehavior caseBehavior) {
     this.keyGenerator = keyGenerator;
     this.eventScopeInstanceState = eventScopeInstanceState;
     this.processState = processState;
@@ -75,6 +78,7 @@ public final class EventHandle {
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.stateBehavior = stateBehavior;
     this.storageOrdinalProvider = storageOrdinalProvider;
+    this.caseBehavior = caseBehavior;
   }
 
   public boolean canTriggerElement(
@@ -321,6 +325,8 @@ public final class EventHandle {
     } else {
       recordForPICreation.setBusinessId("");
     }
+
+    caseBehavior.createCaseIfMarked(process.getProcess(), recordForPICreation, variablesBuffer);
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
