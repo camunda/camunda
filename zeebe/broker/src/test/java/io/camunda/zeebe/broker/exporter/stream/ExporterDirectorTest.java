@@ -497,8 +497,7 @@ public final class ExporterDirectorTest {
     final var backedUpPosition = new AtomicReference<OptionalLong>(OptionalLong.empty());
     rule.withExporterDirectorContextConfigurator(
         ctx ->
-            ctx.exportOnlyBackedUpRecords(true)
-                .backedUpPositionPollInterval(Duration.ofMillis(10))
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
                 .backedUpPositionSource(
                     () -> CompletableFuture.completedFuture(backedUpPosition.get())));
     startExporterDirector(exporterDescriptors);
@@ -545,8 +544,7 @@ public final class ExporterDirectorTest {
     // given
     rule.withExporterDirectorContextConfigurator(
         ctx ->
-            ctx.exportOnlyBackedUpRecords(true)
-                .backedUpPositionPollInterval(Duration.ofMillis(10))
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
                 .backedUpPositionSource(
                     () -> CompletableFuture.completedFuture(OptionalLong.of(-1))));
     startExporterDirector(exporterDescriptors);
@@ -566,8 +564,7 @@ public final class ExporterDirectorTest {
     // given
     rule.withExporterDirectorContextConfigurator(
         ctx ->
-            ctx.exportOnlyBackedUpRecords(true)
-                .backedUpPositionPollInterval(Duration.ofMillis(10))
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
                 .backedUpPositionSource(
                     () -> CompletableFuture.completedFuture(OptionalLong.empty())));
     startExporterDirector(exporterDescriptors);
@@ -592,8 +589,7 @@ public final class ExporterDirectorTest {
     final var backedUpPosition = new AtomicReference<>(OptionalLong.of(-1));
     rule.withExporterDirectorContextConfigurator(
         ctx ->
-            ctx.exportOnlyBackedUpRecords(true)
-                .backedUpPositionPollInterval(Duration.ofMillis(10))
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
                 .backedUpPositionSource(
                     () -> CompletableFuture.completedFuture(backedUpPosition.get())));
     startExporterDirector(exporterDescriptors);
@@ -661,8 +657,7 @@ public final class ExporterDirectorTest {
     final var pollCount = new AtomicInteger();
     rule.withExporterDirectorContextConfigurator(
         ctx ->
-            ctx.exportOnlyBackedUpRecords(true)
-                .backedUpPositionPollInterval(Duration.ofMillis(10))
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
                 .backedUpPositionSource(
                     () -> {
                       pollCount.incrementAndGet();
@@ -710,8 +705,7 @@ public final class ExporterDirectorTest {
     final var targetPosition = new AtomicLong(-1);
     rule.withExporterDirectorContextConfigurator(
         ctx ->
-            ctx.exportOnlyBackedUpRecords(true)
-                .backedUpPositionPollInterval(Duration.ofMillis(10))
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
                 .backedUpPositionSource(
                     () -> {
                       final int n = attempt.incrementAndGet();
@@ -749,8 +743,7 @@ public final class ExporterDirectorTest {
             CompletableFuture.completedFuture(OptionalLong.empty()));
     rule.withExporterDirectorContextConfigurator(
         ctx ->
-            ctx.exportOnlyBackedUpRecords(true)
-                .backedUpPositionPollInterval(Duration.ofMillis(10))
+            ctx.backedUpPositionPollInterval(Duration.ofMillis(10))
                 .backedUpPositionSource(nextPoll::get));
     startExporterDirector(exporterDescriptors);
 

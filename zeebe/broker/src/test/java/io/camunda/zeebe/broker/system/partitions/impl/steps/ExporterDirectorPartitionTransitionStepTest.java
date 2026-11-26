@@ -30,7 +30,6 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
@@ -389,7 +388,6 @@ class ExporterDirectorPartitionTransitionStepTest {
     // given
     final var brokerCfg = new BrokerCfg();
     brokerCfg.setExporting(new ExportingCfg(null, null, 100_000, true));
-    brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
     transitionContext.setBrokerCfg(brokerCfg);
 
     final var brokerClient = mock(BrokerClient.class);
@@ -404,7 +402,6 @@ class ExporterDirectorPartitionTransitionStepTest {
     exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
 
     // then
-    assertThat(capturedContext.get().isExportOnlyBackedUpRecords()).isTrue();
     assertThat(capturedContext.get().getBackedUpPositionSource())
         .isInstanceOf(CommonBackupPositionSource.class);
   }
@@ -414,7 +411,6 @@ class ExporterDirectorPartitionTransitionStepTest {
     // given
     final var brokerCfg = new BrokerCfg();
     brokerCfg.setExporting(new ExportingCfg(null, null, 100_000, false));
-    brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
     transitionContext.setBrokerCfg(brokerCfg);
 
     final AtomicReference<ExporterDirectorContext> capturedContext = new AtomicReference<>();
@@ -425,7 +421,6 @@ class ExporterDirectorPartitionTransitionStepTest {
     exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
 
     // then
-    assertThat(capturedContext.get().isExportOnlyBackedUpRecords()).isFalse();
     assertThat(capturedContext.get().getBackedUpPositionSource()).isNull();
   }
 
@@ -434,7 +429,6 @@ class ExporterDirectorPartitionTransitionStepTest {
     // given
     final var brokerCfg = new BrokerCfg();
     brokerCfg.setExporting(new ExportingCfg(null, null, 100_000, true));
-    brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
     transitionContext.setBrokerCfg(brokerCfg);
 
     final AtomicReference<ExporterDirectorContext> capturedContext = new AtomicReference<>();
@@ -445,27 +439,6 @@ class ExporterDirectorPartitionTransitionStepTest {
     exporterDirectorStep.transitionTo(transitionContext, 1, Role.FOLLOWER).join();
 
     // then
-    assertThat(capturedContext.get().isExportOnlyBackedUpRecords()).isTrue();
-    assertThat(capturedContext.get().getBackedUpPositionSource()).isNull();
-  }
-
-  @Test
-  void shouldNotWireBackedUpPositionSourceWhenNoBackupStoreConfigured() {
-    // given
-    final var brokerCfg = new BrokerCfg();
-    brokerCfg.setExporting(new ExportingCfg(null, null, 100_000, true));
-    brokerCfg.getData().getBackup().setStore(BackupStoreType.NONE);
-    transitionContext.setBrokerCfg(brokerCfg);
-
-    final AtomicReference<ExporterDirectorContext> capturedContext = new AtomicReference<>();
-    final var exporterDirectorStep = getExporterDirectorPartitionTransitionStep(capturedContext);
-
-    // when
-    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
-    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
-
-    // then
-    assertThat(capturedContext.get().isExportOnlyBackedUpRecords()).isTrue();
     assertThat(capturedContext.get().getBackedUpPositionSource()).isNull();
   }
 
