@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,6 +87,10 @@ final class S3BackupStoreReplicationTest {
   private volatile ReplicationFake replication = (key, polls) -> ReplicationStatus.COMPLETED;
 
   private final Map<String, Integer> polls = new ConcurrentHashMap<>();
+
+  /** Replication status the bucket reports when a manifest is read, or null for none. */
+  private volatile @Nullable ReplicationStatus manifestReplicationStatus;
+
   private S3BackupStore store;
 
   @BeforeEach
@@ -117,7 +122,11 @@ final class S3BackupStoreReplicationTest {
                     NoSuchKeyException.builder().message("no such key").build());
               }
               return CompletableFuture.completedFuture(
-                  ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), manifest));
+                  ResponseBytes.fromByteArray(
+                      GetObjectResponse.builder()
+                          .replicationStatus(manifestReplicationStatus)
+                          .build(),
+                      manifest));
             });
     lenient()
         .when(client.headObject(any(Consumer.class)))
@@ -321,6 +330,91 @@ final class S3BackupStoreReplicationTest {
         .isEqualTo(BackupStatusCode.COMPLETED);
     verify(client, never()).headObject(any(Consumer.class));
     verify(client, never()).getBucketReplication(any(Consumer.class));
+  }
+
+  @Test
+  void shouldReportBackupInProgressUntilItsManifestIsReplicated() throws IOException {
+    // given
+    store = storeWaitingForReplication(WAIT);
+    final var backup = TestBackupProvider.simpleBackup();
+    store.save(backup).join();
+
+    // when the completed manifest has not reached the replica site yet
+    manifestReplicationStatus = ReplicationStatus.PENDING;
+
+    // then
+    assertThat(store.getStatus(backup.id()).join().statusCode())
+        .isEqualTo(BackupStatusCode.IN_PROGRESS);
+
+    // when it has
+    manifestReplicationStatus = ReplicationStatus.COMPLETED;
+
+    // then
+    assertThat(store.getStatus(backup.id()).join().statusCode())
+        .isEqualTo(BackupStatusCode.COMPLETED);
+  }
+
+  @Test
+  void shouldReportBackupFailedWhenItsManifestFailedToReplicate() throws IOException {
+    // given
+    store = storeWaitingForReplication(WAIT);
+    final var backup = TestBackupProvider.simpleBackup();
+    store.save(backup).join();
+
+    // when
+    manifestReplicationStatus = ReplicationStatus.FAILED;
+
+    // then
+    final var status = store.getStatus(backup.id()).join();
+    assertThat(status.statusCode()).isEqualTo(BackupStatusCode.FAILED);
+    assertThat(status.failureReason())
+        .hasValueSatisfying(reason -> assertThat(reason).contains("failed to replicate"));
+  }
+
+  @Test
+  void shouldReportReplicaOfCompletedManifestAsCompleted() throws IOException {
+    // given the backup is read at the replica site
+    store = storeWaitingForReplication(WAIT);
+    final var backup = TestBackupProvider.simpleBackup();
+    store.save(backup).join();
+
+    // when
+    manifestReplicationStatus = ReplicationStatus.REPLICA;
+
+    // then
+    assertThat(store.getStatus(backup.id()).join().statusCode())
+        .isEqualTo(BackupStatusCode.COMPLETED);
+  }
+
+  @Test
+  void shouldReportCompletedManifestWithoutReplicationStatusAsCompleted() throws IOException {
+    // given a backup written before the bucket had replication rules
+    store = storeWaitingForReplication(WAIT);
+    final var backup = TestBackupProvider.simpleBackup();
+    store.save(backup).join();
+
+    // when
+    manifestReplicationStatus = null;
+
+    // then
+    assertThat(store.getStatus(backup.id()).join().statusCode())
+        .isEqualTo(BackupStatusCode.COMPLETED);
+  }
+
+  @Test
+  void shouldIgnoreManifestReplicationStatusWhenNotWaitingForReplication() throws IOException {
+    // given
+    store =
+        new S3BackupStore(new S3BackupConfig.Builder().withBucketName("bucket").build(), client);
+    final var backup = TestBackupProvider.simpleBackup();
+    store.save(backup).join();
+
+    // when
+    manifestReplicationStatus = ReplicationStatus.PENDING;
+
+    // then
+    assertThat(store.getStatus(backup.id()).join().statusCode())
+        .isEqualTo(BackupStatusCode.COMPLETED);
   }
 
   private S3BackupStore storeWaitingForReplication(final Duration timeout) {
