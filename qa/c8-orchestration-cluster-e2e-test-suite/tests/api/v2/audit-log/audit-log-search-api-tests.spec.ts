@@ -453,34 +453,39 @@ test.describe.parallel('Search Audit Logs API Tests', () => {
     request,
   }) => {
     const instancesToCancel: string[] = [];
-    const {processInstanceKey, userTaskKey} = await startTwoUserTaskInstance(
-      request,
-      instancesToCancel,
-    );
-    for (let i = 0; i < 5; i++) {
-      await lookupUserTaskAndExpectFound(request, userTaskKey);
-    }
-    // The assignment proves the task's entries are exported before checking
-    // that none came from the lookups.
-    await assertStatusCode(
-      await assignUserTask(request, userTaskKey, 'qa-user-a'),
-      204,
-    );
-
-    await expect(async () => {
-      const res = await request.post(
-        buildUrl('/user-tasks/{userTaskKey}/audit-logs/search', {
-          userTaskKey,
-        }),
-        {headers: jsonHeaders(), data: {}},
+    try {
+      const {userTaskKey} = await startTwoUserTaskInstance(
+        request,
+        instancesToCancel,
       );
-      await assertStatusCode(res, 200);
-      const {items} = await res.json();
-      expect(
-        items.map((item: {operationType: string}) => item.operationType),
-      ).toEqual(['ASSIGN']);
-    }).toPass(defaultAssertionOptions);
-    await cancelProcessInstance(processInstanceKey);
+      for (let i = 0; i < 5; i++) {
+        await lookupUserTaskAndExpectFound(request, userTaskKey);
+      }
+      // The assignment proves the task's entries are exported before checking
+      // that none came from the lookups.
+      await assertStatusCode(
+        await assignUserTask(request, userTaskKey, 'qa-user-a'),
+        204,
+      );
+
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/user-tasks/{userTaskKey}/audit-logs/search', {
+            userTaskKey,
+          }),
+          {headers: jsonHeaders(), data: {}},
+        );
+        await assertStatusCode(res, 200);
+        const {items} = await res.json();
+        expect(
+          items.map((item: {operationType: string}) => item.operationType),
+        ).toEqual(['ASSIGN']);
+      }).toPass(defaultAssertionOptions);
+    } finally {
+      await Promise.allSettled(
+        instancesToCancel.map((key) => cancelProcessInstance(key)),
+      );
+    }
   });
 
   test('Search Audit Logs - Unauthorized', async ({request}) => {

@@ -433,9 +433,12 @@ test.describe.parallel('User Task Lookup API', () => {
       await cancelProcessInstance(processInstanceKey, {ignoreNotFound: false});
 
       // then
-      expect(
-        await lookupUserTaskNotFoundDetail(request, userTaskKey),
-      ).toContain(NOT_FOUND_DETAIL);
+      // The cancellation is acknowledged before the task is terminated.
+      await expect(async () => {
+        expect(
+          await lookupUserTaskNotFoundDetail(request, userTaskKey),
+        ).toContain(NOT_FOUND_DETAIL);
+      }).toPass(defaultAssertionOptions);
     });
   });
 
