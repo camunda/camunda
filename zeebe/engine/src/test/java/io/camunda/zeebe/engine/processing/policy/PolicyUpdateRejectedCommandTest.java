@@ -306,7 +306,7 @@ public final class PolicyUpdateRejectedCommandTest {
   }
 
   /** A membership whose target role doesn't exist; adding a member to it fails the update. */
-  private static List<PolicyMembershipEntryValue> addToMissingRole(final String missingRoleId) {
+  static List<PolicyMembershipEntryValue> addToMissingRole(final String missingRoleId) {
     return List.of(
         new PolicyMembershipEntry()
             .setTargetType(PolicyUpdateEntityType.ROLE)
