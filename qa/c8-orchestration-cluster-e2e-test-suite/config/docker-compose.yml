@@ -137,6 +137,10 @@ services:
       - CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_2=USER_TASKS
       - CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_0=VARIABLE # [AUTHORIZATION, BATCH, DECISION, GROUP, INCIDENT, MAPPING_RULE, PROCESS_INSTANCE, ROLE, TENANT, USER, USER_TASK, RESOURCE, VARIABLE]
       - CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED=true
+      # Gateway response validation turns contract-violating API responses into
+      # 5xx so the API suite catches them. Default off so normal CI is unaffected;
+      # the on-demand API workflow sets this to true for investigation runs.
+      - CAMUNDA_REST_RESPONSEVALIDATION_ENABLED=${CAMUNDA_REST_RESPONSEVALIDATION_ENABLED:-false}
       # Centralized secret resolution. Without a store the broker registers a
       # NoopSecretStore, so every reference resolves to NOT_FOUND. The store id
       # must be `default` - any other id is rejected at startup. A 1m cache TTL

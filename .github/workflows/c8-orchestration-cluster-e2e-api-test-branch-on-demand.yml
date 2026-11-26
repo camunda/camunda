@@ -13,6 +13,11 @@ on:
         description: "Enter the branch to test"
         required: true
         default: "main"
+      response_validation:
+        description: "Enable gateway response validation (turns contract-violating API responses into 5xx). Off by default."
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -166,6 +171,10 @@ jobs:
           fi
 
       - name: Start Camunda
+        # docker-compose.yml interpolates CAMUNDA_REST_RESPONSEVALIDATION_ENABLED
+        # from this step's environment, defaulting to false when the input is off.
+        env:
+          CAMUNDA_REST_RESPONSEVALIDATION_ENABLED: ${{ github.event.inputs.response_validation }}
         run: |
           export CAMUNDA_DOCKER_IMAGE="camunda/camunda:${RESOLVED_DOCKER_TAG}"
           echo "Using CAMUNDA_DOCKER_IMAGE=${CAMUNDA_DOCKER_IMAGE}"
@@ -402,6 +411,8 @@ jobs:
           fi
 
       - name: Start Camunda with H2/RDBMS
+        env:
+          RESPONSE_VALIDATION: ${{ github.event.inputs.response_validation }}
         run: |
           chmod +x dev-dist/bin/camunda
 
@@ -447,6 +458,10 @@ jobs:
 
           # Business ID uniqueness enforcement toggle
           export CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED="true"
+
+          # Gateway response validation: contract-violating responses become 5xx.
+          # Off unless the on-demand run requested it.
+          export CAMUNDA_REST_RESPONSEVALIDATION_ENABLED="${RESPONSE_VALIDATION:-false}"
 
           dev-dist/bin/camunda > dev-dist/camunda.log 2>&1 &
           echo $! > dev-dist/camunda.pid
