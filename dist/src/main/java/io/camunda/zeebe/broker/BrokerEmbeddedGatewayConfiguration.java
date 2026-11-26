@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.actor.GatewayActorScheduler;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.registry.ServiceRegistry;
@@ -59,6 +60,7 @@ public class BrokerEmbeddedGatewayConfiguration {
       @Autowired(required = false) final ServiceRegistry serviceRegistry,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      @Autowired(required = false) final CamundaSecurityLibraryProperties securityProperties,
       @Autowired(required = false)
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       final MeterRegistry meterRegistry,
@@ -86,6 +88,7 @@ public class BrokerEmbeddedGatewayConfiguration {
             brokerCfg.getExperimental().getEngine().getValidators().getMaxNameFieldLength(),
             serviceRegistry,
             scopedJwtDecoderFactory,
+            securityProperties,
             scopedOidcClaimsProviderFactory,
             observationRegistry);
     final var embeddedGateway = new BrokerEmbeddedGateway(gateway, jobStreamClient);

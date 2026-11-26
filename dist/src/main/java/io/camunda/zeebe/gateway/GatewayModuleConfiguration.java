@@ -12,6 +12,7 @@ import io.camunda.application.commons.actor.GatewayActorScheduler;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.registry.ServiceRegistry;
@@ -67,6 +68,7 @@ public class GatewayModuleConfiguration {
       @Autowired(required = false) final ServiceRegistry serviceRegistry,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      @Autowired(required = false) final CamundaSecurityLibraryProperties securityProperties,
       @Autowired(required = false)
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       final MeterRegistry meterRegistry,
@@ -101,6 +103,7 @@ public class GatewayModuleConfiguration {
             gatewayRestConfiguration.getMaxNameFieldLength(),
             serviceRegistry,
             scopedJwtDecoderFactory,
+            securityProperties,
             scopedOidcClaimsProviderFactory,
             observationRegistry);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
