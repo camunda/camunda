@@ -34,14 +34,32 @@ public final class DefinitionQueryUtilOS {
       final List<String> tenantIds,
       final AbstractInstanceIndex type,
       final UnaryOperator<String> getLatestVersionToKey) {
+    return createDefinitionQuery(
+        definitionKey,
+        definitionVersions,
+        tenantIds,
+        type.getDefinitionKeyFieldName(),
+        type.getDefinitionVersionFieldName(),
+        type.getTenantIdFieldName(),
+        getLatestVersionToKey);
+  }
+
+  public static BoolQuery.Builder createDefinitionQuery(
+      final String definitionKey,
+      final List<String> definitionVersions,
+      final List<String> tenantIds,
+      final String definitionKeyFieldName,
+      final String definitionVersionFieldName,
+      final String tenantIdFieldName,
+      final UnaryOperator<String> getLatestVersionToKey) {
     final BoolQuery.Builder queryBuilder = new BoolQuery.Builder();
-    queryBuilder.must(createTenantIdQuery(type.getTenantIdFieldName(), tenantIds));
-    queryBuilder.must(term(type.getDefinitionKeyFieldName(), definitionKey));
+    queryBuilder.must(createTenantIdQuery(tenantIdFieldName, tenantIds));
+    queryBuilder.must(term(definitionKeyFieldName, definitionKey));
     if (isDefinitionVersionSetToLatest(definitionVersions)) {
       queryBuilder.must(
-          term(type.getDefinitionVersionFieldName(), getLatestVersionToKey.apply(definitionKey)));
+          term(definitionVersionFieldName, getLatestVersionToKey.apply(definitionKey)));
     } else if (!isDefinitionVersionSetToAll(definitionVersions)) {
-      queryBuilder.must(stringTerms(type.getDefinitionVersionFieldName(), definitionVersions));
+      queryBuilder.must(stringTerms(definitionVersionFieldName, definitionVersions));
     } else if (definitionVersions.isEmpty()) {
       // if no version is set just return empty results
       queryBuilder.mustNot(matchAll());

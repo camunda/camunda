@@ -78,21 +78,34 @@ public final class DefinitionQueryUtilES {
       final List<String> tenantIds,
       final AbstractInstanceIndex<?> type,
       final UnaryOperator<String> getLatestVersionToKey) {
+    return createDefinitionQuery(
+        definitionKey,
+        definitionVersions,
+        tenantIds,
+        type.getDefinitionKeyFieldName(),
+        type.getDefinitionVersionFieldName(),
+        type.getTenantIdFieldName(),
+        getLatestVersionToKey);
+  }
+
+  public static BoolQuery.Builder createDefinitionQuery(
+      final String definitionKey,
+      final List<String> definitionVersions,
+      final List<String> tenantIds,
+      final String definitionKeyFieldName,
+      final String definitionVersionFieldName,
+      final String tenantIdFieldName,
+      final UnaryOperator<String> getLatestVersionToKey) {
     final BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
     boolQueryBuilder
-        .must(
-            m ->
-                m.term(
-                    t ->
-                        t.field(type.getDefinitionKeyFieldName())
-                            .value(FieldValue.of(definitionKey))))
-        .must(createTenantIdQuery(type.getTenantIdFieldName(), tenantIds));
+        .must(m -> m.term(t -> t.field(definitionKeyFieldName).value(FieldValue.of(definitionKey))))
+        .must(createTenantIdQuery(tenantIdFieldName, tenantIds));
     if (isDefinitionVersionSetToLatest(definitionVersions)) {
       boolQueryBuilder.must(
           m ->
               m.terms(
                   t ->
-                      t.field(type.getDefinitionVersionFieldName())
+                      t.field(definitionVersionFieldName)
                           .terms(
                               tt ->
                                   tt.value(
@@ -104,7 +117,7 @@ public final class DefinitionQueryUtilES {
           m ->
               m.terms(
                   t ->
-                      t.field(type.getDefinitionVersionFieldName())
+                      t.field(definitionVersionFieldName)
                           .terms(
                               tt ->
                                   tt.value(
