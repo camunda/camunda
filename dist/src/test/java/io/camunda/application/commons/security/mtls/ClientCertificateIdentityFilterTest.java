@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.zeebe.util.tls.PeerIdentityMatcher;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.servlet.http.HttpServlet;
@@ -26,6 +27,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.security.KeyStore;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import javax.net.ssl.KeyManagerFactory;
@@ -44,6 +46,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.mock.web.MockFilterChain;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * Verifies the REST API's client certificate identity check against a real Tomcat, configured the
@@ -168,17 +173,58 @@ final class ClientCertificateIdentityFilterTest {
   }
 
   @Test
-  void shouldCheckIdentityOncePerTlsSession() throws Exception {
+  void shouldCheckIdentityOncePerCertificate() throws Exception {
     // given
     start("need", "allowed-identities=worker.example.com");
-    final var client = client("worker");
 
-    // when - the client reuses its connection
-    client.send(request(), BodyHandlers.ofString());
-    client.send(request(), BodyHandlers.ofString());
+    // when - two separate clients, connections and TLS sessions, one certificate
+    get("worker");
+    get("worker");
 
     // then
     assertThat(acceptedCount("worker.example.com")).isEqualTo(1);
+  }
+
+  @Test
+  void shouldNotReuseVerdictOfAnotherCertificateWithinTheSameTlsSessionId() throws Exception {
+    // given - with TLS 1.2 session tickets a client chooses the id of a resumed session, so a
+    // disallowed client may present the session id of an allowed one
+    final var filter =
+        new ClientCertificateIdentityFilter(
+            new PeerIdentityMatcher(List.of("worker.example.com"), false),
+            new SimpleMeterRegistry());
+    final var allowed = servletRequest("worker.crt", "shared-session-id");
+    final var disallowed = servletRequest("intruder.crt", "shared-session-id");
+
+    // when
+    final var allowedResponse = new MockHttpServletResponse();
+    filter.doFilter(allowed, allowedResponse, new MockFilterChain());
+    final var disallowedResponse = new MockHttpServletResponse();
+    filter.doFilter(disallowed, disallowedResponse, new MockFilterChain());
+
+    // then
+    assertThat(allowedResponse.getStatus()).isEqualTo(200);
+    assertThat(disallowedResponse.getStatus()).isEqualTo(403);
+  }
+
+  @Test
+  void shouldNotStartWithClientCertificatesButNoTrustStore() {
+    // given - Tomcat would fall back to the JVM's default CAs, i.e. any public CA
+
+    // when - then
+    assertThatThrownBy(
+            () ->
+                context =
+                    new SpringApplicationBuilder(TestApplication.class)
+                        .web(WebApplicationType.SERVLET)
+                        .properties(
+                            "server.port=0",
+                            "server.ssl.client-auth=want",
+                            "server.ssl.certificate=" + FIXTURES + "server.crt",
+                            "server.ssl.certificate-private-key=" + FIXTURES + "server.key")
+                        .run())
+        .rootCause()
+        .hasMessageContaining("trust store");
   }
 
   @Test
@@ -210,6 +256,20 @@ final class ClientCertificateIdentityFilterTest {
             .web(WebApplicationType.SERVLET)
             .properties(properties.toArray(String[]::new))
             .run();
+  }
+
+  private static MockHttpServletRequest servletRequest(
+      final String certificate, final String sessionId) throws Exception {
+    final var request = new MockHttpServletRequest("GET", "/ok");
+    try (final InputStream in = resource(certificate)) {
+      request.setAttribute(
+          "jakarta.servlet.request.X509Certificate",
+          new X509Certificate[] {
+            (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(in)
+          });
+    }
+    request.setAttribute("jakarta.servlet.request.ssl_session_id", sessionId);
+    return request;
   }
 
   private HttpResponse<String> get(final @Nullable String client) throws Exception {

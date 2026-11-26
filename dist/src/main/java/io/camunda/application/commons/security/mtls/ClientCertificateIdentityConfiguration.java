@@ -16,6 +16,7 @@ import java.util.EnumSet;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.boot.web.server.Ssl.ClientAuth;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -35,7 +36,8 @@ public class ClientCertificateIdentityConfiguration {
   public FilterRegistrationBean<ClientCertificateIdentityFilter> clientCertificateIdentityFilter(
       final UnifiedConfiguration configuration,
       final Environment environment,
-      final ObjectProvider<MeterRegistry> meterRegistry) {
+      final ObjectProvider<MeterRegistry> meterRegistry,
+      final ObjectProvider<SslBundles> sslBundles) {
     final var settings = configuration.getCamunda().getApi().getRest().getClientCertificate();
     final var matcher =
         new PeerIdentityMatcher(settings.getAllowedIdentities(), settings.isCommonNameFallback());
@@ -52,6 +54,16 @@ public class ClientCertificateIdentityConfiguration {
                   .formatted(clientAuth, sslEnabled ? "" : " and TLS is disabled"));
     }
 
+    if (certificatesRequested && !hasClientTrustStore(environment, sslBundles)) {
+      // without one, the JVM's default CAs would be trusted: any public CA could issue a client
+      // certificate that passes, and with an empty allow-list it would be accepted
+      throw new IllegalStateException(
+          "Expected a trust store for client certificates when server.ssl.client-auth is '%s'"
+                  .formatted(clientAuth)
+              + ", but neither server.ssl.trust-store, server.ssl.trust-certificate nor a"
+              + " truststore in the server.ssl.bundle is configured");
+    }
+
     final var registration =
         new FilterRegistrationBean<>(
             new ClientCertificateIdentityFilter(
@@ -61,5 +73,16 @@ public class ClientCertificateIdentityConfiguration {
     registration.setDispatcherTypes(EnumSet.allOf(DispatcherType.class));
     registration.setEnabled(certificatesRequested);
     return registration;
+  }
+
+  private static boolean hasClientTrustStore(
+      final Environment environment, final ObjectProvider<SslBundles> sslBundles) {
+    final var bundle = environment.getProperty("server.ssl.bundle");
+    if (bundle != null) {
+      final var bundles = sslBundles.getIfAvailable();
+      return bundles != null && bundles.getBundle(bundle).getStores().getTrustStore() != null;
+    }
+    return environment.containsProperty("server.ssl.trust-store")
+        || environment.containsProperty("server.ssl.trust-certificate");
   }
 }

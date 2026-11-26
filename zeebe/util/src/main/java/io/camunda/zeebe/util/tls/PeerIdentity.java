@@ -130,7 +130,8 @@ public record PeerIdentity(
     }
     sans.append(']');
     return "{subject='%s', sans=%s, peer=%s}"
-        .formatted(sanitize(subject), sans, peerAddress == null ? "unknown" : peerAddress);
+        .formatted(
+            sanitize(subject), sans, peerAddress == null ? "unknown" : sanitize(peerAddress));
   }
 
   /** Escapes control and non-ASCII characters, so a certificate cannot forge log lines. */
