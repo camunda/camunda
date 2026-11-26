@@ -1,12 +1,11 @@
 ---
 name: maven-run-build
-description: Use when compiling, testing, formatting, or packaging the monorepo with ./mvnw. For ./gradlew use gradle-run-build.
+description: Use when compiling, testing, formatting, or packaging the monorepo with maven.
 ---
 
 # Running the Maven build
 
-Maven is the authoritative build. Run everything from the repo root with the wrapper (`./mvnw`).
-For the experimental Gradle build, use `gradle-run-build`.
+Run everything from the repo root with the wrapper (`./mvnw`).
 
 ## Rules
 
