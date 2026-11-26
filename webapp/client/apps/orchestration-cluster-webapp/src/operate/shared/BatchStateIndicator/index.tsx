@@ -18,24 +18,24 @@ import {
 	UnknownFilled,
 	type CarbonIconType,
 } from '@carbon/react/icons';
+import {useTranslation} from 'react-i18next';
 import type {BatchOperationItemState, BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Container} from './styled';
 
 type Config = {
 	Icon: CarbonIconType;
 	color: string;
-	label: string;
 };
 
 const STATE_CONFIG: Record<BatchOperationState | BatchOperationItemState, Config> = {
-	COMPLETED: {Icon: CheckmarkFilled, color: 'var(--cds-status-green)', label: 'Completed'},
-	ACTIVE: {Icon: InProgress, color: 'var(--cds-status-blue)', label: 'Active'},
-	SUSPENDED: {Icon: PauseOutlineFilled, color: 'var(--cds-status-gray)', label: 'Suspended'},
-	CANCELED: {Icon: MisuseOutline, color: 'var(--cds-status-red)', label: 'Canceled'},
-	FAILED: {Icon: ErrorFilled, color: 'var(--cds-status-red)', label: 'Failed'},
-	CREATED: {Icon: CircleDash, color: 'var(--cds-status-gray)', label: 'Created'},
-	PARTIALLY_COMPLETED: {Icon: Incomplete, color: 'var(--cds-status-blue)', label: 'Partially completed'},
-	SKIPPED: {Icon: SkipForwardFilled, color: 'var(--cds-status-gray)', label: 'Skipped'},
+	COMPLETED: {Icon: CheckmarkFilled, color: 'var(--cds-status-green)'},
+	ACTIVE: {Icon: InProgress, color: 'var(--cds-status-blue)'},
+	SUSPENDED: {Icon: PauseOutlineFilled, color: 'var(--cds-status-gray)'},
+	CANCELED: {Icon: MisuseOutline, color: 'var(--cds-status-red)'},
+	FAILED: {Icon: ErrorFilled, color: 'var(--cds-status-red)'},
+	CREATED: {Icon: CircleDash, color: 'var(--cds-status-gray)'},
+	PARTIALLY_COMPLETED: {Icon: Incomplete, color: 'var(--cds-status-blue)'},
+	SKIPPED: {Icon: SkipForwardFilled, color: 'var(--cds-status-gray)'},
 };
 
 type Props = {
@@ -43,14 +43,27 @@ type Props = {
 	ariaLabelPrefix?: string;
 };
 
-const BatchStateIndicator: React.FC<Props> = ({state, ariaLabelPrefix = 'Batch operation status'}) => {
-	const {Icon, color, label} = STATE_CONFIG[state] ?? {
+const BatchStateIndicator: React.FC<Props> = ({state, ariaLabelPrefix}) => {
+	const {t} = useTranslation();
+	const stateLabels: Record<BatchOperationState | BatchOperationItemState, string> = {
+		COMPLETED: t('operate.shared.batchStateIndicator.state.completed'),
+		ACTIVE: t('operate.shared.batchStateIndicator.state.active'),
+		SUSPENDED: t('operate.shared.batchStateIndicator.state.suspended'),
+		CANCELED: t('operate.shared.batchStateIndicator.state.canceled'),
+		FAILED: t('operate.shared.batchStateIndicator.state.failed'),
+		CREATED: t('operate.shared.batchStateIndicator.state.created'),
+		PARTIALLY_COMPLETED: t('operate.shared.batchStateIndicator.state.partiallyCompleted'),
+		SKIPPED: t('operate.shared.batchStateIndicator.state.skipped'),
+	};
+	const {Icon, color} = STATE_CONFIG[state] ?? {
 		Icon: UnknownFilled,
 		color: 'var(--cds-status-gray)',
-		label: state,
 	};
+	const label = stateLabels[state] ?? state;
+	const resolvedAriaLabelPrefix = ariaLabelPrefix ?? t('operate.shared.batchStateIndicator.ariaLabelPrefix');
+
 	return (
-		<Container role="status" aria-label={`${ariaLabelPrefix}: ${label}`}>
+		<Container role="status" aria-label={`${resolvedAriaLabelPrefix}: ${label}`}>
 			<Icon style={{color}} aria-hidden="true" focusable="false" />
 			{label}
 		</Container>
