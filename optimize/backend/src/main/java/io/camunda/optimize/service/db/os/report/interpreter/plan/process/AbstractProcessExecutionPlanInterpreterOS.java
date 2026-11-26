@@ -16,7 +16,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinition
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.service.db.filter.FilterContext;
-import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
+import io.camunda.optimize.service.db.os.report.filter.QueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.ProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.interpreter.plan.AbstractExecutionPlanInterpreterOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
@@ -40,7 +40,7 @@ public abstract class AbstractProcessExecutionPlanInterpreterOS
 
   protected abstract ProcessDefinitionReader getProcessDefinitionReader();
 
-  protected abstract ProcessQueryFilterEnhancerOS getQueryFilterEnhancer();
+  protected abstract QueryFilterEnhancerOS<ProcessFilterDto<?>> getQueryFilterEnhancer();
 
   @Override
   public Optional<MinMaxStatDto> getGroupByMinMaxStats(
@@ -134,14 +134,16 @@ public abstract class AbstractProcessExecutionPlanInterpreterOS
     final List<Query> filterQueries =
         getQueryFilterEnhancer().filterQueries(filters, filterContext);
 
+    return createDefinitionQuery(definitionDto).filter(filterQueries).build().toQuery();
+  }
+
+  /** Scopes the query to one report definition: its key, versions and tenants. */
+  protected BoolQuery.Builder createDefinitionQuery(final ReportDataDefinitionDto definitionDto) {
     return DefinitionQueryUtilOS.createDefinitionQuery(
-            definitionDto.getKey(),
-            definitionDto.getVersions(),
-            definitionDto.getTenantIds(),
-            new ProcessInstanceIndexOS(definitionDto.getKey()),
-            getProcessDefinitionReader()::getLatestVersionToKey)
-        .filter(filterQueries)
-        .build()
-        .toQuery();
+        definitionDto.getKey(),
+        definitionDto.getVersions(),
+        definitionDto.getTenantIds(),
+        new ProcessInstanceIndexOS(definitionDto.getKey()),
+        getProcessDefinitionReader()::getLatestVersionToKey);
   }
 }

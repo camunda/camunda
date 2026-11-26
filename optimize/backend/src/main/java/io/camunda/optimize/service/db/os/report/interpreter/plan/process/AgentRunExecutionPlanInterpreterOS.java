@@ -10,10 +10,11 @@ package io.camunda.optimize.service.db.os.report.interpreter.plan.process;
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_INSTANCE_INDEX_NAME;
 
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
-import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
+import io.camunda.optimize.service.db.os.report.filter.AgentRunQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.ProcessGroupByInterpreterFacadeOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.os.util.DefinitionQueryUtilOS;
@@ -41,7 +42,7 @@ public class AgentRunExecutionPlanInterpreterOS extends AbstractProcessExecution
 
   private final ProcessDefinitionReader processDefinitionReader;
   private final OptimizeOpenSearchClient osClient;
-  private final ProcessQueryFilterEnhancerOS queryFilterEnhancer;
+  private final AgentRunQueryFilterEnhancerOS queryFilterEnhancer;
   private final ProcessGroupByInterpreterFacadeOS groupByInterpreter;
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
   private final AgentDefinitionReader agentDefinitionReader;
@@ -49,7 +50,7 @@ public class AgentRunExecutionPlanInterpreterOS extends AbstractProcessExecution
   public AgentRunExecutionPlanInterpreterOS(
       final ProcessDefinitionReader processDefinitionReader,
       final OptimizeOpenSearchClient osClient,
-      final ProcessQueryFilterEnhancerOS queryFilterEnhancer,
+      final AgentRunQueryFilterEnhancerOS queryFilterEnhancer,
       final ProcessGroupByInterpreterFacadeOS groupByInterpreter,
       final ProcessViewInterpreterFacadeOS viewInterpreter,
       final AgentDefinitionReader agentDefinitionReader) {
@@ -100,6 +101,18 @@ public class AgentRunExecutionPlanInterpreterOS extends AbstractProcessExecution
   }
 
   @Override
+  protected BoolQuery.Builder createDefinitionQuery(final ReportDataDefinitionDto definitionDto) {
+    return DefinitionQueryUtilOS.createDefinitionQuery(
+        definitionDto.getKey(),
+        definitionDto.getVersions(),
+        definitionDto.getTenantIds(),
+        AgentRunIndex.PROCESS_DEFINITION_KEY,
+        AgentRunIndex.PROCESS_DEFINITION_VERSION,
+        AgentRunIndex.TENANT_ID,
+        processDefinitionReader::getLatestVersionToKey);
+  }
+
+  @Override
   protected String[] getIndexNames(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return getMultiIndexAlias();
@@ -116,7 +129,7 @@ public class AgentRunExecutionPlanInterpreterOS extends AbstractProcessExecution
   }
 
   @Override
-  protected ProcessQueryFilterEnhancerOS getQueryFilterEnhancer() {
+  protected AgentRunQueryFilterEnhancerOS getQueryFilterEnhancer() {
     return queryFilterEnhancer;
   }
 

@@ -16,7 +16,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinition
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.service.db.es.builders.OptimizeBoolQueryBuilderES;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
+import io.camunda.optimize.service.db.es.filter.QueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.ProcessGroupByInterpreterES;
 import io.camunda.optimize.service.db.es.report.interpreter.plan.AbstractExecutionPlanInterpreterES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
@@ -39,7 +39,7 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
 
   protected abstract ProcessDefinitionReader getProcessDefinitionReader();
 
-  protected abstract ProcessQueryFilterEnhancerES getQueryFilterEnhancer();
+  protected abstract QueryFilterEnhancerES<ProcessFilterDto<?>> getQueryFilterEnhancer();
 
   @Override
   public Optional<MinMaxStatDto> getGroupByMinMaxStats(
@@ -133,7 +133,8 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
     return multiDefinitionFilterQuery;
   }
 
-  private BoolQuery.Builder createDefinitionQuery(final ReportDataDefinitionDto definitionDto) {
+  /** Scopes the query to one report definition: its key, versions and tenants. */
+  protected BoolQuery.Builder createDefinitionQuery(final ReportDataDefinitionDto definitionDto) {
     return DefinitionQueryUtilES.createDefinitionQuery(
         definitionDto.getKey(),
         definitionDto.getVersions(),

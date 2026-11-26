@@ -12,13 +12,10 @@ import static java.util.stream.Collectors.toSet;
 import io.camunda.optimize.dto.optimize.query.agent.AgentDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import io.camunda.optimize.service.db.filter.AgentRunFilters;
 import io.camunda.optimize.service.db.reader.AgentDefinitionReader;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,9 +25,9 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Evaluates the agentRun views against the agent run index, one document per agent run. The run
- * index uses the process instance field names for the definition, tenant and end date, so the
- * process definition scoping and the instance end date filters apply to it unchanged.
+ * Evaluates the agentRun views against the agent run index, one document per agent run. The report
+ * definitions and the accepted process filters ({@link AgentRunFilters}) are applied to the agent
+ * run's own fields, not the process instance's.
  *
  * <p>A run counts only when its agent definition is imported on the run's tenant, as a process
  * instance counts only when its process definition is imported. Definitions and runs are imported
@@ -38,9 +35,6 @@ import java.util.Set;
  * has no name or agent type and is left out of every agentRun report.
  */
 public interface AgentRunExecutionPlanInterpreter extends ProcessExecutionPlanInterpreter {
-
-  List<Class<? extends ProcessFilterDto<?>>> SUPPORTED_FILTERS =
-      List.of(InstanceEndDateFilterDto.class, CompletedInstancesOnlyFilterDto.class);
 
   @Override
   default Set<ProcessExecutionPlan> getSupportedExecutionPlans() {
@@ -50,19 +44,9 @@ public interface AgentRunExecutionPlanInterpreter extends ProcessExecutionPlanIn
         .collect(toSet());
   }
 
-  /** Other process filters read fields that agent runs do not have, so they are rejected. */
+  /** Rejects the filters an agentRun report cannot apply, before the report is evaluated. */
   static void validateFilters(final ProcessReportDataDto reportData) {
-    reportData.getFilter().stream()
-        .filter(filter -> !SUPPORTED_FILTERS.contains(filter.getClass()))
-        .findFirst()
-        .ifPresent(
-            filter -> {
-              throw new OptimizeValidationException(
-                  String.format(
-                      "The filter [%s] is not supported for agentRun views. Supported filters: "
-                          + "instanceEndDate, completedInstancesOnly.",
-                      filter.getClass().getSimpleName()));
-            });
+    AgentRunFilters.validate(reportData.getFilter());
   }
 
   /**
