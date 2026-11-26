@@ -146,8 +146,10 @@ public final class TimerTriggerProcessor
           null,
           storageOrdinal);
       // The same record is reused for the rescheduled CREATED below. A start timer belongs to
-      // the definition, so it must not inherit the ordinal of the instance it just started.
-      timer.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+      // the definition, so it must not inherit the ordinal or key of the instance it just started.
+      timer
+          .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED)
+          .setProcessInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
       if (!eventHandle.canTriggerElement(elementInstance, timer.getTargetElementIdBuffer())) {
