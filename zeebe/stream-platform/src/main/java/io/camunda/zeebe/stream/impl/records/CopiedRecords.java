@@ -27,7 +27,7 @@ public final class CopiedRecords {
     final DirectBuffer contentBuffer = rawEvent.getValueBuffer();
 
     final byte[] metadataBytes = new byte[rawEvent.getMetadataLength()];
-    contentBuffer.getBytes(rawEvent.getMetadataOffset(), metadataBytes);
+    rawEvent.getMetadata().getBytes(rawEvent.getMetadataOffset(), metadataBytes);
     final DirectBuffer metadataBuffer = new UnsafeBuffer(metadataBytes);
 
     final RecordMetadata metadata = new RecordMetadata();

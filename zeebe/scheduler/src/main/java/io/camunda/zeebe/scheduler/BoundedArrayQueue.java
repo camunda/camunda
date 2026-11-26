@@ -32,7 +32,7 @@ public final class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
     head = 0;
     tail = 0;
 
-    array = new Object[capacity];
+    array = new Object[this.capacity];
   }
 
   @Override

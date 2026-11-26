@@ -27,7 +27,7 @@ interface SegmentDescriptorSerializer {
    *   <li>SBE (current) current descriptor
    * </ol>
    *
-   * @return
+   * @return the major version of the segment descriptor
    */
   byte majorVersion();
 

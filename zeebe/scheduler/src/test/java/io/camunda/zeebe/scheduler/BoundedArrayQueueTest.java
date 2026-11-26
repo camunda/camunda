@@ -9,7 +9,9 @@ package io.camunda.zeebe.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public final class BoundedArrayQueueTest {
 
@@ -48,5 +50,29 @@ public final class BoundedArrayQueueTest {
       // then
       assertThat(queueHead).isEqualTo(i);
     }
+  }
+
+  @ParameterizedTest
+  @CsvSource({"1, 1", "3, 4", "5, 8", "8, 8"})
+  void shouldSupportRoundedCapacityAndWrapAround(
+      final int requestedCapacity, final int expectedCapacity) {
+    // given
+    final var queue = new BoundedArrayQueue<Integer>(requestedCapacity);
+    assertThat(queue.getCapacity()).isEqualTo(expectedCapacity);
+
+    // when
+    for (int i = 0; i < expectedCapacity; i++) {
+      assertThat(queue.offer(i)).isTrue();
+    }
+
+    // then
+    assertThat(queue.offer(-1)).isFalse();
+    assertThat(queue.poll()).isZero();
+    assertThat(queue.offer(expectedCapacity)).isTrue();
+    for (int i = 1; i < expectedCapacity; i++) {
+      assertThat(queue.poll()).isEqualTo(i);
+    }
+    assertThat(queue.poll()).isEqualTo(expectedCapacity);
+    assertThat(queue.poll()).isNull();
   }
 }

@@ -97,9 +97,9 @@ public final class PosixPathAssert extends AbstractPathAssert<PosixPathAssert> {
    * size of your device, then the real size may be slightly larger, as more blocks may have been
    * allocated.
    *
-   * <p>NOTE: on Windows, sparse files are not the default, so {@link File#length()} is appropriate.
-   * Plus, there is no {@code lstat} function, and the equivalent function {@code wstat} does not
-   * return the number of blocks.
+   * <p>NOTE: on Windows, sparse files are not the default, so {@link Files#size(Path)} is
+   * appropriate. Plus, there is no {@code lstat} function, and the equivalent function {@code
+   * wstat} does not return the number of blocks.
    *
    * @param file the file to get the size of
    * @return the actual size on disk of the file
