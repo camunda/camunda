@@ -503,6 +503,7 @@ jobs:
               | sort_by(.version, .cost_bucket) | group_by([.version, .cost_bucket])
               | map({
                   version: .[0].version,
+                  cost_bucket: .[0].cost_bucket,
                   test_specs: (map(del(.version) | del(.cost_bucket)) | .[0:50]),
                   ref: (if .[0].version == "main" then "main" else ("stable/" + .[0].version) end)
                 })
@@ -934,17 +935,23 @@ jobs:
 
           while IFS= read -r d; do
             version=$(echo "$d" | jq -r '.version')
+            # Cooldown is keyed by version AND cost bucket so the cheap (e2e/api-es)
+            # and rdbms dispatches for a version -- and any workflow-level dispatch
+            # (no bucket, keyed "wf") -- each get independent same-day protection,
+            # rather than the first-dispatched bucket cooling down the others.
+            bucket=$(echo "$d" | jq -r '.cost_bucket // "wf"')
+            ledger_key="${version}::${bucket}"
             specs=$(echo "$d" | jq -c '.test_specs')
             e2e=$(echo "$d"   | jq -r '.e2e_run_id')
             api_es=$(echo "$d" | jq -r '.api_es_run_id')
             api_rdbms=$(echo "$d" | jq -r '.api_rdbms_run_id')
 
             # Cooldown check — skip if already dispatched today (unless danger mode)
-            ledger_entry=$(jq -c --arg v "$version" '.[$v] // null' "$LEDGER_PATH")
+            ledger_entry=$(jq -c --arg k "$ledger_key" '.[$k] // null' "$LEDGER_PATH")
             if [ "$ledger_entry" != "null" ]; then
               dispatched_date=$(echo "$ledger_entry" | jq -r '.dispatched_at // ""' | cut -c1-10)
               if [ "$dispatched_date" = "$today_utc" ] && [ "$DANGER_FORCE_REDISPATCH" != "true" ]; then
-                echo "Version $version: already dispatched today ($dispatched_date) — skipping (use danger_force_redispatch to override)"
+                echo "Version $version ($bucket): already dispatched today ($dispatched_date) — skipping (use danger_force_redispatch to override)"
                 continue
               fi
             fi
@@ -1097,9 +1104,9 @@ jobs:
               /tmp/fix_agent_runs.json > /tmp/fix_agent_runs.json.tmp
             mv /tmp/fix_agent_runs.json.tmp /tmp/fix_agent_runs.json
 
-            # Update ledger — record this version as dispatched today
-            jq --arg v "$version" --arg now "$now_iso" \
-              '.[$v] = {state: "dispatched", dispatched_at: $now}' \
+            # Update ledger — record this version+bucket as dispatched today
+            jq --arg k "$ledger_key" --arg now "$now_iso" \
+              '.[$k] = {state: "dispatched", dispatched_at: $now}' \
               "$LEDGER_PATH" > "${LEDGER_PATH}.tmp" && mv "${LEDGER_PATH}.tmp" "$LEDGER_PATH"
           done < <(echo "$DISPATCHES_JSON" | jq -c '.[]')
 
