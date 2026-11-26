@@ -18,15 +18,19 @@ import java.util.Map;
 public enum QueueOrdering {
 
   /**
-   * Sorts by {@link WriteStatementType} (natural order), then {@link QueueItem#statementId()}, so
-   * that items with the same statement ID can be batched.
+   * Sorts by {@link WriteStatementType} (natural order), then {@link QueueItem#order()} (default
+   * {@code 0}), then {@link QueueItem#statementId()}, so that items with the same statement ID can
+   * be batched. The {@code order} field lets an individual item be placed before or after the
+   * others it would otherwise tie with, without changing how any other item is sorted.
    */
   SORT_BY_STATEMENT_TYPE {
     @Override
     List<QueueItem> apply(final List<QueueItem> items) {
       final var sorted = new ArrayList<>(items);
       sorted.sort(
-          Comparator.comparing(QueueItem::statementType).thenComparing(QueueItem::statementId));
+          Comparator.comparing(QueueItem::statementType)
+              .thenComparing(QueueItem::order)
+              .thenComparing(QueueItem::statementId));
       return sorted;
     }
   },
