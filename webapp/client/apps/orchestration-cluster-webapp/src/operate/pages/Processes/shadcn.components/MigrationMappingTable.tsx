@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useId, useMemo, useState} from 'react';
+import {useId, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
 	Alert,
@@ -49,6 +49,7 @@ type Props = {
 	autoMapping: Record<string, string>;
 	selectedSourceElementIds?: string[];
 	onSourceElementSelection: (elementId: string) => void;
+	onSourceElementKeyboardSelection: (elementId: string) => void;
 	onMappingChange: (sourceElementId: string, targetElementId: string) => void;
 };
 
@@ -62,11 +63,15 @@ const MigrationMappingTable: React.FC<Props> = ({
 	autoMapping,
 	selectedSourceElementIds,
 	onSourceElementSelection,
+	onSourceElementKeyboardSelection,
 	onMappingChange,
 }) => {
 	const {t} = useTranslation();
 	const [isNotMappedFilterEnabled, setIsNotMappedFilterEnabled] = useState(false);
+	const [focusedSourceElementId, setFocusedSourceElementId] = useState<string>();
+	const [selectedRowAnnouncement, setSelectedRowAnnouncement] = useState('');
 	const embeddedFormWarningId = useId();
+	const rowButtonsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
 	const rows = useMemo(
 		() =>
 			targetElements === undefined
@@ -93,6 +98,39 @@ const MigrationMappingTable: React.FC<Props> = ({
 				.map(([sourceElementId]) => sourceElementId),
 		);
 	}, [isTargetSelected, sourceElements, targetElements, mapping]);
+	const focusedRowId = useMemo(() => {
+		if (rows.length === 0) {
+			return undefined;
+		}
+		if (
+			focusedSourceElementId !== undefined &&
+			rows.some(({sourceElement}) => sourceElement.id === focusedSourceElementId)
+		) {
+			return focusedSourceElementId;
+		}
+		const selectedRowId = rows
+			.map(({sourceElement}) => sourceElement.id)
+			.find((sourceElementId) => selectedSourceElementIds?.includes(sourceElementId));
+		return selectedRowId ?? rows[0]?.sourceElement.id;
+	}, [rows, focusedSourceElementId, selectedSourceElementIds]);
+	const focusRow = (sourceElementId: string) => {
+		setFocusedSourceElementId(sourceElementId);
+		rowButtonsRef.current.get(sourceElementId)?.focus();
+	};
+	const announceRowSelection = (sourceElementId: string) => {
+		const rowIndex = rows.findIndex(({sourceElement}) => sourceElement.id === sourceElementId);
+		const row = rowIndex === -1 ? undefined : rows[rowIndex];
+		if (row === undefined) {
+			return;
+		}
+		setSelectedRowAnnouncement(
+			t('operate.processes.migration.mappingRowSelected', {
+				name: getNameOrId(row.sourceElement.name, row.sourceElement.id),
+				index: rowIndex + 1,
+				total: rows.length,
+			}),
+		);
+	};
 
 	return (
 		<div className="flex h-full flex-col overflow-auto">
@@ -117,7 +155,10 @@ const MigrationMappingTable: React.FC<Props> = ({
 								id="not-mapped-toggle"
 								size="sm"
 								checked={isNotMappedFilterEnabled}
-								onCheckedChange={setIsNotMappedFilterEnabled}
+								onCheckedChange={(value) => {
+									setSelectedRowAnnouncement('');
+									setIsNotMappedFilterEnabled(value);
+								}}
 							/>
 						</div>
 					)}
@@ -129,25 +170,44 @@ const MigrationMappingTable: React.FC<Props> = ({
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{rows.map(({sourceElement, choices}) => {
+							{rows.map(({sourceElement, choices}, rowIndex) => {
 								const name = getNameOrId(sourceElement.name, sourceElement.id);
 								const targetElementId = mapping[sourceElement.id] ?? '';
 								const isSelected = selectedSourceElementIds?.includes(sourceElement.id) ?? false;
+								const isFocusedRow = focusedRowId === sourceElement.id;
+								const hasEmbeddedFormWarning = embeddedFormMigrationSourceIds.has(sourceElement.id);
+								const embeddedFormDescriptionId = `embedded-form-description-${sourceElement.id}`;
+								const selectTargetElement = () => {
+									setSelectedRowAnnouncement('');
+									setFocusedSourceElementId(sourceElement.id);
+									onSourceElementSelection(sourceElement.id);
+								};
+								const selectFocusedRowByIndex = (index: number) => {
+									const nextRowId = rows[Math.max(0, Math.min(index, rows.length - 1))]?.sourceElement.id;
+									if (nextRowId === undefined) {
+										return;
+									}
+									if (nextRowId !== focusedRowId) {
+										announceRowSelection(nextRowId);
+										onSourceElementKeyboardSelection(nextRowId);
+									}
+									focusRow(nextRowId);
+								};
 
 								return (
 									<TableRow
 										key={sourceElement.id}
 										data-state={isSelected ? 'selected' : undefined}
 										className={cn('cursor-pointer', isSelected && 'bg-accent')}
-										onClick={() => onSourceElementSelection(sourceElement.id)}
+										onClick={selectTargetElement}
 									>
 										<TableCell>
 											<div className="flex items-center gap-2">
-												{embeddedFormMigrationSourceIds.has(sourceElement.id) && (
+												{hasEmbeddedFormWarning && (
 													<Tooltip>
 														<TooltipTrigger asChild>
 															<span
-																tabIndex={0}
+																tabIndex={-1}
 																role="img"
 																aria-label={t('operate.processes.migration.embeddedFormElement')}
 															>
@@ -160,14 +220,53 @@ const MigrationMappingTable: React.FC<Props> = ({
 												<button
 													type="button"
 													aria-pressed={isSelected}
-													className="rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-2"
+													aria-describedby={hasEmbeddedFormWarning ? embeddedFormDescriptionId : undefined}
+													tabIndex={isFocusedRow ? 0 : -1}
+													className="rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+													ref={(element) => {
+														if (element === null) {
+															rowButtonsRef.current.delete(sourceElement.id);
+															return;
+														}
+														rowButtonsRef.current.set(sourceElement.id, element);
+													}}
+													onFocus={() => {
+														setFocusedSourceElementId(sourceElement.id);
+													}}
+													onKeyDown={(event) => {
+														switch (event.key) {
+															case 'ArrowDown':
+																event.preventDefault();
+																selectFocusedRowByIndex(rowIndex + 1);
+																return;
+															case 'ArrowUp':
+																event.preventDefault();
+																selectFocusedRowByIndex(rowIndex - 1);
+																return;
+															case 'Home':
+																event.preventDefault();
+																selectFocusedRowByIndex(0);
+																return;
+															case 'End':
+																event.preventDefault();
+																selectFocusedRowByIndex(rows.length - 1);
+																return;
+															default:
+																return;
+														}
+													}}
 													onClick={(event) => {
 														event.stopPropagation();
-														onSourceElementSelection(sourceElement.id);
+														selectTargetElement();
 													}}
 												>
 													{name}
 												</button>
+												{hasEmbeddedFormWarning && (
+													<span id={embeddedFormDescriptionId} className="sr-only">
+														{t('operate.processes.migration.embeddedFormElement')}
+													</span>
+												)}
 												{isTargetSelected && mapping[sourceElement.id] === undefined && (
 													<Badge variant="info">{t('operate.processes.migration.notMapped')}</Badge>
 												)}
@@ -190,7 +289,9 @@ const MigrationMappingTable: React.FC<Props> = ({
 														size="sm"
 														className="w-full"
 														aria-label={t('operate.processes.migration.targetFor', {name})}
+														tabIndex={isFocusedRow ? 0 : -1}
 														onClick={(event) => event.stopPropagation()}
+														onFocus={() => setFocusedSourceElementId(sourceElement.id)}
 														onKeyDown={(event) => event.stopPropagation()}
 													>
 														<SelectValue />
@@ -220,6 +321,9 @@ const MigrationMappingTable: React.FC<Props> = ({
 							})}
 						</TableBody>
 					</Table>
+					<span aria-live="polite" aria-atomic className="sr-only">
+						{selectedRowAnnouncement}
+					</span>
 				</>
 			)}
 			{isTargetSelected && embeddedFormMigrationSourceIds.size > 0 && (

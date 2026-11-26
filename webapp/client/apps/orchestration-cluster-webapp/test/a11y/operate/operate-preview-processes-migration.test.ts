@@ -50,42 +50,42 @@ const TARGET = createProcessDefinition({
 	version: 2,
 });
 
-test.beforeEach(({network}) => {
-	network.use(
-		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
-		}),
-		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
-		}),
-		mockLicenseEndpoint({
-			successResponse: HttpResponse.json(createLicense()),
-		}),
-		mockQueryProcessDefinitionsEndpoint({
-			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: [SOURCE, TARGET]})),
-		}),
-		mockQueryProcessInstancesEndpoint({
-			successResponse: HttpResponse.json(
-				createQueryProcessInstancesResponse({
-					items: [createProcessInstance({processInstanceKey: INSTANCE_KEY, state: 'ACTIVE'})],
-				}),
-			),
-		}),
-		mockQueryBatchOperationItemsEndpoint({
-			successResponse: HttpResponse.json(createPaginatedResponse({items: []})),
-		}),
-		mockGetProcessDefinitionXmlByKeyEndpoint({
-			xmlByKey: {'source-key': MIGRATION_SOURCE_BPMN_XML, 'latest-key': BPMN_XML},
-		}),
-		mockGetProcessDefinitionStatisticsEndpoint({
-			successResponse: HttpResponse.json(
-				createGetProcessDefinitionStatisticsResponse([
-					createProcessDefinitionStatistic({elementId: 'task-1', active: 2}),
-				]),
-			),
-		}),
-	);
-});
+const handlers = [
+	mockCurrentUserEndpoint({
+		successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+	}),
+	mockSystemConfigurationEndpoint({
+		successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+	}),
+	mockLicenseEndpoint({
+		successResponse: HttpResponse.json(createLicense()),
+	}),
+	mockQueryProcessDefinitionsEndpoint({
+		successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: [SOURCE, TARGET]})),
+	}),
+	mockQueryProcessInstancesEndpoint({
+		successResponse: HttpResponse.json(
+			createQueryProcessInstancesResponse({
+				items: [createProcessInstance({processInstanceKey: INSTANCE_KEY, state: 'ACTIVE'})],
+			}),
+		),
+	}),
+	mockQueryBatchOperationItemsEndpoint({
+		successResponse: HttpResponse.json(createPaginatedResponse({items: []})),
+	}),
+	mockGetProcessDefinitionXmlByKeyEndpoint({
+		xmlByKey: {'source-key': MIGRATION_SOURCE_BPMN_XML, 'latest-key': BPMN_XML},
+	}),
+	mockGetProcessDefinitionStatisticsEndpoint({
+		successResponse: HttpResponse.json(
+			createGetProcessDefinitionStatisticsResponse([
+				createProcessDefinitionStatistic({elementId: 'task-1', active: 2}),
+			]),
+		),
+	}),
+];
+
+test.use({handlers: [handlers, {scope: 'test'}]});
 
 async function enterMigrationMode(page: import('@playwright/test').Page) {
 	await page.goto('/operate-preview/processes?process=my_simple_process&version=1&active=true');
@@ -97,8 +97,14 @@ async function enterMigrationMode(page: import('@playwright/test').Page) {
 
 test('should have no accessibility violations in migration mode', async ({page, makeAxeBuilder}) => {
 	await enterMigrationMode(page);
+	const reviewInvoiceButton = page.getByRole('button', {name: 'Review invoice', exact: true});
+	const checkPaymentButton = page.getByRole('button', {name: 'Check payment', exact: true});
 
 	await expect(page.getByRole('button', {name: 'Next'})).toBeEnabled();
+	await reviewInvoiceButton.click();
+	await page.keyboard.press('ArrowDown');
+	await expect(checkPaymentButton).toBeFocused();
+	await expect(page.getByText('Selected mapping row 2 of 2: Check payment.')).toBeAttached();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);

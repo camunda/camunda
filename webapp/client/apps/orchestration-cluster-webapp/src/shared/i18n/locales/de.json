@@ -1293,6 +1293,7 @@
 					"sourceElements": "Quellelemente",
 					"targetElements": "Zielelemente",
 					"targetFor": "Zielelement für {{name}}",
+					"mappingRowSelected": "Ausgewählte Zuordnungszeile {{index}} von {{total}}: {{name}}.",
 					"notMapped": "Nicht zugeordnet",
 					"autoMapped": "Dieses Element wurde automatisch zugeordnet",
 					"embeddedFormElement": "Das eingebettete Formular in dieser Benutzeraufgabe wird durch das im Zielelement definierte Formular ersetzt.",

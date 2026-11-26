@@ -237,4 +237,116 @@ describe('<Processes /> migration mode (design system)', () => {
 		await expect.element(target).toHaveTextContent('Not mapped');
 		await expect.element(elementButton).toHaveAttribute('aria-pressed', 'false');
 	});
+
+	it('should preserve toggle selection when clicking rows', async ({worker}) => {
+		mockPage(worker);
+		const screen = await renderPage();
+		await enterMigration(screen);
+		const reviewInvoiceButton = screen.getByRole('button', {name: 'Review invoice', exact: true});
+
+		await expect.element(reviewInvoiceButton).toHaveAttribute('aria-pressed', 'false');
+		await userEvent.click(reviewInvoiceButton);
+		await expect.element(reviewInvoiceButton).toHaveAttribute('aria-pressed', 'true');
+		await userEvent.click(reviewInvoiceButton);
+		await expect.element(reviewInvoiceButton).toHaveAttribute('aria-pressed', 'false');
+	});
+
+	it('should focus the roving row with Tab without changing selection', async ({worker}) => {
+		mockPage(worker);
+		const screen = await renderPage();
+		await enterMigration(screen);
+		const checkPaymentButton = screen.getByRole('button', {name: 'Check payment', exact: true});
+
+		await expect.element(checkPaymentButton).toHaveAttribute('aria-pressed', 'false');
+		await userEvent.click(screen.getByRole('switch', {name: 'Show only not mapped'}));
+		await userEvent.tab();
+		await expect.element(checkPaymentButton).toHaveFocus();
+		await expect.element(checkPaymentButton).toHaveAttribute('aria-pressed', 'false');
+	});
+
+	it('should expose embedded-form warning as button accessible description', async ({worker}) => {
+		mockPage(worker);
+		const screen = await renderPage();
+		await enterMigration(screen);
+		const reviewInvoiceButton = screen.getByRole('button', {name: 'Review invoice', exact: true});
+
+		await expect
+			.element(reviewInvoiceButton)
+			.toHaveAccessibleDescription(
+				'Embedded form in this user task will be replaced by the form defined in the target element.',
+			);
+	});
+
+	it('should move mapping selection with arrow keys and keep first-row boundary', async ({worker}) => {
+		mockPage(worker);
+		const screen = await renderPage();
+		await enterMigration(screen);
+		const reviewInvoiceButton = screen.getByRole('button', {name: 'Review invoice', exact: true});
+		const checkPaymentButton = screen.getByRole('button', {name: 'Check payment', exact: true});
+
+		await userEvent.click(reviewInvoiceButton);
+		await userEvent.keyboard('{ArrowUp}');
+		await expect.element(reviewInvoiceButton).toHaveAttribute('aria-pressed', 'true');
+		await expect.element(reviewInvoiceButton).toHaveFocus();
+		await expect.element(screen.getByText('Selected mapping row 1 of 2: Review invoice.')).not.toBeInTheDocument();
+
+		await userEvent.keyboard('{ArrowDown}');
+		await expect.element(checkPaymentButton).toHaveAttribute('aria-pressed', 'true');
+		await expect.element(checkPaymentButton).toHaveFocus();
+		await expect.element(screen.getByText('Selected mapping row 2 of 2: Check payment.')).toBeInTheDocument();
+
+		await userEvent.keyboard('{ArrowUp}');
+		await expect.element(reviewInvoiceButton).toHaveAttribute('aria-pressed', 'true');
+		await expect.element(reviewInvoiceButton).toHaveFocus();
+		await expect.element(screen.getByText('Selected mapping row 1 of 2: Review invoice.')).toBeInTheDocument();
+
+		await userEvent.keyboard('{End}');
+		await expect.element(checkPaymentButton).toHaveAttribute('aria-pressed', 'true');
+		await expect.element(checkPaymentButton).toHaveFocus();
+		await expect.element(screen.getByText('Selected mapping row 2 of 2: Check payment.')).toBeInTheDocument();
+
+		await userEvent.keyboard('{Home}');
+		await expect.element(reviewInvoiceButton).toHaveAttribute('aria-pressed', 'true');
+		await expect.element(reviewInvoiceButton).toHaveFocus();
+		await expect.element(screen.getByText('Selected mapping row 1 of 2: Review invoice.')).toBeInTheDocument();
+	});
+
+	it('should keep selection when keyboard navigation target row is already selected', async ({worker}) => {
+		mockPage(worker);
+		const screen = await renderPage();
+		await enterMigration(screen);
+		const reviewInvoiceButton = screen.getByRole('button', {name: 'Review invoice', exact: true});
+		const checkPaymentButton = screen.getByRole('button', {name: 'Check payment', exact: true});
+		const reviewInvoiceTarget = screen.getByRole('combobox', {name: 'Target element for Review invoice'});
+
+		await userEvent.click(checkPaymentButton);
+		await expect.element(checkPaymentButton).toHaveAttribute('aria-pressed', 'true');
+		await userEvent.click(reviewInvoiceTarget);
+		await userEvent.keyboard('{Escape}');
+		await userEvent.tab({shift: true});
+		await expect.element(reviewInvoiceButton).toHaveFocus();
+		await userEvent.keyboard('{ArrowDown}');
+
+		await expect.element(checkPaymentButton).toHaveAttribute('aria-pressed', 'true');
+		await expect.element(checkPaymentButton).toHaveFocus();
+		await expect.element(screen.getByText('Selected mapping row 2 of 2: Check payment.')).toBeInTheDocument();
+	});
+
+	it('should focus the selected row target select, open it with keyboard, and change it', async ({worker}) => {
+		mockPage(worker);
+		const screen = await renderPage();
+		await enterMigration(screen);
+		const sourceElementButton = screen.getByRole('button', {name: 'Review invoice', exact: true});
+		const targetSelect = screen.getByRole('combobox', {name: 'Target element for Review invoice'});
+		const notMappedOption = screen.getByRole('option', {name: 'Not mapped'});
+
+		await userEvent.click(sourceElementButton);
+		await userEvent.tab();
+		await userEvent.keyboard('{Enter}');
+		await expect.element(notMappedOption).toBeVisible();
+		await userEvent.click(notMappedOption);
+
+		await expect.element(targetSelect).toHaveFocus();
+		await expect.element(targetSelect).toHaveTextContent('Not mapped');
+	});
 });
