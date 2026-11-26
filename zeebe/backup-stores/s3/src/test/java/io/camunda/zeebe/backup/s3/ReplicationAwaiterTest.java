@@ -207,6 +207,26 @@ final class ReplicationAwaiterTest {
   }
 
   @Test
+  void shouldNameOnlyObjectsNotReplicatedYetWhenTimingOutMidRound() {
+    // given the round never completes, because one check never returns
+    final var awaiter = awaiter(Duration.ofMillis(100));
+    reportStatuses("a", ReplicationStatus.COMPLETED);
+    hangingHeads.add("slow");
+
+    // when
+    final var replicated = awaiter.awaitReplication(List.of("a", "slow"), awaiter.deadline());
+
+    // then
+    assertThat(replicated)
+        .failsWithin(WAIT)
+        .withThrowableThat()
+        .havingCause()
+        .isInstanceOf(BackupReplicationTimedOut.class)
+        .withMessageContaining("1 objects")
+        .withMessageContaining("[slow]");
+  }
+
+  @Test
   void shouldFailWithoutWaitingForOutstandingChecksWhenAnObjectFails() {
     // given
     final var awaiter = awaiter(WAIT);
