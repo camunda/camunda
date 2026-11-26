@@ -140,9 +140,11 @@ Where they are stricter than that skill, they win.
 **Test what the user sees and does.** A test that follows the user survives a refactor; a test that
 follows the code breaks on one and can pass while the screen is wrong.
 
-- Find elements by role, label or text. No new test ids: if an element has no accessible name, give
-  it one that reads correctly for a screen-reader user. Leave existing test ids alone unless the
-  task is about them.
+- Find elements by role, label or text. No new test ids. When a native control has no accessible
+  name, give it one that reads correctly for a screen-reader user. Never put `aria-label` on a
+  generic element such as a `div`: that is invalid ARIA. Leave existing test ids alone unless the
+  task is about them; a test id is the last resort for an element with no role and no accessible
+  name.
 - Act with `userEvent`. Reach a page state by clicking the link, row or tab, not by calling the
   router.
 - Assert rendered output, and the URL after navigation. Do not assert on a store, the query client,
@@ -162,9 +164,16 @@ follows the code breaks on one and can pass while the screen is wrong.
 **Make the test deterministic.** A test must pass every time or fail every time, without retries.
 
 - Never wait on real time: no sleep, `waitFor`, `vi.waitFor` or raised timeout. For a pending state
-  use `delay: 'infinite'`, or a numeric `delay` with fake timers that the test advances.
-- Assert on the DOM only through `expect.element` on a locator, which retries. Do not assert on a
-  resolved node (`.element()`, `.elements()`, `querySelector`, `closest`).
+  use `delay: 'infinite'`: with fake timers on, `expect.element` and waiting actions advance the
+  clock themselves, so a finite `delay` is never held pending. Fake timers advanced by the test are
+  for a real debounce, backoff or poll the test must fast-forward.
+- Assert on the DOM only through `expect.element` on a locator, which retries
+  (`await expect.element(locator).toHaveLength(n)` counts). Do not assert on a resolved node
+  (`.element()`, `.elements()` in a plain `expect(...)`, `querySelector`, `closest`) and do not call
+  DOM methods on one (`.click()`, `.focus()`). To hand a node to an external API use
+  `await locator.findElement()`.
+- `expect.element` and `userEvent` wait up to the test deadline, `expect.poll` and `vi.waitFor` only
+  1000 ms. This holds only while the browser provider sets no `actionTimeout`.
 - Before asserting that something is absent, assert something visible that proves the UI rendered.
   A component that is expected to render nothing has no such anchor; that test stands as it is.
 - Mock every request the test triggers. An unhandled request is a failure.
