@@ -30,6 +30,7 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
+import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
@@ -242,6 +243,7 @@ public final class SystemContext {
    */
   private void validatePerTenantConfiguration(final String tenantId, final BrokerCfg tenantCfg) {
     validatePerTenantDataConfig(tenantId, tenantCfg.getData());
+    validateExportingCfg(tenantId, tenantCfg.getExporting(), tenantCfg.getData().getBackup());
     validatePerTenantExperimentalConfigs(
         tenantId, tenantCfg.getCluster(), tenantCfg.getExperimental());
   }
@@ -468,6 +470,21 @@ public final class SystemContext {
     }
 
     validateBackupSchedulerConfig(tenantId, backup);
+  }
+
+  private void validateExportingCfg(
+      final String tenantId, final ExportingCfg exporting, final BackupCfg backup) {
+    if (exporting.exportOnlyBackedUpRecords()
+        && backup.getStore() == BackupCfg.BackupStoreType.NONE) {
+      throw new InvalidConfigurationException(
+          tenantScopedMessage(
+              tenantId,
+              "Exporting is restricted to backed-up records "
+                  + "(camunda.data.export.export-only-backed-up-records), but no backup store is "
+                  + "configured. Set camunda.data.primary-storage.backup.store to one of: "
+                  + "S3, GCS, AZURE, FILESYSTEM"),
+          null);
+    }
   }
 
   /**

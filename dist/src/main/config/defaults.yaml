@@ -387,6 +387,20 @@ camunda: # Type: io.camunda.configuration.Camunda
       # need to replay and export everything. It can for example can start from the last exported position
       # it has received by the distribution mechanism.
       distribution-interval: null # Type: Duration, Env: CAMUNDA_DATA_EXPORT_DISTRIBUTIONINTERVAL
+      # When enabled, exporters only receive records that are already contained in a confirmed backup common
+      # to all partitions of the physical tenant. The exporter reader never advances past this partition's
+      # checkpoint position for that backup, so no record reaches secondary storage before it can be
+      # restored from primary storage backups.
+      # Requires a configured backup store (`camunda.data.primary-storage.backup.store`) and regular
+      # backups; nothing is exported until a backup completes across all partitions, and exporting stalls
+      # whenever backups stop completing.
+      # Interferes with write-rate throttling (`camunda.processing.flow-control.write.throttle`), because
+      # delaying exporting grows the exporting backlog between backups and can trigger backpressure.
+      # After restoring from a backup, exporting stalls until a new backup completes across all partitions.
+      # A backup's confirmation record is written after its checkpoint position and is therefore truncated
+      # by the restore, so records already contained in the restored backup are held back until a new common
+      # backup is confirmed.
+      export-only-backed-up-records: false # Type: Boolean, Env: CAMUNDA_DATA_EXPORT_EXPORTONLYBACKEDUPRECORDS
       # The maximum number of not-yet-exported records to scan, starting from the oldest one still pending,
       # when checking whether every pending record on a partition is on the current application version.
       # This backs the `exporterMigrated` upgrade-readiness condition: if the backlog of not-yet-exported

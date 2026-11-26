@@ -9,8 +9,10 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.BlockingExporter;
+import io.camunda.zeebe.broker.exporter.stream.CommonBackupPositionSource;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
@@ -28,10 +30,12 @@ import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
@@ -129,6 +133,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .partitionMessagingService(context.getMessagingService())
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)
+            .backedUpPositionSource(
+                backedUpPositionSource(context, exportingCfg, exporterMode, tenantName))
             .positionsToSkipFilter(exporterFilter)
             .meterRegistry(context.getPartitionTransitionMeterRegistry())
             .clusterId(
@@ -170,6 +176,25 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           }
         });
     return startFuture;
+  }
+
+  private static @Nullable CommonBackupPositionSource backedUpPositionSource(
+      final PartitionTransitionContext context,
+      final ExportingCfg exportingCfg,
+      final ExporterMode exporterMode,
+      final String physicalTenantId) {
+    if (exporterMode != ExporterMode.ACTIVE || !exportingCfg.exportOnlyBackedUpRecords()) {
+      return null;
+    }
+    final var brokerClient = context.getBrokerClient();
+    return new CommonBackupPositionSource(
+        new BackupRequestHandler(brokerClient),
+        physicalTenantId,
+        context.getPartitionId(),
+        () -> {
+          final var topology = brokerClient.getTopologyManager().getTopology(physicalTenantId);
+          return topology == null ? List.of() : topology.getPartitions();
+        });
   }
 
   /**
