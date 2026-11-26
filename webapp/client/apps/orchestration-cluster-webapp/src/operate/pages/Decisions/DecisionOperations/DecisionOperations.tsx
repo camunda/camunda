@@ -8,7 +8,7 @@
 
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {useIsMutating, useMutation, useQueryClient} from '@tanstack/react-query';
 import {useRouter} from '@tanstack/react-router';
 import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
 import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -33,12 +33,15 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 	const queryClient = useQueryClient();
 	const router = useRouter();
 	const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+	const mutationKey = ['deleteDecisionRequirements', definition.decisionRequirementsKey];
+	const isOperationRunning = useIsMutating({mutationKey}) > 0;
 
-	const {mutate: deleteDefinition, isPending: isOperationRunning} = useMutation<
+	const {mutate: deleteDefinition} = useMutation<
 		void,
 		RequestError,
-		{tenantId: string | undefined}
+		{decisionDefinitionId: string; version: number; tenantId: string | undefined}
 	>({
+		mutationKey,
 		mutationFn: async () => {
 			const {error} = await request(
 				endpoints.deleteResource(definition.decisionRequirementsKey, {deleteHistory: true}),
@@ -48,7 +51,7 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 				throw error;
 			}
 		},
-		onSuccess: (_, {tenantId}) => {
+		onSuccess: (_, {decisionDefinitionId, version, tenantId}) => {
 			notificationsStore.displayNotification({
 				kind: 'success',
 				title: t('operate.decisions.definitionDeletion.successTitle'),
@@ -56,8 +59,8 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 			});
 			const {search} = router.state.location;
 			if (
-				search.decisionDefinitionId === definition.decisionDefinitionId &&
-				search.decisionDefinitionVersion === definition.version &&
+				search.decisionDefinitionId === decisionDefinitionId &&
+				search.decisionDefinitionVersion === version &&
 				search.tenantId === tenantId
 			) {
 				void router.navigate({
@@ -134,7 +137,11 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 				onClose={() => setIsDeleteModalVisible(false)}
 				onDelete={() => {
 					setIsDeleteModalVisible(false);
-					deleteDefinition({tenantId: router.state.location.search.tenantId});
+					deleteDefinition({
+						decisionDefinitionId: definition.decisionDefinitionId,
+						version: definition.version,
+						tenantId: router.state.location.search.tenantId,
+					});
 				}}
 			/>
 		</>
