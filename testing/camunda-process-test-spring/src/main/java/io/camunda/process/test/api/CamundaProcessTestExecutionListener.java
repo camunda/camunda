@@ -23,6 +23,7 @@ import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.client.CommandApiProbe;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
@@ -315,6 +316,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       final Instant startTime = Instant.now();
 
       camundaManagementClient.purgeCluster();
+      try (final CamundaClient client = camundaProcessTestContext.createClient()) {
+        CommandApiProbe.waitUntilCommandApiAcceptsCommands(client);
+      }
       final Instant endTime = Instant.now();
       final Duration duration = Duration.between(startTime, endTime);
       LOG.debug("Runtime data deleted in {}", duration);

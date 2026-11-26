@@ -18,7 +18,10 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -26,7 +29,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.ProblemDetail;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
@@ -43,9 +49,11 @@ import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -59,6 +67,7 @@ import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.TestInstances;
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.mockito.Answers;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -438,6 +447,28 @@ public class JunitExtensionTest {
   @Nested
   class AfterEachTests {
 
+    private static final long DEPLOYMENT_PARTITION_JOB_KEY = (1L << 51) | 1;
+
+    private final List<CamundaClient> createdClients = new ArrayList<>();
+    private int probeStatus = 404;
+
+    @BeforeEach
+    void stubClientCreation() {
+      final CamundaClientBuilder builder = mock(CamundaClientBuilder.class, Answers.RETURNS_SELF);
+      when(builder.build())
+          .thenAnswer(
+              invocation -> {
+                final CamundaClient createdClient =
+                    mock(CamundaClient.class, Answers.RETURNS_DEEP_STUBS);
+                lenient()
+                    .when(createdClient.newCompleteCommand(anyLong()).useRest().send().join())
+                    .thenThrow(new ProblemException(probeStatus, "reason", new ProblemDetail()));
+                createdClients.add(createdClient);
+                return createdClient;
+              });
+      when(camundaContainerRuntime.getCamundaClientBuilderFactory()).thenReturn(() -> builder);
+    }
+
     @Test
     void shouldPrintResultIfTestFailed() throws Exception {
       // given
@@ -523,6 +554,47 @@ public class JunitExtensionTest {
 
       // then
       verify(camundaManagementClient).resetTime();
+    }
+
+    @Test
+    void shouldProbeCommandApiAfterPurge() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+
+      extension.afterEach(extensionContext);
+
+      // then
+      final CamundaClient probeClient = createdClients.get(createdClients.size() - 1);
+      final InOrder inOrder = inOrder(camundaManagementClient, probeClient);
+      inOrder.verify(camundaManagementClient).purgeCluster();
+      inOrder.verify(probeClient).newCompleteCommand(DEPLOYMENT_PARTITION_JOB_KEY);
+      verify(probeClient).close();
+    }
+
+    @Test
+    void shouldCloseProbeClientWhenProbeFails() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+      probeStatus = 400;
+
+      // when
+      extension.afterEach(extensionContext);
+
+      // then
+      verify(createdClients.get(createdClients.size() - 1)).close();
     }
 
     private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
