@@ -8,6 +8,7 @@
 package io.camunda.application.commons.actor;
 
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.system.configuration.TenantActorPoolCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -76,24 +77,28 @@ public final class ActorSchedulerConfiguration {
    */
   @Bean
   public PhysicalTenantActorSchedulers physicalTenantActorSchedulers(
-      final ActorScheduler scheduler) {
+      final ActorScheduler scheduler, final PhysicalTenantResolver physicalTenantResolver) {
     if (!schedulerConfiguration.tenantActorPool().enabled()) {
       return PhysicalTenantActorSchedulers.shared(scheduler);
     }
 
     return PhysicalTenantActorSchedulers.dedicated(
-        physicalTenantId ->
-            newScheduler(schedulerConfiguration.schedulerPrefix())
-                .setSchedulerName(
-                    String.format(
-                        "%s-%s-%s",
-                        schedulerConfiguration.schedulerPrefix(),
-                        schedulerConfiguration.nodeId(),
-                        physicalTenantId))
-                .setCpuBoundActorThreadCount(schedulerConfiguration.tenantActorPool().cpuThreads())
-                .setIoBoundActorThreadCount(schedulerConfiguration.tenantActorPool().ioThreads())
-                .setActorThreadFactory(new DefaultActorThreadFactory(physicalTenantId + "-"))
-                .build());
+        physicalTenantId -> {
+          final var tenantActorPool =
+              physicalTenantResolver.forPhysicalTenant(physicalTenantId).getSystem().getActorPool();
+          tenantActorPool.validate();
+          return newScheduler(schedulerConfiguration.schedulerPrefix())
+              .setSchedulerName(
+                  String.format(
+                      "%s-%s-%s",
+                      schedulerConfiguration.schedulerPrefix(),
+                      schedulerConfiguration.nodeId(),
+                      physicalTenantId))
+              .setCpuBoundActorThreadCount(tenantActorPool.getCpuThreadCount())
+              .setIoBoundActorThreadCount(tenantActorPool.getIoThreadCount())
+              .setActorThreadFactory(new DefaultActorThreadFactory(physicalTenantId + "-"))
+              .build();
+        });
   }
 
   private ActorScheduler.ActorSchedulerBuilder newScheduler(final String prefix) {

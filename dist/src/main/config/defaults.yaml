@@ -2023,7 +2023,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         max-yields: null # Type: Long, Env: CAMUNDA_SYSTEM_ACTOR_IDLE_MAXYIELDS
         min-park-period: null # Type: Duration, Env: CAMUNDA_SYSTEM_ACTOR_IDLE_MINPARKPERIOD
     
-    actor-pool: # Type: io.camunda.configuration.system.ActorPool
+    actor-pool: # Type: io.camunda.configuration.system.ActorPool  
       # The default number of CPU-bound actor threads in each physical tenant's pool. A physical tenant can
       # override this value in its own configuration. Must be positive when the pool is enabled.
       # Experimental.
@@ -2036,7 +2036,7 @@ camunda: # Type: io.camunda.configuration.Camunda
       # override this value in its own configuration. Must be positive when the pool is enabled.
       # Experimental.
       io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_ACTORPOOL_IOTHREADCOUNT
-
+    
     # Controls whether the system clock or mutable one. When enabled, time progression can be controlled
     # programmatically for testing purposes.
     clock-controlled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_CLOCKCONTROLLED
