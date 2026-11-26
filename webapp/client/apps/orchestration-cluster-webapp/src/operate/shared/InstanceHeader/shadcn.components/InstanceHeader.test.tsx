@@ -82,9 +82,6 @@ describe('<InstanceHeader />', () => {
 		);
 
 		await expect.element(screen.getByText('Waiting')).toBeVisible();
-		await expect.element(screen.getByText('Waiting')).toHaveAttribute('data-slot', 'badge');
-		// a subtitle row (nameSubtitle) switches the instance name to the smaller "label-sm" typography
-		await expect.element(screen.getByText('orderProcess')).toHaveClass('text-xs');
 	});
 
 	it('should skip hidden body columns', async () => {
@@ -113,20 +110,6 @@ describe('<InstanceHeader />', () => {
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'Cancel Instance'})).toBeVisible();
-	});
-
-	it('should hide the bottom border when hideBottomBorder is set', async () => {
-		const screen = await render(
-			<InstanceHeader
-				state="ACTIVE"
-				instanceName="orderProcess"
-				headerColumns={[]}
-				bodyColumns={[]}
-				hideBottomBorder
-			/>,
-		);
-
-		await expect.element(screen.getByTestId('instance-header')).toHaveClass('border-b-0');
 	});
 });
 

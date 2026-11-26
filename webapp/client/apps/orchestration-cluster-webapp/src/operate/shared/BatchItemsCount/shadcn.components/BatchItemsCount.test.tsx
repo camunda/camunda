@@ -49,6 +49,7 @@ describe('<BatchItemsCount />', () => {
 			<BatchItemsCount totalCount={10} completedCount={3} failedCount={1} />,
 		);
 
+		await expect.element(screen.getByRole('status', {name: '1 failed'})).toBeVisible();
 		await expect.element(screen.getByRole('tooltip')).not.toBeInTheDocument();
 
 		await userEvent.hover(screen.getByRole('status', {name: '1 failed'}));

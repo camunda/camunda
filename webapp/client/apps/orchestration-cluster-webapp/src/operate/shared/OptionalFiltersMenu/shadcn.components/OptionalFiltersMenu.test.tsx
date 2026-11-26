@@ -26,7 +26,8 @@ describe('<OptionalFiltersMenu />', () => {
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'More filters'})).toHaveAttribute('aria-disabled', 'true');
-		screen.getByRole('button', {name: 'More filters'}).element().focus();
+		await userEvent.tab();
+		await expect.element(screen.getByRole('button', {name: 'More filters'})).toHaveFocus();
 		await expect.element(screen.getByRole('tooltip')).toHaveTextContent('All filters are already added');
 	});
 

@@ -25,6 +25,7 @@ describe('<TruncatedText />', () => {
 			</TooltipProvider>,
 		);
 
+		await expect.element(screen.getByText(LONG_TEXT)).toBeVisible();
 		await expect.element(screen.getByRole('tooltip')).not.toBeInTheDocument();
 
 		await userEvent.tab();

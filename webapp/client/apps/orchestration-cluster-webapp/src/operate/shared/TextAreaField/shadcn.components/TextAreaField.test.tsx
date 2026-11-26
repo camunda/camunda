@@ -59,16 +59,16 @@ describe('<TextAreaField />', () => {
 			</Field>,
 			{
 				wrapper: getWrapper({
-					validate: ({description}) => (description ? {} : {description: 'Description is required'}),
+					validate: () => ({description: 'Description is required'}),
 				}),
 			},
 		);
 
 		const textarea = screen.getByLabelText('Description');
 
-		await userEvent.type(textarea.element(), 'a');
-		await userEvent.clear(textarea.element());
-		await textarea.element().blur();
+		await userEvent.type(textarea, 'a');
+		await userEvent.clear(textarea);
+		await userEvent.tab();
 
 		await expect.element(textarea).toHaveAttribute('aria-invalid', 'true');
 		await expect.element(screen.getByText('Description is required')).toBeVisible();

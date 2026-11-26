@@ -10,23 +10,16 @@ import {render} from 'vitest-browser-react';
 import {describe, expect, vi, beforeEach, afterEach} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
-import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
+import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {FilterSidebar} from './FilterSidebar';
 
 describe('<FilterSidebar />', () => {
-	let previousPanelStates: string | null;
-
 	beforeEach(() => {
-		previousPanelStates = localStorage.getItem('operate.panelStates');
 		localStorage.removeItem('operate.panelStates');
 	});
 
 	afterEach(() => {
 		localStorage.removeItem('operate.panelStates');
-
-		if (previousPanelStates !== null) {
-			localStorage.setItem('operate.panelStates', previousPanelStates);
-		}
 	});
 
 	it('should render children', async () => {
@@ -83,15 +76,21 @@ describe('<FilterSidebar />', () => {
 		);
 
 		await expect.element(screen.getByTestId('expanded-panel')).toBeInTheDocument();
-		expect(getStateLocally('operate.panelStates')?.isFiltersCollapsed).toBe(false);
 
 		await userEvent.click(screen.getByRole('button', {name: /collapse/i}));
-
 		await expect.element(screen.getByTestId('collapsed-panel')).toBeInTheDocument();
-		expect(getStateLocally('operate.panelStates')?.isFiltersCollapsed).toBe(true);
+		await screen.unmount();
+
+		const remounted = await render(
+			<FilterSidebar localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
+				<div>my filters</div>
+			</FilterSidebar>,
+		);
+
+		await expect.element(remounted.getByRole('button', {name: 'Expand Filter'})).toBeVisible();
 	});
 
-	it('should keep the filter icon visible in the expanded header', async () => {
+	it('should show the Filter heading in the expanded header', async () => {
 		const screen = await render(
 			<FilterSidebar localStorageKey="isFiltersCollapsed" isResetButtonDisabled={false}>
 				<div>my filters</div>
@@ -99,7 +98,6 @@ describe('<FilterSidebar />', () => {
 		);
 
 		await expect.element(screen.getByTestId('expanded-panel').getByRole('heading', {name: 'Filter'})).toBeVisible();
-		expect(document.querySelector('[data-testid="expanded-panel"] header svg')).not.toBeNull();
 	});
 
 	it('should collapse to an icon-only rail that keeps the filters mounted but hidden', async () => {

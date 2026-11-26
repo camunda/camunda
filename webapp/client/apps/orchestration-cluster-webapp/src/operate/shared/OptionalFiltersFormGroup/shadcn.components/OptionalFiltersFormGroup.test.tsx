@@ -94,7 +94,7 @@ describe('<OptionalFiltersFormGroup /> (shared, design system)', () => {
 		await userEvent.click(screen.getByRole('checkbox', {name: 'Has retries left'}));
 		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
 
-		expect(onSubmit.mock.calls[0]?.[0]).toEqual(expect.objectContaining({hasRetriesLeft: true}));
+		expect(onSubmit).toHaveBeenCalledWith({hasRetriesLeft: true}, expect.anything(), expect.anything());
 	});
 
 	it('should focus a text filter after it is selected from the menu', async () => {
@@ -121,7 +121,7 @@ describe('<OptionalFiltersFormGroup /> (shared, design system)', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'End date range'}));
 
-		await expect.element(screen.getByTestId('date-range-modal')).toBeVisible();
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
 		await expect.element(screen.getByText('Filter by end date')).toBeVisible();
 	});
 
@@ -151,9 +151,6 @@ describe('<OptionalFiltersFormGroup /> (shared, design system)', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Remove Start date range Filter'}));
 
-		expect(onSubmit).toHaveBeenCalledTimes(1);
-		const submitted = onSubmit.mock.calls[0]?.[0];
-		expect(submitted?.startDateFrom).toBeUndefined();
-		expect(submitted?.startDateTo).toBeUndefined();
+		expect(onSubmit).toHaveBeenCalledExactlyOnceWith({}, expect.anything(), expect.anything());
 	});
 });

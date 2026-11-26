@@ -97,24 +97,8 @@ describe('<Operations />', () => {
 			wrapper: getWrapper(),
 		});
 
-		expect(
-			screen.getByRole('button', {name: `Retry instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Cancel instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Modify instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Delete instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Suspend instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Resume instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
+		await expect.element(screen.getByRole('list')).toBeInTheDocument();
+		await expect.element(screen.getByRole('button')).not.toBeInTheDocument();
 	});
 
 	it('should execute resolve incident operation', async () => {
@@ -410,7 +394,7 @@ describe('<Operations />', () => {
 
 		const passiveModal = screen.getByTestId('passive-cancellation-modal');
 		await expect.element(passiveModal).toBeVisible();
-		await expect.poll(() => passiveModal.element().contains(document.activeElement)).toBe(true);
+		await expect.element(passiveModal.getByRole('button', {name: 'Close'})).toHaveFocus();
 	});
 
 	it('should keep the root instance warning modal open when clicking outside it', async ({worker}) => {
