@@ -9,6 +9,7 @@
 import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
+import {Link, useSearch} from '@tanstack/react-router';
 import {deleteResourceRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -19,9 +20,17 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {DecisionOperations} from './DecisionOperations';
 
 const DEFINITION = createDecisionDefinition({tenantId: 'tenant-a'});
+const NEXT_VERSION_DEFINITION = createDecisionDefinition({
+	decisionDefinitionId: DEFINITION.decisionDefinitionId,
+	version: DEFINITION.version + 1,
+	tenantId: DEFINITION.tenantId,
+	decisionDefinitionKey: '2251799813685290',
+	decisionRequirementsKey: '2251799813685291',
+});
 const INITIAL_ENTRY =
 	'/operate/decisions?decisionDefinitionId=my-decision&decisionDefinitionVersion=1&tenantId=tenant-a&businessId=order-1&failed=false';
 const ACTION_NAME = 'Delete Decision Definition "My Decision - Version 1"';
+const NEXT_VERSION_ACTION_NAME = 'Delete Decision Definition "My Decision - Version 2"';
 const CONFIRMATION = 'Yes, I confirm I want to delete this DRD and all related instances.';
 
 function renderOperations(definition = DEFINITION) {
@@ -32,6 +41,34 @@ function renderOperations(definition = DEFINITION) {
 				<Notifications />
 			</>
 		),
+		{path: '/operate/decisions', initialEntry: INITIAL_ENTRY},
+	);
+}
+
+function renderOperationsWithVersionLink() {
+	return renderWithRouter(
+		() => {
+			const {decisionDefinitionVersion} = useSearch({strict: false});
+			const definition = decisionDefinitionVersion === 2 ? NEXT_VERSION_DEFINITION : DEFINITION;
+
+			return (
+				<>
+					<Link
+						to="/operate/decisions"
+						search={(prev) => ({
+							...prev,
+							evaluated: prev.evaluated ?? false,
+							failed: prev.failed ?? false,
+							decisionDefinitionVersion: NEXT_VERSION_DEFINITION.version,
+						})}
+					>
+						Version 2
+					</Link>
+					<DecisionOperations definition={definition} />
+					<Notifications />
+				</>
+			);
+		},
 		{path: '/operate/decisions', initialEntry: INITIAL_ENTRY},
 	);
 }
@@ -102,6 +139,20 @@ describe('<DecisionOperations />', () => {
 			evaluated: false,
 			failed: false,
 		});
+	});
+
+	it('should keep the newly selected version and not clear it when the previous deletion finishes', async ({
+		worker,
+	}) => {
+		worker.use(mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 1500}));
+		const screen = await renderOperationsWithVersionLink();
+		await submit(screen);
+
+		await userEvent.click(screen.getByRole('link', {name: 'Version 2'}));
+		await expect.element(screen.getByRole('button', {name: NEXT_VERSION_ACTION_NAME})).toBeEnabled();
+
+		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: NEXT_VERSION_ACTION_NAME})).toBeVisible();
 	});
 
 	it.for([
