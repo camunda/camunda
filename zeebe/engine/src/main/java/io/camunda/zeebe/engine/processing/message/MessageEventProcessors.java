@@ -178,6 +178,27 @@ public final class MessageEventProcessors {
                 partitionId,
                 metrics))
         .onCommand(
+            ValueType.MESSAGE_CORRELATION,
+            MessageCorrelationIntent.CORRELATE_AND_AWAIT_RESULT,
+            new MessageCorrelationCorrelateAndAwaitResultProcessor(
+                writers,
+                keyGenerator,
+                eventScopeInstanceState,
+                processState,
+                bpmnBehaviors,
+                startEventSubscriptionState,
+                messageState,
+                subscriptionState,
+                subscriptionCommandSender,
+                cslCheck,
+                tenantCheck,
+                elementInstanceState,
+                bannedInstanceState,
+                businessIdUniquenessEnabled,
+                routingInfo,
+                partitionId,
+                metrics))
+        .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REQUEST,
             new MessageStartProcessInstanceRequestRequestProcessor(

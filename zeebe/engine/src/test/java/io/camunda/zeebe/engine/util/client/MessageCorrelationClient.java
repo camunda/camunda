@@ -119,6 +119,26 @@ public final class MessageCorrelationClient {
     return this;
   }
 
+  /** SPIKE B1: writes CORRELATE_AND_AWAIT_RESULT with request metadata; the caller checks the response. */
+  public void correlateAndAwaitResult(
+      final long requestId, final int requestStreamId, final java.util.List<String> fetchVariables) {
+    if (partitionId == NOT_SET) {
+      partitionId =
+          SubscriptionUtil.getSubscriptionPartitionId(
+              messageCorrelationRecord.getCorrelationKeyBuffer(), partitionCount);
+    }
+    fetchVariables.forEach(
+        v -> messageCorrelationRecord.fetchVariables().add().wrap(new UnsafeBuffer(v.getBytes())));
+    writer.writeCommandOnPartition(
+        partitionId,
+        b ->
+            b.requestId(requestId)
+                .requestStreamId(requestStreamId)
+                .authorizations(io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                .intent(MessageCorrelationIntent.CORRELATE_AND_AWAIT_RESULT)
+                .event(messageCorrelationRecord));
+  }
+
   public Record<MessageCorrelationRecordValue> correlate() {
 
     if (partitionId == NOT_SET) {

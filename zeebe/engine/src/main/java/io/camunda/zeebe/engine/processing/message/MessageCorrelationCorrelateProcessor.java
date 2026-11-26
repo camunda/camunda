@@ -49,7 +49,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class MessageCorrelationCorrelateProcessor
+public class MessageCorrelationCorrelateProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord>,
         SuspensionAware<MessageCorrelationRecord> {
 
@@ -235,11 +235,7 @@ public final class MessageCorrelationCorrelateProcessor
 
               stateWriter.appendFollowUpEvent(
                   messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
-              responseWriter.writeAcceptedResponseOnCommand(
-                  messageKey,
-                  MessageCorrelationIntent.CORRELATED,
-                  messageCorrelationRecord,
-                  command);
+              respondToStartedInstance(command, messageKey, messageCorrelationRecord);
             });
 
     correlateBehavior.sendCorrelateCommands(messageData, correlatingSubscriptions);
@@ -247,6 +243,15 @@ public final class MessageCorrelationCorrelateProcessor
     // Message Correlate command cannot have a TTL. As a result the message expires immediately.
     stateWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
     metrics.expireCrossPartitionAsks(messageKey);
+  }
+
+  /** Answers the caller once the instance exists. Subclasses can register a wait instead. */
+  protected void respondToStartedInstance(
+      final TypedRecord<MessageCorrelationRecord> command,
+      final long messageKey,
+      final MessageCorrelationRecord record) {
+    responseWriter.writeAcceptedResponseOnCommand(
+        messageKey, MessageCorrelationIntent.CORRELATED, record, command);
   }
 
   private MessageData createMessageData(
