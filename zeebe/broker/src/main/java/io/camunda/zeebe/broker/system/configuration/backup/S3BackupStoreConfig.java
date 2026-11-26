@@ -36,6 +36,10 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
 
   private String ssecKey;
 
+  private boolean waitForReplication = false;
+  private Duration replicationPollInterval = S3BackupConfig.DEFAULT_REPLICATION_POLL_INTERVAL;
+  private Duration replicationTimeout = S3BackupConfig.DEFAULT_REPLICATION_TIMEOUT;
+
   public String getBucketName() {
     return bucketName;
   }
@@ -144,6 +148,30 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.ssecKey = ssecKey;
   }
 
+  public boolean isWaitForReplication() {
+    return waitForReplication;
+  }
+
+  public void setWaitForReplication(final boolean waitForReplication) {
+    this.waitForReplication = waitForReplication;
+  }
+
+  public Duration getReplicationPollInterval() {
+    return replicationPollInterval;
+  }
+
+  public void setReplicationPollInterval(final Duration replicationPollInterval) {
+    this.replicationPollInterval = replicationPollInterval;
+  }
+
+  public Duration getReplicationTimeout() {
+    return replicationTimeout;
+  }
+
+  public void setReplicationTimeout(final Duration replicationTimeout) {
+    this.replicationTimeout = replicationTimeout;
+  }
+
   public static S3BackupConfig toStoreConfig(
       final S3BackupStoreConfig config,
       final @Nullable Duration readTimeout,
@@ -162,7 +190,10 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
             .withMaxConcurrentConnections(config.getMaxConcurrentConnections())
             .withConnectionAcquisitionTimeout(config.getConnectionAcquisitionTimeout())
             .withSupportLegacyMd5(config.isSupportLegacyMd5())
-            .withSsecKey(config.getSsecKey());
+            .withSsecKey(config.getSsecKey())
+            .withWaitForReplication(config.isWaitForReplication())
+            .withReplicationPollInterval(config.getReplicationPollInterval())
+            .withReplicationTimeout(config.getReplicationTimeout());
     if (config.getAccessKey() != null && config.getSecretKey() != null) {
       builder.withCredentials(config.getAccessKey(), config.getSecretKey());
     }
@@ -182,6 +213,9 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     result = 31 * result + (basePath != null ? basePath.hashCode() : 0);
     result = 31 * result + (ssecKey != null ? ssecKey.hashCode() : 0);
     result = 31 * result + maxConcurrentConnections;
+    result = 31 * result + (waitForReplication ? 1 : 0);
+    result = 31 * result + Objects.hashCode(replicationPollInterval);
+    result = 31 * result + Objects.hashCode(replicationTimeout);
     result =
         31 * result
             + (connectionAcquisitionTimeout != null ? connectionAcquisitionTimeout.hashCode() : 0);
@@ -211,6 +245,9 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(basePath, that.basePath)
         && Objects.equals(ssecKey, that.ssecKey)
         && Objects.equals(connectionAcquisitionTimeout, that.connectionAcquisitionTimeout)
+        && waitForReplication == that.waitForReplication
+        && Objects.equals(replicationPollInterval, that.replicationPollInterval)
+        && Objects.equals(replicationTimeout, that.replicationTimeout)
         && supportLegacyMd5 == that.supportLegacyMd5;
   }
 
@@ -246,6 +283,12 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         + connectionAcquisitionTimeout
         + ", supportLegacyMd5="
         + supportLegacyMd5
+        + ", waitForReplication="
+        + waitForReplication
+        + ", replicationPollInterval="
+        + replicationPollInterval
+        + ", replicationTimeout="
+        + replicationTimeout
         + ", ssecKey='"
         + (ssecKey != null ? "<redacted>" : "null")
         + '\''

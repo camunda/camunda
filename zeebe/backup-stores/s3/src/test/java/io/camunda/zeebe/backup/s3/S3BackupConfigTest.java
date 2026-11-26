@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
 
@@ -78,5 +79,43 @@ final class S3BackupConfigTest {
 
     // then
     assertThat(asString).contains("ssecKey=").doesNotContain(VALID_SSEC_KEY);
+  }
+
+  @Test
+  void shouldNotWaitForReplicationByDefault() {
+    // when
+    final var config = new Builder().withBucketName("bucket").build();
+
+    // then
+    assertThat(config.waitForReplication()).isFalse();
+    assertThat(config.replicationPollInterval())
+        .isEqualTo(S3BackupConfig.DEFAULT_REPLICATION_POLL_INTERVAL);
+    assertThat(config.replicationTimeout()).isEqualTo(S3BackupConfig.DEFAULT_REPLICATION_TIMEOUT);
+  }
+
+  @Test
+  void shouldRejectNonPositiveReplicationPollInterval() {
+    // when - then
+    assertThatThrownBy(
+            () ->
+                new Builder()
+                    .withBucketName("bucket")
+                    .withReplicationPollInterval(Duration.ZERO)
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("poll interval");
+  }
+
+  @Test
+  void shouldRejectNegativeReplicationTimeout() {
+    // when - then
+    assertThatThrownBy(
+            () ->
+                new Builder()
+                    .withBucketName("bucket")
+                    .withReplicationTimeout(Duration.ofSeconds(-1))
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("timeout");
   }
 }
