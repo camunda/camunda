@@ -103,12 +103,9 @@ repository code with a stable GitHub permalink pinned to a pushed commit SHA. Ne
 
 ### Build pipeline
 
-Two build tools exist. Maven (`./mvnw`) is authoritative and the default; Gradle (`./gradlew`) is
-experimental. Use Gradle when the user expresses a preference for it, in the prompt or in their
-memory or settings. Load the matching skill for commands instead of improvising them:
-
-- `maven-run-build` — compile, test, format, and package with `./mvnw`
-- `gradle-run-build` — compile, test, and package with `./gradlew`
+Maven (`./mvnw`) and Gradle (`./gradlew`) are expected to behave the same. Use the one the user
+prefers (prompt, memory, or settings), otherwise Maven, which is still used for releasing. Load
+`maven-run-build` or `gradle-run-build` for commands instead of improvising them.
 
 Always scope work to the relevant module(s). Never run full-repo builds for single-module work.
 Before every commit, format the code, build the changed module, and run its tests with zero
