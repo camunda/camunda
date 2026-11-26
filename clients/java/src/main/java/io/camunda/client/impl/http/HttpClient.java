@@ -783,6 +783,16 @@ public final class HttpClient implements AutoCloseable {
     return new RenderedEntity(content, ContentType.parse(entity.getContentType()));
   }
 
+  private URI buildRequestURI(final URI baseAddress, final String path) {
+    final URI target;
+    try {
+      target = new URIBuilder(baseAddress).appendPath(path).build();
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+    return target;
+  }
+
   /** The content of an {@link HttpEntity}, which can be sent more than once. */
   private static final class RenderedEntity {
     private final byte[] content;
@@ -792,15 +802,5 @@ public final class HttpClient implements AutoCloseable {
       this.content = content;
       this.contentType = contentType;
     }
-  }
-
-  private URI buildRequestURI(final URI baseAddress, final String path) {
-    final URI target;
-    try {
-      target = new URIBuilder(baseAddress).appendPath(path).build();
-    } catch (final URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
-    return target;
   }
 }

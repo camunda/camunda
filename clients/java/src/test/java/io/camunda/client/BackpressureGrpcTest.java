@@ -73,6 +73,7 @@ final class BackpressureGrpcTest {
   private final AtomicInteger completeCalls = new AtomicInteger();
   private final AtomicInteger topologyCalls = new AtomicInteger();
   private final AtomicInteger activateCalls = new AtomicInteger();
+  private final AtomicInteger completeRejections = new AtomicInteger();
   private final List<List<String>> tenantHeaders = new CopyOnWriteArrayList<>();
 
   /** Decides how the gateway answers the n-th publish call: {@code null} for success. */
@@ -350,8 +351,6 @@ final class BackpressureGrpcTest {
     assertThat(limiter.state().permitsCurrent()).isZero();
     assertThat(publishCalls).hasValue(0);
   }
-
-  private final AtomicInteger completeRejections = new AtomicInteger();
 
   private final class Gateway extends GatewayImplBase {
 

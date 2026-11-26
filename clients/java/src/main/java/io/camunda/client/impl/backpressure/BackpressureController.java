@@ -36,19 +36,6 @@ public final class BackpressureController implements AutoCloseable {
   private final LongSupplier clockMillis;
   private final DoubleSupplier random;
 
-  /** Creates a controller that is not in the way: it neither retries nor limits. */
-  public static BackpressureController disabled() {
-    return create(BackpressureProfile.DISABLED);
-  }
-
-  public static BackpressureController create(final BackpressureProfile profile) {
-    return new BackpressureController(
-        BackpressureSettings.forProfile(profile),
-        SYSTEM_CLOCK,
-        SYSTEM_RANDOM,
-        SharedTimerScheduler.INSTANCE);
-  }
-
   /** Lets tests control time, randomness and the passing of delays. */
   public BackpressureController(
       final BackpressureSettings settings,
@@ -60,6 +47,19 @@ public final class BackpressureController implements AutoCloseable {
     this.random = random;
     this.scheduler = scheduler;
     manager = new BackpressureManager(settings, clockMillis, scheduler);
+  }
+
+  /** Creates a controller that is not in the way: it neither retries nor limits. */
+  public static BackpressureController disabled() {
+    return create(BackpressureProfile.DISABLED);
+  }
+
+  public static BackpressureController create(final BackpressureProfile profile) {
+    return new BackpressureController(
+        BackpressureSettings.forProfile(profile),
+        SYSTEM_CLOCK,
+        SYSTEM_RANDOM,
+        SharedTimerScheduler.INSTANCE);
   }
 
   /** Whether requests are retried and observed at all. */
