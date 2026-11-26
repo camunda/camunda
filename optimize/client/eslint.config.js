@@ -8,6 +8,12 @@ import licenseHeader from 'eslint-plugin-license-header';
 import prettier from 'eslint-plugin-prettier';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
+// Only the classic rules: v7's `recommended` preset adds React Compiler rules this codebase does not follow.
+const reactHooksRules = {
+  'react-hooks/rules-of-hooks': 'error',
+  'react-hooks/exhaustive-deps': 'warn',
+};
+
 export default tseslint.config(
   eslintJs.configs.recommended,
   ...tseslint.configs.recommended,
@@ -41,7 +47,7 @@ export default tseslint.config(
       prettier,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      ...reactHooksRules,
       'react-refresh/only-export-components': ['off', {allowConstantExport: true}],
       'license-header/header': ['error', './resources/license-header.js'],
       'prettier/prettier': ['warn', {endOfLine: 'auto'}],
@@ -106,6 +112,6 @@ export default tseslint.config(
 // Playwright fixtures call their parameter `use`, which the React hooks rules mistake for a hook.
 function reactHooksOff() {
   return Object.fromEntries(
-    Object.keys(reactHooks.configs.recommended.rules).map((rule) => [rule, 'off'])
+    Object.keys(reactHooksRules).map((rule) => [rule, 'off'])
   );
 }
