@@ -48,7 +48,7 @@ public class ZeebeCaseImpl extends BpmnModelElementInstanceImpl implements Zeebe
             .defineType(ZeebeCase.class, ZeebeConstants.ELEMENT_CASE)
             .namespaceUri(BpmnModelConstants.ZEEBE_NS)
             .instanceProvider(ZeebeCaseImpl::new);
-    // not required: a missing title is reported by the validator instead of failing the parse
+    // not required: a case marker may omit the title
     titleAttribute =
         typeBuilder
             .stringAttribute(ZeebeConstants.ATTRIBUTE_TITLE)

@@ -18,8 +18,8 @@ package io.camunda.zeebe.model.bpmn.instance.zeebe;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
 /**
- * Marks a process as a case. The {@code title} is the name of the process variable that holds the
- * case title; it is a plain variable name, not an expression.
+ * Marks a process as a case. The optional {@code title} is the name of the process variable that
+ * holds the case title; it is a plain variable name, not an expression.
  */
 public interface ZeebeCase extends BpmnModelElementInstance {
 

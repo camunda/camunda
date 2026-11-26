@@ -44,13 +44,9 @@ public class ZeebeCaseValidator implements ModelElementValidator<ZeebeCase> {
       return;
     }
 
+    // the title is optional: a case without one is identified by its process instance key
     final String title = element.getTitle();
-    if (title == null || title.trim().isEmpty()) {
-      validationResultCollector.addError(0, "Attribute 'title' must be present and not empty");
-      return;
-    }
-
-    if (title.startsWith("=")) {
+    if (title != null && title.startsWith("=")) {
       validationResultCollector.addError(
           0, "Attribute 'title' must be a variable name, not an expression");
     }

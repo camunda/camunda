@@ -112,25 +112,23 @@ public class ZeebeCaseValidationTest {
   }
 
   @Test
-  void shouldRejectCaseMarkerWithoutTitle() {
+  void shouldAcceptCaseMarkerWithoutTitle() {
     // given
     final BpmnModelInstance process = processWithCaseXml("missing-title", "<zeebe:case />");
 
     // when/then
-    ProcessValidationUtil.assertThatProcessHasViolations(
-        process, expect(ZeebeCase.class, "Attribute 'title' must be present and not empty"));
+    ProcessValidationUtil.assertThatProcessIsValid(process);
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"", " ", "   "})
-  void shouldRejectCaseMarkerWithBlankTitle(final String title) {
+  void shouldAcceptCaseMarkerWithBlankTitle(final String title) {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("blank-title").zeebeCase(title).startEvent().done();
 
     // when/then
-    ProcessValidationUtil.assertThatProcessHasViolations(
-        process, expect(ZeebeCase.class, "Attribute 'title' must be present and not empty"));
+    ProcessValidationUtil.assertThatProcessIsValid(process);
   }
 
   @Test
