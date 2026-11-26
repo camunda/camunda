@@ -17,7 +17,6 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReplicationFailed;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReplicationTimedOut;
-import io.camunda.zeebe.backup.s3.S3BackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.s3.manifest.CompletedBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
@@ -39,12 +38,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.GetBucketReplicationResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
@@ -54,10 +51,7 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
-import software.amazon.awssdk.services.s3.model.ReplicationConfiguration;
-import software.amazon.awssdk.services.s3.model.ReplicationRule;
 import software.amazon.awssdk.services.s3.model.ReplicationStatus;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /**
  * Tests how {@link S3BackupStore#save(Backup)} waits for bucket replication. The client is an
@@ -145,7 +139,6 @@ final class S3BackupStoreReplicationTest {
     lenient()
         .when(client.headBucket(any(HeadBucketRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(HeadBucketResponse.builder().build()));
-    bucketHasReplicationRule();
   }
 
   @AfterEach
@@ -264,10 +257,10 @@ final class S3BackupStoreReplicationTest {
   }
 
   @Test
-  void shouldFailBackupWithoutUploadingWhenBucketHasNoReplication() throws IOException {
-    // given
+  void shouldMarkBackupFailedWhenBucketHasNoReplication() throws IOException {
+    // given no replication rule covers the backup's objects, so they report no status
     store = storeWaitingForReplication(WAIT);
-    bucketHasNoReplication();
+    replication = (key, previousPolls) -> null;
     final var backup = TestBackupProvider.simpleBackup();
 
     // when
@@ -278,39 +271,23 @@ final class S3BackupStoreReplicationTest {
         .failsWithin(WAIT)
         .withThrowableThat()
         .havingCause()
-        .isInstanceOf(ConfigurationException.class);
-    assertThat(uploads).allMatch(key -> key.endsWith("manifest.json"));
+        .isInstanceOf(BackupReplicationFailed.class)
+        .withMessageContaining("has no replication status");
     assertThat(store.getStatus(backup.id()).join().statusCode()).isEqualTo(BackupStatusCode.FAILED);
   }
 
   @Test
-  void shouldRejectConnectionWhenBucketHasNoReplication() {
+  void shouldNotReadTheBucketReplicationConfiguration() throws IOException {
     // given
     store = storeWaitingForReplication(WAIT);
-    bucketHasNoReplication();
+    final var backup = TestBackupProvider.simpleBackup();
 
     // when
-    final var verified = store.verifyConnection();
+    store.verifyConnection().join();
+    store.save(backup).join();
 
-    // then
-    assertThat(verified)
-        .failsWithin(WAIT)
-        .withThrowableThat()
-        .havingCause()
-        .isInstanceOf(ConfigurationException.class)
-        .withMessageContaining("has no replication configured");
-  }
-
-  @Test
-  void shouldAcceptConnectionWhenBucketHasReplication() {
-    // given
-    store = storeWaitingForReplication(WAIT);
-
-    // when
-    final var verified = store.verifyConnection();
-
-    // then
-    assertThat(verified).succeedsWithin(WAIT);
+    // then only object-level requests are needed
+    verify(client, never()).getBucketReplication(any(Consumer.class));
   }
 
   @Test
@@ -426,33 +403,6 @@ final class S3BackupStoreReplicationTest {
             .withReplicationTimeout(timeout)
             .build();
     return new S3BackupStore(config, client);
-  }
-
-  private void bucketHasReplicationRule() {
-    lenient()
-        .when(client.getBucketReplication(any(Consumer.class)))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                GetBucketReplicationResponse.builder()
-                    .replicationConfiguration(
-                        ReplicationConfiguration.builder()
-                            .rules(ReplicationRule.builder().id("rule").build())
-                            .build())
-                    .build()));
-  }
-
-  private void bucketHasNoReplication() {
-    lenient()
-        .when(client.getBucketReplication(any(Consumer.class)))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                S3Exception.builder()
-                    .statusCode(404)
-                    .awsErrorDetails(
-                        AwsErrorDetails.builder()
-                            .errorCode(ReplicationAwaiter.REPLICATION_CONFIGURATION_NOT_FOUND)
-                            .build())
-                    .build()));
   }
 
   private static String putKey(final Consumer<PutObjectRequest.Builder> request) {

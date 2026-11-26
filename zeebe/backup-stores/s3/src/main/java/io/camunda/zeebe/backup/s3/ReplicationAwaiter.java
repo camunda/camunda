@@ -9,7 +9,6 @@ package io.camunda.zeebe.backup.s3;
 
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReplicationFailed;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReplicationTimedOut;
-import io.camunda.zeebe.backup.s3.S3BackupStoreException.ConfigurationException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
@@ -17,18 +16,14 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.GetBucketReplicationResponse;
 import software.amazon.awssdk.services.s3.model.ReplicationStatus;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /**
  * Waits until objects have been replicated by the bucket's own replication (S3 replication or MinIO
@@ -41,7 +36,6 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
  */
 final class ReplicationAwaiter {
 
-  static final String REPLICATION_CONFIGURATION_NOT_FOUND = "ReplicationConfigurationNotFoundError";
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationAwaiter.class);
   private static final int MAX_KEYS_IN_MESSAGE = 10;
   // Time given to the single check made when the deadline has already passed
@@ -52,7 +46,6 @@ final class ReplicationAwaiter {
   private final Duration pollInterval;
   private final Duration timeout;
   private final int maxInFlight;
-  private volatile boolean replicationConfigured;
 
   ReplicationAwaiter(final S3AsyncClient client, final S3BackupConfig config) {
     this.client = client;
@@ -66,31 +59,6 @@ final class ReplicationAwaiter {
   /** Returns the point in time after which {@link #awaitReplication} gives up. */
   Instant deadline() {
     return Instant.now().plus(timeout);
-  }
-
-  /**
-   * Completes successfully if the bucket has at least one replication rule. Without replication, no
-   * object ever reports a replication status, so waiting for one would only end with the timeout. A
-   * successful check is remembered; a failed one is repeated on the next call.
-   */
-  CompletableFuture<Void> verifyReplicationConfigured() {
-    if (replicationConfigured) {
-      return CompletableFuture.completedFuture(null);
-    }
-    return client
-        .getBucketReplication(req -> req.bucket(bucketName))
-        .handle(
-            (final GetBucketReplicationResponse response, final @Nullable Throwable error) -> {
-              if (error != null) {
-                throw replicationCheckFailed(unwrap(error));
-              }
-              final var configuration = response.replicationConfiguration();
-              if (configuration == null || !configuration.hasRules()) {
-                throw noReplicationConfigured(null);
-              }
-              replicationConfigured = true;
-              return null;
-            });
   }
 
   /**
@@ -154,33 +122,6 @@ final class ReplicationAwaiter {
     return new BackupReplicationTimedOut(
         "Timed out after %s waiting for replication of %d objects in bucket '%s', for example %s"
             .formatted(timeout, pending.size(), bucketName, sample));
-  }
-
-  private ConfigurationException replicationCheckFailed(final Throwable error) {
-    if (error instanceof final S3Exception s3Exception
-        && s3Exception.awsErrorDetails() != null
-        && REPLICATION_CONFIGURATION_NOT_FOUND.equals(s3Exception.awsErrorDetails().errorCode())) {
-      return noReplicationConfigured(error);
-    }
-    return new ConfigurationException(
-        ("Failed to read the replication configuration of bucket '%s', which is required to "
-                + "wait for replication")
-            .formatted(bucketName),
-        error);
-  }
-
-  private ConfigurationException noReplicationConfigured(final @Nullable Throwable cause) {
-    return new ConfigurationException(
-        ("The S3 backup store is configured to wait for replication, but bucket '%s' has no "
-                + "replication configured")
-            .formatted(bucketName),
-        cause);
-  }
-
-  private static Throwable unwrap(final Throwable error) {
-    return error instanceof CompletionException && error.getCause() != null
-        ? error.getCause()
-        : error;
   }
 
   /**
