@@ -7,12 +7,14 @@
  */
 package io.camunda.secretstore.azure;
 
+import static io.camunda.secretstore.SecretErrorCode.ACCESS_DENIED;
 import static io.camunda.secretstore.azure.StubAzureHttpClient.environment;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
@@ -268,11 +270,10 @@ final class AzureMockedEntraSignInIT {
     try (final var everyLog = capturingSdkAndStoreLogs()) {
       try (final var storeA = store(config(vaultA, clientIdA), Map.of());
           final var storeB = store(config(vaultB, clientIdB), Map.of())) {
-        // when / then — tenant B resolves while tenant A is refused.
-        // #68640 maps the 403 to ACCESS_DENIED; until then it reports the store unavailable.
-        assertThatThrownBy(() -> storeA.resolve(Set.of(secretName)))
-            .isInstanceOf(SecretStoreUnavailableException.class)
-            .hasMessageContaining("403");
+        // when / then — tenant A is denied its secret, while tenant B resolves its own
+        assertThat(storeA.resolve(Set.of(secretName)).get(secretName))
+            .isInstanceOfSatisfying(
+                Failed.class, failed -> assertThat(failed.code()).isEqualTo(ACCESS_DENIED));
         assertThat(storeB.resolve(Set.of(secretName)))
             .containsEntry(secretName, new Resolved(secretValue));
       }
