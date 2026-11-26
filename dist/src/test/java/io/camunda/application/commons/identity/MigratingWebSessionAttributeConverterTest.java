@@ -22,6 +22,10 @@ import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.ConditionalMembership;
+import io.camunda.security.api.model.authz.MembershipCondition;
+import io.camunda.security.api.model.authz.Operand;
+import io.camunda.security.api.model.authz.ResourceAttribute;
 import jakarta.servlet.http.Cookie;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -155,6 +159,62 @@ class MigratingWebSessionAttributeConverterTest {
     assertThat(restored.authenticatedGroupIds()).containsExactly("admins");
     assertThat(restored.authenticatedTenantIds()).containsExactly("default");
     assertThat(restored.claims()).containsEntry("sub", "bob");
+  }
+
+  @Test
+  void shouldReadASessionStoredBeforeConditionalMemberships() throws IOException {
+    // given a session attribute serialized without the conditional memberships field
+    final var oldAuth =
+        new io.camunda.security.auth.CamundaAuthentication(
+            "alice", null, false, List.of(), List.of("role1"), List.of(), List.of(), Map.of());
+
+    // when
+    final var restored = (CamundaAuthentication) converter.deserialize(serialize(oldAuth));
+
+    // then
+    assertThat(restored.authenticatedRoleIds()).containsExactly("role1");
+    assertThat(restored.conditionalRoleMemberships()).isEmpty();
+  }
+
+  @Test
+  void shouldRejectASessionCarryingConditionalMemberships() {
+    // given a session attribute that carries a conditional membership. OC on 8.10 never produces
+    // one (its MembershipPort keeps the CSL default of no conditional memberships), and the
+    // deserialization allowlist deliberately does not cover the CSL authz model classes.
+    final var auth =
+        CamundaAuthentication.of(
+            b ->
+                b.user("bob")
+                    .role("viewer")
+                    .conditionalRoleMemberships(
+                        List.of(
+                            new ConditionalMembership(
+                                "reviewer",
+                                List.of(
+                                    new MembershipCondition(
+                                        ResourceAttribute.WORKSPACE_ID,
+                                        new Operand.Equals("payments")))))));
+    final byte[] payload = converter.serialize(auth);
+
+    // when / then the allowlist rejects the class rather than instantiating it, so a session that
+    // somehow carried conditional memberships fails closed instead of being silently restored
+    assertThatThrownBy(() -> converter.deserialize(payload))
+        .hasRootCauseInstanceOf(java.io.InvalidClassException.class);
+  }
+
+  @Test
+  void shouldNotReferenceConditionalMembershipsInASessionWithoutThem() {
+    // given an authentication as OC builds it: its MembershipPort has no conditional memberships
+    final var auth =
+        CamundaAuthentication.of(
+            b -> b.user("bob").role("viewer").conditionalRoleMembershipsSupplier(List::of));
+
+    // when
+    final byte[] payload = converter.serialize(auth);
+
+    // then the payload names no class an older node lacks, so it can still read the session
+    assertThat(new String(payload, StandardCharsets.ISO_8859_1))
+        .doesNotContain(ConditionalMembership.class.getSimpleName());
   }
 
   @Test
