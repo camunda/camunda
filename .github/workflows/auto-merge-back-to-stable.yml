@@ -162,7 +162,7 @@ jobs:
           fi      
       - name: Wait for required checks
         id: wait_checks
-        uses: camunda/infra-global-github-actions/wait-for-required-checks@main
+        uses: camunda/infra-global-github-actions/wait-for-required-checks@50d6a648396f9cf5af51212986d9baa83f8c0129 # wait-for-required-checks-1.0.0
         with:
           repository_owner: ${{ github.event.repository.owner.login }}
           repository_name: ${{ github.event.repository.name }}
@@ -171,7 +171,7 @@ jobs:
 
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@405ecc95af077cd030bfe3249511e802fd9e4585 # generate-github-app-token-from-vault-secrets-1.3.1
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -213,7 +213,7 @@ jobs:
       - name: Monitor merge queue status
         id: monitor_merge
         if: steps.wait_checks.outcome != 'failure'
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@50d6a648396f9cf5af51212986d9baa83f8c0129 # ensure-pr-passes-merge-queue-1.0.0
         with:
           pr-number: ${{ github.event.pull_request.number }}
           timeout-minutes: ${{ env.MERGE_QUEUE_TIMEOUT_MINUTES }}

@@ -77,7 +77,7 @@ jobs:
       CONFTEST_VERSION: '0.56.0'
     steps:
       - uses: actions/checkout@v4
-      - uses: camunda/infra-global-github-actions/actionlint@main
+      - uses: camunda/infra-global-github-actions/actionlint@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # actionlint-1.0.6
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
           ignore: |-
@@ -636,7 +636,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@67d00e9260887361a31f6446252fffbecae4a02e # setup-yarn-cache-1.0.2
         with:
           directory: identity/client
       - name: Install dependencies
