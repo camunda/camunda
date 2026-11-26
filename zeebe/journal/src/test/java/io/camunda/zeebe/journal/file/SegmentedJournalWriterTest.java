@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.journal.StickySyncFailure;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -238,6 +239,7 @@ final class SegmentedJournalWriterTest {
     sortedMap.put(2L, new TestSegment(30, false));
 
     final var segments = Mockito.mock(SegmentsManager.class);
+    when(segments.syncFailure()).thenReturn(new StickySyncFailure());
     final var segment = Mockito.mock(Segment.class);
     when(segment.index()).thenReturn(1L);
     when(segments.getLastSegment()).thenReturn(segment);
@@ -263,6 +265,7 @@ final class SegmentedJournalWriterTest {
     sortedMap.put(2L, new TestSegment(30, error));
 
     final var segments = Mockito.mock(SegmentsManager.class);
+    when(segments.syncFailure()).thenReturn(new StickySyncFailure());
     final var segment = Mockito.mock(Segment.class);
     when(segment.index()).thenReturn(1L);
     when(segments.getLastSegment()).thenReturn(segment);
@@ -383,6 +386,7 @@ final class SegmentedJournalWriterTest {
   private SegmentedJournal journalWithSegments(
       final SortedMap<Long, FlushableSegment> flushableSegments, final JournalMetaStore metaStore) {
     final var segments = Mockito.mock(SegmentsManager.class);
+    when(segments.syncFailure()).thenReturn(new StickySyncFailure());
     final var segment = Mockito.mock(Segment.class);
     when(segment.index()).thenReturn(1L);
     when(segment.writer()).thenReturn(Mockito.mock(SegmentWriter.class));
@@ -390,6 +394,10 @@ final class SegmentedJournalWriterTest {
     when(segments.getFirstSegment()).thenReturn(segment);
     when(segments.getTailSegments(anyLong())).thenAnswer(invocation -> flushableSegments);
     return new SegmentedJournal(
-        new SparseJournalIndex(1), segments, journalFactory.metrics(), metaStore);
+        new SparseJournalIndex(1),
+        segments,
+        journalFactory.metrics(),
+        metaStore,
+        new StickySyncFailure());
   }
 }

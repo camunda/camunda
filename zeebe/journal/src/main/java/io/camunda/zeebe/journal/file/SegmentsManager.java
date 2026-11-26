@@ -15,6 +15,7 @@ import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.journal.StickySyncFailure;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -53,15 +54,11 @@ final class SegmentsManager implements AutoCloseable {
 
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
-  // read when flushing, which may run on another thread
-  private volatile @Nullable CompletableFuture<UninitializedSegment> nextSegment = null;
+  private @Nullable CompletableFuture<UninitializedSegment> nextSegment = null;
   // the deletion stops at the first failed segment and retries it later, so that the log on disk
   // never has a gap
   private final Queue<Segment> segmentsToDelete = new ConcurrentLinkedQueue<>();
   private CompletableFuture<Void> pendingDeletion = CompletableFuture.completedFuture(null);
-  // set when deleting a segment failed to sync, see deleteQueuedSegments
-  private volatile @Nullable SyncFailed deletionSyncFailure;
-
   private final JournalMetrics journalMetrics;
   private final JournalIndex journalIndex;
   private final int maxSegmentSize;
@@ -70,6 +67,7 @@ final class SegmentsManager implements AutoCloseable {
   private final String name;
   private final JournalMetaStore metaStore;
   private final Executor deletionExecutor;
+  private final StickySyncFailure syncFailure;
   private @Nullable ExecutorService bgIoExecutor;
 
   private volatile @Nullable Segment currentSegment;
@@ -82,7 +80,8 @@ final class SegmentsManager implements AutoCloseable {
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
       final JournalMetaStore metaStore,
-      final Executor deletionExecutor) {
+      final Executor deletionExecutor,
+      final StickySyncFailure syncFailure) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
@@ -91,6 +90,7 @@ final class SegmentsManager implements AutoCloseable {
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
     this.deletionExecutor = deletionExecutor;
+    this.syncFailure = syncFailure;
   }
 
   @Override
@@ -136,6 +136,10 @@ final class SegmentsManager implements AutoCloseable {
     currentSegment = null;
   }
 
+  StickySyncFailure syncFailure() {
+    return syncFailure;
+  }
+
   @Nullable Segment getCurrentSegment() {
     return currentSegment;
   }
@@ -174,7 +178,7 @@ final class SegmentsManager implements AutoCloseable {
       } catch (final CompletionException e) {
         if (e.getCause() instanceof final SyncFailed syncFailed) {
           // creating the segment again would sync the same directory again, which may succeed
-          // without writing what failed to sync
+          // without writing what failed to sync; the failure is recorded already
           nextSegment = null;
           throw syncFailed;
         }
@@ -190,32 +194,6 @@ final class SegmentsManager implements AutoCloseable {
     segments.put(descriptor.index(), currentSegment);
     journalMetrics.incSegmentCount();
     return currentSegment;
-  }
-
-  /**
-   * Returns why a sync in the background failed, if one did: creating the next segment, which
-   * nothing requests until the current one is full, or deleting compacted segments, which only the
-   * next compaction would notice.
-   */
-  @Nullable SyncFailed getBackgroundSyncFailure() {
-    final var deletionFailure = deletionSyncFailure;
-    if (deletionFailure != null) {
-      return deletionFailure;
-    }
-
-    final var prepared = nextSegment;
-    if (prepared == null || !prepared.isCompletedExceptionally()) {
-      return null;
-    }
-
-    try {
-      prepared.join();
-    } catch (final CompletionException e) {
-      if (e.getCause() instanceof final SyncFailed syncFailed) {
-        return syncFailed;
-      }
-    }
-    return null;
   }
 
   @Nullable Segment getNextSegment(final long index) {
@@ -244,13 +222,6 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   boolean deleteUntil(final long index) {
-    final var previousFailure = deletionSyncFailure;
-    if (previousFailure != null) {
-      throw new SyncFailed(
-          "Expected to delete segments, but deleting compacted segments failed to sync",
-          previousFailure);
-    }
-
     final Map.Entry<Long, Segment> segmentEntry = segments.floorEntry(index);
     if (segmentEntry == null) {
       scheduleQueuedDeletion();
@@ -322,14 +293,13 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   private void deleteQueuedSegments() {
-    final var previousFailure = deletionSyncFailure;
+    final var previousFailure = syncFailure.get();
     if (previousFailure != null) {
       // deleting another segment would sync the same directory again, which may succeed without
       // persisting the rename that failed to sync; this also stops compactions queued before the
       // failure, and the deletion when closing
       throw new SyncFailed(
-          "Expected to delete compacted segments, but deleting one failed to sync",
-          previousFailure);
+          "Expected to delete compacted segments, but a previous sync failed", previousFailure);
     }
 
     Segment segment;
@@ -338,7 +308,8 @@ final class SegmentsManager implements AutoCloseable {
       try {
         journalMetrics.observeSegmentDeletion(segment::delete);
       } catch (final SyncFailed e) {
-        deletionSyncFailure = e;
+        // the deletion runs in the background, where nothing else would notice the failure
+        syncFailure.record(e);
         throw e;
       }
       segmentsToDelete.remove();
@@ -492,7 +463,14 @@ final class SegmentsManager implements AutoCloseable {
 
   private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
-    return segmentLoader.createUninitializedSegment(segmentFile, descriptor, journalIndex);
+    try {
+      return segmentLoader.createUninitializedSegment(segmentFile, descriptor, journalIndex);
+    } catch (final SyncFailed e) {
+      // nothing requests the prepared segment until the current one is full, so record the
+      // failure now instead of letting writes continue until then
+      syncFailure.record(e);
+      throw e;
+    }
   }
 
   private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn) {

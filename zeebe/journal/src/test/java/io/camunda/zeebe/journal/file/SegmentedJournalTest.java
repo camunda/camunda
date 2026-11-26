@@ -427,7 +427,7 @@ class SegmentedJournalTest {
     // the first record in the second segment starts preparing the third one
     journal.append(journalFactory.entry());
     Awaitility.await("next segment failed to sync")
-        .until(() -> segments.getBackgroundSyncFailure() != null);
+        .until(() -> segments.syncFailure().get() != null);
     return segments;
   }
 
