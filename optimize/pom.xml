@@ -51,7 +51,7 @@
     <apache.http5-client.version>5.6.4</apache.http5-client.version>
     <apache.http5-core.version>5.4.3</apache.http5-core.version>
     <guava.version>33.3.1-jre</guava.version>
-    <spring.boot.version>3.5.15</spring.boot.version>
+    <spring.boot.version>3.5.16-spring-boot-3.5.22</spring.boot.version>
     <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 -->
     <opentelemetry.version>1.62.0</opentelemetry.version>
     <!-- 6.2.20+ (fixing CVE-2026-47884) ships only on the Spring Enterprise line, as OSS 6.2 is
@@ -1000,5 +1000,20 @@
       <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
     </repository>
   </repositories>
+
+  <pluginRepositories>
+    <!-- Reuse the authenticated CI mirror for the Spring Boot NES Maven plugin. -->
+    <pluginRepository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>zeebe</id>
+      <name>Zeebe Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io/</url>
+    </pluginRepository>
+  </pluginRepositories>
 
 </project>
