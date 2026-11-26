@@ -31,6 +31,7 @@ import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
@@ -573,6 +574,7 @@ final class SystemContextTest {
             SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             new BrokerCfg(),
             mock(ActorScheduler.class),
+            PhysicalTenantActorSchedulers.shared(mock(ActorScheduler.class)),
             mock(AtomixCluster.class),
             mock(BrokerClient.class),
             new SimpleMeterRegistry(),
@@ -927,6 +929,7 @@ final class SystemContextTest {
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
         mock(ActorScheduler.class),
+        PhysicalTenantActorSchedulers.shared(mock(ActorScheduler.class)),
         mock(AtomixCluster.class),
         mock(BrokerClient.class),
         new SimpleMeterRegistry(),

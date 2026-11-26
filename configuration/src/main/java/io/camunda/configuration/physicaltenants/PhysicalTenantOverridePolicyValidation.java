@@ -40,8 +40,9 @@ import org.springframework.core.env.Environment;
  * what a tenant declares) or a deliberate uniform-cluster policy call (see {@link
  * io.camunda.configuration.Camunda}). It is a flat enumeration rather than broader subtrees plus
  * carve-outs: the overridable properties ({@code cluster.partition-count}, {@code
- * system.clock-controlled}) are simply absent from the list. Matching is by ancestor, so listing a
- * parent (e.g. {@code cluster.network}) also forbids all of its descendants.
+ * system.clock-controlled}, and the actor-pool CPU and IO thread counts) are exceptions to denied
+ * parents. Matching is by ancestor, so listing a parent (e.g. {@code cluster.network}) also forbids
+ * all of its descendants unless the property is an explicit per-tenant exception.
  *
  * <p>{@code cluster.raft.*} is denied even though {@code RaftPartitionFactory} builds each
  * partition from the per-tenant {@code BrokerCfg} and would honor a per-tenant value correctly —
@@ -56,11 +57,21 @@ import org.springframework.core.env.Environment;
 final class PhysicalTenantOverridePolicyValidation {
 
   /**
+   * System properties under a denied parent that are intentionally overridable per tenant because
+   * each tenant's broker configuration consumes its own value.
+   */
+  private static final List<ConfigurationPropertyName> PER_TENANT_OVERRIDES =
+      Stream.of("system.actor-pool.cpu-thread-count", "system.actor-pool.io-thread-count")
+          .map(ConfigurationPropertyName::of)
+          .toList();
+
+  /**
    * Cluster-wide and identity-security properties that may not be overridden per physical tenant.
    * Enumerated from {@code camunda.cluster.*}, {@code camunda.system.*}, {@code camunda.license.*},
    * the identity-security subtrees of {@code camunda.security.*}, and the {@code BrokerCfg}
-   * sections denied by the #56648 review; the overridable carve-outs ({@code
-   * cluster.partition-count}, {@code system.clock-controlled}) are intentionally omitted.
+   * sections denied by the #56648 review. The cluster partition count and clock-controlled setting
+   * are not included; actor-pool thread counts are explicit exceptions in {@link
+   * #PER_TENANT_OVERRIDES}.
    */
   private static final List<ConfigurationPropertyName> NON_OVERRIDABLE =
       Stream.of(
@@ -93,6 +104,7 @@ final class PhysicalTenantOverridePolicyValidation {
               "system.cpu-thread-count",
               "system.io-thread-count",
               "system.actor",
+              "system.actor-pool",
               "system.upgrade",
               "system.restore",
               // camunda.license.* — one license per installation
@@ -198,7 +210,8 @@ final class PhysicalTenantOverridePolicyValidation {
    * test can classify the full configuration surface through the real policy.
    */
   static boolean isNonOverridable(final ConfigurationPropertyName relative) {
-    return NON_OVERRIDABLE.stream().anyMatch(prefix -> isUnder(prefix, relative));
+    return PER_TENANT_OVERRIDES.stream().noneMatch(relative::equals)
+        && NON_OVERRIDABLE.stream().anyMatch(prefix -> isUnder(prefix, relative));
   }
 
   private static boolean isUnder(

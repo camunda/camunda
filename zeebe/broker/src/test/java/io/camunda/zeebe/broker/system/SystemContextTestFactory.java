@@ -18,6 +18,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestEngineFactory;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -116,6 +117,7 @@ public final class SystemContextTestFactory {
         shutdownTimeout,
         brokerCfg,
         scheduler,
+        PhysicalTenantActorSchedulers.shared(scheduler),
         cluster,
         brokerClient,
         meterRegistry,
@@ -201,6 +203,7 @@ public final class SystemContextTestFactory {
         shutdownTimeout,
         rootBrokerCfg,
         scheduler,
+        PhysicalTenantActorSchedulers.shared(scheduler),
         cluster,
         brokerClient,
         meterRegistry,

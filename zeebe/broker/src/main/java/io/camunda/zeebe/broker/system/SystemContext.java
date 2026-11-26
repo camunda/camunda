@@ -25,6 +25,7 @@ import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
@@ -113,6 +114,7 @@ public final class SystemContext {
   private final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
+  private final PhysicalTenantActorSchedulers physicalTenantActorSchedulers;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
@@ -134,6 +136,7 @@ public final class SystemContext {
       final Duration shutdownTimeout,
       final BrokerCfg brokerCfg,
       final ActorScheduler scheduler,
+      final PhysicalTenantActorSchedulers physicalTenantActorSchedulers,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
@@ -149,6 +152,7 @@ public final class SystemContext {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.scheduler = scheduler;
+    this.physicalTenantActorSchedulers = physicalTenantActorSchedulers;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
@@ -756,6 +760,10 @@ public final class SystemContext {
       throw new IllegalArgumentException(
           tenantScopedMessage(tenantId, "Backup retention schedule is mandatory, none provided."));
     }
+  }
+
+  public PhysicalTenantActorSchedulers getPhysicalTenantActorSchedulers() {
+    return physicalTenantActorSchedulers;
   }
 
   public ActorScheduler getScheduler() {

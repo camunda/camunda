@@ -11,7 +11,7 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -82,7 +82,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
   }
 
-  public Future<Void> stop() {
+  public CompletableFuture<Void> stop() {
     if (state.compareAndSet(SchedulerState.RUNNING, SchedulerState.TERMINATING)) {
 
       return actorTaskExecutor.closeAsync().thenRun(() -> state.set(SchedulerState.TERMINATED));
@@ -270,6 +270,17 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
   }
 
   public static final class DefaultActorThreadFactory implements ActorThreadFactory {
+    private final String threadNamePrefix;
+
+    public DefaultActorThreadFactory() {
+      this("");
+    }
+
+    /** Creates threads whose names are the given prefix followed by the scheduler's thread name. */
+    public DefaultActorThreadFactory(final String threadNamePrefix) {
+      this.threadNamePrefix = threadNamePrefix;
+    }
+
     @Override
     public ActorThread newThread(
         final String name,
@@ -281,7 +292,14 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
         final ActorMetrics actorMetrics,
         final IdleStrategy idleStrategy) {
       return new ActorThread(
-          name, id, threadGroup, taskScheduler, clock, timerQueue, actorMetrics, idleStrategy);
+          threadNamePrefix + name,
+          id,
+          threadGroup,
+          taskScheduler,
+          clock,
+          timerQueue,
+          actorMetrics,
+          idleStrategy);
     }
   }
 

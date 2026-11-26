@@ -15,6 +15,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
 import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import java.util.HashMap;
@@ -22,6 +23,8 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.MapPropertySource;
@@ -92,6 +95,78 @@ class PhysicalTenantResolverTest {
     // then both declared tenants are present (alongside the synthesized 'default')
     assertThat(indexPrefixOf(resolved.get("tenanta"))).isEqualTo("tenanta");
     assertThat(indexPrefixOf(resolved.get("tenantb"))).isEqualTo("tenantb");
+  }
+
+  @Test
+  void shouldApplyPhysicalTenantActorPoolThreadCountsToEachTenantBrokerConfig() {
+    // given a broker-wide actor pool with different CPU and IO thread counts for each tenant
+    setProperties(
+        Map.of(
+            "camunda.system.actor-pool.enabled", true,
+            "camunda.system.actor-pool.cpu-thread-count", 4,
+            "camunda.system.actor-pool.io-thread-count", 6,
+            "camunda.physical-tenants.tenanta.system.actor-pool.cpu-thread-count", 1,
+            "camunda.physical-tenants.tenanta.system.actor-pool.io-thread-count", 2,
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+            "camunda.physical-tenants.tenantb.system.actor-pool.cpu-thread-count", 3,
+            "camunda.physical-tenants.tenantb.system.actor-pool.io-thread-count", 5,
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb"),
+        "tenanta",
+        "tenantb");
+
+    // when the resolved tenant configurations are converted to broker configurations
+    final PhysicalTenantResolver resolver = newResolver();
+    final var tenantA =
+        BrokerBasedPropertiesOverride.convert(resolver.forPhysicalTenant("tenanta"))
+            .getThreads()
+            .getPhysicalTenantActorPool();
+    final var tenantB =
+        BrokerBasedPropertiesOverride.convert(resolver.forPhysicalTenant("tenantb"))
+            .getThreads()
+            .getPhysicalTenantActorPool();
+
+    // then each broker config keeps actor-pool enablement and its own thread counts
+    assertThat(tenantA.enabled()).isTrue();
+    assertThat(tenantA.cpuThreads()).isEqualTo(1);
+    assertThat(tenantA.ioThreads()).isEqualTo(2);
+    assertThat(tenantB.enabled()).isTrue();
+    assertThat(tenantB.cpuThreads()).isEqualTo(3);
+    assertThat(tenantB.ioThreads()).isEqualTo(5);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, -1})
+  void shouldRejectNonPositiveTenantActorPoolCpuThreadCountWhenEnabled(final int count) {
+    // given a physical tenant with an enabled pool but a non-positive CPU thread count
+    assertTenantActorPoolCountRejected("cpu-thread-count", count);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, -1})
+  void shouldRejectNonPositiveTenantActorPoolIoThreadCountWhenEnabled(final int count) {
+    // given a physical tenant with an enabled pool but a non-positive IO thread count
+    assertTenantActorPoolCountRejected("io-thread-count", count);
+  }
+
+  private void assertTenantActorPoolCountRejected(final String property, final int count) {
+    setProperties(
+        Map.of(
+            "camunda.system.actor-pool.enabled",
+            true,
+            "camunda.physical-tenants.tenanta.system.actor-pool." + property,
+            count,
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+            "tenanta"),
+        "tenanta");
+    final Camunda tenant = newResolver().forPhysicalTenant("tenanta");
+
+    // when the resolved tenant is converted to a broker configuration
+    assertThatThrownBy(() -> BrokerBasedPropertiesOverride.convert(tenant))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("camunda.system.actor-pool." + property)
+        .hasMessageContaining("got " + count);
   }
 
   @Test

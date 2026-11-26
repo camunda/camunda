@@ -152,6 +152,7 @@ security.transport-layer-security.cluster.certificate-private-key-path
 security.transport-layer-security.cluster.enabled
 security.transport-layer-security.cluster.key-store.file-path
 security.transport-layer-security.cluster.key-store.password
+system.actor-pool.enabled
 system.actor.idle.max-park-period
 system.actor.idle.max-spins
 system.actor.idle.max-yields

@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.configuration.system.Actor;
+import io.camunda.configuration.system.ActorPool;
 import io.camunda.configuration.system.LegacyQueryApi;
 import io.camunda.configuration.system.Restore;
 import io.camunda.configuration.system.Upgrade;
@@ -26,16 +27,21 @@ public class System {
       Set.of("zeebe.clock.controlled");
 
   /**
-   * Controls the number of non-blocking CPU threads to be used. WARNING: You should never specify a
-   * value that is larger than the number of physical cores available. Good practice is to leave 1-2
-   * cores for IO threads and the operating system (it has to run somewhere). For example, when
-   * running Zeebe on a machine which has 4 cores, a good value would be 2.
+   * Controls the number of non-blocking CPU threads in the broker-wide actor pool. When {@code
+   * camunda.system.actor-pool.enabled} is true, this still sizes the shared pool for actors that
+   * are not specific to a physical tenant; each tenant's pool is additional. WARNING: You should
+   * never specify a value that is larger than the number of physical cores available. Good practice
+   * is to leave 1-2 cores for IO threads and the operating system (it has to run somewhere). For
+   * example, when running Zeebe on a machine which has 4 cores, a good value would be 2.
    */
   private int cpuThreadCount = 2;
 
   /**
-   * Controls the number of io threads to be used. These threads are used for workloads that write
-   * data to disk. While writing, these threads are blocked which means that they yield the CPU.
+   * Controls the number of IO threads in the broker-wide actor pool. These threads are used for
+   * workloads that write data to disk. While writing, these threads are blocked which means that
+   * they yield the CPU. When {@code camunda.system.actor-pool.enabled} is true, this still sizes
+   * the shared pool for actors that are not specific to a physical tenant; each tenant's pool is
+   * additional.
    */
   private int ioThreadCount = 2;
 
@@ -47,6 +53,7 @@ public class System {
 
   @NestedConfigurationProperty private Actor actor = new Actor();
   @NestedConfigurationProperty private Upgrade upgrade = new Upgrade();
+  @NestedConfigurationProperty private ActorPool actorPool = new ActorPool();
   @NestedConfigurationProperty private Restore restore = new Restore();
   @NestedConfigurationProperty private LegacyQueryApi legacyQueryApi = new LegacyQueryApi();
 
@@ -95,6 +102,14 @@ public class System {
 
   public void setActor(final Actor actor) {
     this.actor = actor;
+  }
+
+  public ActorPool getActorPool() {
+    return actorPool;
+  }
+
+  public void setActorPool(final ActorPool actorPool) {
+    this.actorPool = actorPool;
   }
 
   public Upgrade getUpgrade() {

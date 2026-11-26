@@ -54,6 +54,7 @@ import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
+import io.camunda.zeebe.broker.system.configuration.TenantActorPoolCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.RateLimitCfg;
@@ -810,6 +811,11 @@ public class BrokerBasedPropertiesOverride {
     final var threadsCfg = new ThreadsCfg();
     threadsCfg.setCpuThreadCount(system.getCpuThreadCount());
     threadsCfg.setIoThreadCount(system.getIoThreadCount());
+    final var tenantPool = system.getActorPool();
+    tenantPool.validate();
+    threadsCfg.setPhysicalTenantActorPool(
+        new TenantActorPoolCfg(
+            tenantPool.isEnabled(), tenantPool.getCpuThreadCount(), tenantPool.getIoThreadCount()));
     override.setThreads(threadsCfg);
 
     final var enableVersionCheck = system.getUpgrade().getEnableVersionCheck();
