@@ -7,6 +7,7 @@
  */
 
 import {HttpResponse, http} from 'msw';
+import {z} from 'zod';
 import {cleanup} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
@@ -108,6 +109,23 @@ describe('<AdminRoleDetailPage />', () => {
 		await expect.element(screen.getByRole('heading', {name: 'Operations'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Edit role'})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: 'Delete role'})).not.toBeInTheDocument();
+	});
+
+	it('should sort the groups of the role by group ID when the reader sorts the column', async ({worker}) => {
+		worker.use(
+			mockQueryGroupsByRoleEndpoint({
+				schema: z.object({sort: z.tuple([z.object({field: z.literal('groupId'), order: z.literal('ASC')})])}),
+				failureResponse: HttpResponse.json(createMembersPage([{groupId: 'unsorted'}])),
+				successResponse: HttpResponse.json(createMembersPage([{groupId: 'sorted'}])),
+			}),
+			mockQueryGroupsEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
+		);
+		const {screen, onSearchChange} = await renderPage({isOidc: true, search: {tab: 'groups'}});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Group ID'}));
+
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'groupId', sortOrder: 'ASC', page: undefined});
+		await expect.element(screen.getByRole('cell', {name: 'sorted'})).toBeVisible();
 	});
 
 	it('should only offer users and groups when the login is not delegated', async ({worker}) => {

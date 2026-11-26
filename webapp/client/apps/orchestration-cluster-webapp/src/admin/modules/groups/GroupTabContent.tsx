@@ -12,7 +12,14 @@ import {useTranslation} from 'react-i18next';
 import {Skeleton, type DataTableColumn} from '@camunda/design-system';
 import {queries} from '#/shared/http/queries';
 import {GroupMembersTab} from './GroupMembersTab';
-import {getMemberId, getMembersQuery, toMemberRow, type MemberKind, type MemberRow} from './members';
+import {
+	getMemberColumnSortField,
+	getMemberId,
+	getMembersQuery,
+	toMemberRow,
+	type MemberKind,
+	type MemberRow,
+} from './members';
 import {getGroupMembersRequestBody, type GroupDetailSearch, type GroupDetailSearchChange} from './detailSearchSchema';
 
 type Props = {
@@ -32,7 +39,7 @@ const COLUMN_FIELDS = {
 
 const GroupTabContent: React.FC<Props> = ({groupId, kind, isOidc, search, onSearchChange}) => {
 	const {t} = useTranslation();
-	const {data} = useSuspenseQuery(getMembersQuery(kind, groupId, getGroupMembersRequestBody(search)));
+	const {data} = useSuspenseQuery(getMembersQuery(kind, groupId, getGroupMembersRequestBody(search, kind)));
 	const memberIds = useMemo(() => data.items.map((item) => getMemberId(kind, item)), [data, kind]);
 
 	const enrichesUsers = kind === 'users' && !isOidc;
@@ -53,10 +60,15 @@ const GroupTabContent: React.FC<Props> = ({groupId, kind, isOidc, search, onSear
 	}, [data, kind, userDetails, enrichesUsers]);
 
 	const columns = useMemo<DataTableColumn<MemberRow>[]>(() => {
-		const memberColumns = COLUMN_FIELDS[kind].map((field) => ({
-			accessorKey: field,
-			header: t(`admin.groups.members.${kind}.${field}Column`),
-		}));
+		const memberColumns = COLUMN_FIELDS[kind].map((field) => {
+			const sortField = getMemberColumnSortField(kind, field);
+			return {
+				id: sortField ?? field,
+				accessorKey: field,
+				header: t(`admin.groups.members.${kind}.${field}Column`),
+				enableSorting: sortField !== undefined,
+			};
+		});
 		if (!enrichesUsers) {
 			return memberColumns;
 		}
@@ -65,11 +77,13 @@ const GroupTabContent: React.FC<Props> = ({groupId, kind, isOidc, search, onSear
 			{
 				accessorKey: 'name',
 				header: t('admin.users.name'),
+				enableSorting: false,
 				cell: ({row}) => (isEnriching ? <Skeleton className="h-4 w-24" /> : row.original.name),
 			},
 			{
 				accessorKey: 'email',
 				header: t('admin.users.email'),
+				enableSorting: false,
 				cell: ({row}) => (isEnriching ? <Skeleton className="h-4 w-32" /> : row.original.email),
 			},
 		];

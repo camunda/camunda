@@ -691,6 +691,8 @@
 				"roleNameColumn": "Name",
 				"mappingRuleIdColumn": "Zuordnungsregel-ID",
 				"mappingRuleNameColumn": "Name",
+				"mappingRuleClaimNameColumn": "Claim-Name",
+				"mappingRuleClaimValueColumn": "Claim-Wert",
 				"clientIdColumn": "Client-ID",
 				"members": {
 					"candidatesLoadError": "Optionen konnten nicht geladen werden",

@@ -19,7 +19,14 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
 import {TenantMembersTab} from './TenantMembersTab';
-import {getTenantMembersRequestBody} from './getTenantMembersRequestBody';
+import {
+	CLIENTS_SORT_FIELDS,
+	GROUPS_SORT_FIELDS,
+	MAPPING_RULES_SORT_FIELDS,
+	ROLES_SORT_FIELDS,
+	USERS_SORT_FIELDS,
+	getTenantMembersRequestBody,
+} from './getTenantMembersRequestBody';
 import type {TenantDetailSearch, TenantDetailSearchChange, TenantTab} from './detailSearchSchema';
 
 type ContentProps = {
@@ -41,7 +48,7 @@ const getClientId = (client: TenantClient) => client.clientId;
 const UsersTab: React.FC<ContentProps> = ({tenantId, search, isOidc, onSearchChange}) => {
 	const {t} = useTranslation();
 	const {data} = useSuspenseQuery(
-		queries.queryUsersByTenant(tenantId, getTenantMembersRequestBody(search, 'username')),
+		queries.queryUsersByTenant(tenantId, getTenantMembersRequestBody(search, USERS_SORT_FIELDS)),
 	);
 	const columns = useMemo<DataTableColumn<TenantUser>[]>(
 		() => [{accessorKey: 'username', header: t('admin.tenants.usernameColumn')}],
@@ -54,7 +61,7 @@ const UsersTab: React.FC<ContentProps> = ({tenantId, search, isOidc, onSearchCha
 			tenantId={tenantId}
 			rows={data.items}
 			columns={columns}
-			sortColumnId="username"
+			sortColumnIds={USERS_SORT_FIELDS}
 			getMemberId={getUsername}
 			totalItems={data.page.totalItems}
 			search={search}
@@ -67,7 +74,7 @@ const UsersTab: React.FC<ContentProps> = ({tenantId, search, isOidc, onSearchCha
 const GroupsTab: React.FC<ContentProps> = ({tenantId, search, isCamundaGroupsEnabled, onSearchChange}) => {
 	const {t} = useTranslation();
 	const {data} = useSuspenseQuery(
-		queries.queryGroupsByTenant(tenantId, getTenantMembersRequestBody(search, 'groupId')),
+		queries.queryGroupsByTenant(tenantId, getTenantMembersRequestBody(search, GROUPS_SORT_FIELDS)),
 	);
 	const columns = useMemo<DataTableColumn<TenantGroup>[]>(
 		() => [{accessorKey: 'groupId', header: t('admin.tenants.groupIdColumn')}],
@@ -80,7 +87,7 @@ const GroupsTab: React.FC<ContentProps> = ({tenantId, search, isCamundaGroupsEna
 			tenantId={tenantId}
 			rows={data.items}
 			columns={columns}
-			sortColumnId="groupId"
+			sortColumnIds={GROUPS_SORT_FIELDS}
 			getMemberId={getGroupId}
 			totalItems={data.page.totalItems}
 			search={search}
@@ -92,11 +99,13 @@ const GroupsTab: React.FC<ContentProps> = ({tenantId, search, isCamundaGroupsEna
 
 const RolesTab: React.FC<ContentProps> = ({tenantId, search, onSearchChange}) => {
 	const {t} = useTranslation();
-	const {data} = useSuspenseQuery(queries.queryRolesByTenant(tenantId, getTenantMembersRequestBody(search, 'roleId')));
+	const {data} = useSuspenseQuery(
+		queries.queryRolesByTenant(tenantId, getTenantMembersRequestBody(search, ROLES_SORT_FIELDS)),
+	);
 	const columns = useMemo<DataTableColumn<Role>[]>(
 		() => [
 			{accessorKey: 'roleId', header: t('admin.tenants.roleIdColumn')},
-			{accessorKey: 'name', header: t('admin.tenants.roleNameColumn'), enableSorting: false},
+			{accessorKey: 'name', header: t('admin.tenants.roleNameColumn')},
 		],
 		[t],
 	);
@@ -107,7 +116,7 @@ const RolesTab: React.FC<ContentProps> = ({tenantId, search, onSearchChange}) =>
 			tenantId={tenantId}
 			rows={data.items}
 			columns={columns}
-			sortColumnId="roleId"
+			sortColumnIds={ROLES_SORT_FIELDS}
 			getMemberId={getRoleId}
 			totalItems={data.page.totalItems}
 			search={search}
@@ -119,12 +128,14 @@ const RolesTab: React.FC<ContentProps> = ({tenantId, search, onSearchChange}) =>
 const MappingRulesTab: React.FC<ContentProps> = ({tenantId, search, onSearchChange}) => {
 	const {t} = useTranslation();
 	const {data} = useSuspenseQuery(
-		queries.queryMappingRulesByTenant(tenantId, getTenantMembersRequestBody(search, 'mappingRuleId')),
+		queries.queryMappingRulesByTenant(tenantId, getTenantMembersRequestBody(search, MAPPING_RULES_SORT_FIELDS)),
 	);
 	const columns = useMemo<DataTableColumn<MappingRule>[]>(
 		() => [
 			{accessorKey: 'mappingRuleId', header: t('admin.tenants.mappingRuleIdColumn')},
-			{accessorKey: 'name', header: t('admin.tenants.mappingRuleNameColumn'), enableSorting: false},
+			{accessorKey: 'name', header: t('admin.tenants.mappingRuleNameColumn')},
+			{accessorKey: 'claimName', header: t('admin.tenants.mappingRuleClaimNameColumn')},
+			{accessorKey: 'claimValue', header: t('admin.tenants.mappingRuleClaimValueColumn')},
 		],
 		[t],
 	);
@@ -135,7 +146,7 @@ const MappingRulesTab: React.FC<ContentProps> = ({tenantId, search, onSearchChan
 			tenantId={tenantId}
 			rows={data.items}
 			columns={columns}
-			sortColumnId="mappingRuleId"
+			sortColumnIds={MAPPING_RULES_SORT_FIELDS}
 			getMemberId={getMappingRuleId}
 			totalItems={data.page.totalItems}
 			search={search}
@@ -147,7 +158,7 @@ const MappingRulesTab: React.FC<ContentProps> = ({tenantId, search, onSearchChan
 const ClientsTab: React.FC<ContentProps> = ({tenantId, search, onSearchChange}) => {
 	const {t} = useTranslation();
 	const {data} = useSuspenseQuery(
-		queries.queryClientsByTenant(tenantId, getTenantMembersRequestBody(search, 'clientId')),
+		queries.queryClientsByTenant(tenantId, getTenantMembersRequestBody(search, CLIENTS_SORT_FIELDS)),
 	);
 	const columns = useMemo<DataTableColumn<TenantClient>[]>(
 		() => [{accessorKey: 'clientId', header: t('admin.tenants.clientIdColumn')}],
@@ -160,7 +171,7 @@ const ClientsTab: React.FC<ContentProps> = ({tenantId, search, onSearchChange}) 
 			tenantId={tenantId}
 			rows={data.items}
 			columns={columns}
-			sortColumnId="clientId"
+			sortColumnIds={CLIENTS_SORT_FIELDS}
 			getMemberId={getClientId}
 			totalItems={data.page.totalItems}
 			search={search}

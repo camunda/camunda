@@ -6,15 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Trash2} from '@camunda/design-system/icons';
 import {Button, DataTable, type DataTableColumn, type DataTableRowAction} from '@camunda/design-system';
 import {AssignEmptyState} from '#/admin/modules/shared/AssignEmptyState';
 import {AssignMemberModal} from './AssignMemberModal';
 import {RemoveMemberModal} from './RemoveMemberModal';
-import type {MemberKind, MemberRow} from './members';
+import {getMemberSortFields, type MemberKind, type MemberRow} from './members';
 import type {GroupDetailSearch, GroupDetailSearchChange} from './detailSearchSchema';
+import {getMemberSortState, toMemberSortSearch, type SortingState} from '#/admin/modules/shared/memberSorting';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES} from './searchSchema';
 
 type Props = {
@@ -50,6 +51,16 @@ const GroupMembersTab: React.FC<Props> = ({
 			onSearchChange({page: lastPage === 1 ? undefined : lastPage}, {replace: true});
 		}
 	}, [page, lastPage, onSearchChange]);
+
+	const {sortField, sortOrder} = search;
+	const sortState = useMemo(
+		() => getMemberSortState({sortField, sortOrder}, getMemberSortFields(kind)),
+		[sortField, sortOrder, kind],
+	);
+	const handleSortingChange = useCallback(
+		(state: SortingState) => onSearchChange(toMemberSortSearch(state)),
+		[onSearchChange],
+	);
 
 	const rowActions = useMemo<DataTableRowAction<MemberRow>[]>(
 		() => [
@@ -91,6 +102,7 @@ const GroupMembersTab: React.FC<Props> = ({
 						getRowId={(row) => row.id}
 						rowActions={rowActions}
 						inlineActionsThreshold={2}
+						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
 						pagination={{
 							manual: true,
 							pageSizes: [...PAGE_SIZES],

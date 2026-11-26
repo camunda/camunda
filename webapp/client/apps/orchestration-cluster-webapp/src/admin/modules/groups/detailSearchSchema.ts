@@ -7,11 +7,13 @@
  */
 
 import {z} from 'zod';
-import {MEMBER_KINDS, type MemberPage} from './members';
+import {memberSortSearchShape} from '#/admin/modules/shared/memberSorting';
+import {MEMBER_KINDS, getMemberSortRequest, type MemberKind, type MemberPage} from './members';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES} from './searchSchema';
 
 const groupDetailSearchSchema = z.object({
 	tab: z.enum(MEMBER_KINDS).optional(),
+	...memberSortSearchShape,
 	page: z.number().int().positive().optional(),
 	pageSize: z.literal(PAGE_SIZES).optional(),
 });
@@ -19,10 +21,10 @@ const groupDetailSearchSchema = z.object({
 type GroupDetailSearch = z.infer<typeof groupDetailSearchSchema>;
 type GroupDetailSearchChange = (next: Partial<GroupDetailSearch>, options?: {replace?: boolean}) => void;
 
-function getGroupMembersRequestBody(search: GroupDetailSearch): MemberPage {
+function getGroupMembersRequestBody(search: GroupDetailSearch, kind: MemberKind): MemberPage {
 	const pageSize = search.pageSize ?? DEFAULT_PAGE_SIZE;
 
-	return {page: {from: ((search.page ?? 1) - 1) * pageSize, limit: pageSize}};
+	return {page: {from: ((search.page ?? 1) - 1) * pageSize, limit: pageSize}, ...getMemberSortRequest(kind, search)};
 }
 
 export {getGroupMembersRequestBody, groupDetailSearchSchema};

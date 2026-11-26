@@ -7,12 +7,14 @@
  */
 
 import {z} from 'zod';
-import {MEMBER_KINDS, type MemberKind, type MemberPage} from './members';
+import {memberSortSearchShape} from '#/admin/modules/shared/memberSorting';
+import {MEMBER_KINDS, getMemberSortRequest, type MemberKind, type MemberPage} from './members';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES, escapeWildcards} from './searchSchema';
 
 const roleDetailSearchSchema = z.object({
 	tab: z.enum(MEMBER_KINDS).optional(),
 	search: z.coerce.string().optional(),
+	...memberSortSearchShape,
 	page: z.number().int().positive().optional(),
 	pageSize: z.literal(PAGE_SIZES).optional(),
 });
@@ -24,12 +26,13 @@ function getRoleMembersRequestBody(search: RoleDetailSearch, kind: MemberKind): 
 	const pageSize = search.pageSize ?? DEFAULT_PAGE_SIZE;
 	const searchTerm = search.search?.trim();
 	const page = {from: ((search.page ?? 1) - 1) * pageSize, limit: pageSize};
+	const sort = getMemberSortRequest(kind, search);
 
 	if (kind !== 'users' || searchTerm === undefined || searchTerm === '') {
-		return {page};
+		return {page, ...sort};
 	}
 
-	return {page, filter: {username: {$like: `*${escapeWildcards(searchTerm)}*`}}};
+	return {page, ...sort, filter: {username: {$like: `*${escapeWildcards(searchTerm)}*`}}};
 }
 
 export {getRoleMembersRequestBody, roleDetailSearchSchema};

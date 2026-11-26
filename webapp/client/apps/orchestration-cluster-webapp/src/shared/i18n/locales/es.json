@@ -691,6 +691,8 @@
 				"roleNameColumn": "Nombre",
 				"mappingRuleIdColumn": "ID de regla de mapeo",
 				"mappingRuleNameColumn": "Nombre",
+				"mappingRuleClaimNameColumn": "Nombre del claim",
+				"mappingRuleClaimValueColumn": "Valor del claim",
 				"clientIdColumn": "ID de cliente",
 				"members": {
 					"candidatesLoadError": "No se pudieron cargar las opciones",

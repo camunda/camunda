@@ -66,4 +66,16 @@ describe('getAuthorizationsRequestBody', () => {
 		// then
 		expect(body.sort).toEqual([{field: 'ownerId', order: 'ASC'}]);
 	});
+
+	it('should sort USER_TASK by resource property name', () => {
+		const body = getAuthorizationsRequestBody({sortField: 'resourcePropertyName', sortOrder: 'DESC'}, 'USER_TASK');
+
+		expect(body.sort).toEqual([{field: 'resourcePropertyName', order: 'DESC'}]);
+	});
+
+	it('should fall back to the default sort when sorting another resource type by resource property name', () => {
+		const body = getAuthorizationsRequestBody({sortField: 'resourcePropertyName'}, 'PROCESS_DEFINITION');
+
+		expect(body.sort).toEqual([{field: 'ownerId', order: 'ASC'}]);
+	});
 });

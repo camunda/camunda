@@ -14,7 +14,14 @@ import {assertAdminSectionAvailable, getAdminSectionConfig} from '#/admin/adminS
 import {AdminTenantDetailPage} from '#/admin/pages/AdminTenantDetailPage';
 import {tenantDetailSearchSchema, type TenantDetailSearch} from '#/admin/modules/tenants/detailSearchSchema';
 import {getActiveTenantTab, getAvailableTenantTabs} from '#/admin/modules/tenants/getAvailableTenantTabs';
-import {getTenantMembersRequestBody} from '#/admin/modules/tenants/getTenantMembersRequestBody';
+import {
+	CLIENTS_SORT_FIELDS,
+	GROUPS_SORT_FIELDS,
+	MAPPING_RULES_SORT_FIELDS,
+	ROLES_SORT_FIELDS,
+	USERS_SORT_FIELDS,
+	getTenantMembersRequestBody,
+} from '#/admin/modules/tenants/getTenantMembersRequestBody';
 import {ForbiddenError} from '#/shared/errors';
 import {queries} from '#/shared/http/queries';
 import {requestErrorSchema} from '#/shared/http/request';
@@ -36,17 +43,25 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/tenants/$tenantId')({
 			await Promise.all([
 				queryClient.query(queries.getTenant(tenantId)),
 				tab === 'users' &&
-					queryClient.query(queries.queryUsersByTenant(tenantId, getTenantMembersRequestBody(search, 'username'))),
+					queryClient.query(
+						queries.queryUsersByTenant(tenantId, getTenantMembersRequestBody(search, USERS_SORT_FIELDS)),
+					),
 				tab === 'groups' &&
-					queryClient.query(queries.queryGroupsByTenant(tenantId, getTenantMembersRequestBody(search, 'groupId'))),
+					queryClient.query(
+						queries.queryGroupsByTenant(tenantId, getTenantMembersRequestBody(search, GROUPS_SORT_FIELDS)),
+					),
 				tab === 'roles' &&
-					queryClient.query(queries.queryRolesByTenant(tenantId, getTenantMembersRequestBody(search, 'roleId'))),
+					queryClient.query(
+						queries.queryRolesByTenant(tenantId, getTenantMembersRequestBody(search, ROLES_SORT_FIELDS)),
+					),
 				tab === 'mapping-rules' &&
 					queryClient.query(
-						queries.queryMappingRulesByTenant(tenantId, getTenantMembersRequestBody(search, 'mappingRuleId')),
+						queries.queryMappingRulesByTenant(tenantId, getTenantMembersRequestBody(search, MAPPING_RULES_SORT_FIELDS)),
 					),
 				tab === 'clients' &&
-					queryClient.query(queries.queryClientsByTenant(tenantId, getTenantMembersRequestBody(search, 'clientId'))),
+					queryClient.query(
+						queries.queryClientsByTenant(tenantId, getTenantMembersRequestBody(search, CLIENTS_SORT_FIELDS)),
+					),
 			]);
 		} catch (error) {
 			const result = requestErrorSchema.safeParse(error);

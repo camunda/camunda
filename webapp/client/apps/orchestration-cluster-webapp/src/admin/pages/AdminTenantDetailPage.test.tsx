@@ -95,7 +95,7 @@ describe('<AdminTenantDetailPage />', () => {
 			mockQueryUsersByTenantEndpoint({successResponse: HttpResponse.json(createQueryUsersByTenantResponse())}),
 		);
 
-		const {screen, onSearchChange} = await renderPage({search: {page: 3, sortOrder: 'DESC'}});
+		const {screen, onSearchChange} = await renderPage({search: {page: 3, sortField: 'name', sortOrder: 'DESC'}});
 
 		await userEvent.click(screen.getByRole('tab', {name: 'Roles'}));
 
@@ -103,6 +103,7 @@ describe('<AdminTenantDetailPage />', () => {
 			tab: 'roles',
 			page: undefined,
 			pageSize: undefined,
+			sortField: undefined,
 			sortOrder: undefined,
 		});
 	});
@@ -202,6 +203,35 @@ describe('<AdminTenantDetailPage />', () => {
 		const {screen} = await renderPage({tabs: ['users', 'clients'], isOidc: true, search: {tab: 'clients'}});
 
 		await expect.element(screen.getByRole('cell', {name: 'connectors'})).toBeVisible();
+	});
+
+	it('should sort the roles of the tenant by name when the reader sorts that column', async ({worker}) => {
+		worker.use(
+			mockQueryRolesByTenantEndpoint({
+				successResponse: HttpResponse.json({items: [{roleId: 'ops', name: 'Operators'}], page: {totalItems: 1}}),
+			}),
+		);
+		const {screen, onSearchChange} = await renderPage({search: {tab: 'roles'}});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Name'}));
+
+		expect(onSearchChange).toHaveBeenCalledWith({sortField: 'name', sortOrder: undefined, page: undefined});
+	});
+
+	it('should show the claim columns of the mapping rules of the tenant', async ({worker}) => {
+		worker.use(
+			http.post('*/tenants/:tenantId/mapping-rules/search', () =>
+				HttpResponse.json({
+					items: [{mappingRuleId: 'okta', name: 'Okta users', claimName: 'groups', claimValue: 'engineering'}],
+					page: {totalItems: 1},
+				}),
+			),
+		);
+
+		const {screen} = await renderPage({tabs: ['users', 'mapping-rules'], search: {tab: 'mapping-rules'}});
+
+		await expect.element(screen.getByRole('button', {name: 'Claim name'})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'engineering'})).toBeVisible();
 	});
 
 	it('should show an empty state when nothing is assigned', async ({worker}) => {

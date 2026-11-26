@@ -18,13 +18,13 @@ import {useGroupMemberMutations} from './useGroupMemberMutations';
 const GROUP_ID = 'group-a';
 const LIST_KEY: QueryKey = ['groupMembers', GROUP_ID, 'users', {page: {from: 0, limit: 20}}];
 
-function setUp(initial: {items: {username: string}[]; page: {totalItems: number}}) {
+function setUp(initial: {items: {username: string}[]; page: {totalItems: number}}, listKey: QueryKey = LIST_KEY) {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
-	queryClient.setQueryData(LIST_KEY, initial);
+	queryClient.setQueryData(listKey, initial);
 	// Marks the list as active, as the open tab would, without ever refetching it.
 	const observer = new QueryObserver(queryClient, {
-		queryKey: LIST_KEY,
-		queryFn: () => queryClient.getQueryData(LIST_KEY),
+		queryKey: listKey,
+		queryFn: () => queryClient.getQueryData(listKey),
 		staleTime: Infinity,
 	});
 	const unsubscribe = observer.subscribe(() => {});
@@ -66,6 +66,35 @@ describe('useGroupMemberMutations', () => {
 
 		// then
 		await vi.waitFor(() => expect(warning).toHaveBeenCalledTimes(1), {timeout: 10_000});
+		unsubscribe();
+	});
+
+	it('should keep a descending list in descending order when a user is assigned', async ({worker}) => {
+		const descendingKey: QueryKey = [
+			'groupMembers',
+			GROUP_ID,
+			'users',
+			{page: {from: 0, limit: 20}, sort: [{field: 'username', order: 'DESC'}]},
+		];
+		const {queryClient, unsubscribe, Wrapper} = setUp(
+			{items: [{username: 'carol'}, {username: 'bob'}], page: {totalItems: 2}},
+			descendingKey,
+		);
+		worker.use(
+			http.put('*/groups/:groupId/users/:username', () => new HttpResponse(null, {status: 204})),
+			mockQueryUsersByGroupEndpoint({
+				successResponse: HttpResponse.json({items: [{username: 'carol'}, {username: 'bob'}], page: {totalItems: 2}}),
+			}),
+		);
+		const {result} = await renderHook(() => useGroupMemberMutations(GROUP_ID), {wrapper: Wrapper});
+
+		await result.current.assign.mutateAsync({kind: 'users', ids: ['dave']});
+
+		expect(queryClient.getQueryData<{items: {username: string}[]}>(descendingKey)?.items).toEqual([
+			{username: 'dave'},
+			{username: 'carol'},
+			{username: 'bob'},
+		]);
 		unsubscribe();
 	});
 
