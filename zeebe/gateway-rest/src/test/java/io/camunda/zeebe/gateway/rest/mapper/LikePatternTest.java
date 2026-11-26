@@ -145,6 +145,8 @@ class LikePatternTest {
         Arguments.of(named("40 '*' then 'ACTIVE'", "*".repeat(40) + "ACTIVE"), true),
         Arguments.of(named("1M '*'", "*".repeat(1_000_000)), true),
         Arguments.of(named("1M '*' then 15 '?'", "*".repeat(1_000_000) + "?".repeat(15)), false),
+        // the most stars that survive collapsing and the bound, so the pattern compiles
+        Arguments.of(named("13 '*?' then 'Z'", "*?".repeat(13) + "Z"), false),
         // compiling a long pattern is superlinear, or overflows the stack
         Arguments.of(named("50k '*?' then 'Z'", "*?".repeat(50_000) + "Z"), false),
         Arguments.of(named("500k escaped 'A'", "\\A".repeat(500_000)), false),
