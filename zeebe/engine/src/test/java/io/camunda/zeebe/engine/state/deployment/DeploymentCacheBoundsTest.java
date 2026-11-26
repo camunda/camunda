@@ -17,9 +17,7 @@ import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -217,9 +215,8 @@ final class DeploymentCacheBoundsTest {
   }
 
   private long storeProcess(final EngineConfiguration config) {
-    final var transformer =
-        BpmnFactory.createTransformer(InstantSource.system(), ExpressionLanguageMetrics.noop());
-    lastProcessState = new DbProcessState(zeebeDb, transactionContext, config, transformer);
+    lastProcessState =
+        new DbProcessState(zeebeDb, transactionContext, config, InstantSource.system());
     final var processRecord = ProcessStateTest.creatingProcessRecord(processingState);
     processTenantId = processRecord.getTenantId();
     lastProcessState.putProcess(processRecord.getKey(), processRecord);
