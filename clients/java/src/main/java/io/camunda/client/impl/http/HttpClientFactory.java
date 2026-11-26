@@ -75,6 +75,16 @@ public class HttpClientFactory {
    */
   static final TimeValue DEFAULT_CONNECTION_TIME_TO_LIVE = TimeValue.ofSeconds(60);
 
+  /**
+   * Maximum time to establish one TCP connection to one resolved address. httpclient5 defaults to 3
+   * minutes, so in practice the operating system gives up first (about 127 seconds on Linux), and
+   * the client tries every resolved address one after the other. When a server pod is replaced, its
+   * address stops answering, the connect attempt hangs, and a job worker waiting for that poll does
+   * nothing for minutes, since neither the response timeout nor the response deadline cover the
+   * connect.
+   */
+  static final Timeout DEFAULT_CONNECT_TIMEOUT = Timeout.ofSeconds(10);
+
   private static final String PHYSICAL_TENANT_PATH_SEGMENT = "/physical-tenants/";
 
   /**
@@ -94,6 +104,7 @@ public class HttpClientFactory {
   private final CamundaClientConfiguration config;
   private final Duration responseDeadlineMargin;
   private final TimeValue connectionTimeToLive;
+  private final Timeout connectTimeout;
 
   public HttpClientFactory(final CamundaClientConfiguration config) {
     this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN, DEFAULT_CONNECTION_TIME_TO_LIVE);
@@ -104,9 +115,19 @@ public class HttpClientFactory {
       final CamundaClientConfiguration config,
       final Duration responseDeadlineMargin,
       final TimeValue connectionTimeToLive) {
+    this(config, responseDeadlineMargin, connectionTimeToLive, DEFAULT_CONNECT_TIMEOUT);
+  }
+
+  /** Lets tests shorten the connect timeout as well. */
+  HttpClientFactory(
+      final CamundaClientConfiguration config,
+      final Duration responseDeadlineMargin,
+      final TimeValue connectionTimeToLive,
+      final Timeout connectTimeout) {
     this.config = config;
     this.responseDeadlineMargin = responseDeadlineMargin;
     this.connectionTimeToLive = connectionTimeToLive;
+    this.connectTimeout = connectTimeout;
   }
 
   public HttpClient createClient() {
@@ -157,7 +178,10 @@ public class HttpClientFactory {
             .setMessageMultiplexing(false)
             .setMaxConnPerRoute(config.getMaxHttpConnections())
             .setDefaultConnectionConfig(
-                ConnectionConfig.custom().setTimeToLive(connectionTimeToLive).build());
+                ConnectionConfig.custom()
+                    .setConnectTimeout(connectTimeout)
+                    .setTimeToLive(connectionTimeToLive)
+                    .build());
 
     if (config.useClientSideLoadBalancing()) {
       connectionManagerBuilder.setDnsResolver(new RandomizedDnsResolver());
@@ -165,7 +189,10 @@ public class HttpClientFactory {
       // DNS. Otherwise the randomized DNS resolver only takes effect when a new connection is
       // created, which would rarely happen and defeat load balancing.
       connectionManagerBuilder.setDefaultConnectionConfig(
-          ConnectionConfig.custom().setTimeToLive(TimeValue.ofSeconds(1)).build());
+          ConnectionConfig.custom()
+              .setConnectTimeout(connectTimeout)
+              .setTimeToLive(TimeValue.ofSeconds(1))
+              .build());
     }
 
     return connectionManagerBuilder.build();
