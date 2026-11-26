@@ -2014,6 +2014,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         assigned: null # Type: List<String>, Env: CAMUNDA_SECURITY_AUTHENTICATION_PROVIDERS_ASSIGNED
     
     authorizations: null # Type: io.camunda.security.api.model.config.AuthorizationsConfiguration, Env: CAMUNDA_SECURITY_AUTHORIZATIONS
+    client: null # Type: Map<String,io.camunda.security.api.model.config.client.OutboundClientConfiguration>, Env: CAMUNDA_SECURITY_CLIENT
     cluster-admin: # Type: io.camunda.configuration.security.ClusterAdmin  
       basic: # Type: io.camunda.configuration.security.clusteradmin.ClusterAdminBasic  
         # Statically configured cluster-admin users for HTTP Basic authentication.
