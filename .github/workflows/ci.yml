@@ -648,7 +648,7 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+      id-token: write # Vault JWT login
     env:
       TEST_PRODUCT: Gradle
       TEST_TYPE: CI
@@ -662,24 +662,12 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
-          skip-maven-cache: true
+          build-tool: gradle
           locale: C.UTF-8
           vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-        with:
-          # Only main and stable pushes warm the shared cache; all other runs only read it.
-          cache-read-only: >-
-            ${{
-              !(
-                github.event_name == 'push' &&
-                (
-                  github.ref == 'refs/heads/main' ||
-                  startsWith(github.ref, 'refs/heads/stable/')
-                )
-              )
-            }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Compile
         run: |
           ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
@@ -724,8 +712,9 @@ jobs:
         uses: ./.github/actions/gcs-build-cache-auth
         with:
           vault-addr: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Upload Gradle distribution comparison inputs to GCS
         if: needs.detect-changes.outputs.gradle-changes == 'true' && github.event.pull_request.head.repo.fork != true
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -770,8 +759,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   gradle-distribution-parity-check:
     name: "Gradle / Distribution Parity"
@@ -781,7 +771,7 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+      id-token: write # Vault JWT login
     env:
       TEST_PRODUCT: Gradle
       TEST_TYPE: CI
@@ -798,8 +788,9 @@ jobs:
         uses: ./.github/actions/gcs-build-cache-auth
         with:
           vault-addr: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Download Maven distribution tarball
         uses: ./.github/actions/download-shared-build-artifact
         with:
@@ -851,8 +842,9 @@ jobs:
         with:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   build-platform-frontend:
     # Runs when the frontend changed, OR on any non-PR event targeting main/stable
