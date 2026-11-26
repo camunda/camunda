@@ -104,6 +104,9 @@ final class PhysicalTenantOverridePolicyValidation {
               // per-tenant config exists.
               "api.enabled",
               "api.rest.executor",
+              // one Tomcat connector serves every physical tenant, so TLS client
+              // certificate checks cannot differ per tenant
+              "api.rest.client-certificate",
               "api.grpc",
               "api.long-polling",
               // camunda.data.* cluster wide

@@ -114,12 +114,29 @@ final class ClientCertificateIdentityFilterTest {
   }
 
   @Test
-  void shouldRejectUntrustedClientAtHandshake() throws Exception {
-    // given - chain validation stays with Tomcat and Spring's trust store
+  void shouldTreatClientWithCertificateOfOtherCaAsAnonymousWhenWanted() throws Exception {
+    // given - Tomcat names its trusted CAs in the certificate request, so a client whose
+    // certificate comes from another CA holds it back and continues without one
     start("want", "allowed-identities=worker.example.com");
 
-    // when - then
-    assertThatThrownBy(() -> get("untrusted")).isInstanceOf(IOException.class);
+    // when
+    final var response = get("untrusted");
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(rejectedCount("IDENTITY_NOT_ALLOWED")).isZero();
+    assertThat(acceptedCount("worker.example.com")).isZero();
+  }
+
+  @Test
+  void shouldRejectClientWithCertificateOfOtherCaAtHandshakeWhenNeeded() throws Exception {
+    // given - chain validation stays with Tomcat and Spring's trust store
+    start("need", "allowed-identities=worker.example.com");
+
+    // when - then: the client holds back its certificate, so it fails as "certificate required"
+    assertThatThrownBy(() -> get("untrusted"))
+        .isInstanceOf(IOException.class)
+        .hasStackTraceContaining("certificate_required");
   }
 
   @Test

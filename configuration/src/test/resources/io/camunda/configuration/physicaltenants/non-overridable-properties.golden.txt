@@ -20,6 +20,8 @@ api.long-polling.min-empty-responses
 api.long-polling.notification-batch-window
 api.long-polling.probe-timeout
 api.long-polling.timeout
+api.rest.client-certificate.allowed-identities
+api.rest.client-certificate.common-name-fallback
 api.rest.executor.core-pool-size-multiplier
 api.rest.executor.keep-alive
 api.rest.executor.max-pool-size-multiplier
