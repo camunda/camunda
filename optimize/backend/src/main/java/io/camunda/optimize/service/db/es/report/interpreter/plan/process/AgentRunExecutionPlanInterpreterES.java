@@ -13,11 +13,11 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
+import io.camunda.optimize.service.db.es.filter.AgentRunQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.ProcessGroupByInterpreterFacadeES;
-import io.camunda.optimize.service.db.es.report.interpreter.util.DefinitionQueryUtilES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.reader.AgentDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
@@ -25,6 +25,7 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.plan.process.AgentRunExecutionPlanInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.schema.index.AgentRunIndex;
+import io.camunda.optimize.service.util.DefinitionQueryUtilES;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Collections;
 import java.util.Map;
@@ -39,7 +40,7 @@ public class AgentRunExecutionPlanInterpreterES extends AbstractProcessExecution
 
   private final ProcessDefinitionReader processDefinitionReader;
   private final OptimizeElasticsearchClient esClient;
-  private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
+  private final AgentRunQueryFilterEnhancerES queryFilterEnhancer;
   private final ProcessGroupByInterpreterFacadeES groupByInterpreter;
   private final ProcessViewInterpreterFacadeES viewInterpreter;
   private final AgentDefinitionReader agentDefinitionReader;
@@ -47,7 +48,7 @@ public class AgentRunExecutionPlanInterpreterES extends AbstractProcessExecution
   public AgentRunExecutionPlanInterpreterES(
       final ProcessDefinitionReader processDefinitionReader,
       final OptimizeElasticsearchClient esClient,
-      final ProcessQueryFilterEnhancerES queryFilterEnhancer,
+      final AgentRunQueryFilterEnhancerES queryFilterEnhancer,
       final ProcessGroupByInterpreterFacadeES groupByInterpreter,
       final ProcessViewInterpreterFacadeES viewInterpreter,
       final AgentDefinitionReader agentDefinitionReader) {
@@ -112,6 +113,18 @@ public class AgentRunExecutionPlanInterpreterES extends AbstractProcessExecution
   }
 
   @Override
+  protected BoolQuery.Builder createDefinitionQuery(final ReportDataDefinitionDto definitionDto) {
+    return DefinitionQueryUtilES.createDefinitionQuery(
+        definitionDto.getKey(),
+        definitionDto.getVersions(),
+        definitionDto.getTenantIds(),
+        AgentRunIndex.PROCESS_DEFINITION_KEY,
+        AgentRunIndex.PROCESS_DEFINITION_VERSION,
+        AgentRunIndex.TENANT_ID,
+        processDefinitionReader::getLatestVersionToKey);
+  }
+
+  @Override
   protected String[] getIndexNames(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return getMultiIndexAlias();
@@ -128,7 +141,7 @@ public class AgentRunExecutionPlanInterpreterES extends AbstractProcessExecution
   }
 
   @Override
-  protected ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
+  protected AgentRunQueryFilterEnhancerES getQueryFilterEnhancer() {
     return queryFilterEnhancer;
   }
 
