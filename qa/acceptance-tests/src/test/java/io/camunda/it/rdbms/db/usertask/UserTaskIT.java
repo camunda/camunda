@@ -437,6 +437,29 @@ public class UserTaskIT {
   }
 
   @TestTemplate
+  public void shouldFindNoUserTaskByUserTaskAuthorizationWithNonNumericResourceId(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    // when - the only grant is on a user task resource ID that is not a user task key
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b),
+                ResourceAccessChecks.of(
+                    AuthorizationCheck.enabled(
+                        Authorization.of(b -> b.userTask().read().resourceId("abc"))),
+                    TenantCheck.disabled()));
+
+    // then
+    assertThat(searchResult.total()).isZero();
+    assertThat(searchResult.items()).isEmpty();
+  }
+
+  @TestTemplate
   public void shouldFindSeveralUserTaskByPropertyBasedAuthorizationWithCandidateGroups(
       final CamundaRdbmsTestApplication testApplication) {
     // given
