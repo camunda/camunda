@@ -689,7 +689,7 @@ jobs:
       - name: Generate GitHub App Token
         id: app-token
         if: failure()
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@405ecc95af077cd030bfe3249511e802fd9e4585 # generate-github-app-token-from-vault-secrets-1.3.1
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
