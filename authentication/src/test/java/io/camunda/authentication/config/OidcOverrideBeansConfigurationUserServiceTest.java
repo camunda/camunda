@@ -9,6 +9,9 @@ package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.sun.net.httpserver.HttpServer;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
@@ -50,7 +53,6 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 class OidcOverrideBeansConfigurationUserServiceTest {
 
   private static final String SUBJECT = "user-subject";
-  private static final String USER_INFO_REQUIRED_KEY = "camunda.security.oidc.user-info-required";
 
   private final OidcOverrideBeansConfiguration configuration =
       new OidcOverrideBeansConfiguration(new CamundaSecurityLibraryProperties());
@@ -121,7 +123,11 @@ class OidcOverrideBeansConfigurationUserServiceTest {
     final var service = userService(ObservationRegistry.NOOP);
 
     // when / then
-    assertThatThrownBy(() -> service.loadUser(userRequest(Map.of(USER_INFO_REQUIRED_KEY, true))))
+    assertThatThrownBy(
+            () ->
+                service.loadUser(
+                    userRequest(
+                        Map.of(FailSoftOidcUserService.USER_INFO_REQUIRED_METADATA_KEY, true))))
         .isInstanceOf(OAuth2AuthenticationException.class);
   }
 
@@ -181,18 +187,10 @@ class OidcOverrideBeansConfigurationUserServiceTest {
     assertThat(observed).contains("camunda_authentication_external_requests");
   }
 
-  @Test
-  void shouldFollowTheSecurityLibraryFailSoftService() {
-    // the chain builder passes this bean to userInfoEndpoint(...), so its type is what Spring uses
-    assertThat(userService(ObservationRegistry.NOOP)).isInstanceOf(FailSoftOidcUserService.class);
-  }
-
   private OidcUserService userService(final ObservationRegistry observationRegistry) {
     @SuppressWarnings("unchecked")
-    final ObjectProvider<ObservationRegistry> provider =
-        org.mockito.Mockito.mock(ObjectProvider.class);
-    org.mockito.Mockito.when(provider.getIfAvailable(org.mockito.ArgumentMatchers.any()))
-        .thenReturn(observationRegistry);
+    final ObjectProvider<ObservationRegistry> provider = mock(ObjectProvider.class);
+    when(provider.getIfAvailable(any())).thenReturn(observationRegistry);
     return configuration.oidcUserService(provider);
   }
 

@@ -524,8 +524,8 @@ public class OidcOverrideBeansConfiguration {
 
     oauthUserService.setRestOperations(restTemplate);
 
-    // keep the library's fail-soft behavior: this bean replaces its default, which would otherwise
-    // continue login with ID-token claims when the IdP rejects the access token at /userinfo
+    // keep the library's fail-soft behavior (continue login on ID-token claims when /userinfo
+    // rejects the access token), which overriding its default bean would otherwise drop
     return new FailSoftOidcUserService(oauthUserService);
   }
 
