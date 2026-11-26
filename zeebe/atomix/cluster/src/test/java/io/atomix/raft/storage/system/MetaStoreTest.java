@@ -115,6 +115,22 @@ class MetaStoreTest {
     }
 
     @Test
+    void shouldStoreTermAndVoteTogether() throws IOException {
+      // given - a vote in the previous term
+      metaStore.storeTerm(1L);
+      metaStore.storeVote(MemberId.from("1"));
+
+      // when
+      metaStore.storeTermAndVote(2L, null);
+
+      // then
+      metaStore.close();
+      metaStore = new MetaStore(storage, meterRegistry);
+      assertThat(metaStore.loadTerm()).isEqualTo(2L);
+      assertThat(metaStore.loadVote()).isNull();
+    }
+
+    @Test
     void shouldStoreAndLoadVote() {
       // when
       metaStore.storeVote(new MemberId("id"));

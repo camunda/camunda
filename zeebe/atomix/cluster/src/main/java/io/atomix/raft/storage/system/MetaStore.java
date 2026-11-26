@@ -172,6 +172,20 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   }
 
   /**
+   * Stores a new term and the vote in it in one write, so that a crash or a failed write never
+   * persists the new term with the vote of the previous one.
+   *
+   * @param term The current server term.
+   * @param vote The server vote in that term, or null if it did not vote yet.
+   */
+  public synchronized void storeTermAndVote(final long term, final MemberId vote) {
+    log.trace("Store term {} and vote {}", term, vote);
+    serializer.writeTerm(term);
+    serializer.writeVotedFor(vote == null ? null : vote.id());
+    writeToFile(serializer.metaByteBuffer(), metaFileChannel, false);
+  }
+
+  /**
    * Loads the last vote for the server.
    *
    * @return The last vote for the server.

@@ -1363,8 +1363,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   public void setTerm(final long term) {
     if (term > this.term) {
       // store before acting on it, so that a term whose write failed is never used
-      meta.storeTerm(term);
-      meta.storeVote(null);
+      meta.storeTermAndVote(term, null);
       this.term = term;
       leader = null;
       lastVotedFor = null;
