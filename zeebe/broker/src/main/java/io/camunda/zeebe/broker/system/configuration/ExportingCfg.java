@@ -20,16 +20,22 @@ import java.util.Set;
  * <p><b> Backwards compatibility with the legacy `zeebe.broker.exporting.skip-records` is broken
  * deliberately as this configuration should only be used for recovery purposes</b>
  */
-public record ExportingCfg(Map<Integer, Set<Long>> skipRecords, Duration distributionInterval) {
+public record ExportingCfg(
+    Map<Integer, Set<Long>> skipRecords,
+    Duration distributionInterval,
+    boolean exportOnlyBackedUpRecords) {
 
   public ExportingCfg(
-      final Map<Integer, Set<Long>> skipRecords, final Duration distributionInterval) {
+      final Map<Integer, Set<Long>> skipRecords,
+      final Duration distributionInterval,
+      final boolean exportOnlyBackedUpRecords) {
     this.skipRecords = skipRecords == null ? Map.of() : skipRecords;
     this.distributionInterval =
         distributionInterval == null ? DEFAULT_DISTRIBUTION_INTERVAL : distributionInterval;
+    this.exportOnlyBackedUpRecords = exportOnlyBackedUpRecords;
   }
 
   public static ExportingCfg defaultExportingCfg() {
-    return new ExportingCfg(null, null);
+    return new ExportingCfg(null, null, false);
   }
 }

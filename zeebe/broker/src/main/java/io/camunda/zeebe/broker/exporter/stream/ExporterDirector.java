@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.LangUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class ExporterDirector extends Actor implements HealthMonitorable, LogRecordAwaiter {
@@ -101,6 +102,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private boolean idle;
   private final InstantSource clock;
   private final RecordMetadataBlock skipRecordDecoder = new RecordMetadataBlock();
+  private final @Nullable BackedUpPositionGate backedUpPositionGate;
 
   public ExporterDirector(
       final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
@@ -152,6 +154,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     exporterMode = context.getExporterMode();
     distributionInterval = context.getDistributionInterval();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
+    final var backedUpPositionSource = context.getBackedUpPositionSource();
+    backedUpPositionGate =
+        backedUpPositionSource != null
+            ? new BackedUpPositionGate(
+                backedUpPositionSource,
+                context.getBackedUpPositionPollInterval(),
+                actor,
+                this::readNextEvent)
+            : null;
 
     // needs name to be initialized
     healthReport = HealthReport.healthy(this);
@@ -445,6 +456,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   protected void onActorCloseRequested() {
     isOpened.set(false);
+    if (backedUpPositionGate != null) {
+      backedUpPositionGate.stop();
+    }
     containers.forEach(ExporterContainer::close);
     exporterDistributionService.close();
   }
@@ -576,6 +590,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       exporterDistributionTimer.cancel();
       exporterDistributionTimer = null;
     }
+    if (backedUpPositionGate != null) {
+      backedUpPositionGate.stop();
+    }
     if (logStreamReader != null) {
       // We have to close it, otherwise it will prevent journal segment deletion
       logStreamReader.close();
@@ -695,6 +712,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     exporterDistributionTimer =
         actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
+    if (backedUpPositionGate != null) {
+      backedUpPositionGate.start();
+    }
   }
 
   private void startPassiveExportingMode() {
@@ -756,7 +776,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         && !idle
         && logStreamReader.hasNext()
         && !inExportingPhase
-        && !exporterPhase.equals(ExporterPhase.PAUSED);
+        && !exporterPhase.equals(ExporterPhase.PAUSED)
+        && isNextRecordBackedUp();
+  }
+
+  private boolean isNextRecordBackedUp() {
+    return backedUpPositionGate == null
+        || backedUpPositionGate.isAllowed(logStreamReader.peekNext().getPosition());
   }
 
   private void exportEvent(final LoggedEvent event) {

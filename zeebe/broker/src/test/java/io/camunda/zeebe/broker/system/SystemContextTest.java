@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
@@ -876,6 +877,33 @@ final class SystemContextTest {
     final var backupCfg = brokerCfg.getData().getBackup();
     backupCfg.setRequired(false);
     backupCfg.setStore(BackupStoreType.NONE);
+
+    // when - then
+    assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));
+  }
+
+  @Test
+  void shouldThrowWhenExportOnlyBackedUpRecordsIsEnabledButStoreIsNone() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.setExporting(new ExportingCfg(null, null, true));
+    brokerCfg.getData().getBackup().setStore(BackupStoreType.NONE);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining("export-only-backed-up-records")
+        .hasMessageContaining("no backup store is configured");
+  }
+
+  @Test
+  void shouldNotThrowWhenExportOnlyBackedUpRecordsIsEnabledAndStoreIsConfigured() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.setExporting(new ExportingCfg(null, null, true));
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setStore(BackupStoreType.FILESYSTEM);
+    backupCfg.getFilesystem().setBasePath("/tmp");
 
     // when - then
     assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));

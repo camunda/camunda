@@ -17,10 +17,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public final class ExporterDirectorContext {
 
   public static final Duration DEFAULT_DISTRIBUTION_INTERVAL = Duration.ofSeconds(15);
+  public static final Duration DEFAULT_BACKED_UP_POSITION_POLL_INTERVAL = Duration.ofSeconds(5);
 
   private int id;
   private String name;
@@ -36,6 +38,8 @@ public final class ExporterDirectorContext {
   private String engineName;
   private boolean sendOnLegacySubject = true;
   private boolean receiveOnLegacySubject = true;
+  private @Nullable BackedUpPositionSource backedUpPositionSource;
+  private Duration backedUpPositionPollInterval = DEFAULT_BACKED_UP_POSITION_POLL_INTERVAL;
 
   public int getId() {
     return id;
@@ -137,6 +141,26 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext distributionInterval(final Duration distributionInterval) {
     this.distributionInterval = distributionInterval;
+    return this;
+  }
+
+  public @Nullable BackedUpPositionSource getBackedUpPositionSource() {
+    return backedUpPositionSource;
+  }
+
+  public ExporterDirectorContext backedUpPositionSource(
+      final @Nullable BackedUpPositionSource backedUpPositionSource) {
+    this.backedUpPositionSource = backedUpPositionSource;
+    return this;
+  }
+
+  public Duration getBackedUpPositionPollInterval() {
+    return backedUpPositionPollInterval;
+  }
+
+  public ExporterDirectorContext backedUpPositionPollInterval(
+      final Duration backedUpPositionPollInterval) {
+    this.backedUpPositionPollInterval = backedUpPositionPollInterval;
     return this;
   }
 

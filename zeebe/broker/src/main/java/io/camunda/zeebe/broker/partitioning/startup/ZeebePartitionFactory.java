@@ -14,6 +14,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
@@ -100,6 +101,7 @@ public final class ZeebePartitionFactory implements Closeable {
   private final BrokerInfo localBroker;
   private final CommandApiService commandApiService;
   private final SnapshotApiRequestHandler snapshotApiRequestHandler;
+  private final BrokerClient brokerClient;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -122,6 +124,7 @@ public final class ZeebePartitionFactory implements Closeable {
       final BrokerInfo localBroker,
       final CommandApiService commandApiService,
       final SnapshotApiRequestHandler snapshotApiRequestHandler,
+      final BrokerClient brokerClient,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
@@ -140,6 +143,7 @@ public final class ZeebePartitionFactory implements Closeable {
     this.localBroker = localBroker;
     this.commandApiService = commandApiService;
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+    this.brokerClient = brokerClient;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
@@ -200,6 +204,7 @@ public final class ZeebePartitionFactory implements Closeable {
             snapshotStore,
             snapshotCopy,
             snapshotApiRequestHandler,
+            brokerClient,
             stateController,
             typedRecordProcessorsFactory,
             exporterRepository,

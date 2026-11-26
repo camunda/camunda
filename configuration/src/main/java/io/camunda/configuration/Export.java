@@ -40,6 +40,27 @@ public class Export {
    */
   private Map<Integer, Set<Long>> skipRecords = Map.of();
 
+  /**
+   * When enabled, exporters only receive records that are already contained in a confirmed backup
+   * common to all partitions. The exporter reader never advances past this partition's checkpoint
+   * position for that backup, so no record reaches secondary storage before it can be restored from
+   * primary storage backups.
+   *
+   * <p>Requires a configured backup store ({@code camunda.data.primary-storage.backup.store}) and
+   * regular backups; nothing is exported until a backup completes across all partitions, and
+   * exporting stalls whenever backups stop completing.
+   *
+   * <p>Interferes with write-rate throttling ({@code
+   * camunda.processing.flow-control.write.throttle}), because delaying exporting grows the
+   * exporting backlog between backups and can trigger backpressure.
+   *
+   * <p>After restoring from a backup, exporting stalls until a new backup completes across all
+   * partitions. A backup's confirmation record is written after its checkpoint position and is
+   * therefore truncated by the restore, so records already contained in the restored backup are
+   * held back until a new common backup is confirmed.
+   */
+  private boolean exportOnlyBackedUpRecords = false;
+
   public Duration getDistributionInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".distribution-interval",
@@ -59,5 +80,13 @@ public class Export {
 
   public void setSkipRecords(final Map<Integer, Set<Long>> skipRecords) {
     this.skipRecords = skipRecords;
+  }
+
+  public boolean isExportOnlyBackedUpRecords() {
+    return exportOnlyBackedUpRecords;
+  }
+
+  public void setExportOnlyBackedUpRecords(final boolean exportOnlyBackedUpRecords) {
+    this.exportOnlyBackedUpRecords = exportOnlyBackedUpRecords;
   }
 }
