@@ -10,8 +10,12 @@ package io.camunda.application.commons.security.mtls;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.util.tls.PeerIdentityMatcher;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import jakarta.servlet.DispatcherType;
 import java.util.EnumSet;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.boot.web.server.Ssl.ClientAuth;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -24,13 +28,14 @@ import org.springframework.core.env.Environment;
  * requests client certificates ({@code server.ssl.client-auth=want|need}).
  */
 @Configuration(proxyBeanMethods = false)
+@ConditionalOnWebApplication(type = Type.SERVLET)
 public class ClientCertificateIdentityConfiguration {
 
   @Bean
   public FilterRegistrationBean<ClientCertificateIdentityFilter> clientCertificateIdentityFilter(
       final UnifiedConfiguration configuration,
       final Environment environment,
-      final MeterRegistry meterRegistry) {
+      final ObjectProvider<MeterRegistry> meterRegistry) {
     final var settings = configuration.getCamunda().getApi().getRest().getClientCertificate();
     final var matcher =
         new PeerIdentityMatcher(settings.getAllowedIdentities(), settings.isCommonNameFallback());
@@ -48,7 +53,9 @@ public class ClientCertificateIdentityConfiguration {
     }
 
     final var registration =
-        new FilterRegistrationBean<>(new ClientCertificateIdentityFilter(matcher, meterRegistry));
+        new FilterRegistrationBean<>(
+            new ClientCertificateIdentityFilter(
+                matcher, meterRegistry.getIfAvailable(() -> Metrics.globalRegistry)));
     registration.setName("clientCertificateIdentityFilter");
     registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
     registration.setDispatcherTypes(EnumSet.allOf(DispatcherType.class));
