@@ -18,7 +18,12 @@ package io.camunda.zeebe.model.bpmn.instance.zeebe;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
 /**
- * Marks a top-level sub-process of a case process as a stage of the case. The marker has no
- * attributes.
+ * Marks a top-level sub-process of a case process as a stage of the case. A stage is alternative
+ * when it is not part of the main (happy) path of the case, e.g. an escalation or a withdrawal.
  */
-public interface ZeebeStage extends BpmnModelElementInstance {}
+public interface ZeebeStage extends BpmnModelElementInstance {
+
+  boolean isAlternative();
+
+  void setAlternative(boolean alternative);
+}

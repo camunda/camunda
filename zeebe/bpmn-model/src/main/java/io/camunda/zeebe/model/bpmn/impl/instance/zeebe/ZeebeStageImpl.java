@@ -22,8 +22,11 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeStage;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
 public class ZeebeStageImpl extends BpmnModelElementInstanceImpl implements ZeebeStage {
+
+  private static Attribute<Boolean> alternativeAttribute;
 
   public ZeebeStageImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -35,6 +38,24 @@ public class ZeebeStageImpl extends BpmnModelElementInstanceImpl implements Zeeb
             .defineType(ZeebeStage.class, ZeebeConstants.ELEMENT_STAGE)
             .namespaceUri(BpmnModelConstants.ZEEBE_NS)
             .instanceProvider(ZeebeStageImpl::new);
+
+    alternativeAttribute =
+        typeBuilder
+            .booleanAttribute(ZeebeConstants.ATTRIBUTE_ALTERNATIVE)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .defaultValue(false)
+            .build();
+
     typeBuilder.build();
+  }
+
+  @Override
+  public boolean isAlternative() {
+    return alternativeAttribute.getValue(this);
+  }
+
+  @Override
+  public void setAlternative(final boolean alternative) {
+    alternativeAttribute.setValue(this, alternative);
   }
 }

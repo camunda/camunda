@@ -229,6 +229,8 @@ public final class BpmnTransformer {
       walker.walk(visitor);
     }
 
+    CaseDefinitionTransformer.transform(modelInstance, context.getProcesses());
+
     return context.getProcesses();
   }
 

@@ -25,6 +25,7 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_NAME = "name";
   public static final String ATTRIBUTE_VALUE = "value";
   public static final String ATTRIBUTE_TITLE = "title";
+  public static final String ATTRIBUTE_ALTERNATIVE = "alternative";
 
   public static final String ATTRIBUTE_SOURCE = "source";
   public static final String ATTRIBUTE_TARGET = "target";

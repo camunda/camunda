@@ -61,6 +61,14 @@ public interface CaseRecordValue extends RecordValue, ProcessInstanceRelated, Te
    */
   List<CaseStageValue> getStages();
 
+  /**
+   * Returns the ids of the stages that can be entered first, reachable from the start of the
+   * process. Only set on {@link CaseIntent#CREATED}.
+   *
+   * @return the element ids of the initial stages, or an empty list if none
+   */
+  List<String> getStartElementIds();
+
   /** A stage of a case. */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableCaseStageValue.Builder.class)
@@ -75,5 +83,23 @@ public interface CaseRecordValue extends RecordValue, ProcessInstanceRelated, Te
      * @return the status of the stage
      */
     CaseStageStatus getStatus();
+
+    /**
+     * @return the name of the stage, or an empty string if none; only set on {@link
+     *     CaseIntent#CREATED}
+     */
+    String getName();
+
+    /**
+     * @return whether the stage is an alternative stage, i.e. not part of the main path of the
+     *     case; only set on {@link CaseIntent#CREATED}
+     */
+    boolean isAlternative();
+
+    /**
+     * @return the ids of the stages that can follow this stage; only set on {@link
+     *     CaseIntent#CREATED}
+     */
+    List<String> getNextElementIds();
   }
 }
