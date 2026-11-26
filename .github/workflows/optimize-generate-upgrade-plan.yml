@@ -16,6 +16,9 @@ on:
 
 jobs:
   generate-upgrade-plan:
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
@@ -25,9 +28,10 @@ jobs:
       uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_ID;
           secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_KEY;

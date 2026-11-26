@@ -37,6 +37,7 @@ permissions:
   issues: read
   checks: write
   pull-requests: write
+  id-token: write # Vault JWT login, also in the called workflows
 
 jobs:
   detect-changes:
@@ -329,5 +330,7 @@ jobs:
           run-id: ${{ github.run_id }}
           repository: ${{ github.repository }}
           vault-addr: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}

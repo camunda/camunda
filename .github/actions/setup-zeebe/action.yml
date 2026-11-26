@@ -21,11 +21,14 @@ inputs:
   secret_vault_address:
     description: 'secret vault url'
     required: false
-  secret_vault_roleId:
-    description: 'secret vault roleId'
+  secret_vault_jwtRole:
+    description: 'Vault JWT role; when set, the action logs in via JWT/OIDC and the job needs id-token: write'
     required: false
-  secret_vault_secretId:
-    description: 'secret valut secret id'
+  secret_vault_jwtPath:
+    description: 'Vault JWT auth backend path'
+    required: false
+  secret_vault_jwtAudience:
+    description: 'GitHub OIDC audience for the Vault JWT login'
     required: false
   docker:
     description: If true, logs into Docker Hub using our CI account; helpful to prevent rate limiting
@@ -50,8 +53,7 @@ runs:
         github.event.name == 'pull_request'
         && github.event.pull_request.head.repo.full_name == 'camunda/camunda'
         && (inputs.secret_vault_address == ''
-        || inputs.secret_vault_roleId == ''
-        || inputs.secret_vault_secretId == '')
+        || inputs.secret_vault_jwtRole == '')
       shell: bash
       run: |
         echo "We will fail the action if it's an internal PR without the secrets. If this occurs it indicates a configuration failure that needs to be fixed."
@@ -61,13 +63,13 @@ runs:
       uses: hashicorp/vault-action@v3.0.0
       if: |
         inputs.secret_vault_address != ''
-        && inputs.secret_vault_roleId != ''
-        && inputs.secret_vault_secretId != ''
+        && inputs.secret_vault_jwtRole != ''
       with:
         url: ${{ inputs.secret_vault_address }}
-        method: approle
-        roleId: ${{ inputs.secret_vault_roleId }}
-        secretId: ${{ inputs.secret_vault_secretId }}
+        method: jwt
+        role: ${{ inputs.secret_vault_jwtRole }}
+        path: ${{ inputs.secret_vault_jwtPath }}
+        jwtGithubAudience: ${{ inputs.secret_vault_jwtAudience }}
         secrets: |
           secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
           secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
@@ -84,8 +86,7 @@ runs:
       if: |
         inputs.docker == 'true'
         && inputs.secret_vault_address != ''
-        && inputs.secret_vault_roleId != ''
-        && inputs.secret_vault_secretId != ''
+        && inputs.secret_vault_jwtRole != ''
       with:
         username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
         password: ${{ steps.secrets.outputs[inputs.docker-token] }}
@@ -95,8 +96,7 @@ runs:
       if: |
         inputs.java == 'true'
         && inputs.secret_vault_address != ''
-        && inputs.secret_vault_roleId != ''
-        && inputs.secret_vault_secretId != ''
+        && inputs.secret_vault_jwtRole != ''
       with:
         githubServer: false
         servers: |

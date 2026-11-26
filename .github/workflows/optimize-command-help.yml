@@ -5,6 +5,9 @@ on:
 jobs:
   optimize-help-command:
     name: Help Command
+    permissions:
+      issues: write
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     steps:
       - name: Create URL to the run output
@@ -22,9 +25,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
           github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
           github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Dump the client payload context
