@@ -3,7 +3,7 @@ description: |
   Local action to simplify login to the Harbor registry
 inputs:
   secrets:
-    description: JSON wrapped secrets for easier secret passing
+    description: 'JSON wrapped secrets for easier secret passing; needs VAULT_ADDR, VAULT_JWT_ROLE, VAULT_JWT_PATH and VAULT_JWT_AUDIENCE, and the job needs id-token: write'
     required: true
   env:
     description: Environment prefix, e.g. "dev." or "stage."
@@ -17,9 +17,10 @@ runs:
     uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
     with:
       url: ${{ fromJSON(inputs.secrets).VAULT_ADDR }}
-      method: approle
-      roleId: ${{ fromJSON(inputs.secrets).VAULT_ROLE_ID }}
-      secretId: ${{ fromJSON(inputs.secrets).VAULT_SECRET_ID }}
+      method: jwt
+      role: ${{ fromJSON(inputs.secrets).VAULT_JWT_ROLE }}
+      path: ${{ fromJSON(inputs.secrets).VAULT_JWT_PATH }}
+      jwtGithubAudience: ${{ fromJSON(inputs.secrets).VAULT_JWT_AUDIENCE }}
       secrets: |
         secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
         secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;

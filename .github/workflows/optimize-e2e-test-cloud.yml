@@ -27,6 +27,9 @@ on:
 
 jobs:
   e2e-cloud-test:
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -37,9 +40,10 @@ jobs:
       uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/optimize/ci/camunda-optimize AUTH0_CLIENTSECRET;
           secret/data/products/optimize/ci/camunda-optimize AUTH0_USEREMAIL;
