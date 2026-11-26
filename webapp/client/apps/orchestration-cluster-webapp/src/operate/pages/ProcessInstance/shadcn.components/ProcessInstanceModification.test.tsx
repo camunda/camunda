@@ -173,11 +173,11 @@ describe('DS process instance token modifications', () => {
 		await expect
 			.element(screen.getByText(/^Last added modification:/))
 			.toHaveTextContent('Last added modification: Cancel "Task A"');
-		await expect.element(screen.getByRole('img', {name: '1 canceled'})).toBeVisible();
+		await expect.element(screen.getByRole('img', {name: 'Task A, 1 canceled'})).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Undo'}));
 
-		await expect.element(screen.getByRole('img', {name: '1 canceled'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('img', {name: 'Task A, 1 canceled'})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: 'Review Modifications'})).toBeDisabled();
 	});
 

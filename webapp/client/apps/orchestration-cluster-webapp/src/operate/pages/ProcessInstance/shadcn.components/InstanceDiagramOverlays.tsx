@@ -31,6 +31,11 @@ type Props = {
 	businessObjects?: BusinessObjects;
 };
 
+function getOverlayElementName(businessObjects: BusinessObjects | undefined, elementId: string): string | undefined {
+	const name = businessObjects?.[elementId]?.name?.trim();
+	return name === undefined || name === '' ? undefined : name;
+}
+
 const AgentShineOverlay: React.FC<Pick<OverlayEntry, 'container' | 'elementId'>> = ({container, elementId}) => {
 	const shineRef = useRef<HTMLSpanElement>(null);
 
@@ -63,6 +68,7 @@ const InstanceDiagramOverlays: React.FC<Props> = ({businessObjects}) => {
 	const {t} = useTranslation();
 
 	return overlays.map(({type, payload, container, elementId}) => {
+		const elementName = getOverlayElementName(businessObjects, elementId);
 		if (type === 'instance-state') {
 			const {elementState, count} = payload as StatePayload;
 			return (
@@ -72,15 +78,25 @@ const InstanceDiagramOverlays: React.FC<Props> = ({businessObjects}) => {
 					count={count}
 					container={container}
 					title={elementState === 'completed' ? t('operate.processInstance.diagram.executionCount') : undefined}
-					elementName={businessObjects?.[elementId]?.name}
+					elementName={elementName}
 				/>
 			);
 		}
 		if (type === 'instance-waiting') {
 			const {waitingCount, centered} = payload as WaitingPayload;
+			const label = getWaitStateLabel(waitingCount);
+			if (label === null) {
+				return null;
+			}
+			const accessibleLabel = elementName === undefined ? label : `${elementName}, ${label}`;
 			return createPortal(
-				<Badge variant="warning" className={cn('tabular-nums', centered && '-translate-x-1/2')}>
-					{getWaitStateLabel(waitingCount)}
+				<Badge
+					variant="warning"
+					role="img"
+					aria-label={accessibleLabel}
+					className={cn('tabular-nums', centered && '-translate-x-1/2')}
+				>
+					{label}
 				</Badge>,
 				container,
 				`waiting-${elementId}`,
@@ -125,6 +141,7 @@ const InstanceDiagramOverlays: React.FC<Props> = ({businessObjects}) => {
 					container={container}
 					newTokenCount={newTokenCount}
 					cancelledTokenCount={cancelledTokenCount}
+					elementName={elementName}
 				/>
 			);
 		}
