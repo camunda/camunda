@@ -31,8 +31,8 @@ import org.junit.Test;
 
 /**
  * Message start events on a suspended definition across partitions: the correlation key of a
- * message decides the partition that correlates it, and its business id the partition that starts
- * the instance, so one key per partition plus one cross-partition start covers every path.
+ * message decides the partition that correlates it, so one key per partition covers every local
+ * start. The cross-partition start (business id on another partition) has its own test.
  */
 public final class MessageStartOnSuspendedDefinitionMultiPartitionTest {
 
@@ -53,13 +53,11 @@ public final class MessageStartOnSuspendedDefinitionMultiPartitionTest {
   @Test
   public void shouldStartNoInstanceWhileSuspendedAndStartInstancesAfterResumeOnAllPartitions() {
     // given - a message-start process on every partition, suspended on all of them, and one
-    // correlation key per partition plus a cross-partition start (business id on another partition)
+    // correlation key per partition
     final var processId = helper.getBpmnProcessId();
     final var messageName = helper.getMessageName();
     final long processDefinitionKey = deployMessageStartProcess(processId, messageName);
     final var keysPerPartition = correlationKeyPerPartition();
-    final var crossPartitionKey = keysPerPartition.getFirst() + "-cross";
-    final var crossPartitionBusinessId = businessIdOnOtherPartitionThan(crossPartitionKey);
     assertDistributionFinished(
         engine
             .processDefinitionSuspension()
@@ -68,7 +66,6 @@ public final class MessageStartOnSuspendedDefinitionMultiPartitionTest {
 
     // when - every key is published while the definition is suspended
     keysPerPartition.forEach(key -> publish(messageName, key, null));
-    publish(messageName, crossPartitionKey, crossPartitionBusinessId);
     final var resumed =
         engine
             .processDefinitionSuspension()
@@ -89,10 +86,9 @@ public final class MessageStartOnSuspendedDefinitionMultiPartitionTest {
 
     // when - the same keys are published after the resume
     keysPerPartition.forEach(key -> publish(messageName, key, null));
-    publish(messageName, crossPartitionKey, crossPartitionBusinessId);
 
     // then - none of the keys was left locked, so each one starts an instance
-    final int expectedInstances = keysPerPartition.size() + 1;
+    final int expectedInstances = keysPerPartition.size();
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(processId)

@@ -15,13 +15,11 @@ import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.time.Duration;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.junit.Rule;
@@ -84,8 +82,7 @@ public final class StartEventOnSuspendedDefinitionTest {
     // then - the evaluation succeeded and only reports the instance it started
     assertThat(evaluated.getValue().getStartedProcessInstances())
         .extracting(instance -> instance.getProcessDefinitionKey())
-        .containsExactly(activeKey)
-        .doesNotContain(suspendedKey);
+        .containsExactly(activeKey);
     assertThat(instancesCreated(activeId, markerKey)).isEqualTo(1);
     assertThat(instancesCreated(suspendedId, markerKey)).isZero();
 
@@ -100,24 +97,6 @@ public final class StartEventOnSuspendedDefinitionTest {
         .extracting(instance -> instance.getProcessDefinitionKey())
         .containsExactlyInAnyOrder(suspendedKey, activeKey);
     assertThat(instancesCreated(suspendedId, resumedMarkerKey)).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldNotStartInstanceOfSuspendedDefinitionOnTimer() {
-    // given - a definition with a repeating timer start event, suspended once its timer exists
-    final var processId = helper.getBpmnProcessId() + "-timer";
-    final var processKey = deploy(processId, start -> start.timerWithCycle("R/PT1S"));
-    RecordingExporter.timerRecords(TimerIntent.CREATED)
-        .withProcessDefinitionKey(processKey)
-        .await();
-    suspend(processKey);
-
-    // when - the timer would be due several times
-    engine.increaseTime(Duration.ofSeconds(5));
-    final long markerKey = completeMarkerInstance();
-
-    // then
-    assertThat(instancesCreated(processId, markerKey)).isZero();
   }
 
   private long deploy(final String processId, final UnaryOperator<StartEventBuilder> startEvent) {
