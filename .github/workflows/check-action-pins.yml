@@ -1,6 +1,6 @@
 # Enforce SHA-pinning of 3rd-party GitHub Actions on PR-touched workflow files.
 # Policy in .github/zizmor.yml: actions/*, github/*, camunda/* may use tags;
-# everything else must be SHA-pinned. Closes #25934.
+# camunda/infra-global-github-actions/* and everything else must be SHA-pinned. Closes #25934.
 #
 # Reusable workflow — invoked from `ci.yml`'s `pin-check` job so the result
 # rolls up into the `check-results` umbrella that branch protection enforces.
