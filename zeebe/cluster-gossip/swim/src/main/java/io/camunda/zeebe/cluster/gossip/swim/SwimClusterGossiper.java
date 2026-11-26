@@ -18,6 +18,7 @@ import io.camunda.zeebe.cluster.gossip.GlobalListener;
 import io.camunda.zeebe.cluster.gossip.MemberKey;
 import io.camunda.zeebe.cluster.gossip.MemberListener;
 import io.camunda.zeebe.cluster.gossip.Subscription;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -146,6 +148,7 @@ public final class SwimClusterGossiper
       subscriptions.add(subscription);
       // the new subscription has been told nothing yet, so this replays every current value to it
       members().forEach(member -> subscription.refresh(member.id(), member.properties()));
+      subscription.deliver();
     }
     return subscription;
   }
@@ -183,14 +186,16 @@ public final class SwimClusterGossiper
 
   /**
    * Lets every subscription compare a member's current value with the one it last notified. A
-   * member that is gone has no values. Notifications are handed to the subscribers' executors while
-   * holding the lock, so every subscriber sees changes in the order they were applied; executors
-   * must therefore not block.
+   * member that is gone has no values. A change is queued for every subscription before any
+   * callback runs, so a listener that writes in response cannot overtake the change for the other
+   * listeners.
    */
   private void refresh(final MemberId member, final @Nullable Member current) {
     synchronized (lock) {
       final var properties = current == null ? null : current.properties();
-      subscriptions.forEach(subscription -> subscription.refresh(member, properties));
+      final var affected = List.copyOf(subscriptions);
+      affected.forEach(subscription -> subscription.refresh(member, properties));
+      affected.forEach(MemberSubscription::deliver);
     }
   }
 
@@ -231,7 +236,7 @@ public final class SwimClusterGossiper
   private final class MemberSubscription<T> implements Subscription {
 
     private final MemberKey<T> key;
-    private final Executor executor;
+    private final SerialCallbacks callbacks;
     private final MemberListener<T> listener;
     // guarded by the gossiper's lock; the encoded value this listener was last told, per member
     private final Map<MemberId, byte[]> lastNotified = new HashMap<>();
@@ -239,11 +244,11 @@ public final class SwimClusterGossiper
     private MemberSubscription(
         final MemberKey<T> key, final Executor executor, final MemberListener<T> listener) {
       this.key = key;
-      this.executor = executor;
+      callbacks = new SerialCallbacks(executor);
       this.listener = listener;
     }
 
-    /** Notifies the listener if the member's value differs from the one it was last told. */
+    /** Queues a notification if the member's value differs from the one the listener was told. */
     void refresh(final MemberId member, final @Nullable Properties properties) {
       final var before = lastNotified.get(member);
       final var after = properties == null ? null : read(properties, key.name());
@@ -260,7 +265,7 @@ public final class SwimClusterGossiper
         // the value neither was nor is readable; there is nothing to tell
         return;
       }
-      executor.execute(
+      callbacks.enqueue(
           () -> {
             if (subscriptions.contains(this)) {
               listener.onChange(member, value);
@@ -268,9 +273,72 @@ public final class SwimClusterGossiper
           });
     }
 
+    void deliver() {
+      callbacks.deliver();
+    }
+
     @Override
     public void close() {
       subscriptions.remove(this);
+    }
+  }
+
+  /**
+   * Runs one subscription's callbacks one at a time, in the order they were queued, on the
+   * subscriber's executor. Without this, a multi-threaded executor could run an older callback
+   * last, and a listener that writes from a direct executor would deliver the resulting change to
+   * other listeners before the change that triggered it.
+   */
+  private final class SerialCallbacks {
+
+    private final Executor executor;
+    // guarded by the gossiper's lock
+    private final Queue<Runnable> pending = new ArrayDeque<>();
+    private boolean draining;
+
+    private SerialCallbacks(final Executor executor) {
+      this.executor = executor;
+    }
+
+    /** Queues a callback without running it. Must be called while holding the gossiper's lock. */
+    void enqueue(final Runnable callback) {
+      pending.add(callback);
+    }
+
+    /**
+     * Starts running queued callbacks unless that is already under way. Must be called while
+     * holding the gossiper's lock.
+     */
+    void deliver() {
+      if (!draining && !pending.isEmpty()) {
+        draining = true;
+        executor.execute(this::drain);
+      }
+    }
+
+    private void drain() {
+      while (true) {
+        final Runnable next;
+        synchronized (lock) {
+          next = pending.poll();
+          if (next == null) {
+            draining = false;
+            return;
+          }
+        }
+        boolean completed = false;
+        try {
+          next.run();
+          completed = true;
+        } finally {
+          if (!completed) {
+            // a throwing listener must not stop later callbacks; the next delivery runs the rest
+            synchronized (lock) {
+              draining = false;
+            }
+          }
+        }
+      }
     }
   }
 }

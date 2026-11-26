@@ -154,6 +154,28 @@ final class SwimClusterGossiperTest {
   }
 
   @Test
+  void shouldNotifyEveryListenerInOrderWhenListenerWrites() {
+    // given - the first listener answers "leader" by writing "follower"
+    gossiper(0)
+        .subscribe(
+            ROLE,
+            Runnable::run,
+            (member, value) -> {
+              if (value.equals(Optional.of("leader"))) {
+                gossiper(0).put(ROLE, "follower");
+              }
+            });
+    final var received = new CopyOnWriteArrayList<Optional<String>>();
+    gossiper(0).subscribe(ROLE, Runnable::run, (member, value) -> received.add(value));
+
+    // when
+    gossiper(0).put(ROLE, "leader");
+
+    // then
+    assertThat(received).containsExactly(Optional.of("leader"), Optional.of("follower"));
+  }
+
+  @Test
   void shouldDropValuesWhenMemberLeaves() {
     // given
     gossiper(0).put(ROLE, "leader");
