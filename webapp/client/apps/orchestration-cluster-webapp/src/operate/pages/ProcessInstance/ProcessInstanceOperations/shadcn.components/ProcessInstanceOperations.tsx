@@ -48,8 +48,6 @@ import {ModificationHelperModal} from '#/operate/pages/ProcessInstance/shadcn.co
 import {COLLAPSED_LAYOUT_QUERY} from '../../shadcn.components/collapsedLayoutQuery';
 import {processInstanceHeaderOperationMachine, type HeaderAction} from '../processInstanceHeaderOperationMachine';
 
-const getRootInstancePath = (rootInstanceId: string) => `${OPERATE_BASE}/processes/${rootInstanceId}`;
-
 const ICONS = {retry: RotateCcw, cancel: Ban, delete: Trash2, suspend: CirclePause, resume: CirclePlay};
 
 function useHeaderOperation(action: HeaderAction, processInstanceKey: string) {
@@ -310,7 +308,6 @@ const ProcessInstanceOperations: React.FC = () => {
 				<CancelConfirmationModal
 					processInstanceKey={processInstanceKey}
 					open
-					getRootInstancePath={getRootInstancePath}
 					onCancel={() => setConfirmation(null)}
 					onConfirm={() => {
 						setConfirmation(null);

@@ -12,6 +12,7 @@ import {userEvent} from 'vitest/browser';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
+import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockGetProcessInstanceCallHierarchyEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {Operations} from './Operations';
@@ -338,12 +339,14 @@ describe('<Operations />', () => {
 			}),
 		);
 
-		const screen = await render(
-			<Operations
-				operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
-				processInstanceKey={PROCESS_INSTANCE_KEY}
-			/>,
-			{wrapper: getWrapper()},
+		const screen = await renderWithRouter(
+			() => (
+				<Operations
+					operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
+					processInstanceKey={PROCESS_INSTANCE_KEY}
+				/>
+			),
+			{path: '/operate-preview/processes'},
 		);
 
 		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
@@ -357,6 +360,31 @@ describe('<Operations />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Apply', exact: true})).not.toBeInTheDocument();
 	});
 
+	it('should open the root instance in the app when its key is clicked', async ({worker}) => {
+		worker.use(
+			mockGetProcessInstanceCallHierarchyEndpoint({
+				successResponse: HttpResponse.json([
+					createCallHierarchy({processInstanceKey: '3', processDefinitionName: 'some root process'}),
+				]),
+			}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<Operations
+					operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
+					processInstanceKey={PROCESS_INSTANCE_KEY}
+				/>
+			),
+			{path: '/operate-preview/processes'},
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
+		await userEvent.click(screen.getByRole('link', {name: '3'}));
+
+		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate-preview/processes/3');
+	});
+
 	it('should move focus into the root instance warning modal once the call hierarchy check resolves', async ({
 		worker,
 	}) => {
@@ -368,12 +396,14 @@ describe('<Operations />', () => {
 			}),
 		);
 
-		const screen = await render(
-			<Operations
-				operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
-				processInstanceKey={PROCESS_INSTANCE_KEY}
-			/>,
-			{wrapper: getWrapper()},
+		const screen = await renderWithRouter(
+			() => (
+				<Operations
+					operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
+					processInstanceKey={PROCESS_INSTANCE_KEY}
+				/>
+			),
+			{path: '/operate-preview/processes'},
 		);
 
 		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
@@ -392,12 +422,14 @@ describe('<Operations />', () => {
 			}),
 		);
 
-		const screen = await render(
-			<Operations
-				operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
-				processInstanceKey={PROCESS_INSTANCE_KEY}
-			/>,
-			{wrapper: getWrapper()},
+		const screen = await renderWithRouter(
+			() => (
+				<Operations
+					operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
+					processInstanceKey={PROCESS_INSTANCE_KEY}
+				/>
+			),
+			{path: '/operate-preview/processes'},
 		);
 
 		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
