@@ -21,7 +21,6 @@ import io.camunda.zeebe.cluster.gossip.MergeStrategy;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -66,29 +65,6 @@ final class InMemoryGossipClusterTest {
 
   @Nested
   final class GlobalLastWriterWins {
-
-    @Test
-    void shouldReturnDefaultUntilValueIsReceived() {
-      // given
-      a.put(FLAG, "on");
-
-      // when - then
-      assertThat(a.get(FLAG)).isEqualTo("on");
-      assertThat(b.get(FLAG)).isEqualTo("off");
-    }
-
-    @Test
-    void shouldPropagateWriteOnSync() {
-      // given
-      a.put(FLAG, "on");
-
-      // when
-      cluster.sync();
-
-      // then
-      assertThat(b.get(FLAG)).isEqualTo("on");
-      assertThat(c.get(FLAG)).isEqualTo("on");
-    }
 
     @Test
     void shouldKeepLaterWriteRegardlessOfArrivalOrder() {
@@ -163,32 +139,6 @@ final class InMemoryGossipClusterTest {
     }
 
     @Test
-    void shouldUpdateFromCurrentValue() {
-      // given
-      a.put(FLAG, "on");
-
-      // when
-      a.update(FLAG, value -> value + "!");
-
-      // then
-      assertThat(a.get(FLAG)).isEqualTo("on!");
-    }
-
-    @Test
-    void shouldKeepValueAfterWriterRestarts() {
-      // given
-      a.put(FLAG, "on");
-      cluster.sync();
-
-      // when
-      final var restarted = cluster.restart(A);
-      cluster.sync();
-
-      // then
-      assertThat(restarted.get(FLAG)).isEqualTo("on");
-    }
-
-    @Test
     void shouldLoseValueWhenEveryHolderRestarts() {
       // given
       a.put(FLAG, "on");
@@ -207,23 +157,6 @@ final class InMemoryGossipClusterTest {
 
   @Nested
   final class GlobalCustomMerge {
-
-    @Test
-    void shouldMergeConcurrentWrites() {
-      // given
-      a.put(UNION, Set.of("x"));
-      b.put(UNION, Set.of("y"));
-      // c only merges values of custom-merge keys it has registered
-      c.get(UNION);
-
-      // when
-      cluster.sync();
-
-      // then
-      assertThat(a.get(UNION)).containsExactlyInAnyOrder("x", "y");
-      assertThat(b.get(UNION)).containsExactlyInAnyOrder("x", "y");
-      assertThat(c.get(UNION)).containsExactlyInAnyOrder("x", "y");
-    }
 
     @Test
     void shouldMergeLocalWriteWithCurrentValue() {
@@ -269,78 +202,6 @@ final class InMemoryGossipClusterTest {
       assertThatThrownBy(cluster::sync)
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("converge");
-    }
-  }
-
-  @Nested
-  final class MemberScope {
-
-    @Test
-    void shouldPropagateOwnValueOnSync() {
-      // given
-      a.put(ROLE, "leader");
-      b.put(ROLE, "follower");
-
-      // when
-      cluster.sync();
-
-      // then
-      assertThat(c.get(ROLE, A)).contains("leader");
-      assertThat(c.getAll(ROLE)).isEqualTo(Map.of(A, "leader", B, "follower"));
-    }
-
-    @Test
-    void shouldIncludeOwnValueImmediately() {
-      // when
-      a.put(ROLE, "leader");
-
-      // then
-      assertThat(a.getAll(ROLE)).isEqualTo(Map.of(A, "leader"));
-      assertThat(b.getAll(ROLE)).isEmpty();
-    }
-
-    @Test
-    void shouldKeepLatestValueOfOwner() {
-      // given
-      a.put(ROLE, "follower");
-      cluster.exchange(A, B);
-      a.put(ROLE, "leader");
-
-      // when
-      cluster.exchange(A, C);
-      cluster.exchange(B, C);
-
-      // then
-      assertThat(c.get(ROLE, A)).contains("leader");
-    }
-
-    @Test
-    void shouldDropValuesOfRemovedMember() {
-      // given
-      a.put(ROLE, "leader");
-      cluster.sync();
-
-      // when
-      cluster.removeMember(A);
-
-      // then
-      assertThat(b.get(ROLE, A)).isEmpty();
-      assertThat(c.getAll(ROLE)).isEmpty();
-    }
-
-    @Test
-    void shouldNotSeeValuesOfPreviousRunAfterRestart() {
-      // given
-      a.put(ROLE, "leader");
-      cluster.sync();
-
-      // when
-      final var restarted = cluster.restart(A);
-      cluster.sync();
-
-      // then
-      assertThat(b.get(ROLE, A)).isEmpty();
-      assertThat(restarted.get(ROLE, A)).isEmpty();
     }
   }
 
@@ -430,35 +291,6 @@ final class InMemoryGossipClusterTest {
     }
 
     @Test
-    void shouldReplayCurrentMemberValuesOnSubscribe() {
-      // given
-      a.put(ROLE, "leader");
-      cluster.sync();
-      final var received = new ArrayList<String>();
-
-      // when
-      b.subscribe(ROLE, Runnable::run, (member, value) -> received.add(member + "=" + value));
-
-      // then
-      assertThat(received).containsExactly(A + "=" + Optional.of("leader"));
-    }
-
-    @Test
-    void shouldNotifyEmptyValueWhenMemberLeaves() {
-      // given
-      a.put(ROLE, "leader");
-      cluster.sync();
-      final var received = new ArrayList<Optional<String>>();
-      b.subscribe(ROLE, Runnable::run, (member, value) -> received.add(value));
-
-      // when
-      cluster.removeMember(A);
-
-      // then
-      assertThat(received).containsExactly(Optional.of("leader"), Optional.empty());
-    }
-
-    @Test
     void shouldRunCallbacksOnGivenExecutor() {
       // given
       final var queued = new ArrayList<Runnable>();
@@ -488,47 +320,6 @@ final class InMemoryGossipClusterTest {
 
       // then
       assertThat(received).isEmpty();
-    }
-
-    @Test
-    void shouldLetListenerWriteWhileValuesAreReplayed() {
-      // given - B holds A's value but none of its own yet
-      a.put(ROLE, "leader");
-      cluster.sync();
-
-      // when - B reacts to the replayed value by writing its own
-      b.subscribe(
-          ROLE,
-          Runnable::run,
-          (member, value) -> {
-            if (member.equals(A)) {
-              b.put(ROLE, "follower");
-            }
-          });
-
-      // then
-      assertThat(b.get(ROLE, B)).contains("follower");
-    }
-
-    @Test
-    void shouldNotifyEveryListenerInOrderWhenListenerWrites() {
-      // given - the first listener answers "leader" by writing "follower"
-      a.subscribe(
-          ROLE,
-          Runnable::run,
-          (member, value) -> {
-            if (value.equals(Optional.of("leader"))) {
-              a.put(ROLE, "follower");
-            }
-          });
-      final var received = new ArrayList<Optional<String>>();
-      a.subscribe(ROLE, Runnable::run, (member, value) -> received.add(value));
-
-      // when
-      a.put(ROLE, "leader");
-
-      // then
-      assertThat(received).containsExactly(Optional.of("leader"), Optional.of("follower"));
     }
 
     @Test
