@@ -43,6 +43,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -51,6 +52,7 @@ import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -414,6 +416,44 @@ class PartitionManagerStepTest {
       // then
       assertThat(shutdownFuture).succeedsWithin(TIME_OUT);
       assertThat(shutdownFuture.join()).isNotNull();
+    }
+
+    @Test
+    void shouldFailFutureWhenStoppingPartitionsFails() {
+      // given
+      final var failure = new IllegalStateException("expected");
+      when(mockPartitionManager.stop())
+          .thenReturn(CompletableActorFuture.completedExceptionally(failure));
+
+      // when
+      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
+
+      // then
+      assertThat(shutdownFuture)
+          .failsWithin(TIME_OUT)
+          .withThrowableOfType(ExecutionException.class)
+          .havingRootCause()
+          .isSameAs(failure);
+    }
+
+    @Test
+    void shouldReleaseTenantSchedulerWhenStoppingPartitionsFails() {
+      // given
+      final var tenantScheduler = mock(ActorScheduler.class);
+      when(tenantScheduler.stop()).thenReturn(CompletableFuture.completedFuture(null));
+      final var schedulers = PhysicalTenantActorSchedulers.dedicated(id -> tenantScheduler);
+      schedulers.schedulingService(PHYSICAL_TENANT_ID).submitActor(mock(Actor.class));
+      testBrokerStartupContext.setPhysicalTenantActorSchedulers(schedulers);
+      when(mockPartitionManager.stop())
+          .thenReturn(
+              CompletableActorFuture.completedExceptionally(new IllegalStateException("expected")));
+
+      // when
+      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
+
+      // then
+      assertThat(shutdownFuture).failsWithin(TIME_OUT);
+      verify(tenantScheduler).stop();
     }
 
     @Test
