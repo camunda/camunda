@@ -8,7 +8,7 @@ A namespaced key-value store for cluster metadata, backed by the system partitio
 Each module owns one package and its subpackages, and no two modules share one: `api` owns
 `io.camunda.zeebe.metadata.store.api`, `impl` owns `io.camunda.zeebe.metadata.store.impl`,
 `in-memory` owns `io.camunda.zeebe.metadata.store.memory` and `testkit` owns
-`io.camunda.zeebe.metadata.store.testkit`. PIT mutates each module's own package only.
+`io.camunda.zeebe.metadata.store.testkit`. PIT mutates the `api` and `impl` packages only.
 
 - `api/` (`zeebe-metadata-store-api`) — the contract consumers compile against: the
   `ClusterMetadataStore` and `NamespaceApi` interfaces, value types (`Namespace`,
@@ -29,8 +29,10 @@ The stores themselves live in `metadata-stores/`, one module each, as the backup
 `zeebe/backup-stores/`:
 
 - `metadata-stores/in-memory/` (`zeebe-metadata-store-in-memory`) — `InMemoryClusterMetadataStore`:
-  the shared parts on one actor, with no log, for consumers' tests and until the Raft store
-  exists. Its tests run the contract suite and a property test against a model of the store.
+  for consumers' tests, so it stays the simplest thing that meets the contract: a plain class
+  under one lock, with no actor, no scheduler and none of the parts of `impl/`. It is the
+  reference that a property test of the Raft store compares against. Its tests run the contract
+  suite; it is not mutation tested.
 - `metadata-stores/testkit/` (`zeebe-metadata-store-testkit`) — `ClusterMetadataStoreContractTest`,
   the suite every store passes, published as a test-jar; a store's test extends it and supplies a
   running store.

@@ -20,19 +20,12 @@
 
   <properties>
     <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
-    <!-- PIT mutates this module's own package only, see docs/testing/mutation-testing.md -->
-    <pit.targetClasses>io.camunda.zeebe.metadata.store.memory.*</pit.targetClasses>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-metadata-store-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-metadata-store-impl</artifactId>
     </dependency>
 
     <dependency>
@@ -59,27 +52,16 @@
     </dependency>
 
     <dependency>
+      <!-- the contract suite in the testkit test-jar uses it; no test code here references it -->
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
+      <!-- the contract suite in the testkit test-jar uses it; no test code here references it -->
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <!-- the test engine that runs the property tests; no test code references it -->
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -97,10 +79,12 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>net.jqwik:jqwik</dependency>
+            <dependency>org.assertj:assertj-core</dependency>
+            <dependency>org.awaitility:awaitility</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
     </plugins>
   </build>
+
 </project>
