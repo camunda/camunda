@@ -136,9 +136,13 @@ the gossiper's own threads. The executor must not block; a direct executor runs 
 gossiper's thread. Local writes notify local listeners too.
 
 **D14. The transport must re-deliver state eventually.**
-Values received for a key that is not registered locally yet may be dropped. The implementation must
-eventually re-deliver the current state of every key to every live member (anti-entropy), which also
-covers members returning from a network partition.
+The implementation must eventually re-deliver the current state of every key to every live member
+(anti-entropy), which also covers members returning from a network partition. Received values are
+kept even for keys not registered locally yet (D5), so they are visible on first use: a MEMBER value
+needs no merge, and a last-writer-wins value is ordered by its hidden header. Only values of a
+custom-merge key that is not registered locally yet may be dropped, because combining two of them
+needs the key's merge function; they arrive again with the next re-delivery, and until then readers
+see the key's default.
 
 **D15. Brokers and gateways take part as equals.**
 Gateways are cluster members and may read and write both scopes.

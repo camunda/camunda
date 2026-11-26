@@ -34,8 +34,8 @@ import java.util.function.UnaryOperator;
  *   <li>Writes are non-blocking and thread-safe, visible to local readers right away, and
  *       propagated asynchronously. No acknowledgement is offered.
  *   <li>The implementation eventually re-delivers the current state of every key to every live
- *       member. Values received for a key not yet registered locally may be dropped, and are
- *       received again later.
+ *       member. Received values are kept for keys not yet registered locally, except values of a
+ *       custom-merge key, which may be dropped and are received again later.
  *   <li>A key is registered the first time it is used. Using a name already registered with an
  *       incompatible descriptor (different scope or merge strategy kind) throws {@link
  *       IllegalStateException}.
