@@ -380,12 +380,15 @@ export async function startTwoUserTaskInstance(
  * Starts a single user task with one task listener of `eventType`, whose job
  * type is unique to this instance so parallel tests never take each other's
  * listener jobs. With a `creating` listener the task stays in `CREATING` until
- * that job is completed.
+ * that job is completed. `listenerJobTypes` gets the instance's job type as soon
+ * as the instance exists, so teardown can release a pending listener even when
+ * a later setup step fails.
  */
 export async function startUserTaskWithListener(
   request: APIRequestContext,
   eventType: 'creating' | 'assigning' | 'updating' | 'completing' | 'canceling',
   instancesToCancel: string[],
+  listenerJobTypes?: Map<string, string>,
 ) {
   const jobType = uniquePrefixedId(`ut-lookup-${eventType}`);
   const processDefinitionId = await deployProcessModel(
@@ -401,6 +404,7 @@ export async function startUserTaskWithListener(
     1,
   );
   instancesToCancel.push(processInstanceKey);
+  listenerJobTypes?.set(processInstanceKey, jobType);
   const userTaskKey = await findUserTask(
     request,
     processInstanceKey,

@@ -558,8 +558,8 @@ test.describe.parallel('User Task Lookup API', () => {
           request,
           'canceling',
           instancesToCancel,
+          cancelingListeners,
         );
-      cancelingListeners.set(processInstanceKey, jobType);
 
       const cancellation = cancelProcessInstance(processInstanceKey, {
         ignoreNotFound: false,
