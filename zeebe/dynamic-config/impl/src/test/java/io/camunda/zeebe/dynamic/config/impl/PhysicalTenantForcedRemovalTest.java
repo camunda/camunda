@@ -197,7 +197,7 @@ final class PhysicalTenantForcedRemovalTest {
    * cluster.
    */
   private CurrentClusterConfiguration simulate(final ConfigurationChangeRequest request) {
-    return coordinator.simulateOperations(request).join().finalMultiConfiguration();
+    return coordinator.simulateOperations(request).join().finalConfiguration();
   }
 
   /** The brokers replicating the given physical tenant's only partition. */

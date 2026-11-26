@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static java.util.Objects.requireNonNull;
-
 import io.camunda.gateway.protocol.model.ClusterModeChangeOperation;
 import io.camunda.gateway.protocol.model.ClusterModeChangePlannedChange;
 import io.camunda.gateway.protocol.model.ClusterModeChangeResponse;
@@ -107,7 +105,7 @@ final class ClusterModeChangeMapper {
     final Map<String, List<ClusterConfigurationChangeOperation>> operationsPerTenant =
         new TreeMap<>();
     final List<ClusterConfigurationChangeOperation> clusterWideOperations = new ArrayList<>();
-    for (final Phase phase : requireNonNull(response.response()).phases()) {
+    for (final Phase phase : response.phases()) {
       switch (phase) {
         // A phase carries its operations plus the edges between them. The edges say what may run
         // when, which this view does not report, so it reads the operations alone.

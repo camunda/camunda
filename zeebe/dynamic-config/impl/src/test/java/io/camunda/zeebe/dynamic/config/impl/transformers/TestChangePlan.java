@@ -23,14 +23,12 @@ import java.util.List;
  *
  * <p>A plan is a sequence of phases, but a test that hands the request a cluster with a single
  * physical tenant gets at most one partition group per phase, so flattening loses nothing: the
- * operations come back in the order they will be applied in. This is the same projection the
- * coordinator makes for {@code ConfigurationChangeResult#legacyOperations}, which is what the
- * management API answers a request with.
+ * operations come back in the order they will be applied in.
  *
  * <p>Tests that assert on more than one physical tenant should read the phases instead — which
  * group an operation belongs to is exactly what this drops.
  */
-final class TestChangePlan {
+public final class TestChangePlan {
 
   private TestChangePlan() {}
 
@@ -39,7 +37,7 @@ final class TestChangePlan {
     return request.phases(configuration).map(TestChangePlan::flatten);
   }
 
-  static List<ClusterConfigurationChangeOperation> flatten(final List<Phase> phases) {
+  public static List<ClusterConfigurationChangeOperation> flatten(final List<Phase> phases) {
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
     for (final var phase : phases) {
       switch (phase) {

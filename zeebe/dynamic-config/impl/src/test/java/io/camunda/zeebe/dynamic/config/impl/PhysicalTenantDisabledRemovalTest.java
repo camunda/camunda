@@ -137,7 +137,7 @@ final class PhysicalTenantDisabledRemovalTest {
                 new ClusterPatchRequestTransformer(
                     Set.of(), Set.of(BARE_2), Optional.empty(), Optional.empty()))
             .join()
-            .finalMultiConfiguration();
+            .finalConfiguration();
 
     // then — the tenant's partition has moved to the retained brokers and broker 2 has left
     assertThat(replicasOf(configuration, TENANT_A))
@@ -164,7 +164,7 @@ final class PhysicalTenantDisabledRemovalTest {
                 new ClusterPatchRequestTransformer(
                     Set.of(), Set.of(BARE_2), Optional.empty(), Optional.empty()))
             .join()
-            .finalMultiConfiguration();
+            .finalConfiguration();
 
     // then — the broker is gone, and the discarded tenant's old assignment is cleared rather than
     // carried forward: only the tombstone itself remains

@@ -31,7 +31,6 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveO
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
@@ -408,32 +407,12 @@ final class ClusterApiUtils {
 
   private static PlannedOperationsResponse mapResponseType(
       final ClusterConfigurationChangeResponse response) {
-    // response.response() is absent when the responding peer hasn't populated the new
-    // multi-partition-group data (e.g. a peer still running old code); fall back to the
-    // legacy data in that case.
-    final var multiConfigResponse = response.response();
-    final List<Operation> operations =
-        multiConfigResponse == null
-            ? mapOperations(response.legacyResponse().plannedChanges())
-            : mapPhaseOperations(multiConfigResponse.phases());
-    final List<BrokerState> currentTopology =
-        multiConfigResponse == null
-            ? mapBrokerStates(response.legacyResponse().currentConfiguration())
-            : mapBrokerStatesFromPhysicalTenantsConfig(multiConfigResponse.currentConfiguration());
-    final List<BrokerState> expectedTopology =
-        multiConfigResponse == null
-            ? mapBrokerStates(response.legacyResponse().expectedConfiguration())
-            : mapBrokerStatesFromPhysicalTenantsConfig(multiConfigResponse.expectedConfiguration());
     return new PlannedOperationsResponse()
         .changeId(response.changeId())
-        .currentTopology(currentTopology)
-        .expectedTopology(expectedTopology)
-        .plannedChanges(operations);
-  }
-
-  private static List<Operation> mapOperations(
-      final List<ClusterConfigurationChangeOperation> operations) {
-    return mapOperations(null, operations);
+        .currentTopology(mapBrokerStatesFromPhysicalTenantsConfig(response.currentConfiguration()))
+        .expectedTopology(
+            mapBrokerStatesFromPhysicalTenantsConfig(response.expectedConfiguration()))
+        .plannedChanges(mapPhaseOperations(response.phases()));
   }
 
   private static List<Operation> mapOperations(
@@ -592,20 +571,6 @@ final class ClusterApiUtils {
     return convertedOperation;
   }
 
-  private static List<BrokerState> mapBrokerStates(
-      final SortedMap<MemberId, MemberState> topology) {
-    return topology.entrySet().stream()
-        .map(
-            entry ->
-                new BrokerState()
-                    .id(brokerIdValue(entry.getKey()))
-                    .state(mapBrokerState(entry.getValue().state()))
-                    .lastUpdatedAt(mapInstantToDateTime(entry.getValue().lastUpdated()))
-                    .version(entry.getValue().version())
-                    .partitions(mapPartitionStates(entry.getValue().partitions())))
-        .toList();
-  }
-
   /**
    * Flattens the new multi-partition-group model into the flat {@code BrokerState} list expected by
    * the REST response: every broker in {@code brokers} is included (broker lifecycle has no tenant
@@ -724,24 +689,8 @@ final class ClusterApiUtils {
         : timestamp.atOffset(ZoneOffset.UTC);
   }
 
-  private static BrokerStateCode mapBrokerState(final MemberState.State state) {
-    return switch (state) {
-      case ACTIVE -> BrokerStateCode.ACTIVE;
-      case JOINING -> BrokerStateCode.JOINING;
-      case LEAVING -> BrokerStateCode.LEAVING;
-      case LEFT -> BrokerStateCode.LEFT;
-      case UNINITIALIZED -> BrokerStateCode.UNKNOWN;
-      case RECOVERING -> BrokerStateCode.RECOVERING;
-    };
-  }
-
   private static List<PartitionState> mapPartitionStates(
-      final SortedMap<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
-    return mapPartitionStates(null, partitions);
-  }
-
-  private static List<PartitionState> mapPartitionStates(
-      final @Nullable String physicalTenantId,
+      final String physicalTenantId,
       final SortedMap<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
     return partitions.entrySet().stream()
         .map(

@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveZoneRequest;
+import io.camunda.zeebe.dynamic.config.impl.transformers.TestChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
@@ -81,7 +82,7 @@ final class ZoneAwareClusterConfigurationManagementApiTest
     final var changeStatus = clientApi.removeZone(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactlyInAnyOrder(
             new PartitionForceReconfigureOperation(ZONE_B_0, 1, Set.of(ZONE_B_0)),
             new PartitionForceReconfigureOperation(ZONE_B_1, 2, Set.of(ZONE_B_1)),
@@ -112,7 +113,7 @@ final class ZoneAwareClusterConfigurationManagementApiTest
     final var changeStatus = clientApi.addZone(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactly(
             new MemberJoinOperation(ZONE_B_0),
             new PreScalingOperation(ZONE_B_0, Set.of(ZONE_A_0, ZONE_A_1, ZONE_B_0)),

@@ -13,8 +13,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
@@ -478,10 +476,8 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
             .toList();
     return new ClusterConfigurationChangeResponse(
         changeId,
-        new LegacyConfigurationChangeResponse(Map.of(), Map.of(), flatOperations),
-        new CurrentConfigurationChangeResponse(
-            CurrentClusterConfiguration.uninitialized(),
-            CurrentClusterConfiguration.uninitialized(),
-            List.of(phase)));
+        CurrentClusterConfiguration.uninitialized(),
+        CurrentClusterConfiguration.uninitialized(),
+        List.of(phase));
   }
 }
