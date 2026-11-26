@@ -16,6 +16,7 @@ import io.camunda.search.clients.reader.AuditLogDocumentReader;
 import io.camunda.search.clients.reader.AuthorizationDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemDocumentReader;
+import io.camunda.search.clients.reader.CaseDocumentReader;
 import io.camunda.search.clients.reader.ClusterVariableDocumentReader;
 import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionDocumentReader;
 import io.camunda.search.clients.reader.DecisionDefinitionDocumentReader;
@@ -172,6 +173,7 @@ public final class SearchClientReadersFactory {
     final var clusterVariableReader =
         new ClusterVariableDocumentReader(executor, descriptors.get(ClusterVariableIndex.class));
     final var variableHistoryReader = new VariableHistoryDocumentReader();
+    final var caseReader = new CaseDocumentReader();
     final var auditLogReader =
         new AuditLogDocumentReader(executor, descriptors.get(AuditLogTemplate.class));
     final var globalListenerReader =
@@ -265,6 +267,7 @@ public final class SearchClientReadersFactory {
         variableReader,
         clusterVariableReader,
         variableHistoryReader,
+        caseReader,
         auditLogReader,
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,
