@@ -60,6 +60,16 @@ camunda: # Type: io.camunda.configuration.Camunda
       timeout: null # Type: Long, Env: CAMUNDA_API_LONGPOLLING_TIMEOUT
     
     rest: # Type: io.camunda.configuration.api.Rest  
+      client-certificate: # Type: io.camunda.configuration.api.rest.ClientCertificate  
+        # Identities allowed to connect, matched exactly (ignoring ASCII case) against the Subject Alternative
+        # Names of the client certificate: DNS names, IP addresses, URIs or emails. When empty, any
+        # certificate accepted by the trust store is allowed. Blank entries are rejected at startup. Requires
+        # `server.ssl.client-auth` to be `want` or `need`.
+        allowed-identities: null # Type: List<String>, Env: CAMUNDA_API_REST_CLIENTCERTIFICATE_ALLOWEDIDENTITIES
+        # Match the certificate subject's Common Name (CN) against the allowed identities when the certificate
+        # has no Subject Alternative Names at all.
+        common-name-fallback: false # Type: Boolean, Env: CAMUNDA_API_REST_CLIENTCERTIFICATE_COMMONNAMEFALLBACK
+      
       cluster-variable: # Type: io.camunda.configuration.api.rest.ClusterVariable  
         # Maximum allowed size (in UTF-8 bytes) of a cluster variable's serialized metadata JSON. When unset,
         # the built-in default is used.
