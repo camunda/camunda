@@ -49,7 +49,8 @@ spec:
         - name: harbor-registry
       initContainers:
         - name: migration
-          image: camunda/optimize:8.8.46
+          image: camunda/optimize:8.8.47
+          imagePullPolicy: Always
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
@@ -99,7 +100,7 @@ spec:
               name: environment-config
       containers:
         - name: optimize
-          image: camunda/optimize:8.8.46
+          image: camunda/optimize:8.8.47
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
