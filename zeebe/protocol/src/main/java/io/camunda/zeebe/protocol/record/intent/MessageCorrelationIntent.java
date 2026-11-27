@@ -19,7 +19,8 @@ public enum MessageCorrelationIntent implements Intent {
   CORRELATE(1),
   CORRELATING(2),
   CORRELATED(3),
-  NOT_CORRELATED(4);
+  NOT_CORRELATED(4),
+  CORRELATE_AND_AWAIT_RESULT(5);
 
   private final short value;
 
@@ -54,6 +55,8 @@ public enum MessageCorrelationIntent implements Intent {
         return CORRELATED;
       case 4:
         return NOT_CORRELATED;
+      case 5:
+        return CORRELATE_AND_AWAIT_RESULT;
       default:
         return Intent.UNKNOWN;
     }
