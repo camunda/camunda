@@ -21,13 +21,20 @@ import org.jspecify.annotations.NullMarked;
  *
  * <p>The splitter goes through the sections of the update in the order the engine applies them, and
  * fills one chunk after the other: when the next entry no longer fits into {@link #maxChunkSize}
- * bytes, it starts a new chunk. A chunk is applied section by section in that same order, so
- * applying the chunks one after the other keeps the order of the whole change set: a membership is
- * never added before its group exists, and a group is never deleted while a later entry still
- * refers to it.
+ * bytes, or the chunk already holds {@link #maxEntriesPerChunk} entries, it starts a new chunk. A
+ * chunk is applied section by section in that same order, so applying the chunks one after the
+ * other keeps the order of the whole change set: a membership is never added before its group
+ * exists, and a group is never deleted while a later entry still refers to it.
  *
  * <p>Every chunk fits into {@link #maxChunkSize} bytes: the size of a chunk is counted for the
  * largest possible chunk index and count, and for the longest possible header of each list.
+ *
+ * <p>The entry limit bounds what applying a chunk writes. The engine applies a chunk with one
+ * {@code APPLY_CHUNK} command, which writes one identity command per entry, all in its own batch. A
+ * command is larger than its entry: it carries record metadata and fields the entry does not have.
+ * Measured, that is about 140 to 200 bytes per command, whatever the length of the IDs; it is the
+ * most for entity deletes, whose entry is little more than an ID. Without a limit, a chunk of tiny
+ * deletes would grow about eightfold, past the maximum batch size.
  */
 @NullMarked
 public final class PolicyChangeSetSplitter {
@@ -39,15 +46,28 @@ public final class PolicyChangeSetSplitter {
   public static final int DEFAULT_MAX_CHUNK_SIZE = 1024 * 1024;
 
   /**
+   * Bounds the batch of applying a chunk to about 2 MB, half the default maximum message size of 4
+   * MB: {@link #DEFAULT_MAX_CHUNK_SIZE} of entries plus up to 256 bytes more per command, which
+   * leaves room for the record metadata to grow.
+   */
+  public static final int DEFAULT_MAX_ENTRIES_PER_CHUNK = 4000;
+
+  /**
    * How many bytes the header of a list can grow by as the list gets longer: MessagePack encodes
    * the length of a list in 1 byte up to 15 entries, and in up to 5 bytes beyond.
    */
   private static final int MAX_LIST_HEADER_GROWTH = 4;
 
   private final int maxChunkSize;
+  private final int maxEntriesPerChunk;
 
   public PolicyChangeSetSplitter(final int maxChunkSize) {
+    this(maxChunkSize, DEFAULT_MAX_ENTRIES_PER_CHUNK);
+  }
+
+  public PolicyChangeSetSplitter(final int maxChunkSize, final int maxEntriesPerChunk) {
     this.maxChunkSize = maxChunkSize;
+    this.maxEntriesPerChunk = maxEntriesPerChunk;
   }
 
   /**
@@ -106,6 +126,7 @@ public final class PolicyChangeSetSplitter {
 
     private PolicyUpdateRecord chunk;
     private int chunkSize;
+    private int chunkEntryCount;
 
     private ChunkWriter(final PolicyUpdateRecord update) {
       this.update = update;
@@ -149,17 +170,19 @@ public final class PolicyChangeSetSplitter {
               "Expected every entry of policy change set of policy '%s' to fit into a chunk of %d bytes, but an entry of section %s has %d bytes"
                   .formatted(update.getPolicyId(), maxChunkSize, section, entrySize));
         }
-        // the entry does not fit any more: close the chunk with this section's entries so far, and
-        // continue the section in a new chunk
-        if (chunkSize + entrySize > maxChunkSize) {
+        // the chunk is full, in bytes or in entries: close it with this section's entries so far,
+        // and continue the section in a new chunk
+        if (chunkSize + entrySize > maxChunkSize || chunkEntryCount == maxEntriesPerChunk) {
           setter.accept(chunk, chunkEntries);
           chunks.add(chunk);
           chunk = emptyChunk();
           chunkSize = emptyChunkSize + MAX_LIST_HEADER_GROWTH;
+          chunkEntryCount = 0;
           chunkEntries = new ArrayList<>();
         }
         chunkEntries.add(entry);
         chunkSize += entrySize;
+        chunkEntryCount++;
       }
       // the chunk stays open, so that the next section can fill up the rest of it
       setter.accept(chunk, chunkEntries);

@@ -17,12 +17,14 @@ import io.camunda.fanout.protocol.model.PolicyChangeSetKind;
 import io.camunda.fanout.protocol.model.PolicyDeletions;
 import io.camunda.fanout.protocol.model.PolicyGroup;
 import io.camunda.fanout.protocol.model.PolicyMembership;
+import io.camunda.fanout.protocol.model.PolicyRole;
 import io.camunda.fanout.protocol.model.PolicyTenant;
 import io.camunda.fanout.protocol.model.PolicyUpserts;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.PolicyDeleteEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyMembershipEntryValue;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -141,6 +143,69 @@ final class PolicyChangeSetSplitterTest {
 
     // then
     assertThat(result.getLeft()).contains(UPDATE_ID).contains("10 bytes");
+  }
+
+  @Test
+  void shouldStartANewChunkOnceItHoldsTheMaximumNumberOfEntries() {
+    // given two tenants and two roles, and room for three entries per chunk
+    final var changeSet =
+        delta(
+            new PolicyUpserts(
+                List.of(new PolicyTenant("t1", "T", null), new PolicyTenant("t2", "T", null)),
+                List.of(new PolicyRole("r1", "R", null), new PolicyRole("r2", "R", null)),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of()),
+            noDeletions());
+
+    // when
+    final var chunks =
+        new PolicyChangeSetSplitter(PolicyChangeSetSplitter.DEFAULT_MAX_CHUNK_SIZE, 3)
+            .split(changeSet, 1L, UPDATE_ID)
+            .get();
+
+    // then the limit counts the entries of all sections of a chunk
+    assertThat(chunks).hasSize(2);
+    assertThat(chunks.get(0).getTenants())
+        .extracting(TenantRecordValue::getTenantId)
+        .containsExactly("t1", "t2");
+    assertThat(chunks.get(0).getRoles())
+        .extracting(RoleRecordValue::getRoleId)
+        .containsExactly("r1");
+    assertThat(chunks.get(1).getTenants()).isEmpty();
+    assertThat(chunks.get(1).getRoles())
+        .extracting(RoleRecordValue::getRoleId)
+        .containsExactly("r2");
+  }
+
+  @Test
+  void shouldSplitManySmallDeletesByTheirNumber() {
+    // given 35,000 tenant deletes, which fit into one chunk of the default size, but whose delete
+    // commands would not fit into the batch that applies it
+    final var tenantIds = IntStream.range(0, 35_000).mapToObj(index -> "t" + index).toList();
+    final var changeSet =
+        delta(
+            noUpserts(),
+            new PolicyDeletions(tenantIds, List.of(), List.of(), List.of(), List.of(), List.of()));
+
+    // when
+    final var chunks =
+        new PolicyChangeSetSplitter(PolicyChangeSetSplitter.DEFAULT_MAX_CHUNK_SIZE)
+            .split(changeSet, 1L, UPDATE_ID)
+            .get();
+
+    // then
+    assertThat(chunks).hasSize(9);
+    assertThat(chunks)
+        .allSatisfy(
+            chunk ->
+                assertThat(chunk.getDeletes())
+                    .hasSizeLessThanOrEqualTo(
+                        PolicyChangeSetSplitter.DEFAULT_MAX_ENTRIES_PER_CHUNK));
+    assertThat(chunks.stream().flatMap(chunk -> chunk.getDeletes().stream()))
+        .extracting(PolicyDeleteEntryValue::getId)
+        .containsExactlyElementsOf(tenantIds);
   }
 
   @Test
