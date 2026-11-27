@@ -521,6 +521,59 @@ class AdvancedSearchFilterUtilTest {
     assertThat(AdvancedSearchFilterUtil.isEmptyAdvancedFilter(value)).isFalse();
   }
 
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideFiltersWithNullListValue")
+  void shouldDetectNullInsideAnOperatorList(final String name, final Object filter) {
+    // when / then
+    assertThat(AdvancedSearchFilterUtil.hasNullListValue(filter)).isTrue();
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideFiltersWithoutNullListValue")
+  void shouldNotDetectNullWhenNoOperatorListHoldsOne(final String name, final Object value) {
+    // when / then
+    assertThat(AdvancedSearchFilterUtil.hasNullListValue(value)).isFalse();
+  }
+
+  private static Stream<Arguments> provideFiltersWithNullListValue() {
+    final var onlyNullIn = BasicStringFilter.Builder.create().build();
+    onlyNullIn.set$In(nullableList((String) null));
+
+    // the null drops the whole $in, the sibling operator alone then decides what matches
+    final var nullInWithExists = BasicStringFilter.Builder.create().build();
+    nullInWithExists.set$In(nullableList(null, "1"));
+    nullInWithExists.set$Exists(true);
+
+    final var nullInWithNeq = BasicStringFilter.Builder.create().build();
+    nullInWithNeq.set$In(nullableList(null, "1"));
+    nullInWithNeq.set$Neq("2");
+
+    final var nullNotIn = BasicStringFilter.Builder.create().build();
+    nullNotIn.set$NotIn(nullableList("1", null));
+    nullNotIn.set$Eq("2");
+
+    return Stream.of(
+        Arguments.of("{\"$in\": [null]}", onlyNullIn),
+        Arguments.of("{\"$in\": [null, \"1\"], \"$exists\": true}", nullInWithExists),
+        Arguments.of("{\"$in\": [null, \"1\"], \"$neq\": \"2\"}", nullInWithNeq),
+        Arguments.of("{\"$notIn\": [\"1\", null], \"$eq\": \"2\"}", nullNotIn));
+  }
+
+  private static Stream<Arguments> provideFiltersWithoutNullListValue() {
+    final var nonEmptyIn = BasicStringFilter.Builder.create().build();
+    nonEmptyIn.set$In(List.of("1", "2"));
+
+    final var emptyInWithNeq = BasicStringFilter.Builder.create().build();
+    emptyInWithNeq.set$Neq("1");
+
+    return Stream.of(
+        Arguments.of("{\"$in\": [\"1\", \"2\"]}", nonEmptyIn),
+        Arguments.of("{\"$neq\": \"1\"}", emptyInWithNeq),
+        Arguments.of("{}", BasicStringFilter.Builder.create().build()),
+        Arguments.of("plain string", "ACTIVE"),
+        Arguments.of("plain list", nullableList((String) null)));
+  }
+
   private static Stream<Arguments> provideEmptyFilters() {
     final var onlyEmptyIn = BasicStringFilter.Builder.create().build();
     onlyEmptyIn.set$In(List.of());
