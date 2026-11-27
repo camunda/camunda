@@ -2,11 +2,11 @@
 
 Downloads an artifact already produced by the current run's `build-distball` job:
 
-|   Artifact             |        GCS objects        |          GitHub artifact name           | GCS timeout per attempt |
-|------------------------|---------------------------|-----------------------------------------|-------------------------|
-| distball               | `camunda-zeebe-*.tar.gz`  | `distball-${{ github.run_id }}`         | 2 minutes               |
-| m2-installed           | `m2-installed.tar`        | `m2-installed-${{ github.run_id }}`     | 1 minute                |
-| gradle-parity-inputs   | `gradle-distribution.tar`<br>`gradle-dist-dependencies.json` | `gradle-parity-inputs-${{ github.run_id }}` | 2 minutes |
+|       Artifact       |                         GCS objects                          |            GitHub artifact name             | GCS timeout per attempt |
+|----------------------|--------------------------------------------------------------|---------------------------------------------|-------------------------|
+| distball             | `camunda-zeebe-*.tar.gz`                                     | `distball-${{ github.run_id }}`             | 2 minutes               |
+| m2-installed         | `m2-installed.tar`                                           | `m2-installed-${{ github.run_id }}`         | 1 minute                |
+| gradle-parity-inputs | `gradle-distribution.tar`<br>`gradle-dist-dependencies.json` | `gradle-parity-inputs-${{ github.run_id }}` | 2 minutes               |
 
 Non-fork runs use the run-scoped GCS prefix. Fork PRs use the GitHub artifact API,
 because they cannot authenticate to GCS. GCS downloads retain the existing policy
