@@ -660,6 +660,8 @@ public final class BpmnJobBehavior {
       final ExecutableFlowElement element) {
 
     final var encodedHeaders = encodeHeaders(context, taskHeaders, props, element);
+    final var processInstanceRecord =
+        stateBehavior.getElementInstance(context.getProcessInstanceKey()).getValue();
 
     jobRecord
         .setType(props.getType())
@@ -675,11 +677,11 @@ public final class BpmnJobBehavior {
         .setElementType(getBpmnElementTypeForLogging(jobKind, context))
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
-        .setTags(getTagsFromProcessInstance(context))
+        .setTags(processInstanceRecord.getTags())
         .setPriority(props.getPriority())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setStorageOrdinal(context.getStorageOrdinal())
-        .setBusinessId(getBusinessIdFromProcessInstance(context));
+        .setBusinessId(processInstanceRecord.getBusinessId());
     setJobSecretReferences(secretReferences);
 
     final var jobKey = keyGenerator.nextKey();
@@ -704,21 +706,6 @@ public final class BpmnJobBehavior {
       case TASK_LISTENER -> BpmnElementType.USER_TASK;
       case AD_HOC_SUB_PROCESS -> BpmnElementType.SUB_PROCESS;
     };
-  }
-
-  private Set<String> getTagsFromProcessInstance(final BpmnElementContext context) {
-    final var processInstance =
-        stateBehavior.getElementInstance(context.getProcessInstanceKey()).getValue();
-
-    return processInstance != null ? processInstance.getTags() : Collections.emptySet();
-  }
-
-  private String getBusinessIdFromProcessInstance(final BpmnElementContext context) {
-    final var elementInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
-    if (elementInstance == null) {
-      return "";
-    }
-    return elementInstance.getValue().getBusinessId();
   }
 
   private DirectBuffer encodeHeaders(
