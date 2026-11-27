@@ -88,7 +88,8 @@ public final class DecisionStateTest {
   void shouldReturnEmptyIfNoDrgIsDeployed() {
     // when
     final var persistedDrg =
-        decisionState.findLatestDecisionRequirementsByTenantAndId(TENANT_ID, wrapString("drg-1"));
+        decisionState.findLatestPersistedDecisionRequirementsByTenantAndId(
+            TENANT_ID, wrapString("drg-1"));
 
     // then
     assertThat(persistedDrg).isEmpty();
@@ -518,7 +519,7 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDrg =
-        decisionState.findLatestDecisionRequirementsByTenantAndId(
+        decisionState.findLatestPersistedDecisionRequirementsByTenantAndId(
             TENANT_ID, drg.getDecisionRequirementsIdBuffer());
 
     // then
@@ -559,10 +560,10 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDrg1 =
-        decisionState.findLatestDecisionRequirementsByTenantAndId(
+        decisionState.findLatestPersistedDecisionRequirementsByTenantAndId(
             TENANT_ID, drg1.getDecisionRequirementsIdBuffer());
     final var persistedDrg2 =
-        decisionState.findLatestDecisionRequirementsByTenantAndId(
+        decisionState.findLatestPersistedDecisionRequirementsByTenantAndId(
             TENANT_ID, drg2.getDecisionRequirementsIdBuffer());
 
     // then
@@ -598,7 +599,7 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDrg =
-        decisionState.findLatestDecisionRequirementsByTenantAndId(
+        decisionState.findLatestPersistedDecisionRequirementsByTenantAndId(
             TENANT_ID, decisionRecordV1.getDecisionRequirementsIdBuffer());
 
     // then
@@ -887,7 +888,7 @@ public final class DecisionStateTest {
                 TENANT_ID, drg1.getDecisionRequirementsKey()))
         .isEmpty();
     final var latestDrg =
-        decisionState.findLatestDecisionRequirementsByTenantAndId(
+        decisionState.findLatestPersistedDecisionRequirementsByTenantAndId(
             TENANT_ID, drg1.getDecisionRequirementsIdBuffer());
     assertThat(latestDrg).isNotEmpty();
     assertThat(latestDrg.get().getDecisionRequirementsId())
@@ -919,7 +920,7 @@ public final class DecisionStateTest {
             decisionState.findDecisionByTenantAndKey(TENANT_ID, drg2.getDecisionRequirementsKey()))
         .isEmpty();
     final var latestDrg =
-        decisionState.findLatestDecisionRequirementsByTenantAndId(
+        decisionState.findLatestPersistedDecisionRequirementsByTenantAndId(
             TENANT_ID, drg2.getDecisionRequirementsIdBuffer());
     assertThat(latestDrg).isNotEmpty();
     assertThat(latestDrg.get().getDecisionRequirementsId())
@@ -951,7 +952,7 @@ public final class DecisionStateTest {
             decisionState.findDecisionByTenantAndKey(TENANT_ID, drg3.getDecisionRequirementsKey()))
         .isEmpty();
     final var latestDrg =
-        decisionState.findLatestDecisionRequirementsByTenantAndId(
+        decisionState.findLatestPersistedDecisionRequirementsByTenantAndId(
             TENANT_ID, drg3.getDecisionRequirementsIdBuffer());
     assertThat(latestDrg).isNotEmpty();
     assertThat(latestDrg.get().getDecisionRequirementsId())
@@ -1077,6 +1078,31 @@ public final class DecisionStateTest {
                 someDeploymentKey)
             .orElseThrow();
     assertThat(foundDecision.getDecisionKey()).isEqualTo(decision.getDecisionKey());
+  }
+
+  @Test
+  void shouldReturnEmptyPersistedDrgIfNoneIsDeployed() {
+    // when / then
+    assertThat(decisionState.findPersistedDecisionRequirementsByTenantAndKey(TENANT_ID, 99L))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldFindPersistedDrgByKey() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    decisionState.storeDecisionRequirements(drg);
+
+    // when
+    final var found =
+        decisionState
+            .findPersistedDecisionRequirementsByTenantAndKey(
+                TENANT_ID, drg.getDecisionRequirementsKey())
+            .orElseThrow();
+
+    // then
+    assertThat(found.getDecisionRequirementsId()).isEqualTo(drg.getDecisionRequirementsIdBuffer());
+    assertThat(found.getDecisionRequirementsVersion()).isEqualTo(1);
   }
 
   private DecisionRecord sampleDecisionRecord() {

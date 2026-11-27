@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_AUTHORIZATIONS_CACHE_TTL;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION;
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_DEPLOYMENT_CACHE_TTL;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_DRG_CACHE_CAPACITY;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_FORM_CACHE_CAPACITY;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY;
@@ -63,6 +64,12 @@ public class EngineCaches {
 
   /** Configures how long a cached authorization decision remains valid before it expires. */
   private Duration authorizationsCacheTtl = DEFAULT_AUTHORIZATIONS_CACHE_TTL;
+
+  /**
+   * Configures how long a cached deployed resource (process, decision model, form, resource) stays
+   * cached after its last use.
+   */
+  private Duration deploymentCacheTtl = DEFAULT_DEPLOYMENT_CACHE_TTL;
 
   /** Configures the maximum number of resolved group names to cache. */
   private int groupNameCacheCapacity = DEFAULT_GROUP_NAME_CACHE_CAPACITY;
@@ -159,6 +166,19 @@ public class EngineCaches {
 
   public void setAuthorizationsCacheTtl(final Duration authorizationsCacheTtl) {
     this.authorizationsCacheTtl = authorizationsCacheTtl;
+  }
+
+  public Duration getDeploymentCacheTtl() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".deployment-cache-ttl",
+        deploymentCacheTtl,
+        Duration.class,
+        BackwardsCompatibilityMode.NOT_SUPPORTED,
+        Set.of());
+  }
+
+  public void setDeploymentCacheTtl(final Duration deploymentCacheTtl) {
+    this.deploymentCacheTtl = deploymentCacheTtl;
   }
 
   public int getGroupNameCacheCapacity() {
