@@ -244,8 +244,11 @@ final class PhysicalTenantSaasOidcClaimBindingIT {
     return TENANTS
         .newClientBuilder(gateway, TENANT)
         .preferRestOverGrpc(api == Api.REST)
+        // Environment variables must not change the target tenant or the client of the token.
+        .applyEnvironmentVariableOverrides(false)
         .credentialsProvider(
             new OAuthCredentialsProviderBuilder()
+                .applyEnvironmentOverrides(false)
                 .clientId(clientId)
                 .clientSecret(clientId + "-secret")
                 .audience("zeebe")
