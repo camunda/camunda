@@ -117,7 +117,14 @@ class SecurityPathAdapterTest {
   void shouldExposeAdminFilterBypassPaths() {
     assertThat(port.adminFilterBypassPaths())
         .containsExactlyInAnyOrder(
-            "/login", "/logout", "/sso-callback", "/post-logout", "/admin/setup", "/admin/assets");
+            "/login",
+            "/logout",
+            "/sso-callback",
+            "/post-logout",
+            "/admin/setup",
+            "/assets",
+            "/custom.css",
+            "/favicon.ico");
   }
 
   @Test

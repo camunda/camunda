@@ -80,11 +80,13 @@ public final class SecurityPathAdapter implements SecurityPathPort {
           "/post-logout",
           "/admin/setup",
           // Setup-page assets (CSS, JS modules) must load before any admin user is provisioned;
-          // without this prefix the filter redirects asset requests to /admin/setup, the SPA gets
-          // text/html back for every <script>/<link> tag, and the browser refuses to evaluate the
-          // setup page with MIME-type errors. Mirrors the explicit ASSETS_PATH bypass the
-          // pre-CSL host AdminUserCheckFilter carried.
-          "/admin/assets");
+          // without these prefixes the filter redirects asset requests to /admin/setup, the SPA
+          // gets text/html back for every <script>/<link> tag, and the browser refuses to evaluate
+          // the setup page with MIME-type errors. The unified webapp serves them from the servlet
+          // root.
+          "/assets",
+          "/custom.css",
+          "/favicon.ico");
 
   private final boolean webappEnabled;
 
