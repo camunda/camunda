@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.HubEventState;
 import io.camunda.zeebe.engine.state.immutable.PolicyUpdateState;
 import io.camunda.zeebe.engine.state.policy.PersistedPolicyUpdate;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Locale;
 import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
@@ -31,7 +33,7 @@ import org.jspecify.annotations.NullMarked;
  * which is the same count that decides whether every chunk is buffered.
  *
  * <p>Only one update is open at a time. The processor rejects a chunk without changing the open
- * update if it cannot belong to it.
+ * update if it cannot belong to it, or if its Hub sequence is already applied or rejected.
  *
  * <p>Once every chunk is buffered, the update is being applied: its identity commands may already
  * be written, and nothing can undo them. A chunk of it is then only rejected, and the update never
@@ -45,6 +47,7 @@ public final class PolicyUpdateAppendChunkProcessor
     implements TypedRecordProcessor<PolicyUpdateRecord> {
 
   private final PolicyUpdateState policyUpdateState;
+  private final HubEventState hubEventState;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -52,9 +55,11 @@ public final class PolicyUpdateAppendChunkProcessor
 
   public PolicyUpdateAppendChunkProcessor(
       final PolicyUpdateState policyUpdateState,
+      final HubEventState hubEventState,
       final KeyGenerator keyGenerator,
       final Writers writers) {
     this.policyUpdateState = policyUpdateState;
+    this.hubEventState = hubEventState;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -70,6 +75,21 @@ public final class PolicyUpdateAppendChunkProcessor
     }
 
     final var chunk = command.getValue();
+    final var lastFinished = hubEventState.getLastFinished();
+    if (lastFinished.isPresent() && chunk.getSeqNo() <= lastFinished.get().seqNo()) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.ALREADY_EXISTS,
+          ("Expected policy update '%s' to have a Hub sequence after %d, which is already %s,"
+                  + " but it has Hub sequence %d")
+              .formatted(
+                  chunk.getUpdateId(),
+                  lastFinished.get().seqNo(),
+                  lastFinished.get().status().name().toLowerCase(Locale.ROOT),
+                  chunk.getSeqNo()));
+      return;
+    }
+
     final var openUpdate = policyUpdateState.getOpenUpdate();
     if (openUpdate.isEmpty()) {
       if (chunk.getChunkIndex() != 0) {

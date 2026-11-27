@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.policy;
 
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.appliedRecord;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.apply;
+import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.nextSeqNo;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.uid;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,6 +30,8 @@ import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -38,6 +41,8 @@ import org.junit.Test;
 public final class PolicyUpdateMultiChunkTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  private static final Map<String, Long> SEQ_NOS = new ConcurrentHashMap<>();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -214,7 +219,9 @@ public final class PolicyUpdateMultiChunkTest {
   @Test
   public void shouldFailTheUpdateWhenAChunkHasAnotherSeqNo() {
     assertFailsWithAChunkThatHas(
-        chunk -> chunk.setSeqNo(8), "identifiers of the update", "seqNo 8 instead of 7");
+        chunk -> chunk.setSeqNo(Long.MAX_VALUE),
+        "identifiers of the update",
+        "seqNo %d instead of".formatted(Long.MAX_VALUE));
   }
 
   @Test
@@ -286,13 +293,14 @@ public final class PolicyUpdateMultiChunkTest {
     assertThat(appliedRecord(secondUpdateId).getValue().getChunkIndex()).isZero();
   }
 
+  /** A chunk of the update; every chunk of an update has the update's own Hub sequence. */
   private static PolicyUpdateRecord chunk(
       final String updateId, final int chunkIndex, final int chunkCount) {
     return new PolicyUpdateRecord()
         .setPolicyId("policy")
         .setPolicyVersion(2)
         .setBasePolicyVersion(1)
-        .setSeqNo(7)
+        .setSeqNo(SEQ_NOS.computeIfAbsent(updateId, id -> nextSeqNo()))
         .setUpdateId(updateId)
         .setChunkIndex(chunkIndex)
         .setChunkCount(chunkCount);

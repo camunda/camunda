@@ -13,13 +13,13 @@ The overall architecture of the identity fan-out from Hub is described in the
 
 ### Terms
 
-|      Term       |                                                                                                       Meaning                                                                                                       |
-|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Policy          | The identity data that authorizes access in an OC: tenants, roles, groups, mapping rules, memberships and authorizations. Users and clients are not entities; they appear only as members and authorization owners. |
-| Policy version  | A number Hub assigns to each committed state of a policy. It starts at 1 and only grows.                                                                                                                            |
-| PolicySet       | The complete policy of one target at one policy version, as Hub holds it.                                                                                                                                           |
-| PolicyChangeSet | The unit Hub sends to an OC through the Hub client: the upserts and deletions up to a target policy version, and the Hub sequence it was polled up to.                                                              |
-| Hub sequence    | The polling cursor of the Hub client. The OC stores it with the committed policy version and resumes polling from it.                                                                                               |
+|      Term       |                                                                                                              Meaning                                                                                                               |
+|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Policy          | The identity data that authorizes access in an OC: tenants, roles, groups, mapping rules, memberships and authorizations. Users and clients are not entities; they appear only as members and authorization owners.                |
+| Policy version  | A number Hub assigns to each committed state of a policy. It starts at 1 and only grows.                                                                                                                                           |
+| PolicySet       | The complete policy of one target at one policy version, as Hub holds it.                                                                                                                                                          |
+| PolicyChangeSet | The unit Hub sends to an OC through the Hub client: the upserts and deletions up to a target policy version, and the Hub sequence it was polled up to.                                                                             |
+| Hub sequence    | The polling cursor of the Hub client. Hub sends its events, of every type, in one sequence per physical tenant. Partition 1 stores up to which sequence every event is handled, applied or rejected, and resumes polling after it. |
 
 A `PolicyChangeSet` always contains exactly the upserts and deletions that turn version `n-x` into
 version `n`. It may aggregate more than one version change.
@@ -34,7 +34,8 @@ The change set defines a fixed apply order, which the OC follows:
 6. Delete mapping rules, groups, roles and tenants.
 
 A change set for a policy version that is already applied is rejected, so a repeated delivery has
-no effect.
+no effect. So is a change set whose Hub sequence is already applied or rejected: a rejection is
+final, and its sequence is not tried again.
 
 ### Modes
 
@@ -53,9 +54,20 @@ leaves version 0, and its state has exactly the layout it had before policy vers
 
 Every physical tenant has its own partition set, and each set has its own partition 1. In
 hub-managed mode, the leader of partition 1 uses the Hub client library to long-poll Hub, starting
-from the stored Hub sequence. While an update is open, the client does not poll the next change
-set; how the client learns that the update is applied is an open question of the ADR. The engine
-distributes each update to the other partitions of the same physical tenant.
+after the last applied or rejected Hub sequence. Partition 1 stores the type and status of its Hub
+events in the `HUB_EVENT` column family. The status is one of:
+
+- `BUFFERING`: the event is received, and its chunks are being collected.
+- `APPLYING`: the event is being applied.
+- `ERROR`: something transient went wrong; the event may be tried again.
+- `CANCELED`: the event was canceled while buffering; it may be tried again.
+- `APPLIED`: the event is applied; the Hub sequence moves past it.
+- `REJECTED`: the event is not applied, for a reason a retry would not change; the Hub sequence
+  moves past it.
+
+While an update is open, the client does not poll the next change set; how the client learns that
+the update is applied is an open question of the ADR. The engine distributes each update to the
+other partitions of the same physical tenant.
 
 ```mermaid
 flowchart LR
@@ -163,6 +175,10 @@ sequenceDiagram
   data. The transformer writes the chunks of an update one after another, in index order, and the
   log keeps that order. Partition 1 checks each chunk against the open update:
 
+  - The chunk's `seqNo` is at or below the last applied or rejected Hub sequence: the chunk is
+    rejected. Its event is already finished, so no update is opened or failed, and the event is not
+    handled twice. This covers chunks that a previous leader wrote before it stepped down. A chunk
+    of an event in progress, in `ERROR` or `CANCELED` is accepted.
   - No update is open and the chunk is not chunk 0: the chunk is rejected.
   - Another update is open: the chunk is rejected. The open update is not changed.
   - The chunk has a different `policyId`, `policyVersion`, `basePolicyVersion`, `seqNo` or
@@ -205,11 +221,11 @@ The buffer uses two column families on partition 1:
 ### Version commit
 
 The last `APPLY_CHUNK` writes the `COMMIT_VERSION` command. Partition 1 processes it first and writes
-`VERSION_COMMITTED`, which sets its current policy version and Hub sequence and removes all buffered
-updates and their chunks. It then distributes the command on the `IDENTITY` queue. Because the
-update's identity commands were distributed on the same queue before, every partition commits only
-after it has applied the whole update. The commit does not check that the version is newer: the
-first `APPEND_CHUNK` of an update does that before anything is buffered.
+`VERSION_COMMITTED`, which sets its current policy version, marks its Hub sequence as handled and
+removes all buffered updates and their chunks. It then distributes the command on the `IDENTITY`
+queue. Because the update's identity commands were distributed on the same queue before, every
+partition commits only after it has applied the whole update. The commit does not check that the
+version is newer: the first `APPEND_CHUNK` of an update does that before anything is buffered.
 
 The commit of a version automatically invalidates the identity caches of the engine.
 
@@ -312,11 +328,11 @@ invisible.
 
 The committed policy of a partition is stored in the `POLICY` column family under a constant key:
 
-|    Property     |                         Content                          |
-|-----------------|----------------------------------------------------------|
-| `policyId`      | The ID of the policy.                                    |
-| `policyVersion` | The current policy version of the partition.             |
-| `seqNo`         | The Hub sequence of that version; polling resumes there. |
+|    Property     |                   Content                    |
+|-----------------|----------------------------------------------|
+| `policyId`      | The ID of the policy.                        |
+| `policyVersion` | The current policy version of the partition. |
+| `seqNo`         | The Hub sequence of that version.            |
 
 ### Cleanup
 
@@ -343,4 +359,8 @@ questions, with options:
 - **Rejected identity commands.** An identity processor can reject a command of the update, and the
   update would still be committed.
 - **Pausing the polling.** The Hub client has to learn that an update is applied or has failed.
+- **Event in progress after a leader change.** Partition 1 stores whether the event in progress is
+  buffering or applying, so a new leader knows how far it got. How it continues from there is open.
+- **Transient errors.** Nothing sets `ERROR` yet; no failure of a policy update is known to be
+  transient.
 

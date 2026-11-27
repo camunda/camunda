@@ -50,6 +50,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,6 +58,8 @@ import org.junit.Test;
 public final class PolicyUpdateApplyTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  private static final AtomicLong SEQ_NO = new AtomicLong();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -264,10 +267,21 @@ public final class PolicyUpdateApplyTest {
     assertThat(ValueTypes.isUserCommand(ValueType.POLICY_UPDATE)).isFalse();
   }
 
+  /**
+   * A Hub sequence after every one used before in this JVM. The engine rejects an update whose
+   * sequence is already handled, and tests that share an engine apply their updates in the order
+   * they create them.
+   */
+  static long nextSeqNo() {
+    return SEQ_NO.incrementAndGet();
+  }
+
+  /** The only chunk of an update, with its own Hub sequence. */
   static PolicyUpdateRecord chunk() {
     return new PolicyUpdateRecord()
         .setPolicyId("policy-" + uid())
         .setPolicyVersion(1)
+        .setSeqNo(nextSeqNo())
         .setUpdateId("update-" + uid())
         .setChunkIndex(0)
         .setChunkCount(1);

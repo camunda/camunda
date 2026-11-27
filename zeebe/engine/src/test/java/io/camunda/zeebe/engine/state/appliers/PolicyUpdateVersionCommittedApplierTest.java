@@ -9,6 +9,9 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.immutable.HubEventState.HubEvent;
+import io.camunda.zeebe.engine.state.immutable.HubEventState.HubEventStatus;
+import io.camunda.zeebe.engine.state.immutable.HubEventState.HubEventType;
 import io.camunda.zeebe.engine.state.immutable.PolicyState.CommittedPolicy;
 import io.camunda.zeebe.engine.state.mutable.MutablePolicyState;
 import io.camunda.zeebe.engine.state.mutable.MutablePolicyUpdateState;
@@ -33,7 +36,9 @@ final class PolicyUpdateVersionCommittedApplierTest {
   void setup() {
     policyState = processingState.getPolicyState();
     policyUpdateState = processingState.getPolicyUpdateState();
-    applier = new PolicyUpdateVersionCommittedApplier(policyState, policyUpdateState);
+    applier =
+        new PolicyUpdateVersionCommittedApplier(
+            policyState, policyUpdateState, processingState.getHubEventState());
   }
 
   @Test
@@ -46,6 +51,17 @@ final class PolicyUpdateVersionCommittedApplierTest {
 
     // then
     assertThat(policyState.getCurrentPolicy()).contains(new CommittedPolicy("policy-1", 2L, 42L));
+  }
+
+  @Test
+  void shouldMarkTheHubEventOfTheUpdateAsApplied() {
+    // when
+    applier.applyState(1L, chunk("update-1", 0, 1));
+
+    // then
+    assertThat(processingState.getHubEventState().getLastFinished())
+        .contains(new HubEvent(42L, HubEventType.POLICY_UPDATE, HubEventStatus.APPLIED, null));
+    assertThat(processingState.getHubEventState().getLastAppliedSeqNo()).hasValue(42L);
   }
 
   @Test
