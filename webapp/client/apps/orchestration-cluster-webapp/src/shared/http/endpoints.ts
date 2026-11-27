@@ -115,6 +115,8 @@ const BASE_REQUEST_OPTIONS: RequestInit = {
 };
 
 type CreateDocumentMetadata = {
+	processDefinitionId?: string;
+	processInstanceKey?: string;
 	customProperties?: Record<string, unknown>;
 };
 

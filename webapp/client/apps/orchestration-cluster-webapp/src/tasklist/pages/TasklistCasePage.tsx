@@ -18,6 +18,7 @@ import {CaseHeader} from '#/tasklist/modules/case-details/components/CaseHeader'
 import {CaseIncidentBanner} from '#/tasklist/modules/case-details/components/CaseIncidentBanner';
 import {StageLine} from '#/tasklist/modules/case-details/components/StageLine';
 import {getCaseView} from '#/tasklist/modules/case-details/getCaseView';
+import {useUploadCaseDocuments} from '#/tasklist/modules/case-details/useUploadCaseDocuments';
 import {extractVariablesFromFormSchema} from '#/tasklist/modules/form-js/extractVariablesFromFormSchema';
 
 type Props = CaseData & {
@@ -37,6 +38,11 @@ const TasklistCasePage: React.FC<Props> = ({caseFormSchema, children, ...caseDat
 	const title = getCaseTitle(caseVariables.find(({name}) => name === model.caseMarker?.titleVariable)) ?? processName;
 	const header = getCaseHeader(caseVariables.find(({name}) => name === CASE_HEADER_VARIABLE)) ?? [];
 	const documents = useMemo(() => getDocumentReferences(documentVariables), [documentVariables]);
+	const {
+		mutate: uploadDocuments,
+		isPending: isUploading,
+		variables: uploadingFiles,
+	} = useUploadCaseDocuments(processInstance);
 	const caseFormVariables = useMemo(() => {
 		const names = new Set(caseFormSchema === null ? [] : extractVariablesFromFormSchema(caseFormSchema));
 		return caseVariables.filter(({name}) => names.has(name));
@@ -78,7 +84,11 @@ const TasklistCasePage: React.FC<Props> = ({caseFormSchema, children, ...caseDat
 						)}
 					</div>
 					<div className="flex min-w-0 flex-col gap-4">
-						<CaseDocumentsCard documents={documents} />
+						<CaseDocumentsCard
+							documents={documents}
+							onUpload={processInstance.state === 'ACTIVE' ? uploadDocuments : undefined}
+							uploadingFiles={isUploading ? uploadingFiles : undefined}
+						/>
 					</div>
 				</div>
 			</div>

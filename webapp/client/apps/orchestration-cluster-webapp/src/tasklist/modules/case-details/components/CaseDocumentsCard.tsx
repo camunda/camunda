@@ -8,27 +8,69 @@
 
 import {useTranslation} from 'react-i18next';
 import type {DocumentReference} from '@camunda/case-management-sdk';
-import {Card, CardContent, CardHeader, CardTitle, EmptyState, Text} from '@camunda/design-system';
-import {FileText} from '@camunda/design-system/icons';
+import {
+	Card,
+	CardAction,
+	CardContent,
+	CardHeader,
+	CardTitle,
+	EmptyState,
+	FileUploaderButton,
+	FileUploaderItem,
+	FileUploaderList,
+	Text,
+} from '@camunda/design-system';
+import {FileText, Upload} from '@camunda/design-system/icons';
 import {endpoints} from '#/shared/http/endpoints';
 import {toHumanReadableBytes} from '#/tasklist/modules/form-js/toHumanReadableBytes';
 
 type Props = {
 	documents: DocumentReference[];
+	/** Without it, the case takes no uploads, for example after it ended. */
+	onUpload?: (files: File[]) => void;
+	/** The files of the upload in progress. */
+	uploadingFiles?: File[];
 };
 
-const CaseDocumentsCard: React.FC<Props> = ({documents}) => {
+const CaseDocumentsCard: React.FC<Props> = ({documents, onUpload, uploadingFiles = []}) => {
 	const {t} = useTranslation();
+	const isUploading = uploadingFiles.length > 0;
 
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>{t('tasklist.caseDocumentsTitle')}</CardTitle>
+				{onUpload === undefined ? null : (
+					<CardAction>
+						<FileUploaderButton
+							multiple
+							variant="secondary"
+							size="sm"
+							disabled={isUploading}
+							onFilesSelected={(files) => {
+								if (files.length > 0) {
+									onUpload(files);
+								}
+							}}
+						>
+							<Upload aria-hidden />
+							{t('tasklist.caseUploadDocuments')}
+						</FileUploaderButton>
+					</CardAction>
+				)}
 			</CardHeader>
-			<CardContent>
-				{documents.length === 0 ? (
+			<CardContent className="flex flex-col gap-3">
+				{isUploading ? (
+					<FileUploaderList>
+						{uploadingFiles.map((file, index) => (
+							<FileUploaderItem key={`${file.name}-${index}`} name={file.name} status="uploading" />
+						))}
+					</FileUploaderList>
+				) : null}
+				{documents.length === 0 && !isUploading ? (
 					<EmptyState size="sm" heading={t('tasklist.caseNoDocuments')} />
-				) : (
+				) : null}
+				{documents.length === 0 ? null : (
 					<ul className="flex flex-col divide-y divide-border">
 						{documents.map(({variableName, documentId, contentHash, fileName, contentType, size}) => (
 							<li key={`${variableName}-${documentId}`} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
