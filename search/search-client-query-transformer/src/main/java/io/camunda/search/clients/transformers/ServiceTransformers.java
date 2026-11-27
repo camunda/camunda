@@ -119,6 +119,7 @@ import io.camunda.search.clients.transformers.entity.TenantMemberEntityTransform
 import io.camunda.search.clients.transformers.entity.UserEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserTaskEntityTransformer;
 import io.camunda.search.clients.transformers.entity.VariableEntityTransformer;
+import io.camunda.search.clients.transformers.entity.VariableHistoryEntityTransformer;
 import io.camunda.search.clients.transformers.entity.WaitStateEntityTransformer;
 import io.camunda.search.clients.transformers.filter.AgentDefinitionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.AgentHistoryFilterTransformer;
@@ -164,6 +165,7 @@ import io.camunda.search.clients.transformers.filter.UsageMetricsTUFilterTransfo
 import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserTaskFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableFilterTransformer;
+import io.camunda.search.clients.transformers.filter.VariableHistoryItemFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableValueFilterTransformer;
 import io.camunda.search.clients.transformers.filter.WaitStateFilterTransformer;
 import io.camunda.search.clients.transformers.filter.WaitStateStatisticsFilterTransformer;
@@ -206,6 +208,7 @@ import io.camunda.search.clients.transformers.sort.UsageMetricsFieldSortingTrans
 import io.camunda.search.clients.transformers.sort.UserFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserTaskFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.VariableFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.VariableHistoryItemFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.WaitStateFieldSortingTransformer;
 import io.camunda.search.filter.AgentDefinitionFilter;
 import io.camunda.search.filter.AgentInstanceFilter;
@@ -252,6 +255,7 @@ import io.camunda.search.filter.UsageMetricsTUFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
+import io.camunda.search.filter.VariableHistoryItemFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.filter.WaitStateStatisticsFilter;
 import io.camunda.search.query.AgentDefinitionQuery;
@@ -301,6 +305,7 @@ import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableHistoryItemQuery;
 import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.query.WaitStateStatisticsQuery;
@@ -342,6 +347,7 @@ import io.camunda.search.sort.TenantSort;
 import io.camunda.search.sort.UsageMetricsSort;
 import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
+import io.camunda.search.sort.VariableHistoryItemSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.search.sort.WaitStateSort;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -376,6 +382,7 @@ import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableHistoryTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
@@ -410,6 +417,7 @@ import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.webapps.schema.entities.variablehistory.VariableHistoryEntity;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.HashMap;
 import java.util.List;
@@ -514,6 +522,7 @@ public final class ServiceTransformers {
             VariableNameQuery.class,
             ClusterVariableQuery.class,
             AuditLogQuery.class,
+            VariableHistoryItemQuery.class,
             IncidentProcessInstanceStatisticsByErrorQuery.class,
             IncidentProcessInstanceStatisticsByDefinitionQuery.class,
             GlobalJobStatisticsQuery.class,
@@ -563,6 +572,7 @@ public final class ServiceTransformers {
     mappers.put(TenantMemberEntity.class, new TenantMemberEntityTransformer());
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(AuditLogEntity.class, new AuditLogEntityTransformer());
+    mappers.put(VariableHistoryEntity.class, new VariableHistoryEntityTransformer());
     mappers.put(GlobalListenerEntity.class, new GlobalListenerEntityTransformer());
     mappers.put(DeployedResourceEntity.class, new DeployedResourceEntityTransformer());
 
@@ -600,6 +610,7 @@ public final class ServiceTransformers {
     mappers.put(UsageMetricsSort.class, new UsageMetricsFieldSortingTransformer());
     mappers.put(UserSort.class, new UserFieldSortingTransformer());
     mappers.put(AuditLogSort.class, new AuditLogSortTransformer());
+    mappers.put(VariableHistoryItemSort.class, new VariableHistoryItemFieldSortingTransformer());
     mappers.put(
         IncidentProcessInstanceStatisticsByDefinitionSort.class,
         new IncidentFieldSortingTransformer());
@@ -647,6 +658,10 @@ public final class ServiceTransformers {
     mappers.put(
         AuditLogFilter.class,
         new AuditLogFilterTransformer(indexDescriptors.get(AuditLogTemplate.class)));
+    mappers.put(
+        VariableHistoryItemFilter.class,
+        new VariableHistoryItemFilterTransformer(
+            indexDescriptors.get(VariableHistoryTemplate.class)));
     mappers.put(
         AuthorizationFilter.class,
         new AuthorizationFilterTransformer(indexDescriptors.get(AuthorizationIndex.class)));
