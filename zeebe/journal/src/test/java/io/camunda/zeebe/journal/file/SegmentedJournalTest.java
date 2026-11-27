@@ -1294,9 +1294,12 @@ class SegmentedJournalTest {
                   .toList())
           .hasSize(2);
     }
+    // and only the current segment is left, besides the next one, which is pre-created on another
+    // thread and may not exist yet
     try (final var stream = Files.list(logDirectory)) {
       assertThat(stream.filter(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p)).toList())
-          .hasSize(1);
+          .contains(journal.getFirstSegment().file().file())
+          .hasSizeLessThanOrEqualTo(2);
     }
   }
 

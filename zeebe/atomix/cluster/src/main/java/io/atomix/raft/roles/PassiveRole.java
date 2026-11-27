@@ -1236,7 +1236,19 @@ public class PassiveRole extends InactiveRole {
    * came from one of them is dropped too.
    */
   private void resetLog(final long firstIndex) {
-    raft.getLog().reset(firstIndex);
+    try {
+      raft.getLog().reset(firstIndex);
+    } catch (final RuntimeException e) {
+      final var log = raft.getLog();
+      if (log.isEmpty() && log.getFirstIndex() == firstIndex) {
+        // only finishing the reset failed: no old entry is left, as after a successful reset
+        raft.getCluster().reloadStoredConfiguration();
+      } else {
+        // a failed reset can leave a prefix of the log, so a configuration may have lost its entry
+        raft.getCluster().dropConfigurationsWithoutLogEntry(log.getLastIndex());
+      }
+      throw e;
+    }
     raft.getCluster().reloadStoredConfiguration();
   }
 }

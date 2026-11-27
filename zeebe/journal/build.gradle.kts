@@ -25,6 +25,8 @@ dependencies {
   testImplementation(libs.com.github.jnr.jnr.posix)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(project(":zeebe-test-util"))
+  testImplementation(libs.net.jqwik.jqwik)
+  testImplementation(libs.net.jqwik.jqwik.api)
 }
 
 description = "Zeebe Journal"

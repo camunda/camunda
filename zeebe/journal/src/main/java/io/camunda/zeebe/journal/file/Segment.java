@@ -253,10 +253,22 @@ final class Segment implements AutoCloseable, FlushableSegment {
 
   /** Deletes the segment. */
   void delete() {
+    final var wasOpen = open;
     open = false;
-    markForDeletion();
-    if (readers.isEmpty()) {
-      safeDelete();
+    try {
+      markForDeletion();
+    } catch (final RuntimeException e) {
+      if (!markedForDeletion) {
+        // the rename failed, so nothing was deleted and the segment stays in use
+        open = wasOpen;
+      }
+      throw e;
+    } finally {
+      // once renamed, the segment is gone even if flushing the rename failed, so its space is freed
+      // now; a reader that still holds it frees it when it closes
+      if (markedForDeletion && readers.isEmpty()) {
+        safeDelete();
+      }
     }
   }
 
@@ -291,11 +303,23 @@ final class Segment implements AutoCloseable, FlushableSegment {
 
     final var target = file.getFileMarkedForDeletion();
     try {
-      FileUtil.moveDurably(file.file(), target);
+      Files.move(file.file(), target);
     } catch (final IOException e) {
       throw new JournalException(e);
     }
+    // once renamed, a restart deletes the file, so the segment must not be used again even if
+    // flushing the rename fails
     markedForDeletion = true;
+    try {
+      FileUtil.flushDirectory(FileUtil.requireParent(target));
+    } catch (final IOException e) {
+      throw new JournalException(e);
+    }
+  }
+
+  /** Whether the segment file was renamed for deletion; the segment is then no longer usable. */
+  boolean isMarkedForDeletion() {
+    return markedForDeletion;
   }
 
   void updateDescriptor() {
@@ -308,6 +332,11 @@ final class Segment implements AutoCloseable, FlushableSegment {
     descriptor = descriptor.reset();
     descriptorSerializer.writeTo(descriptor, buffer);
     // flush immediately to prevent inconsistencies between descriptor and actual last written entry
+    flushDescriptor();
+  }
+
+  /** Forces the descriptor to disk, without the records after it. */
+  void flushDescriptor() {
     buffer.force(0, descriptor.encodingLength());
   }
 }

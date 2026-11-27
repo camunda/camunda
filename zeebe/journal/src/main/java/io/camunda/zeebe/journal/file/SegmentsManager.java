@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -66,6 +67,7 @@ final class SegmentsManager implements AutoCloseable {
   private final String name;
   private final JournalMetaStore metaStore;
   private final Executor deletionExecutor;
+  private final Supplier<ExecutorService> preparationExecutors;
   private @Nullable ExecutorService bgIoExecutor;
 
   private volatile @Nullable Segment currentSegment;
@@ -78,7 +80,8 @@ final class SegmentsManager implements AutoCloseable {
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
       final JournalMetaStore metaStore,
-      final Executor deletionExecutor) {
+      final Executor deletionExecutor,
+      final Supplier<ExecutorService> preparationExecutors) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
@@ -87,6 +90,7 @@ final class SegmentsManager implements AutoCloseable {
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
     this.deletionExecutor = deletionExecutor;
+    this.preparationExecutors = preparationExecutors;
   }
 
   @Override
@@ -157,29 +161,37 @@ final class SegmentsManager implements AutoCloseable {
     final var lastWrittenAsqn = lastSegment != null ? lastSegment.lastAsqn() : INITIAL_ASQN;
     final var nextSegmentIndex =
         requireNonNull(currentSegment, "currentSegment is null").lastIndex() + 1;
-    final var descriptor =
-        SegmentDescriptor.builder()
-            .withId(lastSegment != null ? lastSegment.descriptor().id() + 1 : 1)
-            .withIndex(nextSegmentIndex)
-            .withMaxSegmentSize(maxSegmentSize)
-            .build();
-    if (nextSegment != null) {
-      try {
-        currentSegment =
-            nextSegment.join().initializeForUse(nextSegmentIndex, lastWrittenAsqn, journalMetrics);
-      } catch (final CompletionException e) {
-        LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
-        nextSegment = null;
-        currentSegment = createSegment(descriptor, lastWrittenAsqn);
-      }
-    } else {
-      currentSegment = createSegment(descriptor, lastWrittenAsqn);
-    }
+    currentSegment = takeNextSegment(nextSegmentIndex, lastWrittenAsqn);
     prepareNextSegment();
 
-    segments.put(descriptor.index(), currentSegment);
+    segments.put(nextSegmentIndex, currentSegment);
     journalMetrics.incSegmentCount();
     return currentSegment;
+  }
+
+  /**
+   * Takes the pre-created segment and lets it start at the given index. Creates a new segment
+   * instead if none was pre-created, or if pre-creating it failed.
+   */
+  private Segment takeNextSegment(final long index, final long lastWrittenAsqn) {
+    final var preparedSegment = nextSegment;
+    nextSegment = null;
+    if (preparedSegment != null) {
+      try {
+        return preparedSegment.join().initializeForUse(index, lastWrittenAsqn, journalMetrics);
+      } catch (final CompletionException e) {
+        LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
+      }
+    }
+
+    final var lastSegment = getLastSegment();
+    final var descriptor =
+        SegmentDescriptor.builder()
+            .withId(lastSegment != null ? lastSegment.descriptor().id() + 1 : FIRST_SEGMENT_ID)
+            .withIndex(index)
+            .withMaxSegmentSize(maxSegmentSize)
+            .build();
+    return createSegment(descriptor, lastWrittenAsqn);
   }
 
   @Nullable Segment getNextSegment(final long index) {
@@ -287,22 +299,58 @@ final class SegmentsManager implements AutoCloseable {
   /**
    * Resets and returns the first segment in the journal.
    *
+   * <p>The new first segment exists before any old segment is deleted. If creating it fails, e.g.
+   * because the disk is full, the journal stays as it was. If deleting an old segment fails, the
+   * older segments are kept, as a crash at that point would keep them, and the last of them is the
+   * current segment again.
+   *
+   * <p>The caller must reset the last flushed index first, so that a restart after a crash in the
+   * middle of the reset discards the new segment if it does not continue the old segments left.
+   *
    * @param index the starting index of the journal
    * @return the first segment
    */
   Segment resetSegments(final long index) {
-    // reset the last flushed index before deleting data to avoid data corruption on start up in
-    // case of node crash
-    // setting the last flushed index to a semantic-null value will let us know on start up that
-    // there is "nothing" written, even if we cannot read the descriptor (e.g. if we crash after
-    // creating the segment but before writing its descriptor)
-    metaStore.resetLastFlushedIndex();
-
-    // the new first segment can use the ID of a segment that waits for deletion
+    // compacted segments that wait for deletion must not survive the reset: a restart would find
+    // them before the new first segment
     deleteQueuedSegmentsNow();
 
-    // delete the segments in reverse order, such that if the operation is interrupted (e.g. crash)
-    // in the middle, there are no gaps in the log (or between the log and snapshot)
+    // the pre-created segment already holds the space the new segment needs; either way, the new
+    // segment's ID is higher than the old ones, so that a restart reads it after them
+    final var firstSegment = takeNextSegment(index, INITIAL_ASQN);
+    try {
+      // once the old segments are gone, the reset must survive a power loss
+      firstSegment.flushDescriptor();
+      deleteAllSegments();
+    } catch (final RuntimeException e) {
+      if (segments.isEmpty()) {
+        // every old segment is gone, only finishing the deletion of the last one failed: the
+        // journal is reset
+        useFirstSegment(firstSegment, index);
+      } else {
+        discardSegment(firstSegment, e);
+        currentSegment = getLastSegment();
+      }
+      throw e;
+    }
+
+    useFirstSegment(firstSegment, index);
+    return firstSegment;
+  }
+
+  private void useFirstSegment(final Segment firstSegment, final long index) {
+    currentSegment = firstSegment;
+    segments.put(index, firstSegment);
+    journalMetrics.incSegmentCount();
+    // the reset took the pre-created segment, so the next roll-over needs a new one
+    prepareNextSegment();
+  }
+
+  /**
+   * Deletes the segments in reverse order, such that if the operation is interrupted (e.g. crash)
+   * in the middle, there are no gaps in the log (or between the log and snapshot).
+   */
+  private void deleteAllSegments() {
     final Iterator<Segment> it = segments.descendingMap().values().iterator();
     while (it.hasNext()) {
       // we explicitly do not want to close the segment, as we may be only soft deleting it here to
@@ -310,21 +358,28 @@ final class SegmentsManager implements AutoCloseable {
       // underlying buffer
       //noinspection resource
       final var segment = it.next();
-      segment.delete();
-      it.remove();
-      journalMetrics.decSegmentCount();
+      try {
+        segment.delete();
+      } finally {
+        // a segment renamed for deletion is gone, even if the deletion failed after the rename
+        if (segment.isMarkedForDeletion()) {
+          it.remove();
+          journalMetrics.decSegmentCount();
+        }
+      }
     }
+  }
 
-    final SegmentDescriptor descriptor =
-        SegmentDescriptor.builder()
-            .withId(1)
-            .withIndex(index)
-            .withMaxSegmentSize(maxSegmentSize)
-            .build();
-    currentSegment = createSegment(descriptor, INITIAL_ASQN);
-    segments.put(index, currentSegment);
-    journalMetrics.incSegmentCount();
-    return currentSegment;
+  /** Deletes the first segment of a reset that failed. */
+  private void discardSegment(final Segment segment, final RuntimeException resetError) {
+    try {
+      segment.delete();
+    } catch (final RuntimeException e) {
+      // left on disk, a restart discards it, as nothing after the segments that are left is
+      // flushed, or reads it as an empty segment right after them
+      resetError.addSuppressed(e);
+      segment.close();
+    }
   }
 
   /**
@@ -364,7 +419,16 @@ final class SegmentsManager implements AutoCloseable {
   void open() {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
-    for (final Segment segment : loadSegments()) {
+    final var loadedSegments = loadSegments();
+    for (int i = 0; i < loadedSegments.size(); i++) {
+      final var segment = loadedSegments.get(i);
+      final var next = i + 1 < loadedSegments.size() ? loadedSegments.get(i + 1) : null;
+      if (next != null && next.index() == segment.index()) {
+        // an empty segment, followed by the segment that a failed reset to its index left on disk;
+        // a reset only deletes the segments it knows, so a crash after it would bring this one back
+        deleteReplacedSegment(segment);
+        continue;
+      }
       segments.put(segment.descriptor().index(), segment);
       journalMetrics.incSegmentCount();
     }
@@ -395,9 +459,29 @@ final class SegmentsManager implements AutoCloseable {
 
     // created last, so that nothing above can fail while holding an executor that no one would
     // close; the executor is only needed once open() has returned, to prepare the next segment
-    bgIoExecutor =
-        Executors.newSingleThreadExecutor(
-            task -> Thread.ofPlatform().name("journal-bg-io-" + name).daemon(true).unstarted(task));
+    bgIoExecutor = preparationExecutors.get();
+  }
+
+  private static void deleteReplacedSegment(final Segment segment) {
+    try {
+      segment.delete();
+    } catch (final JournalException e) {
+      if (!segment.isMarkedForDeletion()) {
+        throw e;
+      }
+      // the next successful directory flush, at the latest the one of a reset, persists the rename
+      LOG.warn("Failed to flush the deletion of the replaced segment {}", segment, e);
+    }
+  }
+
+  /**
+   * The executor that pre-creates the next segment of a journal: a single daemon thread, named
+   * after the journal so that it can be found in thread dumps.
+   */
+  static ExecutorService newBackgroundIoExecutor(final String journalName) {
+    return Executors.newSingleThreadExecutor(
+        task ->
+            Thread.ofPlatform().name("journal-bg-io-" + journalName).daemon(true).unstarted(task));
   }
 
   private void prepareNextSegment() {

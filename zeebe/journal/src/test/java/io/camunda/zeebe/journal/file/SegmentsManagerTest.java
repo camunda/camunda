@@ -11,9 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,6 +24,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
@@ -39,6 +43,44 @@ class SegmentsManagerTest {
   @AfterEach
   void afterEach() {
     CloseHelper.quietClose(segments);
+  }
+
+  @Test
+  void shouldKeepSegmentOpenWhenDeletingItFails() throws IOException {
+    // given - a segment whose file cannot be renamed for deletion, because it is gone
+    segments = journalFactory.segmentsManager(directory);
+    segments.open();
+    final var segment = Objects.requireNonNull(segments.getFirstSegment());
+    Files.delete(segment.file().file());
+
+    // when
+    assertThatThrownBy(segment::delete).isInstanceOf(JournalException.class);
+
+    // then - nothing was deleted, so readers can still use it
+    assertThat(segment.isOpen()).isTrue();
+  }
+
+  @Test
+  void shouldFreeRenamedSegmentWhenFlushingTheRenameFails() {
+    // given - a segment that no reader holds, and a directory flush that fails
+    segments = journalFactory.segmentsManager(directory);
+    segments.open();
+    final var segment = Objects.requireNonNull(segments.getFirstSegment());
+    final var renamedFile = segment.file().getFileMarkedForDeletion();
+    final var flushFailure = new IOException("Injected: failed to flush the directory");
+
+    // when - the segment file is renamed for deletion, but flushing the rename fails
+    final Throwable error;
+    try (final var fileUtil = Mockito.mockStatic(FileUtil.class, Mockito.CALLS_REAL_METHODS)) {
+      fileUtil.when(() -> FileUtil.flushDirectory(Mockito.any())).thenThrow(flushFailure);
+      error = catchThrowable(segment::delete);
+    }
+
+    // then - the segment is gone, and its file does not wait for a restart to free its space
+    assertThat(error).isInstanceOf(JournalException.class).hasCauseReference(flushFailure);
+    assertThat(segment.isMarkedForDeletion()).isTrue();
+    assertThat(segment.file().file()).doesNotExist();
+    assertThat(renamedFile).doesNotExist();
   }
 
   @Test
@@ -289,7 +331,7 @@ class SegmentsManagerTest {
 
     // when
     segments = journalFactory.segmentsManager(directory, loader, metaStore);
-    try (final var journal = journalFactory.journal(segments)) {
+    try (final var journal = journalFactory.journal(segments, metaStore)) {
       // grab all segments and copy them to avoid the map getting cleared
       final var loadedSegments = new ArrayList<>(segments.getTailSegments(0).values());
       journal.reset(10);
@@ -301,8 +343,86 @@ class SegmentsManagerTest {
       inOrder.verify(metaStore).resetLastFlushedIndex();
 
       Collections.reverse(loadedSegments);
-      loadedSegments.forEach(s -> inOrder.verify(s).delete());
+      loadedSegments.forEach(
+          s -> {
+            inOrder.verify(s).delete();
+            inOrder.verify(s).isMarkedForDeletion();
+          });
       inOrder.verifyNoMoreInteractions();
+    }
+  }
+
+  @Test
+  void shouldForceNewFirstSegmentBeforeDeletingOldSegmentsOnReset() {
+    // given - a journal whose segments are spied on, including the one the reset creates
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    try (final var journal = openJournal()) {
+      journal.append(1, journalFactory.entry()).index();
+      journal.append(2, journalFactory.entry()).index();
+    }
+    //noinspection resource
+    Mockito.doAnswer(call -> Mockito.spy(call.callRealMethod()))
+        .when(loader)
+        .loadExistingSegment(Mockito.any(), Mockito.anyLong(), Mockito.any());
+    //noinspection resource
+    Mockito.doAnswer(call -> Mockito.spy(call.callRealMethod()))
+        .when(loader)
+        .createSegment(Mockito.any(), Mockito.any(), Mockito.anyLong(), Mockito.any());
+    segments = journalFactory.segmentsManager(directory, loader);
+    try (final var journal = journalFactory.journal(segments)) {
+      final var oldLastSegment = segments.getLastSegment();
+
+      // when
+      journal.reset(10);
+
+      // then - the new first segment is on disk before any old segment is gone, so that a power
+      // loss after the deletion still finds the reset
+      final var newFirstSegment = segments.getFirstSegment();
+      final var inOrder = Mockito.inOrder(newFirstSegment, oldLastSegment);
+      inOrder.verify(newFirstSegment).flushDescriptor();
+      inOrder.verify(oldLastSegment).delete();
+    }
+  }
+
+  @Test
+  void shouldCloseNewFirstSegmentWhenDiscardingItAfterFailedResetFails() {
+    // given - deleting any segment fails, the old ones and the one the reset creates
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    try (final var journal = openJournal()) {
+      journal.append(1, journalFactory.entry()).index();
+      journal.append(2, journalFactory.entry()).index();
+    }
+    final var deleteFailure = new JournalException("Injected: failed to delete the old segment");
+    final var discardFailure = new JournalException("Injected: failed to delete the new segment");
+    final var newSegment = new AtomicReference<Segment>();
+    //noinspection resource
+    Mockito.doAnswer(
+            call -> {
+              final var spy = Mockito.spy((Segment) call.callRealMethod());
+              Mockito.doThrow(deleteFailure).when(spy).delete();
+              return spy;
+            })
+        .when(loader)
+        .loadExistingSegment(Mockito.any(), Mockito.anyLong(), Mockito.any());
+    //noinspection resource
+    Mockito.doAnswer(
+            call -> {
+              final var spy = Mockito.spy((Segment) call.callRealMethod());
+              Mockito.doThrow(discardFailure).when(spy).delete();
+              newSegment.set(spy);
+              return spy;
+            })
+        .when(loader)
+        .createSegment(Mockito.any(), Mockito.any(), Mockito.anyLong(), Mockito.any());
+    segments = journalFactory.segmentsManager(directory, loader);
+    try (final var journal = journalFactory.journal(segments)) {
+
+      // when
+      final var error = catchThrowable(() -> journal.reset(10));
+
+      // then - the reset fails for the old segment, and the new one is closed, not left mapped
+      assertThat(error).isSameAs(deleteFailure).hasSuppressedException(discardFailure);
+      assertThat(newSegment.get().isOpen()).isFalse();
     }
   }
 
@@ -375,6 +495,214 @@ class SegmentsManagerTest {
 
     // then
     assertThat(second.id()).isGreaterThan(first.id());
+  }
+
+  @Test
+  void shouldNotUseSegmentRenamedForDeletionWhenResetFailsAfterTheRename() {
+    // given - entries 1-3 in three segments, and the first deletion fails after renaming the file,
+    // e.g. because flushing the directory fails
+    try (final var journal = openJournal()) {
+      journal.append(journalFactory.entry());
+      journal.append(journalFactory.entry());
+      journal.append(journalFactory.entry());
+    }
+    final var renameThenFail = new JournalException("Injected: failed to flush the directory");
+    segments =
+        journalFactory.segmentsManager(
+            directory, loaderFailingFirstDeleteAfterRename(renameThenFail));
+    try (final var journal = journalFactory.journal(segments)) {
+
+      // when
+      final var error = catchThrowable(() -> journal.reset(10));
+
+      // then - the renamed segment is gone, so the journal continues after the older ones
+      assertThat(error).isSameAs(renameThenFail);
+      assertThat(journal.getLastIndex()).isEqualTo(2);
+      assertThat(journal.append(journalFactory.entry()).index()).isEqualTo(3);
+    }
+
+    // and a restart, which deletes files renamed for deletion, still finds the appended entry
+    final var restartFactory = new TestJournalFactory();
+    JournalCrash.copyLastFlushedIndex(journalFactory.metaStore(), restartFactory.metaStore());
+    try (final var restarted = restartFactory.journal(restartFactory.segmentsManager(directory))) {
+      assertThat(JournalEntry.readAll(restarted))
+          .extracting(JournalEntry::index)
+          .containsExactly(1L, 2L, 3L);
+    }
+  }
+
+  @Test
+  void shouldBeResetWhenOnlyFinishingTheLastDeletionFails() {
+    // given - a single segment, whose deletion fails after renaming the file
+    try (final var journal = openJournal()) {
+      journal.append(journalFactory.entry());
+    }
+    final var renameThenFail = new JournalException("Injected: failed to flush the directory");
+    segments =
+        journalFactory.segmentsManager(
+            directory, loaderFailingFirstDeleteAfterRename(renameThenFail));
+    try (final var journal = journalFactory.journal(segments)) {
+
+      // when
+      final var error = catchThrowable(() -> journal.reset(10));
+
+      // then - no old segment is left, so the journal is reset
+      assertThat(error).isSameAs(renameThenFail);
+      assertThat(journal.getFirstIndex()).isEqualTo(10);
+      assertThat(journal.getLastIndex()).isEqualTo(9);
+      assertThat(journal.append(journalFactory.entry()).index()).isEqualTo(10);
+    }
+  }
+
+  @Test
+  void shouldRollOverToPreCreatedSegmentAfterReset() {
+    // given - a reset journal
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    segments = journalFactory.segmentsManager(directory, loader);
+    try (final var journal = journalFactory.journal(segments)) {
+      journal.append(journalFactory.entry());
+      journal.reset(10);
+      journal.append(journalFactory.entry());
+      Mockito.clearInvocations(loader);
+
+      // when - the next entry rolls over to a new segment
+      journal.append(journalFactory.entry());
+
+      // then - the roll-over uses a segment pre-created after the reset, not one created now
+      Mockito.verify(loader, Mockito.never())
+          .createSegment(Mockito.any(), Mockito.any(), Mockito.anyLong(), Mockito.any());
+      assertThat(journal.getLastIndex()).isEqualTo(11);
+    }
+  }
+
+  @Test
+  void shouldNotBringBackAnOldSegmentAfterResetWhenASegmentStartingAtTheSameIndexWasLeftOver() {
+    // given - an empty journal, and the segment that a failed reset to the same index left on disk,
+    // e.g. because flushing the directory failed after creating it
+    leaveSegmentStartingAtTheSameIndex();
+
+    // when - the journal is reset after a restart
+    try (final var journal = openJournal()) {
+      journal.reset(5);
+    }
+
+    // then - after another restart, the journal starts where the reset let it start
+    try (final var journal = openJournal()) {
+      assertThat(journal.getFirstIndex()).isEqualTo(5);
+      assertThat(journal.append(journalFactory.entry()).index()).isEqualTo(5);
+    }
+  }
+
+  @Test
+  void shouldOpenWhenOnlyFlushingTheDeletionOfALeftOverSegmentFails() {
+    // given - an empty segment followed by a left-over segment starting at the same index
+    final var replacedFile = leaveSegmentStartingAtTheSameIndex();
+
+    // when - the journal opens, and flushing the rename of the replaced segment fails
+    segments = journalFactory.segmentsManager(directory);
+    try (final var fileUtil = Mockito.mockStatic(FileUtil.class, Mockito.CALLS_REAL_METHODS)) {
+      fileUtil
+          .when(() -> FileUtil.flushDirectory(Mockito.any()))
+          .thenThrow(new IOException("Injected: failed to flush the directory"));
+      segments.open();
+    }
+
+    // then - the replaced segment is gone, and the next flush persists its rename
+    assertThat(replacedFile).doesNotExist();
+    assertThat(segments.getFirstSegment()).isSameAs(segments.getLastSegment());
+  }
+
+  @Test
+  void shouldNotOpenWhenTheLeftOverSegmentCannotBeRenamedForDeletion() {
+    // given - an empty segment followed by a left-over segment starting at the same index, and
+    // renaming the empty segment for deletion fails
+    final var replacedFile = leaveSegmentStartingAtTheSameIndex();
+    final var renameFailure = new JournalException("Injected: failed to rename the segment");
+    segments = journalFactory.segmentsManager(directory, loaderFailingFirstRename(renameFailure));
+
+    // when
+    final var error = catchThrowable(segments::open);
+
+    // then - the journal does not open, as a later reset would not delete the replaced segment
+    assertThat(error).isSameAs(renameFailure);
+    assertThat(replacedFile).exists();
+  }
+
+  /**
+   * Leaves an empty segment followed by a segment starting at the same index, as a reset that
+   * failed after creating its new first segment does.
+   *
+   * @return the file of the empty segment, which the left-over segment replaces on open
+   */
+  private Path leaveSegmentStartingAtTheSameIndex() {
+    final Segment firstSegment;
+    try (final var journal = openJournal()) {
+      firstSegment = journal.getFirstSegment();
+    }
+    final var leftOverId = firstSegment.id() + 1;
+    final var leftOver =
+        journalFactory
+            .segmentLoader()
+            .createSegment(
+                SegmentFile.createSegmentFile(JOURNAL_NAME, directory.resolve("data"), leftOverId),
+                SegmentDescriptor.builder()
+                    .withId(leftOverId)
+                    .withIndex(firstSegment.index())
+                    .withMaxSegmentSize(journalFactory.maxSegmentSize())
+                    .build(),
+                SegmentedJournal.ASQN_IGNORE,
+                new SparseJournalIndex(1));
+    leftOver.close();
+    return firstSegment.file().file();
+  }
+
+  /** A loader whose segments fail their first deletion after the file was renamed. */
+  private SegmentLoader loaderFailingFirstDeleteAfterRename(final JournalException failure) {
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    final var failed = new AtomicBoolean();
+    //noinspection resource
+    Mockito.doAnswer(
+            call -> {
+              final var spy = Mockito.spy((Segment) call.callRealMethod());
+              Mockito.doAnswer(
+                      delete -> {
+                        delete.callRealMethod();
+                        if (failed.compareAndSet(false, true)) {
+                          throw failure;
+                        }
+                        return null;
+                      })
+                  .when(spy)
+                  .delete();
+              return spy;
+            })
+        .when(loader)
+        .loadExistingSegment(Mockito.any(), Mockito.anyLong(), Mockito.any());
+    return loader;
+  }
+
+  /** A loader whose segments fail their first deletion before the file is renamed. */
+  private SegmentLoader loaderFailingFirstRename(final JournalException failure) {
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    final var failed = new AtomicBoolean();
+    //noinspection resource
+    Mockito.doAnswer(
+            call -> {
+              final var spy = Mockito.spy((Segment) call.callRealMethod());
+              Mockito.doAnswer(
+                      delete -> {
+                        if (failed.compareAndSet(false, true)) {
+                          throw failure;
+                        }
+                        return delete.callRealMethod();
+                      })
+                  .when(spy)
+                  .delete();
+              return spy;
+            })
+        .when(loader)
+        .loadExistingSegment(Mockito.any(), Mockito.anyLong(), Mockito.any());
+    return loader;
   }
 
   private SegmentedJournal openJournal() {
