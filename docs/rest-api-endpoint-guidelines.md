@@ -538,7 +538,7 @@ Use consistent response codes across endpoints. Reuse `common-responses.yaml` de
 | `400` | Invalid request data                     | `$ref: 'common-responses.yaml#/components/responses/InvalidData'`         |
 | `401` | Missing/invalid authentication           | `$ref: 'common-responses.yaml#/components/responses/Unauthorized'`        |
 | `403` | Authorization failure / disabled feature | `$ref: 'common-responses.yaml#/components/responses/Forbidden'`           |
-| `404` | Resource not found                       | Inline with `ProblemDetail` schema                                        |
+| `404` | Resource not found / other tenant        | Inline with `ProblemDetail` schema                                        |
 | `409` | Conflict / wrong state                   | Inline with `ProblemDetail` schema                                        |
 | `500` | Internal server error                    | `$ref: 'common-responses.yaml#/components/responses/InternalServerError'` |
 | `503` | Backpressure / unavailable               | `$ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'`  |
@@ -1333,9 +1333,13 @@ say *how* the endpoint behaves when the caller lacks it. That deny outcome is no
 uniform:
 
 - **`reject`** (the default when the marker is absent) — the caller receives a
-  `4xx` and no data. Writes return `403 Forbidden`; single-resource point reads
-  (`get…ByKey`) return `404 Not Found`, because an unauthorized resource is
-  indistinguishable from a missing one.
+  `4xx` and no data. Writes and single-resource point reads (`get…ByKey`) both
+  return `403 Forbidden` when the authenticated caller lacks the permission:
+  the caller's identity is known, and they may learn that the resource exists.
+  `404 Not Found` is returned when the resource does not exist or belongs to a
+  tenant the caller cannot access (tenant denial is deliberately
+  indistinguishable from not found). A point read checks existence and tenant
+  first, then the permission.
 - **`filter`** — the caller receives `200 OK` with the result set **scoped to the
   resources they are authorized for** (possibly empty). This is the contract of
   collection/aggregate reads backed directly by the search client, where
@@ -1349,8 +1353,9 @@ uniform:
 Note that **not every `search…` endpoint filters.** Sub-resource searches that
 gate on a parent point-read first (e.g. `searchProcessInstanceIncidents`,
 `searchUserTaskVariables`, `searchUserTaskAuditLogs` call `getByKey` on the parent
-before querying) **reject** with the parent's `404` when the caller cannot read
-the parent — so they are left at the default `reject`.
+before querying) **reject** with the parent point read's outcome (`403` on permission denial,
+`404` when the parent is missing or in another tenant) when the caller cannot
+read the parent — so they are left at the default `reject`.
 
 ```yaml
 operationId: searchUsers

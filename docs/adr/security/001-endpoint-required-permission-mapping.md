@@ -203,8 +203,11 @@ shows, that outcome is not uniform. We capture it with an optional operation-lev
 marker:
 
 - **`reject`** (default when absent) — denial yields a `4xx` with no data: `403`
-  for writes, `404` for single-resource point reads (`get…ByKey`), where an
-  unauthorized resource is indistinguishable from a missing one.
+  for writes and for single-resource point reads (`get…ByKey`), since the
+  authenticated caller may learn that the resource exists. `404` is returned
+  when the resource is missing or belongs to another tenant (tenant denial is
+  deliberately indistinguishable from not found); a point read checks existence
+  and tenant first, then the permission.
 - **`filter`** — denial yields `200` with results scoped to the authorized subset
   (possibly empty). This is the uniform contract of search-client-backed
   collection/aggregate reads where authorization is pushed into the query as a
@@ -213,8 +216,9 @@ marker:
   aggregates, plus `activateJobs` (the authorize-by-filtering case from D8).
   Sub-resource searches that gate on a parent `getByKey` first (e.g.
   `searchProcessInstanceIncidents`, `searchUserTaskVariables`,
-  `searchUserTaskAuditLogs`) instead `reject` with the parent's `404`, so they are
-  left at the default.
+  `searchUserTaskAuditLogs`) instead `reject` with the parent point read's outcome (`403` on permission denial,
+  `404` when the parent is missing or in another tenant), so they are left at
+  the default.
 
 The marker is optional and defaults to `reject` to minimise churn and because a
 misclassification is *safe by construction*: the runtime oracle (api-test-generator#374)

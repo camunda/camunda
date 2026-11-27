@@ -396,8 +396,9 @@ rules:
   # ── x-permission-enforcement (camunda/camunda#54727) ──
   # Optional operation-level marker describing the *deny outcome* when the caller
   # lacks the required permission(s):
-  #   - `reject` (default when absent): the caller receives a 4xx (403 for writes,
-  #     404/not-found for single-resource point reads) and no data.
+  #   - `reject` (default when absent): the caller receives a 4xx (403 for writes and
+  #     single-resource point reads; 404 if the resource is missing or in another
+  #     tenant) and no data.
   #   - `filter`: the caller receives 200 with results scoped to the resources they
   #     are authorized for (collection/aggregate reads pushed through the search
   #     client as an authorization filter; also `activateJobs`).
