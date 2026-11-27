@@ -176,6 +176,11 @@ sequenceDiagram
   So the buffered chunks are exactly chunks 0 to `chunkCount - 1`, and an update has all its chunks
   once as many chunks are buffered as its `chunkCount`.
 
+  A `CANCEL` command for the open update ends it with `CANCELED` while it still receives chunks:
+  its chunks are removed, and its Hub event may be tried again under a new `updateId`. Once the
+  update is being applied, `CANCEL` is rejected, and the update runs to its end. `CANCEL` for an
+  update that is not open is rejected.
+
 - **One chunk per `APPLY_CHUNK`.** Each `APPLY_CHUNK` command applies exactly one chunk and then writes the next
   `APPLY_CHUNK`. This bounds the batch of the `APPLY_CHUNK` command itself. Each identity command it writes is
   processed in its own batch, which includes its cascades: deleting a role, for example, also
@@ -245,7 +250,7 @@ type and ID.
 | `CHUNK_APPLIED`     | Event   | A chunk is applied.                                                                             |
 | `COMMIT_VERSION`    | Command | Internal follow-up after the last chunk; distributed to all partitions on the `IDENTITY` queue. |
 | `VERSION_COMMITTED` | Event   | The partition's current policy version is set; the new policy becomes visible.                  |
-| `CANCEL`            | Command | Written by the transformer to cancel a pending policy update (e.g. from a leader change).       |
+| `CANCEL`            | Command | Cancels the open update while it still receives chunks, e.g. one a previous leader left.        |
 | `CANCELED`          | Event   | An open update was discarded; its buffered chunks are removed.                                  |
 | `FAILED`            | Event   | An update failed, for example because it is invalid; its buffered chunks are removed.           |
 

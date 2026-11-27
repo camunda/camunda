@@ -84,6 +84,25 @@ public final class PolicyUpdateApplyingTest {
   }
 
   @Test
+  public void shouldNotCancelTheUpdate() {
+    // given
+    holdUpdateWhileApplying();
+
+    // when
+    engine.writeRecords(PolicyUpdateCancelTest.cancelCommand(chunk(0), "a new leader took over"));
+
+    // then
+    final var rejection = PolicyUpdateCancelTest.cancelRejection(updateId);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason()).contains(updateId, "already being applied");
+    assertThat(
+            RecordingExporter.records()
+                .limit(record -> record.getPosition() == rejection.getPosition())
+                .toList())
+        .noneMatch(record -> record.getIntent() == PolicyUpdateIntent.CANCELED);
+  }
+
+  @Test
   public void shouldRejectAChunkWithAnEntryWithoutEntityType() {
     // given
     final var id = "entity-" + uid();
