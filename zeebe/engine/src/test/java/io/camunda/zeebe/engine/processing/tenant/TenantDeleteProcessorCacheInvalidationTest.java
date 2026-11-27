@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
+import io.camunda.zeebe.engine.state.immutable.PolicyUpdateState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
@@ -93,7 +95,8 @@ class TenantDeleteProcessorCacheInvalidationTest {
             writers,
             mock(CommandDistributionBehavior.class),
             authorizationScopeStateAdapter,
-            membershipStateAdapter);
+            membershipStateAdapter,
+            new PolicyUpdateBehavior(mock(PolicyUpdateState.class), stateWriter));
   }
 
   @Test

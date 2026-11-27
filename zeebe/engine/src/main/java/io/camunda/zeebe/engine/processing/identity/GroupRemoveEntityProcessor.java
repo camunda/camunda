@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -32,7 +32,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
+public class GroupRemoveEntityProcessor extends AbstractIdentityCommandProcessor<GroupRecord> {
   private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
       "Expected to remove entity with ID '%s' from group with ID '%s', but the entity is not assigned to this group.";
   private final GroupState groupState;
@@ -53,7 +53,9 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final MembershipStateAdapter membershipStateAdapter) {
+      final MembershipStateAdapter membershipStateAdapter,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     groupState = processingState.getGroupState();
     mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
@@ -68,7 +70,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<GroupRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
     final var groupId = record.getGroupId();
 
@@ -77,8 +79,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
             command, AuthorizationResourceType.GROUP, PermissionType.UPDATE, groupId);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -87,8 +88,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       final var errorMessage =
           "Expected to update group with ID '%s', but a group with this ID does not exist."
               .formatted(groupId);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommandAsAlreadyApplied(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
@@ -98,16 +98,14 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       final var errorMessage =
           "Expected to remove an entity with ID '%s' and type '%s' from group with ID '%s', but the entity does not exist."
               .formatted(entityId, entityType, groupId);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommandAsAlreadyApplied(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
     if (!isEntityAssigned(record)) {
       final var errorMessage =
           ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getGroupId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommandAsAlreadyApplied(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 

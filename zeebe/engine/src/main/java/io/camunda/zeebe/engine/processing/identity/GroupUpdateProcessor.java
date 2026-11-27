@@ -8,9 +8,8 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -26,13 +25,12 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
+public class GroupUpdateProcessor extends AbstractIdentityCommandProcessor<GroupRecord> {
 
   private final GroupState groupState;
   private final KeyGenerator keyGenerator;
   private final PermissionsBehavior permissionsBehavior;
   private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
@@ -41,18 +39,19 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       final KeyGenerator keyGenerator,
       final PermissionsBehavior permissionsBehavior,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     this.groupState = groupState;
     this.keyGenerator = keyGenerator;
     this.permissionsBehavior = permissionsBehavior;
     this.commandDistributionBehavior = commandDistributionBehavior;
     stateWriter = writers.state();
     responseWriter = writers.response();
-    rejectionWriter = writers.rejection();
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<GroupRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
     final var groupId = record.getGroupId();
 
@@ -61,8 +60,7 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
             command, AuthorizationResourceType.GROUP, PermissionType.UPDATE, groupId);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -71,8 +69,7 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       final var errorMessage =
           "Expected to update group with ID '%s', but a group with this ID does not exist."
               .formatted(groupId);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 

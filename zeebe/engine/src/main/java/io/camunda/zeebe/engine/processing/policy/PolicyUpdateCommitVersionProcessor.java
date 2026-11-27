@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -31,15 +32,18 @@ import org.jspecify.annotations.NullMarked;
 public final class PolicyUpdateCommitVersionProcessor
     implements DistributedTypedRecordProcessor<PolicyUpdateRecord> {
 
+  private final PolicyUpdateBehavior policyUpdateBehavior;
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior distributionBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
   public PolicyUpdateCommitVersionProcessor(
+      final PolicyUpdateBehavior policyUpdateBehavior,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior distributionBehavior,
       final Writers writers) {
+    this.policyUpdateBehavior = policyUpdateBehavior;
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
     stateWriter = writers.state();
@@ -52,6 +56,18 @@ public final class PolicyUpdateCommitVersionProcessor
     if (notInternal.isPresent()) {
       rejectionWriter.appendRejection(
           command, notInternal.get().type(), notInternal.get().reason());
+      return;
+    }
+
+    // the commit follows the identity commands of the last chunk; if one of them was rejected, the
+    // update failed and must not be committed
+    final var updateId = command.getValue().getUpdateId();
+    if (policyUpdateBehavior.findOpenUpdate(updateId).isEmpty()) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.INVALID_STATE,
+          "Expected policy update '%s' to be open to commit its version, but it failed or no longer exists"
+              .formatted(updateId));
       return;
     }
 

@@ -10,6 +10,7 @@ package io.camunda;
 import static com.tngtech.archunit.lang.SimpleConditionEvent.violated;
 
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -32,6 +33,8 @@ public final class ProcessorNamingArchTest {
       ArchRuleDefinition.classes()
           .that()
           .implement(TypedRecordProcessor.class)
+          .and()
+          .doNotHaveModifier(JavaModifier.ABSTRACT)
           .should(
               new ArchCondition<>(
                   "follow the processor naming convention: <ValueType><Intent>Processor") {

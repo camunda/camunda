@@ -8,9 +8,8 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -26,7 +25,7 @@ import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public class MappingRuleUpdateProcessor
-    implements DistributedTypedRecordProcessor<MappingRuleRecord> {
+    extends AbstractIdentityCommandProcessor<MappingRuleRecord> {
   private static final String MAPPING_RULE_NULL_VALUE_ERROR_MESSAGE =
       "Expected to update mapping rule with claimName '%s' and claimValue '%s' and name '%s' and mappingRuleId '%s', but at least one of them is null.";
   private static final String MAPPING_RULE_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE =
@@ -38,7 +37,6 @@ public class MappingRuleUpdateProcessor
   private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
@@ -47,18 +45,19 @@ public class MappingRuleUpdateProcessor
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     this.mappingRuleState = mappingRuleState;
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
-    rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<MappingRuleRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<MappingRuleRecord> command) {
 
     final var record = command.getValue();
     final var mappingRuleId = record.getMappingRuleId();
@@ -76,8 +75,7 @@ public class MappingRuleUpdateProcessor
               record.getClaimValue(),
               record.getName(),
               record.getMappingRuleId());
-      rejectionWriter.appendRejection(command, RejectionType.NULL_VAL, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NULL_VAL, errorMessage);
+      rejectNewCommand(command, RejectionType.NULL_VAL, errorMessage);
       return;
     }
 
@@ -85,8 +83,7 @@ public class MappingRuleUpdateProcessor
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
           MAPPING_RULE_ID_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(mappingRuleId);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
@@ -95,8 +92,7 @@ public class MappingRuleUpdateProcessor
             command, AuthorizationResourceType.MAPPING_RULE, PermissionType.UPDATE, mappingRuleId);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -107,9 +103,7 @@ public class MappingRuleUpdateProcessor
       final var errorMessage =
           MAPPING_RULE_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
               record.getClaimName(), record.getClaimValue());
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.ALREADY_EXISTS, errorMessage);
+      rejectNewCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 

@@ -121,6 +121,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -161,10 +162,13 @@ public class CommandDistributionIdempotencyTest {
       new HashSet<>(
           ReflectionSupport.findAllClassesInPackage(
               "io.camunda.zeebe.engine.processing",
-              c -> {
-                final var interfaces = c.getInterfaces();
-                return Arrays.asList(interfaces).contains(DistributedTypedRecordProcessor.class);
-              },
+              // also the processors that extend an abstract distributed processor, like the
+              // identity processors; anonymous classes are test doubles, not engine processors
+              c ->
+                  DistributedTypedRecordProcessor.class.isAssignableFrom(c)
+                      && !c.isInterface()
+                      && !c.isAnonymousClass()
+                      && !Modifier.isAbstract(c.getModifiers()),
               ignored -> true));
 
   @Rule
@@ -1097,8 +1101,9 @@ public class CommandDistributionIdempotencyTest {
   }
 
   /**
-   * Writes the commit like the apply processor does, as a new command without request metadata on
-   * partition 1, because a policy update cannot be sent through the command API.
+   * Appends a policy update of one chunk, as the broker does, because a policy update cannot be
+   * sent through the command API. Applying the chunk writes the commit, which only commits an open
+   * update.
    */
   private static Record<PolicyUpdateRecordValue> commitPolicyVersion() {
     final var update =
@@ -1109,9 +1114,7 @@ public class CommandDistributionIdempotencyTest {
             .setChunkIndex(0)
             .setChunkCount(1);
     ENGINE.writeRecords(
-        RecordToWrite.commandWithoutClaims()
-            .key(-1L)
-            .policyUpdate(PolicyUpdateIntent.COMMIT_VERSION, update));
+        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPEND_CHUNK, update));
     return RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.VERSION_COMMITTED)
         .withPartitionId(1)
         .filter(record -> record.getValue().getUpdateId().equals(update.getUpdateId()))

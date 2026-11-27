@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -30,7 +30,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class GroupCreateProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
+public class GroupCreateProcessor extends AbstractIdentityCommandProcessor<GroupRecord> {
 
   public static final String GROUP_ALREADY_EXISTS_ERROR_MESSAGE =
       "Expected to create group with ID '%s', but a group with this ID already exists.";
@@ -53,7 +53,9 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final EngineSecurityConfig securityConfig,
-      final MembershipStateAdapter membershipStateAdapter) {
+      final MembershipStateAdapter membershipStateAdapter,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     groupState = processingState.getGroupState();
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
@@ -71,15 +73,14 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<GroupRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<GroupRecord> command) {
     final var isAuthorized =
         permissionsBehavior.isAuthorized(
             command, AuthorizationResourceType.GROUP, PermissionType.CREATE);
 
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -88,9 +89,7 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
     final var persistedGroup = groupState.get(groupId);
     if (persistedGroup.isPresent()) {
       final var errorMessage = GROUP_ALREADY_EXISTS_ERROR_MESSAGE.formatted(groupId);
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.ALREADY_EXISTS, errorMessage);
+      rejectNewCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 

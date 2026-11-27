@@ -10,12 +10,12 @@ package io.camunda.zeebe.engine.processing.tenant;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AbstractIdentityCommandProcessor;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
@@ -38,7 +38,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 
-public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
+public class TenantAddEntityProcessor extends AbstractIdentityCommandProcessor<TenantRecord> {
 
   private static final String TENANT_NOT_FOUND_ERROR_MESSAGE =
       "Expected to add entity to tenant with ID '%s', but no tenant with this ID exists.";
@@ -50,7 +50,6 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final EngineSecurityConfig securityConfig;
@@ -65,7 +64,9 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final EngineSecurityConfig securityConfig,
-      final MembershipStateAdapter membershipStateAdapter) {
+      final MembershipStateAdapter membershipStateAdapter,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     tenantState = state.getTenantState();
     mappingRuleState = state.getMappingRuleState();
     groupState = state.getGroupState();
@@ -75,7 +76,6 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
-    rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
@@ -84,7 +84,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<TenantRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
     final var tenantId = record.getTenantId();
     final var authResult =
@@ -197,7 +197,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final String entityId,
       final EntityType entityType,
       final String tenantId) {
-    rejectCommand(
+    rejectNewCommandAsAlreadyApplied(
         command,
         RejectionType.ALREADY_EXISTS,
         formatErrorMessage(entityType, entityId, tenantId, "is already assigned to the tenant"));
@@ -222,10 +222,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final TypedRecord<TenantRecord> command,
       final RejectionType type,
       final String errorMessage) {
-    rejectionWriter.appendRejection(command, type, errorMessage);
-    if (command.hasRequestMetadata()) {
-      responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
-    }
+    rejectNewCommand(command, type, errorMessage);
   }
 
   private void distributeCommand(final TypedRecord<TenantRecord> command) {

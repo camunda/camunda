@@ -11,6 +11,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -30,6 +31,8 @@ public class GroupProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final EngineSecurityConfig securityConfig,
       final MembershipStateAdapter membershipStateAdapter) {
+    final var policyUpdateBehavior =
+        new PolicyUpdateBehavior(processingState.getPolicyUpdateState(), writers.state());
     final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
@@ -41,7 +44,8 @@ public class GroupProcessors {
             writers,
             commandDistributionBehavior,
             securityConfig,
-            membershipStateAdapter));
+            membershipStateAdapter,
+            policyUpdateBehavior));
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
         GroupIntent.UPDATE,
@@ -50,7 +54,8 @@ public class GroupProcessors {
             keyGenerator,
             permissionsBehavior,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            policyUpdateBehavior));
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
         GroupIntent.ADD_ENTITY,
@@ -61,7 +66,8 @@ public class GroupProcessors {
             writers,
             commandDistributionBehavior,
             securityConfig,
-            membershipStateAdapter));
+            membershipStateAdapter,
+            policyUpdateBehavior));
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
         GroupIntent.REMOVE_ENTITY,
@@ -71,7 +77,8 @@ public class GroupProcessors {
             keyGenerator,
             writers,
             commandDistributionBehavior,
-            membershipStateAdapter));
+            membershipStateAdapter,
+            policyUpdateBehavior));
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
         GroupIntent.DELETE,
@@ -81,6 +88,7 @@ public class GroupProcessors {
             keyGenerator,
             writers,
             commandDistributionBehavior,
-            membershipStateAdapter));
+            membershipStateAdapter,
+            policyUpdateBehavior));
   }
 }

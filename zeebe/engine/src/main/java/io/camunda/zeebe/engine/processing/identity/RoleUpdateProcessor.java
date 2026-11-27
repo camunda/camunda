@@ -9,9 +9,8 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -26,7 +25,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
+public class RoleUpdateProcessor extends AbstractIdentityCommandProcessor<RoleRecord> {
 
   public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to update role with ID '%s', but a role with this ID does not exist.";
@@ -36,7 +35,6 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
   private final KeyGenerator keyGenerator;
   private final PermissionsBehavior permissionsBehavior;
   private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
@@ -45,18 +43,19 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
       final KeyGenerator keyGenerator,
       final PermissionsBehavior permissionsBehavior,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     this.roleState = roleState;
     this.keyGenerator = keyGenerator;
     this.permissionsBehavior = permissionsBehavior;
     stateWriter = writers.state();
-    rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<RoleRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
     final var roleId = record.getRoleId();
     final var isAuthorized =
@@ -64,24 +63,20 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
             command, AuthorizationResourceType.ROLE, PermissionType.UPDATE, roleId);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
     if (roleId != null && DefaultRole.ids().contains(roleId)) {
       final var errorMessage = ROLE_PROTECTED_ERROR_MESSAGE.formatted(record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.INVALID_STATE, errorMessage);
+      rejectNewCommand(command, RejectionType.INVALID_STATE, errorMessage);
       return;
     }
 
     final var persistedRecord = roleState.getRole(record.getRoleId());
     if (persistedRecord.isEmpty()) {
       final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 

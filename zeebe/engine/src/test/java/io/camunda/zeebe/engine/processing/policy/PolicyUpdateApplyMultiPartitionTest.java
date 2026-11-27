@@ -11,14 +11,18 @@ import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.ap
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.apply;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.chunk;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.uid;
+import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateRejectedCommandTest.addToMissingRole;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -122,5 +126,70 @@ public final class PolicyUpdateApplyMultiPartitionTest {
           .describedAs("role created before the commit on partition %d", partitionId)
           .isLessThan(committed.getPosition());
     }
+  }
+
+  @Test
+  public void shouldNotCommitAFailedUpdateOnAnyPartition() {
+    // given an update whose role is created and distributed before its membership is rejected
+    final var roleId = "role-" + uid();
+    final var failing =
+        chunk()
+            .setRoles(List.<RoleRecordValue>of(new RoleRecord().setRoleId(roleId).setName(roleId)))
+            .setMemberships(addToMissingRole("role-" + uid()));
+
+    // when
+    apply(engine, failing);
+
+    // then partition 1 fails the update
+    RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.FAILED)
+        .withPartitionId(1)
+        .filter(record -> record.getValue().getUpdateId().equals(failing.getUpdateId()))
+        .await();
+
+    // a later update is committed on every partition after everything the failed one distributed,
+    // as both use the same distribution queue
+    final var marker = chunk();
+    apply(engine, marker);
+    for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
+      final int partition = partitionId;
+      final var records =
+          RecordingExporter.records()
+              .limit(
+                  record ->
+                      record.getPartitionId() == partition
+                          && isPolicyUpdateEvent(
+                              record, PolicyUpdateIntent.VERSION_COMMITTED, marker.getUpdateId()))
+              .filter(record -> record.getPartitionId() == partition)
+              .toList();
+      assertThat(records)
+          .describedAs("role created on partition %d", partition)
+          .anyMatch(
+              record ->
+                  record.getIntent() == RoleIntent.CREATED
+                      && ((RoleRecordValue) record.getValue()).getRoleId().equals(roleId));
+      assertThat(records)
+          .describedAs("failed update not committed on partition %d", partition)
+          .noneMatch(
+              record ->
+                  isPolicyUpdateEvent(
+                      record, PolicyUpdateIntent.VERSION_COMMITTED, failing.getUpdateId()));
+      if (partition != 1) {
+        assertThat(records)
+            .describedAs("no commit of the failed update distributed to partition %d", partition)
+            .noneMatch(
+                record ->
+                    record.getIntent() == PolicyUpdateIntent.COMMIT_VERSION
+                        && ((PolicyUpdateRecordValue) record.getValue())
+                            .getUpdateId()
+                            .equals(failing.getUpdateId()));
+      }
+    }
+  }
+
+  private static boolean isPolicyUpdateEvent(
+      final Record<?> record, final PolicyUpdateIntent intent, final String updateId) {
+    return record.getRecordType() == RecordType.EVENT
+        && record.getIntent() == intent
+        && ((PolicyUpdateRecordValue) record.getValue()).getUpdateId().equals(updateId);
   }
 }

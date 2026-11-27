@@ -9,8 +9,9 @@ package io.camunda.zeebe.engine.processing.tenant;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AbstractIdentityCommandProcessor;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -25,7 +26,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class TenantCreateProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
+public class TenantCreateProcessor extends AbstractIdentityCommandProcessor<TenantRecord> {
 
   private static final String TENANT_ALREADY_EXISTS_ERROR_MESSAGE =
       "Expected to create tenant with ID '%s', but a tenant with this ID already exists";
@@ -42,7 +43,9 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     this.tenantState = tenantState;
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
@@ -53,7 +56,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<TenantRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<TenantRecord> command) {
     if (!isAuthorizedToCreate(command)) {
       return;
     }
@@ -126,7 +129,6 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
       final TypedRecord<TenantRecord> command,
       final RejectionType type,
       final String errorMessage) {
-    rejectionWriter.appendRejection(command, type, errorMessage);
-    responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
+    rejectNewCommand(command, type, errorMessage);
   }
 }

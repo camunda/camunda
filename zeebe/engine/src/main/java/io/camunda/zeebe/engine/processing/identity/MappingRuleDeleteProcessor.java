@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -45,7 +45,7 @@ import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public class MappingRuleDeleteProcessor
-    implements DistributedTypedRecordProcessor<MappingRuleRecord> {
+    extends AbstractIdentityCommandProcessor<MappingRuleRecord> {
 
   private static final String MAPPING_RULE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete mapping rule with id '%s', but a mapping rule with this id does not exist.";
@@ -67,7 +67,9 @@ public class MappingRuleDeleteProcessor
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     mappingRuleState = processingState.getMappingRuleState();
     tenantState = processingState.getTenantState();
     roleState = processingState.getRoleState();
@@ -83,14 +85,13 @@ public class MappingRuleDeleteProcessor
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<MappingRuleRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<MappingRuleRecord> command) {
     final var record = command.getValue();
     final String id = record.getMappingRuleId();
     final var persistedMappingRuleOptional = mappingRuleState.get(id);
     if (persistedMappingRuleOptional.isEmpty()) {
       final var errorMessage = MAPPING_RULE_NOT_FOUND_ERROR_MESSAGE.formatted(id);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      rejectNewCommandAsAlreadyApplied(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
@@ -99,8 +100,7 @@ public class MappingRuleDeleteProcessor
             command, AuthorizationResourceType.MAPPING_RULE, PermissionType.DELETE);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
     final long key = keyGenerator.nextKey();

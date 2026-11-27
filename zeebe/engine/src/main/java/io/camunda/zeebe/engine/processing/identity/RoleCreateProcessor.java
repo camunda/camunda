@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -29,7 +29,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class RoleCreateProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
+public class RoleCreateProcessor extends AbstractIdentityCommandProcessor<RoleRecord> {
 
   private static final String ROLE_ALREADY_EXISTS_ERROR_MESSAGE =
       "Expected to create role with ID '%s', but a role with this ID already exists";
@@ -50,7 +50,9 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final MembershipStateAdapter membershipStateAdapter) {
+      final MembershipStateAdapter membershipStateAdapter,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     roleState = processingState.getRoleState();
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
@@ -64,14 +66,13 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<RoleRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<RoleRecord> command) {
     final var isAuthorized =
         permissionsBehavior.isAuthorized(
             command, AuthorizationResourceType.ROLE, PermissionType.CREATE);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectNewCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -79,9 +80,7 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
     final var persistedRole = roleState.getRole(record.getRoleId());
     if (persistedRole.isPresent()) {
       final var errorMessage = ROLE_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.ALREADY_EXISTS, errorMessage);
+      rejectNewCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
     final long key = keyGenerator.nextKey();

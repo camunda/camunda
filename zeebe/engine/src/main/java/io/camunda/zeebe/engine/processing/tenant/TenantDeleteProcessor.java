@@ -9,10 +9,11 @@ package io.camunda.zeebe.engine.processing.tenant;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AbstractIdentityCommandProcessor;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -37,7 +38,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
+public class TenantDeleteProcessor extends AbstractIdentityCommandProcessor<TenantRecord> {
 
   private static final String TENANT_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete tenant with id '%s', but no tenant with this id exists.";
@@ -62,7 +63,9 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter,
-      final MembershipStateAdapter membershipStateAdapter) {
+      final MembershipStateAdapter membershipStateAdapter,
+      final PolicyUpdateBehavior policyUpdateBehavior) {
+    super(policyUpdateBehavior, writers);
     tenantState = state.getTenantState();
     authorizationState = state.getAuthorizationState();
     userState = state.getUserState();
@@ -79,13 +82,13 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<TenantRecord> command) {
+  protected void processNewIdentityCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
     final var tenantId = record.getTenantId();
     final var persistedTenantRecord = tenantState.getTenantById(tenantId);
 
     if (persistedTenantRecord.isEmpty()) {
-      rejectCommand(
+      rejectNewCommandAsAlreadyApplied(
           command, RejectionType.NOT_FOUND, TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantId));
       return;
     }
@@ -128,7 +131,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
               invalidateAuthorizationCaches();
             },
             () ->
-                rejectCommand(
+                rejectionWriter.appendRejection(
                     command,
                     RejectionType.NOT_FOUND,
                     TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(record.getTenantId())));
@@ -145,8 +148,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       final TypedRecord<TenantRecord> command,
       final RejectionType type,
       final String errorMessage) {
-    rejectionWriter.appendRejection(command, type, errorMessage);
-    responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
+    rejectNewCommand(command, type, errorMessage);
   }
 
   private void distributeCommand(final TypedRecord<TenantRecord> command) {
