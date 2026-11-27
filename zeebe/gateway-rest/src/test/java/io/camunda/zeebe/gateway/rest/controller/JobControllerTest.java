@@ -1270,6 +1270,54 @@ public class JobControllerTest extends RestControllerTest {
     verifyNoInteractions(jobServices);
   }
 
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{\"$in\": [null, \"1\"], \"$exists\": true}",
+        "{\"$in\": [null, \"1\"], \"$neq\": \"2\"}"
+      })
+  void shouldRejectBatchUpdateWhenAJobKeyListHoldsNull(final String keyFilter) {
+    // given - a null drops the whole list on mapping, so the sibling operator alone would update
+    // every job but one
+    final var request =
+        """
+            {
+              "filter": {
+                "jobKey": %s
+              },
+              "changeset": { "priority": 80 }
+            }"""
+            .formatted(keyFilter);
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The filter property 'jobKey' must not contain null values.",
+              "instance": "%s"
+            }"""
+            .formatted(JOBS_BASE_URL + "/batch-update");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/batch-update")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
   @Test
   void shouldRejectBatchUpdateWhenFilterIsEmpty() {
     // given
