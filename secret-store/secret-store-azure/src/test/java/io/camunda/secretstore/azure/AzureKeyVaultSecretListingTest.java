@@ -263,8 +263,8 @@ class AzureKeyVaultSecretListingTest {
           .isInstanceOf(SecretStoreUnavailableException.class)
           .hasMessage(
               STORE
-                  + ": Azure Key Vault is unavailable: it did not list its secrets within the call"
-                  + " timeout of PT1S");
+                  + " is unavailable: it did not list its secrets within the call timeout of"
+                  + " PT1S");
     }
   }
 

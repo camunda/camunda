@@ -222,10 +222,10 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
   List<ListedSecret> listSecrets() {
     LOG.debug("Listing secrets from Azure Key Vault");
     try {
-      return callTimeout.call("list its secrets", this::readAllPages);
+      // SecretServices logs a failed listing with no store name of its own
+      return callTimeout.naming(storeDescription).call("list its secrets", this::readAllPages);
     } catch (final SecretStoreUnavailableException e) {
-      // a timeout, an interrupt or a closed store: name the store, as every other listing failure
-      throw new SecretStoreUnavailableException(storeDescription + ": " + e.getMessage(), e);
+      throw e;
     } catch (final RuntimeException e) {
       throw listingFailed(e);
     }

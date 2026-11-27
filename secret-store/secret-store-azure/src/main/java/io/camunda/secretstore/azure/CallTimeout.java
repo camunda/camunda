@@ -28,10 +28,31 @@ final class CallTimeout {
 
   private final ExecutorService executor;
   private final Duration timeout;
+  // what a failure names as unavailable or closed
+  private final String vault;
+  private final String store;
 
   CallTimeout(final ExecutorService executor, final Duration timeout) {
+    this(executor, timeout, "Azure Key Vault", "Azure Key Vault store");
+  }
+
+  private CallTimeout(
+      final ExecutorService executor,
+      final Duration timeout,
+      final String vault,
+      final String store) {
     this.executor = executor;
     this.timeout = timeout;
+    this.vault = vault;
+    this.store = store;
+  }
+
+  /**
+   * This timeout, naming the given store in every failure, for a call whose failure reaches the
+   * operator without the store's name otherwise.
+   */
+  CallTimeout naming(final String storeDescription) {
+    return new CallTimeout(executor, timeout, storeDescription, storeDescription);
   }
 
   /**
@@ -51,18 +72,14 @@ final class CallTimeout {
     try {
       future = executor.submit(call::get);
     } catch (final RejectedExecutionException e) {
-      throw new SecretStoreUnavailableException(
-          "Azure Key Vault store is closed: cannot " + what, e);
+      throw new SecretStoreUnavailableException(store + " is closed: cannot " + what, e);
     }
     try {
       return future.get(TimeUnit.NANOSECONDS.convert(timeout), TimeUnit.NANOSECONDS);
     } catch (final TimeoutException e) {
       future.cancel(true);
       throw new SecretStoreUnavailableException(
-          "Azure Key Vault is unavailable: it did not "
-              + what
-              + " within the call timeout of "
-              + timeout,
+          vault + " is unavailable: it did not " + what + " within the call timeout of " + timeout,
           e);
     } catch (final InterruptedException e) {
       future.cancel(true);
@@ -76,14 +93,13 @@ final class CallTimeout {
       if (cause instanceof final Error error) {
         throw error;
       }
-      throw new SecretStoreUnavailableException(
-          "Azure Key Vault is unavailable: cannot " + what, cause);
+      throw new SecretStoreUnavailableException(vault + " is unavailable: cannot " + what, cause);
     }
   }
 
-  private static SecretStoreUnavailableException interrupted(
+  private SecretStoreUnavailableException interrupted(
       final String what, final @Nullable InterruptedException cause) {
     return new SecretStoreUnavailableException(
-        "Interrupted while waiting for Azure Key Vault to " + what, cause);
+        "Interrupted while waiting for " + vault + " to " + what, cause);
   }
 }
