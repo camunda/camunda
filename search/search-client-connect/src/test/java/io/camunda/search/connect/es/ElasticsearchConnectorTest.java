@@ -10,6 +10,7 @@ package io.camunda.search.connect.es;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
@@ -276,6 +277,63 @@ class ElasticsearchConnectorTest {
     esServer.verify(
         postRequestedFor(urlEqualTo("/some-index/_delete_by_query"))
             .withHeader("Authorization", equalTo(expected)));
+  }
+
+  @Test
+  void shouldRequestTheElasticsearch8ApiWhenCreatedForElasticsearch8() throws IOException {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setUrl(esServer.getRuntimeInfo().getHttpBaseUrl());
+    final var connector = ElasticsearchConnector.forElasticsearch8(configuration);
+    esServer.stubFor(
+        post(urlEqualTo("/compat-version"))
+            .willReturn(ok().withHeader("X-Elastic-Product", "Elasticsearch")));
+    esServer.stubFor(
+        get(urlEqualTo("/_ilm/status"))
+            .willReturn(
+                ok().withHeader("X-Elastic-Product", "Elasticsearch")
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"operation_mode\":\"RUNNING\"}")));
+    final var request = new Request("POST", "/compat-version");
+    request.setEntity(new StringEntity("{}", ContentType.APPLICATION_JSON));
+    final var expected = "application/vnd.elasticsearch+json;compatible-with=8";
+
+    // when
+    try (final var client = connector.createClient()) {
+      restClient(client).performRequest(request);
+      client.ilm().getStatus();
+    }
+
+    // then
+    esServer.verify(
+        postRequestedFor(urlEqualTo("/compat-version"))
+            .withHeader("Accept", equalTo(expected))
+            .withHeader("Content-Type", equalTo(expected)));
+    esServer.verify(
+        getRequestedFor(urlEqualTo("/_ilm/status")).withHeader("Accept", equalTo(expected)));
+  }
+
+  @Test
+  void shouldKeepTheClientsOwnApiVersionByDefault() throws IOException {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setUrl(esServer.getRuntimeInfo().getHttpBaseUrl());
+    final var connector =
+        new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
+    esServer.stubFor(
+        get(urlEqualTo("/default-version"))
+            .willReturn(ok().withHeader("X-Elastic-Product", "Elasticsearch")));
+
+    // when
+    try (final var client = connector.createClient()) {
+      restClient(client).performRequest(new Request("GET", "/default-version"));
+    }
+
+    // then
+    esServer.verify(
+        getRequestedFor(urlEqualTo("/default-version"))
+            .withoutHeader("Content-Type")
+            .withHeader("Accept", notContaining("compatible-with=8")));
   }
 
   @Test
