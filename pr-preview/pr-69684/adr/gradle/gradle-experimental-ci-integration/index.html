@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Keep Maven authoritative while evaluating a parallel Gradle build | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-69684/adr/gradle/gradle-experimental-ci-integration/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Keep Maven authoritative while evaluating a parallel Gradle build | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Carlo Sana"><meta data-rh="true" property="og:description" content="DRI: Carlo Sana"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-69684/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-69684/adr/gradle/gradle-experimental-ci-integration/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-69684/adr/gradle/gradle-experimental-ci-integration/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-69684/adr/gradle/gradle-experimental-ci-integration/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-69684/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-69684/assets/js/runtime~main.bf3944e9.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-69684/assets/js/main.c99d8752.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-69684/assets/js/runtime~main.9e23075b.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-69684/assets/js/main.45aca87a.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -80,9 +80,9 @@ Published metadata and distribution contents must remain aligned with Maven.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d4-keep-focused-gradle-checks-enabled-in-unified-ci">D4. Keep focused Gradle checks enabled in Unified CI<a href="#d4-keep-focused-gradle-checks-enabled-in-unified-ci" class="hash-link" aria-label="Direct link to D4. Keep focused Gradle checks enabled in Unified CI" title="Direct link to D4. Keep focused Gradle checks enabled in Unified CI" translate="no">​</a></h3>
 <p>For every pull request, merge group, and protected-branch push that can affect build behavior,
 Unified CI runs focused Gradle checks. They are part of the intended CI path rather than an opt-in
-signal. The job combines the existing <code>java-code-changes</code> and <code>gradle-changes</code> outputs to trigger
-<strong>Gradle production and test compilation</strong> and validate the <strong>resulting distribution against Maven</strong>
-when Java, Maven, Gradle, or relevant CI inputs change.</p>
+signal. The <code>gradle-changes</code> filter triggers <strong>Gradle production and test compilation</strong>
+and validates the <strong>resulting distribution against Maven</strong> when Java, Maven, Gradle, or relevant CI
+inputs change.</p>
 <p>For this ADR, Gradle build inputs are:</p>
 <ul>
 <li class=""><code>**/*.gradle.kts</code> files;</li>
@@ -90,9 +90,9 @@ when Java, Maven, Gradle, or relevant CI inputs change.</p>
 <li class=""><code>gradlew</code> and <code>gradlew.bat</code>;</li>
 <li class="">files below <code>gradle/</code>.</li>
 </ul>
-<p>The implementation must reuse the existing <code>java-code-change</code>, <code>maven-change</code>, <code>ci-relevant</code>, and
-<code>gradle-change</code> filters through those outputs when deciding whether build behavior may have changed.
-Unknown or shared CI inputs must not be classified as Gradle-only by default.</p>
+<p>The implementation must reuse the existing <code>java-code-change</code>, <code>maven-change</code>, <code>ci-relevant</code> filters and define
+a new <code>gradle-changes</code> filter, when deciding whether build behavior may
+have changed. Unknown or shared CI inputs must not be classified as Gradle-only by default.</p>
 <p>The focused checks target the most frequent sources of drift, such as dependency changes, newly
 added modules, and changes to Java, Maven, Gradle, or relevant CI inputs. They cannot catch every
 possible mismatch between Maven and Gradle. Maven remains the behavioral reference and the complete
@@ -172,9 +172,11 @@ failing integration test therefore neither triggers the alert nor hides a real G
 notification is an implementation detail and can change without changing this decision.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="temporary-soft-integration">Temporary soft integration<a href="#temporary-soft-integration" class="hash-link" aria-label="Direct link to Temporary soft integration" title="Direct link to Temporary soft integration" translate="no">​</a></h2>
 <p>The temporary soft-integration period has ended. Focused Gradle compilation and distribution-parity
-checks now run in Unified CI and are included in <code>check-results</code>. The separate <code>gradle-ci.yml</code>
-workflow runs Gradle unit tests as a non-blocking check; failures on a push to <code>main</code> send a Slack
-notification.</p>
+checks now run in Unified CI and are included in <code>check-results</code>. <code>gradle-compile-check</code> also
+compiles with <code>--isolated-projects</code> as a strict, blocking compile check. Isolated projects works
+for building only, not for running tests, so that run never executes test tasks. The separate
+<code>gradle-ci.yml</code> workflow runs the Gradle unit-test suite as a non-blocking check; failures on a
+push to <code>main</code> send a Slack notification.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="deferred-work">Deferred work<a href="#deferred-work" class="hash-link" aria-label="Direct link to Deferred work" title="Direct link to Deferred work" translate="no">​</a></h2>
 <p>The following work is intentionally excluded from this change:</p>
 <ul>
