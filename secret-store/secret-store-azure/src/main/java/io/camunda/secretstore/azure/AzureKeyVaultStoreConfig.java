@@ -35,9 +35,10 @@ import org.jspecify.annotations.Nullable;
  * @param maxRetries how many times a throttled or transient request to the vault is retried; a
  *     rejected sign-in or an answer such as 403 or 404 is never retried
  * @param callTimeout upper bound on one read of the vault, retries included; a {@code resolve} call
- *     fails as soon as one of its reads exceeds it. The background resolution calls this store from
- *     an IO-bound actor thread shared with every partition's exporter, so an unbounded call there
- *     stalls exporting broker-wide (camunda/camunda#62869)
+ *     fails as soon as one of its reads exceeds it, and a {@code list} call as soon as all its
+ *     pages together exceed it. The background resolution calls this store from an IO-bound actor
+ *     thread shared with every partition's exporter, so an unbounded call there stalls exporting
+ *     broker-wide (camunda/camunda#62869)
  * @param attemptTimeout upper bound on a single HTTP attempt to the vault within a read, and on
  *     connecting to Microsoft Entra ID or the managed identity endpoint to sign in, whose answer
  *     may take up to {@code callTimeout}; applied by the default HTTP client only

@@ -49,18 +49,20 @@ import org.jspecify.annotations.Nullable;
  * {@code max-concurrency} above 1, {@link io.camunda.secretstore.ConcurrentSecretStore}, which fans
  * a request out one name per call.
  *
- * <p>Each read of the vault is bounded by {@code callTimeout}, retries included: it runs on the
- * credential executor, and the caller stops waiting past that time and requests an interrupt, so a
- * slow vault cannot stall the IO thread resolution shares with the exporters
- * (camunda/camunda#62869) for longer than that ({@link CallTimeout}). Within it, each HTTP attempt
- * of the default HTTP client to the vault is bounded by {@code attemptTimeout}; one to Microsoft
- * Entra ID or IMDS connects within {@code attemptTimeout} but may wait up to {@code callTimeout}
- * for its answer, for a managed identity's slow first token (an injected client keeps its own
- * timeouts). The SDK retries up to {@code maxRetries} times on transient failures only: 408, 429,
- * 500, 502 to 504, network errors and timeouts, never a rejected sign-in ({@link
- * KeyVaultRetryStrategy}). The waits between retries, backoff and {@code Retry-After} alike, fit in
- * half of {@code callTimeout}, so a vault that keeps failing fast or throttling is reported with
- * its own answer rather than as a timeout; a retry whose wait would not fit is not made.
+ * <p>Each read of the vault is bounded by {@code callTimeout}, retries included, and a listing is
+ * bounded as a whole, every page included: it runs on the credential executor, and the caller stops
+ * waiting past that time and requests an interrupt, so a slow vault cannot stall the IO thread
+ * resolution shares with the exporters (camunda/camunda#62869) for longer than that ({@link
+ * CallTimeout}). Within it, each HTTP attempt of the default HTTP client to the vault is bounded by
+ * {@code attemptTimeout}; one to Microsoft Entra ID or IMDS connects within {@code attemptTimeout}
+ * but may wait up to {@code callTimeout} for its answer, for a managed identity's slow first token
+ * (an injected client keeps its own timeouts). The SDK retries up to {@code maxRetries} times on
+ * transient failures only: 408, 429, 500, 502 to 504, network errors and timeouts, never a rejected
+ * sign-in ({@link KeyVaultRetryStrategy}). The waits between retries, backoff and {@code
+ * Retry-After} alike, fit in half of {@code callTimeout}, so a vault that keeps failing fast or
+ * throttling is reported with its own answer rather than as a timeout; a retry whose wait would not
+ * fit is not made. That budget applies per request, so per page of a listing: a listing whose pages
+ * keep being throttled can still end as a timeout.
  *
  * <p>Key Vault's answers map to the shared error codes as follows ({@link AzureKeyVaultErrors}):
  *
@@ -295,6 +297,8 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
     return resolver.resolve(names);
   }
 
+  // TODO(camunda/camunda#68643): override listEntries() so disabled, expired and not-yet-active
+  // secrets are not reported as ACTIVE by SecretStore's default
   @Override
   public List<String> list() {
     requireOpen("list its secrets");
