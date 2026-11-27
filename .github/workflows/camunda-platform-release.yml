@@ -858,6 +858,7 @@ jobs:
     name: Github Release
     permissions:
       issues: write
+      pull-requests: write # zcl add-labels also labels PRs referenced in merge commits
       contents: write
       id-token: write # Vault JWT login
     runs-on: ubuntu-latest
