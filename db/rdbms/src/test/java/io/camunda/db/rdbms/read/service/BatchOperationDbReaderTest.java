@@ -41,13 +41,19 @@ class BatchOperationDbReaderTest {
   }
 
   @Test
-  void shouldReturnEmptyResultWhenAuthorizedTenantIdsIsNull() {
+  void shouldQueryWithoutTenantAccessSinceBatchOperationsCarryNoTenant() {
+    // given
+    when(batchOperationMapper.count(any())).thenReturn(1L);
     final BatchOperationQuery query = BatchOperationQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
 
-    final var items = batchOperationDbReader.search(query, resourceAccessChecks).items();
-    assertThat(items).isEmpty();
+    // when
+    final var result = batchOperationDbReader.search(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isEqualTo(1L);
+    verify(batchOperationMapper).search(any());
   }
 
   @Test
