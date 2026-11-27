@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.logging.log4j.Level;
@@ -42,8 +43,12 @@ final class AzureCredentialChainTest {
   private static final String PHYSICAL_TENANT = "pt1";
   private static final String VAULT_URL = "https://my-vault.vault.azure.net";
   private static final String US_GOVERNMENT_AUTHORITY = "https://login.microsoftonline.us/";
-  private static final TokenRequestContext VAULT_SCOPE =
-      new TokenRequestContext().addScopes("https://vault.azure.net/.default");
+
+  // MSAL caches managed-identity tokens in static state, keyed by identity and scope, so a token
+  // another test (or test class) got for the same scope would answer without an IMDS request
+  private final TokenRequestContext vaultScope =
+      new TokenRequestContext()
+          .addScopes("https://" + UUID.randomUUID() + ".vault.azure.net/.default");
 
   private final ExecutorService executor = Executors.newCachedThreadPool();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -89,7 +94,7 @@ final class AzureCredentialChainTest {
             http);
 
     // when
-    final var token = credential.getTokenSync(VAULT_SCOPE);
+    final var token = credential.getTokenSync(vaultScope);
 
     // then
     assertThat(token.getToken()).isEqualTo(StubAzureHttpClient.TOKEN);
@@ -117,7 +122,7 @@ final class AzureCredentialChainTest {
     final var credential = chain(AzureKeyVaultStoreConfig.of(VAULT_URL), environment, http);
 
     // when
-    final var token = credential.getTokenSync(VAULT_SCOPE);
+    final var token = credential.getTokenSync(vaultScope);
 
     // then — signed in with an assertion signed by the certificate, not a secret
     assertThat(token.getToken()).isEqualTo(StubAzureHttpClient.TOKEN);
@@ -141,7 +146,7 @@ final class AzureCredentialChainTest {
             http);
 
     // when
-    final var token = credential.getTokenSync(VAULT_SCOPE);
+    final var token = credential.getTokenSync(vaultScope);
 
     // then
     assertThat(token.getToken()).isEqualTo(StubAzureHttpClient.TOKEN);
@@ -162,7 +167,7 @@ final class AzureCredentialChainTest {
     final var credential = chain(config("vm-identity", null), environment(Map.of()), http);
 
     // when
-    final var token = credential.getTokenSync(VAULT_SCOPE);
+    final var token = credential.getTokenSync(vaultScope);
 
     // then
     assertThat(token.getToken()).isEqualTo(StubAzureHttpClient.TOKEN);
@@ -183,7 +188,7 @@ final class AzureCredentialChainTest {
         chain(AzureKeyVaultStoreConfig.of(VAULT_URL), environment(Map.of()), http);
 
     // when
-    credential.getTokenSync(VAULT_SCOPE);
+    credential.getTokenSync(vaultScope);
 
     // then
     assertThat(http.tokenRequests())
@@ -201,12 +206,9 @@ final class AzureCredentialChainTest {
     final var http = StubAzureHttpClient.signingIn(3600);
     final var environment = environment(Map.of("AZURE_CLIENT_ID", "unrelated-client-id"));
     final var credential = chain(AzureKeyVaultStoreConfig.of(VAULT_URL), environment, http);
-    // MSAL caches managed-identity tokens process-wide; a scope of its own keeps this test from
-    // serving the system-assigned token another test expects to request
-    final var scope = new TokenRequestContext().addScopes("https://other.vault.azure.net/.default");
 
     // when
-    credential.getTokenSync(scope);
+    credential.getTokenSync(vaultScope);
 
     // then
     assertThat(http.tokenRequests())
@@ -242,8 +244,8 @@ final class AzureCredentialChainTest {
     final var credentialB = chain(config("identity-b", null), environment(Map.of()), tenantB);
 
     // when
-    credentialA.getTokenSync(VAULT_SCOPE);
-    credentialB.getTokenSync(VAULT_SCOPE);
+    credentialA.getTokenSync(vaultScope);
+    credentialB.getTokenSync(vaultScope);
 
     // then
     assertThat(tenantA.tokenRequests())
@@ -269,7 +271,7 @@ final class AzureCredentialChainTest {
             http);
 
     // when
-    credential.getTokenSync(VAULT_SCOPE);
+    credential.getTokenSync(vaultScope);
 
     // then
     assertThat(http.requests())
@@ -288,7 +290,7 @@ final class AzureCredentialChainTest {
             http);
 
     // when
-    credential.getTokenSync(VAULT_SCOPE);
+    credential.getTokenSync(vaultScope);
 
     // then
     assertThat(http.requests())
@@ -305,7 +307,7 @@ final class AzureCredentialChainTest {
         chain(AzureKeyVaultStoreConfig.of(VAULT_URL), environment(Map.of()), http);
 
     // when/then
-    assertThatThrownBy(() -> credential.getTokenSync(VAULT_SCOPE))
+    assertThatThrownBy(() -> credential.getTokenSync(vaultScope))
         .isInstanceOf(ClientAuthenticationException.class);
     assertThat(http.requests())
         .isNotEmpty()
@@ -328,7 +330,7 @@ final class AzureCredentialChainTest {
     final var credential = chain(config("fallback-identity", null), environment, http);
 
     // when
-    credential.getTokenSync(VAULT_SCOPE);
+    credential.getTokenSync(vaultScope);
 
     // then — the chain moves past the environment to the managed identity
     assertThat(http.requests())
@@ -347,7 +349,7 @@ final class AzureCredentialChainTest {
             http);
 
     // when/then
-    assertThatThrownBy(() -> credential.getTokenSync(VAULT_SCOPE))
+    assertThatThrownBy(() -> credential.getTokenSync(vaultScope))
         .isInstanceOf(ClientAuthenticationException.class);
     assertThat(http.requests()).noneMatch(Request::isImdsRequest);
     // counted once by the rejected credential, not again by the chain it ended
