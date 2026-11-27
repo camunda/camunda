@@ -1,0 +1,77 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.util.tls;
+
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * What a peer's leaf certificate claims to be, for logging and matching. Every field but the
+ * address is attacker-controlled: {@link #toString()} escapes and truncates them for logs.
+ *
+ * @param subject the full subject distinguished name
+ * @param subjectAlternativeNames DNS, IP, URI and email SAN entries, in certificate order
+ * @param hasSubjectAlternativeNameExtension whether the certificate has a SAN extension at all
+ * @param commonName the subject's CN, if it has exactly one
+ * @param malformed whether the SAN extension could not be parsed
+ * @param peerAddress the remote host and port, if known
+ */
+public record PeerIdentity(
+    String subject,
+    List<String> subjectAlternativeNames,
+    boolean hasSubjectAlternativeNameExtension,
+    @Nullable String commonName,
+    boolean malformed,
+    @Nullable String peerAddress) {
+
+  private static final int MAX_FIELD_LENGTH = 256;
+  private static final int MAX_LOGGED_SANS = 10;
+
+  public PeerIdentity withPeerAddress(final @Nullable String address) {
+    return new PeerIdentity(
+        subject,
+        subjectAlternativeNames,
+        hasSubjectAlternativeNameExtension,
+        commonName,
+        malformed,
+        address);
+  }
+
+  @Override
+  public String toString() {
+    final var sans = new StringBuilder("[");
+    for (var i = 0; i < Math.min(subjectAlternativeNames.size(), MAX_LOGGED_SANS); i++) {
+      sans.append(i == 0 ? "" : ", ").append(sanitize(subjectAlternativeNames.get(i)));
+    }
+    if (subjectAlternativeNames.size() > MAX_LOGGED_SANS) {
+      sans.append(", ... ")
+          .append(subjectAlternativeNames.size() - MAX_LOGGED_SANS)
+          .append(" more");
+    }
+    sans.append(']');
+    return "{subject='%s', sans=%s, peer=%s}"
+        .formatted(sanitize(subject), sans, peerAddress == null ? "unknown" : peerAddress);
+  }
+
+  /** Escapes control and non-ASCII characters, so a certificate cannot forge log lines. */
+  public static String sanitize(final String value) {
+    final var out = new StringBuilder(Math.min(value.length(), MAX_FIELD_LENGTH) + 16);
+    for (var i = 0; i < value.length() && out.length() < MAX_FIELD_LENGTH; i++) {
+      final var c = value.charAt(i);
+      if (c >= 0x20 && c < 0x7f) {
+        out.append(c);
+      } else {
+        out.append("\\u%04x".formatted((int) c));
+      }
+    }
+    if (out.length() >= MAX_FIELD_LENGTH) {
+      out.append("...");
+    }
+    return out.toString();
+  }
+}
