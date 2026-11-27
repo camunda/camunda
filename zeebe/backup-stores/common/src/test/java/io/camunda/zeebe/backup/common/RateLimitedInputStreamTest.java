@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.time.Duration;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -137,6 +138,26 @@ class RateLimitedInputStreamTest {
         .hasMessageContaining("closed");
     readOneMoreByte();
     assertThat(clock.slept()).isZero();
+  }
+
+  @Test
+  void shouldCloseTheWrappedStream() throws Exception {
+    // given - backups wrap open file handles, which must not outlive the limited stream
+    final var closed = new AtomicBoolean();
+    final var stream =
+        limiter.wrap(
+            new ByteArrayInputStream(new byte[1]) {
+              @Override
+              public void close() {
+                closed.set(true);
+              }
+            });
+
+    // when
+    stream.close();
+
+    // then
+    assertThat(closed).isTrue();
   }
 
   /** A read waits for the bytes charged before it, so one more read shows what was charged. */

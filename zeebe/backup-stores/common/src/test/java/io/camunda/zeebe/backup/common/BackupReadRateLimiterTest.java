@@ -20,6 +20,8 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -282,6 +284,42 @@ class BackupReadRateLimiterTest {
         .isInstanceOf(TimeoutException.class);
     clock.advance(Duration.ofNanos(62_500_000));
     assertThat(second).succeedsWithin(Duration.ofSeconds(30));
+  }
+
+  @Test
+  void shouldHoldTheSlotOfAClosedStreamOnlyForWhatIsLeftOfItsLastRead() throws Exception {
+    // given - System.nanoTime() is usually far from zero, so the delay must be measured from now
+    clock.advance(Duration.ofDays(3));
+    final List<Long> scheduledDelays = new ArrayList<>();
+    final var limiter =
+        new BackupReadRateLimiter(
+            MIB, 1, clock::nanos, clock::sleep, (delay, task) -> scheduledDelays.add(delay));
+    final var stream = limiter.wrap(new ZeroInputStream(MIB));
+    assertThat(stream.read(new byte[MAX_BYTES_PER_READ])).isEqualTo(MAX_BYTES_PER_READ);
+    clock.advance(Duration.ofMillis(20));
+
+    // when
+    stream.close();
+
+    // then - the read took 62.5 ms of budget, of which 20 ms have passed
+    assertThat(scheduledDelays).containsExactly(42_500_000L);
+  }
+
+  @Test
+  void shouldFreeTheSlotOfAStreamClosedAfterItsLastReadIsPaidRightAway() throws Exception {
+    // given - a single slot, held by a stream whose last read of 62.5 ms of budget is already paid
+    final var limiter =
+        new BackupReadRateLimiter(MIB, 1, clock::nanos, clock::sleep, clock::schedule);
+    final var first = limiter.wrap(new ZeroInputStream(MIB));
+    assertThat(first.read(new byte[MAX_BYTES_PER_READ])).isEqualTo(MAX_BYTES_PER_READ);
+    clock.advance(Duration.ofMillis(100));
+    first.close();
+
+    // when
+    final var second = CompletableFuture.supplyAsync(() -> wrapUnchecked(limiter));
+
+    // then - nothing is left to wait for, so the slot is free without the clock moving on
+    assertThat(second).succeedsWithin(Duration.ofSeconds(1));
   }
 
   @Test
