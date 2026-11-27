@@ -1,7 +1,7 @@
 # description: Nightly E2E smoke run for Optimize in Cloud (SaaS) mode against the Auth0 dev tenant.
 # test location: /optimize/client/e2e/cloud
 # type: CI
-# owner: @camunda/optimize-frontend
+# owner: @camunda/optimize
 #
 # Deliberately not part of the general PR gate (it used to be the `e2e-cloud-test` job in
 # ci-optimize.yml). The only thing this run covers beyond the self-managed smoke job is the Auth0
@@ -41,7 +41,7 @@ permissions:
   contents: read
 
 env:
-  TEST_OWNER: '@camunda/optimize-frontend'
+  TEST_OWNER: '@camunda/optimize'
   TEST_PRODUCT: 'optimize'
   TEST_TYPE: 'E2E'
   GHA_BEST_PRACTICES_LINTER: enabled

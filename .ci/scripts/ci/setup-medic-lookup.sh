@@ -43,7 +43,7 @@ lookupTeamMedic["@camunda/employee-engagement-tasklist"]=$tasklistMedic
 
 # @bi-pod-medic
 optimizeFrontendMedic="<!subteam^S0BPBPG5H2S|bi-pod-medic>"
-lookupTeamMedic["@camunda/optimize-frontend"]=$optimizeFrontendMedic
+lookupTeamMedic["@camunda/optimize"]=$optimizeFrontendMedic
 
 # @clients-sdks-ai-first-tooling-medic
 clientsSdksAiFirstToolingMedic="<!subteam^S0BFV0L5R2S|clients-sdks-ai-first-tooling-medic>"
