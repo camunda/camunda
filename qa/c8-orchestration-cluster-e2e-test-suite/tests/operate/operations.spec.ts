@@ -371,7 +371,9 @@ test.describe('Operations', () => {
       // Open the cancel operation's own view (operationId-scoped, canceled=true)
       // so the canceled icons are in scope for the assertion below.
       await operateOperationPanelPage.clickOperationLink(operationEntry);
-      await validateURL(page, /operationId=/);
+      await expect(operateFiltersPanelPage.operationIdFilter).toHaveValue(
+        cancelOperationIds[0],
+      );
 
       await Promise.all(
         instances.map((instance) =>
