@@ -29,6 +29,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -102,6 +103,44 @@ final class JobWorkerPollMetricsTest {
 
     // then the closed worker is not reported as stalled
     assertThat(metrics.pollsCompleted).hasValue(1);
+  }
+
+  @Test
+  void shouldNotLeavePollInFlightWhenTheWorkerClosesWhileThePollStarts() {
+    // given metrics that close the worker before the start of a poll is recorded, which is what
+    // a close on another thread looks like when it lands between the worker's check and its report
+    final MockClock clock = new MockClock();
+    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, clock);
+    final Tags tags = Tags.of("type", "payment");
+    final JobWorkerMetrics micrometer =
+        JobWorkerMetrics.micrometer().withMeterRegistry(meterRegistry).withTags(tags).build();
+    final LongTaskTimer pollInFlight =
+        meterRegistry.more().longTaskTimer(Names.POLL_IN_FLIGHT.asString(), tags);
+    final AtomicReference<JobWorkerImpl> worker = new AtomicReference<>();
+    final JobWorkerMetrics metrics =
+        new JobWorkerMetrics() {
+          @Override
+          public void pollStarted() {
+            worker.get().close();
+            micrometer.pollStarted();
+          }
+
+          @Override
+          public void pollCompleted() {
+            micrometer.pollCompleted();
+          }
+        };
+
+    try (final JobWorkerImpl created = createWorker(metrics)) {
+      worker.set(created);
+
+      // when the worker sends its first poll
+      executor.tick(POLL_INTERVAL.getSeconds(), TimeUnit.SECONDS);
+      clock.add(Duration.ofMinutes(10));
+
+      // then the closed worker is not reported as stalled
+      assertThat(pollInFlight.activeTasks()).isZero();
+    }
   }
 
   @Test
