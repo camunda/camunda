@@ -259,6 +259,30 @@ func TestGoldenFiles(t *testing.T) {
 	}
 }
 
+// saasScenarios are the Makefile targets of the saas-default setup that render the
+// camunda-load-tests chart. Goldens live under golden/saas-default/<name>/.
+var saasScenarios = []struct{ Name, Target string }{
+	{"default", "template"},
+	{"realistic", "realistic-template"},
+	{"typical", "typical-template"},
+}
+
+func TestSaasGoldenFiles(t *testing.T) {
+	for _, s := range saasScenarios {
+		namespace := "c8-golden-saas-" + s.Name
+		testName := "c8-golden-saas-default-" + s.Name
+
+		t.Run(testName, func(t *testing.T) {
+			t.Parallel()
+
+			ns := ScaffoldSaas(t, namespace)
+			defer ns.Cleanup()
+
+			renderAndAssert(t, "saas-default", s.Name, "camunda-load-tests", ns, s.Target, "", nil)
+		})
+	}
+}
+
 // TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProvided
 // simulates the real CI invocation (camunda-load-test.yml), which always sets
 // additional_load_test_setup_configuration on the make command line. In GNU

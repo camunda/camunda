@@ -1,0 +1,155 @@
+---
+# Source: camunda-load-tests/templates/starter.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starter
+  labels:
+    app: starter
+
+    app.kubernetes.io/name: camunda-load-tests
+    app.kubernetes.io/instance: c8-golden-saas-realistic-test
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+spec:
+  selector:
+    matchLabels:
+      app: starter
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: starter
+        app.kubernetes.io/component: zeebe-client
+
+        app.kubernetes.io/name: camunda-load-tests
+        app.kubernetes.io/instance: c8-golden-saas-realistic-test
+
+        app.kubernetes.io/managed-by: Helm
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
+      annotations:
+        
+        checksum/saas-credentials: 2d3891268c2d87029535d648a6f9b3794d8c13260c2039d4947646d3a24a6c90
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry
+      containers:
+        - name: starter
+          image: "registry.camunda.cloud/team-zeebe/starter:SNAPSHOT"
+          imagePullPolicy: Always
+          env:
+            - name: JDK_JAVA_OPTIONS
+              value: >-
+                -XX:+ExitOnOutOfMemoryError
+                -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/heap-dumps
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: ZEEBE_REST_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-realistic-test-credentials
+                  key: zeebeRestAddress
+            - name: ZEEBE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-realistic-test-credentials
+                  key: clientId
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-realistic-test-credentials
+                  key: clientSecret
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-realistic-test-credentials
+                  key: authServer
+            - name: ZEEBE_TOKEN_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-realistic-test-credentials
+                  key: authorizationAudience
+            - name: ZEEBE_AUTH_TYPE
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-realistic-test-credentials
+                  key: authType
+            - name: ZEEBE_GRPC_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-saas-realistic-test-credentials
+                  key: zeebeGrpcAddress
+            ##
+            ## Spring Boot compatible env vars (for migrated load tester, ignored by old HOCON app)
+            ##
+            - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
+              value: "true"
+            - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+              value: "false"
+            - name: CAMUNDA_CLIENT_MODE
+              value: "saas"
+            - name: CAMUNDA_CLIENT_AUTH_METHOD
+              value: "oidc"
+            - name: LOAD_TESTER_STARTER_RATE
+              value: "1"
+            - name: LOAD_TESTER_STARTER_PROCESS_ID
+              value: "bankDisputeHandling"
+            - name: LOAD_TESTER_STARTER_BPMN_XML_PATH
+              value: "bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn"
+            - name: LOAD_TESTER_STARTER_EXTRA_BPMN_MODELS_0_
+              value: "bpmn/realistic/refundingProcess.bpmn"
+            - name: LOAD_TESTER_STARTER_EXTRA_BPMN_MODELS_1_
+              value: "bpmn/realistic/determineFraudRatingConfidence.dmn"
+            - name: LOAD_TESTER_STARTER_BUSINESS_KEY
+              value: "customerId"
+            - name: LOAD_TESTER_STARTER_PAYLOAD_PATH
+              value: "bpmn/realistic/realisticPayload.json"
+            - name: LOGGING_LEVEL_IO_CAMUNDA_ZEEBE
+              value: "INFO"
+          envFrom:
+            - configMapRef:
+                name: starter-config
+                optional: true
+          resources:
+            limits:
+              cpu: 1
+              memory: 2Gi
+            requests:
+              cpu: 500m
+              memory: 2Gi
+          ports:
+            - containerPort: 9600
+              name: "http"
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /health/readiness
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health/liveness
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health/readiness
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: heap-dumps
+              mountPath: /heap-dumps
+      volumes:
+        - name: heap-dumps
+          emptyDir: {}

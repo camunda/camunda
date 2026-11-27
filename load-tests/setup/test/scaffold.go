@@ -65,6 +65,24 @@ func Scaffold(t *testing.T, setupDirName, namespace, storage, optimize string, e
 	return &ScaffoldedNamespace{Dir: namespaceDir, Name: namespace}
 }
 
+// ScaffoldSaas runs newCloudLoadTest.sh without kubectl and returns the
+// scaffolded namespace directory, with the same fixed author as Scaffold.
+func ScaffoldSaas(t *testing.T, namespace string) *ScaffoldedNamespace {
+	t.Helper()
+
+	scriptDir := filepath.Join(repoRoot(t), "load-tests", "setup")
+	namespaceDir := filepath.Join(scriptDir, namespace)
+	_ = os.RemoveAll(namespaceDir)
+
+	cmd := exec.Command(filepath.Join(scriptDir, "newCloudLoadTest.sh"), namespace)
+	cmd.Dir = scriptDir
+	cmd.Env = append(os.Environ(), "GIT_AUTHOR=golden-test", "LOAD_TEST_SKIP_KUBECTL=true")
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "newCloudLoadTest.sh failed:\n%s", string(out))
+
+	return &ScaffoldedNamespace{Dir: namespaceDir, Name: namespace}
+}
+
 // Render runs `make <target>` in the namespace directory and returns the path to
 // the directory helm wrote the rendered manifests into via --output-dir (one file
 // per chart template, mirroring the chart structure). When workload is non-empty

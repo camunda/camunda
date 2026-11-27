@@ -44,15 +44,19 @@ if [[ ! "$namespace" =~ ^c8- ]]; then
   echo "Namespace prefix added: $namespace"
 fi
 
-kubectl create namespace $namespace
+git_author=${GIT_AUTHOR:-$(compute_git_author)}
 
-# Label namespace with registry (required to inject image pull secrets)
-kubectl label namespace "$namespace" registry=harbor --overwrite
+# LOAD_TEST_SKIP_KUBECTL=true only scaffolds the folder, for the golden file tests.
+if [ "${LOAD_TEST_SKIP_KUBECTL:-false}" != "true" ]; then
+  kubectl create namespace $namespace
 
-# Label namespace with author and purpose
-git_author=$(compute_git_author)
-kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
-kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
+  # Label namespace with registry (required to inject image pull secrets)
+  kubectl label namespace "$namespace" registry=harbor --overwrite
+
+  # Label namespace with author and purpose
+  kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
+  kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
+fi
 
 cp -rv saas-default/ $namespace
 # Derive the SaaS realistic-benchmark values from the single shared source.
