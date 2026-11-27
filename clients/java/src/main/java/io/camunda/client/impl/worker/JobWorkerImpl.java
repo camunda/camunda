@@ -272,6 +272,12 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     refusedJobsInPoll.set(0);
     failedJobsInPoll.set(0);
     reportPollStarted();
+    if (!acquiringJobs.get()) {
+      // The worker was closed after the check above and may have reported its close before this
+      // poll was reported as started. Either way the poll is not wanted, so it must not stay
+      // counted as in flight; reporting twice is harmless.
+      reportPollCompleted();
+    }
     jobPoller.poll(
         maxJobsToActivate,
         this::handleJob,
