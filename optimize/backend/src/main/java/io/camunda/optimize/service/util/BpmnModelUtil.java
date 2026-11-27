@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.BaseElement;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
@@ -44,7 +43,7 @@ public class BpmnModelUtil {
 
   public static BpmnModelInstance parseBpmnModel(final String bpmn20Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(bpmn20Xml.getBytes())) {
-      return Bpmn.readModelFromStream(stream);
+      return BundledSchemaBpmnParser.readModelFromStream(stream);
     } catch (final IOException e) {
       throw new OptimizeRuntimeException("Failed reading model", e);
     }
