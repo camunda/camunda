@@ -41,11 +41,11 @@ import org.jspecify.annotations.Nullable;
  * the vault through its own {@link SecretClient}, so two physical tenants never share an identity
  * or a cached token. No credential is read from the configuration.
  *
- * <p>In one-by-one mode, {@link #resolve} reads each reference's latest version from the vault;
- * container mode and {@link #list} are not implemented yet (camunda/camunda#67226): they report
- * every name as not found and list no names. The store keeps no cache: the registry wraps it in
- * {@link io.camunda.secretstore.CachingSecretStore} and, with a {@code max-concurrency} above 1,
- * {@link io.camunda.secretstore.ConcurrentSecretStore}, which fans a request out one name per call.
+ * <p>{@link #resolve} reads the latest version from the vault: each reference's own secret in
+ * one-by-one mode, or the container secret once per call in container mode. {@link #list} is not
+ * implemented yet and lists no names. The store keeps no cache: the registry wraps it in {@link
+ * io.camunda.secretstore.CachingSecretStore} and, with a {@code max-concurrency} above 1, {@link
+ * io.camunda.secretstore.ConcurrentSecretStore}, which fans a request out one name per call.
  *
  * <p>Each read of the vault is bounded by {@code callTimeout}, retries included: it runs on the
  * credential executor, and the caller stops waiting past that time and requests an interrupt, so a
@@ -230,7 +230,7 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
     if (containerSecretId == null) {
       return new OneByOneSecretResolver(client, pathPrefix, clock, storeDescription, callTimeout);
     }
-    return new ContainerSecretResolver(client, pathPrefix + containerSecretId);
+    return new ContainerSecretResolver(client, pathPrefix + containerSecretId, clock, callTimeout);
   }
 
   /**

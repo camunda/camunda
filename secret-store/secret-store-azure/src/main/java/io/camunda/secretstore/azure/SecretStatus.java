@@ -9,6 +9,7 @@ package io.camunda.secretstore.azure;
 
 import com.azure.security.keyvault.secrets.models.SecretProperties;
 import java.time.Instant;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The state of a Key Vault secret, from its {@code enabled}, {@code expiresOn} and {@code
@@ -40,5 +41,35 @@ enum SecretStatus {
       return NOT_YET_ACTIVE;
     }
     return ACTIVE;
+  }
+
+  /**
+   * Why a secret with these properties is refused, or {@code null} when it is {@link #ACTIVE} or
+   * has no properties.
+   *
+   * @param subject names the secret, e.g. {@code "Secret api-key"}
+   * @param now what the dates are compared with
+   */
+  static @Nullable String refusal(
+      final String subject, final @Nullable SecretProperties properties, final Instant now) {
+    if (properties == null) {
+      return null;
+    }
+    return switch (of(properties, now)) {
+      case ACTIVE -> null;
+      case DISABLED -> disabledRefusal(subject);
+      case EXPIRED -> refused(subject, "expired on " + properties.getExpiresOn().toInstant());
+      case NOT_YET_ACTIVE ->
+          refused(subject, "is not active until " + properties.getNotBefore().toInstant());
+    };
+  }
+
+  /** The refusal of a disabled secret, which Key Vault answers with 403 rather than a bundle. */
+  static String disabledRefusal(final String subject) {
+    return refused(subject, "is disabled in Azure Key Vault");
+  }
+
+  private static String refused(final String subject, final String reason) {
+    return subject + " " + reason + " and is refused";
   }
 }

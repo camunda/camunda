@@ -85,17 +85,129 @@ class AzureKeyVaultSecretStoreTest {
   }
 
   @Test
-  void shouldReportEveryNameAsNotFoundInContainerModeUntilItIsImplemented() {
+  void shouldResolveEveryFieldOfTheContainerSecretWithOneRead() {
     // given
-    try (final var store = store(containerConfig(), signedIn())) {
+    final var http =
+        signedIn()
+            .putSecret(
+                "camunda-container", "{\"user\": \"u\", \"password\": \"p\", \"API_KEY\": \"k\"}");
+    try (final var store = store(containerConfig(), http)) {
+      final var readsAtStartup = secretPathsRead(http).size();
+
+      // when
+      final var results = store.resolve(Set.of("user", "password", "API_KEY"));
+
+      // then
+      assertThat(results)
+          .containsOnly(
+              entry("user", new Resolved("u")),
+              entry("password", new Resolved("p")),
+              entry("API_KEY", new Resolved("k")));
+      final var reads = secretPathsRead(http);
+      assertThat(reads.subList(readsAtStartup, reads.size()))
+          .containsExactly("/secrets/camunda-container/");
+    }
+  }
+
+  @Test
+  void shouldReportAMissingOrNullFieldAsNotFoundAndANonStringFieldAsInvalid() {
+    // given
+    final var http =
+        signedIn()
+            .putSecret(
+                "camunda-container",
+                "{\"nulled\": null, \"number\": 1, \"object\": {}, \"array\": []}");
+    try (final var store = store(containerConfig(), http)) {
+
+      // when
+      final var results = store.resolve(Set.of("missing", "nulled", "number", "object", "array"));
+
+      // then
+      assertThat(failure(results.get("missing")).code()).isEqualTo(NOT_FOUND);
+      assertThat(failure(results.get("nulled")).code()).isEqualTo(NOT_FOUND);
+      assertThat(failure(results.get("number")).code()).isEqualTo(INVALID_REF);
+      assertThat(failure(results.get("object")).code()).isEqualTo(INVALID_REF);
+      assertThat(failure(results.get("array")).code()).isEqualTo(INVALID_REF);
+    }
+  }
+
+  @Test
+  void shouldFailEveryNameNamingTheContainerWhenItIsNotAJsonObject() {
+    for (final var value : List.of("{\"a\": \"top-secret", "[\"top-secret\"]")) {
+      // given
+      final var http = signedIn().putSecret("camunda-container", value);
+      try (final var log = LogCapturer.capturing(ContainerSecretResolver.class, Level.TRACE);
+          final var store = store(containerConfig(), http)) {
+
+        // when
+        final var results = store.resolve(Set.of("a", "b"));
+
+        // then
+        assertThat(results).as(value).containsOnlyKeys("a", "b");
+        assertThat(results.values())
+            .as(value)
+            .allSatisfy(
+                result -> {
+                  assertThat(failure(result).code()).isEqualTo(INVALID_REF);
+                  assertThat(describe(result) + log.messages())
+                      .contains("camunda-container")
+                      .doesNotContain("top-secret");
+                });
+      }
+    }
+  }
+
+  @Test
+  void shouldRefuseEveryNameWhenTheContainerSecretIsDisabledExpiredOrNotActiveYet() {
+    // given
+    final var container = "{\"a\": \"top-secret\"}";
+    final var stubs =
+        Map.of(
+            "is disabled in Azure Key Vault",
+            signedIn().putDisabledSecret("camunda-container"),
+            "expired on 2026-06-01T11:59:00Z",
+            signedIn().putSecret("camunda-container", container, null, NOW.minusSeconds(60)),
+            "is not active until 2026-06-01T13:00:00Z",
+            signedIn().putSecret("camunda-container", container, NOW.plusSeconds(3600), null));
+
+    stubs.forEach(
+        (reason, http) -> {
+          try (final var store = store(containerConfig(), http, CLOCK)) {
+
+            // when
+            final var results = store.resolve(Set.of("a", "b"));
+
+            // then
+            assertThat(results).containsOnlyKeys("a", "b");
+            assertThat(results.values())
+                .allSatisfy(
+                    result -> {
+                      assertThat(failure(result).code()).isEqualTo(NOT_FOUND);
+                      assertThat(describe(result))
+                          .isEqualTo(
+                              "Container secret camunda-container " + reason + " and is refused");
+                    });
+          }
+        });
+  }
+
+  @Test
+  void shouldFailEveryNameNamingTheContainerWhenItIsMissing() {
+    // given
+    final var http = signedIn().putSecret("another-secret", "value");
+    try (final var store = store(containerConfig(), http)) {
 
       // when
       final var results = store.resolve(Set.of("a", "b"));
 
       // then
-      assertThat(results).containsOnlyKeys("a", "b");
       assertThat(results.values())
-          .allSatisfy(result -> assertThat(failure(result).code()).isEqualTo(NOT_FOUND));
+          .hasSize(2)
+          .allSatisfy(
+              result -> {
+                assertThat(failure(result).code()).isEqualTo(NOT_FOUND);
+                assertThat(failure(result).message()).contains("camunda-container");
+              });
       assertThat(store.list()).isEmpty();
     }
   }
@@ -242,7 +354,7 @@ class AzureKeyVaultSecretStoreTest {
             assertThat(failure(result).code()).isEqualTo(INVALID_REF);
             assertThat(failure(result).message())
                 .contains(name, AzureKeyVaultSecretStore.NAME_PATTERN.pattern())
-                .doesNotContain("container");
+                .contains("container secret (containerSecretId)");
           });
       assertThat(secretPathsRead(http)).isEmpty();
     }

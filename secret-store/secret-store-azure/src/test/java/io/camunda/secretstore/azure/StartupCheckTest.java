@@ -530,7 +530,8 @@ final class StartupCheckTest {
 
   private static final class ContainerProbingResolver extends ProbingResolver {
 
-    private final ContainerSecretResolver wording = new ContainerSecretResolver(null, "camunda");
+    private final ContainerSecretResolver wording =
+        new ContainerSecretResolver(null, "camunda", null, null);
 
     ContainerProbingResolver(final RuntimeException failure) {
       super(

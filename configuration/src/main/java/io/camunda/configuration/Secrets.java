@@ -186,9 +186,7 @@ public class Secrets {
      * Azure Key Vault stores, keyed by store id; the only supported id is {@code default}. Only one
      * store per physical tenant is supported, across all store types. Sign-in is meant to be
      * identity-based (managed identity, workload identity, or a service principal from the {@code
-     * AZURE_*} environment variables), but signing in and reading the vault are not implemented
-     * yet: until then every reference resolves as not found. Empty by default, so no Azure store is
-     * configured.
+     * AZURE_*} environment variables). Empty by default, so no Azure store is configured.
      */
     private Map<String, AzureKeyVaultStore> azure = new LinkedHashMap<>();
 
@@ -778,9 +776,6 @@ public class Secrets {
    * Configuration for an Azure Key Vault store. Sign-in is meant to be identity-based only (managed
    * identity, workload identity, or a service principal from the standard {@code AZURE_*}
    * environment variables), so no static credentials are accepted here by design.
-   *
-   * <p>Signing in and reading the vault are not implemented yet (camunda/camunda#67225,
-   * camunda/camunda#67226): until then the store resolves every reference as not found.
    */
   public static class AzureKeyVaultStore {
 

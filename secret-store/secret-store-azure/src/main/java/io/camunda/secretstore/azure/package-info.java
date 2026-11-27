@@ -48,8 +48,16 @@
  * refused as not found, naming the reason. The dates are compared with the clock of the node
  * reading the vault. A value cached before its secret expired or was disabled can still be served
  * until the next read of the vault drops it, at the latest when its cache entry expires ({@code
- * camunda.secrets.cache.ttl}). Container mode and listing are not implemented yet
- * (camunda/camunda#67226): every name is reported as not found and no names are listed.
+ * camunda.secrets.cache.ttl}). A name Key Vault cannot hold, such as {@code API_KEY}, is refused
+ * with a hint to use container mode.
+ *
+ * <p>In container mode, one read of the container secret's latest version serves every reference of
+ * a call. Its value must be a flat JSON object of string values, and each reference is a field
+ * name, which Key Vault's naming rules do not limit. Invalid JSON or a value that is not an object
+ * fails every reference as an invalid reference, a missing or {@code null} field is not found and a
+ * field that is not a string is an invalid reference; a message names the container secret, never
+ * its content. A disabled, expired or not yet active container secret is refused, as in one-by-one
+ * mode, for every reference. Listing is not implemented yet: no names are listed.
  *
  * <p>See {@link io.camunda.secretstore.azure.AzureKeyVaultStoreConfig} for every setting and its
  * default.

@@ -42,12 +42,13 @@ import org.slf4j.LoggerFactory;
  * <p>A reference is refused, without a call to the vault, as {@link
  * io.camunda.secretstore.SecretErrorCode#INVALID_REF INVALID_REF} when it is empty or {@code
  * pathPrefix + name} is not a name Key Vault can hold ({@link
- * AzureKeyVaultSecretStore#NAME_PATTERN}). Key Vault keeps returning a secret that is at or past
- * its expiry date or before its activation date, as these dates are only informational there; this
- * resolver refuses both. It also refuses a disabled secret, which Key Vault answers with 403 like a
- * missing permission. All three are reported as {@link
- * io.camunda.secretstore.SecretErrorCode#NOT_FOUND NOT_FOUND}, so a cached value is dropped and the
- * incident resolves once the secret is fixed; the message names the reason.
+ * AzureKeyVaultSecretStore#NAME_PATTERN}); the message then suggests container mode, whose field
+ * names have no such limit. Key Vault keeps returning a secret that is at or past its expiry date
+ * or before its activation date, as these dates are only informational there; this resolver refuses
+ * both. It also refuses a disabled secret, which Key Vault answers with 403 like a missing
+ * permission. All three are reported as {@link io.camunda.secretstore.SecretErrorCode#NOT_FOUND
+ * NOT_FOUND}, so a cached value is dropped and the incident resolves once the secret is fixed; the
+ * message names the reason.
  *
  * <p>Every other failure is mapped by {@link AzureKeyVaultErrors#classify}. The first 403 also logs
  * one WARN for the store, as it may mean the identity lacks its role on the whole vault, which
@@ -128,7 +129,7 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
 
   private Failed failedRead(final String secretName, final RuntimeException e) {
     if (AzureKeyVaultErrors.isSecretDisabled(e)) {
-      return refused(secretName, "is disabled in Azure Key Vault");
+      return new Failed(NOT_FOUND, SecretStatus.disabledRefusal("Secret " + secretName), null);
     }
     final var code = AzureKeyVaultErrors.classify(secretName, e);
     if (code == ACCESS_DENIED) {
@@ -147,20 +148,8 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
    */
   private @Nullable Failed refusalFor(
       final String secretName, final @Nullable SecretProperties properties) {
-    if (properties == null) {
-      return null;
-    }
-    return switch (SecretStatus.of(properties, clock.instant())) {
-      case ACTIVE -> null;
-      case DISABLED -> refused(secretName, "is disabled in Azure Key Vault");
-      case EXPIRED -> refused(secretName, "expired on " + properties.getExpiresOn().toInstant());
-      case NOT_YET_ACTIVE ->
-          refused(secretName, "is not active until " + properties.getNotBefore().toInstant());
-    };
-  }
-
-  private static Failed refused(final String secretName, final String reason) {
-    return new Failed(NOT_FOUND, "Secret " + secretName + " " + reason + " and is refused", null);
+    final var refusal = SecretStatus.refusal("Secret " + secretName, properties, clock.instant());
+    return refusal == null ? null : new Failed(NOT_FOUND, refusal, null);
   }
 
   private Failed invalidName(final String name, final String secretName) {
@@ -177,7 +166,8 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
             + AzureKeyVaultStoreConfig.MAX_SECRET_NAME_LENGTH
             + " letters, digits and hyphens ("
             + AzureKeyVaultSecretStore.NAME_PATTERN.pattern()
-            + "), and names are never rewritten",
+            + "), and names are never rewritten. To keep it as written, store it as a field of a"
+            + " container secret (containerSecretId)",
         null);
   }
 
