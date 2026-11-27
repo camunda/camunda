@@ -471,6 +471,140 @@ class PhysicalTenantAssignedProvidersValidationTest {
   }
 
   // -------------------------------------------------------------------------
+  // Issuer URI collision: providers that CSL drops
+  // -------------------------------------------------------------------------
+
+  /**
+   * CSL drops a provider block whose client type contradicts its other properties. Such a block
+   * must not claim an issuer here, because this check runs before CSL writes its warning and would
+   * stop the start of the application. See https://github.com/camunda/camunda/issues/70767.
+   */
+  @Test
+  void shouldIgnoreTheIssuerOfAProviderThatTheSecurityLibraryDrops() {
+    // given a valid provider and a dropped provider on the same issuer: the default client type
+    // 'confidential' cannot use the client authentication method 'none'
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.valid.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.dropped.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.dropped.client-authentication-method",
+                    "none"));
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldIgnoreTheIssuerOfADroppedProviderInAnAssignedList() {
+    // given a tenant that assigns both a valid provider and a dropped one on the same issuer
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.valid.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.dropped.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.dropped.type", "public",
+                "camunda.security.authentication.providers.oidc.dropped.client-secret", "s3cret",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "valid",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "dropped"));
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldStillRejectACollisionBetweenTwoProvidersTheSecurityLibraryUses() {
+    // given two usable providers on the same issuer: the drop filter must not hide a real
+    // collision
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.a.type", "public",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.b.type", "hybrid",
+                "camunda.security.authentication.providers.oidc.b.client-secret", "s3cret"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("same issuer URI")
+        .withMessageContaining("https://idp.example.com");
+  }
+
+  /**
+   * The usability of a block follows the same precedence as its issuer: a value of the
+   * physical-tenant overlay wins over the root value. Here the overlay moves 'b' onto the issuer of
+   * 'a' and makes it unusable at the same time, so the tenant has no collision.
+   */
+  @Test
+  void shouldIgnoreACollisionThatTheTenantOverlayMakesUnusable() {
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://other.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.b.client-authentication-method",
+                    "none",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "a",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "b"));
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  /**
+   * The mirror case: the root block is unusable, and the overlay makes it usable again. CSL then
+   * uses the provider for this tenant, so the shared issuer is a real collision.
+   */
+  @Test
+  void shouldRejectACollisionThatTheTenantOverlayMakesUsable() {
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.b.type", "public",
+                "camunda.security.authentication.providers.oidc.b.client-secret", "s3cret",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.b.type",
+                    "hybrid",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "a",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "b"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("same issuer URI");
+  }
+
+  // -------------------------------------------------------------------------
   // Issuer URI collision: assigned list
   // -------------------------------------------------------------------------
 

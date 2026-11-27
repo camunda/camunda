@@ -31,6 +31,7 @@ import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.security.spring.oidc.AssertionJwkProvider;
 import io.camunda.security.spring.oidc.FailSoftOidcUserService;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
+import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
@@ -465,8 +466,16 @@ public class OidcOverrideBeansConfiguration {
     final var decoderFactory = new OidcIdTokenDecoderFactory();
     decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
 
+    // Only the providers that CSL uses. CSL drops a provider block whose client type contradicts
+    // its other properties: it warns once and then behaves as if nobody configured that provider
+    // (camunda-security-library ADR-0042). Such a block never gets a ClientRegistration, so it
+    // never asks for an algorithm, but an invalid id-token-algorithm on it would stop the start
+    // of the application here. See https://github.com/camunda/camunda/issues/70767.
     final Map<String, JwsAlgorithm> algorithmByRegistrationId =
-        oidcAuthenticationConfigurations.entrySet().stream()
+        ScopedClientRegistrationFactory.withoutUnusableRegistrations(
+                oidcAuthenticationConfigurations)
+            .entrySet()
+            .stream()
             .collect(
                 toMap(Map.Entry::getKey, e -> parseAlgorithm(e.getValue().getIdTokenAlgorithm())));
     decoderFactory.setJwsAlgorithmResolver(

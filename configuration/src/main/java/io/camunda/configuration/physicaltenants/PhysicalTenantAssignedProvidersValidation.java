@@ -10,6 +10,7 @@ package io.camunda.configuration.physicaltenants;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
 import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
 import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.ArrayList;
@@ -341,6 +342,50 @@ final class PhysicalTenantAssignedProvidersValidation {
   }
 
   /**
+   * Whether CSL uses the provider block of {@code providerId} under {@code tenantId}. CSL drops a
+   * block whose client type contradicts its other properties: it writes one {@code WARN} and then
+   * behaves as if nobody configured that provider (camunda-security-library ADR-0042). A dropped
+   * block must not make this check fail, because this check runs before CSL can write that warning,
+   * and it would stop the start of the application. See
+   * https://github.com/camunda/camunda/issues/70767.
+   *
+   * <p>The block binds from the root path first and then from the physical-tenant overlay, so an
+   * overlay value wins. This is the same precedence that {@link #resolveIssuerUri} applies to one
+   * value.
+   *
+   * <p>A block that does not bind counts as usable. This check must not add a new reason to stop
+   * the start of the application.
+   */
+  private static boolean isUsableProvider(
+      final Environment environment,
+      final Binder binder,
+      final String tenantId,
+      final String providerId) {
+    final String tenantAuth = tenantAuth(tenantId);
+    final List<ConfigurationPropertyName> names =
+        Stream.concat(
+                providerNames(environment, ROOT_AUTH, tenantAuth, providerId).stream(),
+                providerNames(environment, tenantAuth, ROOT_AUTH, providerId).stream())
+            .toList();
+    OidcConfiguration merged = new OidcConfiguration();
+    boolean bound = false;
+    for (final ConfigurationPropertyName name : names) {
+      try {
+        final BindResult<OidcConfiguration> result = binder.bind(name, Bindable.ofInstance(merged));
+        if (result.isBound()) {
+          merged = result.get();
+          bound = true;
+        }
+      } catch (final RuntimeException e) {
+        // A value of the block does not bind. The verdict is unknown, and the check then keeps the
+        // provider and behaves as it did before.
+        return true;
+      }
+    }
+    return !bound || ScopedClientRegistrationFactory.isUsable(merged);
+  }
+
+  /**
    * Fails if any two provider ids in {@code providerIds} resolve to the same {@code issuer-uri}
    * under {@code tenantId}, a trailing slash ignored. Provider ids whose issuer is {@code null} are
    * skipped (not yet configured, or set elsewhere).
@@ -367,6 +412,9 @@ final class PhysicalTenantAssignedProvidersValidation {
       }
     }
     for (final String id : distinctIds) {
+      if (!isUsableProvider(environment, binder, tenantId, id)) {
+        continue;
+      }
       final String issuer = resolveIssuerUri(environment, binder, tenantId, id);
       if (issuer != null) {
         // The runtime treats issuers that differ only by a trailing slash as one issuer.
