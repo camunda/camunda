@@ -1512,7 +1512,7 @@ public class BatchOperationIT {
                     SearchQueryPage.of(b -> b.from(0).size(10))),
                 ResourceAccessChecks.of(
                     AuthorizationCheck.enabled(
-                        RequiredAuthorization.of(
+                        Authorization.of(
                             b ->
                                 b.resourceType(AuthorizationResourceType.BATCH)
                                     .resourceIds(List.of(batchOperation.batchOperationKey())))),
