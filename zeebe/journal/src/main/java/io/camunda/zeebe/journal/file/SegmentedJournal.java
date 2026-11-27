@@ -22,10 +22,12 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalException.SyncFailed;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.SegmentInfo;
+import io.camunda.zeebe.journal.StickySyncFailure;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -33,6 +35,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.SortedMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -51,16 +54,21 @@ public final class SegmentedJournal implements Journal {
   private final StampedLock rwlock = new StampedLock();
   private final SegmentsManager segments;
   private final JournalMetaStore metaStore;
+  // the first failed sync, after which no flush may succeed anymore; see flush()
+  private final StickySyncFailure syncFailure;
+  private final ReentrantLock flushLock = new ReentrantLock();
 
   SegmentedJournal(
       final JournalIndex journalIndex,
       final SegmentsManager segments,
       final JournalMetrics journalMetrics,
-      final JournalMetaStore metaStore) {
+      final JournalMetaStore metaStore,
+      final StickySyncFailure syncFailure) {
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
     this.metaStore = Objects.requireNonNull(metaStore, "must specify a journal meta store");
+    this.syncFailure = Objects.requireNonNull(syncFailure, "must specify a sync failure");
     this.segments.open();
     writer = new SegmentedJournalWriter(segments, metaStore, journalMetrics);
   }
@@ -82,24 +90,36 @@ public final class SegmentedJournal implements Journal {
   @Override
   public JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
     assertOpen();
+    assertNoSyncFailure();
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       return writer.append(asqn, recordDataWriter);
+    } catch (final SyncFailed e) {
+      syncFailure.record(e);
+      throw e;
     }
   }
 
   @Override
   public void append(final JournalRecord record) {
     assertOpen();
+    assertNoSyncFailure();
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       writer.append(record);
+    } catch (final SyncFailed e) {
+      syncFailure.record(e);
+      throw e;
     }
   }
 
   @Override
   public JournalRecord append(final long checksum, final byte[] serializedRecord) {
     assertOpen();
+    assertNoSyncFailure();
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       return writer.append(checksum, serializedRecord);
+    } catch (final SyncFailed e) {
+      syncFailure.record(e);
+      throw e;
     }
   }
 
@@ -109,8 +129,13 @@ public final class SegmentedJournal implements Journal {
         () -> {
           final var stamp = rwlock.writeLock();
           try {
+            // checked under the lock, as a delayed flush may fail while this waits for it
+            assertNoSyncFailure();
             writer.deleteAfter(indexExclusive, hasConcurrentReaderPast(indexExclusive));
             readers.forEach(reader -> reader.onTruncatedAfter(indexExclusive));
+          } catch (final SyncFailed e) {
+            syncFailure.record(e);
+            throw e;
           } finally {
             rwlock.unlockWrite(stamp);
           }
@@ -121,6 +146,9 @@ public final class SegmentedJournal implements Journal {
   public boolean deleteUntil(final long index) {
     final var stamp = rwlock.writeLock();
     try {
+      // deleting segments syncs the directory, which a failed sync may have left clean; the
+      // deletion runs in the background, and records its own failure
+      assertNoSyncFailure();
       return segments.deleteUntil(index);
     } finally {
       rwlock.unlockWrite(stamp);
@@ -131,12 +159,17 @@ public final class SegmentedJournal implements Journal {
   public void reset(final long nextIndex) {
     final var stamp = rwlock.writeLock();
     try {
+      // checked under the lock, as a delayed flush may fail while this waits for it
+      assertNoSyncFailure();
       journalIndex.clear();
       writer.reset(nextIndex);
       // no need to update the meta store's last flushed index as usage is that we always reset
       // with a greater index than what we previously had. it's fine if the stored last flushed
       // index is lower than the real flushed index. every thing will be treated as a partial write
       // until the next flush, which is fine
+    } catch (final SyncFailed e) {
+      syncFailure.record(e);
+      throw e;
     } finally {
       rwlock.unlockWrite(stamp);
     }
@@ -158,30 +191,95 @@ public final class SegmentedJournal implements Journal {
     return writer.getNextIndex() - getFirstIndex() == 0;
   }
 
+  /**
+   * Flushes the journal, unless a previous sync failed.
+   *
+   * <p>A failed flush, or any other failed sync of the journal's files (e.g. when creating a
+   * segment), may leave records only in the page cache: the kernel marks their pages clean and
+   * reports the error only once, so a later flush has nothing left to write and succeeds. To never
+   * treat these records as durable, every flush after a failed one fails too, and the last flushed
+   * index stays at the last flush that succeeded. Appending, truncating and resetting fail too, as
+   * nothing written can be persisted anymore. Recovering requires restarting from the data that is
+   * actually on disk.
+   */
   @Override
   public void flush() throws FlushException {
+    // Flushes may run concurrently, e.g. a delayed flush and the one when closing. Two flushes
+    // could both pass the check for a previous failure; the second would then sync the pages the
+    // first failed to sync again, succeed, and store a last flushed index past what is on disk.
+    flushLock.lock();
+    try {
+      flushExclusively();
+    } finally {
+      flushLock.unlock();
+    }
+  }
+
+  private void flushExclusively() throws FlushException {
+    // grabbing the read lock here will prevent write-exclusive operations such as deleteAfter and
+    // reset from modifying the segments, allowing us to properly determine which segments must be
+    // flushed. contention is quite low as it only contends with deleteAfter, deleteUntil, and
+    // reset, all operations which do not run often, and not on the hot path. in the case where
+    // flushing is synchronous on the raft thread (the default), then all these operations run
+    // sequentially anyway, meaning there is virtually no contention. The checks for a previous
+    // failure and storing the last flushed index happen under the same lock: a truncation that
+    // fails, or lowers the last flushed index, in between would otherwise be missed or undone.
+    final var stamp = rwlock.readLock();
+    try {
+      flushUnderReadLock();
+    } finally {
+      rwlock.unlockRead(stamp);
+    }
+  }
+
+  private void flushUnderReadLock() throws FlushException {
+    final var previousFailure = syncFailure.get();
+    if (previousFailure != null) {
+      throw new FlushException(
+          "Expected to flush the journal, but a previous sync or deletion failed; records written since the last successful flush may not be on disk",
+          previousFailure);
+    }
+
     if (!isOpen() || isEmpty()) {
       LOGGER.debug("Skipped journal flush as it is either closed or empty");
       return;
     }
 
+    FlushException failure = null;
     try (final var ignored = journalMetrics.observeJournalFlush()) {
-      // grabbing the read lock here will prevent write-exclusive operations such as deleteAfter and
-      // reset from modifying the segments, allowing us to properly determine which segments must be
-      // flushed. contention is quite low as it only contends with deleteAfter, deleteUntil, and
-      // reset, all operations which do not run often, and not on the hot path. in the case where
-      // flushing is synchronous on the raft thread (the default), then all these operations run
-      // sequentially anyway, meaning there is virtually no contention
-      final var stamp = rwlock.readLock();
+      writer.flush();
+    } catch (final FlushException e) {
+      failure = e;
+    }
+
+    // store whatever was flushed, even if a later segment failed to flush
+    final var lastFlushedIndex = writer.getLastFlushedIndex();
+    if (lastFlushedIndex > 0) {
       try {
-        writer.flush();
-      } finally {
-        rwlock.unlockRead(stamp);
+        metaStore.storeLastFlushedIndex(lastFlushedIndex);
+      } catch (final RuntimeException e) {
+        if (failure == null) {
+          failure =
+              new FlushException(
+                  "Failed to store the last flushed index %d".formatted(lastFlushedIndex), e);
+        } else {
+          failure.addSuppressed(e);
+        }
       }
-    } finally {
-      if (writer.getLastFlushedIndex() > 0) {
-        metaStore.storeLastFlushedIndex((writer.getLastFlushedIndex()));
-      }
+    }
+
+    if (failure != null) {
+      syncFailure.record(failure);
+      throw failure;
+    }
+  }
+
+  private void assertNoSyncFailure() {
+    final var previousFailure = syncFailure.get();
+    if (previousFailure != null) {
+      throw new SyncFailed(
+          "Expected to write to the journal, but a previous sync or deletion failed; nothing written can be persisted anymore",
+          previousFailure);
     }
   }
 

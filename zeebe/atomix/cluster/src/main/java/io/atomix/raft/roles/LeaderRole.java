@@ -938,6 +938,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             retries,
             MAX_APPEND_ATTEMPTS,
             e);
+      } catch (final JournalException.SyncFailed e) {
+        // the journal rejects every write after a failed sync, so retrying cannot succeed
+        throw e;
       } catch (final JournalException
           | UncheckedIOException e) { // JournalException will wrap most IOException
         lastError = e;

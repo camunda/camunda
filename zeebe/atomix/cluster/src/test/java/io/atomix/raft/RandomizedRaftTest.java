@@ -66,16 +66,12 @@ public class RandomizedRaftTest {
             .mapToObj(String::valueOf)
             .map(MemberId::from)
             .collect(Collectors.toList());
-    defaultOperations = RaftOperation.withFlushFailures(RaftOperation.getDefaultRaftOperations());
-    operationsWithSnapshot =
-        RaftOperation.withFlushFailures(RaftOperation.getRaftOperationsWithSnapshot());
-    operationsWithRestarts =
-        RaftOperation.withFlushFailures(RaftOperation.getRaftOperationsWithRestarts());
-    operationsWithSnapshotsAndRestarts =
-        RaftOperation.withFlushFailures(RaftOperation.getRaftOperationsWithSnapshotsAndRestarts());
+    defaultOperations = RaftOperation.getDefaultRaftOperations();
+    operationsWithSnapshot = RaftOperation.getRaftOperationsWithSnapshot();
+    operationsWithRestarts = RaftOperation.getRaftOperationsWithRestarts();
+    operationsWithSnapshotsAndRestarts = RaftOperation.getRaftOperationsWithSnapshotsAndRestarts();
     operationsWithSnapshotsAndRestartsWithDataLoss =
-        RaftOperation.withFlushFailures(
-            RaftOperation.getRaftOperationsWithSnapshotsAndRestartsWithDataLoss());
+        RaftOperation.getRaftOperationsWithSnapshotsAndRestartsWithDataLoss();
     raftMembers = servers;
   }
 

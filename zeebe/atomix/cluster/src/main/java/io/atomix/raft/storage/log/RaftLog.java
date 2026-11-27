@@ -242,10 +242,12 @@ public final class RaftLog implements Closeable {
 
   @Override
   public void close() {
+    // Close the flusher first: closing the journal flushes it, which must not race with a delayed
+    // flush. Closing the flusher waits for a delayed flush that is already running.
     CloseHelper.closeAll(
         error -> LOGGER.warn("Unexpected error while closing the Raft log", error),
-        journal,
-        flusher);
+        flusher,
+        journal);
   }
 
   @Override

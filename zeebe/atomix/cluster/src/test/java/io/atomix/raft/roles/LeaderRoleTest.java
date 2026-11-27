@@ -63,9 +63,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.Before;
-import org.junit.Test;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 public class LeaderRoleTest {
@@ -77,7 +77,7 @@ public class LeaderRoleTest {
   private LogCompactor logCompactor;
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
-  @Before
+  @BeforeEach
   public void setup() {
     context = Mockito.mock(RaftContext.class, RETURNS_DEEP_STUBS);
     logCompactor = mock(LogCompactor.class);
@@ -226,6 +226,29 @@ public class LeaderRoleTest {
     // then
     assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(logCompactor, times(1)).compactIgnoringReplicationThreshold();
+  }
+
+  @Test
+  public void shouldNotRetryAppendEntryAfterFailedSync() throws InterruptedException {
+    // given
+    when(log.append(any(RaftLogEntry.class)))
+        .thenThrow(new JournalException.SyncFailed("Failed to sync", new IOException()));
+
+    final CountDownLatch latch = new CountDownLatch(1);
+    final AppendListener listener =
+        new AppendListener() {
+          @Override
+          public void onWriteError(final Throwable error) {
+            latch.countDown();
+          }
+        };
+
+    // when
+    leaderRole.appendEntry(0, 1, ByteBuffer.allocate(Integer.BYTES).putInt(0, 1), listener);
+
+    // then - the journal rejects every write after a failed sync, so a retry would only fail too
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    verify(log, times(1)).append(any(RaftLogEntry.class));
   }
 
   @Test

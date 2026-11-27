@@ -26,6 +26,7 @@ import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.serializer.MetaEncoder;
 import io.atomix.raft.storage.serializer.MetaStoreSerializer;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.journal.StickySyncFailure;
 import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -59,6 +60,9 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   private volatile long lastFlushedIndex;
   private volatile long commitIndex;
 
+  // the first failed sync of the partition's data, after which every write fails; see writeToFile
+  private final StickySyncFailure syncFailure;
+
   public MetaStore(final RaftStorage storage, final MeterRegistry meterRegistry)
       throws IOException {
     this(storage, meterRegistry, new PosixFs());
@@ -73,6 +77,7 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     }
 
     metrics = new MetaStoreMetrics(String.valueOf(storage.partitionId()), meterRegistry);
+    syncFailure = storage.syncFailure();
 
     // Note that for raft safety, irrespective of the storage level, <term, vote> metadata is always
     // persisted on disk.
@@ -163,6 +168,20 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     log.trace("Store vote {}", vote);
     final String id = vote == null ? null : vote.id();
     serializer.writeVotedFor(id);
+    writeToFile(serializer.metaByteBuffer(), metaFileChannel, false);
+  }
+
+  /**
+   * Stores a new term and the vote in it in one write, so that a crash or a failed write never
+   * persists the new term with the vote of the previous one.
+   *
+   * @param term The current server term.
+   * @param vote The server vote in that term, or null if it did not vote yet.
+   */
+  public synchronized void storeTermAndVote(final long term, final MemberId vote) {
+    log.trace("Store term {} and vote {}", term, vote);
+    serializer.writeTerm(term);
+    serializer.writeVotedFor(vote == null ? null : vote.id());
     writeToFile(serializer.metaByteBuffer(), metaFileChannel, false);
   }
 
@@ -299,15 +318,37 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     }
   }
 
+  /**
+   * Writes the buffer, which holds the whole content, to the file and syncs it.
+   *
+   * <p>After a failed write or sync, the file's pages may hold data that is not on disk, and the
+   * kernel reports the error only once: a later write may seem to succeed without that data
+   * reaching the disk. Every write after a failed sync of the partition's data fails, so nothing
+   * written since is treated as persisted.
+   */
   private void writeToFile(final ByteBuffer buffer, final FileChannel file, final boolean force) {
+    final var previousFailure = syncFailure.get();
+    if (previousFailure != null) {
+      throw new StorageException(
+          "Expected to write to the meta store, but a previous sync failed", previousFailure);
+    }
+
     try {
-      buffer.position(0);
-      file.write(buffer, 0);
-      if (force) {
-        file.force(true);
-      }
+      write(buffer, file, force);
     } catch (final IOException e) {
-      throw new StorageException(e);
+      final var failure = new StorageException("Failed to write to the meta store", e);
+      syncFailure.record(failure);
+      throw failure;
+    }
+  }
+
+  @VisibleForTesting("Tests fail writes by stubbing this method of a spy")
+  public void write(final ByteBuffer buffer, final FileChannel file, final boolean force)
+      throws IOException {
+    buffer.position(0);
+    file.write(buffer, 0);
+    if (force) {
+      file.force(true);
     }
   }
 }

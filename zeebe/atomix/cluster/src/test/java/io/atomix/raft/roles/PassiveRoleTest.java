@@ -210,6 +210,32 @@ final class PassiveRoleTest {
   }
 
   @Test
+  void shouldNotAcknowledgeEntriesWhenFlushFails() throws CheckedJournalException {
+    // given
+    doThrow(new FlushException(new IOException("Input/output error"))).when(log).flush();
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1])))
+            .withCommitIndex(1)
+            .build();
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - neither acknowledged nor committed
+    assertThat(response.succeeded()).isFalse();
+    assertThat(response.lastLogIndex()).isZero();
+    verify(ctx, never()).setCommitIndex(anyLong());
+  }
+
+  @Test
   void shouldFlushEventWithFailure() throws CheckedJournalException {
     // given
     final var entries =

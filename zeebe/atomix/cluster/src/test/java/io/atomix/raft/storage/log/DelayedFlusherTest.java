@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.Scheduler;
 import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,38 +111,20 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldRescheduleOnFlushError() throws CheckedJournalException {
-    // given
+  void shouldNotRetryFailedFlush() throws CheckedJournalException {
+    // given - a retry would succeed without writing what failed to be flushed
     final var journal = Mockito.mock(Journal.class);
-    Mockito.doThrow(new UncheckedIOException(new IOException("Cannot allocate memory")))
+    Mockito.doThrow(new FlushException(new IOException("Input/output error")))
         .when(journal)
         .flush();
 
     // when
     flusher.flush(journal);
-    scheduler.runNext();
-    Mockito.doNothing().when(journal).flush();
-    scheduler.runNext();
-
-    // then
-    Mockito.verify(journal, Mockito.times(2)).flush();
-  }
-
-  @Test
-  void shouldNotRescheduleOnFlushErrorIfClosed() throws CheckedJournalException {
-    // given
-    final var journal = Mockito.mock(Journal.class);
-    Mockito.doThrow(new UncheckedIOException(new IOException("Cannot allocate memory")))
-        .when(journal)
-        .flush();
-
-    // when
-    flusher.flush(journal);
-    flusher.close();
     scheduler.runNext();
 
     // then
     assertThat(scheduler.operations).isEmpty();
+    Mockito.verify(journal, Mockito.times(1)).flush();
   }
 
   private static final class TestScheduled implements Scheduled {

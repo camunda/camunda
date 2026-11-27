@@ -9,12 +9,11 @@ package io.atomix.raft.storage.log;
 
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.Scheduler;
-import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
-import io.camunda.zeebe.journal.JournalException;
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +24,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>In other words, this implementation flushes at least every given period, if there is anything
  * to flush.
+ *
+ * <p>A failed flush is not retried, as a retry would succeed without writing the data that failed
+ * to be flushed. The journal records the failure and fails every later flush (see {@link
+ * Journal#flush()}).
  *
  * <p>NOTE: this class is not thread safe, and is expected to run from the same thread as the
  * journal write path, e.g. the Raft thread.
@@ -39,6 +42,8 @@ public final class DelayedFlusher implements RaftLogFlusher {
   private Scheduled scheduledFlush;
 
   private boolean closed;
+  // held while flushing, so that closing can wait for a running flush instead of interrupting it
+  private final ReentrantLock flushLock = new ReentrantLock();
 
   public DelayedFlusher(final Scheduler scheduler, final Duration delayTime) {
     this.scheduler = Objects.requireNonNull(scheduler, "must specify a scheduler");
@@ -61,6 +66,15 @@ public final class DelayedFlusher implements RaftLogFlusher {
       }
     }
 
+    // Closing the scheduler interrupts a running flush, which closes the files it writes to
+    // (ClosedByInterruptException): a healthy flush would fail, and the journal with it. Wait for
+    // it first; a flush that starts afterwards sees that the flusher is closed and does nothing.
+    flushLock.lock();
+    try {
+      LOGGER.trace("No delayed flush is running anymore, closing the scheduler");
+    } finally {
+      flushLock.unlock();
+    }
     scheduler.close();
   }
 
@@ -82,17 +96,24 @@ public final class DelayedFlusher implements RaftLogFlusher {
   }
 
   private void asyncFlush(final Journal journal) {
-    synchronized (scheduledMonitor) {
-      scheduledFlush = null;
-    }
-
-    LOGGER.trace("Flushing journal after {}", delayTime);
-
+    flushLock.lock();
     try {
-      journal.flush();
-    } catch (final CheckedJournalException | JournalException | UncheckedIOException e) {
-      LOGGER.warn("Failed to flush journal, operation will be retried after {}", delayTime, e);
-      scheduleFlush(journal);
+      synchronized (scheduledMonitor) {
+        scheduledFlush = null;
+        if (closed) {
+          return;
+        }
+      }
+
+      LOGGER.trace("Flushing journal after {}", delayTime);
+
+      try {
+        journal.flush();
+      } catch (final FlushException | RuntimeException e) {
+        LOGGER.error("Failed to flush journal, will not retry the flush", e);
+      }
+    } finally {
+      flushLock.unlock();
     }
   }
 

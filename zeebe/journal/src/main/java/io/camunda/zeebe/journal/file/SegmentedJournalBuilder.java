@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.journal.StickySyncFailure;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.nio.file.Path;
@@ -58,6 +59,7 @@ public class SegmentedJournalBuilder {
   private @Nullable JournalMetaStore journalMetaStore;
   private final MeterRegistry meterRegistry;
   private SegmentAllocator segmentAllocator = SegmentAllocator.defaultAllocator();
+  private StickySyncFailure syncFailure = new StickySyncFailure();
 
   SegmentedJournalBuilder(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
@@ -187,6 +189,17 @@ public class SegmentedJournalBuilder {
     return this;
   }
 
+  /**
+   * @param syncFailure where the journal records its first failed sync, and checks for one before
+   *     every write; shared with the other data of the partition, so that a failed sync of any of
+   *     it stops the journal too
+   * @return this builder for chaining
+   */
+  public SegmentedJournalBuilder withSyncFailure(final StickySyncFailure syncFailure) {
+    this.syncFailure = requireNonNull(syncFailure, "must specify a sync failure");
+    return this;
+  }
+
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var journalMetrics = new JournalMetrics(meterRegistry);
@@ -201,8 +214,10 @@ public class SegmentedJournalBuilder {
             segmentLoader,
             journalMetrics,
             metaStore,
-            SEGMENT_DELETION_EXECUTOR);
+            SEGMENT_DELETION_EXECUTOR,
+            syncFailure);
 
-    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, metaStore);
+    return new SegmentedJournal(
+        journalIndex, segmentsManager, journalMetrics, metaStore, syncFailure);
   }
 }

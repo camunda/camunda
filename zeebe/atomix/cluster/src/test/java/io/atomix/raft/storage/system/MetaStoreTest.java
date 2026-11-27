@@ -16,8 +16,15 @@
 package io.atomix.raft.storage.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.junit.jupiter.api.Named.named;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -26,6 +33,7 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.StorageException;
 import io.camunda.zeebe.journal.fs.PosixFs;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -104,6 +112,22 @@ class MetaStoreTest {
 
       // then
       assertThat(metaStore.loadTerm()).isEqualTo(2L);
+    }
+
+    @Test
+    void shouldStoreTermAndVoteTogether() throws IOException {
+      // given - a vote in the previous term
+      metaStore.storeTerm(1L);
+      metaStore.storeVote(MemberId.from("1"));
+
+      // when
+      metaStore.storeTermAndVote(2L, null);
+
+      // then
+      metaStore.close();
+      metaStore = new MetaStore(storage, meterRegistry);
+      assertThat(metaStore.loadTerm()).isEqualTo(2L);
+      assertThat(metaStore.loadVote()).isNull();
     }
 
     @Test
@@ -331,6 +355,54 @@ class MetaStoreTest {
               named(
                   "force configuration",
                   new Configuration(2, 3, 1235L, getMembers("0", "3"), List.of(), true))));
+    }
+  }
+
+  @Nested
+  final class WriteFailureTest {
+
+    @Test
+    void shouldRecordFailedWriteForThePartition() throws IOException {
+      // given - the caller may swallow the exception, e.g. in a future's callback
+      final var failingStore = spy(metaStore);
+      final var error = new IOException("Input/output error");
+      doThrow(error).when(failingStore).write(any(), any(), anyBoolean());
+
+      // when
+      final var thrown = catchThrowable(() -> failingStore.storeTerm(2L));
+
+      // then
+      assertThat(thrown).isInstanceOf(StorageException.class).hasCause(error);
+      assertThat(storage.syncFailure().get()).isSameAs(thrown);
+    }
+
+    @Test
+    void shouldFailWritesAfterAnotherSyncOfThePartitionFailed() {
+      // given - e.g. flushing the journal failed
+      storage.syncFailure().record(new IOException("Input/output error"));
+
+      // when
+      final var thrown = catchThrowable(() -> metaStore.storeTerm(2L));
+
+      // then
+      assertThat(thrown).isInstanceOf(StorageException.class);
+      assertThat(metaStore.loadTerm()).isZero();
+    }
+
+    @Test
+    void shouldFailEveryWriteAfterFailedWrite() throws IOException {
+      // given - like a failed fsync, the write fails once and would then seem to succeed
+      final var failingStore = spy(metaStore);
+      final var error = new IOException("Input/output error");
+      doThrow(error).doCallRealMethod().when(failingStore).write(any(), any(), anyBoolean());
+      assertThatThrownBy(() -> failingStore.storeTerm(2L)).isInstanceOf(StorageException.class);
+
+      // when
+      final var thrown = catchThrowable(() -> failingStore.storeVote(MemberId.from("1")));
+
+      // then - no later write is attempted, so none can seem to succeed
+      assertThat(thrown).isInstanceOf(StorageException.class).hasRootCause(error);
+      verify(failingStore, times(1)).write(any(), any(), anyBoolean());
     }
   }
 }

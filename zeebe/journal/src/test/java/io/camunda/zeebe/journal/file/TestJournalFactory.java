@@ -8,6 +8,7 @@
 package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.journal.StickySyncFailure;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
@@ -130,6 +131,11 @@ final class TestJournalFactory {
     return segmentsManager(directory, loader, metaStore, name, ForkJoinPool.commonPool());
   }
 
+  SegmentsManager segmentsManager(
+      final Path directory, final SegmentLoader loader, final Executor deletionExecutor) {
+    return segmentsManager(directory, loader, metaStore, "journal", deletionExecutor);
+  }
+
   private SegmentsManager segmentsManager(
       final Path directory,
       final SegmentLoader loader,
@@ -144,11 +150,12 @@ final class TestJournalFactory {
         loader,
         metrics,
         metaStore,
-        deletionExecutor);
+        deletionExecutor,
+        new StickySyncFailure());
   }
 
   SegmentedJournal journal(final SegmentsManager segments) {
-    return new SegmentedJournal(index, segments, metrics, metaStore);
+    return new SegmentedJournal(index, segments, metrics, metaStore, segments.syncFailure());
   }
 
   DirectBuffer entryData() {

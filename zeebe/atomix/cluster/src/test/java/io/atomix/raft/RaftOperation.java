@@ -55,15 +55,6 @@ public final class RaftOperation {
     return defaultRaftOperation;
   }
 
-  /**
-   * Adds an operation that makes the next flush of a member's log fail, like a transient I/O error,
-   * to the given operations.
-   */
-  public static List<RaftOperation> withFlushFailures(final List<RaftOperation> operations) {
-    operations.add(RaftOperation.of("Fail next flush", ControllableRaftContexts::failNextFlush));
-    return operations;
-  }
-
   public static List<RaftOperation> getRaftOperationsWithRestarts() {
     final List<RaftOperation> defaultRaftOperation = getDefaultRaftOperations();
     defaultRaftOperation.add(RaftOperation.of("Restart member", ControllableRaftContexts::restart));
