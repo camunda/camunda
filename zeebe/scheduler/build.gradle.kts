@@ -20,6 +20,7 @@ dependencies {
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.awaitility.awaitility)
+  testImplementation(libs.org.jetbrains.lincheck.lincheck)
   compileOnly(libs.com.github.spotbugs.spotbugs.annotations)
 }
 

@@ -128,6 +128,7 @@ internal fun VersionCatalogBuilder.catalogVersions(
   version("joda-time", pomVersion("version.joda-time"))
   version("jmock", pomVersion("version.jmock"))
   version("jqwik", pomVersion("version.jqwik"))
+  version("lincheck", pomVersion("version.lincheck"))
   version("jspecify", pomVersion("version.jspecify"))
   version("junit", pomVersion("version.junit"))
   version("junit-junit", pomVersion("version.junit4"))
