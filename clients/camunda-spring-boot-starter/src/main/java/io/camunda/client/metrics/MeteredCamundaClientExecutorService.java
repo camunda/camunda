@@ -65,7 +65,7 @@ public class MeteredCamundaClientExecutorService extends CamundaClientExecutorSe
         meterRegistry,
         scheduledExecutorService,
         "camundaClientExecutor",
-        Collections.singleton(Tag.of("name", "zeebe_client_thread_pool")));
+        Collections.singleton(Tag.of("executor", "zeebe_client_thread_pool")));
   }
 
   private static ExecutorService createMeteredExecutorService(
@@ -80,7 +80,7 @@ public class MeteredCamundaClientExecutorService extends CamundaClientExecutorSe
         meterRegistry,
         executorService,
         "camundaClientExecutor",
-        Collections.singleton(Tag.of("name", "zeebe_client_job_handling_pool")));
+        Collections.singleton(Tag.of("executor", "zeebe_client_job_handling_pool")));
   }
 
   public static MeteredCamundaClientExecutorService createDefault(
