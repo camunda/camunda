@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.s3;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.common.RateLimitedInputStream;
 import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupCompressionFailed;
 import io.camunda.zeebe.backup.s3.manifest.FileSet;
@@ -53,10 +54,9 @@ final class FileSetManager {
   private static final String TMP_DECOMPRESSION_PREFIX = "zb-backup-decompress-";
 
   /**
-   * The SDK cannot switch off the client-wide API call timeout for a single request, only replace
-   * it. No upload gets near this value, so {@link #joinWithin} is what ends a stuck one.
+   * The least the SDK timeout of a limited upload is replaced with, see {@link #sdkApiCallTimeout}.
    */
-  private static final Duration SDK_API_CALL_TIMEOUT_DISABLED = Duration.ofDays(1);
+  private static final Duration MIN_SDK_API_CALL_TIMEOUT = Duration.ofDays(1);
 
   private final S3AsyncClient client;
   private final S3BackupConfig config;
@@ -135,9 +135,10 @@ final class FileSetManager {
             client.putObject(
                 put -> {
                   put.bucket(config.bucketName()).key(objectKey(prefix, fileName));
-                  if (apiCallTimeout.isPresent()) {
-                    put.overrideConfiguration(c -> c.apiCallTimeout(SDK_API_CALL_TIMEOUT_DISABLED));
-                  }
+                  apiCallTimeout.ifPresent(
+                      timeout ->
+                          put.overrideConfiguration(
+                              c -> c.apiCallTimeout(sdkApiCallTimeout(timeout, fileSize))));
                 },
                 AsyncRequestBody.fromInputStream(inputStream, fileSize, schedulerExecutor));
         if (apiCallTimeout.isPresent()) {
@@ -150,6 +151,22 @@ final class FileSetManager {
       }
       return FileSet.FileMetadata.none();
     }
+  }
+
+  /**
+   * Returns the timeout that replaces the SDK's API call timeout of a limited upload. The SDK
+   * counts waits for the read limit, and cannot switch its timeout off for a single request, only
+   * replace it. Every read of a limited stream waits at most {@link
+   * BackupReadRateLimiter#MAX_READ_PAUSE}, so this leaves room for the configured timeout plus all
+   * waits of the file, however low the rate; {@link #joinWithin} is what ends a stuck upload.
+   */
+  static Duration sdkApiCallTimeout(final Duration apiCallTimeout, final long fileSize) {
+    final long reads = Math.ceilDiv(fileSize, RateLimitedInputStream.MAX_BYTES_PER_READ);
+    final var longestUpload =
+        apiCallTimeout.plus(BackupReadRateLimiter.MAX_READ_PAUSE.multipliedBy(reads));
+    return longestUpload.compareTo(MIN_SDK_API_CALL_TIMEOUT) > 0
+        ? longestUpload
+        : MIN_SDK_API_CALL_TIMEOUT;
   }
 
   /**

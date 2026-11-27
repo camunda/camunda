@@ -231,6 +231,23 @@ final class FileSetManagerRateLimitTest {
   }
 
   @Test
+  void shouldLeaveTheSdkTimeoutRoomForEveryWaitOfALargeFile() {
+    // given - a 3 GiB file; each of its 64 KiB reads may wait for the read limit up to the max
+    // pause
+    final long fileSize = 3L * 1024 * MIB;
+    final var apiCallTimeout = Duration.ofSeconds(180);
+
+    // when
+    final var sdkTimeout = FileSetManager.sdkApiCallTimeout(apiCallTimeout, fileSize);
+
+    // then - the upload only times out after the configured timeout plus all of its waits
+    final long reads = fileSize / MAX_BYTES_PER_READ;
+    assertThat(sdkTimeout)
+        .isGreaterThanOrEqualTo(
+            apiCallTimeout.plus(BackupReadRateLimiter.MAX_READ_PAUSE.multipliedBy(reads)));
+  }
+
+  @Test
   void shouldKeepApiCallTimeoutOfUploadsWhenNotLimited() throws Exception {
     // given
     final var file =
