@@ -8,21 +8,12 @@
 package io.camunda.secretstore.aws;
 
 import static io.camunda.secretstore.SecretErrorCode.INVALID_REF;
-import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 import static io.camunda.secretstore.aws.AwsSecretsManagerErrors.classify;
 import static io.camunda.secretstore.aws.AwsSecretsManagerErrors.messageFor;
 import static io.camunda.secretstore.aws.AwsSecretsManagerErrors.storeUnavailable;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.secretstore.SecretErrorCode;
+import io.camunda.secretstore.JsonContainerSecret;
 import io.camunda.secretstore.SecretResolutionResult;
-import io.camunda.secretstore.SecretResolutionResult.Failed;
-import io.camunda.secretstore.SecretResolutionResult.Resolved;
-import io.camunda.secretstore.SecretStoreUnavailableException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,7 +53,6 @@ import software.amazon.awssdk.services.secretsmanager.model.SecretsManagerExcept
 final class ContainerSecretResolver implements AwsSecretResolver {
 
   private static final Logger LOG = LoggerFactory.getLogger(ContainerSecretResolver.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final SecretsManagerClient client;
   private final String containerId;
@@ -82,69 +72,38 @@ final class ContainerSecretResolver implements AwsSecretResolver {
         "Resolving {} secret refs from AWS Secrets Manager container '{}'",
         names.size(),
         containerId);
-    final JsonNode json;
+    final String raw;
     try {
-      final var raw = fetchRawSecret();
-      if (raw == null) {
-        return failAll(
-            names,
-            INVALID_REF,
-            "Container secret '" + containerId + "' has no string value (binary secret)");
-      }
-      json = OBJECT_MAPPER.readTree(raw);
-    } catch (final JsonProcessingException e) {
-      return failAll(
-          names, INVALID_REF, "Container secret '" + containerId + "' is not valid JSON");
+      raw = fetchRawSecret();
     } catch (final SecretsManagerException e) {
       final var code = classify(e);
-      return failAll(names, code, messageFor(code, "container secret", containerId));
+      return JsonContainerSecret.failAll(
+          names, code, messageFor(code, "container secret", containerId));
     } catch (final SdkClientException e) {
       throw storeUnavailable(e);
     }
-    if (!json.isObject()) {
-      return failAll(
+    if (raw == null) {
+      return JsonContainerSecret.failAll(
           names,
           INVALID_REF,
-          "Container secret '"
-              + containerId
-              + "' is not a JSON object (was "
-              + json.getNodeType()
-              + ")");
+          "Container secret '" + containerId + "' has no string value (binary secret)");
     }
-
-    final Map<String, SecretResolutionResult> results = new LinkedHashMap<>(names.size());
-    for (final var name : names) {
-      results.put(name, extractKey(json, name));
-    }
-    return results;
+    return JsonContainerSecret.resolve(containerId, raw, names);
   }
 
   @Override
   public List<String> list() {
     LOG.debug("Listing keys from AWS Secrets Manager container secret '{}'", containerId);
+    final String raw;
     try {
-      final var raw = fetchRawSecret();
-      if (raw == null) {
-        return List.of();
-      }
-      final var json = OBJECT_MAPPER.readTree(raw);
-      if (!json.isObject()) {
-        throw new SecretStoreUnavailableException(
-            "Container secret '"
-                + containerId
-                + "' is not a JSON object (was "
-                + json.getNodeType()
-                + ")");
-      }
-      final var names = new ArrayList<String>();
-      json.fieldNames().forEachRemaining(names::add);
-      return names;
-    } catch (final JsonProcessingException e) {
-      throw new SecretStoreUnavailableException(
-          "Container secret '" + containerId + "' is not valid JSON");
+      raw = fetchRawSecret();
     } catch (final SecretsManagerException | SdkClientException e) {
       throw storeUnavailable(e);
     }
+    if (raw == null) {
+      return List.of();
+    }
+    return JsonContainerSecret.fieldNames(containerId, raw);
   }
 
   @Override
@@ -163,29 +122,5 @@ final class ContainerSecretResolver implements AwsSecretResolver {
     final var response =
         client.getSecretValue(GetSecretValueRequest.builder().secretId(containerId).build());
     return response.secretString();
-  }
-
-  private SecretResolutionResult extractKey(final JsonNode container, final String key) {
-    final var node = container.get(key);
-    if (node == null || node.isNull()) {
-      return new Failed(
-          NOT_FOUND, "Key '" + key + "' not found in container secret '" + containerId + "'", null);
-    }
-    if (!node.isTextual()) {
-      return new Failed(
-          INVALID_REF,
-          "Key '" + key + "' in container secret '" + containerId + "' is not a string value",
-          null);
-    }
-    return new Resolved(node.asText());
-  }
-
-  private static Map<String, SecretResolutionResult> failAll(
-      final Set<String> names, final SecretErrorCode code, final String message) {
-    final Map<String, SecretResolutionResult> results = new LinkedHashMap<>(names.size());
-    for (final var name : names) {
-      results.put(name, new Failed(code, message, null));
-    }
-    return results;
   }
 }

@@ -4,8 +4,6 @@ dependencies {
   api(project(":camunda-secret-store-api"))
   implementation(libs.org.jspecify.jspecify)
   implementation(libs.org.slf4j.slf4j.api)
-  implementation(libs.com.fasterxml.jackson.core.jackson.databind)
-  implementation(libs.com.fasterxml.jackson.core.jackson.core)
   implementation(libs.software.amazon.awssdk.secretsmanager)
   implementation(libs.software.amazon.awssdk.regions)
   implementation(libs.software.amazon.awssdk.auth)

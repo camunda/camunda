@@ -7,25 +7,15 @@
  */
 package io.camunda.secretstore.gcp;
 
-import static io.camunda.secretstore.SecretErrorCode.INVALID_REF;
-import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 import static io.camunda.secretstore.gcp.GcpSecretManagerErrors.classify;
 import static io.camunda.secretstore.gcp.GcpSecretManagerErrors.messageFor;
 import static io.camunda.secretstore.gcp.GcpSecretManagerErrors.storeUnavailable;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.gax.rpc.ApiException;
 import com.google.cloud.secretmanager.v1.SecretManagerServiceClient;
 import com.google.cloud.secretmanager.v1.SecretVersionName;
-import io.camunda.secretstore.SecretErrorCode;
+import io.camunda.secretstore.JsonContainerSecret;
 import io.camunda.secretstore.SecretResolutionResult;
-import io.camunda.secretstore.SecretResolutionResult.Failed;
-import io.camunda.secretstore.SecretResolutionResult.Resolved;
-import io.camunda.secretstore.SecretStoreUnavailableException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -66,7 +56,6 @@ import org.slf4j.LoggerFactory;
 final class ContainerSecretResolver implements GcpSecretResolver {
 
   private static final Logger LOG = LoggerFactory.getLogger(ContainerSecretResolver.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final String LATEST_VERSION = "latest";
 
   private final SecretManagerServiceClient client;
@@ -92,63 +81,29 @@ final class ContainerSecretResolver implements GcpSecretResolver {
         "Resolving {} secret refs from GCP Secret Manager container '{}'",
         names.size(),
         containerId);
-    final JsonNode json;
+    final String raw;
     try {
-      json = OBJECT_MAPPER.readTree(fetchRawSecret());
-    } catch (final JsonProcessingException e) {
-      return failAll(
-          names, INVALID_REF, "Container secret '" + containerId + "' is not valid JSON");
+      raw = fetchRawSecret();
     } catch (final ApiException e) {
       final var code = classify(e);
-      return failAll(names, code, messageFor(code, "container secret", containerId));
+      return JsonContainerSecret.failAll(
+          names, code, messageFor(code, "container secret", containerId));
     } catch (final RuntimeException e) {
       throw storeUnavailable(e);
     }
-    if (!json.isObject()) {
-      return failAll(
-          names,
-          INVALID_REF,
-          "Container secret '"
-              + containerId
-              + "' is not a JSON object (was "
-              + json.getNodeType()
-              + ")");
-    }
-
-    final Map<String, SecretResolutionResult> results = new LinkedHashMap<>(names.size());
-    for (final var name : names) {
-      results.put(name, extractKey(json, name));
-    }
-    return results;
+    return JsonContainerSecret.resolve(containerId, raw, names);
   }
 
   @Override
   public List<String> list() {
     LOG.debug("Listing keys from GCP Secret Manager container secret '{}'", containerId);
-    final JsonNode json;
+    final String raw;
     try {
-      json = OBJECT_MAPPER.readTree(fetchRawSecret());
-    } catch (final JsonProcessingException e) {
-      throw new SecretStoreUnavailableException(
-          "Container secret '" + containerId + "' is not valid JSON");
+      raw = fetchRawSecret();
     } catch (final RuntimeException e) {
       throw storeUnavailable(e);
     }
-    // Kept outside the try so this deterministic malformed-content error is not caught by the broad
-    // RuntimeException handler above and re-wrapped as a misleading "GCP is unavailable"
-    // (transient)
-    // failure.
-    if (!json.isObject()) {
-      throw new SecretStoreUnavailableException(
-          "Container secret '"
-              + containerId
-              + "' is not a JSON object (was "
-              + json.getNodeType()
-              + ")");
-    }
-    final var names = new ArrayList<String>();
-    json.fieldNames().forEachRemaining(names::add);
-    return names;
+    return JsonContainerSecret.fieldNames(containerId, raw);
   }
 
   @Override
@@ -163,29 +118,5 @@ final class ContainerSecretResolver implements GcpSecretResolver {
     final var response =
         client.accessSecretVersion(SecretVersionName.of(projectId, containerId, LATEST_VERSION));
     return response.getPayload().getData().toStringUtf8();
-  }
-
-  private SecretResolutionResult extractKey(final JsonNode container, final String key) {
-    final var node = container.get(key);
-    if (node == null || node.isNull()) {
-      return new Failed(
-          NOT_FOUND, "Key '" + key + "' not found in container secret '" + containerId + "'", null);
-    }
-    if (!node.isTextual()) {
-      return new Failed(
-          INVALID_REF,
-          "Key '" + key + "' in container secret '" + containerId + "' is not a string value",
-          null);
-    }
-    return new Resolved(node.asText());
-  }
-
-  private static Map<String, SecretResolutionResult> failAll(
-      final Set<String> names, final SecretErrorCode code, final String message) {
-    final Map<String, SecretResolutionResult> results = new LinkedHashMap<>(names.size());
-    for (final var name : names) {
-      results.put(name, new Failed(code, message, null));
-    }
-    return results;
   }
 }
