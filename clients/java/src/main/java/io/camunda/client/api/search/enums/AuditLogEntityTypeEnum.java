@@ -31,5 +31,6 @@ public enum AuditLogEntityTypeEnum {
   RESOURCE,
   VARIABLE,
   CLIENT,
+  PROBE,
   UNKNOWN_ENUM_VALUE
 }

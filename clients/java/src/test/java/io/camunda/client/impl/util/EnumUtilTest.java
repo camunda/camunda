@@ -17,6 +17,7 @@ package io.camunda.client.impl.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationErrorType;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationState;
@@ -44,6 +45,35 @@ import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import org.junit.jupiter.api.Test;
 
 public class EnumUtilTest {
+
+  @Test
+  public void shouldConvertAuditLogEntityType() {
+    for (final AuditLogEntityTypeEnum value : AuditLogEntityTypeEnum.values()) {
+      final io.camunda.client.protocol.rest.AuditLogEntityTypeEnum protocolValue =
+          EnumUtil.convert(value, io.camunda.client.protocol.rest.AuditLogEntityTypeEnum.class);
+      assertThat(protocolValue).isNotNull();
+      if (value == AuditLogEntityTypeEnum.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(
+                io.camunda.client.protocol.rest.AuditLogEntityTypeEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final io.camunda.client.protocol.rest.AuditLogEntityTypeEnum protocolValue :
+        io.camunda.client.protocol.rest.AuditLogEntityTypeEnum.values()) {
+      final AuditLogEntityTypeEnum value =
+          EnumUtil.convert(protocolValue, AuditLogEntityTypeEnum.class);
+      assertThat(value).isNotNull();
+      if (protocolValue
+          == io.camunda.client.protocol.rest.AuditLogEntityTypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(AuditLogEntityTypeEnum.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
 
   @Test
   public void shouldConvertOwnerType() {
