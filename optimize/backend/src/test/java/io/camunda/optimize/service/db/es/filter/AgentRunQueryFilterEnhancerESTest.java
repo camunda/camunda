@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import io.camunda.optimize.service.db.filter.FilterContext;
@@ -84,6 +86,40 @@ class AgentRunQueryFilterEnhancerESTest {
     assertThatThrownBy(() -> filterQueries(filters))
         .isInstanceOf(OptimizeValidationException.class)
         .hasMessageContaining("RunningInstancesOnlyFilterDto");
+  }
+
+  @Test
+  void shouldGiveDateBucketingTheAgentRunDateFilters() {
+    // given
+    final List<ProcessFilterDto<?>> filters =
+        ProcessFilterBuilder.filter()
+            .fixedInstanceEndDate()
+            .start(OffsetDateTime.parse("2026-10-14T00:00:00+02:00"))
+            .add()
+            .completedInstancesOnly()
+            .add()
+            .buildList();
+    final BoolQuery.Builder endDateQuery = new BoolQuery.Builder();
+    final BoolQuery.Builder startDateQuery = new BoolQuery.Builder();
+
+    // when
+    final List<DateFilterDataDto<?>> endDateFilters =
+        underTest.extractInstanceFilters(filters, InstanceEndDateFilterDto.class);
+    underTest
+        .getInstanceEndDateQueryFilter()
+        .addFilters(endDateQuery, endDateFilters, FILTER_CONTEXT);
+    underTest
+        .getInstanceStartDateQueryFilter()
+        .addFilters(startDateQuery, endDateFilters, FILTER_CONTEXT);
+
+    // then
+    assertThat(endDateFilters).hasSize(1);
+    assertThat(endDateQuery.build().filter())
+        .singleElement()
+        .satisfies(q -> assertThat(q.range().date().field()).isEqualTo(AgentRunIndex.END_DATE));
+    assertThat(startDateQuery.build().filter())
+        .singleElement()
+        .satisfies(q -> assertThat(q.range().date().field()).isEqualTo(AgentRunIndex.START_DATE));
   }
 
   private List<Query> filterQueries(final List<ProcessFilterDto<?>> filters) {

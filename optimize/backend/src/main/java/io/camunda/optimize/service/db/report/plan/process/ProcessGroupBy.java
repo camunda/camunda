@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.report.plan.process;
 
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.AgentModelGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.AssigneeGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.CandidateGroupGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
@@ -49,7 +50,11 @@ public enum ProcessGroupBy {
   PROCESS_GROUP_BY_VARIABLE(new VariableGroupByDto()),
   // Same FlowNodesGroupByDto shape as PROCESS_GROUP_BY_FLOW_NODE, but routes to a dedicated
   // interpreter that aggregates over the agentInstances nested path instead of flowNodeInstances.
-  PROCESS_GROUP_BY_AGENT_FLOW_NODE(new FlowNodesGroupByDto());
+  PROCESS_GROUP_BY_AGENT_FLOW_NODE(new FlowNodesGroupByDto()),
+  // Same EndDateGroupByDto shape as PROCESS_GROUP_BY_PROCESS_INSTANCE_END_DATE, but routes agentRun
+  // reports to an interpreter that buckets on the agent run index and its own endDate field.
+  PROCESS_GROUP_BY_AGENT_RUN_END_DATE(new EndDateGroupByDto()),
+  PROCESS_GROUP_BY_AGENT_MODEL(new AgentModelGroupByDto());
 
   private final ProcessGroupByDto<?> dto;
   private final boolean topNLimitSupported;

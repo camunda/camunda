@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.process.group;
 
+import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_AGENT_MODEL;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_ASSIGNEE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_CANDIDATE_GROUP;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_DURATION;
@@ -53,6 +54,7 @@ import java.util.Objects;
   @JsonSubTypes.Type(
       value = ProcessDefinitionVersionGroupByDto.class,
       name = GROUP_BY_PROCESS_DEFINITION_VERSION),
+  @JsonSubTypes.Type(value = AgentModelGroupByDto.class, name = GROUP_BY_AGENT_MODEL),
 })
 public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto>
     implements Combinable {

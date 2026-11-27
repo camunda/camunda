@@ -47,6 +47,7 @@ public final class ReportConstants {
   public static final String GROUP_BY_DURATION = "duration";
   public static final String GROUP_BY_PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String GROUP_BY_PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
+  public static final String GROUP_BY_AGENT_MODEL = "agentModel";
 
   public static final String GROUP_BY_EVALUATION_DATE_TYPE = "evaluationDateTime";
   public static final String GROUP_BY_INPUT_VARIABLE_TYPE = "inputVariable";
@@ -91,6 +92,7 @@ public final class ReportConstants {
   public static final String DISTRIBUTED_BY_START_DATE = "startDate";
   public static final String DISTRIBUTED_BY_END_DATE = "endDate";
   public static final String DISTRIBUTED_BY_PROCESS = "process";
+  public static final String DISTRIBUTED_BY_AGENT_MODEL = "agentModel";
 
   public static final String IDLE_USER_TASK_DURATION_TIME = "idle";
   public static final String WORK_USER_TASK_DURATION_TIME = "work";

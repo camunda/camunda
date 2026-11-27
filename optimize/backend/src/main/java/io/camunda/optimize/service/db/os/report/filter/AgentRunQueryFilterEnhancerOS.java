@@ -9,6 +9,8 @@ package io.camunda.optimize.service.db.os.report.filter;
 
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
 
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.service.db.filter.AgentRunFilters;
 import io.camunda.optimize.service.db.filter.FilterContext;
@@ -24,7 +26,16 @@ import org.springframework.stereotype.Component;
 /** Applies the process filters an agentRun report accepts to the agent run index's own fields. */
 @Component
 @Conditional(OpenSearchCondition.class)
-public class AgentRunQueryFilterEnhancerOS implements QueryFilterEnhancerOS<ProcessFilterDto<?>> {
+public class AgentRunQueryFilterEnhancerOS implements InstanceDateQueryFilterEnhancerOS {
+
+  private static final QueryFilterOS<DateFilterDataDto<?>> START_DATE_FILTER =
+      (filters, filterContext) ->
+          DateFilterQueryUtilOS.filterQueries(
+              filters, AgentRunIndex.START_DATE, filterContext.getTimezone());
+  private static final QueryFilterOS<DateFilterDataDto<?>> END_DATE_FILTER =
+      (filters, filterContext) ->
+          DateFilterQueryUtilOS.filterQueries(
+              filters, AgentRunIndex.END_DATE, filterContext.getTimezone());
 
   @Override
   public List<Query> filterQueries(
@@ -32,13 +43,26 @@ public class AgentRunQueryFilterEnhancerOS implements QueryFilterEnhancerOS<Proc
     AgentRunFilters.validate(filters);
     final List<Query> queries =
         new ArrayList<>(
-            DateFilterQueryUtilOS.filterQueries(
-                AgentRunFilters.endDateFilters(filters),
-                AgentRunIndex.END_DATE,
-                filterContext.getTimezone()));
+            END_DATE_FILTER.filterQueries(AgentRunFilters.endDateFilters(filters), filterContext));
     if (AgentRunFilters.isCompletedOnly(filters)) {
       queries.add(exists(AgentRunIndex.END_DATE));
     }
     return queries;
+  }
+
+  @Override
+  public <T extends FilterDataDto> List<T> extractInstanceFilters(
+      final List<ProcessFilterDto<?>> filters, final Class<? extends ProcessFilterDto<T>> clazz) {
+    return AgentRunFilters.instanceFilterData(filters, clazz);
+  }
+
+  @Override
+  public QueryFilterOS<DateFilterDataDto<?>> getInstanceStartDateQueryFilter() {
+    return START_DATE_FILTER;
+  }
+
+  @Override
+  public QueryFilterOS<DateFilterDataDto<?>> getInstanceEndDateQueryFilter() {
+    return END_DATE_FILTER;
   }
 }

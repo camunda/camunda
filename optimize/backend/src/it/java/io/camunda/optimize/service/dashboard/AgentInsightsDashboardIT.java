@@ -26,6 +26,8 @@ import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardServic
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.AGENT_INVENTORY_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.INCIDENT_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.PROCESS_DURATION_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.TOKENS_BY_MODEL_OVER_TIME_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.TOP_MODELS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.TOTAL_TOKENS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticReportFilters.rollingEndDateFilter;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
@@ -44,7 +46,10 @@ import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTile
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
+import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
+import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.DatabaseClient;
@@ -60,6 +65,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -103,6 +109,10 @@ class AgentInsightsDashboardIT extends AbstractBrokerlessZeebeCCSMIT {
                 PROCESS_DURATION_REPORT_ID,
                 Map.of("section", "summary", "tile", "processDuration")),
             tuple(INCIDENT_RATE_REPORT_ID, Map.of("section", "summary", "tile", "incidentRate")),
+            tuple(
+                TOKENS_BY_MODEL_OVER_TIME_REPORT_ID,
+                Map.of("section", "models", "tile", "tokensByModelOverTime")),
+            tuple(TOP_MODELS_REPORT_ID, Map.of("section", "models", "tile", "topModels")),
             tuple(
                 AGENT_INVENTORY_REPORT_ID,
                 Map.of("section", "inventory", "tile", "agentInventory")));
@@ -164,6 +174,47 @@ class AgentInsightsDashboardIT extends AbstractBrokerlessZeebeCCSMIT {
             tuple(CACHE_READ_TOKENS, SUM, 8.0),
             tuple(CACHE_WRITE_TOKENS, SUM, 4.0),
             tuple(REASONING_TOKENS, SUM, 4.0));
+  }
+
+  @Test
+  void shouldSplitTokensOfCompletedRunsInTheRangeByModel() {
+    // given runs of two models in the range, one before it, and one still running
+    final String processKey = uniqueKey();
+    persistProcessDefinition(processKey);
+    persistAgentDefinition(processKey);
+    persistAgentRuns(
+        withModel(completedRun(processKey, 1L, 1), "anthropic", "claude-sonnet-5"),
+        withModel(completedRun(processKey, 2L, 1), "openai", "gpt-4o"),
+        withModel(completedRun(processKey, 100L, 40), "openai", "gpt-4o"),
+        withModel(runningRun(processKey, 1000L), "openai", "gpt-4o"));
+    final AdditionalProcessReportEvaluationFilterDto lastThirtyDays =
+        rollingEndDateFilter(30L, DateUnit.DAYS);
+    lastThirtyDays.setGroupByDateUnit(AggregateByDateUnit.WEEK);
+
+    // when
+    final List<MeasureDto<?>> topModels = evaluateMeasures(TOP_MODELS_REPORT_ID, lastThirtyDays);
+    final List<MeasureDto<?>> overTime =
+        evaluateMeasures(TOKENS_BY_MODEL_OVER_TIME_REPORT_ID, lastThirtyDays);
+
+    // then top models sums each token kind per provider:model
+    assertThat(topModels)
+        .extracting(MeasureDto::getProperty, measure -> mapValues(measure))
+        .containsExactlyInAnyOrder(
+            tuple(INPUT_TOKENS, Map.of("anthropic:claude-sonnet-5", 4.0, "openai:gpt-4o", 8.0)),
+            tuple(OUTPUT_TOKENS, Map.of("anthropic:claude-sonnet-5", 3.0, "openai:gpt-4o", 6.0)),
+            tuple(TOTAL_TOKENS, Map.of("anthropic:claude-sonnet-5", 10.0, "openai:gpt-4o", 20.0)),
+            tuple(
+                CACHE_READ_TOKENS, Map.of("anthropic:claude-sonnet-5", 2.0, "openai:gpt-4o", 4.0)),
+            tuple(
+                CACHE_WRITE_TOKENS,
+                Map.of("anthropic:claude-sonnet-5", 1.0, "openai:gpt-4o", 2.0)));
+    // and the weekly buckets add up to the same per-model totals
+    assertThat(overTime)
+        .singleElement()
+        .satisfies(
+            measure ->
+                assertThat(weeklyTotalsByModel(measure))
+                    .isEqualTo(Map.of("anthropic:claude-sonnet-5", 10.0, "openai:gpt-4o", 20.0)));
   }
 
   @Test
@@ -235,6 +286,29 @@ class AgentInsightsDashboardIT extends AbstractBrokerlessZeebeCCSMIT {
         .getCommandEvaluationResults()
         .forEach(result -> measures.addAll(result.getMeasures()));
     return measures;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<String, Double> mapValues(final MeasureDto<?> measure) {
+    return ((List<MapResultEntryDto>) measure.getData())
+        .stream().collect(Collectors.toMap(MapResultEntryDto::getKey, MapResultEntryDto::getValue));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<String, Double> weeklyTotalsByModel(final MeasureDto<?> measure) {
+    return ((List<HyperMapResultEntryDto>) measure.getData())
+        .stream()
+            .flatMap(bucket -> bucket.getValue().stream())
+            .collect(
+                Collectors.toMap(
+                    MapResultEntryDto::getKey, MapResultEntryDto::getValue, Double::sum));
+  }
+
+  private static AgentRunDto withModel(
+      final AgentRunDto run, final String provider, final String model) {
+    run.setProvider(provider);
+    run.setModel(model);
+    return run;
   }
 
   private void persistProcessDefinition(final String key) {

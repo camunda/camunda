@@ -195,7 +195,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   }
 
   public String createDistributedByCommandKey() {
-    if (distributedBy != null && (isModelElementCommand() || isInstanceCommand())) {
+    if (distributedBy != null
+        && (isModelElementCommand() || isInstanceCommand() || isAgentRunCommand())) {
       return distributedBy.createCommandKey();
     }
     return null;
@@ -310,6 +311,12 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return nonNull(view)
         && nonNull(view.getEntity())
         && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity());
+  }
+
+  private boolean isAgentRunCommand() {
+    return nonNull(view)
+        && nonNull(view.getEntity())
+        && ProcessViewEntity.AGENT_RUN.equals(view.getEntity());
   }
 
   public @Valid List<ProcessFilterDto<?>> getFilter() {

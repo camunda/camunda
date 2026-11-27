@@ -49,9 +49,9 @@ public final class AgentRunFilters {
     return !instanceFilterData(filters, CompletedInstancesOnlyFilterDto.class).isEmpty();
   }
 
-  // Same selection as the process filter enhancers: only instance-level filters apply here.
+  /** Same selection as the process filter enhancers: only instance-level filters apply. */
   @SuppressWarnings("unchecked")
-  private static <T extends FilterDataDto> List<T> instanceFilterData(
+  public static <T extends FilterDataDto> List<T> instanceFilterData(
       final List<ProcessFilterDto<?>> filters, final Class<? extends ProcessFilterDto<T>> clazz) {
     return filters.stream()
         .filter(clazz::isInstance)
