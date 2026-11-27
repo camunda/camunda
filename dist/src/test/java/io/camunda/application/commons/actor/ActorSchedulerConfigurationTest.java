@@ -17,9 +17,11 @@ import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.system.configuration.TenantActorPoolCfg;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -98,6 +100,63 @@ final class ActorSchedulerConfigurationTest {
       }
       UnifiedConfigurationHelper.setCustomEnvironment(null);
     }
+  }
+
+  @Test
+  void shouldUseSharedSchedulerWhenTenantActorPoolIsDisabled() throws Exception {
+    // given a broker-wide pool with the tenant pools disabled
+    final var environment = new MockEnvironment();
+    UnifiedConfigurationHelper.setCustomEnvironment(environment);
+
+    ActorScheduler sharedScheduler = null;
+    PhysicalTenantActorSchedulers tenantSchedulers = null;
+    try {
+      final var rootConfig = new Camunda();
+      Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(rootConfig));
+      final var tenantResolver = PhysicalTenantResolver.of(environment, rootConfig);
+      final var schedulerConfiguration =
+          new ActorSchedulerConfiguration.SchedulerConfiguration(
+              1, 1, 0, false, "Broker", "node", TenantActorPoolCfg.DISABLED);
+      final var actorSchedulerConfiguration =
+          new ActorSchedulerConfiguration(
+              schedulerConfiguration,
+              IdleStrategySupplier.ofDefault(),
+              new ActorClockConfiguration(false),
+              new SimpleMeterRegistry());
+      sharedScheduler = actorSchedulerConfiguration.scheduler();
+      tenantSchedulers =
+          actorSchedulerConfiguration.physicalTenantActorSchedulers(
+              sharedScheduler, tenantResolver);
+
+      // when an actor of a tenant is submitted
+      final var tenantThread = threadNameOf(tenantSchedulers.schedulingService("default"));
+
+      // then it runs on the broker-wide pool instead of a pool named after the tenant
+      assertThat(tenantThread).isEqualTo("zb-actors-0");
+      assertThat(threadNameOf(sharedScheduler)).isEqualTo(tenantThread);
+    } finally {
+      if (tenantSchedulers != null) {
+        tenantSchedulers.close();
+      }
+      if (sharedScheduler != null) {
+        sharedScheduler.close();
+      }
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
+    }
+  }
+
+  private static String threadNameOf(final ActorSchedulingService schedulingService)
+      throws Exception {
+    final var threadName = new CompletableFuture<String>();
+    schedulingService.submitActor(
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            threadName.complete(Thread.currentThread().getName());
+          }
+        },
+        SchedulingHints.cpuBound());
+    return threadName.get(10, TimeUnit.SECONDS);
   }
 
   private static Actor blockingActor(

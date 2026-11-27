@@ -8,6 +8,7 @@
 package io.camunda.configuration.physicaltenants;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -148,6 +149,27 @@ class PhysicalTenantResolverTest {
   void shouldRejectNonPositiveTenantActorPoolIoThreadCountWhenEnabled(final int count) {
     // given a physical tenant with an enabled pool but a non-positive IO thread count
     assertTenantActorPoolCountRejected("io-thread-count", count);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, -1})
+  void shouldAcceptNonPositiveTenantActorPoolThreadCountWhenDisabled(final int count) {
+    // given a tenant with non-positive counts while the tenant pools are disabled
+    setProperties(
+        Map.of(
+            "camunda.system.actor-pool.enabled",
+            false,
+            "camunda.physical-tenants.tenanta.system.actor-pool.cpu-thread-count",
+            count,
+            "camunda.physical-tenants.tenanta.system.actor-pool.io-thread-count",
+            count,
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+            "tenanta"),
+        "tenanta");
+    final Camunda tenant = newResolver().forPhysicalTenant("tenanta");
+
+    // when / then the counts are only validated when the pools are enabled
+    assertThatCode(() -> BrokerBasedPropertiesOverride.convert(tenant)).doesNotThrowAnyException();
   }
 
   private void assertTenantActorPoolCountRejected(final String property, final int count) {
