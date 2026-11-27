@@ -111,8 +111,7 @@ public class WebappsConfigurationInitializer
 
     if ((activeProfiles.contains(IDENTITY.getId()) || activeProfiles.contains(ADMIN.getId()))
         && WebappsHelper.isIdentityUiEnabled(environment)) {
-      locations.add(DEFAULT_RESOURCES_LOCATION + "identity/");
-      locations.add(DEFAULT_RESOURCES_LOCATION + "admin/");
+      locations.add(DEFAULT_RESOURCES_LOCATION + "webapp/");
       if (defaultWebapp == null) {
         defaultWebapp = ADMIN.getId();
       }

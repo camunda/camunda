@@ -64,7 +64,14 @@ public class WebappPropertiesOverride {
   }
 
   private List<String> computeActiveComponents() {
-    return KNOWN_COMPONENTS.stream().filter(this::isComponentUiEnabled).toList();
+    return KNOWN_COMPONENTS.stream().filter(this::isComponentAvailable).toList();
+  }
+
+  private boolean isComponentAvailable(final String name) {
+    // Admin's UI needs both the identity and admin switches, as in
+    // WebappsHelper#isIdentityUiEnabled
+    return isComponentUiEnabled(name)
+        && (!"admin".equals(name) || isComponentUiEnabled("identity"));
   }
 
   private boolean isComponentUiEnabled(final String name) {

@@ -67,6 +67,31 @@ class WebappIndexControllerTest {
   }
 
   @Test
+  void shouldReturnWebappIndexViewForAdmin() {
+    environment.setActiveProfiles("admin");
+    when(servletContext.getContextPath()).thenReturn("/camunda");
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, new WebappConfiguration(), null, environment);
+    final ExtendedModelMap model = new ExtendedModelMap();
+
+    final String viewName = controller.admin(model);
+
+    assertThat(viewName).isEqualTo("webapp/index");
+    assertThat(model.getAttribute("baseName")).isEqualTo("/camunda/");
+  }
+
+  @Test
+  void shouldForwardToAdminShell() {
+    environment.setActiveProfiles("admin");
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, new WebappConfiguration(), null, environment);
+
+    final String result = controller.forwardToAdmin(request);
+
+    assertThat(result).isEqualTo("forward:/admin/");
+  }
+
+  @Test
   void shouldForwardToWebappWhenLoginNotDelegated() {
     // given
     final WebappConfiguration config = new WebappConfiguration();

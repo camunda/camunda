@@ -12,6 +12,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.SpringApplication;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -55,6 +57,56 @@ class ModesAndProfilesProcessorTest {
     assertThat(environment.getProperty("zeebe.gateway.security.enabled")).isNull();
     assertThat(environment.getProperty("camunda.security.authentication.unprotected-api")).isNull();
     assertThat(environment.getProperty("camunda.security.authorizations.enabled")).isNull();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"all-in-one", "gateway"})
+  void shouldActivateTheAdminProfileWhenAdminIsEnabled(final String mode) {
+    // given a StandaloneCamunda app launched with a mode that starts the webapps
+    final MockEnvironment environment = new MockEnvironment();
+    environment.setProperty("camunda.mode", mode);
+
+    // when the listener prepares the environment
+    new ModesAndProfilesProcessor(standaloneCamundaApplication(), new String[] {})
+        .environmentPrepared(null, environment);
+
+    // then Admin is served by the unified webapp, which is gated on the admin profile
+    assertThat(environment.getActiveProfiles()).contains("admin").doesNotContain("identity");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"all-in-one", "gateway"})
+  void shouldActivateTheAdminProfileWhenOnlyAdminIsEnabled(final String mode) {
+    // given Operate and Tasklist are disabled
+    final MockEnvironment environment = new MockEnvironment();
+    environment.setProperty("camunda.mode", mode);
+    environment.setProperty("camunda.webapps.operate.enabled", "false");
+    environment.setProperty("camunda.webapps.tasklist.enabled", "false");
+
+    // when the listener prepares the environment
+    new ModesAndProfilesProcessor(standaloneCamundaApplication(), new String[] {})
+        .environmentPrepared(null, environment);
+
+    // then the admin profile alone activates the unified webapp
+    assertThat(environment.getActiveProfiles())
+        .contains("admin")
+        .doesNotContain("operate", "tasklist");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"camunda.webapps.admin.enabled", "camunda.webapps.identity.enabled"})
+  void shouldNotActivateTheAdminProfileWhenAdminIsDisabled(final String property) {
+    // given Admin is disabled
+    final MockEnvironment environment = new MockEnvironment();
+    environment.setProperty("camunda.mode", "all-in-one");
+    environment.setProperty(property, "false");
+
+    // when the listener prepares the environment
+    new ModesAndProfilesProcessor(standaloneCamundaApplication(), new String[] {})
+        .environmentPrepared(null, environment);
+
+    // then
+    assertThat(environment.getActiveProfiles()).doesNotContain("admin");
   }
 
   private static SpringApplication standaloneCamundaApplication() {
