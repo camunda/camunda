@@ -831,7 +831,7 @@
 		"@kubb/core": "5.24.0",
 		"@kubb/parser-ts": "5.24.0",
 		"@kubb/plugin-ts": "5.7.0",
-		"@kubb/plugin-zod": "5.12.0",
+		"@kubb/plugin-zod": "5.13.0",
 		"@types/node": "26.6.6",
 		"changelogen": "0.6.2",
 		"kubb": "5.24.0",
