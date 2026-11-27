@@ -20,7 +20,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Dat
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import io.camunda.optimize.service.db.es.filter.DecisionQueryFilterEnhancerES;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
+import io.camunda.optimize.service.db.es.filter.InstanceDateQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.filter.QueryFilterES;
 import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
 import io.camunda.optimize.service.db.filter.FilterContext;
@@ -92,7 +92,7 @@ public final class DateHistogramFilterUtilES {
       final DateAggregationContextES context,
       final DateTimeFormatter dateTimeFormatter) {
 
-    final ProcessQueryFilterEnhancerES queryFilterEnhancer =
+    final InstanceDateQueryFilterEnhancerES queryFilterEnhancer =
         context.getProcessQueryFilterEnhancer();
 
     final List<DateFilterDataDto<?>> startDateFilters =
@@ -129,7 +129,7 @@ public final class DateHistogramFilterUtilES {
       final DateAggregationContextES context,
       final DateTimeFormatter dateTimeFormatter) {
 
-    final ProcessQueryFilterEnhancerES queryFilterEnhancer =
+    final InstanceDateQueryFilterEnhancerES queryFilterEnhancer =
         context.getProcessQueryFilterEnhancer();
 
     final List<DateFilterDataDto<?>> startDateFilters =

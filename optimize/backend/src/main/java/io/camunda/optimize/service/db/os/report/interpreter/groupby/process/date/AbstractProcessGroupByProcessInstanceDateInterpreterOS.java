@@ -17,7 +17,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDat
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.service.db.os.report.context.DateAggregationContextOS;
-import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
+import io.camunda.optimize.service.db.os.report.filter.InstanceDateQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.service.DateAggregationServiceOS;
@@ -52,7 +52,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterOS
 
   protected abstract MinMaxStatsServiceOS getMinMaxStatsService();
 
-  protected abstract ProcessQueryFilterEnhancerOS getQueryFilterEnhancer();
+  protected abstract InstanceDateQueryFilterEnhancerOS getQueryFilterEnhancer();
 
   @Override
   public Optional<MinMaxStatDto> getMinMaxStats(

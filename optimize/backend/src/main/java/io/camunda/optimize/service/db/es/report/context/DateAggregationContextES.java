@@ -10,7 +10,7 @@ package io.camunda.optimize.service.db.es.report.context;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder.ContainerBuilder;
 import io.camunda.optimize.service.db.es.filter.DecisionQueryFilterEnhancerES;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
+import io.camunda.optimize.service.db.es.filter.InstanceDateQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.report.context.DateAggregationContext;
 import java.util.Map;
 
@@ -18,7 +18,7 @@ public class DateAggregationContextES extends DateAggregationContext {
 
   private final Map<String, Aggregation.Builder.ContainerBuilder> subAggregations;
   private final DecisionQueryFilterEnhancerES decisionQueryFilterEnhancer;
-  private final ProcessQueryFilterEnhancerES processQueryFilterEnhancer;
+  private final InstanceDateQueryFilterEnhancerES processQueryFilterEnhancer;
 
   protected DateAggregationContextES(final DateAggregationContextESBuilder<?, ?> b) {
     super(b);
@@ -39,7 +39,7 @@ public class DateAggregationContextES extends DateAggregationContext {
     return decisionQueryFilterEnhancer;
   }
 
-  public ProcessQueryFilterEnhancerES getProcessQueryFilterEnhancer() {
+  public InstanceDateQueryFilterEnhancerES getProcessQueryFilterEnhancer() {
     return processQueryFilterEnhancer;
   }
 
@@ -53,7 +53,7 @@ public class DateAggregationContextES extends DateAggregationContext {
 
     private Map<String, ContainerBuilder> subAggregations;
     private DecisionQueryFilterEnhancerES decisionQueryFilterEnhancer;
-    private ProcessQueryFilterEnhancerES processQueryFilterEnhancer;
+    private InstanceDateQueryFilterEnhancerES processQueryFilterEnhancer;
 
     public B subAggregations(final Map<String, ContainerBuilder> subAggregations) {
       if (subAggregations == null) {
@@ -71,7 +71,7 @@ public class DateAggregationContextES extends DateAggregationContext {
     }
 
     public B processQueryFilterEnhancer(
-        final ProcessQueryFilterEnhancerES processQueryFilterEnhancer) {
+        final InstanceDateQueryFilterEnhancerES processQueryFilterEnhancer) {
       this.processQueryFilterEnhancer = processQueryFilterEnhancer;
       return self();
     }

@@ -61,7 +61,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(OpenSearchCondition.class)
-public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<ProcessFilterDto<?>> {
+public class ProcessQueryFilterEnhancerOS implements InstanceDateQueryFilterEnhancerOS {
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessQueryFilterEnhancerOS.class);
