@@ -38,6 +38,7 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
 const INSTANCE_KEY = '2251799813700001';
+const NOW = new Date('2026-01-15T10:15:00.000Z');
 const SOURCE = createProcessDefinition({
 	processDefinitionId: 'my_simple_process',
 	processDefinitionKey: 'source-key',
@@ -51,7 +52,9 @@ const TARGET = createProcessDefinition({
 	version: 2,
 });
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, page}) => {
+	await page.clock.setFixedTime(NOW);
+
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
