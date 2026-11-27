@@ -173,8 +173,8 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should always schedule incident and usage metrics tasks regardless of PI config")
-        .hasSize(11)
-        .anyMatch(task -> isTaskOfType(task, IncidentUpdateTask.class))
+        .hasSize(10)
+        .noneMatch(task -> isTaskOfType(task, IncidentUpdateTask.class))
         .anyMatch(task -> isTaskOfType(task, PendingIncidentUpdateCountTask.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricTUArchiverJob.class))
@@ -199,7 +199,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should not schedule ApplyRolloverPeriodJob when retention is disabled")
-        .hasSize(12)
+        .hasSize(11)
         .noneMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 
@@ -215,7 +215,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should schedule ApplyRolloverPeriodJob when retention is enabled")
-        .hasSize(13)
+        .hasSize(12)
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 

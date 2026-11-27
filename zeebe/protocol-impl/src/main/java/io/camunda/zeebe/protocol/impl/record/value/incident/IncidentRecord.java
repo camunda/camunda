@@ -45,6 +45,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new StringValue("processDefinitionPath");
   private static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+  private static final StringValue INCIDENT_FLAG_KEYS_KEY = new StringValue("incidentFlagKeys");
 
   private final EnumProperty<ErrorType> errorTypeProp =
       new EnumProperty<>(ERROR_TYPE_KEY, ErrorType.class, ErrorType.UNKNOWN);
@@ -68,9 +69,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new ArrayProperty<>(PROCESS_DEFINITION_PATH_KEY, LongValue::new);
   private final ArrayProperty<IntegerValue> callingElementPathProp =
       new ArrayProperty<>(CALLING_ELEMENT_PATH_KEY, IntegerValue::new);
+  private final ArrayProperty<LongValue> incidentFlagKeysProp =
+      new ArrayProperty<>(INCIDENT_FLAG_KEYS_KEY, LongValue::new);
 
   public IncidentRecord() {
-    super(14);
+    super(15);
     declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)
@@ -84,7 +87,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
         .declareProperty(tenantIdProp)
         .declareProperty(elementInstancePathProp)
         .declareProperty(processDefinitionPathProp)
-        .declareProperty(callingElementPathProp);
+        .declareProperty(callingElementPathProp)
+        .declareProperty(incidentFlagKeysProp);
   }
 
   public void wrap(final IncidentRecord record) {
@@ -102,6 +106,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     setElementInstancePath(record.getElementInstancePath());
     setProcessDefinitionPath(record.getProcessDefinitionPath());
     setCallingElementPath(record.getCallingElementPath());
+    // incidentFlagKeys is not copied, it belongs to one event and not to the stored incident
   }
 
   @JsonIgnore
@@ -229,6 +234,19 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   public IncidentRecord setCallingElementPath(final List<Integer> callingElementPath) {
     callingElementPathProp.reset();
     callingElementPath.forEach(e -> callingElementPathProp.add().setValue(e));
+    return this;
+  }
+
+  @Override
+  public List<Long> getIncidentFlagKeys() {
+    final var incidentFlagKeys = new ArrayList<Long>();
+    incidentFlagKeysProp.forEach(e -> incidentFlagKeys.add(e.getValue()));
+    return incidentFlagKeys;
+  }
+
+  public IncidentRecord setIncidentFlagKeys(final List<Long> incidentFlagKeys) {
+    incidentFlagKeysProp.reset();
+    incidentFlagKeys.forEach(e -> incidentFlagKeysProp.add().setValue(e));
     return this;
   }
 

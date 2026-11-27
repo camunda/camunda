@@ -201,11 +201,8 @@ final class ExporterBulkConsistencyIT {
         .allMatch(e -> ERROR_MESSAGE.equals(e.getErrorMessage()));
 
     assertThat(referenceSnapshot.postImporterQueue())
-        .as("one PostImporterQueueEntity per instance (PostImporterQueueFromIncidentHandler)")
-        .hasSize(INSTANCE_COUNT);
-    assertThat(referenceSnapshot.postImporterQueue())
-        .as("processInstanceKey set by PostImporterQueueFromIncidentHandler")
-        .allMatch(e -> e.getProcessInstanceKey() != null);
+        .as("no PostImporterQueueEntity, the incident flags come from the incident events")
+        .isEmpty();
 
     assertThat(referenceSnapshot.variables())
         .as("one VariableEntity per instance (VariableHandler)")

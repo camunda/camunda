@@ -58,6 +58,9 @@
             "callingElementPath": {
               "enabled": false
             },
+            "incidentFlagKeys": {
+              "type": "long"
+            },
             "rootProcessInstanceKey": {
               "type": "long"
             }

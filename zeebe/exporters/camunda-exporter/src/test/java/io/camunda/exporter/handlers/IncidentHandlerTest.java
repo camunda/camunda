@@ -22,6 +22,7 @@ import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -59,7 +60,7 @@ public class IncidentHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = IncidentIntent.class,
-      names = {"RESOLVE", "RESOLVED"})
+      names = {"RESOLVE"})
   void shouldNotHandleRecordWithUnsupportedIntent(final IncidentIntent intent) {
     // given
     final Record<IncidentRecordValue> incidentRecord =
@@ -72,7 +73,7 @@ public class IncidentHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = IncidentIntent.class,
-      names = {"CREATED", "MIGRATED"})
+      names = {"CREATED", "MIGRATED", "RESOLVED"})
   void shouldHandleRecordWithSupportedIntent(final IncidentIntent intent) {
     // given
     final Record<IncidentRecordValue> incidentRecord =
@@ -80,6 +81,45 @@ public class IncidentHandlerTest {
 
     // when - then
     assertThat(underTest.handlesRecord(incidentRecord)).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = IncidentIntent.class,
+      names = {"CREATED", "MIGRATED"})
+  void shouldSetActiveStateAndCreationTimeForNonResolvedIntent(final IncidentIntent intent) {
+    // given
+    final long timestamp = 1_700_000_000_000L;
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT, r -> r.withIntent(intent).withTimestamp(timestamp));
+    final IncidentEntity incidentEntity = new IncidentEntity();
+
+    // when
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
+    assertThat(incidentEntity.getCreationTime())
+        .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
+  }
+
+  @Test
+  void shouldSetResolvedStateAndKeepCreationTimeForResolvedIntent() {
+    // given
+    final OffsetDateTime creationTime = OffsetDateTime.parse("2024-01-01T00:00:00Z");
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(IncidentIntent.RESOLVED).withTimestamp(1_700_000_000_000L));
+    final IncidentEntity incidentEntity = new IncidentEntity().setCreationTime(creationTime);
+
+    // when
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
+    assertThat(incidentEntity.getCreationTime()).isEqualTo(creationTime);
   }
 
   @Test

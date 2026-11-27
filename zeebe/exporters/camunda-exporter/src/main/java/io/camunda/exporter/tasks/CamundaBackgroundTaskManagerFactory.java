@@ -17,7 +17,6 @@ import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.AuditLogArchiverJob;
@@ -43,7 +42,6 @@ import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository;
 import io.camunda.exporter.tasks.historydeletion.OpenSearchHistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.ElasticsearchIncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
-import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.incident.OpenSearchIncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.PendingIncidentUpdateCountTask;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -88,7 +86,6 @@ public final class CamundaBackgroundTaskManagerFactory {
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
   private final ExporterMetadata metadata;
-  private final ObjectMapper objectMapper;
 
   private ScheduledThreadPoolExecutor executor;
   private ArchiverRepository archiverRepository;
@@ -96,7 +93,6 @@ public final class CamundaBackgroundTaskManagerFactory {
   private BatchOperationUpdateRepository batchOperationUpdateRepository;
   private HistoryDeletionRepository historyDeletionRepository;
   private AuditLogArchiverRepository auditLogArchiverRepository;
-  private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private final InstantSource clock;
 
   public CamundaBackgroundTaskManagerFactory(
@@ -117,8 +113,6 @@ public final class CamundaBackgroundTaskManagerFactory {
     this.metrics = metrics;
     this.logger = logger;
     this.metadata = metadata;
-    this.objectMapper = objectMapper;
-    this.processCache = processCache;
     this.clock = clock;
   }
 
@@ -267,7 +261,6 @@ public final class CamundaBackgroundTaskManagerFactory {
   private List<RunnableTask> buildTasks() {
     final List<RunnableTask> tasks = new ArrayList<>();
 
-    tasks.add(buildIncidentMarkerTask());
     tasks.add(buildPendingIncidentCountTask());
     if (config.getHistory().isProcessInstanceEnabled()) {
       tasks.add(buildProcessInstanceArchiverJob());
@@ -369,29 +362,6 @@ public final class CamundaBackgroundTaskManagerFactory {
         0,
         ProcessInstanceToBeArchivedCountJob.DELAY_BETWEEN_RUNS,
         ProcessInstanceToBeArchivedCountJob.MAX_DELAY_BETWEEN_RUNS,
-        executor,
-        logger);
-  }
-
-  private ReschedulingTask buildIncidentMarkerTask() {
-
-    final IncidentNotifier incidentNotifier =
-        new IncidentNotifier(processCache, config.getNotifier(), executor, objectMapper);
-
-    final var postExport = config.getPostExport();
-    return new ReschedulingTask(
-        new IncidentUpdateTask(
-            metadata,
-            incidentRepository,
-            postExport.isIgnoreMissingData(),
-            postExport.getBatchSize(),
-            executor,
-            incidentNotifier,
-            metrics,
-            logger),
-        1,
-        postExport.getDelayBetweenRuns(),
-        postExport.getMaxDelayBetweenRuns(),
         executor,
         logger);
   }

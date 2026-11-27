@@ -174,6 +174,51 @@ public final class IncidentStateTest {
     assertThat(writtenRecord.getJobKey()).isEqualTo(2048);
   }
 
+  @Test
+  public void shouldReturnZeroActiveIncidentCountWhenMissing() {
+    // when
+    final long count = incidentState.getActiveIncidentCount(1234);
+
+    // then
+    assertThat(count).isZero();
+  }
+
+  @Test
+  public void shouldIncrementActiveIncidentCount() {
+    // given
+    incidentState.incrementActiveIncidentCount(1234);
+
+    // when
+    incidentState.incrementActiveIncidentCount(1234);
+
+    // then
+    assertThat(incidentState.getActiveIncidentCount(1234)).isEqualTo(2);
+    assertThat(incidentState.getActiveIncidentCount(5678)).isZero();
+  }
+
+  @Test
+  public void shouldRemoveActiveIncidentCountWhenDecrementedToZero() {
+    // given
+    incidentState.incrementActiveIncidentCount(1234);
+    incidentState.incrementActiveIncidentCount(1234);
+
+    // when
+    incidentState.decrementActiveIncidentCount(1234);
+    incidentState.decrementActiveIncidentCount(1234);
+
+    // then
+    assertThat(incidentState.getActiveIncidentCount(1234)).isZero();
+  }
+
+  @Test
+  public void shouldIgnoreDecrementOfMissingActiveIncidentCount() {
+    // when
+    incidentState.decrementActiveIncidentCount(1234);
+
+    // then
+    assertThat(incidentState.getActiveIncidentCount(1234)).isZero();
+  }
+
   public IncidentRecord createJobIncident() {
     jobState.create(1234, new JobRecord().setType("test"));
 

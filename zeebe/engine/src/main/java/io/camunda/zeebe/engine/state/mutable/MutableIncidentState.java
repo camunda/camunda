@@ -17,4 +17,13 @@ public interface MutableIncidentState extends IncidentState {
   void deleteIncident(long key);
 
   void migrateIncident(long incidentKey, IncidentRecord incident);
+
+  /** Adds 1 to the active incident count, the entry is created with 1 when it is missing. */
+  void incrementActiveIncidentCount(long elementInstanceKey);
+
+  /**
+   * Subtracts 1 from the active incident count and deletes the entry when it reaches 0. Does
+   * nothing when there is no entry, for example for incidents created before the count existed.
+   */
+  void decrementActiveIncidentCount(long elementInstanceKey);
 }

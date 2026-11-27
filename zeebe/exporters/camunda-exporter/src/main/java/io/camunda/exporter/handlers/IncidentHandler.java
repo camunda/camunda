@@ -41,7 +41,7 @@ public class IncidentHandler
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentHandler.class);
   private static final Set<IncidentIntent> SUPPORTED_INTENTS =
-      EnumSet.of(IncidentIntent.CREATED, IncidentIntent.MIGRATED);
+      EnumSet.of(IncidentIntent.CREATED, IncidentIntent.MIGRATED, IncidentIntent.RESOLVED);
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
@@ -102,12 +102,15 @@ public class IncidentHandler
             ErrorType.fromZeebeErrorType(
                 recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()))
         .setFlowNodeId(recordValue.getElementId());
+    final boolean resolved = record.getIntent() == IncidentIntent.RESOLVED;
     entity
-        .setState(IncidentState.PENDING)
-        .setCreationTime(
-            OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC))
+        .setState(resolved ? IncidentState.RESOLVED : IncidentState.ACTIVE)
         .setTenantId(ExporterUtil.tenantOrDefault(recordValue.getTenantId()))
         .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
+    if (!resolved) {
+      entity.setCreationTime(
+          OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC));
+    }
 
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {

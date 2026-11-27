@@ -759,6 +759,7 @@ final class JsonSerializableToJsonTest {
               final var elementInstancePath = List.of(List.of(101L, 102L), List.of(103L, 104L));
               final var processDefinitionPath = List.of(101L, 102L);
               final var callingElementPath = List.of(12345, 67890);
+              final var incidentFlagKeys = List.of(201L, 202L);
               final int storageOrdinal = 5;
               return new IncidentRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -773,6 +774,7 @@ final class JsonSerializableToJsonTest {
                   .setElementInstancePath(elementInstancePath)
                   .setProcessDefinitionPath(processDefinitionPath)
                   .setCallingElementPath(callingElementPath)
+                  .setIncidentFlagKeys(incidentFlagKeys)
                   .setStorageOrdinal(storageOrdinal);
             },
         """
@@ -790,6 +792,7 @@ final class JsonSerializableToJsonTest {
                   "elementInstancePath":[[101, 102], [103, 104]],
                   "processDefinitionPath": [101, 102],
                   "callingElementPath": [12345, 67890],
+                  "incidentFlagKeys": [201, 202],
                   "rootProcessInstanceKey": 101,
                   "storageOrdinal": 5
                 }
@@ -818,6 +821,7 @@ final class JsonSerializableToJsonTest {
                   "elementInstancePath":[],
                   "processDefinitionPath":[],
                   "callingElementPath":[],
+                  "incidentFlagKeys":[],
                   "rootProcessInstanceKey": -1,
                   "storageOrdinal": 0
                 }

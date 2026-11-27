@@ -147,6 +147,7 @@ public final class IncidentResolveProcessor
       return;
     }
 
+    IncidentFlagKeys.setForResolved(incidentState, incident);
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeAcceptedResponseOnCommand(key, IncidentIntent.RESOLVED, incident, command);
     incidentMetrics.incidentResolved();

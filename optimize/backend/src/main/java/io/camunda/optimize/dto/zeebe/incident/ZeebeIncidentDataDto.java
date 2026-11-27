@@ -108,6 +108,12 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     throw new UnsupportedOperationException("Operation not supported");
   }
 
+  @JsonIgnore
+  @Override
+  public List<Long> getIncidentFlagKeys() {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
+
   @Override
   public long getRootProcessInstanceKey() {
     return -1L; // Not used in Optimize
