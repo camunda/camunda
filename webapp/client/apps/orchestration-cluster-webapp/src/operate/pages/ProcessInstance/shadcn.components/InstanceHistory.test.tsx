@@ -171,7 +171,7 @@ describe('InstanceHistory (design system)', () => {
 		});
 
 		await expect.element(screen.getByText('Instance history could not be fetched. Please refresh.')).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
+		await expect.element(screen.getByRole('alert').getByRole('button', {name: 'Try again'})).toBeVisible();
 	});
 
 	it('should switch to filtered results after typing in the search field', async ({worker}) => {

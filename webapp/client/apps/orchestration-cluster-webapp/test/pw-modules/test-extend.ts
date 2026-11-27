@@ -98,12 +98,6 @@ type Fixtures = {
 };
 
 const test = base.extend<Fixtures>({
-	page: async ({page, isProcessInstanceHelperHidden}, use) => {
-		if (isProcessInstanceHelperHidden) {
-			await page.addInitScript(() => localStorage.setItem('operate.hideProcessInstanceHelperModal', 'true'));
-		}
-		await use(page);
-	},
 	makeAxeBuilder: async ({page}, use) => {
 		const makeAxeBuilder = () => new AxeBuilder({page});
 		await use(makeAxeBuilder);
@@ -227,6 +221,12 @@ const test = base.extend<Fixtures>({
 	},
 	handlers: [[], {option: true}],
 	isProcessInstanceHelperHidden: [true, {option: true}],
+	page: async ({page, isProcessInstanceHelperHidden}, use) => {
+		if (isProcessInstanceHelperHidden) {
+			await page.addInitScript(() => localStorage.setItem('operate.hideProcessInstanceHelperModal', 'true'));
+		}
+		await use(page);
+	},
 	network: [
 		async ({context, handlers, baseURL}, use) => {
 			const appOrigin = baseURL === undefined ? undefined : new URL(baseURL).origin;
