@@ -26,9 +26,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
+import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -221,7 +221,8 @@ public class ResourceDeletionDeleteProcessor
     }
 
     final var drgOptional =
-        decisionState.findDecisionRequirementsByTenantAndKey(tenantId, value.getResourceKey());
+        decisionState.findPersistedDecisionRequirementsByTenantAndKey(
+            tenantId, value.getResourceKey());
     if (drgOptional.isPresent()) {
       final var drg = drgOptional.get();
       return authorizeAndDelete(
@@ -275,7 +276,7 @@ public class ResourceDeletionDeleteProcessor
     return true;
   }
 
-  private void deleteDecisionRequirements(final DeployedDrg drg) {
+  private void deleteDecisionRequirements(final PersistedDecisionRequirements drg) {
     decisionState
         .findDecisionsByTenantAndDecisionRequirementsKey(
             drg.getTenantId(), drg.getDecisionRequirementsKey())
