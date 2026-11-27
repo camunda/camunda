@@ -44,6 +44,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private ConsistencyCheckCfg consistencyChecks = new ConsistencyCheckCfg();
   private EngineCfg engine = new EngineCfg();
   private FeatureFlagsCfg features = new FeatureFlagsCfg();
+  private HealthDetectorsCfg healthDetectors = new HealthDetectorsCfg();
 
   public boolean isContinuousBackups() {
     return continuousBackups;
@@ -163,6 +164,14 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.features = features;
   }
 
+  public HealthDetectorsCfg getHealthDetectors() {
+    return healthDetectors;
+  }
+
+  public void setHealthDetectors(final HealthDetectorsCfg healthDetectors) {
+    this.healthDetectors = healthDetectors;
+  }
+
   public boolean isReceiveOnLegacySubject() {
     return receiveOnLegacySubject;
   }
@@ -194,6 +203,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + features
         + ", receiveOnLegacySubject="
         + receiveOnLegacySubject
+        + ", healthDetectors="
+        + healthDetectors
         + '}';
   }
 }

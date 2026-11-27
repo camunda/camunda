@@ -54,6 +54,8 @@ public final class BrokerStartupProcess {
     result.add(new DiskSpaceUsageMonitorStep());
 
     result.add(new MonitoringServerStep());
+    // after the health check service started, before the partitions start
+    result.add(new HealthDetectorsStep());
 
     result.add(new ApiMessagingServiceStep());
     result.add(new RequestIdGeneratorStep());

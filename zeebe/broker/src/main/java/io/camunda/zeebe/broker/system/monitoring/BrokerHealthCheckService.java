@@ -12,10 +12,12 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.system.monitoring.history.HealthHistory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
+import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -25,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /*
@@ -112,6 +115,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   /* Guards against logging "broker is ready" more than once. Only touched on the actor thread. */
   private boolean readyLogged = false;
   private volatile boolean brokerStarted = false;
+  private volatile @Nullable HealthHistory healthHistory;
   private final HealthMonitor healthMonitor;
 
   public BrokerHealthCheckService(
@@ -259,6 +263,32 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
 
   public void removeMonitoredPartition(final HealthMonitorable partition) {
     removeComponent(partition);
+  }
+
+  /** Adds a component, such as a health detector, directly below the broker's root. */
+  public void registerMonitoredComponent(final HealthMonitorable component) {
+    registerComponent(component);
+  }
+
+  public void removeMonitoredComponent(final HealthMonitorable component) {
+    removeComponent(component);
+  }
+
+  /** Notifies the listener of every change of the broker's health tree. */
+  public void addHealthListener(final FailureListener listener) {
+    healthMonitor.addFailureListener(listener);
+  }
+
+  public void removeHealthListener(final FailureListener listener) {
+    healthMonitor.removeFailureListener(listener);
+  }
+
+  public Optional<HealthHistory> getHealthHistory() {
+    return Optional.ofNullable(healthHistory);
+  }
+
+  public void setHealthHistory(final @Nullable HealthHistory healthHistory) {
+    this.healthHistory = healthHistory;
   }
 
   private void removeComponent(final HealthMonitorable component) {
