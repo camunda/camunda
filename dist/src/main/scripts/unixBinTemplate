@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 @LICENSE_HEADER@
 
 # -----------------------------------------------------------------------------
@@ -7,10 +7,14 @@
 # plugin jar). The plugin has not been updated since 2015 and is effectively
 # frozen, so this copy should not require maintenance.
 #
-# The only change we made is the "CAMUNDA ADDITION" block below, which loads an
-# optional config/jvm.options @argfile before the exec call so that
-# runtime-specific JVM flags (e.g. flags only available on JDK 23+) can be
-# applied in Docker images without breaking the general distribution.
+# We made two changes:
+# - The shebang runs bash instead of sh. dash, the sh on Debian and Ubuntu,
+#   drops environment variables whose names are not valid shell identifiers
+#   (e.g. APP_SECRET_db-password) before exec'ing the JVM; bash keeps them.
+# - The "CAMUNDA ADDITION" block below loads an optional config/jvm.options
+#   @argfile before the exec call so that runtime-specific JVM flags (e.g.
+#   flags only available on JDK 23+) can be applied in Docker images without
+#   breaking the general distribution.
 # -----------------------------------------------------------------------------
 
 # resolve links - $0 may be a softlink
