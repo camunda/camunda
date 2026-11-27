@@ -439,7 +439,7 @@ jobs:
             # Derive the bucket from the head branch slot; anything that is not a
             # recognised cheap-/rdbms- slot is treated as a legacy version-only PR.
             version=$([ "$base_ref" = "main" ] && echo "main" || echo "${base_ref#stable/}")
-            rest=${head_ref#fix/nightly-${version}-}
+            rest=${head_ref#fix/nightly-"${version}"-}
             case "$rest" in
               cheap-*) bucket=cheap ;;
               rdbms-*) bucket=rdbms ;;
