@@ -229,6 +229,7 @@ final class BackpressureGrpcTest {
     // given
     publishOutcome = n -> n == 1 ? Status.RESOURCE_EXHAUSTED : null;
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.backpressureProfile(BackpressureProfile.BALANCED);
     builder.physicalTenantId("tenant1");
     final CamundaClient c = newClient(builder);
 
@@ -238,6 +239,18 @@ final class BackpressureGrpcTest {
     // then
     assertThat(publishCalls).hasValue(2);
     assertThat(tenantHeaders).hasSize(2).allSatisfy(h -> assertThat(h).containsExactly("tenant1"));
+  }
+
+  @Test
+  void shouldNotHandleBackpressureByDefault() {
+    // given: a client that was not told to handle backpressure
+    publishOutcome = n -> Status.RESOURCE_EXHAUSTED;
+    final CamundaClientImpl c = newClient(new CamundaClientBuilderImpl());
+
+    // when / then: nothing is retried, and no interceptor is in the way
+    assertThatThrownBy(() -> publish(c).join()).isInstanceOf(ClientStatusException.class);
+    assertThat(publishCalls).hasValue(1);
+    assertThat(c.backpressure().isEnabled()).isFalse();
   }
 
   @Test
@@ -268,6 +281,7 @@ final class BackpressureGrpcTest {
     // given
     publishOutcome = n -> Status.RESOURCE_EXHAUSTED;
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.backpressureProfile(BackpressureProfile.BALANCED);
     builder.useDefaultRetryPolicy(true);
     final CamundaClientImpl c = newClient(builder);
 

@@ -86,19 +86,19 @@ public class SpringCamundaClientConfigurationTest {
   }
 
   @Test
-  void shouldUseTheBalancedBackpressureProfileByDefault() {
+  void shouldNotHandleBackpressureByDefault() {
     final SpringCamundaClientConfiguration configuration =
         new SpringCamundaClientConfiguration(properties(), null, null, null, null, null, null);
-    assertThat(configuration.getBackpressureProfile()).isEqualTo(BackpressureProfile.BALANCED);
+    assertThat(configuration.getBackpressureProfile()).isEqualTo(BackpressureProfile.DISABLED);
   }
 
   @Test
   void shouldPassTheBackpressureProfileOn() {
     final CamundaClientProperties properties = properties();
-    properties.getBackpressure().setProfile(BackpressureProfile.DISABLED);
+    properties.getBackpressure().setProfile(BackpressureProfile.BALANCED);
     final SpringCamundaClientConfiguration configuration =
         new SpringCamundaClientConfiguration(properties, null, null, null, null, null, null);
-    assertThat(configuration.getBackpressureProfile()).isEqualTo(BackpressureProfile.DISABLED);
+    assertThat(configuration.getBackpressureProfile()).isEqualTo(BackpressureProfile.BALANCED);
   }
 
   @Test

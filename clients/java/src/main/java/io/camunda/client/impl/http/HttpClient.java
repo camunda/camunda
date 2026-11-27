@@ -524,11 +524,15 @@ public final class HttpClient implements AutoCloseable {
       final HttpCamundaFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback,
       final boolean sensitiveResponseBody) {
-    // A multipart entity may stream its content from a source that can be read only once, and that
-    // the caller closes as soon as the request is sent. The request may be sent after that, if it
-    // waits for its turn or is retried, so the content is read once, now.
+    // With backpressure handling, a request may be sent after the caller returned, if it waits for
+    // its turn, or be sent again. A multipart entity may stream its content from a source that can
+    // be read only once, and that the caller closes as soon as the request is sent, so its content
+    // is read once, now. Without backpressure handling the entity is read when each attempt is
+    // built, as it always was.
     final Object requestBody =
-        body instanceof HttpEntity ? renderEntity((HttpEntity) body, result) : body;
+        backpressure.isEnabled() && body instanceof HttpEntity
+            ? renderEntity((HttpEntity) body, result)
+            : body;
     if (requestBody == null && body != null) {
       return;
     }
@@ -753,6 +757,15 @@ public final class HttpClient implements AutoCloseable {
 
     if (body instanceof RenderedEntity) {
       final RenderedEntity entity = (RenderedEntity) body;
+      requestBuilder.setBody(entity.content, entity.contentType);
+      return true;
+    }
+
+    if (body instanceof HttpEntity) {
+      final RenderedEntity entity = renderEntity((HttpEntity) body, result);
+      if (entity == null) {
+        return false;
+      }
       requestBuilder.setBody(entity.content, entity.contentType);
       return true;
     }

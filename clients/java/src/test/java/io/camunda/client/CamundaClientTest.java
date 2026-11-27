@@ -133,7 +133,7 @@ public final class CamundaClientTest {
           .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
       assertThat(configuration.preferRestOverGrpc()).isTrue();
       assertThat(configuration.getMaxHttpConnections()).isEqualTo(DEFAULT_MAX_HTTP_CONNECTIONS);
-      assertThat(configuration.getBackpressureProfile()).isEqualTo(BackpressureProfile.BALANCED);
+      assertThat(configuration.getBackpressureProfile()).isEqualTo(BackpressureProfile.DISABLED);
       assertThat(configuration.jobHandlingExecutor()).isNull();
       assertThat(configuration.jobWorkerSchedulingExecutor()).isNull();
     }
@@ -1567,22 +1567,9 @@ public final class CamundaClientTest {
   }
 
   @Test
-  public void shouldUseTheBalancedBackpressureProfileByDefault() {
+  public void shouldNotHandleBackpressureByDefault() {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-
-    // when
-    builder.build().close();
-
-    // then
-    assertThat(builder.getBackpressureProfile()).isEqualTo(BackpressureProfile.BALANCED);
-  }
-
-  @Test
-  public void shouldSetTheBackpressureProfile() {
-    // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-    builder.backpressureProfile(BackpressureProfile.DISABLED);
 
     // when
     builder.build().close();
@@ -1591,12 +1578,25 @@ public final class CamundaClientTest {
     assertThat(builder.getBackpressureProfile()).isEqualTo(BackpressureProfile.DISABLED);
   }
 
+  @Test
+  public void shouldSetTheBackpressureProfile() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.backpressureProfile(BackpressureProfile.BALANCED);
+
+    // when
+    builder.build().close();
+
+    // then
+    assertThat(builder.getBackpressureProfile()).isEqualTo(BackpressureProfile.BALANCED);
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {BACKPRESSURE_PROFILE_VAR})
   public void shouldOverrideTheBackpressureProfileWithEnvVar(final String envName) {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-    builder.backpressureProfile(BackpressureProfile.BALANCED);
+    builder.backpressureProfile(BackpressureProfile.DISABLED);
     Environment.system().put(envName, "conservative");
 
     // when
@@ -1612,7 +1612,7 @@ public final class CamundaClientTest {
     // given
     final Properties properties = new Properties();
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-    builder.backpressureProfile(BackpressureProfile.BALANCED);
+    builder.backpressureProfile(BackpressureProfile.DISABLED);
     properties.setProperty(propertyName, "AGGRESSIVE");
     builder.withProperties(properties);
 

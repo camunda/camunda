@@ -302,6 +302,6 @@ public interface CamundaClientConfiguration {
    * @see CamundaClientBuilder#backpressureProfile(BackpressureProfile)
    */
   default BackpressureProfile getBackpressureProfile() {
-    return BackpressureProfile.BALANCED;
+    return BackpressureProfile.DISABLED;
   }
 }

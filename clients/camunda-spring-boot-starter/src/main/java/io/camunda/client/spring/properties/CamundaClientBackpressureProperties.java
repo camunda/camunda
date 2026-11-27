@@ -24,15 +24,16 @@ public class CamundaClientBackpressureProperties {
 
   /**
    * The profile that tunes how the client reacts when the cluster rejects a request because it is
-   * temporarily overloaded: balanced, conservative, aggressive, legacy or disabled. Unless it is
-   * disabled, a request that the cluster rejects with backpressure (an HTTP 429, an HTTP 503 or 500
-   * that reports resource exhaustion, or a gRPC status of resource exhausted) is retried up to two
-   * more times with exponential backoff and jitter, within the request timeout. Except for legacy,
-   * the client also limits the number of concurrent requests while the cluster is under pressure.
-   * The profiles correspond to those of the Camunda TypeScript SDK. Legacy retries but does not
-   * limit, and disabled restores the behavior from before this handling existed.
+   * temporarily overloaded: balanced, conservative, aggressive, legacy or disabled. Handling
+   * backpressure is opt-in, so the default is disabled. With any other profile, a request that the
+   * cluster rejects with backpressure (an HTTP 429, an HTTP 503 or 500 that reports resource
+   * exhaustion, or a gRPC status of resource exhausted) is retried up to two more times with
+   * exponential backoff and jitter, within the request timeout. Except for legacy, the client also
+   * limits the number of concurrent requests while the cluster is under pressure. The profiles
+   * correspond to those of the Camunda TypeScript SDK. Legacy retries but does not limit, and
+   * disabled restores the behavior from before this handling existed.
    */
-  private BackpressureProfile profile = BackpressureProfile.BALANCED;
+  private BackpressureProfile profile = BackpressureProfile.DISABLED;
 
   public BackpressureProfile getProfile() {
     return profile;

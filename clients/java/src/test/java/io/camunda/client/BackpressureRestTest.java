@@ -49,6 +49,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -98,6 +99,13 @@ public final class BackpressureRestTest extends ClientRestTest {
     }
   }
 
+  /** Backpressure handling is opt-in, so the client of the base class is replaced. */
+  @BeforeEach
+  void optIn() {
+    client.close();
+    client = newClient(BackpressureProfile.BALANCED);
+  }
+
   private CamundaFuture<?> publish(final CamundaClient c) {
     return c.newPublishMessageCommand().messageName("order").correlationKey("1").send();
   }
@@ -112,6 +120,24 @@ public final class BackpressureRestTest extends ClientRestTest {
         .restAddress(client.getConfiguration().getRestAddress())
         .backpressureProfile(profile)
         .build();
+  }
+
+  @Test
+  void shouldNotHandleBackpressureByDefault() {
+    // given: a client that was not told to handle backpressure
+    stubFor(post(urlPathEqualTo(PUBLISH_PATH)).willReturn(resourceExhaustedAs500()));
+    try (final CamundaClient byDefault =
+        CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(true)
+            .restAddress(client.getConfiguration().getRestAddress())
+            .build()) {
+      // when / then: nothing is retried
+      assertThat(byDefault.getConfiguration().getBackpressureProfile())
+          .isEqualTo(BackpressureProfile.DISABLED);
+      assertThat(((CamundaClientImpl) byDefault).backpressure().isEnabled()).isFalse();
+      assertThatThrownBy(() -> publish(byDefault).join()).isInstanceOf(ProblemException.class);
+      verify(exactly(1), postRequestedFor(urlPathEqualTo(PUBLISH_PATH)));
+    }
   }
 
   @Test

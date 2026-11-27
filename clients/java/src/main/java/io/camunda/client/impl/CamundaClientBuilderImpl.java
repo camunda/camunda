@@ -139,7 +139,7 @@ public final class CamundaClientBuilderImpl
       JobExceptionHandler.createDefault();
   public static final boolean DEFAULT_CLIENT_SIDE_LOAD_BALANCING = false;
   public static final BackpressureProfile DEFAULT_BACKPRESSURE_PROFILE =
-      BackpressureProfile.BALANCED;
+      BackpressureProfile.DISABLED;
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private boolean applyEnvironmentVariableOverrides = true;
 

@@ -436,11 +436,12 @@ public interface CamundaClientBuilder {
    * overloaded (backpressure), i.e. with an HTTP 429, an HTTP 503 or 500 with the title or detail
    * {@code RESOURCE_EXHAUSTED}, or a gRPC status {@code RESOURCE_EXHAUSTED}.
    *
-   * <p>By default ({@link BackpressureProfile#BALANCED}) the client retries a rejected request up
-   * to two more times, after a delay that grows exponentially and is randomized, as long as the
-   * request timeout allows it, and limits the number of requests running concurrently while the
-   * cluster is under pressure. A request that is rejected for the last time fails as it did before.
-   * Use {@link BackpressureProfile#DISABLED} to turn this off.
+   * <p>This is opt-in. By default ({@link BackpressureProfile#DISABLED}) the client does not handle
+   * backpressure and behaves as it did before this option existed. With another profile, e.g.
+   * {@link BackpressureProfile#BALANCED}, the client retries a rejected request up to two more
+   * times, after a delay that grows exponentially and is randomized, as long as the request timeout
+   * allows it, and limits the number of requests running concurrently while the cluster is under
+   * pressure. A request that is rejected for the last time fails as it did before.
    *
    * <p>A request that waits for the concurrency limit counts against its request timeout, and the
    * retries of a request do not take longer than the request timeout either. The retry is only made
@@ -448,7 +449,7 @@ public interface CamundaClientBuilder {
    * command twice; timeouts, broken connections and a 503 that does not carry {@code
    * RESOURCE_EXHAUSTED} are not retried.
    *
-   * <p>Default is {@link BackpressureProfile#BALANCED}. Can be overridden with the property {@code
+   * <p>Default is {@link BackpressureProfile#DISABLED}. Can be overridden with the property {@code
    * camunda.client.backpressure.profile} or the environment variable {@code
    * CAMUNDA_SDK_BACKPRESSURE_PROFILE}.
    *

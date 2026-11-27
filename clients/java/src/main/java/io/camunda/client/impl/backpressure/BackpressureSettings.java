@@ -72,7 +72,7 @@ public final class BackpressureSettings {
 
   /** Returns the settings of the given profile; {@code null} stands for the default profile. */
   public static BackpressureSettings forProfile(final BackpressureProfile profile) {
-    final BackpressureProfile effective = profile == null ? BackpressureProfile.BALANCED : profile;
+    final BackpressureProfile effective = profile == null ? BackpressureProfile.DISABLED : profile;
     final Builder builder = new Builder();
     switch (effective) {
       case DISABLED:

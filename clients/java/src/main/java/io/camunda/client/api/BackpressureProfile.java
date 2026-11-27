@@ -20,13 +20,15 @@ package io.camunda.client.api;
  * because it is temporarily overloaded: an HTTP 429, an HTTP 503 or 500 whose problem title or
  * detail contains {@code RESOURCE_EXHAUSTED}, or a gRPC status {@code RESOURCE_EXHAUSTED}.
  *
- * <p>Unless the profile is {@link #DISABLED}, such a rejection does not fail the call right away.
- * The client retries it (3 attempts in total, exponential backoff with full jitter, starting at 100
- * ms and capped at 2 s) as long as the request timeout allows it. Except for {@link #LEGACY}, the
- * client additionally limits the number of concurrently running requests while the cluster is under
- * pressure and lifts the limit again once the cluster has recovered. Only requests that start new
- * work are limited: requests that complete, fail or throw an error for a job, complete a user task,
- * read data (GET requests and searches) and job activation are never delayed by the limit.
+ * <p>Handling backpressure is opt-in: the default profile is {@link #DISABLED}, with which the
+ * client behaves as it did before this handling existed. With any other profile, such a rejection
+ * does not fail the call right away. The client retries it (3 attempts in total, exponential
+ * backoff with full jitter, starting at 100 ms and capped at 2 s) as long as the request timeout
+ * allows it. Except for {@link #LEGACY}, the client additionally limits the number of concurrently
+ * running requests while the cluster is under pressure and lifts the limit again once the cluster
+ * has recovered. Only requests that start new work are limited: requests that complete, fail or
+ * throw an error for a job, complete a user task, read data (GET requests and searches) and job
+ * activation are never delayed by the limit.
  *
  * <p>The profiles mirror those of the Camunda TypeScript SDK, with the same names and values.
  *
@@ -35,10 +37,9 @@ package io.camunda.client.api;
 public enum BackpressureProfile {
 
   /**
-   * The default. The limit starts from 16 concurrent requests, each rejection multiplies it by 0.7
-   * (by 0.5 from the third consecutive rejection on), never below 1. It grows again by one per
-   * second while the cluster is quiet, then by a factor of 1.5, and is lifted after 30 seconds
-   * without rejection.
+   * The limit starts from 16 concurrent requests, each rejection multiplies it by 0.7 (by 0.5 from
+   * the third consecutive rejection on), never below 1. It grows again by one per second while the
+   * cluster is quiet, then by a factor of 1.5, and is lifted after 30 seconds without rejection.
    */
   BALANCED,
 
@@ -67,9 +68,9 @@ public enum BackpressureProfile {
   LEGACY,
 
   /**
-   * Turns client-side backpressure handling off: no retry with backoff, no concurrency limit.
-   * Requests are rejected right away, as before the feature existed, except for the single retry
-   * that the underlying HTTP client performs for HTTP 429 and 503 responses.
+   * The default. Client-side backpressure handling is off: no retry with backoff, no concurrency
+   * limit. Requests are rejected right away, as before the feature existed, except for the single
+   * retry that the underlying HTTP client performs for HTTP 429 and 503 responses.
    */
   DISABLED
 }
