@@ -21,9 +21,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 6 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T02:22:54Z",
+      "window_start": "2026-11-21T02:22:12Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "d64e1205": {
@@ -48,9 +48,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T01:47:37Z",
+      "window_start": "2026-11-21T01:47:25Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "f9a130cc": {
@@ -75,9 +75,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T00:44:08Z",
+      "window_start": "2026-11-21T00:44:35Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "0acc0fd5": {
@@ -129,9 +129,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 6 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T02:22:54Z",
+      "window_start": "2026-11-21T02:22:12Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "bb4828fb": {
@@ -169,9 +169,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T00:52:21Z",
+      "window_start": "2026-11-21T00:52:14Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "3b4d6f3c": {
@@ -196,9 +196,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T00:44:08Z",
+      "window_start": "2026-11-21T00:44:35Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "b1ba4e19": {
@@ -275,9 +275,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T00:34:40Z",
+      "window_start": "2026-11-21T00:36:04Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "3d80a605": {
@@ -302,9 +302,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T00:34:40Z",
+      "window_start": "2026-11-21T00:36:04Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "35a13433": {
@@ -329,9 +329,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T01:30:49Z",
+      "window_start": "2026-11-21T01:30:35Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "df6c1204": {
@@ -363,15 +363,15 @@
     "post_merge": {
       "unit": "nights",
       "merged_at": "2026-11-23T11:52:47Z",
-      "nightlies": 3,
+      "nightlies": 4,
       "flaked": 0,
       "confirmed": 0,
       "verdict": "clean",
-      "summary": "clean 3 night(s)",
+      "summary": "clean 4 night(s)",
       "window_covers_merge": true,
-      "window_start": "2026-11-20T01:30:49Z",
+      "window_start": "2026-11-21T01:30:35Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "449b7818": {
@@ -396,9 +396,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T01:18:20Z",
+      "window_start": "2026-11-21T01:18:35Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "ef2bd44f": {
@@ -423,9 +423,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T00:52:21Z",
+      "window_start": "2026-11-21T00:52:14Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "9932e04a": {
@@ -463,9 +463,9 @@
       "verdict": "clean-in-window",
       "summary": "clean 7 night(s) — the report window starts after the merge, so earlier nights are unmeasured",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T01:02:44Z",
+      "window_start": "2026-11-21T01:02:55Z",
       "last_flake_run_id": "",
-      "checked_at": "2026-11-26T06:26:32.845Z"
+      "checked_at": "2026-11-27T06:27:15.166Z"
     }
   },
   "8819ad24": {
@@ -516,9 +516,9 @@
       "verdict": "re-flaked",
       "summary": "re-flaked in 1 of 7 night(s) since the merge",
       "window_covers_merge": false,
-      "window_start": "2026-11-20T01:18:20Z",
+      "window_start": "2026-11-21T01:18:35Z",
       "last_flake_run_id": "45524974714",
-      "checked_at": "2026-11-26T06:26:32.845Z",
+      "checked_at": "2026-11-27T06:27:15.166Z",
       "pr_flagged_at": "2026-11-25T06:26:44Z"
     }
   },
