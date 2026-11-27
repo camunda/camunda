@@ -487,16 +487,17 @@ export function createProcessInstanceRequest(
 
 /**
  * Creates instances of `processDefinitionKey` over REST until every partition
- * holds one or `maxAttempts` is reached, returning the instance keys. Each
- * create must answer 200.
+ * holds one or `maxAttempts` is reached, returning the partitions reached. Each
+ * create must answer 200; `onCreated` receives every instance key as soon as it
+ * exists, so a later failure still leaves the earlier ones for teardown.
  */
 export async function createInstancesUntilEveryPartition(
   request: APIRequestContext,
   processDefinitionKey: string,
   partitions: number,
   maxAttempts: number,
-): Promise<string[]> {
-  const created: string[] = [];
+  onCreated: (processInstanceKey: string) => void,
+): Promise<Set<number>> {
   const reached = new Set<number>();
   for (
     let attempt = 0;
@@ -508,10 +509,74 @@ export async function createInstancesUntilEveryPartition(
     });
     await assertStatusCode(res, 200);
     const {processInstanceKey} = await res.json();
-    created.push(processInstanceKey);
+    onCreated(processInstanceKey);
     reached.add(partitionOf(processInstanceKey));
   }
-  return created;
+  return reached;
+}
+
+/**
+ * Alternates a create of the suspended version, which must be rejected, with a
+ * create of an active `probeDefinitionKey`, until the probes have landed on
+ * every partition or `maxAttempts` is reached. Returns the partitions the probes
+ * reached.
+ *
+ * No API routes a create to a chosen partition and a rejected create returns no
+ * key, so the probes are the evidence that the gateway's round-robin rotated
+ * through every partition while the suspended creates were being rejected.
+ */
+export async function expectCreationRejectedWhileProbesReachEveryPartition(
+  request: APIRequestContext,
+  suspended: {
+    processDefinitionKey: string;
+    processDefinitionId: string;
+    processDefinitionVersion: number;
+  },
+  probeDefinitionKey: string,
+  partitions: number,
+  maxAttempts: number,
+  onCreated: (processInstanceKey: string) => void,
+): Promise<Set<number>> {
+  const reached = new Set<number>();
+  for (
+    let attempt = 0;
+    attempt < maxAttempts && reached.size < partitions;
+    attempt++
+  ) {
+    await expectCreationRejectedAsSuspended(
+      await createProcessInstanceRequest(request, {
+        processDefinitionKey: suspended.processDefinitionKey,
+      }),
+      suspended.processDefinitionId,
+      suspended.processDefinitionVersion,
+    );
+    const probe = await createProcessInstanceRequest(request, {
+      processDefinitionKey: probeDefinitionKey,
+    });
+    await assertStatusCode(probe, 200);
+    const {processInstanceKey} = await probe.json();
+    onCreated(processInstanceKey);
+    reached.add(partitionOf(processInstanceKey));
+  }
+  return reached;
+}
+
+/** Polls GET by key, the endpoint a client reads a single definition with. */
+export async function expectProcessDefinitionStateByKey(
+  request: APIRequestContext,
+  processDefinitionKey: string,
+  expectedState: ProcessDefinitionState,
+): Promise<void> {
+  await expect(async () => {
+    const res = await request.get(
+      buildUrl('/process-definitions/{processDefinitionKey}', {
+        processDefinitionKey,
+      }),
+      {headers: jsonHeaders()},
+    );
+    await assertStatusCode(res, 200);
+    expect((await res.json()).state).toBe(expectedState);
+  }).toPass(defaultAssertionOptions);
 }
 
 export async function expectCreationRejectedAsSuspended(

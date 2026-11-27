@@ -21,9 +21,11 @@ import {
   deployUserTaskProcessVersions,
   drainProcessDefinition,
   expectCreationRejectedAsSuspended,
+  expectCreationRejectedWhileProbesReachEveryPartition,
   expectProcessDefinitionDeleted,
   expectProcessDefinitionKeys,
   expectProcessDefinitionState,
+  expectProcessDefinitionStateByKey,
   expectProcessInstanceCount,
   expectProcessState,
   findUserTask,
@@ -340,6 +342,8 @@ test.describe('Process Definition Suspension API', () => {
 
       await suspendDefinitionAndWait(request, keys[1]!);
 
+      await expectProcessDefinitionStateByKey(request, keys[1]!, 'SUSPENDED');
+      await expectProcessDefinitionStateByKey(request, keys[0]!, 'ACTIVE');
       await expectProcessDefinitionKeys(
         request,
         {processDefinitionId, state: 'SUSPENDED'},
@@ -353,6 +357,7 @@ test.describe('Process Definition Suspension API', () => {
 
       await resumeDefinitionAndWait(request, keys[1]!);
 
+      await expectProcessDefinitionStateByKey(request, keys[1]!, 'ACTIVE');
       await expectProcessDefinitionKeys(
         request,
         {processDefinitionId, state: 'SUSPENDED'},
@@ -504,31 +509,40 @@ test.describe('Process Definition Suspension API', () => {
       const processDefinitionId = uniquePrefixedId('pd-suspend-partitions');
       const [v1] = await deployUserTaskProcessVersions(processDefinitionId, 1);
       const processDefinitionKey = v1!.processDefinitionKey;
+      const probe = await deployUserTaskProcess(
+        uniquePrefixedId('pd-suspend-partitions-probe'),
+      );
       const attempts = partitions * 10;
 
       await suspendDefinitionAndWait(request, processDefinitionKey);
 
-      for (let attempt = 0; attempt < attempts; attempt++) {
-        await expectCreationRejectedAsSuspended(
-          await createProcessInstanceRequest(request, {processDefinitionKey}),
-          processDefinitionId,
-          1,
+      const rotatedThrough =
+        await expectCreationRejectedWhileProbesReachEveryPartition(
+          request,
+          {
+            processDefinitionKey,
+            processDefinitionId,
+            processDefinitionVersion: 1,
+          },
+          probe.processDefinitionKey,
+          partitions,
+          attempts,
+          (key) => instancesToCancel.push(key),
         );
-      }
+      expect(rotatedThrough.size).toBe(partitions);
 
       await resumeDefinitionAndWait(request, processDefinitionKey);
 
-      const created = await createInstancesUntilEveryPartition(
+      const reached = await createInstancesUntilEveryPartition(
         request,
         processDefinitionKey,
         partitions,
         attempts,
+        (key) => instancesToCancel.push(key),
       );
-      instancesToCancel.push(...created);
-      expect(new Set(created.map(partitionOf)).size).toBe(partitions);
+      expect(reached.size).toBe(partitions);
     });
 
-    // eslint-disable-next-line playwright/expect-expect -- asserted through the request helpers
     test('Suspend directly followed by resume leaves the version active on every partition', async ({
       request,
     }) => {
@@ -546,13 +560,14 @@ test.describe('Process Definition Suspension API', () => {
         extendedAssertionOptions,
       );
       const partitions = await partitionsCount(request);
-      for (let attempt = 0; attempt < partitions * 2; attempt++) {
-        const res = await createProcessInstanceRequest(request, {
-          processDefinitionKey,
-        });
-        await assertStatusCode(res, 200);
-        instancesToCancel.push((await res.json()).processInstanceKey);
-      }
+      const reached = await createInstancesUntilEveryPartition(
+        request,
+        processDefinitionKey,
+        partitions,
+        partitions * 10,
+        (key) => instancesToCancel.push(key),
+      );
+      expect(reached.size).toBe(partitions);
     });
   });
 });
