@@ -85,6 +85,10 @@ public final class SortOptionBuilders {
     return new ClusterVariableSort.Builder();
   }
 
+  public static CaseSort.Builder caseSort() {
+    return new CaseSort.Builder();
+  }
+
   public static DecisionDefinitionSort.Builder decisionDefinition() {
     return new DecisionDefinitionSort.Builder();
   }
@@ -160,6 +164,10 @@ public final class SortOptionBuilders {
   public static ClusterVariableSort clusterVariable(
       final Function<ClusterVariableSort.Builder, ObjectBuilder<ClusterVariableSort>> fn) {
     return fn.apply(clusterVariable()).build();
+  }
+
+  public static CaseSort caseSort(final Function<CaseSort.Builder, ObjectBuilder<CaseSort>> fn) {
+    return fn.apply(caseSort()).build();
   }
 
   public static DecisionDefinitionSort decisionDefinition(

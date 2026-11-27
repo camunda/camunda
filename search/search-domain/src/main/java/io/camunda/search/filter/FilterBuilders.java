@@ -254,6 +254,14 @@ public final class FilterBuilders {
     return new ClusterVariableFilter.Builder();
   }
 
+  public static CaseFilter.Builder caseFilter() {
+    return new CaseFilter.Builder();
+  }
+
+  public static CaseStageFilter.Builder caseStage() {
+    return new CaseStageFilter.Builder();
+  }
+
   public static VariableFilter variable(
       final Function<VariableFilter.Builder, ObjectBuilder<VariableFilter>> fn) {
     return fn.apply(variable()).build();
@@ -262,6 +270,16 @@ public final class FilterBuilders {
   public static ClusterVariableFilter clusterVariable(
       final Function<ClusterVariableFilter.Builder, ObjectBuilder<ClusterVariableFilter>> fn) {
     return fn.apply(clusterVariable()).build();
+  }
+
+  public static CaseFilter caseFilter(
+      final Function<CaseFilter.Builder, ObjectBuilder<CaseFilter>> fn) {
+    return fn.apply(caseFilter()).build();
+  }
+
+  public static CaseStageFilter caseStage(
+      final Function<CaseStageFilter.Builder, ObjectBuilder<CaseStageFilter>> fn) {
+    return fn.apply(caseStage()).build();
   }
 
   public static VariableValueFilter.Builder variableValue() {

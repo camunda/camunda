@@ -139,9 +139,18 @@ public final class SearchQueryBuilders {
     return new ClusterVariableQuery.Builder();
   }
 
+  public static CaseQuery.Builder caseSearchQuery() {
+    return new CaseQuery.Builder();
+  }
+
   public static ClusterVariableQuery clusterVariableSearchQuery(
       final Function<ClusterVariableQuery.Builder, ObjectBuilder<ClusterVariableQuery>> fn) {
     return fn.apply(clusterVariableSearchQuery()).build();
+  }
+
+  public static CaseQuery caseSearchQuery(
+      final Function<CaseQuery.Builder, ObjectBuilder<CaseQuery>> fn) {
+    return fn.apply(caseSearchQuery()).build();
   }
 
   public static DecisionDefinitionQuery.Builder decisionDefinitionSearchQuery() {

@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
+import io.camunda.db.rdbms.read.service.CaseDbReader;
 import io.camunda.db.rdbms.read.service.ClusterVariableDbReader;
 import io.camunda.db.rdbms.read.service.CorrelatedMessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
@@ -69,6 +70,7 @@ public record RdbmsTenantReaders(
     BatchOperationDbReader batchOperationReader,
     BatchOperationItemDbReader batchOperationItemReader,
     ClusterVariableDbReader clusterVariableReader,
+    CaseDbReader caseReader,
     CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader,
     DecisionDefinitionDbReader decisionDefinitionReader,
     DecisionInstanceDbReader decisionInstanceReader,
@@ -122,6 +124,7 @@ public record RdbmsTenantReaders(
         new BatchOperationDbReader(mappers.batchOperationMapper(), readerConfig),
         new BatchOperationItemDbReader(mappers.batchOperationMapper(), readerConfig),
         new ClusterVariableDbReader(mappers.clusterVariableMapper(), readerConfig),
+        new CaseDbReader(),
         new CorrelatedMessageSubscriptionDbReader(
             mappers.correlatedMessageSubscriptionMapper(), readerConfig),
         new DecisionDefinitionDbReader(mappers.decisionDefinitionMapper(), readerConfig),
@@ -209,6 +212,7 @@ public record RdbmsTenantReaders(
         variableReader,
         clusterVariableReader,
         variableHistoryReader,
+        caseReader,
         auditLogReader,
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,
