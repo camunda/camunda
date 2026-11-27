@@ -9,13 +9,13 @@ package io.camunda.authentication.clusteradmin;
 
 import static io.camunda.security.spring.security.CamundaSecurityFilterChainConstants.ORDER_API;
 
-import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.authentication.clusteradmin.ClusterApiSettings.ClusterAdminAuthenticationMethod;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
-import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.security.spring.handler.AuthFailureHandler;
 import io.camunda.security.spring.security.SecurityFilterChainSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -28,6 +28,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
@@ -39,7 +40,9 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  *
  * <p>All paths under {@code /cluster/v2/**} require HTTP Basic authentication against the
  * statically configured cluster-admin users ({@code camunda.security.cluster-admin.basic.users}).
- * Registered only under the basic authentication method (the default)
+ * Registered when the effective cluster-admin method is basic (see {@link
+ * ClusterApiSettings#load}): explicitly via {@code
+ * camunda.security.cluster-admin.authentication.method}, or by following the global method.
  *
  * <p><strong>Isolation:</strong> keep the cluster-admin user store isolated as a plain in-memory
  * object behind a dedicated, parent-less {@link ProviderManager} for this chain. Do not expose it
@@ -52,14 +55,12 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  * RequestAttributeSecurityContextRepository} explicitly and never creates a session, so an existing
  * webapp session cookie can never authenticate {@code /cluster/v2/**}.
  *
- * <p><strong>OIDC:</strong> handled by separate {@link ClusterAdminOidcSecurityConfiguration},
- * gated by {@code @ConditionalOnAuthenticationMethod(OIDC)}.
- *
- * <p>The Basic and OIDC chains are mutually exclusive by deployment method, so both can target
- * {@code /cluster/v2/**} without conflict.
+ * <p><strong>OIDC / none:</strong> handled by {@link ClusterAdminOidcSecurityConfiguration} and
+ * {@link ClusterAdminNoAuthSecurityConfiguration}. The three chains are mutually exclusive by the
+ * effective cluster-admin method, so all can target {@code /cluster/v2/**} without conflict.
  */
 @Configuration
-@ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+@ConditionalOnClusterAdminAuthenticationMethod(ClusterAdminAuthenticationMethod.BASIC)
 public class ClusterAdminBasicSecurityConfiguration {
 
   /**
@@ -70,23 +71,30 @@ public class ClusterAdminBasicSecurityConfiguration {
    */
   public static final String CLUSTER_ADMIN_AUTHORITY = "ROLE_CLUSTER_ADMIN";
 
-  static final String CLUSTER_ADMIN_API_PATTERN = "/cluster/v2/**";
+  static final String CLUSTER_ADMIN_API_PATTERN = ClusterApiSettings.CLUSTER_API_PATTERN;
 
   private static final Logger LOG =
       LoggerFactory.getLogger(ClusterAdminBasicSecurityConfiguration.class);
 
-  @Bean
+  @Bean(ClusterApiSettings.BASIC_CHAIN_BEAN)
   @Order(ORDER_API)
   public SecurityFilterChain clusterAdminSecurityFilterChain(
       final HttpSecurity http,
       final Environment environment,
-      final PasswordEncoder passwordEncoder,
+      final ObjectProvider<PasswordEncoder> passwordEncoderProvider,
       final AuthFailureHandler authFailureHandler,
       final CamundaSecurityLibraryProperties properties)
       throws Exception {
+    // The shared PasswordEncoder bean exists only when the global method is BASIC; a Basic
+    // cluster-admin chain on an OIDC cluster encodes and verifies with its own encoder.
+    final PasswordEncoder passwordEncoder =
+        passwordEncoderProvider.getIfAvailable(
+            PasswordEncoderFactories::createDelegatingPasswordEncoder);
     http.authenticationManager(clusterAdminAuthenticationManager(environment, passwordEncoder));
 
-    http.securityMatcher(CLUSTER_ADMIN_API_PATTERN)
+    // Path-only, on every port: credentials are required wherever /cluster/v2/** is reachable,
+    // independently of the port gate that confines it to a dedicated port when one is set.
+    http.securityMatcher(ClusterApiSettings.load(environment).clusterApiMatcher())
         .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
         .httpBasic(Customizer.withDefaults())
         .exceptionHandling(
@@ -128,9 +136,8 @@ public class ClusterAdminBasicSecurityConfiguration {
       final Environment environment, final PasswordEncoder passwordEncoder) {
     final var users = ClusterAdminBasicAuthProperties.loadAndValidate(environment);
 
-    // The shared PasswordEncoder bean is present because this chain and that bean share the same
-    // @ConditionalOnAuthenticationMethod(BASIC) gate. It encodes the configured passwords below and
-    // verifies them on every request, so encode and verify always agree.
+    // The same encoder encodes the configured passwords below and verifies them on every request,
+    // so encode and verify always agree.
     final var userDetailsManager = new InMemoryUserDetailsManager();
     for (final ClusterAdminUser user : users) {
       userDetailsManager.createUser(

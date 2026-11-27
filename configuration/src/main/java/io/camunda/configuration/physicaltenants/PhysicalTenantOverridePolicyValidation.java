@@ -118,6 +118,8 @@ final class PhysicalTenantOverridePolicyValidation {
               "api.rest.executor",
               "api.grpc",
               "api.long-polling",
+              // one dedicated cluster API connector per process, not per tenant
+              "api.cluster",
               // camunda.data.* cluster wide
               "data.secondary-storage.rdbms.max-varchar-field-length",
               // #56648: a per-tenant override of the partition data directory is not allowed,
