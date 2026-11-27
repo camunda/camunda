@@ -55,7 +55,7 @@ public class ProcessInstanceCreationHelper {
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS =
-      "Expected to find process definition with process ID '%s', but none found";
+      "Expected to find process definition with process ID '%s', but no active definition was found";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION =
       "Expected to find process definition with process ID '%s' and version '%d', but none found";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION_TAG =

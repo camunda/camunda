@@ -399,7 +399,7 @@ public final class CreateProcessInstanceTest {
 
     assertThatThrownBy(command::join)
         .hasMessageContaining(
-            "Expected to find process definition with process ID 'non-existing', but none found");
+            "Expected to find process definition with process ID 'non-existing', but no active definition was found");
   }
 
   @ParameterizedTest
