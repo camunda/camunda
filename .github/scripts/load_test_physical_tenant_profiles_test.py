@@ -176,9 +176,15 @@ class CapacityTest(unittest.TestCase):
         self.assertEqual(profiles.capacity_of("postgresql", "120", rest=True), 120)
         self.assertEqual(profiles.capacity_of("elasticsearch", "120", rest=False), 120)
 
+    def test_postgresql_over_rest_uses_the_elasticsearch_estimate(self):
+        self.assertEqual(profiles.capacity_of("postgresql", "", rest=True), profiles.capacity_of("elasticsearch", "", rest=True))
+
+    def test_postgresql_over_grpc_uses_the_elasticsearch_estimate(self):
+        self.assertEqual(profiles.capacity_of("postgresql", "", rest=False), profiles.capacity_of("elasticsearch", "", rest=False))
+
     def test_storage_without_an_estimate_needs_a_given_capacity(self):
-        with self.assertRaisesRegex(profiles.InputError, "required for secondary storage 'postgresql'"):
-            profiles.capacity_of("postgresql", "")
+        with self.assertRaisesRegex(profiles.InputError, "required for secondary storage 'mysql'"):
+            profiles.capacity_of("mysql", "")
 
 
 if __name__ == "__main__":

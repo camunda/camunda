@@ -19,7 +19,8 @@ common factor so that all rates sum to it; it is an error when that cannot be re
 The cluster capacity is the throughput at which the cluster saturates. The daily `max` stress test
 (300 PI/s, `load-tests/docs/scripts/optimal.json`) is not that: it is a rate the cluster sustains with
 CPU at about half of its limit. Until a calibration run measures the capacity, an estimate exists for
-Elasticsearch only (see ESTIMATED_CAPACITY); for any other secondary storage it must be given.
+Elasticsearch, OpenSearch and PostgreSQL (ESTIMATED_GRPC_CAPACITY); for any other secondary storage it
+must be given.
 
 Worker replicas scale linearly with the rate (WORKER_REPLICAS_PER_100_PI, at least one), so workers
 never limit a tenant. 3 workers sustain about 800 PI/s, so the default ratio keeps some margin.
@@ -47,7 +48,8 @@ from dataclasses import dataclass
 # PI/s per secondary storage used as the gRPC capacity on the default 4 CPU sizing. A 10 tenant gRPC run
 # reached 600 to 650 PI/s with a lot of backpressure, so this is closer to the saturation throughput than
 # to a rate sustained without backpressure. TODO: replace with the result of a calibration run.
-ESTIMATED_GRPC_CAPACITY = {"elasticsearch": 600.0}
+# OpenSearch and PostgreSQL are assumed to match Elasticsearch.
+ESTIMATED_GRPC_CAPACITY = {"elasticsearch": 600.0, "opensearch": 600.0, "postgresql": 600.0}
 # REST spends a quarter to a third of the CPU in Tomcat and Spring request handling (profile of a
 # 10 tenant run), so the same cluster sustains less over REST. Assumed 35% less, to be calibrated.
 REST_CAPACITY_FACTOR = 0.65

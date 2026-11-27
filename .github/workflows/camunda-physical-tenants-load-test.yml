@@ -22,7 +22,7 @@ on:
         type: string
         required: true
       cluster-capacity-rate:
-        description: '── Load ──────────────────────────── Process instances/s the cluster sustains (100%). Empty uses an estimate for the chosen API (Elasticsearch only, not yet calibrated, REST 35% below gRPC); other storages need a calibrated value'
+        description: '── Load ──────────────────────────── Process instances/s the cluster sustains (100%). Empty uses an uncalibrated estimate for Elasticsearch, OpenSearch and PostgreSQL (600 over gRPC, REST 35% below); other storages need a calibrated value'
         type: string
         default: ""
         required: false
