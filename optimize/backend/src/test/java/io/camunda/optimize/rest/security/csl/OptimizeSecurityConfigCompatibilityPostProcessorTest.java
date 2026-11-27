@@ -226,6 +226,81 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
+  void shouldBridgeIdentityClientSecretKeyAndLogDeprecation() {
+    // given the docker-compose 8.10 .optimize/application-ccsm.yaml: the secret only lives in the
+    // camunda.identity.clientSecret config key, with no CAMUNDA_IDENTITY_CLIENT_SECRET env var
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "http://localhost:18080/auth/realms/camunda-platform");
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("camunda.identity.clientSecret", "compose-secret");
+
+    // when
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    // then
+    assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("optimize");
+    assertThat(env.getProperty(OIDC + "client-secret")).isEqualTo("compose-secret");
+    logs.assertContains(
+        entry ->
+            entry.getLevel() == Level.WARN
+                && entry.getMessage().contains("camunda.identity.clientSecret")
+                && entry.getMessage().contains(OIDC + "client-secret"),
+        "expected deprecation warning naming the camunda.identity.clientSecret key");
+    logs.assertDoesNotContain(
+        entry -> entry.getMessage().contains("compose-secret"),
+        "client secret value must never be logged");
+  }
+
+  @Test
+  void shouldWarnAboutTheIdentityClientSecretKeyWhenNoIssuerIsConfigured() {
+    // given a client secret but no issuer to register it against
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "");
+    legacy.put("camunda.identity.clientSecret", "guard-secret");
+
+    // when
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    // then the credential is withheld, and the operator is told the key was seen but not used
+    assertThat(env.getProperty(OIDC + "client-secret")).isNull();
+    logs.assertContains(
+        entry ->
+            entry.getLevel() == Level.WARN
+                && entry.getMessage().contains("camunda.identity.clientSecret"),
+        "expected a warning naming the unbridgeable camunda.identity.clientSecret key");
+    logs.assertDoesNotContain(
+        entry ->
+            entry.getMessage().contains("camunda.identity.clientId")
+                || entry.getMessage().contains("CAMUNDA_IDENTITY_CLIENT_SECRET"),
+        "the warning must name only the keys that are set");
+    logs.assertDoesNotContain(
+        entry -> entry.getMessage().contains("guard-secret"),
+        "client secret value must never be logged");
+  }
+
+  @Test
+  void shouldPreferIdentityClientSecretEnvVarOverTheConfigKeyAndNotDoubleWarn() {
+    // given both secret sources, with an issuer
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "http://localhost:18080/auth/realms/camunda-platform");
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "env-secret");
+    legacy.put("camunda.identity.clientSecret", "yaml-secret");
+
+    // when
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
+
+    // then the env var wins, as in the legacy stack, and the losing key gets no warning
+    assertThat(env.getProperty(OIDC + "client-secret")).isEqualTo("env-secret");
+    logs.assertDoesNotContain(
+        entry -> entry.getMessage().contains("camunda.identity.clientSecret"),
+        "the config key must not get its own warning when the env var already won");
+  }
+
+  @Test
   void shouldDeriveEndpointsFromIssuerBackendUrlWhenNoIssuerIsConfigured() {
     // A deployment that only protects the public API: a JWK set URI, no browser-facing issuer. CSL
     // needs an issuer-uri or all three endpoints, so without this it can build no registration at
@@ -800,6 +875,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("camunda.identity.issuer", "");
     legacy.put("camunda.identity.clientId", "");
     legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "");
+    legacy.put("camunda.identity.clientSecret", "");
 
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
@@ -824,6 +900,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("camunda.identity.issuer", "http://legacy.example.com/realm");
     legacy.put("camunda.identity.clientId", "legacy-client");
     legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
+    legacy.put("camunda.identity.clientSecret", "legacy-secret");
 
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
@@ -848,6 +925,10 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         entry -> entry.getMessage().contains("CAMUNDA_IDENTITY_CLIENT_SECRET"),
         "the mirrored CAMUNDA_IDENTITY_CLIENT_SECRET key must not get its own warning when the"
             + " legacy secret already won");
+    logs.assertDoesNotContain(
+        entry -> entry.getMessage().contains("camunda.identity.clientSecret"),
+        "the mirrored camunda.identity.clientSecret key must not get its own warning when the"
+            + " legacy secret already won");
   }
 
   @Test
@@ -871,6 +952,12 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     logs.assertContains(
         entry -> entry.getMessage().contains("camunda.identity.issuer"),
         "expected a warning naming the missing issuer key");
+    logs.assertContains(
+        entry ->
+            entry
+                .getMessage()
+                .contains("'camunda.identity.clientId'/'CAMUNDA_IDENTITY_CLIENT_SECRET'"),
+        "expected the warning to name both keys that are set");
     // the secret value itself must never be logged
     logs.assertDoesNotContain(
         entry -> entry.getMessage().contains("helm-secret"),
