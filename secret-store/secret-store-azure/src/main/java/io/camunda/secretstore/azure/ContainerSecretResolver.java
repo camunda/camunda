@@ -37,7 +37,7 @@ final class ContainerSecretResolver implements AzureSecretResolver {
 
   @Override
   public List<String> list() {
-    // TODO(#68639): return the container secret's field names once container resolution
+    // TODO(#71444): return the container secret's field names once container resolution
     // (#68637, PR #71286) lands, reading it within the call timeout like resolve does
     return List.of();
   }
