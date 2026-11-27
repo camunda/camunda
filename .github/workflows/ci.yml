@@ -1016,7 +1016,7 @@ jobs:
           plugins.index_state_management.jitter: "0"
           knn.algo_param.index_thread_qty: 4
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - uses: actions/checkout@v4
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1106,7 +1106,7 @@ jobs:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       TEST_OWNER: '@camunda/data-layer'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - uses: actions/checkout@v4
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
