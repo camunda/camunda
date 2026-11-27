@@ -1,0 +1,35 @@
+name: Engine risk
+description: Record a risky area of the engine where changes need care to avoid regressions and bugs.
+title: "[Engine Risk] "
+labels: ["risk/engine", "component/zeebe", "component/zeebe-engine"]
+# The risk status and the risk kind are fields of the Engine Governance project, not part of this form.
+# See docs/zeebe/risks/README.md.
+body:
+  - type: textarea
+    id: where
+    attributes:
+      label: Where
+      description: A rough area or path in the engine, for example a module, a class or a flow.
+    validations:
+      required: true
+  - type: textarea
+    id: what-can-go-wrong
+    attributes:
+      label: What can go wrong
+      description: One or two sentences on the mistake and what happens if it is not handled correctly.
+    validations:
+      required: true
+  - type: textarea
+    id: where-found
+    attributes:
+      label: Where it was found
+      description: A link to the pull request, Slack thread, incident or postmortem.
+    validations:
+      required: false
+  - type: input
+    id: documented-in
+    attributes:
+      label: Documented in
+      description: Link to the markdown file of this risk in docs/zeebe/risks. Leave empty for a new risk, fill it in when the pull request that documents the risk is merged.
+    validations:
+      required: false

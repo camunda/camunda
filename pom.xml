@@ -98,6 +98,8 @@
               <exclude>.github/workflows/**/*.md</exclude>
               <exclude>load-tests/skills/**/*.md</exclude>
               <exclude>docs/monorepo-docs/**/*.md</exclude>
+              <!-- the risk files start with a YAML front matter that agents read, see docs/zeebe/risks/README.md -->
+              <exclude>docs/zeebe/risks/**/*.md</exclude>
             </excludes>
             <flexmark/>
           </markdown>
