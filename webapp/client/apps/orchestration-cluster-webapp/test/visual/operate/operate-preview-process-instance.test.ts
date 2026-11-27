@@ -13,6 +13,7 @@ import {
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessInstanceEndpoint,
 	mockQueryAgentInstancesEndpoint,
+	mockQueryAgentInstanceHistoryEndpoint,
 	mockQueryAuditLogsEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,
@@ -23,7 +24,11 @@ import {
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 import {createJob, createListenerJob, createQueryJobsResponse} from '#/shared-test-modules/api-mocks/jobs';
-import {createAgentInstance} from '#/shared-test-modules/api-mocks/agent-instances';
+import {
+	createAgentInstance,
+	createAgentInstanceHistoryItem,
+	createQueryAgentInstanceHistoryResponse,
+} from '#/shared-test-modules/api-mocks/agent-instances';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
@@ -290,6 +295,67 @@ test('should match the process instance details tab snapshot', async ({
 	);
 
 	await expect(operatePreviewProcessInstancePage.elementInstanceDetailsList.getByText('email-worker')).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
+});
+
+test('should match the process instance details tab snapshot with AI agent details', async ({
+	network,
+	page,
+	operatePreviewProcessInstancePage,
+}) => {
+	const elementInstanceKey = '2251799813685290';
+	network.use(
+		mockGetElementInstanceEndpoint({
+			successResponse: HttpResponse.json(
+				createElementInstance({
+					elementId: 'task-1',
+					elementInstanceKey,
+					type: 'USER_TASK',
+					state: 'ACTIVE',
+				}),
+			),
+		}),
+		mockQueryAgentInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createAgentInstance({
+							elementId: 'task-1',
+							processInstanceKey: PROCESS_INSTANCE_ID,
+							elementInstanceKeys: [elementInstanceKey],
+							metrics: {
+								inputTokens: 120,
+								outputTokens: 80,
+								reasoningTokenCount: 10,
+								cacheCreationTokenCount: 0,
+								cacheReadTokenCount: 0,
+								modelCalls: 3,
+								toolCalls: 2,
+							},
+							limits: {maxModelCalls: 5, maxToolCalls: 4, maxTokens: 500},
+						}),
+					],
+				}),
+			),
+		}),
+		mockQueryAgentInstanceHistoryEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryAgentInstanceHistoryResponse([
+					createAgentInstanceHistoryItem({
+						role: 'ASSISTANT',
+						content: [{contentType: 'TEXT', text: 'I found two possible options.'}],
+					}),
+				]),
+			),
+		}),
+	);
+
+	await page.goto(
+		`/operate-preview/processes/${PROCESS_INSTANCE_ID}/details?elementId=task-1&elementInstanceKey=${elementInstanceKey}`,
+	);
+
+	await expect(page.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+	await expect(page.getByText('I found two possible options.')).toBeVisible();
 	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
 });
 
