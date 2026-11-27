@@ -138,6 +138,7 @@ worker.
 | D73 | The activation response carries `secretPointers`: the JSON pointers of the input leaves into which the engine injected a secret value, taken from the references the engine found at `CREATE` (D28). No secret names and no values. The Java client removes the values of these leaves from `ActivatedProbe.toString()` and from the default `ERROR` message (D30). A leaf that mixes a secret with other text is removed whole; a message that holds only part of such a leaf is not caught, so a handler must not build messages from secret values. Divergence from jobs, which have no such field: only the probe SDK promises this removal. From the review of camunda/camunda#68884.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | AGREED                      |
 | D74 | A processed command carries one response, and `ANSWER` has two requesters: the worker and the client. So `ANSWER` answers the worker, writes `ANSWERED`, and appends the internal command `RESPOND`, which carries `data` and answers the client held since `CREATE`. A client that sends `RESPOND` is rejected. The exporters skip `RESPOND` as `ANSWER` (D42). The POC did this since 2026-10-26; the specification missed it. Consequence: `RESPOND` carries `data` again, in one batch with `ANSWERED`. An answer near `maxMessageSize` still fits; one whose `RESPOND` does not fit gets `413` and becomes an `ERROR` answer (D53), and the probe stays `ACTIVATED`. The specification first said the largest answer was about half of D7; the tests of camunda/camunda#69194 showed it is not. From the implementation of camunda/camunda#68865, 2026-11-12.                                                                                                                                                                                                                                                                                                                                                                                       | AGREED                      |
 | D75 | A probe is parked on a secret as a job is. `SECRET_REFERENCE` records get `probeKeys`, next to `jobKeys`: the probes a `RESOLUTION_REQUESTED` parks. Two partition-local column families mirror the job ones: `SECRET_REFERENCES_BY_PROBE` and `PROBES_BY_SECRET_REFERENCE`, emptied when the probe becomes `ACTIVATABLE` again or ends (`ANSWERED`, `TIMED_OUT`, `CANCELED`). The `RESOLUTION_REQUESTED` and `RESOLUTION_COMPLETED` appliers shipped in 8.10.0, so each gets a version 2 that also parks or releases probes; version 1 is kept. `RESOLUTION_COMPLETED` makes a parked probe `ACTIVATABLE` when none of its references is still pending, and `RESOLUTION_FAILED` cancels the parked probes, both without the batched follow-up commands jobs use: only probes in flight wait for a reference. The client of a canceled probe is answered by the internal `RESPOND` (D74), as the poll that cancels it answers its worker and a failed resolution can cancel several probes. A cancellation that no longer fits the batch is left out: the probe stays activatable for the next poll to cancel, or parked until its deadline. The POC had these; the specification did not. From the implementation of camunda/camunda#68866, 2026-11-13. | AGREED                      |
+| D78 | The Java client sends a probe with `newCreateProbeCommand()`, as its other `newCreateXCommand()`s: `probeId(String)`, `input(...)` (a String, the FEEL expression; or a Map or an Object, as other commands take variables, sent as a FEEL context of literal values), optional `tenantId(String)` and `requestTimeout(Duration)`, then `send()`. The response is the answer envelope (D9, D59): `outcome`, `worker`, `data`, `message`. `404 NO_WORKER`, `413` and the `504`s surface as `ProblemException`, as for every REST command. Its HTTP request waits at least the probe's `requestTimeout` + 1 s (when absent, the request carries none and the cluster default applies, capped at 30 s, so the client waits 30 s + 1 s; D49, section 10.1). The probe worker has no `metrics` option in phase 2, as there are no server-side probe metrics: a divergence from the job worker. Agreed on 2026-11-18 for camunda/camunda#68869.                                                                                                                                                                                                                                                                                                                | AGREED                      |
 
 ## 4. Client API
 
@@ -388,11 +389,11 @@ Options taken from the job worker, all required in the implementation:
 | `pollInterval`, `requestTimeout`                                                          | `pollInterval`, `requestTimeout` |
 | `backoffSupplier`: retry after a failed poll, including on a cluster without probes (D43) | `backoffSupplier`                |
 | `probeExceptionHandler`: provides the `ERROR` message (D30)                               | `jobExceptionHandler`            |
-| `metrics`                                                                                 | `metrics`                        |
 
 Left out, because they have no meaning for probes: `timeout` (the client sets the deadline, D18),
 `fetchVariables` (the input is always complete), `withLease`, and the stream options
-(`streamEnabled`, `streamTimeout`, `streamInactivityTimeout`: probes do not stream, D38).
+(`streamEnabled`, `streamTimeout`, `streamInactivityTimeout`: probes do not stream, D38). Also
+left out in phase 2: `metrics`, a divergence from the job worker (D78).
 
 #### `ProbeHandler`
 
@@ -443,6 +444,32 @@ ProbeAnswer.ok(data);          // outcome OK
 ProbeAnswer.unsupported();     // outcome UNSUPPORTED (D5)
 ProbeAnswer.error(message);    // outcome ERROR, at most 500 characters (D30)
 ```
+
+#### `newCreateProbeCommand()`
+
+The client side of `POST /v2/probes` (section 4), named as the client's other `newCreateXCommand()`s
+(D78):
+
+```java
+ProbeResult result = client.newCreateProbeCommand()
+    .probeId("validate-configuration/io.camunda:aws-credential:1")
+    .input("={region: \"eu-west-1\", accessKey: camunda.secrets.awsKey}")  // or a Map, or an Object
+    .tenantId("tenant-a")                                                  // optional
+    .requestTimeout(Duration.ofSeconds(10))                                // optional
+    .send()
+    .join();
+
+result.getOutcome();  // OK, UNSUPPORTED or ERROR
+result.getWorker();
+result.getData();     // with OK
+result.getMessage();  // with ERROR
+```
+
+A Map or an Object is serialized to JSON and sent as `=` followed by that JSON, a FEEL context of
+literal values: a value never becomes an expression. A String is sent as it is, so it can reference
+`camunda.vars.*` and `camunda.secrets.*`. `tenantId` defaults to the client's default tenant, as for
+other commands. `404 NO_WORKER`, `413` and the `504`s surface as `ProblemException`, as for every
+REST command. The HTTP request waits at least the probe's `requestTimeout` + 1 s (section 10.1).
 
 ### 5.2 Connector runtime
 
@@ -788,6 +815,10 @@ Each layer waits longer than the layer below, so that the client gets the engine
 | Gateway, for the broker's response                                               | `T + 500 ms`                                      |
 | Every client of `POST /v2/probes` (Java client, Hub, Modelers), its HTTP request | At least `T + 1 s`; the API documentation says so |
 
+The Java client's `newCreateProbeCommand()` (D78) sets its HTTP request timeout to the probe's
+`requestTimeout` + 1 s. When the command sets no `requestTimeout`, the client does not know the
+cluster's default, so it waits for the gateway's cap, 30 s, + 1 s.
+
 The engine deadline `T` is absolute: the gateway computes it when it receives the request (D49), so
 queueing and input evaluation cannot push the engine past the gateway.
 
@@ -799,7 +830,8 @@ PROPOSED, to review in the implementation:
 - Histogram of the time from `CREATED` to the end.
 - Gauge of pending probes per partition.
 - Gauge of polls held by the gateway.
-- Java client: the job worker's metrics, renamed for probes.
+
+The Java probe worker has no metrics in phase 2 (D78).
 
 ## 11. Future uses
 

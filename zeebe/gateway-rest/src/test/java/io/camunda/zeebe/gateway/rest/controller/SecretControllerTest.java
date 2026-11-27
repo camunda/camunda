@@ -36,6 +36,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.Timeout.ThreadMode;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -420,17 +422,9 @@ public class SecretControllerTest extends RestControllerTest {
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
-    webClient
-        .post()
-        .uri(LIST_URL)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{ \"filter\": { \"status\": %s } }".formatted(statusFilter))
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isOk();
+    listSecrets("{ \"filter\": { \"status\": %s } }".formatted(statusFilter));
 
-    // then the operators resolve to the statuses they match
+    // then the parsed filter resolves to the statuses passed to the service
     verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), eq(expected));
   }
 
@@ -451,22 +445,55 @@ public class SecretControllerTest extends RestControllerTest {
         Arguments.of(
             "{ \"$like\": \"*ACTIVE\" }",
             EnumSet.of(SecretStatus.ACTIVE, SecretStatus.NOT_YET_ACTIVE)),
-        Arguments.of("{ \"$like\": \"EXP?RED\" }", EnumSet.of(SecretStatus.EXPIRED)),
-        Arguments.of(
-            "{ \"$in\": [\"ACTIVE\", \"EXPIRED\"], \"$neq\": \"ACTIVE\" }",
-            EnumSet.of(SecretStatus.EXPIRED)),
         Arguments.of("{ \"$in\": [] }", all),
-        Arguments.of("{}", all));
+        Arguments.of("{}", all),
+        // status names are parsed case-insensitively, unlike $like patterns
+        Arguments.of("\"active\"", EnumSet.of(SecretStatus.ACTIVE)),
+        Arguments.of("{ \"$eq\": \"active\" }", EnumSet.of(SecretStatus.ACTIVE)),
+        Arguments.of("{ \"$like\": \"active\" }", EnumSet.noneOf(SecretStatus.class)),
+        // an explicit null operator is parsed like an absent one
+        Arguments.of("{ \"$eq\": null }", all),
+        Arguments.of("{ \"$like\": null }", all),
+        Arguments.of("{ \"$exists\": null }", all));
   }
 
   @Test
-  void shouldRejectUnknownStatusInAdvancedFilter() {
-    // when / then
+  // a $like value is caller input, so a hostile one must not tie up the request thread
+  @Timeout(value = 5, threadMode = ThreadMode.SEPARATE_THREAD)
+  void shouldListSecretsQuicklyForHostileLikeStatusFilter() {
+    // given a run of stars before a character no status has, which backtracks exponentially
+    when(secretServices.list(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    final var like = "*".repeat(40) + "Z";
+
+    // when
+    listSecrets("{ \"filter\": { \"status\": { \"$like\": \"%s\" } } }".formatted(like));
+
+    // then
+    verify(secretServices)
+        .list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), eq(EnumSet.noneOf(SecretStatus.class)));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(
+      strings = {
+        "{ \"$eq\": \"BROKEN\" }",
+        "{ \"$neq\": \"BROKEN\" }",
+        "{ \"$in\": [\"BROKEN\"] }",
+        "{ \"$notIn\": [\"BROKEN\"] }",
+        "{ \"$like\": [\"ACTIVE\"] }",
+        "{ \"$like\": { \"$eq\": \"ACTIVE\" } }",
+        "{ \"$exists\": \"maybe\" }",
+        "{ \"$in\": \"ACTIVE\" }",
+        "{ \"$regex\": \"ACTIVE\" }"
+      })
+  void shouldRejectMalformedStatusFilter(final String statusFilter) {
+    // when / then the request fails before the service is asked
     webClient
         .post()
         .uri(LIST_URL)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{ \"filter\": { \"status\": { \"$in\": [\"BROKEN\"] } } }")
+        .bodyValue("{ \"filter\": { \"status\": %s } }".formatted(statusFilter))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -494,22 +521,21 @@ public class SecretControllerTest extends RestControllerTest {
     verifyNoInteractions(secretServices);
   }
 
-  @Test
-  void shouldListSecretsInEveryStatusWhenFilterIsEmpty() {
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(
+      strings = {
+        "{}",
+        "{ \"filter\": null }",
+        "{ \"filter\": {} }",
+        "{ \"filter\": { \"status\": null } }"
+      })
+  void shouldListSecretsInEveryStatusWhenFilterIsEmpty(final String body) {
     // given
     when(secretServices.list(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
-    webClient
-        .post()
-        .uri(LIST_URL)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{ \"filter\": {} }")
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isOk();
+    listSecrets(body);
 
     // then a filter without a status narrows nothing
     verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT), isNull());
@@ -557,6 +583,18 @@ public class SecretControllerTest extends RestControllerTest {
         .expectStatus()
         .isBadRequest();
     verifyNoInteractions(secretServices);
+  }
+
+  private void listSecrets(final String body) {
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(body)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk();
   }
 
   private static String referencesJson(final int count) {

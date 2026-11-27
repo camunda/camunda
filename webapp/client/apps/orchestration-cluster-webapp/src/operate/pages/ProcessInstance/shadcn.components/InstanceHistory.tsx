@@ -9,13 +9,14 @@
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import {Alert, Badge, Button, Label, Skeleton, Switch, TreeView, type TreeNodeDef} from '@camunda/design-system';
+import {Alert, Badge, Label, Skeleton, Switch, TreeView, type TreeNodeDef} from '@camunda/design-system';
 import {Ban, Plus, TriangleAlert} from '@camunda/design-system/icons';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ForbiddenError} from '#/shared/errors';
 import {isMultiInstance} from '#/operate/shared/utils/elements';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {useProcessInstancePage} from '../useProcessInstancePage';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
@@ -338,22 +339,17 @@ const InstanceHistory: React.FC<Props> = ({showHeader = true}) => {
 		}
 		if (error) {
 			return (
-				<div className="flex flex-col items-start gap-2 p-2">
-					<Alert variant="destructive" title={t('operate.processInstance.history.error')} />
-					<Button
-						variant="secondary"
-						size="sm"
-						onClick={() => {
-							if (xml.isError) {
-								void xml.refetch();
-							} else {
-								history.retry();
-							}
-						}}
-					>
-						{t('errorGenericErrorPageButtonLabel')}
-					</Button>
-				</div>
+				<DataLoadErrorAlert
+					className="p-2"
+					title={t('operate.processInstance.history.error')}
+					onRetry={() => {
+						if (xml.isError) {
+							void xml.refetch();
+						} else {
+							history.retry();
+						}
+					}}
+				/>
 			);
 		}
 		if (xml.isPending) {
