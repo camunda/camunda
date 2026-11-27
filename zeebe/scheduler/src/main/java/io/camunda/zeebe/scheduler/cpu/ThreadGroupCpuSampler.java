@@ -197,58 +197,82 @@ public final class ThreadGroupCpuSampler implements AutoCloseable {
       account.startReading();
     }
 
-    // since JDK 21 a thread group does not track its threads, so enumerate all threads once
+    forgetLastRead();
     final int count = enumerateThreads();
-    try {
-      int matched = 0;
-      for (int i = 0; i < count; i++) {
-        final var account = accountOf(threads[i].getThreadGroup());
-        if (account != null) {
-          threads[matched++] = threads[i];
-          owners.add(account);
-        }
-      }
-      if (matched == 0) {
-        return readNanos;
-      }
-
-      // the source reads every id, so the array must have exactly the matched length
-      if (ids.length != matched) {
-        ids = new long[matched];
-      }
-      for (int i = 0; i < matched; i++) {
-        ids[i] = threads[i].threadId();
-      }
-      final var cpuNanos = threadCpuNanos.apply(ids);
-      int failed = 0;
-      for (int i = 0; i < matched; i++) {
-        if (cpuNanos[i] >= 0) {
-          owners.get(i).charge(ids[i], cpuNanos[i]);
-        } else {
-          owners.get(i).skipFailedRead(ids[i]);
-          failed++;
-        }
-      }
-      if (failed == matched) {
-        readFailureLog.warn(
-            "Failed to read the CPU time of all {} sampled threads; was thread CPU time measurement disabled?",
-            matched);
-      }
+    final int matched = matchThreadsToAccounts(count);
+    if (matched == 0) {
       return readNanos;
-    } finally {
-      // let ended threads and unregistered accounts be collected
-      Arrays.fill(threads, 0, count, null);
-      owners.clear();
     }
+    final var cpuNanos = threadCpuNanos.apply(idsOfMatchedThreads(matched));
+    final int failed = chargeOwners(cpuNanos);
+    if (failed == matched) {
+      readFailureLog.warn(
+          "Failed to read the CPU time of all {} sampled threads; was thread CPU time measurement disabled?",
+          matched);
+    }
+    return readNanos;
   }
 
+  /** Clears the buffers of the last read, so that it keeps no ended thread or old account. */
+  @GuardedBy("this")
+  private void forgetLastRead() {
+    Arrays.fill(threads, null);
+    owners.clear();
+  }
+
+  /** Enumerates all live threads into {@code threads}; returns their number. */
   @GuardedBy("this")
   private int enumerateThreads() {
+    // since JDK 21 a thread group does not track its threads, so enumerate all threads once
     int count;
     while ((count = rootGroup.enumerate(threads, true)) == threads.length) {
       threads = new Thread[threads.length * 2];
     }
     return count;
+  }
+
+  /**
+   * Moves the threads of registered groups to the front of {@code threads} and adds their accounts
+   * to {@code owners}, in the same order; returns their number.
+   */
+  @GuardedBy("this")
+  private int matchThreadsToAccounts(final int count) {
+    int matched = 0;
+    for (int i = 0; i < count; i++) {
+      final var account = accountOf(threads[i].getThreadGroup());
+      if (account != null) {
+        threads[matched++] = threads[i];
+        owners.add(account);
+      }
+    }
+    return matched;
+  }
+
+  @GuardedBy("this")
+  private long[] idsOfMatchedThreads(final int matched) {
+    // the source reads every id, so the array must have exactly the matched length
+    if (ids.length != matched) {
+      ids = new long[matched];
+    }
+    for (int i = 0; i < matched; i++) {
+      ids[i] = threads[i].threadId();
+    }
+    return ids;
+  }
+
+  /** Charges each matched thread to its owner; returns the number of failed reads. */
+  @GuardedBy("this")
+  private int chargeOwners(final long[] cpuNanos) {
+    int failed = 0;
+    for (int i = 0; i < owners.size(); i++) {
+      if (cpuNanos[i] >= 0) {
+        owners.get(i).charge(ids[i], cpuNanos[i]);
+      } else {
+        owners.get(i).skipFailedRead(ids[i]);
+        failed++;
+      }
+    }
+    return failed;
   }
 
   @GuardedBy("this")
