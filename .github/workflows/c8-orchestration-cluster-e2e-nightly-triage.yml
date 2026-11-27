@@ -533,7 +533,14 @@ jobs:
               # dozens of failing tests -- to the cap, so the serialized dispatch payload
               # cannot blow past the workflow_dispatch input limit.
               def cap_by_file($n):
-                def reps: [group_by([(.database // ""), (.tasklist_mode // "")])[] | .[0]];
+                # Group representatives by the backend the fix agent actually verifies against
+                # -- ES for elasticsearch/e2e, H2 for every RDBMS engine (it never provisions
+                # the real engine) -- plus tasklist_mode. Grouping by the raw database would
+                # treat each of the ~28 RDBMS engine/deployment rows as its own variant, so a
+                # file failing on all of them with distinct diagnostics would exceed any room
+                # and be skipped whole (emptying the dispatch).
+                def vbackend: if (.database // "") != "" and (.database // "") != "elasticsearch" then "h2" else "es" end;
+                def reps: [group_by([vbackend, (.tasklist_mode // "")])[] | .[0]];
                 group_by(.file) | map(reps as $r | $r + (. - $r))
                 | reduce .[] as $g ([];
                     ($n - length) as $room |
@@ -588,6 +595,9 @@ jobs:
               # backend variants together.
               | map(.test_specs |= (cap_by_file(20)
                   | map(if (.error | type) == "string" then (.error |= .[0:2000]) else . end)))
+              # drop any dispatch the caps emptied: an empty test_specs would otherwise be
+              # fired as a workflow-level dispatch (the fix workflow switches on empty specs).
+              | map(select(.test_specs | length > 0))
               # cap dispatch count
               | .[0:$cap]
             ' /tmp/failures_normalized.json > /tmp/dispatches_test.json
