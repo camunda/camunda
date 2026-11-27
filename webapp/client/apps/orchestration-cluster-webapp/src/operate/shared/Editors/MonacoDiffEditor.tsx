@@ -72,6 +72,7 @@ const MonacoDiffEditor = observer(
 					fontFamily: '"IBM Plex Mono", "Droid Sans Mono", monospace',
 					wordWrap: 'on',
 					scrollBeyondLastLine: false,
+					disableMonospaceOptimizations: true,
 					readOnly: true,
 					renderOverviewRuler: false,
 				}}

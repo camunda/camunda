@@ -21,6 +21,7 @@ const options: React.ComponentProps<typeof Editor>['options'] = {
   tabSize: 2,
   wordWrap: 'on',
   scrollBeyondLastLine: false,
+  disableMonospaceOptimizations: true,
 };
 
 export {options};
