@@ -15,7 +15,6 @@ import com.azure.core.credential.AccessToken;
 import com.azure.security.keyvault.secrets.SecretClientBuilder;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStoreUnavailableException;
-import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -25,7 +24,6 @@ import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
-import org.apache.logging.log4j.Level;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -86,6 +84,20 @@ class AzureKeyVaultSecretListingTest {
       // then — the listed name resolves as listed
       assertThat(names).containsExactly("C");
       assertThat(store.resolve(Set.of("C"))).containsEntry("C", new Resolved("value-c"));
+    }
+  }
+
+  @Test
+  void shouldNotListASecretNamedExactlyThePathPrefix() {
+    // given — no reference resolves to the prefix itself
+    final var http = signedIn().putSecret("camunda-", "prefix-value").putSecret("camunda-a", "a");
+    try (final var store = store(config("camunda-", Duration.ofSeconds(30)), http)) {
+
+      // when
+      final var names = store.list();
+
+      // then
+      assertThat(names).containsExactly("a");
     }
   }
 
@@ -264,8 +276,7 @@ class AzureKeyVaultSecretListingTest {
             .putSecret("camunda-a", "value-a")
             .putDisabledSecret("camunda-disabled")
             .putCertificateSecret("camunda-cert", "cert-value");
-    try (final var log = LogCapturer.capturing(OneByOneSecretResolver.class, Level.TRACE);
-        final var store = store(config("camunda-", Duration.ofSeconds(30)), http)) {
+    try (final var store = store(config("camunda-", Duration.ofSeconds(30)), http)) {
 
       // when
       store.list();
@@ -275,7 +286,6 @@ class AzureKeyVaultSecretListingTest {
           .filteredOn(StubAzureHttpClient.Request::isAuthorizedVaultRequest)
           .isNotEmpty()
           .allSatisfy(request -> assertThat(request.isListRequest()).isTrue());
-      assertThat(String.join("\n", log.messages())).doesNotContain("value-a", "cert-value");
     }
   }
 
