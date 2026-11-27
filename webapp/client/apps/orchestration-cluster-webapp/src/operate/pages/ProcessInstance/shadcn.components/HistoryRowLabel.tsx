@@ -35,15 +35,16 @@ const STATE_LABEL_KEYS = {
 	UNKNOWN: 'operate.shared.stateIcon.unknown',
 } as const;
 
-const HISTORY_TREE_CLASS_NAME = '[&_[role=treeitem]]:border-l-[2rem] [&_[role=treeitem]]:border-transparent';
+const HISTORY_TREE_CLASS_NAME = '[&_[role=treeitem]]:relative [&_[role=treeitem]>button:first-child]:ml-6';
 
 const HistoryRowLabel: React.FC<Props> = ({rowId, item, businessObject, suffix, showTimestamp = true}) => {
 	const {t} = useTranslation();
 	const name = item.elementName ?? item.elementId;
 	const state = item.hasIncident ? 'INCIDENT' : item.state;
+
 	return (
-		<span {...historyRowProps(rowId)} className="flex min-w-0 flex-1 items-center gap-2">
-			<span className="absolute inset-y-0 right-full mr-2 flex items-center">
+		<span {...historyRowProps(rowId)} className="flex min-w-0 w-full flex-1 items-center gap-2 overflow-hidden">
+			<span className="absolute left-2 top-1/2 flex -translate-y-1/2 items-center in-data-[slot=tooltip-content]:hidden!">
 				<StateIcon state={state} size={16} />
 			</span>
 			<ElementInstanceIcon businessObject={businessObject} root={item.type === 'PROCESS'} />
