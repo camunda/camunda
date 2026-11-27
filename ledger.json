@@ -668,5 +668,19 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/45952019625",
     "updated_at": "2026-11-27T06:44:56Z",
     "cooldown_until": "2026-11-30T06:44:56Z"
+  },
+  "1e244c51": {
+    "version": "8.7",
+    "file": "operate/operations.spec.ts",
+    "titlePath": [
+      "Operations",
+      "Retry and cancel multiple instances"
+    ],
+    "last_action": "open_pr",
+    "last_reason": "iter1 100% vs baseline 80% (+20pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/45951996275",
+    "updated_at": "2026-11-27T06:56:17Z",
+    "cooldown_until": "2026-12-11T06:56:17Z",
+    "pr": "https://github.com/camunda/camunda/pull/71306"
   }
 }
