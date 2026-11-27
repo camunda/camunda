@@ -301,6 +301,72 @@ class JsonMapperAutoConfigurationTest {
   }
 
   @Nested
+  @TestPropertySource(
+      properties = {
+        // Spring Boot 3's Jackson 2 message converter fails on several primary ObjectMappers
+        WITHOUT_SPRING_OBJECT_MAPPER
+            + ",org.springframework.boot.autoconfigure.http.HttpMessageConvertersAutoConfiguration",
+        "test.primary-library-object-mapper=true",
+        "test.second-primary-library-object-mapper=true"
+      })
+  class WithSeveralPrimaryObjectMappersFromLaterAutoConfiguration {
+
+    @Autowired JsonMapper jsonMapper;
+
+    @Test
+    void shouldUseDefaultMapper() {
+      // given
+      final Order order = new Order("A-1");
+
+      // when
+      final String json = jsonMapper.toJson(order);
+
+      // then
+      assertThat(json).isEqualTo("{\"orderId\":\"A-1\"}");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {WITHOUT_SPRING_OBJECT_MAPPER, "test.library-non-json-mapper=true"})
+  class WithNonJsonMapperFromLaterAutoConfiguration {
+
+    @Autowired JsonMapper jsonMapper;
+
+    @Test
+    void shouldUseDefaultMapper() {
+      // given
+      final Order order = new Order("A-1");
+
+      // when
+      final String json = jsonMapper.toJson(order);
+
+      // then
+      assertThat(json).isEqualTo("{\"orderId\":\"A-1\"}");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {WITHOUT_SPRING_OBJECT_MAPPER, "test.library-non-copyable-object-mapper=true"})
+  class WithNonCopyableObjectMapperFromLaterAutoConfiguration {
+
+    @Autowired JsonMapper jsonMapper;
+
+    @Test
+    void shouldUseDefaultMapper() {
+      // given
+      final Map<String, Object> variables = Map.of("date", new Date(EPOCH_MILLIS));
+
+      // when
+      final String json = jsonMapper.toJson(variables);
+
+      // then
+      assertThat(json).isEqualTo("{\"date\":" + EPOCH_MILLIS + "}");
+    }
+  }
+
+  @Nested
   @TestPropertySource(properties = WITHOUT_SPRING_OBJECT_MAPPER)
   class WithoutSpringObjectMapper {
 

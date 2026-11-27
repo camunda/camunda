@@ -15,12 +15,14 @@
  */
 package io.camunda.client.spring.configuration;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -62,13 +64,32 @@ public class DefaultJsonMapperConfiguration {
       LOG.warn(
           "The property 'camunda.client.use-bare-object-mapper' is deprecated and will be removed"
               + " in 8.11, which always uses the application's ObjectMapper");
-    }
-    final ObjectMapper springObjectMapper = useBareObjectMapper ? null : objectMapper.getIfUnique();
-    if (springObjectMapper != null) {
-      LOG.debug("Using jackson 2 to configure Camunda client json mapper");
-      return new CamundaObjectMapper(springObjectMapper.copy());
+    } else {
+      try {
+        final ObjectMapper springObjectMapper = objectMapper.getIfUnique();
+        if (springObjectMapper != null && isJson(springObjectMapper)) {
+          LOG.debug("Using jackson 2 to configure Camunda client json mapper");
+          return new CamundaObjectMapper(springObjectMapper.copy());
+        }
+      } catch (final BeansException | IllegalStateException e) {
+        LOG.warn(
+            "Cannot use the Jackson 2 ObjectMapper for the Camunda client, using the default json"
+                + " mapper. Define a JsonMapper bean to configure it.",
+            e);
+      }
     }
     LOG.debug("Using the default jackson 2 Camunda client json mapper");
     return new CamundaObjectMapper();
+  }
+
+  private static boolean isJson(final ObjectMapper objectMapper) {
+    final String formatName = objectMapper.getFactory().getFormatName();
+    if (JsonFactory.FORMAT_NAME_JSON.equals(formatName)) {
+      return true;
+    }
+    LOG.debug(
+        "Ignoring the application's {} ObjectMapper for the Camunda client json mapper",
+        formatName);
+    return false;
   }
 }
