@@ -121,7 +121,7 @@ const MigrationMappingTable: React.FC<Props> = ({
 							/>
 						</div>
 					)}
-					<Table className="table-fixed">
+					<Table className="table-fixed" containerClassName="rounded-none">
 						<TableHeader>
 							<TableRow>
 								<TableHead className="w-1/2">{t('operate.processes.migration.sourceElements')}</TableHead>
