@@ -19,18 +19,27 @@ import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
+import io.camunda.optimize.service.definition.ProcessDefinitionDeletionRequestService;
+import io.github.netmikey.logunit.api.LogCapturer;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.slf4j.event.Level;
 import org.springframework.http.HttpStatus;
 
 public class PublicApiProcessDefinitionDeletionIT extends AbstractCCSMIT {
 
   private static final String TEST_ACCESS_TOKEN = "test-access-token";
+
+  @RegisterExtension
+  private final LogCapturer logs =
+      LogCapturer.create()
+          .captureForType(ProcessDefinitionDeletionRequestService.class, Level.INFO);
 
   @Override
   protected void startAndUseNewOptimizeInstance() {
@@ -71,6 +80,8 @@ public class PublicApiProcessDefinitionDeletionIT extends AbstractCCSMIT {
             .orElseThrow();
     assertThat(entry.getStatus()).isEqualTo(JobStatus.QUEUED);
     assertThat(entry.getEntityType()).isEqualTo(EntityType.PROCESS_DEFINITION);
+    // the static access token has no per-caller identity, so the requester is recorded as unknown
+    logs.assertContains("from client [unknown]");
   }
 
   @Test

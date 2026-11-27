@@ -26,6 +26,7 @@ import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.security.UserIdMigrationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.Either;
 import jakarta.servlet.Filter;
@@ -185,6 +186,13 @@ class CslChainIntegrationTest {
   }
 
   @Test
+  void shouldResolveClientIdOfClientTokenBehindPublicApiForCcsm() throws Exception {
+    // the process definition deletion endpoint attributes a request to this very value
+    assertClientIdResolvedBehindPublicApi(
+        ccsmRunner(), clientToken(CCSM_CLIENT_ID_CLAIM, CCSM_TOKEN_AUDIENCE, null), "client-1");
+  }
+
+  @Test
   void shouldRejectUserTokenOnPublicApiForCcsm() throws Exception {
     // a user's token with the very audience the former audience check accepted
     assertBearerRejectedOnPublicApi(
@@ -285,6 +293,14 @@ class CslChainIntegrationTest {
     // camunda/camunda#69726: an API client's SaaS token, with no public API audience configured
     assertBearerAuthenticatesOnPublicApi(
         ccsaasRunner(), clientToken(CCSAAS_CLIENT_ID_CLAIM, CCSAAS_TOKEN_AUDIENCE, "cluster-1"));
+  }
+
+  @Test
+  void shouldResolveClientIdOfClientTokenBehindPublicApiForCcsaas() throws Exception {
+    assertClientIdResolvedBehindPublicApi(
+        ccsaasRunner(),
+        clientToken(CCSAAS_CLIENT_ID_CLAIM, CCSAAS_TOKEN_AUDIENCE, "cluster-1"),
+        "client-1");
   }
 
   @Test
@@ -764,6 +780,41 @@ class CslChainIntegrationTest {
               .as("bearer token on the public API, body: %s", response.getContentAsString())
               .isEqualTo(200);
           assertThat(downstream.getRequest()).isNotNull();
+        });
+  }
+
+  /**
+   * Reads the client id from the authentication provider while the request is inside the real
+   * chain, which is where a controller on the public API reads it.
+   */
+  private void assertClientIdResolvedBehindPublicApi(
+      final WebApplicationContextRunner runner, final String token, final String expectedClientId) {
+    runner.run(
+        ctx -> {
+          final MockHttpServletRequest request =
+              new MockHttpServletRequest("DELETE", "/api/public/process-definition/123456789");
+          request.addHeader("Authorization", "Bearer " + token);
+          final MockHttpServletResponse response = new MockHttpServletResponse();
+          final AtomicReference<String> resolvedClientId = new AtomicReference<>();
+          final var provider = ctx.getBean(CamundaAuthenticationProvider.class);
+          final MockFilterChain downstream =
+              new MockFilterChain(
+                  new jakarta.servlet.GenericServlet() {
+                    @Override
+                    public void service(
+                        final jakarta.servlet.ServletRequest req,
+                        final jakarta.servlet.ServletResponse res) {
+                      resolvedClientId.set(
+                          provider.getCamundaAuthentication().authenticatedClientId());
+                    }
+                  });
+
+          doFilterWithRequestContext(ctx, request, response, downstream);
+
+          assertThat(response.getStatus())
+              .as("client token on the public API, body: %s", response.getContentAsString())
+              .isEqualTo(200);
+          assertThat(resolvedClientId).hasValue(expectedClientId);
         });
   }
 
