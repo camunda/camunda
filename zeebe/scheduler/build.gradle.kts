@@ -8,6 +8,7 @@ plugins {
 dependencies {
   implementation(project(":camunda-cluster"))
   implementation(libs.org.jspecify.jspecify)
+  compileOnly(libs.com.google.errorprone.error.prone.annotations)
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)
   api(libs.io.micrometer.micrometer.commons)
