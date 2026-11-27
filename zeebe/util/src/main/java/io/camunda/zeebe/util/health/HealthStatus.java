@@ -44,7 +44,7 @@ public enum HealthStatus {
   }
 
   /** Whether everything outside the health tree should treat this status as healthy. */
-  public boolean isHealthyOrDegraded() {
+  public boolean isTreatedAsHealthy() {
     return this == HEALTHY || this == DEGRADED;
   }
 }

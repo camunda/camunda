@@ -280,7 +280,7 @@ public final class ZeebePartition extends Actor
     actor.run(
         () -> {
           failureListeners.add(failureListener);
-          if (getHealthReport().getStatus().isHealthyOrDegraded()) {
+          if (getHealthReport().getStatus().isTreatedAsHealthy()) {
             failureListener.onRecovered(getHealthReport());
           } else {
             failureListener.onFailure(getHealthReport());
