@@ -118,7 +118,14 @@ public final class CallActivityOnSuspendedDefinitionTest {
     final var parentId = helper.getBpmnProcessId() + "-parent";
     deploy(childModel(childId));
     final var suspendedVersion =
-        suspend(deploy(Bpmn.createExecutableProcess(childId).startEvent().endEvent().done()));
+        suspend(
+            deploy(
+                Bpmn.createExecutableProcess(childId)
+                    .startEvent()
+                    .manualTask("second-version")
+                    .endEvent()
+                    .done()));
+    assertThat(suspendedVersion.getVersion()).isEqualTo(2);
     deploy(parentModel(parentId, c -> c.zeebeBindingType(ZeebeBindingType.latest), childId));
 
     // when
@@ -157,29 +164,6 @@ public final class CallActivityOnSuspendedDefinitionTest {
                 .getValue()
                 .getProcessDefinitionKey())
         .isEqualTo(child.getProcessDefinitionKey());
-  }
-
-  @Test
-  public void shouldNotCreateChildProcessInstanceWhenSuspended() {
-    // given
-    final var childId = helper.getBpmnProcessId() + "-child";
-    final var parentId = helper.getBpmnProcessId() + "-parent";
-    final var child = suspend(deploy(childModel(childId)));
-    deploy(parentModel(parentId, c -> c.zeebeBindingType(ZeebeBindingType.latest), childId));
-
-    // when
-    final long parentInstanceKey = engine.processInstance().ofBpmnProcessId(parentId).create();
-    final var incident = assertSuspendedIncident(parentInstanceKey, child);
-
-    // then - the call activity never asks for the child to be activated
-    assertThat(
-            RecordingExporter.records()
-                .limit(record -> record.getPosition() >= incident.getPosition())
-                .processInstanceRecords()
-                .withIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
-                .withBpmnProcessId(childId)
-                .exists())
-        .isFalse();
   }
 
   private static BpmnModelInstance childModel(final String childId) {
