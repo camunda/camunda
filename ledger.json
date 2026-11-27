@@ -655,5 +655,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/45768308004",
     "updated_at": "2026-11-26T06:39:55Z",
     "cooldown_until": "2026-11-29T06:39:55Z"
+  },
+  "5f77ea2f": {
+    "version": "8.9",
+    "file": "tests/operate/decisionFilters.spec.ts",
+    "titlePath": [
+      "Decision Filters",
+      "Failed filter shows only failed instances"
+    ],
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 20 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/45952019625",
+    "updated_at": "2026-11-27T06:44:56Z",
+    "cooldown_until": "2026-11-30T06:44:56Z"
   }
 }
