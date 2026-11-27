@@ -35,6 +35,8 @@ import io.micrometer.core.instrument.Tag;
  *   <li>A counter for the jobs refused count
  *   <li>A counter for the jobs expired count
  *   <li>A counter for the streaming-worker inactivity-triggered stream recreations
+ *   <li>A long task timer for the polls in flight, whose longest running duration keeps growing
+ *       while a poll gets no response
  * </ul>
  *
  * From these counters you can derive the rate of jobs activated, the rate of jobs handled, and
@@ -110,6 +112,20 @@ public interface MicrometerJobWorkerMetricsBuilder {
       @Override
       public String asString() {
         return "camunda.client.worker.stream.inactivity.recreated";
+      }
+    },
+
+    /**
+     * Long task timer name backing {@link JobWorkerMetrics#pollStarted()} and {@link
+     * JobWorkerMetrics#pollCompleted()}. It tracks the polls that were sent and have no response
+     * yet. Workers that share the same tags share this timer, so its longest running duration is
+     * the age of the oldest poll still waiting among them. Alert on that exceeding the poll request
+     * timeout by a margin.
+     */
+    POLL_IN_FLIGHT {
+      @Override
+      public String asString() {
+        return "camunda.client.worker.poll.in.flight";
       }
     }
   }

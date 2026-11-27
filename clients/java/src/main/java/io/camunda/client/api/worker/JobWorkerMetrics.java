@@ -77,6 +77,26 @@ public interface JobWorkerMetrics {
   default void streamInactivityRecreated() {}
 
   /**
+   * Called every time the worker sends a poll request to activate jobs, before the request goes
+   * out. At most one poll is in flight per worker, and it is always followed by a call to {@link
+   * #pollCompleted()}, unless the poll never gets a response.
+   *
+   * <p>A poll that never gets a response is the failure this exists to expose: the worker then
+   * stops polling without logging anything. Measuring how long the oldest poll has been in flight
+   * shows it, which counting the jobs activated cannot, because an idle worker and a stalled one
+   * both activate nothing.
+   */
+  default void pollStarted() {}
+
+  /**
+   * Called when the poll that {@link #pollStarted()} reported got a response, successful or not,
+   * and when the worker is closed while a poll is still in flight. May be called without a
+   * preceding {@link #pollStarted()}, for example when the poll failed before it was sent, so
+   * implementations must tolerate that.
+   */
+  default void pollCompleted() {}
+
+  /**
    * Returns a new builder for the Micrometer bridge.
    *
    * @throws UnsupportedOperationException if Micrometer is not found in the class path
