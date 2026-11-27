@@ -69,6 +69,10 @@ public record HealthReport(
     return new HealthReport(component, HealthStatus.HEALTHY, null, Map.of());
   }
 
+  public static HealthReport degraded(final HealthMonitorable component) {
+    return new HealthReport(component, HealthStatus.DEGRADED, null, Map.of());
+  }
+
   public static HealthReport unhealthy(final HealthMonitorable component) {
     return new HealthReport(component, HealthStatus.UNHEALTHY, null, Map.of());
   }
@@ -81,6 +85,7 @@ public record HealthReport(
       final @Nullable HealthStatus status, final HealthMonitorable component) {
     return switch (status) {
       case HEALTHY -> HealthReport.healthy(component);
+      case DEGRADED -> HealthReport.degraded(component);
       case UNHEALTHY -> HealthReport.unhealthy(component);
       case DEAD -> HealthReport.dead(component);
       case null -> HealthReport.unknown(component.componentName());
@@ -93,6 +98,10 @@ public record HealthReport(
 
   public boolean isNotHealthy() {
     return status != HealthStatus.HEALTHY;
+  }
+
+  public boolean isDegraded() {
+    return status == HealthStatus.DEGRADED;
   }
 
   public boolean isUnhealthy() {

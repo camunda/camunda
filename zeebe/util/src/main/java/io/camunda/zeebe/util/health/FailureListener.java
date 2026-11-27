@@ -14,9 +14,10 @@ public interface FailureListener {
   void onFailure(HealthReport report);
 
   /**
-   * Invoked when health status becomes healthy after being unhealthy for some time. A component can
-   * be marked unhealthy initially and set to healthy only after start up is complete. It is
-   * expected to call {#onRecovered} when it is marked as healthy.
+   * Invoked when health status becomes healthy (or degraded, which counts as healthy outside the
+   * health tree) after being unhealthy for some time. A component can be marked unhealthy initially
+   * and set to healthy only after start up is complete. It is expected to call {#onRecovered} when
+   * it is marked as healthy.
    */
   void onRecovered(HealthReport report);
 
@@ -28,7 +29,7 @@ public interface FailureListener {
 
   default void onHealthReport(final HealthReport healthReport) {
     switch (healthReport.getStatus()) {
-      case HEALTHY -> onRecovered(healthReport);
+      case HEALTHY, DEGRADED -> onRecovered(healthReport);
       case UNHEALTHY -> onFailure(healthReport);
       case DEAD -> onUnrecoverableFailure(healthReport);
       default -> {}

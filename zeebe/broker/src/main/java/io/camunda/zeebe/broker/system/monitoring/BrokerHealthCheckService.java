@@ -266,7 +266,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   }
 
   public boolean isBrokerHealthy() {
-    return !actor.isClosed() && getBrokerHealth() == HealthStatus.HEALTHY;
+    return !actor.isClosed() && getBrokerHealth().isHealthyOrDegraded();
+  }
+
+  public boolean isBrokerDegraded() {
+    return !actor.isClosed() && getBrokerHealth() == HealthStatus.DEGRADED;
   }
 
   public HealthReport getHealthReport() {

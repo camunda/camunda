@@ -16,12 +16,14 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
+import org.springframework.boot.health.contributor.Status;
 import org.springframework.stereotype.Component;
 
 @Component
 public final class BrokerStatusHealthIndicator implements HealthIndicator {
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
+  private static final Status DEGRADED = new Status("DEGRADED");
 
   private final SpringBrokerBridge brokerBridge;
   private final ObjectMapper objectMapper;
@@ -41,8 +43,10 @@ public final class BrokerStatusHealthIndicator implements HealthIndicator {
     }
 
     final var service = optionalService.get();
-    final var isHealthy = service.isBrokerHealthy();
-    final var builder = isHealthy ? Health.up() : Health.down();
+    final var builder =
+        !service.isBrokerHealthy()
+            ? Health.down()
+            : service.isBrokerDegraded() ? Health.status(DEGRADED) : Health.up();
 
     final var healthReport = service.getHealthReport();
     addComponentTreeDetails(builder, healthReport);

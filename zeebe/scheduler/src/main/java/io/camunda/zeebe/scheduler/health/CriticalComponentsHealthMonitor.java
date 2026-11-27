@@ -230,7 +230,11 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
         return;
       }
 
-      log.info("{} recovered, marking it as healthy", componentName);
+      if (healthReport.isDegraded()) {
+        log.info("{} is degraded: {}", componentName, healthReport.getIssue());
+      } else {
+        log.info("{} recovered, marking it as healthy", componentName);
+      }
       componentHealth.put(componentName, healthReport);
       calculateHealth();
       failureListeners.forEach(l -> l.onRecovered(getHealthReport()));

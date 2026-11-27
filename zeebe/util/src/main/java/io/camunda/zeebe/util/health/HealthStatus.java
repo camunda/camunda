@@ -15,6 +15,12 @@ import java.util.Comparator;
  */
 public enum HealthStatus {
   HEALTHY,
+  /**
+   * The component works, but something worth an operator's attention was observed, for example a
+   * latency outlier. Readiness, the topology and the partition health that clients see treat it as
+   * healthy; only the health tree and its history show it.
+   */
+  DEGRADED,
   UNHEALTHY,
   DEAD;
 
@@ -29,10 +35,16 @@ public enum HealthStatus {
    *     <ul>
    *       <li>if any of the two is DEAD -> DEAD
    *       <li>if any of the two is UNHEALTHY -> UNHEALTHY
+   *       <li>if any of the two is DEGRADED -> DEGRADED
    *       <li>if both are HEALTHY -> HEALTHY
    *     </ul>
    */
   public HealthStatus combine(final HealthStatus other) {
     return compareTo(other) > 0 ? this : other;
+  }
+
+  /** Whether everything outside the health tree should treat this status as healthy. */
+  public boolean isHealthyOrDegraded() {
+    return this == HEALTHY || this == DEGRADED;
   }
 }

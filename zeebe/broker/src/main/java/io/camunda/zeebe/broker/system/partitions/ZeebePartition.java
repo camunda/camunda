@@ -34,7 +34,6 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
-import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -281,7 +280,7 @@ public final class ZeebePartition extends Actor
     actor.run(
         () -> {
           failureListeners.add(failureListener);
-          if (getHealthReport().getStatus() == HealthStatus.HEALTHY) {
+          if (getHealthReport().getStatus().isHealthyOrDegraded()) {
             failureListener.onRecovered(getHealthReport());
           } else {
             failureListener.onFailure(getHealthReport());

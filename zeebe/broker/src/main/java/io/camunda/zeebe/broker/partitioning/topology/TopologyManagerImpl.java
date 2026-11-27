@@ -249,7 +249,7 @@ public final class TopologyManagerImpl extends Actor
           if (!localPartitionGroupInfo.getPartitionRoles().containsKey(partitionId)) {
             return;
           }
-          if (status == HealthStatus.HEALTHY) {
+          if (status.isHealthyOrDegraded()) {
             localPartitionGroupInfo.setPartitionHealthy(partitionId);
           } else if (status == HealthStatus.UNHEALTHY) {
             localPartitionGroupInfo.setPartitionUnhealthy(partitionId);
