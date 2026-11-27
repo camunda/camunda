@@ -10,8 +10,9 @@ intent: Tell the author which guideline violations their spec change adds, and w
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    # Stable branches too: some fixes land only there. Backport PRs are reviewed again; that is cheap.
-    branches: [main, "stable/**"]
+    # No branches filter and no stack gate: the review also runs on stacked pull requests, whose base
+    # is the branch below them. Backport PRs to stable branches are reviewed again; that is cheap.
+    max-stack: -1
     paths:
       - "zeebe/gateway-protocol/src/main/proto/v2/**"
   # Backport PRs are opened by this GitHub App. Allowing it here keeps the human roles unchanged.
