@@ -522,15 +522,25 @@ jobs:
               # A file failing under only one backend stays in that bucket, so purely-cheap
               # work still skips the Maven build.
               #
-              # Truncate a spec list without splitting the backend variants of one file across
-              # the cap: keep whole per-file groups so a "both" file never loses its ES or
-              # RDBMS side to a cap (which would flip HAS_API_RDBMS off in the fix workflow and
-              # then let the PR suppress the dropped backend via coverage). The first group is
-              # always kept so a single oversized file is not dropped whole.
+              # Truncate a spec list to ~n without splitting the backend variants of one file.
+              # Within each file, put one representative of each (database, tasklist_mode)
+              # variant first, then pack whole files until the cap. A file that does not fit
+              # whole is included only when the remaining room still covers all its variants
+              # (reps-first, so the first "room" entries keep every backend/mode) -- otherwise
+              # it is skipped and retried on a later run, never half-included with one backend
+              # missing (which would flip HAS_API_RDBMS off and let the PR suppress the dropped
+              # backend). This also bounds any single oversized file -- e.g. one spec with
+              # dozens of failing tests -- to the cap, so the serialized dispatch payload
+              # cannot blow past the workflow_dispatch input limit.
               def cap_by_file($n):
-                group_by(.file)
+                def reps: [group_by([(.database // ""), (.tasklist_mode // "")])[] | .[0]];
+                group_by(.file) | map(reps as $r | $r + (. - $r))
                 | reduce .[] as $g ([];
-                    if (length == 0) or (length + ($g | length) <= $n) then . + $g else . end);
+                    ($n - length) as $room |
+                    ($g | reps | length) as $variants |
+                    if ($g | length) <= $room then . + $g
+                    elif $room >= $variants then . + ($g[0:$room])
+                    else . end);
               map(. + {raw_kind: (
                   if .test_type == "api"
                      and .database != null and .database != "" and .database != "elasticsearch"
@@ -571,10 +581,13 @@ jobs:
                   api_es_run_id:    ($run_ids[0][(.version + "/api_es")]    // ""),
                   api_rdbms_run_id: ($run_ids[0][(.version + "/api_rdbms")] // "")
                 })
-              # cap failures per dispatch to ~20 so the workflow_dispatch input stays well
-              # under the 64KB limit; cap_by_file keeps a file and its backend variants
-              # together, so the count can land slightly above 20 when a file straddles it.
-              | map(.test_specs |= cap_by_file(20))
+              # cap failures per dispatch to ~20 and clip each error to 2000 chars so the
+              # workflow_dispatch input stays well under its 64KB limit even when many specs
+              # carry long stack traces (the fix agent reads full errors from the downloaded
+              # json-report, not from this payload). cap_by_file keeps each file and its
+              # backend variants together.
+              | map(.test_specs |= (cap_by_file(20)
+                  | map(if (.error | type) == "string" then (.error |= .[0:2000]) else . end)))
               # cap dispatch count
               | .[0:$cap]
             ' /tmp/failures_normalized.json > /tmp/dispatches_test.json
@@ -1100,7 +1113,11 @@ jobs:
             echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')"
             dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-            gh workflow run c8-orchestration-cluster-e2e-nightly-fix.yml \
+            # Under set -e a rejected dispatch (e.g. an oversized payload past the
+            # workflow_dispatch input limit) would abort the step and strand every later
+            # bucket. Tolerate it: log, and continue so the remaining buckets still dispatch.
+            # The ledger update below is skipped, so the skipped bucket is retried next run.
+            if ! gh workflow run c8-orchestration-cluster-e2e-nightly-fix.yml \
               --repo "$REPO" --ref "${FIX_AGENT_REF}" \
               -f version="$version" \
               -f test_specs="$specs" \
@@ -1111,7 +1128,10 @@ jobs:
               -f triage_run_url="$TRIAGE_RUN_URL" \
               -f slack_thread_ts="$SLACK_THREAD_TS" \
               -f slack_channel="$SLACK_CHANNEL" \
-              -f send_slack_notification="${SEND_SLACK_NOTIFICATION}"
+              -f send_slack_notification="${SEND_SLACK_NOTIFICATION}"; then
+              echo "::error::Failed to dispatch fix agent for ${version} (${bucket}) -- $(echo "$specs" | jq 'length') failure(s); skipping this bucket so the rest still dispatch. Not recorded in the ledger, so it retries on the next run."
+              continue
+            fi
 
             # Poll for the newly created fix-agent run (created after dispatch)
             fix_run_id=""
