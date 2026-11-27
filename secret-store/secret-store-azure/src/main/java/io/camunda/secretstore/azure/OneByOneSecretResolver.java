@@ -231,10 +231,15 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
     }
   }
 
-  // iterating the PagedIterable fetches each next page on demand
+  // iterating the PagedIterable fetches each next page on demand; a timed-out listing interrupts
+  // this thread, so stop rather than keep fetching pages nobody waits for
   private List<ListedSecret> readAllPages() {
     final List<ListedSecret> listed = new ArrayList<>();
     for (final var properties : client.listPropertiesOfSecrets()) {
+      if (Thread.currentThread().isInterrupted()) {
+        throw new SecretStoreUnavailableException(
+            storeDescription + " stopped listing its secrets: interrupted");
+      }
       final var name = referenceName(properties.getName());
       if (name != null) {
         listed.add(
