@@ -11,9 +11,11 @@ import io.camunda.optimize.OptimizeApplicationDetector;
 import io.camunda.security.api.model.config.SessionConfiguration;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -209,13 +211,18 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // for a boot failure. Mirrors bridgeAuth0SaasOrgAndCluster's all-or-nothing precedent below.
     if (isBlank(effectiveOidcProperty(env, derived, "issuer-uri"))
         && !hasOidcEndpoints(env, derived)) {
-      final String clientId = env.getProperty("camunda.identity.clientId");
-      final String clientSecret = env.getProperty("CAMUNDA_IDENTITY_CLIENT_SECRET");
-      final String clientSecretKey = env.getProperty("camunda.identity.clientSecret");
-      if (!isBlank(clientId) || !isBlank(clientSecret) || !isBlank(clientSecretKey)) {
+      final List<String> keysSet =
+          Stream.of(
+                  "camunda.identity.clientId",
+                  "CAMUNDA_IDENTITY_CLIENT_SECRET",
+                  "camunda.identity.clientSecret")
+              .filter(key -> !isBlank(env.getProperty(key)))
+              .toList();
+      if (!keysSet.isEmpty()) {
         LOG.warn(
-            "Optimize config 'camunda.identity.clientId'/'CAMUNDA_IDENTITY_CLIENT_SECRET'/"
-                + "'camunda.identity.clientSecret' cannot be bridged without an OIDC issuer:"
+            "Optimize config '"
+                + String.join("'/'", keysSet)
+                + "' cannot be bridged without an OIDC issuer:"
                 + " neither 'camunda.identity.issuer' nor"
                 + " 'camunda.security.authentication.oidc.issuer-uri' resolves to a value."
                 + " 'camunda.identity.issuerBackendUrl' cannot substitute for it (OIDC discovery"

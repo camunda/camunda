@@ -271,6 +271,11 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
                 && entry.getMessage().contains("camunda.identity.clientSecret"),
         "expected a warning naming the unbridgeable camunda.identity.clientSecret key");
     logs.assertDoesNotContain(
+        entry ->
+            entry.getMessage().contains("camunda.identity.clientId")
+                || entry.getMessage().contains("CAMUNDA_IDENTITY_CLIENT_SECRET"),
+        "the warning must name only the keys that are set");
+    logs.assertDoesNotContain(
         entry -> entry.getMessage().contains("guard-secret"),
         "client secret value must never be logged");
   }
@@ -947,6 +952,12 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     logs.assertContains(
         entry -> entry.getMessage().contains("camunda.identity.issuer"),
         "expected a warning naming the missing issuer key");
+    logs.assertContains(
+        entry ->
+            entry
+                .getMessage()
+                .contains("'camunda.identity.clientId'/'CAMUNDA_IDENTITY_CLIENT_SECRET'"),
+        "expected the warning to name both keys that are set");
     // the secret value itself must never be logged
     logs.assertDoesNotContain(
         entry -> entry.getMessage().contains("helm-secret"),
