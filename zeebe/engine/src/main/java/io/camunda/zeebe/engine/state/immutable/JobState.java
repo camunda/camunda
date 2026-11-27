@@ -9,13 +9,14 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.LongPredicate;
 import org.agrona.DirectBuffer;
 
-public interface JobState {
+public interface JobState extends StreamProcessorLifecycleAware {
 
   /**
    * Loops over all timed-out job entries and applies the provided callback.

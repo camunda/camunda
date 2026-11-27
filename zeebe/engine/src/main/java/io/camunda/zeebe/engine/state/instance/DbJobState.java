@@ -21,12 +21,17 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.metrics.JobBacklogMetrics;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.util.EnsureUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -111,6 +116,8 @@ public final class DbJobState implements JobState, MutableJobState {
   /** In-memory, per-partition memory that the legacy JOB_ACTIVATABLE CF is globally drained. */
   private volatile boolean isLegacyCfDrained = false;
 
+  private final JobBacklogMetrics jobBacklogMetrics;
+
   public DbJobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
@@ -167,6 +174,18 @@ public final class DbJobState implements JobState, MutableJobState {
             transactionContext,
             processInstanceJobKey,
             DbNil.INSTANCE);
+
+    jobBacklogMetrics = new JobBacklogMetrics(zeebeDb.getMeterRegistry());
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    final Map<String, Long> activatableCountByType = new HashMap<>();
+    deprecatedActivatableColumnFamily.forEachKey(
+        key -> activatableCountByType.merge(key.wrappedKey().first().toString(), 1L, Long::sum));
+    priorityActivatableColumnFamily.forEachKey(
+        key -> activatableCountByType.merge(key.wrappedKey().first().toString(), 1L, Long::sum));
+    jobBacklogMetrics.resetActivatable(activatableCountByType);
   }
 
   /**
@@ -196,6 +215,7 @@ public final class DbJobState implements JobState, MutableJobState {
     updateJobState(key, State.ACTIVATED);
 
     makeJobNotActivatable(key, record);
+    jobBacklogMetrics.recordActivation(BufferUtil.bufferAsString(type));
 
     addJobDeadline(key, deadline);
   }
@@ -480,8 +500,11 @@ public final class DbJobState implements JobState, MutableJobState {
     tenantIdKey.wrapString(tenantId);
     // overflow for negative priorities is intentional (see invertedPriorityKey field comment above)
     invertedPriorityKey.wrapInt(Integer.MAX_VALUE - priority);
-    // upsert because a failed job with retries can be made activatable multiple times
-    priorityActivatableColumnFamily.upsert(tenantAwarePriorityKey, DbNil.INSTANCE);
+    if (!priorityActivatableColumnFamily.exists(tenantAwarePriorityKey)) {
+      // upsert because a failed job with retries can be made activatable multiple times
+      priorityActivatableColumnFamily.upsert(tenantAwarePriorityKey, DbNil.INSTANCE);
+      jobBacklogMetrics.incrementActivatable(BufferUtil.bufferAsString(type));
+    }
   }
 
   @Override
@@ -881,8 +904,11 @@ public final class DbJobState implements JobState, MutableJobState {
     jobTypeKey.wrapBuffer(type);
     jobKey.wrapLong(key);
     tenantIdKey.wrapString(tenantId);
-    // upsert because a failed job with retries can be made activatable multiple times
-    deprecatedActivatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
+    if (!deprecatedActivatableColumnFamily.exists(tenantAwareTypeJobKey)) {
+      // upsert because a failed job with retries can be made activatable multiple times
+      deprecatedActivatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
+      jobBacklogMetrics.incrementActivatable(BufferUtil.bufferAsString(type));
+    }
   }
 
   private void makeJobNotActivatable(
@@ -896,10 +922,16 @@ public final class DbJobState implements JobState, MutableJobState {
     invertedPriorityKey.wrapInt(Integer.MAX_VALUE - priority);
     // Requires jobKey to already be set by the caller (directly or via updateJobRecord).
     // This method does not set jobKey because it is not passed as a parameter.
-    priorityActivatableColumnFamily.deleteIfExists(tenantAwarePriorityKey);
+    if (priorityActivatableColumnFamily.exists(tenantAwarePriorityKey)) {
+      priorityActivatableColumnFamily.deleteIfExists(tenantAwarePriorityKey);
+      jobBacklogMetrics.decrementActivatable(BufferUtil.bufferAsString(type));
+    }
     // Legacy CF cleanup: pre-8.10 jobs live in JOB_ACTIVATABLE; deleteIfExists is a no-op
     // when the key is absent. Do not remove this line!
-    deprecatedActivatableColumnFamily.deleteIfExists(tenantAwareTypeJobKey);
+    if (deprecatedActivatableColumnFamily.exists(tenantAwareTypeJobKey)) {
+      deprecatedActivatableColumnFamily.deleteIfExists(tenantAwareTypeJobKey);
+      jobBacklogMetrics.decrementActivatable(BufferUtil.bufferAsString(type));
+    }
   }
 
   private void addJobDeadline(final long job, final long deadline) {

@@ -271,6 +271,7 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     bannedInstanceState.onRecovered(context);
+    jobState.onRecovered(context);
     messageState.onRecovered(context);
     messageStartProcessInstanceAskState.onRecovered(context);
     messageStartProcessInstanceDedupState.onRecovered(context);
