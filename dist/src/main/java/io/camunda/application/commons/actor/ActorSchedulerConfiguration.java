@@ -82,6 +82,8 @@ public final class ActorSchedulerConfiguration {
       return PhysicalTenantActorSchedulers.shared(scheduler);
     }
 
+    // a fixed parent keeps the tenant groups siblings, whichever thread creates them
+    final var tenantThreadGroups = new ThreadGroup("physical-tenants");
     return PhysicalTenantActorSchedulers.dedicated(
         physicalTenantId -> {
           final var tenantActorPool =
@@ -96,7 +98,10 @@ public final class ActorSchedulerConfiguration {
                       physicalTenantId))
               .setCpuBoundActorThreadCount(tenantActorPool.getCpuThreadCount())
               .setIoBoundActorThreadCount(tenantActorPool.getIoThreadCount())
-              .setActorThreadFactory(new DefaultActorThreadFactory(physicalTenantId + "-"))
+              .setActorThreadFactory(
+                  new DefaultActorThreadFactory(
+                      physicalTenantId + "-",
+                      new ThreadGroup(tenantThreadGroups, "physical-tenant-" + physicalTenantId)))
               .build();
         });
   }

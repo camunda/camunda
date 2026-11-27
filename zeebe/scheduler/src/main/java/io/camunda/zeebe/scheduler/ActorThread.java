@@ -80,8 +80,25 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       final ActorTimerQueue timerQueue,
       final ActorMetrics actorMetrics,
       final IdleStrategy idleStrategy) {
+    this(null, name, id, threadGroup, taskScheduler, clock, timerQueue, actorMetrics, idleStrategy);
+  }
+
+  /**
+   * @param javaThreadGroup the {@link java.lang.ThreadGroup} to create the thread in, which threads
+   *     started by this thread inherit; {@code null} uses the group of the creating thread
+   */
+  public ActorThread(
+      final java.lang.ThreadGroup javaThreadGroup,
+      final String name,
+      final int id,
+      final ActorThreadGroup threadGroup,
+      final TaskScheduler taskScheduler,
+      final ActorClock clock,
+      final ActorTimerQueue timerQueue,
+      final ActorMetrics actorMetrics,
+      final IdleStrategy idleStrategy) {
+    super(javaThreadGroup, name);
     this.actorMetrics = actorMetrics;
-    setName(name);
     state = ActorThreadState.NEW;
     threadId = id;
     this.clock = clock != null ? clock : new DefaultActorClock();

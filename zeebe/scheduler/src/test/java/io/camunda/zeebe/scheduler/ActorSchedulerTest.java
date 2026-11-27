@@ -11,8 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import io.camunda.zeebe.scheduler.ActorScheduler.DefaultActorThreadFactory;
 import java.time.Duration;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 final class ActorSchedulerTest {
@@ -102,6 +106,55 @@ final class ActorSchedulerTest {
       assertThat(sut.submitActor(testActor, SchedulingHints.cpuBound()))
           .succeedsWithin(Duration.ofSeconds(5));
     }
+  }
+
+  @Test
+  void shouldCreateActorThreadsInGivenThreadGroup() throws Exception {
+    // given
+    final var group = new ThreadGroup("tenant-" + UUID.randomUUID());
+    try (final var sut =
+        ActorScheduler.newActorScheduler()
+            .setActorThreadFactory(new DefaultActorThreadFactory("prefix-", group))
+            .build()) {
+      sut.start();
+
+      // when
+      final var cpuGroup = threadGroupOf(sut, SchedulingHints.cpuBound());
+      final var ioGroup = threadGroupOf(sut, SchedulingHints.ioBound());
+      final var inheritingGroup = groupOfThreadStartedByActor(sut);
+
+      // then
+      assertThat(cpuGroup).isSameAs(group);
+      assertThat(ioGroup).isSameAs(group);
+      assertThat(inheritingGroup).isSameAs(group);
+    }
+  }
+
+  private static ThreadGroup threadGroupOf(
+      final ActorSchedulingService scheduler, final SchedulingHints hints) throws Exception {
+    final var group = new CompletableFuture<ThreadGroup>();
+    scheduler.submitActor(
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            group.complete(Thread.currentThread().getThreadGroup());
+          }
+        },
+        hints);
+    return group.get(10, TimeUnit.SECONDS);
+  }
+
+  private static ThreadGroup groupOfThreadStartedByActor(final ActorSchedulingService scheduler)
+      throws Exception {
+    final var group = new CompletableFuture<ThreadGroup>();
+    scheduler.submitActor(
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            new Thread(() -> group.complete(Thread.currentThread().getThreadGroup())).start();
+          }
+        });
+    return group.get(10, TimeUnit.SECONDS);
   }
 
   private static final class TestActor extends Actor {}
