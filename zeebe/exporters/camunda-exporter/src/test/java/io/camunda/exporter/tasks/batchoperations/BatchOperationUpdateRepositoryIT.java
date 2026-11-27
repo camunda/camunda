@@ -47,6 +47,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -413,6 +415,56 @@ abstract class BatchOperationUpdateRepositoryIT {
       final BatchOperationEntity batchOperationEntity = getBatchOperationEntity("1");
       assertThat(batchOperationEntity.getEndDate()).isNotNull();
       assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = BatchOperationState.class,
+        names = {"PARTIALLY_COMPLETED", "FAILED"})
+    public void shouldSetEndDateOfPartiallyCompletedOrFailedBatchOperation(
+        final BatchOperationState state) throws PersistenceException {
+      // given a terminal batch operation whose items have all finished
+      final var repository = createRepository();
+      createBatchOperationEntity("1", 2, state);
+
+      // when
+      final var updated = repository.bulkUpdate(List.of(new DocumentUpdate("1", 2, 0, 2, 2)));
+
+      // then
+      assertThat(updated)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+          .isEqualTo(1);
+
+      final BatchOperationEntity batchOperationEntity = getBatchOperationEntity("1");
+      assertThat(batchOperationEntity.getEndDate()).isNotNull();
+      assertThat(batchOperationEntity.getOperationsFinishedCount())
+          .isEqualTo(batchOperationEntity.getOperationsTotalCount())
+          .isEqualTo(2);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = BatchOperationState.class,
+        names = {"PARTIALLY_COMPLETED", "FAILED"})
+    public void shouldNotSetEndDateOfPartiallyCompletedOrFailedBatchOperationWithUnfinishedItems(
+        final BatchOperationState state) throws PersistenceException {
+      // given a terminal batch operation that still has an unfinished item
+      final var repository = createRepository();
+      createBatchOperationEntity("1", 2, state);
+
+      // when
+      final var updated = repository.bulkUpdate(List.of(new DocumentUpdate("1", 1, 0, 1, 1)));
+
+      // then the counts are updated, but the batch operation still counts as running
+      assertThat(updated)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+          .isEqualTo(1);
+
+      final BatchOperationEntity batchOperationEntity = getBatchOperationEntity("1");
+      assertThat(batchOperationEntity.getEndDate()).isNull();
+      assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
     }
 
     private BatchOperationEntity createBatchOperationEntity(

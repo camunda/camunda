@@ -11,15 +11,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationFinalizeEndDateDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemCompletionDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateDto;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.QueueItemMerger;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -71,5 +81,200 @@ class BatchOperationWriterTest {
     assertThat(capturedItems.get(0).items()).hasSize(10);
     assertThat(capturedItems.get(1).items()).hasSize(10);
     assertThat(capturedItems.get(2).items()).hasSize(5);
+  }
+
+  @Test
+  void shouldFinalizeEndDateAfterFinish() {
+    // given
+    final var endDate = OffsetDateTime.now();
+
+    // when
+    batchOperationWriter.finish("42", endDate);
+
+    // then the state is written without an end date, and the end date is derived afterwards
+    final var queued = queuedItems();
+    assertThat(queued).hasSize(2);
+    assertThat(statement(queued, "updateCompleted").parameter())
+        .isEqualTo(new BatchOperationUpdateDto("42", BatchOperationState.COMPLETED, null));
+    assertFinalizedLast(queued, new BatchOperationFinalizeEndDateDto("42", endDate));
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = BatchOperationState.class,
+      names = {"PARTIALLY_COMPLETED", "FAILED"})
+  void shouldFinalizeEndDateAfterFinishWithErrors(final BatchOperationState state) {
+    // given
+    final var endDate = OffsetDateTime.now();
+    final var errors = new BatchOperationErrorsDto("42", List.of());
+
+    // when
+    batchOperationWriter.finishWithErrors("42", endDate, errors, state);
+
+    // then
+    final var queued = queuedItems();
+    assertThat(statement(queued, "updateCompleted").parameter())
+        .isEqualTo(new BatchOperationUpdateDto("42", state, null));
+    assertFinalizedLast(queued, new BatchOperationFinalizeEndDateDto("42", endDate));
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = BatchOperationItemState.class,
+      names = {"COMPLETED", "SKIPPED", "FAILED"})
+  void shouldFinalizeEndDateAfterItemSettles(final BatchOperationItemState itemState) {
+    // given
+    final var processedDate = OffsetDateTime.now();
+    final var item =
+        new BatchOperationItemDbModel("42", 1L, 2L, 3L, itemState, processedDate, null);
+
+    // when
+    batchOperationWriter.updateItem(item);
+
+    // then the end date is derived at the time the item was processed
+    assertFinalizedLast(queuedItems(), new BatchOperationFinalizeEndDateDto("42", processedDate));
+  }
+
+  @Test
+  void shouldNotFinalizeEndDateWhileItemIsActive() {
+    // given
+    final var item =
+        new BatchOperationItemDbModel(
+            "42", 1L, 2L, 3L, BatchOperationItemState.ACTIVE, OffsetDateTime.now(), null);
+
+    // when
+    batchOperationWriter.updateItem(item);
+
+    // then
+    assertThat(queuedItems()).noneMatch(q -> q.statementId().endsWith("finalizeEndDate"));
+  }
+
+  @Test
+  void shouldNotFinalizeEndDateOfCanceledBatchOperation() {
+    // when
+    batchOperationWriter.cancel("42", OffsetDateTime.now());
+
+    // then the canceled batch operation keeps the end date written by the cancellation
+    assertThat(queuedItems()).noneMatch(q -> q.statementId().endsWith("finalizeEndDate"));
+  }
+
+  @Test
+  void shouldFinalizeEndDateOfEachBatchOperationWhenItemsAreCompletedInBulk() {
+    // given
+    final var processedDate = OffsetDateTime.now();
+    final var items =
+        List.of(
+            new BatchOperationItemCompletionDto("1", 10L),
+            new BatchOperationItemCompletionDto("1", 11L),
+            new BatchOperationItemCompletionDto("2", 20L));
+
+    // when
+    batchOperationWriter.completeBatchOperationItems(items, processedDate);
+
+    // then
+    Mockito.verify(batchOperationMapper)
+        .finalizeEndDate(new BatchOperationFinalizeEndDateDto("1", processedDate));
+    Mockito.verify(batchOperationMapper)
+        .finalizeEndDate(new BatchOperationFinalizeEndDateDto("2", processedDate));
+  }
+
+  /** Backs the mocked queue with a list that applies merges like the real queue. */
+  private List<QueueItem> mergingQueue() {
+    final var queue = new ArrayList<QueueItem>();
+    Mockito.doAnswer(invocation -> queue.add(invocation.getArgument(0)))
+        .when(executionQueue)
+        .executeInQueue(Mockito.any());
+    Mockito.doAnswer(
+            invocation -> {
+              final QueueItemMerger merger = invocation.getArgument(0);
+              for (int i = queue.size() - 1; i >= 0; i--) {
+                if (merger.canBeMerged(queue.get(i))) {
+                  queue.set(i, merger.merge(queue.get(i)));
+                  return true;
+                }
+              }
+              return false;
+            })
+        .when(executionQueue)
+        .tryMergeWithExistingQueueItem(Mockito.any());
+    return queue;
+  }
+
+  @Test
+  void shouldKeepOneFinalizeEndDatePerBatchOperationWithTheLatestTimestamp() {
+    // given a queue that applies merges like the real one
+    final var queue = mergingQueue();
+    final var start = OffsetDateTime.parse("2026-01-01T10:00:00Z");
+
+    // when items of two batch operations settle, and the lifecycle record has an earlier timestamp
+    batchOperationWriter.updateItem(settledItem("1", 1L, start.plusSeconds(1)));
+    batchOperationWriter.updateItem(settledItem("2", 2L, start.plusSeconds(2)));
+    batchOperationWriter.updateItem(settledItem("1", 3L, start.plusSeconds(3)));
+    batchOperationWriter.finish("1", start);
+
+    // then
+    assertThat(queue)
+        .filteredOn(q -> q.statementId().endsWith(".finalizeEndDate"))
+        .extracting(QueueItem::parameter)
+        .containsExactly(
+            new BatchOperationFinalizeEndDateDto("1", start.plusSeconds(3)),
+            new BatchOperationFinalizeEndDateDto("2", start.plusSeconds(2)));
+    assertThat(queue)
+        .filteredOn(q -> q.statementId().endsWith(".incrementCompletedOperationsCount"))
+        .hasSize(3);
+  }
+
+  @Test
+  void shouldKeepQueuedFinalizeEndDateWhenMergedItemHasNoProcessedDate() {
+    // given
+    final var queue = mergingQueue();
+    final var start = OffsetDateTime.parse("2026-01-01T10:00:00Z");
+
+    // when an item without a processed date settles after one with a processed date
+    batchOperationWriter.updateItem(settledItem("1", 1L, start));
+    batchOperationWriter.updateItem(settledItem("1", 2L, null));
+
+    // then the queued end date is kept
+    assertThat(queue)
+        .filteredOn(q -> q.statementId().endsWith(".finalizeEndDate"))
+        .extracting(QueueItem::parameter)
+        .containsExactly(new BatchOperationFinalizeEndDateDto("1", start));
+  }
+
+  private static BatchOperationItemDbModel settledItem(
+      final String batchOperationKey, final long itemKey, final OffsetDateTime processedDate) {
+    return new BatchOperationItemDbModel(
+        batchOperationKey,
+        itemKey,
+        itemKey,
+        itemKey,
+        BatchOperationItemState.COMPLETED,
+        processedDate,
+        null);
+  }
+
+  private List<QueueItem> queuedItems() {
+    final var captor = ArgumentCaptor.forClass(QueueItem.class);
+    Mockito.verify(executionQueue, Mockito.atLeastOnce()).executeInQueue(captor.capture());
+    return captor.getAllValues();
+  }
+
+  private static QueueItem statement(final List<QueueItem> queued, final String statement) {
+    return queued.stream()
+        .filter(q -> q.statementId().endsWith("." + statement))
+        .findFirst()
+        .orElseThrow();
+  }
+
+  /**
+   * The queue sorts the updates of a flush by order and statement ID, so the end date has to be
+   * queued with a higher order than everything else it reads.
+   */
+  private static void assertFinalizedLast(
+      final List<QueueItem> queued, final BatchOperationFinalizeEndDateDto expected) {
+    final var finalize = statement(queued, "finalizeEndDate");
+    assertThat(finalize.parameter()).isEqualTo(expected);
+    assertThat(queued.stream().filter(q -> q != finalize))
+        .allSatisfy(other -> assertThat(finalize.order()).isGreaterThan(other.order()));
   }
 }

@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemCompletionDto;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
@@ -567,7 +568,9 @@ public class BatchOperationIT {
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
-    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
+    final var items =
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
+    settleItems(writer, items, BatchOperationItemState.COMPLETED, NOW);
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
@@ -585,6 +588,370 @@ public class BatchOperationIT {
   }
 
   @TestTemplate
+  public void shouldNotSetEndDateOfFinishedBatchOperationWhileItemsAreActive(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
+
+    // when
+    writer.getBatchOperationWriter().finish(batchOperation.batchOperationKey(), NOW);
+    writer.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    assertThat(updatedBatchOperation).isNotNull();
+    assertThat(updatedBatchOperation.items().getFirst().state())
+        .isEqualTo(BatchOperationState.COMPLETED);
+    assertThat(updatedBatchOperation.items().getFirst().endDate()).isNull();
+  }
+
+  @TestTemplate
+  public void shouldSetEndDateWhenLastItemOfFinishedBatchOperationSettles(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given a finished batch operation whose items are still active
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final var items =
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
+    writer.getBatchOperationWriter().finish(batchOperation.batchOperationKey(), NOW);
+    writer.flush();
+
+    // when the first item is completed
+    settleItems(writer, items.subList(0, 1), BatchOperationItemState.COMPLETED, NOW.plusSeconds(1));
+
+    // then there is still no end date
+    assertThat(getBatchOperation(rdbmsService, batchOperation).items().getFirst().endDate())
+        .isNull();
+
+    // when the last item fails
+    final var lastProcessedDate = NOW.plusSeconds(5);
+    settleItems(writer, items.subList(1, 2), BatchOperationItemState.FAILED, lastProcessedDate);
+
+    // then the end date is the time the last item was processed
+    final var updatedBatchOperation =
+        getBatchOperation(rdbmsService, batchOperation).items().getFirst();
+    assertThat(updatedBatchOperation.endDate())
+        .isCloseTo(lastProcessedDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(updatedBatchOperation.operationsCompletedCount()).isEqualTo(1);
+    assertThat(updatedBatchOperation.operationsFailedCount()).isEqualTo(1);
+  }
+
+  @TestTemplate
+  public void shouldSetEndDateWhenItemsOfFinishedBatchOperationAreCompletedInBulk(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given a finished batch operation whose items are still active
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final var batchOperationKey = batchOperation.batchOperationKey();
+    final var items = createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 2);
+    writer.getBatchOperationWriter().finish(batchOperationKey, NOW);
+    writer.flush();
+
+    // when
+    final var processedDate = NOW.plusSeconds(5);
+    writer
+        .getBatchOperationWriter()
+        .completeBatchOperationItems(
+            items.stream()
+                .map(i -> new BatchOperationItemCompletionDto(batchOperationKey, i.itemKey()))
+                .toList(),
+            processedDate);
+
+    // then
+    final var updatedBatchOperation =
+        getBatchOperation(rdbmsService, batchOperation).items().getFirst();
+    assertThat(updatedBatchOperation.operationsCompletedCount()).isEqualTo(2);
+    assertThat(updatedBatchOperation.endDate())
+        .isCloseTo(processedDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldSetEndDateToLastItemWhenItemsAndFinishAreFlushedTogether(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given a batch operation with two active items
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final var batchOperationKey = batchOperation.batchOperationKey();
+    final var items = createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 2);
+
+    // when both items settle and the batch operation finishes in the same flush, as happens when
+    // the exporter catches up on a backlog
+    final var lastProcessedDate = NOW.plusSeconds(3);
+    queueItemUpdates(
+        writer, items.subList(0, 1), BatchOperationItemState.COMPLETED, NOW.plusSeconds(1));
+    queueItemUpdates(
+        writer, items.subList(1, 2), BatchOperationItemState.COMPLETED, lastProcessedDate);
+    writer.getBatchOperationWriter().finish(batchOperationKey, NOW.plusSeconds(2));
+    writer.flush();
+
+    // then the end date is not earlier than the last of them
+    assertThat(getBatchOperation(rdbmsService, batchOperation).items().getFirst().endDate())
+        .isCloseTo(lastProcessedDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldSetEndDateToFinishWhenItemsSettleBeforeFinishInSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given a batch operation with two active items
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final var batchOperationKey = batchOperation.batchOperationKey();
+    final var items = createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 2);
+
+    // when both items settle before the batch operation finishes, in the same flush
+    final var finishDate = NOW.plusSeconds(5);
+    queueItemUpdates(writer, items, BatchOperationItemState.COMPLETED, NOW.plusSeconds(1));
+    writer.getBatchOperationWriter().finish(batchOperationKey, finishDate);
+    writer.flush();
+
+    // then
+    assertThat(getBatchOperation(rdbmsService, batchOperation).items().getFirst().endDate())
+        .isCloseTo(finishDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldSetEndDateWhenSuspendedBatchOperationIsResumedAndFinished(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given a suspended batch operation whose items have all settled
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final var batchOperationKey = batchOperation.batchOperationKey();
+    final var items = createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 2);
+    writer.getBatchOperationWriter().suspend(batchOperationKey);
+    writer.flush();
+    settleItems(writer, items, BatchOperationItemState.COMPLETED, NOW.plusSeconds(1));
+
+    // then it has no end date while suspended
+    assertThat(getBatchOperation(rdbmsService, batchOperation).items().getFirst().endDate())
+        .isNull();
+
+    // when it is resumed
+    writer.getBatchOperationWriter().resume(batchOperationKey);
+    writer.flush();
+
+    // then it still has none, as it has not finished
+    assertThat(getBatchOperation(rdbmsService, batchOperation).items().getFirst().endDate())
+        .isNull();
+
+    // when it finishes
+    final var finishDate = NOW.plusSeconds(2);
+    writer.getBatchOperationWriter().finish(batchOperationKey, finishDate);
+    writer.flush();
+
+    // then
+    assertThat(getBatchOperation(rdbmsService, batchOperation).items().getFirst().endDate())
+        .isCloseTo(finishDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldKeepEndDateWhenFinishIsExportedAgain(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given a finished batch operation whose items have all settled
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final var batchOperationKey = batchOperation.batchOperationKey();
+    final var items = createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 1);
+    settleItems(writer, items, BatchOperationItemState.COMPLETED, NOW);
+    writer.getBatchOperationWriter().finish(batchOperationKey, NOW.plusSeconds(1));
+    writer.flush();
+
+    // when the same record is exported again, for example after an exporter restart
+    writer.getBatchOperationWriter().finish(batchOperationKey, NOW.plusSeconds(1));
+    writer.flush();
+
+    // then the batch operation is still finished
+    final var updatedBatchOperation =
+        getBatchOperation(rdbmsService, batchOperation).items().getFirst();
+    assertThat(updatedBatchOperation.state()).isEqualTo(BatchOperationState.COMPLETED);
+    assertThat(updatedBatchOperation.endDate())
+        .isCloseTo(NOW.plusSeconds(1), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldSetEndDateWhenLastItemIsSkipped(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given a finished batch operation with one active item
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final var items =
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 1);
+    writer.getBatchOperationWriter().finish(batchOperation.batchOperationKey(), NOW);
+    writer.flush();
+
+    // when the item is skipped
+    final var processedDate = NOW.plusSeconds(1);
+    settleItems(writer, items, BatchOperationItemState.SKIPPED, processedDate);
+
+    // then a skipped item counts as settled
+    assertThat(getBatchOperation(rdbmsService, batchOperation).items().getFirst().endDate())
+        .isCloseTo(processedDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldSetEndDateOfFinishedBatchOperationWithoutItems(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+
+    // when
+    final OffsetDateTime endDate = OffsetDateTime.now();
+    writer.getBatchOperationWriter().finish(batchOperation.batchOperationKey(), endDate);
+    writer.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    assertThat(updatedBatchOperation).isNotNull();
+    assertThat(updatedBatchOperation.items().getFirst().endDate())
+        .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldSetEndDateOfFailedBatchOperation(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given a batch operation that failed on every partition, so it has no items
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final var errors =
+        new BatchOperationErrorsDto(
+            batchOperation.batchOperationKey(),
+            List.of(new BatchOperationErrorDto(1, "QUERY_FAILED", "error message")));
+
+    // when
+    final OffsetDateTime endDate = OffsetDateTime.now();
+    writer
+        .getBatchOperationWriter()
+        .finishWithErrors(
+            batchOperation.batchOperationKey(), endDate, errors, BatchOperationState.FAILED);
+    writer.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    assertThat(updatedBatchOperation).isNotNull();
+    assertThat(updatedBatchOperation.items().getFirst().state())
+        .isEqualTo(BatchOperationState.FAILED);
+    assertThat(updatedBatchOperation.items().getFirst().endDate())
+        .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldResetEndDateWhenLateChunkIncreasesTotal(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given a finished batch operation whose items have all settled
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final var batchOperationKey = batchOperation.batchOperationKey();
+    final var items = createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 2);
+    settleItems(writer, items, BatchOperationItemState.COMPLETED, NOW);
+    writer.getBatchOperationWriter().finish(batchOperationKey, NOW);
+    writer.flush();
+    assertThat(getBatchOperation(rdbmsService, batchOperation).items().getFirst().endDate())
+        .isNotNull();
+
+    // when a chunk of a lagging partition is exported afterwards
+    final var lateItems = createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 1);
+
+    // then the batch operation is not finished anymore
+    assertThat(getBatchOperation(rdbmsService, batchOperation).items().getFirst().endDate())
+        .isNull();
+
+    // and gets its end date again once the late item settles
+    final var lateProcessedDate = NOW.plusSeconds(5);
+    settleItems(writer, lateItems, BatchOperationItemState.COMPLETED, lateProcessedDate);
+    assertThat(getBatchOperation(rdbmsService, batchOperation).items().getFirst().endDate())
+        .isCloseTo(lateProcessedDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldKeepEndDateOfCanceledBatchOperationWhenLateChunkArrives(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final OffsetDateTime endDate = OffsetDateTime.now();
+    writer.getBatchOperationWriter().cancel(batchOperation.batchOperationKey(), endDate);
+    writer.flush();
+
+    // when
+    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 1);
+
+    // then
+    final var updatedBatchOperation =
+        getBatchOperation(rdbmsService, batchOperation).items().getFirst();
+    assertThat(updatedBatchOperation.state()).isEqualTo(BatchOperationState.CANCELED);
+    assertThat(updatedBatchOperation.endDate())
+        .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldKeepEndDateOfCanceledBatchOperationWhenItemsSettleAfterCancel(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given a canceled batch operation whose items are still unsettled
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+    final var items =
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
+    final OffsetDateTime cancelDate = NOW;
+    writer.getBatchOperationWriter().cancel(batchOperation.batchOperationKey(), cancelDate);
+    writer.flush();
+
+    // when all items settle afterwards, e.g. because their records are exported after the cancel
+    settleItems(writer, items, BatchOperationItemState.COMPLETED, cancelDate.plusSeconds(5));
+
+    // then the batch operation stays canceled and keeps the end date of the cancel
+    final var updatedBatchOperation =
+        getBatchOperation(rdbmsService, batchOperation).items().getFirst();
+    assertThat(updatedBatchOperation.state()).isEqualTo(BatchOperationState.CANCELED);
+    assertThat(updatedBatchOperation.operationsCompletedCount()).isEqualTo(2);
+    assertThat(updatedBatchOperation.endDate())
+        .isCloseTo(cancelDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
   public void shouldFinishBatchOperationWithErrors(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -595,7 +962,8 @@ public class BatchOperationIT {
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
     final String batchOperationKey = batchOperation.batchOperationKey();
-    createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 2);
+    final var items = createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 2);
+    settleItems(writer, items, BatchOperationItemState.COMPLETED, NOW);
 
     final var errors =
         new BatchOperationErrorsDto(
@@ -1032,6 +1400,36 @@ public class BatchOperationIT {
         .isCloseTo(batchOperation.startDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(instance.endDate())
         .isCloseTo(batchOperation.endDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  private static void settleItems(
+      final RdbmsWriters writer,
+      final List<BatchOperationItemDbModel> items,
+      final BatchOperationItemState state,
+      final OffsetDateTime processedDate) {
+    queueItemUpdates(writer, items, state, processedDate);
+    writer.flush();
+  }
+
+  /** Queues the item updates without flushing, so that they can share a flush with other writes. */
+  private static void queueItemUpdates(
+      final RdbmsWriters writer,
+      final List<BatchOperationItemDbModel> items,
+      final BatchOperationItemState state,
+      final OffsetDateTime processedDate) {
+    items.forEach(
+        item ->
+            writer
+                .getBatchOperationWriter()
+                .updateItem(
+                    new BatchOperationItemDbModel(
+                        item.batchOperationKey(),
+                        item.itemKey(),
+                        item.processInstanceKey(),
+                        item.rootProcessInstanceKey(),
+                        state,
+                        processedDate,
+                        null)));
   }
 
   private static SearchQueryResult<BatchOperationEntity> getBatchOperation(

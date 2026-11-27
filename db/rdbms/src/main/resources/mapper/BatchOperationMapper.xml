@@ -266,6 +266,21 @@
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </update>
 
+  <!-- Sets the end date only when the batch operation has finished and all of its items have
+       settled. Every statement that can make this true calls it after changing the state or one
+       of the counts, so it does not matter which of them is exported last. A flush can contain
+       several of these calls with different timestamps and all of them run after the count
+       updates, so a later timestamp replaces an earlier one: the end date is the latest of them. -->
+  <update id="finalizeEndDate"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationFinalizeEndDateDto">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET END_DATE = #{endDate, jdbcType=TIMESTAMP}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND (END_DATE IS NULL OR END_DATE &lt; #{endDate, jdbcType=TIMESTAMP})
+      AND STATE IN ('COMPLETED', 'PARTIALLY_COMPLETED', 'FAILED')
+      AND OPERATIONS_COMPLETED_COUNT + OPERATIONS_FAILED_COUNT >= OPERATIONS_TOTAL_COUNT
+  </update>
+
 
   <insert id="upsertItem"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
@@ -411,7 +426,8 @@
   <update id="incrementOperationsTotalCount"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateTotalCountDto">
     UPDATE ${prefix}BATCH_OPERATION
-    SET OPERATIONS_TOTAL_COUNT = OPERATIONS_TOTAL_COUNT + #{operationsTotalCount}
+    SET OPERATIONS_TOTAL_COUNT = OPERATIONS_TOTAL_COUNT + #{operationsTotalCount},
+        END_DATE = CASE WHEN STATE = 'CANCELED' THEN END_DATE ELSE NULL END
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </update>
 
