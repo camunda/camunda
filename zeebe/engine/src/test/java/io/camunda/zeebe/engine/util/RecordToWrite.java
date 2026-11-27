@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.util;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -48,6 +50,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
 
 public final class RecordToWrite implements LogAppendEntry {
 
@@ -136,6 +139,12 @@ public final class RecordToWrite implements LogAppendEntry {
       final ProcessInstanceCreationIntent intent, final ProcessInstanceCreationRecordValue value) {
     recordMetadata.valueType(ValueType.PROCESS_INSTANCE_CREATION).intent(intent);
     unifiedRecordValue = (ProcessInstanceCreationRecord) value;
+    return this;
+  }
+
+  public RecordToWrite process(final ProcessIntent intent, final Process value) {
+    recordMetadata.valueType(ValueType.PROCESS).intent(intent);
+    unifiedRecordValue = (ProcessRecord) value;
     return this;
   }
 

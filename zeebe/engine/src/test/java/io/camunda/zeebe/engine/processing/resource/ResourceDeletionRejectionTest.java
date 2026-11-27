@@ -8,12 +8,16 @@
 package io.camunda.zeebe.engine.processing.resource;
 
 import static io.camunda.zeebe.protocol.record.RecordAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.junit.Rule;
@@ -108,22 +112,53 @@ public class ResourceDeletionRejectionTest {
   }
 
   @Test
-  public void shouldRejectDeletionWhenRunningInstances() {
+  public void shouldDrainInsteadOfRejectingDeletionWhenRunningInstances() {
     // given
     final var processId = helper.getBpmnProcessId();
     final var processDefinitionKey = deployProcess(processId);
     engine.processInstance().ofBpmnProcessId(processId).create();
 
     // when
+    final var deletion = engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then - the deletion is accepted, not rejected
+    Assertions.assertThat(deletion).hasIntent(ResourceDeletionIntent.DELETED);
+
+    // and - the definition is marked draining, not physically deleted, while the instance runs
+    final var eventsUpToDraining =
+        RecordingExporter.processRecords()
+            .withProcessDefinitionKey(processDefinitionKey)
+            .limit(r -> r.getIntent() == ProcessIntent.DRAINING)
+            .asList();
+    assertThat(eventsUpToDraining)
+        .extracting(Record::getIntent)
+        .describedAs("the definition is not deleted while an instance is still running")
+        .doesNotContain(ProcessIntent.DELETED)
+        .contains(ProcessIntent.DRAINING);
+  }
+
+  @Test
+  public void shouldRejectSecondDeletionOfDrainingProcess() {
+    // given - a definition that is draining because it still has a running instance
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey = deployProcess(processId);
+    engine.processInstance().ofBpmnProcessId(processId).create();
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+
+    // when - the same definition is deleted a second time while still draining
     final var rejection =
         engine.resourceDeletion().withResourceKey(processDefinitionKey).expectRejection().delete();
 
-    // then
+    // then - the repeated deletion is rejected as already-being-deleted, not re-marked draining
     assertThat(rejection)
-        .describedAs("Expect running instances")
+        .describedAs("a draining definition reports it is already being deleted")
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to delete resource with key `%d` but there are still running instances"
+            "Expected to delete process definition with key `%d`, but it is already being deleted."
                 .formatted(processDefinitionKey));
   }
 
