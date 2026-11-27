@@ -121,7 +121,7 @@ record StoreScope(
     if (name == null) {
       return false;
     }
-    return container == null ? name.startsWith(prefix) : name.equals(prefix + container);
+    return container == null ? name.startsWith(prefix) : (prefix + container).equals(name);
   }
 
   /**
