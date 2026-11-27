@@ -27,6 +27,8 @@ import java.util.function.UnaryOperator;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class ThreadGroupCpuSamplerTest {
 
@@ -299,17 +301,16 @@ final class ThreadGroupCpuSamplerTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
-  @Test
-  void shouldRejectAnInvalidQuota() {
+  @ParameterizedTest
+  @ValueSource(doubles = {0, -1, Double.NaN, Double.POSITIVE_INFINITY})
+  void shouldRejectAnInvalidQuota(final double quota) {
     // given
     final var group = new ThreadGroup(GROUP_ID);
 
     // when - then
-    for (final var quota : new double[] {0, -1, Double.NaN, Double.POSITIVE_INFINITY}) {
-      assertThatThrownBy(() -> sampler.register(GROUP_ID, group, quota))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("the quota must be a positive number of CPUs");
-    }
+    assertThatThrownBy(() -> sampler.register(GROUP_ID, group, quota))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("the quota must be a positive number of CPUs");
   }
 
   @Test
