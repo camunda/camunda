@@ -604,7 +604,7 @@ jobs:
           if [ -n "${COST_BUCKET}" ]; then
             reuse_exclusion=""
           else
-            reuse_exclusion="This slot carries no bucket, so additionally EXCLUDE any head starting with fix/nightly-${VERSION}-cheap- or fix/nightly-${VERSION}-rdbms-: those are bucket-isolated triage PRs and are not yours to reuse or push to."
+            reuse_exclusion="This slot carries no bucket, so additionally EXCLUDE any head starting with fix/nightly-${VERSION}-cheap-, fix/nightly-${VERSION}-rdbms-, or fix/nightly-${VERSION}-both-: those are bucket-isolated triage PRs and are not yours to reuse or push to."
           fi
 
           prompt=$(cat <<EOF
@@ -668,8 +668,10 @@ jobs:
           same base, neither aware of the other.
           This per-dispatch slot (${branch_slot}) is authoritative and OVERRIDES the manual's
           version-only branch examples and its "One PR per version" rule for test fixes: triage
-          dispatches a version's cheap (e2e/API-ES) and RDBMS failures separately, so open or
-          reuse ONE PR per version AND bucket, never a single PR spanning both buckets.
+          dispatches a version's failures in up to three buckets, each on its own slot -- cheap
+          (e2e/API-ES only), rdbms (RDBMS only), and both (a spec that fails under ES and RDBMS,
+          which you verify against both backends). Open or reuse ONE PR per version AND bucket,
+          never a single PR spanning buckets.
           Commit + PR title prefix: 'test:' for test-only changes, 'ci:' for workflow-only
           changes, 'fix:' for other code changes (NEVER 'fix:' for test-only changes —
           commitlint rejects it).

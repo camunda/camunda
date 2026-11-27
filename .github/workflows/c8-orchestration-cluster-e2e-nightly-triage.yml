@@ -33,7 +33,7 @@ on:
         default: true
         required: false
       daily_cap:
-        description: 'Max fix-agent dispatches this run (default: 10 -- up to two per supported version: a cheap e2e/api-es bucket and a separate rdbms bucket)'
+        description: 'Max fix-agent dispatches this run (default: 10 -- a version splits into up to three cost buckets: cheap (e2e/api-es), rdbms, and both)'
         default: '10'
         required: false
       send_slack_notification:
@@ -504,17 +504,28 @@ jobs:
             jq --slurpfile run_ids /tmp/run_ids.json \
                --argjson covered "$covered_files_map" \
                --argjson cap "${DAILY_CAP}" '
-              # Group failures by version AND environment-cost bucket so one dispatch
-              # covers only one kind of setup. An api failure flagged for a non-
-              # Elasticsearch database ("rdbms") drives the from-source Maven build in
-              # the Live Docker Verify loop -- by far the most expensive step -- while e2e
-              # and Elasticsearch api failures share the cheap docker-compose setup.
-              # Mixing them forced one agent invocation to pay for both; keeping rdbms
-              # in its own dispatch lets the cheap bucket skip the Maven build.
-              map(. + {cost_bucket: (
+              # Classify each failure as cheap (e2e / Elasticsearch api) or rdbms (api on a
+              # non-Elasticsearch database). An rdbms failure drives the from-source Maven
+              # build in the Live Docker Verify loop -- by far the most expensive step --
+              # while cheap failures share the fast docker-compose setup, so mixing them in
+              # one dispatch forces that dispatch to pay for both.
+              #
+              # Then bucket by spec FILE, not by individual failure: a file that fails under
+              # both backends is promoted to the "both" bucket so its ES and RDBMS variants
+              # land in ONE dispatch -- one PR, verified against both backends in the same
+              # Live Docker Verify run (AGENTS.md "Live Docker Verify" runs each spec against
+              # the environment that matches it) -- rather than two PRs making the same fix.
+              # A file failing under only one backend stays in that bucket, so purely-cheap
+              # work still skips the Maven build.
+              map(. + {raw_kind: (
                   if .test_type == "api"
                      and .database != null and .database != "" and .database != "elasticsearch"
                   then "rdbms" else "cheap" end)})
+              | (reduce (group_by([.version, .file])[]) as $g ({};
+                  .[($g[0].version + "\u0000" + $g[0].file)] =
+                    (if ([$g[].raw_kind] | unique | length) > 1 then "both" else $g[0].raw_kind end)
+                )) as $file_bucket
+              | map(. + {cost_bucket: $file_bucket[(.version + "\u0000" + .file)]} | del(.raw_kind))
               | sort_by(.version, .cost_bucket) | group_by([.version, .cost_bucket])
               | map({
                   version: .[0].version,
@@ -523,14 +534,17 @@ jobs:
                   ref: (if .[0].version == "main" then "main" else ("stable/" + .[0].version) end)
                 })
               | map(select(.test_specs | length > 0))
-              # per-file dedup: remove specs whose file is already covered by an open PR for
-              # the same ref AND bucket (a legacy version-only PR, keyed ::legacy, covers all
-              # buckets). A spec failing under both ES and RDBMS is dropped only for the bucket
-              # already covered by a PR, so a failure in the other bucket still dispatches.
+              # per-file dedup: remove specs whose file is already covered by an open PR.
+              # Coverage is keyed by ref::bucket. A "both" PR covers a file for both backends
+              # and a legacy version-only PR (::legacy) covers all buckets, so a cheap or rdbms
+              # dispatch also unions in ::both and ::legacy; a "both" dispatch unions only
+              # ::both and ::legacy (an existing cheap/rdbms PR covers only one backend, so it
+              # must not suppress the file from the "both" dispatch that fixes both).
               | map(
                   .ref as $ref |
                   .cost_bucket as $cb |
-                  (($covered[$ref + "::" + $cb] // []) + ($covered[$ref + "::legacy"] // [])) as $cov |
+                  ([$cb, "both", "legacy"] | unique) as $keys |
+                  ([$keys[] | $covered[$ref + "::" + .] // []] | add) as $cov |
                   .test_specs |= map(
                     . as $spec |
                     select($cov | index($spec.file) == null)

@@ -1192,7 +1192,7 @@ What this asks of you:
 - **Code comments:** follow `## Code Comments` — no narration, history, or emphasis banners; the reasoning goes in the PR body.
 - **PR title type must be `test:`** — commitlint rejects `fix:` for test-only changes (see Commit / PR Conventions above).
 - **Never target a `release-*` branch** — your PR goes to `main` or `stable/<version>`; the release-branch backport is labelled for you (see "Backport to a frozen release branch" above).
-- **One PR per version and cost bucket** — triage dispatches a version's cheap (e2e/API-ES) and RDBMS failures as separate dispatches, each on its own `fix/nightly-<version>-<bucket>-` branch slot named in your prompt. A single PR may fix multiple tests of the same bucket on the same `stable/<version>` branch, but never spans two buckets or crosses branch boundaries. A manual run with no bucket uses the version-only slot.
+- **One PR per version and cost bucket** — triage dispatches a version's failures in up to three buckets, each on its own `fix/nightly-<version>-<bucket>-` branch slot named in your prompt: `cheap` (e2e/API-ES only), `rdbms` (RDBMS only), and `both` (a spec that fails under ES and RDBMS — verify it against both backends per Live Docker Verify). A single PR may fix multiple tests of the same bucket on the same `stable/<version>` branch, but never spans buckets or crosses branch boundaries. A manual run with no bucket uses the version-only slot.
 
 ### Result manifest
 
