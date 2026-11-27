@@ -11,9 +11,11 @@ import io.camunda.optimize.OptimizeApplicationDetector;
 import io.camunda.security.api.model.config.SessionConfiguration;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -49,7 +51,9 @@ import org.springframework.core.env.MapPropertySource;
  * service-config.yaml}), or from the {@code camunda.identity.issuer} / {@code
  * camunda.identity.clientId} / {@code camunda.identity.audience} / {@code
  * CAMUNDA_IDENTITY_CLIENT_SECRET} config surface the official {@code camunda-platform} Helm chart's
- * Optimize ConfigMap renders instead.
+ * Optimize ConfigMap renders instead. The yaml key {@code camunda.identity.clientSecret}, which the
+ * chart does not render but docker-compose and hand-written {@code application-ccsm.yaml} files
+ * set, is bridged last, below both env vars.
  *
  * <p>Every recognised legacy key logs a deprecation warning naming its {@code camunda.security.*}
  * replacement (or, for obsolete keys, stating that it no longer has any effect). Legacy keys stay
@@ -179,9 +183,9 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   // discovery fail (issuer mismatch) instead of fixing reachability. It feeds the back-channel
   // endpoints, which carry no issuer check — see deriveOidcEndpoints.
   //
-  // Also deliberately NOT bridged: camunda.identity.clientSecret, the config-file secret key that
-  // application-ccsm.yaml also declares — the official Helm chart never renders it, only the
-  // CAMUNDA_IDENTITY_CLIENT_SECRET env var, which is the only secret-carrying key bridged here.
+  // camunda.identity.clientSecret, the config-file secret key that application-ccsm.yaml declares,
+  // is bridged last (lowest priority, after both env vars): the Helm chart never renders it, but
+  // the official docker-compose setup and hand-written application-ccsm.yaml files set it.
   private void bridgeIdentityOidc(
       final ConfigurableEnvironment env, final Map<String, Object> derived) {
     if (isAuth0Configured(env)) {
@@ -207,12 +211,19 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // for a boot failure. Mirrors bridgeAuth0SaasOrgAndCluster's all-or-nothing precedent below.
     if (isBlank(effectiveOidcProperty(env, derived, "issuer-uri"))
         && !hasOidcEndpoints(env, derived)) {
-      final String clientId = env.getProperty("camunda.identity.clientId");
-      final String clientSecret = env.getProperty("CAMUNDA_IDENTITY_CLIENT_SECRET");
-      if (!isBlank(clientId) || !isBlank(clientSecret)) {
+      final List<String> keysSet =
+          Stream.of(
+                  "camunda.identity.clientId",
+                  "CAMUNDA_IDENTITY_CLIENT_SECRET",
+                  "camunda.identity.clientSecret")
+              .filter(key -> !isBlank(env.getProperty(key)))
+              .toList();
+      if (!keysSet.isEmpty()) {
         LOG.warn(
-            "Optimize config 'camunda.identity.clientId'/'CAMUNDA_IDENTITY_CLIENT_SECRET' cannot"
-                + " be bridged without an OIDC issuer: neither 'camunda.identity.issuer' nor"
+            "Optimize config '"
+                + String.join("'/'", keysSet)
+                + "' cannot be bridged without an OIDC issuer:"
+                + " neither 'camunda.identity.issuer' nor"
                 + " 'camunda.security.authentication.oidc.issuer-uri' resolves to a value."
                 + " 'camunda.identity.issuerBackendUrl' cannot substitute for it (OIDC discovery"
                 + " would fail against it, see the Javadoc above). Leaving the OIDC client"
@@ -223,6 +234,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
 
     mapIfCslKeyUnset(env, derived, "camunda.identity.clientId", OIDC_PREFIX + "client-id");
     mapIfCslKeyUnset(env, derived, "CAMUNDA_IDENTITY_CLIENT_SECRET", OIDC_PREFIX + "client-secret");
+    mapIfCslKeyUnset(env, derived, "camunda.identity.clientSecret", OIDC_PREFIX + "client-secret");
   }
 
   // OIDC / Auth0 (CCSaaS cloud), from the CAMUNDA_OPTIMIZE_AUTH0_* / CAMUNDA_OPTIMIZE_CLIENT_* env
