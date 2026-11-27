@@ -11,21 +11,35 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class TaskListenerIndicesRecord extends UnpackedObject implements DbValue {
 
+  private static final StringValue CREATING_TASK_LISTENER_INDEX =
+      new StringValue("creatingTaskListenerIndex");
+  private static final StringValue ASSIGNING_TASK_LISTENER_INDEX =
+      new StringValue("assigningTaskListenerIndex");
+  private static final StringValue UPDATING_TASK_LISTENER_INDEX =
+      new StringValue("updatingTaskListenerIndex");
+  private static final StringValue COMPLETING_TASK_LISTENER_INDEX =
+      new StringValue("completingTaskListenerIndex");
+  private static final StringValue CANCELING_TASK_LISTENER_INDEX =
+      new StringValue("cancelingTaskListenerIndex");
+
   private final IntegerProperty creatingTaskListenerIndexProp =
-      new IntegerProperty("creatingTaskListenerIndex", 0);
+      new IntegerProperty(CREATING_TASK_LISTENER_INDEX, 0);
   private final IntegerProperty assigningTaskListenerIndexProp =
-      new IntegerProperty("assigningTaskListenerIndex", 0);
+      new IntegerProperty(ASSIGNING_TASK_LISTENER_INDEX, 0);
   private final IntegerProperty updatingTaskListenerIndexProp =
-      new IntegerProperty("updatingTaskListenerIndex", 0);
+      new IntegerProperty(UPDATING_TASK_LISTENER_INDEX, 0);
   private final IntegerProperty completingTaskListenerIndexProp =
-      new IntegerProperty("completingTaskListenerIndex", 0);
+      new IntegerProperty(COMPLETING_TASK_LISTENER_INDEX, 0);
   private final IntegerProperty cancelingTaskListenerIndexProp =
-      new IntegerProperty("cancelingTaskListenerIndex", 0);
+      new IntegerProperty(CANCELING_TASK_LISTENER_INDEX, 0);
 
   TaskListenerIndicesRecord() {
     super(5);
