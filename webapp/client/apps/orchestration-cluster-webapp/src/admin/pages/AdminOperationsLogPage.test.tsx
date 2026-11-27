@@ -171,6 +171,76 @@ describe('<AdminOperationsLogPage />', () => {
 		await expect.element(screen.getByRole('cell', {name: '-'}).first()).toBeVisible();
 	});
 
+	it('should show a probe entry with its probe ID as the reference', async () => {
+		// given
+		const log = createAuditLog({
+			entityType: 'PROBE',
+			operationType: 'COMPLETE',
+			userTaskKey: null,
+			entityDescription: 'validate-configuration/io.camunda:aws-credential:1',
+		});
+
+		// when
+		const {screen} = await renderPage({auditLogs: [log]});
+
+		// then
+		await expect.element(screen.getByRole('cell', {name: 'Complete'})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'Probe'})).toBeVisible();
+		await expect
+			.element(screen.getByRole('cell', {name: 'validate-configuration/io.camunda:aws-credential:1'}))
+			.toBeVisible();
+	});
+
+	it('should not show the probe ID of a failed probe entry as an error code', async () => {
+		// given
+		const log = createAuditLog({
+			entityType: 'PROBE',
+			operationType: 'CANCEL',
+			result: 'FAIL',
+			userTaskKey: null,
+			entityDescription: 'validate-configuration/io.camunda:aws-credential:1',
+		});
+
+		// when
+		const {screen} = await renderPage({auditLogs: [log]});
+
+		// then
+		await expect.element(screen.getByLabelText('Fail')).toBeVisible();
+		await expect.element(screen.getByText('Error code')).not.toBeInTheDocument();
+	});
+
+	it('should select the PROBE entity type', async () => {
+		// given
+		const {screen, onSearchChange} = await renderPage();
+
+		// when
+		await userEvent.click(screen.getByLabelText('Entity type'));
+		await userEvent.click(screen.getByRole('option', {name: 'Probe'}));
+
+		// then
+		expect(onSearchChange).toHaveBeenCalledWith({
+			entityType: 'PROBE',
+			relatedEntityType: undefined,
+			relatedEntityKey: undefined,
+			page: undefined,
+		});
+	});
+
+	it.for([
+		{label: 'Complete', operationType: 'COMPLETE'},
+		{label: 'Cancel', operationType: 'CANCEL'},
+	] as const)('should select the $label operation type that ends a probe', async ({label, operationType}) => {
+		// given
+		const {screen, onSearchChange} = await renderPage();
+
+		// when
+		await userEvent.click(screen.getByLabelText('Operation type'));
+		await userEvent.click(screen.getByRole('option', {name: label}));
+
+		// then
+		expect(onSearchChange).toHaveBeenCalledWith({operationType, page: undefined});
+	});
+
 	it('should hide the owner-type and owner-key filters while the entity type is not AUTHORIZATION', async () => {
 		// given
 		const {screen} = await renderPage();

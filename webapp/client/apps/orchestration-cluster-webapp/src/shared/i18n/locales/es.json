@@ -528,6 +528,7 @@
 				"secretNameFieldPlaceholder": "Introduzca el nombre del secreto, o * para todos los secretos",
 				"secretResourceIdHelperText": "A los secretos se les añade automáticamente el prefijo \"camunda.secrets.\". Introduzca * para conceder acceso a todos los secretos.",
 				"secretResourceIdInvalidError": "Introduzca un nombre de secreto válido que coincida con el patrón {{pattern}}, o *",
+				"probeResourceIdInvalidError": "Introduzca un ID de sonda válido de como máximo 256 caracteres sin espacios en blanco, o *",
 				"permissionsFieldLabel": "Seleccione al menos un permiso",
 				"permissionsRequiredError": "Seleccione al menos un permiso",
 				"permissionsUnavailable": "No hay permisos disponibles para el tipo de recurso seleccionado.",

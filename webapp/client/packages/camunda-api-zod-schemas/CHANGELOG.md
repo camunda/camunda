@@ -5,10 +5,12 @@
 ### 🚀 Enhancements
 
 - Add the 8.11 `secret` module: the `listSecrets` endpoint, its request with the optional `filter.status` (a status, or the advanced operators `$eq`, `$neq`, `$exists`, `$in`, `$notIn`, `$like`) and its response ([#68644](https://github.com/camunda/camunda/issues/68644))
+- Add the `PROBE` audit log entity type to the 8.11 schemas ([#68871](https://github.com/camunda/camunda/issues/68871))
 
 ### ❤️ Contributors
 
 - Helene ([@HeleneW-dot](https://github.com/HeleneW-dot))
+- Mathias Vandaele ([@mathias-vandaele](https://github.com/mathias-vandaele))
 
 ## v0.0.97
 

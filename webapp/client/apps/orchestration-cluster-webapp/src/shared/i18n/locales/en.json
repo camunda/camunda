@@ -528,6 +528,7 @@
 				"secretNameFieldPlaceholder": "Enter secret name, or * for all secrets",
 				"secretResourceIdHelperText": "Secrets are automatically prefixed with \"camunda.secrets.\". Enter * to grant access to all secrets.",
 				"secretResourceIdInvalidError": "Enter a valid secret name matching the pattern {{pattern}}, or *",
+				"probeResourceIdInvalidError": "Enter a valid probe ID of at most 256 characters without whitespace, or *",
 				"permissionsFieldLabel": "Select at least one permission",
 				"permissionsRequiredError": "Select at least one permission",
 				"permissionsUnavailable": "No permissions are available for the selected resource type.",

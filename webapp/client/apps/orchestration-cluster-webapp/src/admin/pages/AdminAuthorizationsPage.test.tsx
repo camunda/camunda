@@ -29,6 +29,7 @@ import {AdminAuthorizationsPage, type AdminAuthorizationsPageProps} from './Admi
 
 const DEBOUNCED = {timeout: 3000};
 const RETRY_BUDGET = {timeout: 10_000};
+const PROBE_ID = 'validate-configuration/io.camunda:aws-credential:1';
 
 const clientConfig: AdminAuthorizationsPageProps['clientConfig'] = {
 	idPattern: null,
@@ -36,6 +37,7 @@ const clientConfig: AdminAuthorizationsPageProps['clientConfig'] = {
 		PROCESS_DEFINITION: ['READ_PROCESS_DEFINITION', 'READ_PROCESS_INSTANCE'],
 		USER_TASK: ['READ', 'COMPLETE'],
 		SECRET: ['READ'],
+		PROBE: ['CREATE', 'ANSWER'],
 	},
 	defaultRoleIds: ['admin'],
 	isAdditionalIdpConfigured: false,
@@ -61,7 +63,7 @@ async function renderPage({
 	const props: AdminAuthorizationsPageProps = {
 		search: {},
 		resourceType: 'PROCESS_DEFINITION',
-		availableResourceTypes: ['AUTHORIZATION', 'PROCESS_DEFINITION', 'USER_TASK', 'SECRET'],
+		availableResourceTypes: ['AUTHORIZATION', 'PROCESS_DEFINITION', 'USER_TASK', 'SECRET', 'PROBE'],
 		clientConfig,
 		isOidc: true,
 		isCamundaGroupsEnabled: true,
@@ -335,6 +337,85 @@ describe('<AdminAuthorizationsPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Create', exact: true}));
 
 		await expect.element(screen.getByText('Authorization created')).toBeVisible();
+	});
+
+	it('should create a probe authorization for a probe ID the ID pattern would reject', async ({worker}) => {
+		// given
+		worker.use(
+			mockCreateAuthorizationEndpoint({
+				schema: z.strictObject({
+					ownerType: z.literal('USER'),
+					ownerId: z.literal('new.user'),
+					resourceType: z.literal('PROBE'),
+					resourceId: z.literal(PROBE_ID),
+					permissionTypes: z.tuple([z.literal('CREATE'), z.literal('ANSWER')]),
+				}),
+				failureResponse: HttpResponse.json({}, {status: 400}),
+				successResponse: HttpResponse.json({authorizationKey: '46'}),
+			}),
+			mockQueryAuthorizationsEndpoint({
+				successResponse: HttpResponse.json({
+					items: [createAuthorization({authorizationKey: '46'})],
+					page: {totalItems: 1},
+				}),
+			}),
+		);
+		const {screen} = await renderPage({resourceType: 'PROBE'});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Create authorization'}));
+		await userEvent.fill(screen.getByLabelText('Username'), 'new.user');
+		await userEvent.fill(screen.getByLabelText('Resource ID'), PROBE_ID);
+		await userEvent.click(screen.getByLabelText('CREATE'));
+		await userEvent.click(screen.getByLabelText('ANSWER'));
+		await userEvent.click(screen.getByRole('button', {name: 'Create', exact: true}));
+
+		// then
+		await expect.element(screen.getByText('Authorization created')).toBeVisible();
+	});
+
+	it('should reject a probe ID with whitespace', async () => {
+		// given
+		const {screen} = await renderPage({resourceType: 'PROBE'});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Create authorization'}));
+		await userEvent.fill(screen.getByLabelText('Resource ID'), 'my probe');
+		await userEvent.click(screen.getByRole('button', {name: 'Create', exact: true}));
+
+		// then
+		await expect
+			.element(screen.getByText('Enter a valid probe ID of at most 256 characters without whitespace, or *'))
+			.toBeVisible();
+	});
+
+	it('should list and delete a probe authorization', async ({worker}) => {
+		// given
+		worker.use(
+			mockDeleteAuthorizationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockQueryAuthorizationsEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
+		);
+		const {screen} = await renderPage({
+			resourceType: 'PROBE',
+			authorizations: [
+				createAuthorization({
+					ownerId: 'connectors',
+					ownerType: 'ROLE',
+					resourceType: 'PROBE',
+					resourceId: PROBE_ID,
+					permissionTypes: ['CREATE', 'ANSWER'],
+				}),
+			],
+		});
+		await expect.element(screen.getByRole('cell', {name: PROBE_ID})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'CREATE, ANSWER'})).toBeVisible();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Delete authorization'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
+
+		// then
+		await expect.element(screen.getByText('Authorization deleted')).toBeVisible();
 	});
 
 	it('should clear the selected owner when the reader switches between owner types', async ({worker}) => {

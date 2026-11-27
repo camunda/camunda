@@ -180,6 +180,50 @@ test.describe('Admin authorizations', () => {
 		await expect(adminAuthorizationsPage.row('new.user')).toBeVisible();
 	});
 
+	test('should create a probe authorization for a probe ID', async ({adminAuthorizationsPage, network}) => {
+		network.use(
+			mockQueryAuthorizationsEndpoint({successResponse: HttpResponse.json(createQueryAuthorizationsResponse())}),
+		);
+		await adminAuthorizationsPage.goto('?resourceType=PROBE');
+		await adminAuthorizationsPage.addButton.click();
+		await expect(adminAuthorizationsPage.addModal.dialog).toBeVisible();
+
+		const probeId = 'validate-configuration/io.camunda:aws-credential:1';
+		const created = createAuthorization({
+			authorizationKey: '43',
+			ownerId: 'new.user',
+			resourceType: 'PROBE',
+			resourceId: probeId,
+			permissionTypes: ['CREATE', 'ANSWER'],
+		});
+		network.use(
+			mockCreateAuthorizationEndpoint({
+				schema: z.object({
+					ownerType: z.literal('USER'),
+					ownerId: z.literal('new.user'),
+					resourceType: z.literal('PROBE'),
+					resourceId: z.literal(probeId),
+					permissionTypes: z.tuple([z.literal('CREATE'), z.literal('ANSWER')]),
+				}),
+				successResponse: HttpResponse.json({authorizationKey: '43'}),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockGetAuthorizationEndpoint({successResponse: HttpResponse.json(created)}),
+			mockQueryAuthorizationsEndpoint({
+				successResponse: HttpResponse.json(createQueryAuthorizationsResponse({items: [created]})),
+			}),
+		);
+
+		await adminAuthorizationsPage.addModal.usernameInput.fill('new.user');
+		await adminAuthorizationsPage.addModal.resourceIdInput.fill(probeId);
+		await adminAuthorizationsPage.addModal.permissionCheckbox('CREATE').click();
+		await adminAuthorizationsPage.addModal.permissionCheckbox('ANSWER').click();
+		await adminAuthorizationsPage.addModal.createButton.click();
+
+		await expect(adminAuthorizationsPage.addModal.dialog).not.toBeVisible();
+		await expect(adminAuthorizationsPage.row(probeId)).toBeVisible();
+	});
+
 	test('should delete an authorization', async ({adminAuthorizationsPage, network}) => {
 		network.use(
 			mockQueryAuthorizationsEndpoint({

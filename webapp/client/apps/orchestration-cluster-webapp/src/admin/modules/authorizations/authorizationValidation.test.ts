@@ -7,7 +7,12 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {AUTHORIZATION_WILDCARD, isValidResourceId, isValidSecretResourceId} from './authorizationValidation';
+import {
+	AUTHORIZATION_WILDCARD,
+	isValidProbeResourceId,
+	isValidResourceId,
+	isValidSecretResourceId,
+} from './authorizationValidation';
 
 describe('authorizationValidation', () => {
 	describe('isValidResourceId', () => {
@@ -48,6 +53,32 @@ describe('authorizationValidation', () => {
 			(id) => {
 				// when
 				const result = isValidSecretResourceId(id);
+
+				// then
+				expect(result).toBe(false);
+			},
+		);
+	});
+	describe('isValidProbeResourceId', () => {
+		it.for([
+			'*',
+			'validate-configuration/io.camunda:aws-credential:1',
+			'a'.repeat(256),
+			// Java's Character.isWhitespace does not count the no-break spaces, so the server accepts them.
+			'probe\u00A0id',
+		])('should accept %s', (id) => {
+			// when
+			const result = isValidProbeResourceId(id);
+
+			// then
+			expect(result).toBe(true);
+		});
+
+		it.for(['', 'a'.repeat(257), 'my probe', 'probe\tid', 'probe\u2003id', 'probe\u2028id', 'probe\u001Fid'])(
+			'should reject %j',
+			(id) => {
+				// when
+				const result = isValidProbeResourceId(id);
 
 				// then
 				expect(result).toBe(false);

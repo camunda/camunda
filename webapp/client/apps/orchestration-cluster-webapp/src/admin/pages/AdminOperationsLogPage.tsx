@@ -41,6 +41,7 @@ import {formatEnumLabel} from '#/admin/modules/operations-log/auditLogs';
 import {
 	ALLOWED_ENTITY_TYPES,
 	ALLOWED_OPERATION_TYPES,
+	ALLOWED_RELATED_ENTITY_TYPES,
 	ALLOWED_RESULT_TYPES,
 	DEFAULT_PAGE_SIZE,
 	PAGE_SIZES,
@@ -73,7 +74,9 @@ type AdminOperationsLogPageProps = {
 };
 
 function getPropertyCell(log: AuditLog, t: TFunction): React.ReactNode {
-	if (log.result === 'FAIL') {
+	// A failed probe entry is a probe that ended in failure, not a rejected command: its
+	// description is the probe ID, which the reference column shows, not a rejection type.
+	if (log.result === 'FAIL' && log.entityType !== 'PROBE') {
 		return (
 			<div>
 				<Text as="div" variant="label-sm" className="text-neutral-foreground-subtle">
@@ -382,7 +385,7 @@ const AdminOperationsLogPage: React.FC<AdminOperationsLogPageProps> = ({
 												</SelectTrigger>
 												<SelectContent>
 													<SelectItem value={ALL_OPTION}>{t('admin.operationsLog.all')}</SelectItem>
-													{ALLOWED_ENTITY_TYPES.map((entityType) => (
+													{ALLOWED_RELATED_ENTITY_TYPES.map((entityType) => (
 														<SelectItem key={entityType} value={entityType}>
 															{formatEnumLabel(entityType)}
 														</SelectItem>

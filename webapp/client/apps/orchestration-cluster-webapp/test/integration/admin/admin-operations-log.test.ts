@@ -149,6 +149,50 @@ test.describe('Admin operations log', () => {
 		await expect(page).toHaveURL(/relatedEntityKey=owner-key/);
 	});
 
+	test('should filter by the PROBE entity type and show probe entries', async ({
+		adminOperationsLogPage,
+		page,
+		network,
+	}) => {
+		await adminOperationsLogPage.goto();
+		await expect(adminOperationsLogPage.cell('demo')).toBeVisible();
+
+		const probeId = 'validate-configuration/io.camunda:aws-credential:1';
+		network.use(
+			mockQueryAuditLogsEndpoint({
+				schema: EXPECTED_INITIAL_REQUEST.extend({
+					filter: z.object({
+						category: z.object({$eq: z.literal('ADMIN')}),
+						entityType: z.literal('PROBE'),
+					}),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryAuditLogsResponse({
+						items: [
+							createAuditLog({
+								auditLogKey: '3',
+								entityType: 'PROBE',
+								operationType: 'CREATE',
+								entityDescription: probeId,
+								actorId: 'demo',
+								actorType: 'USER',
+								result: 'SUCCESS',
+							}),
+						],
+					}),
+				),
+				failureResponse: HttpResponse.json({}, {status: 400}),
+			}),
+		);
+
+		await adminOperationsLogPage.entityTypeFilter.click();
+		await page.getByRole('option', {name: 'Probe'}).click();
+
+		await expect(page).toHaveURL(/entityType=PROBE/);
+		await expect(adminOperationsLogPage.cell(probeId)).toBeVisible();
+		await expect(adminOperationsLogPage.cell('Probe')).toBeVisible();
+	});
+
 	test('should filter by actor once the reader stops typing', async ({adminOperationsLogPage, page, network}) => {
 		await adminOperationsLogPage.goto();
 		await expect(adminOperationsLogPage.cell('demo')).toBeVisible();

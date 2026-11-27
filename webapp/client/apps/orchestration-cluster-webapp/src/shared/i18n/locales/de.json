@@ -528,6 +528,7 @@
 				"secretNameFieldPlaceholder": "Secret-Namen eingeben, oder * für alle Secrets",
 				"secretResourceIdHelperText": "Secrets wird automatisch das Präfix \"camunda.secrets.\" vorangestellt. Geben Sie * ein, um Zugriff auf alle Secrets zu gewähren.",
 				"secretResourceIdInvalidError": "Geben Sie einen gültigen Secret-Namen ein, der dem Muster {{pattern}} entspricht, oder *",
+				"probeResourceIdInvalidError": "Geben Sie eine gültige Probe-ID mit höchstens 256 Zeichen ohne Leerzeichen ein, oder *",
 				"permissionsFieldLabel": "Wählen Sie mindestens eine Berechtigung aus",
 				"permissionsRequiredError": "Wählen Sie mindestens eine Berechtigung aus",
 				"permissionsUnavailable": "Für den ausgewählten Ressourcentyp sind keine Berechtigungen verfügbar.",
