@@ -22,6 +22,7 @@ import {
   encode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
+import {extendedAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from 'utils/usersCleanup';
 import {
   expectProcessInstanceCanBeFound,
@@ -77,6 +78,26 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
     await test.step('Poll process instances', async () => {
       for (const key of processInstanceKeys) {
         await expectProcessInstanceCanBeFound(request, key);
+      }
+    });
+
+    await test.step('Wait for message subscriptions to be open', async () => {
+      // createSingleInstance() returns before the catch event opens its message
+      // subscription, so a correlate sent right away can hit NOT_FOUND. Wait
+      // until the subscription is queryable before correlating.
+      for (const key of processInstanceKeys) {
+        await expect(async () => {
+          const res = await request.post(
+            buildUrl('/message-subscriptions/search'),
+            {
+              headers: jsonHeaders(),
+              data: {filter: {processInstanceKey: key}},
+            },
+          );
+          await assertStatusCode(res, 200);
+          const json = await res.json();
+          expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
+        }).toPass(extendedAssertionOptions);
       }
     });
 
