@@ -365,6 +365,16 @@ test.describe('Operations', () => {
         maxRetries: 3,
       });
 
+      // Canceled instances only appear under a filter that includes the Canceled
+      // state. The recovery reloads above restore filteredProcessesUrl, whose
+      // filter is active+incidents only, so after cancellation the list is empty.
+      // Open the cancel operation's own view (operationId-scoped, canceled=true)
+      // so the canceled icons are in scope for the assertion below.
+      await operateOperationPanelPage.clickOperationLink(operationEntry);
+      await expect(operateFiltersPanelPage.operationIdFilter).toHaveValue(
+        cancelOperationIds[0],
+      );
+
       await Promise.all(
         instances.map((instance) =>
           expect(
