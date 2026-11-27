@@ -805,6 +805,7 @@
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-metadata-store-in-memory</artifactId>
         <version>${project.version}</version>
+        <scope>test</scope>
       </dependency>
 
       <dependency>
