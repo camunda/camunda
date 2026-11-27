@@ -15,11 +15,9 @@
  */
 package io.camunda.client.api.response;
 
-import io.camunda.client.api.ExperimentalApi;
 import java.util.Map;
 
 /** The answer of the worker to a probe (alpha). */
-@ExperimentalApi("https://github.com/camunda/camunda/issues/68869")
 public interface ProbeResult {
 
   ProbeOutcome getOutcome();

@@ -836,7 +836,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the worker
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/68869")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/71322")
   ProbeWorkerBuilderStep1 newProbeWorker();
 
   /**
@@ -3628,7 +3628,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/68869")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/71322")
   CreateProbeCommandStep1 newCreateProbeCommand();
 
   /**

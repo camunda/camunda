@@ -15,12 +15,10 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.response.ProbeResult;
 import java.time.Duration;
 import java.util.Map;
 
-@ExperimentalApi("https://github.com/camunda/camunda/issues/68869")
 public interface CreateProbeCommandStep1 {
 
   /**
