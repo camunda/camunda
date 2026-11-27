@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {CASE_HEADER_VARIABLE, getCaseHeader, getCaseTitle, getDocumentReferences} from '@camunda/case-management-sdk';
 import {Card, CardContent, CardHeader, CardTitle, PageLayout} from '@camunda/design-system';
 import type {CaseData} from '#/tasklist/modules/case-details/caseData';
+import {CaseActivityCard} from '#/tasklist/modules/case-details/components/CaseActivityCard';
 import {CaseDetailsCard} from '#/tasklist/modules/case-details/components/CaseDetailsCard';
 import {CaseDiagramCard} from '#/tasklist/modules/case-details/components/CaseDiagramCard';
 import {CaseDocumentsCard} from '#/tasklist/modules/case-details/components/CaseDocumentsCard';
@@ -38,6 +39,7 @@ const TasklistCasePage: React.FC<Props> = ({caseFormSchema, children, ...caseDat
 	const title = getCaseTitle(caseVariables.find(({name}) => name === model.caseMarker?.titleVariable)) ?? processName;
 	const header = getCaseHeader(caseVariables.find(({name}) => name === CASE_HEADER_VARIABLE)) ?? [];
 	const documents = useMemo(() => getDocumentReferences(documentVariables), [documentVariables]);
+	const documentVariableNames = useMemo(() => new Set(documents.map(({variableName}) => variableName)), [documents]);
 	const {
 		mutate: uploadDocuments,
 		isPending: isUploading,
@@ -88,6 +90,13 @@ const TasklistCasePage: React.FC<Props> = ({caseFormSchema, children, ...caseDat
 							documents={documents}
 							onUpload={processInstance.state === 'ACTIVE' ? uploadDocuments : undefined}
 							uploadingFiles={isUploading ? uploadingFiles : undefined}
+						/>
+						<CaseActivityCard
+							processInstanceKey={processInstance.processInstanceKey}
+							model={model}
+							elementInstances={elementInstances}
+							userTasks={userTasks}
+							documentVariableNames={documentVariableNames}
 						/>
 					</div>
 				</div>

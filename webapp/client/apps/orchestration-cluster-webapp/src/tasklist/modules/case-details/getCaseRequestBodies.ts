@@ -7,6 +7,8 @@
  */
 
 import type {
+	AuditLogEntityType,
+	QueryAuditLogsRequestBody,
 	QueryElementInstanceEffectiveVariablesRequestBody,
 	QueryElementInstancesRequestBody,
 	QueryUserTasksRequestBody,
@@ -14,6 +16,14 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.11';
 
 const MAX_ITEMS = 1000;
+const MAX_AUDIT_LOG_ITEMS = 100;
+const CASE_AUDIT_LOG_ENTITY_TYPES = [
+	'PROCESS_INSTANCE',
+	'USER_TASK',
+	'VARIABLE',
+	'INCIDENT',
+	'JOB',
+] as const satisfies AuditLogEntityType[];
 
 function getCaseElementInstancesRequestBody(processInstanceKey: string): QueryElementInstancesRequestBody {
 	return {
@@ -61,7 +71,24 @@ function getDocumentVariablesRequestBody(processInstanceKey: string): QueryVaria
 	};
 }
 
+/** The latest audit log entries of a case. Only the entity types whose operations a case worker relates to. */
+function getCaseAuditLogsRequestBody(processInstanceKey: string): QueryAuditLogsRequestBody {
+	return {
+		filter: {
+			processInstanceKey,
+			result: 'SUCCESS',
+			entityType: {$in: [...CASE_AUDIT_LOG_ENTITY_TYPES]},
+		},
+		sort: [
+			{field: 'timestamp', order: 'DESC'},
+			{field: 'auditLogKey', order: 'DESC'},
+		],
+		page: {limit: MAX_AUDIT_LOG_ITEMS},
+	};
+}
+
 export {
+	getCaseAuditLogsRequestBody,
 	getCaseElementInstancesRequestBody,
 	getCaseUserTasksRequestBody,
 	getCaseVariablesRequestBody,

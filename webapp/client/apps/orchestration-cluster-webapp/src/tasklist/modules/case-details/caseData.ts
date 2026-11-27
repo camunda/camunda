@@ -22,6 +22,7 @@ import {endpoints} from '#/shared/http/endpoints';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {
+	getCaseAuditLogsRequestBody,
 	getCaseElementInstancesRequestBody,
 	getCaseUserTasksRequestBody,
 	getCaseVariablesRequestBody,
@@ -193,6 +194,18 @@ function useCaseData(processInstanceKey: string, variableNames: string[]): CaseD
 	};
 }
 
+/**
+ * Reads the latest audit log entries of the case. A failed or slow audit log search does not hold the case page:
+ * the activity card shows the state of the search.
+ */
+function useCaseAuditLogs(processInstanceKey: string) {
+	return useQuery({
+		...queries.queryAuditLogs(getCaseAuditLogsRequestBody(processInstanceKey)),
+		refetchInterval: REFETCH_INTERVAL,
+		placeholderData: keepPreviousData,
+	});
+}
+
 /** Loads the form of a task and its variables. Returns `null` when the task does not exist. */
 async function loadCaseTask(queryClient: QueryClient, userTaskKey: string): Promise<CaseTaskData | null> {
 	const task = await returnNullIfNotFound(queryClient.query(queries.getUserTask(userTaskKey)));
@@ -243,5 +256,5 @@ async function loadCaseForm(
 	return form?.schema ?? null;
 }
 
-export {loadCaseData, loadCaseTask, useCaseData};
+export {loadCaseData, loadCaseTask, useCaseAuditLogs, useCaseData};
 export type {CaseData};
