@@ -597,6 +597,16 @@ jobs:
           # unverified fix. A manual run without cost_bucket uses the version-only slot.
           branch_slot="fix/nightly-${VERSION}-${COST_BUCKET:+${COST_BUCKET}-}"
 
+          # The version-only slot (manual run, no bucket) is a prefix of the bucket
+          # slots, so a plain startsWith would also match fix/nightly-<v>-cheap-/-rdbms-
+          # PRs; reusing one would re-introduce the cross-bucket verification hazard.
+          # Tell the agent to exclude those heads when the slot carries no bucket.
+          if [ -n "${COST_BUCKET}" ]; then
+            reuse_exclusion=""
+          else
+            reuse_exclusion="This slot carries no bucket, so additionally EXCLUDE any head starting with fix/nightly-${VERSION}-cheap- or fix/nightly-${VERSION}-rdbms-: those are bucket-isolated triage PRs and are not yours to reuse or push to."
+          fi
+
           prompt=$(cat <<EOF
           You are the Camunda orchestration-cluster nightly fix agent.
           Workspace: ${ws_dir} (already on branch ${TARGET_REF}).
@@ -641,7 +651,7 @@ jobs:
           \`gh pr list --repo ${REPO} --label "failing-test-fix" --state open --json number,headRefName\`
           and look for one whose \`headRefName\` STARTS WITH \`${branch_slot}\`. The prefix
           test is not optional: a branch for another version or bucket, or a \`ci/\` branch, is not
-          yours to push to.
+          yours to push to. ${reuse_exclusion}
             - If one exists: \`git fetch origin <branch> && git checkout <branch>\`, then
               \`git fetch origin ${TARGET_REF} && git merge --no-edit origin/${TARGET_REF}\` — triage
               may have REOPENED a PR opened on an earlier night, so its branch can be behind its
