@@ -246,6 +246,8 @@ Optimize is enabled by default. To disable it, pass `false` as the fourth argume
 
 In the GitHub workflow, set the `enable-optimize` input to `false`.
 
+The load tester does not evaluate Optimize reports by default. To enable it, run `make install enable_optimize_report_metrics=true`. The variable has an effect only when Optimize is enabled.
+
 ### How to configure a load test
 
 Shared baseline configuration is in `camunda-platform-values-defaults.yaml`; storage-specific overrides are in `camunda-platform-values-${secondaryStorage}.yaml` (both copied to your namespace folder).
