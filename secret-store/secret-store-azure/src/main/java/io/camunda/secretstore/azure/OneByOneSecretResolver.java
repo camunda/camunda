@@ -11,6 +11,8 @@ import static io.camunda.secretstore.SecretErrorCode.ACCESS_DENIED;
 import static io.camunda.secretstore.SecretErrorCode.INVALID_REF;
 import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 
+import com.azure.core.exception.ClientAuthenticationException;
+import com.azure.core.exception.HttpResponseException;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import com.azure.security.keyvault.secrets.models.SecretProperties;
@@ -19,6 +21,7 @@ import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,12 +54,22 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Every other failure is mapped by {@link AzureKeyVaultErrors#classify}. The first 403 also logs
  * one WARN for the store, as it may mean the identity lacks its role on the whole vault, which
- * would otherwise show only as one incident per reference. Listing is not implemented yet: no names
- * are listed.
+ * would otherwise show only as one incident per reference.
+ *
+ * <p>Listing pages through every secret's properties, never a value, and returns each name that
+ * starts with the path prefix, compared case-insensitively as Key Vault compares names, without
+ * that prefix, so a listed name resolves as listed. Disabled, expired and not yet active secrets,
+ * and secrets backing a Key Vault certificate, are listed too; Camunda's reference rules,
+ * duplicates and order are left to the caller. Listing is bounded by the store's call timeout as a
+ * whole, every page included, and any failure to list fails the whole listing as store-unavailable.
  */
 final class OneByOneSecretResolver implements AzureSecretResolver {
 
   private static final Logger LOG = LoggerFactory.getLogger(OneByOneSecretResolver.class);
+
+  private static final String LIST_PERMISSION_HINT =
+      "grant the identity the 'Key Vault Secrets User' role on the vault, or, if the vault uses"
+          + " access policies, the 'list' secret permission";
 
   private final SecretClient client;
   private final String pathPrefix;
@@ -196,7 +209,72 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
 
   @Override
   public List<String> list() {
-    return List.of();
+    return listSecrets().stream().map(ListedSecret::name).toList();
+  }
+
+  /**
+   * Every secret under the path prefix with the properties its status derives from, for {@link
+   * #list} and a status-aware listing alike, so both name the same secrets. The status-aware
+   * listing (camunda/camunda#68643) derives each {@link SecretStatus} from these properties.
+   *
+   * @throws SecretStoreUnavailableException if any page cannot be read within the call timeout
+   */
+  List<ListedSecret> listSecrets() {
+    LOG.debug("Listing secrets from Azure Key Vault");
+    try {
+      // SecretServices logs a failed listing with no store name of its own
+      return callTimeout.naming(storeDescription).call("list its secrets", this::readAllPages);
+    } catch (final SecretStoreUnavailableException e) {
+      throw e;
+    } catch (final RuntimeException e) {
+      throw listingFailed(e);
+    }
+  }
+
+  // iterating the PagedIterable fetches each next page on demand; a timed-out listing interrupts
+  // this thread, so stop rather than keep fetching pages nobody waits for
+  private List<ListedSecret> readAllPages() {
+    final List<ListedSecret> listed = new ArrayList<>();
+    for (final var properties : client.listPropertiesOfSecrets()) {
+      if (Thread.currentThread().isInterrupted()) {
+        throw new SecretStoreUnavailableException(
+            storeDescription + " stopped listing its secrets: interrupted");
+      }
+      final var name = referenceName(properties.getName());
+      if (name != null) {
+        listed.add(
+            new ListedSecret(
+                name,
+                properties.isEnabled(),
+                properties.getExpiresOn(),
+                properties.getNotBefore()));
+      }
+    }
+    return listed;
+  }
+
+  /** The reference a Key Vault secret name resolves from, or {@code null} if none does. */
+  private @Nullable String referenceName(final @Nullable String secretName) {
+    if (secretName == null
+        || secretName.length() <= pathPrefix.length()
+        || !secretName.regionMatches(true, 0, pathPrefix, 0, pathPrefix.length())) {
+      return null;
+    }
+    return secretName.substring(pathPrefix.length());
+  }
+
+  private SecretStoreUnavailableException listingFailed(final RuntimeException e) {
+    final var hint = isListingDenied(e) ? ". To list secrets, " + LIST_PERMISSION_HINT : "";
+    return AzureKeyVaultErrors.listingUnavailable(storeDescription, e, hint);
+  }
+
+  // a 403 from the vault's network rules is not about the identity's permissions
+  private static boolean isListingDenied(final RuntimeException e) {
+    return e instanceof final HttpResponseException http
+        && !(e instanceof ClientAuthenticationException)
+        && http.getResponse() != null
+        && http.getResponse().getStatusCode() == 403
+        && !AzureKeyVaultErrors.isRefusedByNetworkRules(http);
   }
 
   /** One request per name, so the store fans a request out across names. */
@@ -222,9 +300,9 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
   // an access policy granting only 'get' refuses the listing yet still lets every reference resolve
   @Override
   public String accessDeniedHint() {
-    return "grant the identity the 'Key Vault Secrets User' role on the vault, or, if the vault uses"
-        + " access policies, the 'list' secret permission. Listing is not permitted; resolution may"
-        + " still work if the identity has the 'get' permission";
+    return LIST_PERMISSION_HINT
+        + ". Listing is not permitted; resolution may still work if the identity has the 'get'"
+        + " permission";
   }
 
   @Override

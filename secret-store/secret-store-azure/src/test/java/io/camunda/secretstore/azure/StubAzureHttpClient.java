@@ -21,10 +21,12 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
+import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -46,6 +48,7 @@ final class StubAzureHttpClient implements HttpClient {
   static final String TOKEN = "stub-access-token";
 
   private static final Pattern SECRET_PATH = Pattern.compile("/secrets/([^/?]+)(?:/[^/?]*)?");
+  private static final Pattern LIST_MARKER = Pattern.compile("[?&]marker=(\\d+)");
 
   private final List<Request> requests = new CopyOnWriteArrayList<>();
   // keyed by lower-cased name, as Key Vault compares names case-insensitively
@@ -53,9 +56,12 @@ final class StubAzureHttpClient implements HttpClient {
   private volatile boolean holdingSecrets;
   private final Queue<Scripted> scriptedReads = new ConcurrentLinkedQueue<>();
   private volatile boolean hangingReads;
+  private volatile boolean hangingListing;
+  private volatile int listPageSize = 25;
   private final Function<Request, Mono<HttpResponse>> router;
   private final AtomicBoolean rejectingSignIn;
   private final AtomicInteger vaultStatus;
+  private volatile @Nullable String vaultInnerErrorCode;
 
   private StubAzureHttpClient(final Function<Request, Mono<HttpResponse>> router) {
     this(router, new AtomicBoolean(), new AtomicInteger());
@@ -125,6 +131,15 @@ final class StubAzureHttpClient implements HttpClient {
   }
 
   /**
+   * Like {@link #answerVaultWith(int)}, with {@code innerErrorCode} as Key Vault's inner error
+   * code, such as {@code ForbiddenByFirewall} for a caller its network rules refuse.
+   */
+  void answerVaultWith(final int status, final String innerErrorCode) {
+    vaultInnerErrorCode = innerErrorCode;
+    vaultStatus.set(status);
+  }
+
+  /**
    * Stores {@code value} as the latest version of the secret {@code name}. From the first call on,
    * the vault holds only the secrets put, answering any other name with 404, rather than one
    * placeholder value for every name.
@@ -142,14 +157,43 @@ final class StubAzureHttpClient implements HttpClient {
       final String value,
       final @Nullable Instant notBefore,
       final @Nullable Instant expiresOn) {
-    secrets.put(name.toLowerCase(Locale.ROOT), new StoredSecret(value, notBefore, expiresOn, true));
+    secrets.put(
+        name.toLowerCase(Locale.ROOT),
+        new StoredSecret(name, value, notBefore, expiresOn, true, false));
     holdingSecrets = true;
+    return this;
+  }
+
+  /**
+   * Stores the secret Key Vault creates to back a certificate, which it lists with {@code managed}
+   * set.
+   */
+  StubAzureHttpClient putCertificateSecret(final String name, final String value) {
+    secrets.put(
+        name.toLowerCase(Locale.ROOT), new StoredSecret(name, value, null, null, true, true));
+    holdingSecrets = true;
+    return this;
+  }
+
+  /**
+   * Lists at most {@code pageSize} secrets per page, linking each page to the next with a {@code
+   * nextLink}, as Key Vault does.
+   */
+  StubAzureHttpClient listingPagesOf(final int pageSize) {
+    listPageSize = pageSize;
+    return this;
+  }
+
+  /** From now on never answers a signed-in listing request, as a vault that hangs. */
+  StubAzureHttpClient hangListing() {
+    hangingListing = true;
     return this;
   }
 
   /** Stores a disabled secret, which Key Vault refuses to read with 403. */
   StubAzureHttpClient putDisabledSecret(final String name) {
-    secrets.put(name.toLowerCase(Locale.ROOT), new StoredSecret("", null, null, false));
+    secrets.put(
+        name.toLowerCase(Locale.ROOT), new StoredSecret(name, "", null, null, false, false));
     holdingSecrets = true;
     return this;
   }
@@ -203,10 +247,27 @@ final class StubAzureHttpClient implements HttpClient {
         return Mono.just(scripted.answer(recorded));
       }
     }
+    final var innerErrorCode = vaultInnerErrorCode;
+    if (innerErrorCode != null && vaultStatus.get() != 0 && recorded.isAuthorizedVaultRequest()) {
+      return Mono.just(
+          json(
+              recorded,
+              vaultStatus.get(),
+              """
+              {"error":{"code":"Forbidden","message":"Client address is not authorized","innererror":{"code":"%s"}}}
+              """
+                  .formatted(innerErrorCode)));
+    }
+    if (hangingListing && recorded.isAuthorizedVaultRequest() && recorded.isListRequest()) {
+      return Mono.never();
+    }
     if (holdingSecrets && vaultStatus.get() == 0 && recorded.isAuthorizedVaultRequest()) {
       final var secretName = recorded.secretName();
       if (secretName != null) {
         return Mono.just(secret(recorded, secretName));
+      }
+      if (recorded.isListRequest()) {
+        return Mono.just(listPage(recorded));
       }
     }
     return router.apply(recorded);
@@ -315,6 +376,40 @@ final class StubAzureHttpClient implements HttpClient {
             .formatted(jsonEscape(secret.value()), request.host(), name, attributes));
   }
 
+  /**
+   * One page of secret properties, sorted by name, never a value, as {@code
+   * listPropertiesOfSecrets} reads them; {@code nextLink} points at the next page, if any.
+   */
+  private HttpResponse listPage(final Request request) {
+    final var matcher = LIST_MARKER.matcher(request.url());
+    final int from = matcher.find() ? Integer.parseInt(matcher.group(1)) : 0;
+    final var all =
+        secrets.values().stream().sorted(Comparator.comparing(StoredSecret::name)).toList();
+    final int to = Math.min(all.size(), from + listPageSize);
+    final var items = new StringJoiner(",");
+    for (final var secret : all.subList(Math.min(from, to), to)) {
+      final var attributes = new StringBuilder("\"enabled\":").append(secret.enabled());
+      if (secret.notBefore() != null) {
+        attributes.append(",\"nbf\":").append(secret.notBefore().getEpochSecond());
+      }
+      if (secret.expiresOn() != null) {
+        attributes.append(",\"exp\":").append(secret.expiresOn().getEpochSecond());
+      }
+      items.add(
+          "{\"id\":\"https://%s/secrets/%s\",\"attributes\":{%s}%s}"
+              .formatted(
+                  request.host(),
+                  secret.name(),
+                  attributes,
+                  secret.managed() ? ",\"managed\":true" : ""));
+    }
+    final var nextLink =
+        to < all.size()
+            ? "\"https://%s/secrets?api-version=7.5&marker=%d\"".formatted(request.host(), to)
+            : "null";
+    return json(request, 200, "{\"value\":[" + items + "],\"nextLink\":" + nextLink + "}");
+  }
+
   private static String jsonEscape(final String value) {
     final var escaped = new StringBuilder(value.length());
     for (final char c : value.toCharArray()) {
@@ -371,7 +466,12 @@ final class StubAzureHttpClient implements HttpClient {
   }
 
   private record StoredSecret(
-      String value, @Nullable Instant notBefore, @Nullable Instant expiresOn, boolean enabled) {}
+      String name,
+      String value,
+      @Nullable Instant notBefore,
+      @Nullable Instant expiresOn,
+      boolean enabled,
+      boolean managed) {}
 
   record Request(
       HttpRequest original, String method, String url, String body, String authorization) {
@@ -390,6 +490,11 @@ final class StubAzureHttpClient implements HttpClient {
 
     boolean isAuthorizedVaultRequest() {
       return !isTokenRequest() && authorization != null;
+    }
+
+    /** Whether this is a {@code listPropertiesOfSecrets} request, for any of its pages. */
+    boolean isListRequest() {
+      return "GET".equals(method) && "/secrets".equals(original.getUrl().getPath());
     }
 
     /** The secret a {@code getSecret} request reads, or {@code null} for any other request. */

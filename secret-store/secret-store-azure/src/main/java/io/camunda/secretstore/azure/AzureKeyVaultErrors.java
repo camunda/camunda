@@ -118,6 +118,18 @@ final class AzureKeyVaultErrors {
   }
 
   /**
+   * A failed listing of the store's secrets, naming the store and Key Vault's answer.
+   *
+   * @param hint appended to the message, e.g. the permission to grant, or empty
+   */
+  static SecretStoreUnavailableException listingUnavailable(
+      final String storeDescription, final Exception e, final String hint) {
+    return new SecretStoreUnavailableException(
+        storeDescription + " is unavailable to list secrets: " + describe(e) + hint,
+        causeToKeep(e));
+  }
+
+  /**
    * What a failure may keep as its cause: only a network or sign-in error without an answer from
    * Azure, and only when nothing it holds, as a cause or a suppressed exception, has one. The SDK's
    * exception for an answer holds the request and the answer, which can carry the bearer token, the
