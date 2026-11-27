@@ -200,6 +200,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   public void close() {
     acquiringJobs.set(false);
     jobStreamer.close();
+    // A poll without a response never reports back once the worker is closed, and would otherwise
+    // be counted as in flight, and growing older, for as long as the application runs.
+    reportPollCompleted();
   }
 
   /**
@@ -268,6 +271,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     final int maxJobsToActivate = Math.min(maxJobsActive, freeCapacity);
     refusedJobsInPoll.set(0);
     failedJobsInPoll.set(0);
+    reportPollStarted();
     jobPoller.poll(
         maxJobsToActivate,
         this::handleJob,
@@ -277,6 +281,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void onPollSuccess(final JobPoller jobPoller, final int activatedJobs) {
+    reportPollCompleted();
     // Read the refusals before releasing the poller: once it is free, a job that finishes can start
     // the next poll, and that poll resets the count.
     final int refusedJobs = refusedJobsInPoll.get();
@@ -339,6 +344,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void onPollError(final JobPoller jobPoller, final Throwable error) {
+    reportPollCompleted();
     // While polls fail, nothing can take the reserved slots, for example when the poll goes over
     // REST and only the gRPC stream works. The next refused poll reserves the lane again.
     releasePollLane();
@@ -347,6 +353,24 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
         "Failed to activate jobs due to {}, delay retry for {} ms",
         error.getMessage(),
         pollInterval);
+  }
+
+  // The two reports below never throw: they run on the path that releases the job poller, so a
+  // metrics implementation that throws must not be able to keep the worker from polling again.
+  private void reportPollStarted() {
+    try {
+      metrics.pollStarted();
+    } catch (final Throwable e) {
+      LOG.debug("Failed to report the start of a poll to the job worker metrics", e);
+    }
+  }
+
+  private void reportPollCompleted() {
+    try {
+      metrics.pollCompleted();
+    } catch (final Throwable e) {
+      LOG.debug("Failed to report the end of a poll to the job worker metrics", e);
+    }
   }
 
   /**
