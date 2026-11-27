@@ -10,13 +10,12 @@ package io.camunda.application.initializers;
 import static io.camunda.application.Profile.CONSOLIDATED_AUTH;
 import static io.camunda.application.Profile.getWebappProfiles;
 
-import io.camunda.authentication.config.AuthenticationProperties;
 import java.util.Set;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 
-/** Adds the "consolidated-auth" profile if it's not set */
+/** Adds the "consolidated-auth" profile when a webapp is active and the profile is not set. */
 public class DefaultAuthenticationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -29,9 +28,6 @@ public class DefaultAuthenticationInitializer
   }
 
   protected boolean shouldApplyDefaultAuthenticationProfile(final Environment environment) {
-    if (environment.getProperty(AuthenticationProperties.METHOD) != null) {
-      return false;
-    }
     final Set<String> activeProfiles = Set.of(environment.getActiveProfiles());
     return webappProfileIsPresent(activeProfiles)
         && !consolidatedAuthProfileIsPresent(activeProfiles);
