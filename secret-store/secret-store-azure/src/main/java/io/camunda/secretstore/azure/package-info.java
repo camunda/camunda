@@ -48,8 +48,10 @@
  * refused as not found, naming the reason. The dates are compared with the clock of the node
  * reading the vault. A value cached before its secret expired or was disabled can still be served
  * until the next read of the vault drops it, at the latest when its cache entry expires ({@code
- * camunda.secrets.cache.ttl}). Container mode and listing are not implemented yet
- * (camunda/camunda#67226): every name is reported as not found and no names are listed.
+ * camunda.secrets.cache.ttl}). Listing returns every secret under the path prefix, matched
+ * case-insensitively and without the prefix, disabled, expired and not yet active ones included; it
+ * reads no value. Container mode is not implemented yet (camunda/camunda#67226): every name is
+ * reported as not found and no names are listed.
  *
  * <p>See {@link io.camunda.secretstore.azure.AzureKeyVaultStoreConfig} for every setting and its
  * default.

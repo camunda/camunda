@@ -41,11 +41,13 @@ import org.jspecify.annotations.Nullable;
  * the vault through its own {@link SecretClient}, so two physical tenants never share an identity
  * or a cached token. No credential is read from the configuration.
  *
- * <p>In one-by-one mode, {@link #resolve} reads each reference's latest version from the vault;
- * container mode and {@link #list} are not implemented yet (camunda/camunda#67226): they report
- * every name as not found and list no names. The store keeps no cache: the registry wraps it in
- * {@link io.camunda.secretstore.CachingSecretStore} and, with a {@code max-concurrency} above 1,
- * {@link io.camunda.secretstore.ConcurrentSecretStore}, which fans a request out one name per call.
+ * <p>In one-by-one mode, {@link #resolve} reads each reference's latest version from the vault, and
+ * {@link #list} pages through the vault's secret properties, never a value, listing every secret
+ * under the path prefix whatever its state. Container mode is not implemented yet
+ * (camunda/camunda#67226): it reports every name as not found and lists no names. The store keeps
+ * no cache: the registry wraps it in {@link io.camunda.secretstore.CachingSecretStore} and, with a
+ * {@code max-concurrency} above 1, {@link io.camunda.secretstore.ConcurrentSecretStore}, which fans
+ * a request out one name per call.
  *
  * <p>Each read of the vault is bounded by {@code callTimeout}, retries included: it runs on the
  * credential executor, and the caller stops waiting past that time and requests an interrupt, so a
@@ -79,6 +81,10 @@ import org.jspecify.annotations.Nullable;
  *       error), past {@code callTimeout}</td>
  *       <td>{@link io.camunda.secretstore.SecretStoreUnavailableException}</td></tr>
  * </table>
+ *
+ * <p>Any failure to list is reported as {@link
+ * io.camunda.secretstore.SecretStoreUnavailableException}, naming the missing {@code list}
+ * permission on a 403.
  *
  * <p>A failure message carries Key Vault's own status, error code and message when the vault
  * answered, and the network error otherwise, never a value.
