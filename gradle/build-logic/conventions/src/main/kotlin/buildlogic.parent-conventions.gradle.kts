@@ -80,7 +80,9 @@ val forcedModules =
 val bomManagedModules =
   listOf(
     // mcp-core requests a pre-release; the Spring Boot BOM manages it through reactor-bom.
-    "io.projectreactor:reactor-core"
+    "io.projectreactor:reactor-core",
+    // The CSL starter is built against a newer Spring Boot and requests its spring-session-core.
+    "org.springframework.session:spring-session-core",
   )
 val bomManagedVersions =
   bomManagedForcedModules(
