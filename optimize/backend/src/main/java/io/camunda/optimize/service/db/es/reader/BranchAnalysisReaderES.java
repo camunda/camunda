@@ -36,6 +36,7 @@ import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.reader.BranchAnalysisReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.BundledSchemaBpmnParser;
 import io.camunda.optimize.service.util.DefinitionQueryUtilES;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.ByteArrayInputStream;
@@ -50,7 +51,6 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
@@ -305,7 +305,8 @@ public class BranchAnalysisReaderES implements BranchAnalysisReader {
                         definitionKey, definitionVersions, ReportConstants.DEFAULT_TENANT_IDS));
 
     return processDefinitionXml.map(
-        xml -> Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes())));
+        xml ->
+            BundledSchemaBpmnParser.readModelFromStream(new ByteArrayInputStream(xml.getBytes())));
   }
 
   private Optional<String> getDefinitionXml(
