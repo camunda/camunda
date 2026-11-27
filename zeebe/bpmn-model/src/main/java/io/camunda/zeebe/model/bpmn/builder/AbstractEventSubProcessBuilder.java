@@ -157,4 +157,8 @@ public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBui
   public B zeebeStage() {
     return addExtensionElement(ZeebeStage.class, stage -> {});
   }
+
+  public B zeebeStage(final boolean alternative) {
+    return addExtensionElement(ZeebeStage.class, stage -> stage.setAlternative(alternative));
+  }
 }

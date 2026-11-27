@@ -73,6 +73,15 @@ components:
         - $ref: '#/components/schemas/ProcessInstanceKey'
         - $ref: '#/components/schemas/ElementInstanceKey'
 
+    CaseKey:
+      description: System-generated key for a case.
+      format: CaseKey
+      x-semantic-type: CaseKey
+      example: "2251799813685251"
+      type: string
+      allOf:
+        - $ref: '#/components/schemas/LongKey'
+
     VariableHistoryItemKey:
       description: System-generated key for a variable history item.
       format: VariableHistoryItemKey

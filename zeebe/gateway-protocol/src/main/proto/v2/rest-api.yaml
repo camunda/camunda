@@ -49,6 +49,7 @@ tags:
   - name: Authorization
   - name: Backup
   - name: Batch operation
+  - name: Case
   - name: Clock
   - name: Cluster
   - name: Cluster Variable
@@ -149,6 +150,10 @@ paths:
     $ref: 'batch-operations.yaml#/paths/~1batch-operations~1{batchOperationKey}~1resumption'
   /batch-operations/{batchOperationKey}/suspension:
     $ref: 'batch-operations.yaml#/paths/~1batch-operations~1{batchOperationKey}~1suspension'
+
+  # Case endpoints
+  /cases/search:
+    $ref: 'cases.yaml#/paths/~1cases~1search'
 
   # Clock endpoints
   /clock:

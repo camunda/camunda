@@ -236,6 +236,15 @@ public final class FilterBuilders {
     return fn.apply(new AuditLogFilter.Builder()).build();
   }
 
+  public static CaseFilter.Builder caseFilter() {
+    return new CaseFilter.Builder();
+  }
+
+  public static CaseFilter caseFilter(
+      final Function<CaseFilter.Builder, ObjectBuilder<CaseFilter>> fn) {
+    return fn.apply(caseFilter()).build();
+  }
+
   public static VariableHistoryItemFilter.Builder variableHistoryItem() {
     return new VariableHistoryItemFilter.Builder();
   }

@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
+import io.camunda.db.rdbms.read.service.CaseDbReader;
 import io.camunda.db.rdbms.read.service.ClusterVariableDbReader;
 import io.camunda.db.rdbms.read.service.CorrelatedMessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
@@ -108,6 +109,7 @@ public record RdbmsTenantReaders(
     UserTaskDbReader userTaskReader,
     VariableDbReader variableReader,
     VariableHistoryDbReader variableHistoryReader,
+    CaseDbReader caseReader,
     WaitStateDbReader waitStateReader,
     WaitStateStatisticsDbReader waitStateStatisticsReader) {
 
@@ -164,6 +166,7 @@ public record RdbmsTenantReaders(
         new UserTaskDbReader(mappers.userTaskMapper(), readerConfig),
         new VariableDbReader(mappers.variableMapper(), readerConfig),
         new VariableHistoryDbReader(),
+        new CaseDbReader(),
         new WaitStateDbReader(mappers.waitStateMapper(), readerConfig),
         new WaitStateStatisticsDbReader(mappers.waitStateMapper(), readerConfig));
   }
@@ -209,6 +212,7 @@ public record RdbmsTenantReaders(
         variableReader,
         clusterVariableReader,
         variableHistoryReader,
+        caseReader,
         auditLogReader,
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,

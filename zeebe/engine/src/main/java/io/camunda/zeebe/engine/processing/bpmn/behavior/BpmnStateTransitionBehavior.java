@@ -62,6 +62,7 @@ public final class BpmnStateTransitionBehavior {
   private final TypedCommandWriter commandWriter;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnCaseBehavior caseBehavior;
 
   public BpmnStateTransitionBehavior(
       final KeyGenerator keyGenerator,
@@ -84,6 +85,7 @@ public final class BpmnStateTransitionBehavior {
     commandWriter = writers.command();
     this.eventSubscriptionBehavior = eventSubscriptionBehavior;
     this.incidentBehavior = incidentBehavior;
+    caseBehavior = new BpmnCaseBehavior(stateBehavior, stateWriter);
   }
 
   public void continueTerminating(final BpmnElementContext context) {
@@ -344,6 +346,8 @@ public final class BpmnStateTransitionBehavior {
     } else {
       stateWriter.appendFollowUpEvent(key, transition, value);
     }
+
+    caseBehavior.onTransition(context, transition);
 
     return context.copy(key, value, transition);
   }

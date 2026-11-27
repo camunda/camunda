@@ -55,6 +55,11 @@ import io.camunda.gateway.protocol.model.BatchOperationSearchQueryResult;
 import io.camunda.gateway.protocol.model.BatchOperationStateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
+import io.camunda.gateway.protocol.model.CaseResult;
+import io.camunda.gateway.protocol.model.CaseSearchQueryResult;
+import io.camunda.gateway.protocol.model.CaseStageResult;
+import io.camunda.gateway.protocol.model.CaseStageStateEnum;
+import io.camunda.gateway.protocol.model.CaseStateEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
@@ -196,6 +201,7 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
+import io.camunda.search.entities.CaseEntity;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
@@ -1847,6 +1853,41 @@ public final class SearchQueryResponseMapper {
 
   private static List<AuditLogResult> toAuditLogs(final List<AuditLogEntity> auditLogs) {
     return auditLogs.stream().map(SearchQueryResponseMapper::toAuditLog).toList();
+  }
+
+  public static CaseSearchQueryResult toCaseSearchQueryResponse(
+      final SearchQueryResult<CaseEntity> result) {
+    return CaseSearchQueryResult.Builder.create()
+        .page(toSearchQueryPageResponse(result))
+        .items(result.items().stream().map(SearchQueryResponseMapper::toCase).toList())
+        .build();
+  }
+
+  private static CaseResult toCase(final CaseEntity item) {
+    return CaseResult.Builder.create()
+        .caseKey(keyToString(item.caseKey()))
+        .processInstanceKey(keyToString(item.processInstanceKey()))
+        .processDefinitionKey(keyToString(item.processDefinitionKey()))
+        .processDefinitionId(item.processDefinitionId())
+        .businessId(item.businessId())
+        .title(item.title())
+        .state(CaseStateEnum.fromValue(item.state().name()))
+        .startDate(formatDate(item.startDate()))
+        .endDate(formatDateOrNull(item.endDate()))
+        .tenantId(item.tenantId())
+        .startElementIds(item.startElementIds())
+        .stages(item.stages().stream().map(SearchQueryResponseMapper::toCaseStage).toList())
+        .build();
+  }
+
+  private static CaseStageResult toCaseStage(final CaseEntity.CaseStageEntity stage) {
+    return CaseStageResult.Builder.create()
+        .elementId(stage.elementId())
+        .name(stage.name())
+        .alternative(stage.alternative())
+        .state(CaseStageStateEnum.fromValue(stage.state().name()))
+        .nextElementIds(stage.nextElementIds())
+        .build();
   }
 
   public static VariableHistoryItemSearchQueryResult toVariableHistoryItemSearchQueryResponse(

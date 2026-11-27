@@ -31,6 +31,7 @@ import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
+import io.camunda.search.query.CaseQuery;
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
@@ -827,6 +828,22 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyAuditLogSortField);
     final var filter = SearchQueryFilterMapper.toAuditLogFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
+  }
+
+  public static Either<ProblemDetail, CaseQuery> toCaseQuery(
+      final @Nullable CaseSearchQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.caseSearchQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromCaseSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::caseSort,
+            SearchQuerySortRequestMapper::applyCaseSortField);
+    final var filter = SearchQueryFilterMapper.toCaseFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::caseSearchQuery);
   }
 
   public static Either<ProblemDetail, VariableHistoryItemQuery> toVariableHistoryItemQuery(

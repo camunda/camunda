@@ -5898,7 +5898,8 @@ final class JsonSerializableToJsonTest {
                     .setTenantId("tenant-1")
                     .setBusinessId("order-42")
                     .setTitle("Order #42 for ACME")
-                    .addStage("review", CaseStageStatus.ACTIVE)
+                    .addStage("review", "Review", true, List.of("approve"), CaseStageStatus.ACTIVE)
+                    .addStartElementId("review")
                     .setStorageOrdinal(1001),
         """
         {
@@ -5911,9 +5912,13 @@ final class JsonSerializableToJsonTest {
           "stages": [
             {
               "elementId": "review",
-              "status": "ACTIVE"
+              "status": "ACTIVE",
+              "name": "Review",
+              "alternative": true,
+              "nextElementIds": ["approve"]
             }
           ],
+          "startElementIds": ["review"],
           "storageOrdinal": 1001
         }
         """

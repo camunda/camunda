@@ -1,0 +1,142 @@
+{
+  "items": [
+    {
+      "caseKey": "2251799813685331",
+      "processInstanceKey": "2251799813685331",
+      "processDefinitionKey": "2251799813685330",
+      "processDefinitionId": "case-poc",
+      "businessId": "case-1",
+      "title": "Broken washing machine",
+      "state": "COMPLETED",
+      "startDate": "2026-11-26T09:13:25.765Z",
+      "endDate": "2026-11-26T09:13:28.256Z",
+      "tenantId": "<default>",
+      "startElementIds": [
+        "Stage_Intake"
+      ],
+      "stages": [
+        {
+          "elementId": "Stage_Intake",
+          "name": "Intake",
+          "alternative": false,
+          "state": "COMPLETED",
+          "nextElementIds": [
+            "Stage_Review",
+            "Stage_EscalationA"
+          ]
+        },
+        {
+          "elementId": "Stage_Review",
+          "name": "Review",
+          "alternative": false,
+          "state": "COMPLETED",
+          "nextElementIds": [
+            "Stage_Resolution",
+            "Stage_Intake"
+          ]
+        },
+        {
+          "elementId": "Stage_EscalationA",
+          "name": "Escalation A",
+          "alternative": true,
+          "state": "COMPLETED",
+          "nextElementIds": [
+            "Stage_EscalationB"
+          ]
+        },
+        {
+          "elementId": "Stage_Resolution",
+          "name": "Resolution",
+          "alternative": false,
+          "state": "TERMINATED",
+          "nextElementIds": []
+        },
+        {
+          "elementId": "Stage_EscalationB",
+          "name": "Escalation B",
+          "alternative": true,
+          "state": "COMPLETED",
+          "nextElementIds": [
+            "Stage_Resolution"
+          ]
+        },
+        {
+          "elementId": "Stage_Withdrawal",
+          "name": "Withdrawal",
+          "alternative": true,
+          "state": "COMPLETED",
+          "nextElementIds": []
+        }
+      ]
+    },
+    {
+      "caseKey": "2251799813685418",
+      "processInstanceKey": "2251799813685418",
+      "processDefinitionKey": "2251799813685330",
+      "processDefinitionId": "case-poc",
+      "businessId": "case-2",
+      "title": "Second case",
+      "state": "ACTIVE",
+      "startDate": "2026-11-26T09:13:28.276Z",
+      "endDate": null,
+      "tenantId": "<default>",
+      "startElementIds": [
+        "Stage_Intake"
+      ],
+      "stages": [
+        {
+          "elementId": "Stage_Intake",
+          "name": "Intake",
+          "alternative": false,
+          "state": "COMPLETED",
+          "nextElementIds": [
+            "Stage_Review",
+            "Stage_EscalationA"
+          ]
+        },
+        {
+          "elementId": "Stage_Review",
+          "name": "Review",
+          "alternative": false,
+          "state": "ACTIVE",
+          "nextElementIds": [
+            "Stage_Resolution",
+            "Stage_Intake"
+          ]
+        },
+        {
+          "elementId": "Stage_EscalationA",
+          "name": "Escalation A",
+          "alternative": true,
+          "state": "NOT_STARTED",
+          "nextElementIds": [
+            "Stage_EscalationB"
+          ]
+        },
+        {
+          "elementId": "Stage_Resolution",
+          "name": "Resolution",
+          "alternative": false,
+          "state": "NOT_STARTED",
+          "nextElementIds": []
+        },
+        {
+          "elementId": "Stage_EscalationB",
+          "name": "Escalation B",
+          "alternative": true,
+          "state": "NOT_STARTED",
+          "nextElementIds": [
+            "Stage_Resolution"
+          ]
+        },
+        {
+          "elementId": "Stage_Withdrawal",
+          "name": "Withdrawal",
+          "alternative": true,
+          "state": "NOT_STARTED",
+          "nextElementIds": []
+        }
+      ]
+    }
+  ]
+}

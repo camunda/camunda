@@ -39,6 +39,7 @@ public interface SearchClientsProxy
         VariableSearchClient,
         ClusterVariableSearchClient,
         VariableHistorySearchClient,
+        CaseSearchClient,
         GlobalListenerSearchClient,
         DeployedResourceSearchClient,
         WaitStateSearchClient,

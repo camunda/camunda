@@ -141,6 +141,8 @@ val openApiGenerateSimple =
           "io.camunda.gateway.protocol.model.BatchOperationItemSearchQuerySortRequest",
         "BatchOperationSearchQuerySortRequest" to
           "io.camunda.gateway.protocol.model.BatchOperationSearchQuerySortRequest",
+        "CaseSearchQuerySortRequest" to
+          "io.camunda.gateway.protocol.model.CaseSearchQuerySortRequest",
         "ClusterVariableSearchQuerySortRequest" to
           "io.camunda.gateway.protocol.model.ClusterVariableSearchQuerySortRequest",
         "CorrelatedMessageSubscriptionSearchQuerySortRequest" to

@@ -14,6 +14,7 @@ import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
+import io.camunda.service.CaseServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterExportingServices;
 import io.camunda.service.ClusterHistoryBackupServices;
@@ -112,6 +113,7 @@ public record DefaultServiceRegistry(
     Map<String, UserTaskServices> userTaskByTenant,
     Map<String, VariableServices> variableByTenant,
     Map<String, VariableHistoryServices> variableHistoryByTenant,
+    Map<String, CaseServices> caseByTenant,
     @Nullable ClusterHistoryBackupServices clusterHistoryBackupServices,
     ClusterRuntimeBackupServices clusterRuntimeBackupServices,
     ClusterRebalanceServices clusterRebalanceServices,
@@ -344,6 +346,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public CaseServices caseServices(final String physicalTenantId) {
+    return byTenant(caseByTenant, physicalTenantId);
+  }
+
+  @Override
   public ClusterHistoryBackupServices clusterHistoryBackupServices() {
     if (clusterHistoryBackupServices == null) {
       // The same answer the @RequiresSecondaryStorage gate gives, rather than an
@@ -479,6 +486,7 @@ public record DefaultServiceRegistry(
     private final Map<String, UserTaskServices> userTaskByTenant = new HashMap<>();
     private final Map<String, VariableServices> variableByTenant = new HashMap<>();
     private final Map<String, VariableHistoryServices> variableHistoryByTenant = new HashMap<>();
+    private final Map<String, CaseServices> caseByTenant = new HashMap<>();
     private @Nullable ClusterHistoryBackupServices clusterHistoryBackupServices;
     private ClusterRuntimeBackupServices clusterRuntimeBackupServices;
     private ClusterRebalanceServices clusterRebalanceServices;
@@ -715,6 +723,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder caseServices(final String tenantId, final CaseServices service) {
+      caseByTenant.put(tenantId, service);
+      return this;
+    }
+
     public Builder clusterHistoryBackupServices(final ClusterHistoryBackupServices service) {
       clusterHistoryBackupServices = service;
       return this;
@@ -804,6 +817,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(userTaskByTenant),
           Map.copyOf(variableByTenant),
           Map.copyOf(variableHistoryByTenant),
+          Map.copyOf(caseByTenant),
           clusterHistoryBackupServices,
           clusterRuntimeBackupServices,
           clusterRebalanceServices,

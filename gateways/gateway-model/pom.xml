@@ -242,6 +242,7 @@
                 <typeMapping>AuthorizationSearchQuerySortRequest=io.camunda.gateway.protocol.model.AuthorizationSearchQuerySortRequest</typeMapping>
                 <typeMapping>BatchOperationItemSearchQuerySortRequest=io.camunda.gateway.protocol.model.BatchOperationItemSearchQuerySortRequest</typeMapping>
                 <typeMapping>BatchOperationSearchQuerySortRequest=io.camunda.gateway.protocol.model.BatchOperationSearchQuerySortRequest</typeMapping>
+                <typeMapping>CaseSearchQuerySortRequest=io.camunda.gateway.protocol.model.CaseSearchQuerySortRequest</typeMapping>
                 <typeMapping>ClusterVariableSearchQuerySortRequest=io.camunda.gateway.protocol.model.ClusterVariableSearchQuerySortRequest</typeMapping>
                 <typeMapping>CorrelatedMessageSubscriptionSearchQuerySortRequest=io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQuerySortRequest</typeMapping>
                 <typeMapping>DecisionDefinitionSearchQuerySortRequest=io.camunda.gateway.protocol.model.DecisionDefinitionSearchQuerySortRequest</typeMapping>

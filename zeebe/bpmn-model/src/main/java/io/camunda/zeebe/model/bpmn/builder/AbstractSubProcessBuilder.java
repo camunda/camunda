@@ -56,4 +56,8 @@ public class AbstractSubProcessBuilder<B extends AbstractSubProcessBuilder<B>>
   public B zeebeStage() {
     return addExtensionElement(ZeebeStage.class, stage -> {});
   }
+
+  public B zeebeStage(final boolean alternative) {
+    return addExtensionElement(ZeebeStage.class, stage -> stage.setAlternative(alternative));
+  }
 }

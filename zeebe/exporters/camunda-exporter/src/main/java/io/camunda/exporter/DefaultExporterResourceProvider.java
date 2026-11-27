@@ -21,6 +21,7 @@ import io.camunda.exporter.handlers.AgentHistoryHandler;
 import io.camunda.exporter.handlers.AgentInstanceHandler;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
+import io.camunda.exporter.handlers.CaseHandler;
 import io.camunda.exporter.handlers.ClusterVariableCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.ClusterVariableDeletedHandler;
 import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler;
@@ -111,6 +112,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.AgentDefinitionIndex;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.index.CaseIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
@@ -425,6 +427,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName()),
+            new CaseHandler(indexDescriptors.get(CaseIndex.class).getFullQualifiedName()),
             new GlobalListenerCreatedUpdatedHandler(
                 indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName()),
             new GlobalListenerDeletedHandler(

@@ -18,6 +18,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
@@ -38,10 +39,12 @@ public final class CaseRecord extends UnifiedRecordValue implements CaseRecordVa
   private final StringProperty titleProp = new StringProperty("title", "");
   private final ArrayProperty<CaseStageRecord> stagesProp =
       new ArrayProperty<>("stages", CaseStageRecord::new);
+  private final ArrayProperty<StringValue> startElementIdsProp =
+      new ArrayProperty<>("startElementIds", StringValue::new);
   private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
 
   public CaseRecord() {
-    super(8);
+    super(9);
     declareProperty(processInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(bpmnProcessIdProp)
@@ -49,6 +52,7 @@ public final class CaseRecord extends UnifiedRecordValue implements CaseRecordVa
         .declareProperty(businessIdProp)
         .declareProperty(titleProp)
         .declareProperty(stagesProp)
+        .declareProperty(startElementIdsProp)
         .declareProperty(storageOrdinalProp);
   }
 
@@ -119,6 +123,36 @@ public final class CaseRecord extends UnifiedRecordValue implements CaseRecordVa
 
   public CaseRecord addStage(final String elementId, final CaseStageStatus status) {
     stagesProp.add().setElementId(elementId).setStatus(status);
+    return this;
+  }
+
+  public CaseRecord addStage(
+      final String elementId,
+      final String name,
+      final boolean alternative,
+      final List<String> nextElementIds,
+      final CaseStageStatus status) {
+    final var stage =
+        stagesProp
+            .add()
+            .setElementId(elementId)
+            .setName(name)
+            .setAlternative(alternative)
+            .setStatus(status);
+    nextElementIds.forEach(stage::addNextElementId);
+    return this;
+  }
+
+  @Override
+  public List<String> getStartElementIds() {
+    return startElementIdsProp.stream()
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .toList();
+  }
+
+  public CaseRecord addStartElementId(final String elementId) {
+    startElementIdsProp.add().wrap(BufferUtil.wrapString(elementId));
     return this;
   }
 

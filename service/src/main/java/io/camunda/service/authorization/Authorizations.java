@@ -28,6 +28,7 @@ import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
+import io.camunda.search.entities.CaseEntity;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -181,6 +182,9 @@ public abstract class Authorizations {
   public static final RequiredAuthorization<VariableHistoryItemEntity>
       VARIABLE_HISTORY_READ_AUTHORIZATION =
           RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance());
+
+  public static final RequiredAuthorization<CaseEntity> CASE_READ_AUTHORIZATION =
+      RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance());
 
   public static final RequiredAuthorization<AuditLogEntity> AUDIT_LOG_READ_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.auditLog().read());

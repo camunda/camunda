@@ -42,7 +42,8 @@ public class ZeebeStageTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Collections.emptyList();
+    return Collections.singletonList(
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "alternative", false, false, false));
   }
 
   @Test

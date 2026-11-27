@@ -65,6 +65,7 @@ import io.camunda.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
+import io.camunda.search.filter.CaseFilter;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
@@ -1554,6 +1555,36 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getInboundChannelToolName())
         .map(mapToStringOperations())
         .ifPresent(builder::inboundChannelToolNameOperations);
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, CaseFilter> toCaseFilter(
+      final io.camunda.gateway.protocol.model.@Nullable CaseFilter filter) {
+    if (filter == null) {
+      return Either.right(FilterBuilders.caseFilter().build());
+    }
+
+    final var builder = FilterBuilders.caseFilter();
+    final List<String> validationErrors = new ArrayList<>();
+    ofNullable(filter.getCaseKey())
+        .map(mapToKeyOperations("caseKey", validationErrors))
+        .ifPresent(builder::caseKeyOperations);
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+        .ifPresent(builder::processDefinitionKeyOperations);
+    ofNullable(filter.getProcessDefinitionId())
+        .map(mapToStringOperations())
+        .ifPresent(builder::processDefinitionIdOperations);
+    ofNullable(filter.getBusinessId())
+        .map(mapToStringOperations())
+        .ifPresent(builder::businessIdOperations);
+    ofNullable(filter.getTitle()).map(mapToStringOperations()).ifPresent(builder::titleOperations);
+    ofNullable(filter.getState()).ifPresent(state -> builder.states(state.getValue()));
+    ofNullable(filter.getTenantId())
+        .map(mapToStringOperations())
+        .ifPresent(builder::tenantIdOperations);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

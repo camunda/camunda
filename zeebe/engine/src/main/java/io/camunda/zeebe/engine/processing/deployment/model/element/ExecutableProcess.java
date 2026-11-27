@@ -23,6 +23,7 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
   private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
   private Expression defaultJobPriority;
   private boolean agentic;
+  private ExecutableCase caseDefinition;
 
   public ExecutableProcess(final String id) {
     super(id);
@@ -35,6 +36,14 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
 
   public void setDefaultJobPriority(final Expression defaultJobPriority) {
     this.defaultJobPriority = defaultJobPriority;
+  }
+
+  public ExecutableCase getCaseDefinition() {
+    return caseDefinition;
+  }
+
+  public void setCaseDefinition(final ExecutableCase caseDefinition) {
+    this.caseDefinition = caseDefinition;
   }
 
   public void addFlowElement(final AbstractFlowElement element) {
