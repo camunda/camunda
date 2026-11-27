@@ -6,7 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useCallback, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useQueryClient} from '@tanstack/react-query';
 import {
 	Button,
 	Card,
@@ -16,6 +18,7 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
+	toast,
 } from '@camunda/design-system';
 import {X} from '@camunda/design-system/icons';
 import type {AuthenticatedCurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -23,6 +26,7 @@ import {AssignButton} from '#/tasklist/modules/task-details/components/AssignBut
 import {CompleteTaskButton} from '#/tasklist/modules/task-details/components/CompleteTaskButton';
 import {useTaskCompletion} from '#/tasklist/modules/task-details/useTaskCompletion';
 import {TaskDetailsForm} from '#/tasklist/modules/task-details-form/components/TaskDetailsForm';
+import {saveTaskDraft, syncTaskDraft} from '#/tasklist/modules/case-details/taskDraft';
 
 type Props = {
 	task: UserTask;
@@ -44,6 +48,32 @@ const CaseTaskPanel: React.FC<Props> = ({task, currentUser, formSchema, variable
 		isSuspended: task.isSuspended,
 		onComplete: onCompleted,
 	});
+	const queryClient = useQueryClient();
+	// The variables that a draft holds in the task's local scope, see syncTaskDraft.
+	const [draftVariableNames, setDraftVariableNames] = useState(
+		() => new Set(variables.filter(({scopeKey}) => scopeKey === task.elementInstanceKey).map(({name}) => name)),
+	);
+	const saveDraft = useCallback(
+		async (draft: Record<string, unknown>) => {
+			const isVisible = await saveTaskDraft(queryClient, task, draft);
+			setDraftVariableNames((names) => new Set([...names, ...Object.keys(draft)]));
+			toast.success(t(isVisible ? 'tasklist.caseTaskDraftSaved' : 'tasklist.caseTaskDraftSavedNotVisibleYet'));
+		},
+		[queryClient, task, t],
+	);
+	const submit = useCallback(
+		async (completionVariables: Record<string, unknown>) => {
+			try {
+				await syncTaskDraft(task, draftVariableNames, completionVariables);
+			} catch (error) {
+				toast.error(t('tasklist.caseTaskDraftSyncFailed'));
+				throw error;
+			}
+
+			complete(completionVariables);
+		},
+		[task, draftVariableNames, complete, t],
+	);
 
 	return (
 		<Card className="gap-0 border-[color:var(--info-action-default)] pb-0">
@@ -89,7 +119,8 @@ const CaseTaskPanel: React.FC<Props> = ({task, currentUser, formSchema, variable
 						isCompletionAllowed={isCompletionAllowed}
 						isHidden={isHidden}
 						isSuspended={task.isSuspended}
-						onSubmit={complete}
+						onSubmit={submit}
+						onSaveDraft={saveDraft}
 					/>
 				</CardContent>
 			)}

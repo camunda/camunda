@@ -9,25 +9,18 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {Separator} from '@camunda/design-system';
 import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.11';
-import set from 'lodash/set';
 import {useTranslation} from 'react-i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {FormManager} from './FormManager';
-import {mergeVariables} from './mergeVariables';
+import {getFormVariables, type PartialVariable} from './getFormVariables';
 import {ValidationMessage} from './ValidationMessage';
 import {getFieldLabels} from './getFieldLabels';
 import {usePrefersReducedMotion} from './usePrefersReducedMotion';
 import {FormLevelErrorMessage} from './FormLevelErrorMessage';
 import {toHumanReadableBytes} from './toHumanReadableBytes';
-import {extractFilePath} from './extractFilePath';
 
 type FormManagerRef = {
 	current: FormManager;
-};
-
-type PartialVariable = {
-	name: string;
-	value: string;
 };
 
 type Props = {
@@ -96,27 +89,6 @@ function useScrollToError(managerRef: FormManagerRef) {
 		},
 		[managerRef, prefersReducedMotion],
 	);
-}
-
-function injectFileMetadataIntoData(options: {
-	data: Record<string, unknown>;
-	fileMetadata: Map<string, DocumentReference[]>;
-	pathsToInject: Map<string, string>;
-}): Record<string, unknown> {
-	const {data, fileMetadata, pathsToInject} = options;
-	let result = structuredClone(data);
-
-	pathsToInject.forEach((filepickerPath, fileKey) => {
-		const metadata = fileMetadata.get(fileKey);
-
-		if (metadata === undefined) {
-			return;
-		}
-
-		result = set(result, filepickerPath, metadata);
-	});
-
-	return result;
 }
 
 const CamundaFormRenderer: React.FC<Props> = ({
@@ -193,18 +165,12 @@ const CamundaFormRenderer: React.FC<Props> = ({
 					}
 
 					try {
-						const enrichedData =
-							files.size === 0
-								? newData
-								: injectFileMetadataIntoData({
-										data: newData,
-										fileMetadata: await handleFileUpload(files),
-										pathsToInject: extractFilePath(newData),
-									});
-						const variables = Object.entries(mergeVariables(data, enrichedData)).map(([name, value]) => ({
-							name,
-							value: JSON.stringify(value),
-						}));
+						const variables = await getFormVariables({
+							initialData: data,
+							data: newData,
+							files,
+							handleFileUpload,
+						});
 
 						await handleSubmit(variables);
 						onSubmitSuccess?.();

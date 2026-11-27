@@ -7,13 +7,14 @@
  */
 
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.11';
-import {Card, CardContent, toast} from '@camunda/design-system';
+import {Button, Card, CardContent, toast} from '@camunda/design-system';
 import {useCallback, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {CompleteTaskButton} from '#/tasklist/modules/task-details/components/CompleteTaskButton';
 import type {CompletionStatus} from '#/tasklist/modules/task-details/useTaskCompletion';
-import {CamundaFormRenderer, type PartialVariable} from '#/tasklist/modules/form-js/CamundaFormRenderer';
+import {CamundaFormRenderer} from '#/tasklist/modules/form-js/CamundaFormRenderer';
 import type {FormManager} from '#/tasklist/modules/form-js/FormManager';
+import {getFormVariables, type PartialVariable} from '#/tasklist/modules/form-js/getFormVariables';
 import {useUploadDocuments} from '#/tasklist/modules/form-js/useUploadDocuments';
 import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
 import {formatVariablesToFormData} from '#/tasklist/modules/task-details-form/formatVariablesToFormData';
@@ -25,7 +26,9 @@ type Props = {
 	isCompletionAllowed: boolean;
 	isHidden: boolean;
 	isSuspended: boolean;
-	onSubmit: (variables: Record<string, unknown>) => void;
+	onSubmit: (variables: Record<string, unknown>) => void | Promise<void>;
+	/** Shows a save button that keeps the form values without completing the task. */
+	onSaveDraft?: (variables: Record<string, unknown>) => Promise<void>;
 };
 
 function getVariablesFromSubmitPayload(variables: PartialVariable[]) {
@@ -43,12 +46,14 @@ const TaskDetailsForm: React.FC<Props> = ({
 	isHidden,
 	isSuspended,
 	onSubmit,
+	onSaveDraft,
 }) => {
 	const {t} = useTranslation();
 	const formManagerRef = useRef<FormManager | null>(null);
 	const {mutateAsync: uploadDocuments} = useUploadDocuments();
 	const [isImportError, setIsImportError] = useState(false);
 	const [localSubmissionStatus, setLocalSubmissionStatus] = useState<CompletionStatus | null>(null);
+	const [isSavingDraft, setIsSavingDraft] = useState(false);
 	const formattedData = useMemo(() => formatVariablesToFormData(variables), [variables]);
 	const submissionStatus = localSubmissionStatus ?? completionStatus;
 	const canCompleteTask = isCompletionAllowed && !isImportError;
@@ -56,9 +61,8 @@ const TaskDetailsForm: React.FC<Props> = ({
 		formManagerRef.current = formManager;
 	}, []);
 	const handleSubmit = useCallback(
-		(variables: PartialVariable[]) => {
-			onSubmit(getVariablesFromSubmitPayload(variables));
-			return Promise.resolve();
+		async (variables: PartialVariable[]) => {
+			await onSubmit(getVariablesFromSubmitPayload(variables));
 		},
 		[onSubmit],
 	);
@@ -80,6 +84,24 @@ const TaskDetailsForm: React.FC<Props> = ({
 		setLocalSubmissionStatus('active');
 		formManagerRef.current?.submit();
 	}, []);
+	const handleSaveDraft = useCallback(async () => {
+		const formManager = formManagerRef.current;
+
+		if (formManager === null || onSaveDraft === undefined) {
+			return;
+		}
+
+		setIsSavingDraft(true);
+		try {
+			const {data, files} = formManager.getDraft();
+			const variables = await getFormVariables({initialData: formattedData, data, files, handleFileUpload});
+			await onSaveDraft(getVariablesFromSubmitPayload(variables));
+		} catch {
+			toast.error(t('tasklist.taskDetailsSaveDraftFailedMessage'));
+		} finally {
+			setIsSavingDraft(false);
+		}
+	}, [formattedData, handleFileUpload, onSaveDraft, t]);
 
 	return (
 		<div className="h-full min-h-0 w-full" data-testid="task-tab-content">
@@ -104,7 +126,17 @@ const TaskDetailsForm: React.FC<Props> = ({
 							</CardContent>
 						</Card>
 					</div>
-					<footer className="mt-auto flex w-full justify-end border-t border-border px-4 py-3">
+					<footer className="mt-auto flex w-full justify-end gap-2 border-t border-border px-4 py-3">
+						{onSaveDraft === undefined || isHidden ? null : (
+							<Button
+								variant="secondary"
+								loading={isSavingDraft}
+								disabled={!canCompleteTask || isSuspended || isSavingDraft || submissionStatus === 'active'}
+								onClick={() => void handleSaveDraft()}
+							>
+								{t('tasklist.taskDetailsSaveDraftButtonLabel')}
+							</Button>
+						)}
 						<CompleteTaskButton
 							status={submissionStatus}
 							onClick={handleCompleteTask}

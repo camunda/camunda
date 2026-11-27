@@ -105,6 +105,14 @@ class FormManager {
 		this.#form.submit();
 	};
 
+	/** Reads the form data and the picked files without validating, so that a half-filled form can be kept. */
+	getDraft = (): {data: FormJSData; files: Map<string, File[]>} => {
+		return {
+			data: this.#form._getSubmitData(),
+			files: this.#form.get<{getAllFiles: () => Map<string, File[]>}>('fileRegistry').getAllFiles(),
+		};
+	};
+
 	detach = () => {
 		this.#form.detach();
 		this.#form = new Form(DEFAULT_FORM_OPTIONS);
