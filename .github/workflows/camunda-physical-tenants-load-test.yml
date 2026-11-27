@@ -47,7 +47,7 @@ on:
         default: 0.85
         required: false
       worker-replicas-per-100-pi:
-        description: 'Worker replicas per 100 PI/s of a tenant, scaled linearly and rounded up (at least 1). The default is 3 workers for 800 PI/s, with some margin'
+        description: 'Worker replicas per 100 PI/s of a tenant, scaled linearly and rounded up (at least 1). The default is 3 workers for 800 PI/s, like the daily stress tests (3 workers for 650 PI/s), with some margin'
         type: number
         default: 0.4
         required: false

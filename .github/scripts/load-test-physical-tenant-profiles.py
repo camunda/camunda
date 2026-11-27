@@ -23,7 +23,9 @@ Elasticsearch, OpenSearch and PostgreSQL (ESTIMATED_GRPC_CAPACITY); for any othe
 must be given.
 
 Worker replicas scale linearly with the rate (WORKER_REPLICAS_PER_100_PI, at least one), so workers
-never limit a tenant. 3 workers sustain about 800 PI/s, so the default ratio keeps some margin.
+never limit a tenant. The daily stress tests run 3 workers (the chart default) for 650 PI/s without secondary
+storage, over gRPC and REST, and for 300 PI/s with Elasticsearch, so the default ratio of 0.4 per 100 PI/s
+keeps margin.
 
 Environment (set by the workflow):
   TENANT_COUNT (including the default tenant), SATURATING_COUNT, SATURATING_MULTIPLIER,
