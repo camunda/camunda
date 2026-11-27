@@ -126,6 +126,11 @@ jobs:
     # source, exactly as c8-orchestration-cluster-e2e-tests-on-demand.yml's own
     # H2/RDBMS job does, before a single test can run.
     timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: write
+      id-token: write # Vault JWT login
     strategy:
       fail-fast: false
       # Cells commit to the same PR branch — serialize so a later cell always
@@ -157,9 +162,10 @@ jobs:
         uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
@@ -173,9 +179,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda
@@ -505,8 +512,9 @@ jobs:
           build_status: ${{ job.status }}
           job_name: verify/${{ matrix.cell }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   finalize:
     name: Report verification outcome
@@ -515,6 +523,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: write
+      id-token: write # Vault JWT login
     steps:
       - name: Download cell results
         continue-on-error: true
@@ -688,9 +701,10 @@ jobs:
         uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;

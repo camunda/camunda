@@ -52,9 +52,11 @@ on:
     secrets:
       VAULT_ADDR:
         required: true
-      VAULT_ROLE_ID:
+      VAULT_JWT_ROLE:
         required: true
-      VAULT_SECRET_ID:
+      VAULT_JWT_PATH:
+        required: true
+      VAULT_JWT_AUDIENCE:
         required: true
     outputs:
       changed:
@@ -77,6 +79,9 @@ jobs:
     name: Fix attempt ${{ inputs.iteration }}
     runs-on: ubuntu-latest
     timeout-minutes: 75
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     outputs:
       start_sha: ${{ steps.ws.outputs.start_sha }}
       has_patch: ${{ steps.patch.outputs.has_patch }}
@@ -102,9 +107,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
@@ -356,6 +362,9 @@ jobs:
     if: needs.fix.outputs.has_patch == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     outputs:
       changed: ${{ steps.push.outputs.changed }}
       sha: ${{ steps.push.outputs.sha }}
@@ -455,9 +464,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda
