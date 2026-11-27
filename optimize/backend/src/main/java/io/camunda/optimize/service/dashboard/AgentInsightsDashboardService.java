@@ -17,12 +17,19 @@ import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.AgentModelDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.AgentModelGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.service.db.reader.DashboardReader;
@@ -60,6 +67,9 @@ public class AgentInsightsDashboardService {
   public static final String TILE_TOTAL_TOKENS = "totalTokens";
   public static final String TILE_PROCESS_DURATION = "processDuration";
   public static final String TILE_INCIDENT_RATE = "incidentRate";
+  public static final String SECTION_MODELS = "models";
+  public static final String TILE_TOKENS_BY_MODEL_OVER_TIME = "tokensByModelOverTime";
+  public static final String TILE_TOP_MODELS = "topModels";
   public static final String SECTION_INVENTORY = "inventory";
   public static final String TILE_AGENT_INVENTORY = "agentInventory";
 
@@ -69,6 +79,9 @@ public class AgentInsightsDashboardService {
   public static final String PROCESS_DURATION_REPORT_ID =
       idFromSeed("agent-insights-process-duration");
   public static final String INCIDENT_RATE_REPORT_ID = idFromSeed("agent-insights-incident-rate");
+  public static final String TOKENS_BY_MODEL_OVER_TIME_REPORT_ID =
+      idFromSeed("agent-insights-tokens-by-model-over-time");
+  public static final String TOP_MODELS_REPORT_ID = idFromSeed("agent-insights-top-models");
   public static final String AGENT_INVENTORY_REPORT_ID =
       idFromSeed("agent-insights-agent-inventory");
 
@@ -105,6 +118,8 @@ public class AgentInsightsDashboardService {
     tiles.add(buildTotalTokensTile());
     tiles.add(buildProcessDurationTile());
     tiles.add(buildIncidentRateTile());
+    tiles.add(buildTokensByModelOverTimeTile());
+    tiles.add(buildTopModelsTile());
     tiles.add(buildAgentInventoryTile());
 
     final DashboardDefinitionRestDto dashboard = buildDashboard(tiles);
@@ -166,6 +181,62 @@ public class AgentInsightsDashboardService {
     return buildTile(INCIDENT_RATE_REPORT_ID, 12, TILE_INCIDENT_RATE);
   }
 
+  // Total tokens of completed agent runs per day, split by model. Hub sends the date unit (day or
+  // week) with every evaluation; day is only the default.
+  private DashboardReportTileDto buildTokensByModelOverTimeTile() {
+    final EndDateGroupByDto groupBy = new EndDateGroupByDto();
+    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.DAY));
+    final ProcessReportDataDto reportData =
+        reportData(
+            new ProcessViewDto(ProcessViewEntity.AGENT_RUN, ViewProperty.TOTAL_TOKENS),
+            List.of(new AggregationDto(AggregationType.SUM)),
+            ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList(),
+            groupBy,
+            new AgentModelDistributedByDto(),
+            ProcessVisualization.BAR);
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOKENS_BY_MODEL_OVER_TIME_REPORT_ID,
+        null,
+        reportData,
+        "Total tokens by model over time",
+        null,
+        null);
+    return buildTile(
+        TOKENS_BY_MODEL_OVER_TIME_REPORT_ID,
+        new PositionDto(0, 2),
+        new DimensionDto(9, 4),
+        SECTION_MODELS,
+        TILE_TOKENS_BY_MODEL_OVER_TIME);
+  }
+
+  // Input, output, total, cache read and cache write tokens of completed agent runs per model.
+  // Every measure has the same model keys, sorted by key; Hub joins them and picks the top N.
+  private DashboardReportTileDto buildTopModelsTile() {
+    final ProcessReportDataDto reportData =
+        reportData(
+            new ProcessViewDto(
+                ProcessViewEntity.AGENT_RUN,
+                List.of(
+                    ViewProperty.INPUT_TOKENS,
+                    ViewProperty.OUTPUT_TOKENS,
+                    ViewProperty.TOTAL_TOKENS,
+                    ViewProperty.CACHE_READ_TOKENS,
+                    ViewProperty.CACHE_WRITE_TOKENS)),
+            List.of(new AggregationDto(AggregationType.SUM)),
+            ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList(),
+            new AgentModelGroupByDto(),
+            new NoneDistributedByDto(),
+            ProcessVisualization.TABLE);
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOP_MODELS_REPORT_ID, null, reportData, "Top models by tokens", null, null);
+    return buildTile(
+        TOP_MODELS_REPORT_ID,
+        new PositionDto(9, 2),
+        new DimensionDto(9, 4),
+        SECTION_MODELS,
+        TILE_TOP_MODELS);
+  }
+
   // One row per agent with a completed run in the range, sorted by agent instances; Hub asks for
   // every row and searches and sorts client-side.
   private DashboardReportTileDto buildAgentInventoryTile() {
@@ -177,14 +248,12 @@ public class AgentInsightsDashboardService {
             ProcessVisualization.TABLE);
     reportWriter.createOrUpdateSingleProcessReport(
         AGENT_INVENTORY_REPORT_ID, null, reportData, "Agent inventory", null, null);
-    return DashboardReportTileDto.builder()
-        .id(AGENT_INVENTORY_REPORT_ID)
-        .type(DashboardTileType.OPTIMIZE_REPORT)
-        .position(new PositionDto(0, 2))
-        .dimensions(new DimensionDto(18, 6))
-        .configuration(
-            Map.of(TILE_CONFIG_SECTION, SECTION_INVENTORY, TILE_CONFIG_TILE, TILE_AGENT_INVENTORY))
-        .build();
+    return buildTile(
+        AGENT_INVENTORY_REPORT_ID,
+        new PositionDto(0, 6),
+        new DimensionDto(18, 6),
+        SECTION_INVENTORY,
+        TILE_AGENT_INVENTORY);
   }
 
   private static ProcessFilterBuilder completedAgenticInstances() {
@@ -203,6 +272,22 @@ public class AgentInsightsDashboardService {
       final List<AggregationDto> aggregations,
       final List<ProcessFilterDto<?>> filters,
       final ProcessVisualization visualization) {
+    return reportData(
+        view,
+        aggregations,
+        filters,
+        new NoneGroupByDto(),
+        new NoneDistributedByDto(),
+        visualization);
+  }
+
+  private static ProcessReportDataDto reportData(
+      final ProcessViewDto view,
+      final List<AggregationDto> aggregations,
+      final List<ProcessFilterDto<?>> filters,
+      final ProcessGroupByDto<?> groupBy,
+      final ProcessReportDistributedByDto<?> distributedBy,
+      final ProcessVisualization visualization) {
     final SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
     if (!aggregations.isEmpty()) {
       configuration.setAggregationTypes(aggregations.toArray(AggregationDto[]::new));
@@ -210,8 +295,8 @@ public class AgentInsightsDashboardService {
     return ProcessReportDataDto.builder()
         .definitions(Collections.emptyList())
         .view(view)
-        .groupBy(new NoneGroupByDto())
-        .distributedBy(new NoneDistributedByDto())
+        .groupBy(groupBy)
+        .distributedBy(distributedBy)
         .visualization(visualization)
         .configuration(configuration)
         .filter(filters)
@@ -221,12 +306,22 @@ public class AgentInsightsDashboardService {
 
   private static DashboardReportTileDto buildTile(
       final String reportId, final int x, final String tile) {
+    return buildTile(
+        reportId, new PositionDto(x, 0), new DimensionDto(6, 2), SECTION_SUMMARY, tile);
+  }
+
+  private static DashboardReportTileDto buildTile(
+      final String reportId,
+      final PositionDto position,
+      final DimensionDto dimensions,
+      final String section,
+      final String tile) {
     return DashboardReportTileDto.builder()
         .id(reportId)
         .type(DashboardTileType.OPTIMIZE_REPORT)
-        .position(new PositionDto(x, 0))
-        .dimensions(new DimensionDto(6, 2))
-        .configuration(Map.of(TILE_CONFIG_SECTION, SECTION_SUMMARY, TILE_CONFIG_TILE, tile))
+        .position(position)
+        .dimensions(dimensions)
+        .configuration(Map.of(TILE_CONFIG_SECTION, section, TILE_CONFIG_TILE, tile))
         .build();
   }
 

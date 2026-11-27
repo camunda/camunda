@@ -40,16 +40,26 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.Aggreg
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.AgentModelDistributedByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.AgentModelGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
+import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ReportReader;
@@ -61,8 +71,12 @@ import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.security.util.tenant.CamundaCCSMTenantAuthorizationService;
+import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -81,6 +95,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
 
   private static final String USER_ID = "testUser";
+  private static final DateTimeFormatter DATE_KEY_FORMAT =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
   private static final List<ViewProperty> TOKEN_PROPERTIES =
       List.of(
           TOTAL_TOKENS,
@@ -252,6 +268,117 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
+  void shouldSumTokensPerModelKeyedByProviderAndModel() {
+    // given the same model through two providers, another model, and a run without a model
+    final String processKey = uniqueKey();
+    persistAgenticProcess(processKey, ZEEBE_DEFAULT_TENANT_ID);
+    persistAgentRuns(
+        completedRun(processKey, 1L, "anthropic", "claude-sonnet-5"),
+        completedRun(processKey, 2L, "anthropic", "claude-sonnet-5"),
+        completedRun(processKey, 4L, "bedrock", "claude-sonnet-5"),
+        completedRun(processKey, 8L, "openai", "gpt-4o"),
+        completedRun(processKey, 16L, null, null),
+        withModel(runningRun(processKey, 100L), "openai", "gpt-4o"));
+    final List<ViewProperty> properties =
+        List.of(INPUT_TOKENS, OUTPUT_TOKENS, TOTAL_TOKENS, CACHE_READ_TOKENS, CACHE_WRITE_TOKENS);
+    final String reportId =
+        createAgentRunReport(properties, new AgentModelGroupByDto(), new NoneDistributedByDto());
+
+    // when
+    final List<MeasureDto<?>> measures = evaluateMeasures(reportId, noExtraFilters());
+
+    // then each measure sums the completed runs per provider:model, with the same keys sorted by
+    // key, so the per-model sums add up to the total of all runs
+    assertThat(measures).extracting(MeasureDto::getProperty).containsExactlyElementsOf(properties);
+    assertThat(measures)
+        .allSatisfy(
+            measure -> {
+              final double factor = tokenFactor(measure.getProperty());
+              assertThat(mapData(measure))
+                  .extracting(
+                      MapResultEntryDto::getKey,
+                      MapResultEntryDto::getLabel,
+                      MapResultEntryDto::getValue)
+                  .containsExactly(
+                      tuple("anthropic:claude-sonnet-5", "claude-sonnet-5", factor * 3),
+                      tuple("bedrock:claude-sonnet-5", "claude-sonnet-5", factor * 4),
+                      tuple("openai:gpt-4o", "gpt-4o", factor * 8),
+                      tuple("unknown:unknown", "unknown", factor * 16));
+            });
+  }
+
+  @Test
+  void shouldSumTotalTokensPerEndDayAndModelWithinTheDateRange() {
+    // given runs on two days in the range, and one before it
+    final String processKey = uniqueKey();
+    persistAgenticProcess(processKey, ZEEBE_DEFAULT_TENANT_ID);
+    final OffsetDateTime recently = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
+    final OffsetDateTime threeDaysAgo = recently.minusDays(3);
+    persistAgentRuns(
+        endedAt(completedRun(processKey, 1L, "anthropic", "claude-sonnet-5"), recently),
+        endedAt(completedRun(processKey, 2L, "openai", "gpt-4o"), recently),
+        endedAt(completedRun(processKey, 4L, "anthropic", "claude-sonnet-5"), threeDaysAgo),
+        endedAt(
+            completedRun(processKey, 8L, "anthropic", "claude-sonnet-5"), recently.minusDays(30)));
+    final String reportId = createTokensByModelOverTimeReport();
+
+    // when
+    final List<HyperMapResultEntryDto> buckets =
+        hyperMapData(evaluateMeasures(reportId, endedInLast(7, DateUnit.DAYS)));
+
+    // then only the two days with runs have models, each with its own runs' total tokens
+    final double factor = tokenFactor(TOTAL_TOKENS);
+    assertThat(buckets).isNotEmpty();
+    assertThat(buckets)
+        .filteredOn(bucket -> !bucket.getValue().isEmpty())
+        .extracting(HyperMapResultEntryDto::getKey, bucket -> modelTotals(bucket))
+        .containsExactly(
+            tuple(dayKey(threeDaysAgo), List.of(tuple("anthropic:claude-sonnet-5", factor * 4))),
+            tuple(
+                dayKey(recently),
+                List.of(
+                    tuple("anthropic:claude-sonnet-5", factor * 1),
+                    tuple("openai:gpt-4o", factor * 2))));
+    // and no bucket starts before the date range
+    assertThat(buckets)
+        .allSatisfy(
+            bucket ->
+                assertThat(parseKey(bucket.getKey()))
+                    .isAfterOrEqualTo(recently.minusDays(8).truncatedTo(ChronoUnit.DAYS)));
+  }
+
+  @Test
+  void shouldBucketByTheDateUnitTheEvaluationAsksFor() {
+    // given
+    final String processKey = uniqueKey();
+    persistAgenticProcess(processKey, ZEEBE_DEFAULT_TENANT_ID);
+    persistAgentRuns(
+        completedRun(processKey, 1L, "anthropic", "claude-sonnet-5"),
+        endedAt(
+            completedRun(processKey, 2L, "anthropic", "claude-sonnet-5"),
+            OffsetDateTime.now(ZoneOffset.UTC).minusDays(10)));
+    final String reportId = createTokensByModelOverTimeReport();
+    final AdditionalProcessReportEvaluationFilterDto weekly = endedInLast(30, DateUnit.DAYS);
+    weekly.setGroupByDateUnit(AggregateByDateUnit.WEEK);
+
+    // when
+    final List<HyperMapResultEntryDto> buckets = hyperMapData(evaluateMeasures(reportId, weekly));
+
+    // then every bucket starts on a Monday, and the runs are still all counted
+    assertThat(buckets)
+        .isNotEmpty()
+        .allSatisfy(
+            bucket ->
+                assertThat(parseKey(bucket.getKey()).getDayOfWeek()).isEqualTo(DayOfWeek.MONDAY));
+    assertThat(
+            buckets.stream()
+                .flatMap(bucket -> bucket.getValue().stream())
+                .mapToDouble(MapResultEntryDto::getValue)
+                .sum())
+        .isEqualTo(tokenFactor(TOTAL_TOKENS) * 3);
+  }
+
+  @Test
   void shouldRejectFiltersThatAgentRunsDoNotSupport() {
     // given
     final String processKey = uniqueKey();
@@ -316,13 +443,59 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
 
   private String createAgentRunReport(
       final List<ViewProperty> properties, final List<ProcessFilterDto<?>> filters) {
+    return saveReport(agentRunReportData(properties, filters));
+  }
+
+  private String createAgentRunReport(
+      final List<ViewProperty> properties,
+      final ProcessGroupByDto<?> groupBy,
+      final ProcessReportDistributedByDto<?> distributedBy) {
+    final ProcessReportDataDto data = agentRunReportData(properties, completedRunsOnly());
+    data.setGroupBy(groupBy);
+    data.setDistributedBy(distributedBy);
+    data.getConfiguration().setAggregationTypes(new AggregationDto(SUM));
+    return saveReport(data);
+  }
+
+  private String createTokensByModelOverTimeReport() {
+    final EndDateGroupByDto byDay = new EndDateGroupByDto();
+    byDay.setValue(new DateGroupByValueDto(AggregateByDateUnit.DAY));
+    return createAgentRunReport(List.of(TOTAL_TOKENS), byDay, new AgentModelDistributedByDto());
+  }
+
+  private String saveReport(final ProcessReportDataDto data) {
     final String reportId = "agent-run-report-" + UUID.randomUUID();
     embeddedOptimizeExtension
         .getBean(ReportWriter.class)
-        .createOrUpdateSingleProcessReport(
-            reportId, null, agentRunReportData(properties, filters), "Agent runs", null, null);
+        .createOrUpdateSingleProcessReport(reportId, null, data, "Agent runs", null, null);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     return reportId;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<MapResultEntryDto> mapData(final MeasureDto<?> measure) {
+    return (List<MapResultEntryDto>) measure.getData();
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<HyperMapResultEntryDto> hyperMapData(final List<MeasureDto<?>> measures) {
+    assertThat(measures).hasSize(1);
+    return (List<HyperMapResultEntryDto>) measures.get(0).getData();
+  }
+
+  private static List<org.assertj.core.groups.Tuple> modelTotals(
+      final HyperMapResultEntryDto bucket) {
+    return bucket.getValue().stream()
+        .map(entry -> tuple(entry.getKey(), entry.getValue()))
+        .toList();
+  }
+
+  private static String dayKey(final OffsetDateTime dateTime) {
+    return DATE_KEY_FORMAT.format(dateTime.truncatedTo(ChronoUnit.DAYS));
+  }
+
+  private static OffsetDateTime parseKey(final String key) {
+    return OffsetDateTime.parse(key, DATE_KEY_FORMAT);
   }
 
   private static ProcessReportDataDto agentRunReportData(
@@ -432,6 +605,24 @@ class AgentRunReportIT extends AbstractBrokerlessZeebeCCSMIT {
     final AgentRunDto run = runningRun(processKey, unit);
     run.setEndDate(OffsetDateTime.now().minusHours(1));
     run.setStatus("COMPLETED");
+    return run;
+  }
+
+  private static AgentRunDto completedRun(
+      final String processKey, final long unit, final String provider, final String model) {
+    return withModel(completedRun(processKey, unit), provider, model);
+  }
+
+  private static AgentRunDto withModel(
+      final AgentRunDto run, final String provider, final String model) {
+    run.setProvider(provider);
+    run.setModel(model);
+    return run;
+  }
+
+  private static AgentRunDto endedAt(final AgentRunDto run, final OffsetDateTime endDate) {
+    run.setEndDate(endDate);
+    run.setStartDate(endDate.minusMinutes(5));
     return run;
   }
 

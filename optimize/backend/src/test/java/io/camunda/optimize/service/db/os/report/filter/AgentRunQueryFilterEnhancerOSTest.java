@@ -10,6 +10,8 @@ package io.camunda.optimize.service.db.os.report.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import io.camunda.optimize.service.db.filter.FilterContext;
@@ -87,6 +89,36 @@ class AgentRunQueryFilterEnhancerOSTest {
     assertThatThrownBy(() -> underTest.filterQueries(filters, FILTER_CONTEXT))
         .isInstanceOf(OptimizeValidationException.class)
         .hasMessageContaining("RunningInstancesOnlyFilterDto");
+  }
+
+  @Test
+  void shouldGiveDateBucketingTheAgentRunDateFilters() {
+    // given
+    final List<ProcessFilterDto<?>> filters =
+        ProcessFilterBuilder.filter()
+            .fixedInstanceEndDate()
+            .start(OffsetDateTime.parse("2026-10-14T00:00:00+02:00"))
+            .add()
+            .completedInstancesOnly()
+            .add()
+            .buildList();
+
+    // when
+    final List<DateFilterDataDto<?>> endDateFilters =
+        underTest.extractInstanceFilters(filters, InstanceEndDateFilterDto.class);
+    final List<Query> endDateQueries =
+        underTest.getInstanceEndDateQueryFilter().filterQueries(endDateFilters, FILTER_CONTEXT);
+    final List<Query> startDateQueries =
+        underTest.getInstanceStartDateQueryFilter().filterQueries(endDateFilters, FILTER_CONTEXT);
+
+    // then
+    assertThat(endDateFilters).hasSize(1);
+    assertThat(endDateQueries)
+        .singleElement()
+        .satisfies(q -> assertThat(toJson(q)).contains("\"" + AgentRunIndex.END_DATE + "\""));
+    assertThat(startDateQueries)
+        .singleElement()
+        .satisfies(q -> assertThat(toJson(q)).contains("\"" + AgentRunIndex.START_DATE + "\""));
   }
 
   private static String toJson(final Query query) {

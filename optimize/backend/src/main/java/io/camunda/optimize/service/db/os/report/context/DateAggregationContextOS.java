@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.db.os.report.context;
 
 import io.camunda.optimize.service.db.os.report.filter.DecisionQueryFilterEnhancerOS;
-import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
+import io.camunda.optimize.service.db.os.report.filter.InstanceDateQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.report.context.DateAggregationContext;
 import java.util.Map;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -17,7 +17,7 @@ public class DateAggregationContextOS extends DateAggregationContext {
 
   private final Map<String, Aggregation> subAggregations;
   private final DecisionQueryFilterEnhancerOS decisionQueryFilterEnhancer;
-  private final ProcessQueryFilterEnhancerOS processQueryFilterEnhancer;
+  private final InstanceDateQueryFilterEnhancerOS processQueryFilterEnhancer;
 
   protected DateAggregationContextOS(final DateAggregationContextOSBuilder<?, ?> b) {
     super(b);
@@ -38,7 +38,7 @@ public class DateAggregationContextOS extends DateAggregationContext {
     return decisionQueryFilterEnhancer;
   }
 
-  public ProcessQueryFilterEnhancerOS getProcessQueryFilterEnhancer() {
+  public InstanceDateQueryFilterEnhancerOS getProcessQueryFilterEnhancer() {
     return processQueryFilterEnhancer;
   }
 
@@ -52,7 +52,7 @@ public class DateAggregationContextOS extends DateAggregationContext {
 
     private Map<String, Aggregation> subAggregations;
     private DecisionQueryFilterEnhancerOS decisionQueryFilterEnhancer;
-    private ProcessQueryFilterEnhancerOS processQueryFilterEnhancer;
+    private InstanceDateQueryFilterEnhancerOS processQueryFilterEnhancer;
 
     public B subAggregations(final Map<String, Aggregation> subAggregations) {
       if (subAggregations == null) {
@@ -70,7 +70,7 @@ public class DateAggregationContextOS extends DateAggregationContext {
     }
 
     public B processQueryFilterEnhancer(
-        final ProcessQueryFilterEnhancerOS processQueryFilterEnhancer) {
+        final InstanceDateQueryFilterEnhancerOS processQueryFilterEnhancer) {
       this.processQueryFilterEnhancer = processQueryFilterEnhancer;
       return self();
     }

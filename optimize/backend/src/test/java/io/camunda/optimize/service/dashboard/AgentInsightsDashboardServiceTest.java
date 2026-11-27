@@ -11,6 +11,8 @@ import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardServic
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.AGENT_INVENTORY_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.INCIDENT_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.PROCESS_DURATION_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.TOKENS_BY_MODEL_OVER_TIME_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.TOP_MODELS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgentInsightsDashboardService.TOTAL_TOKENS_REPORT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -29,12 +31,17 @@ import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTile
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.AgentModelDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.HasAgentInstancesFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.AgentModelGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
@@ -115,6 +122,10 @@ class AgentInsightsDashboardServiceTest {
                 PROCESS_DURATION_REPORT_ID,
                 Map.of("section", "summary", "tile", "processDuration")),
             tuple(INCIDENT_RATE_REPORT_ID, Map.of("section", "summary", "tile", "incidentRate")),
+            tuple(
+                TOKENS_BY_MODEL_OVER_TIME_REPORT_ID,
+                Map.of("section", "models", "tile", "tokensByModelOverTime")),
+            tuple(TOP_MODELS_REPORT_ID, Map.of("section", "models", "tile", "topModels")),
             tuple(
                 AGENT_INVENTORY_REPORT_ID,
                 Map.of("section", "inventory", "tile", "agentInventory")));
@@ -197,6 +208,53 @@ class AgentInsightsDashboardServiceTest {
             CompletedInstancesOnlyFilterDto.class,
             HasAgentInstancesFilterDto.class,
             ResolvedIncidentFilterDto.class);
+  }
+
+  @Test
+  void shouldSeedTokensByModelOverTimeAsTotalTokensPerDaySplitByModel() {
+    // when
+    underTest.reconcile();
+
+    // then
+    final ProcessReportDataDto data = capturedReportData(TOKENS_BY_MODEL_OVER_TIME_REPORT_ID);
+    assertThat(data.isAgentInsightsReport()).isTrue();
+    assertThat(data.getDefinitions()).isEmpty();
+    assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_RUN);
+    assertThat(data.getView().getProperties()).containsExactly(ViewProperty.TOTAL_TOKENS);
+    assertThat(data.getConfiguration().getAggregationTypes())
+        .containsExactly(new AggregationDto(AggregationType.SUM));
+    assertThat(data.getGroupBy()).isInstanceOf(EndDateGroupByDto.class);
+    assertThat(((DateGroupByValueDto) data.getGroupBy().getValue()).getUnit())
+        .isEqualTo(AggregateByDateUnit.DAY);
+    assertThat(data.getDistributedBy()).isInstanceOf(AgentModelDistributedByDto.class);
+    assertThat(data.getFilter())
+        .extracting(ProcessFilterDto::getClass)
+        .containsExactly(CompletedInstancesOnlyFilterDto.class);
+  }
+
+  @Test
+  void shouldSeedTopModelsAsTokenSumsGroupedByModel() {
+    // when
+    underTest.reconcile();
+
+    // then
+    final ProcessReportDataDto data = capturedReportData(TOP_MODELS_REPORT_ID);
+    assertThat(data.isAgentInsightsReport()).isTrue();
+    assertThat(data.getDefinitions()).isEmpty();
+    assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_RUN);
+    assertThat(data.getView().getProperties())
+        .containsExactly(
+            ViewProperty.INPUT_TOKENS,
+            ViewProperty.OUTPUT_TOKENS,
+            ViewProperty.TOTAL_TOKENS,
+            ViewProperty.CACHE_READ_TOKENS,
+            ViewProperty.CACHE_WRITE_TOKENS);
+    assertThat(data.getConfiguration().getAggregationTypes())
+        .containsExactly(new AggregationDto(AggregationType.SUM));
+    assertThat(data.getGroupBy()).isInstanceOf(AgentModelGroupByDto.class);
+    assertThat(data.getFilter())
+        .extracting(ProcessFilterDto::getClass)
+        .containsExactly(CompletedInstancesOnlyFilterDto.class);
   }
 
   @Test

@@ -57,7 +57,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
-public class ProcessQueryFilterEnhancerES implements QueryFilterEnhancerES<ProcessFilterDto<?>> {
+public class ProcessQueryFilterEnhancerES implements InstanceDateQueryFilterEnhancerES {
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessQueryFilterEnhancerES.class);

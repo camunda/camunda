@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.process.group;
 
+import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_AGENT_MODEL;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_ASSIGNEE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_CANDIDATE_GROUP;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_DURATION;
@@ -34,7 +35,8 @@ public enum ProcessGroupByType {
   CANDIDATE_GROUP(GROUP_BY_CANDIDATE_GROUP),
   DURATION(GROUP_BY_DURATION),
   PROCESS_DEFINITION_KEY(GROUP_BY_PROCESS_DEFINITION_KEY),
-  PROCESS_DEFINITION_VERSION(GROUP_BY_PROCESS_DEFINITION_VERSION);
+  PROCESS_DEFINITION_VERSION(GROUP_BY_PROCESS_DEFINITION_VERSION),
+  AGENT_MODEL(GROUP_BY_AGENT_MODEL);
 
   private final String id;
 

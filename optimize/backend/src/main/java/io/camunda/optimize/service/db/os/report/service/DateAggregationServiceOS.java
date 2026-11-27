@@ -36,7 +36,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDat
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import io.camunda.optimize.service.db.os.report.context.DateAggregationContextOS;
-import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
+import io.camunda.optimize.service.db.os.report.filter.InstanceDateQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.report.service.DateAggregationService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
@@ -386,7 +386,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
   private Consumer<DateHistogramAggregation.Builder> extendBoundsConsumer(
       final DateAggregationContextOS context) {
     return (final DateHistogramAggregation.Builder builder) -> {
-      final ProcessQueryFilterEnhancerOS queryFilterEnhancer =
+      final InstanceDateQueryFilterEnhancerOS queryFilterEnhancer =
           context.getProcessQueryFilterEnhancer();
       final List<DateFilterDataDto<?>> dateFilters =
           context.isStartDateAggregation()
@@ -403,7 +403,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
 
   private static Query createProcessDateHistogramLimitingFilterQuery(
       final DateAggregationContextOS context) {
-    final ProcessQueryFilterEnhancerOS queryFilterEnhancer =
+    final InstanceDateQueryFilterEnhancerOS queryFilterEnhancer =
         context.getProcessQueryFilterEnhancer();
     final List<DateFilterDataDto<?>> startDateFilters =
         queryFilterEnhancer.extractInstanceFilters(
