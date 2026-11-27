@@ -232,7 +232,7 @@ public class ProcessDefinitionSuspensionAuthorizationTest {
   }
 
   @Test
-  public void shouldRejectSuspendByKeyWithoutPermissionAsNotFound() {
+  public void shouldRejectSuspendByKeyWithoutPermission() {
     // given
     final var process = deployProcess();
     final var user = createUser();
@@ -245,16 +245,14 @@ public class ProcessDefinitionSuspensionAuthorizationTest {
             .expectRejection()
             .suspend(user.getUsername());
 
-    // then - same rejection as for an unknown key, so the caller can't tell them apart
+    // then
     Assertions.assertThat(rejection)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to suspend process definition with key '%d', but no such process definition was found"
-                .formatted(process.getProcessDefinitionKey()));
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(FORBIDDEN_MESSAGE.formatted(process.getBpmnProcessId()));
   }
 
   @Test
-  public void shouldRejectResumeByKeyWithoutPermissionAsNotFound() {
+  public void shouldRejectResumeByKeyWithoutPermission() {
     // given
     final var process = deployProcess();
     final var user = createUser();
@@ -269,10 +267,30 @@ public class ProcessDefinitionSuspensionAuthorizationTest {
 
     // then
     Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(FORBIDDEN_MESSAGE.formatted(process.getBpmnProcessId()));
+  }
+
+  @Test
+  public void shouldRejectUnknownKeyWithoutPermissionAsNotFound() {
+    // given
+    final var unknownKey = deployProcess().getProcessDefinitionKey() + 1_000_000;
+    final var user = createUser();
+
+    // when
+    final var rejection =
+        engine
+            .processDefinitionSuspension()
+            .withProcessDefinitionKey(unknownKey)
+            .expectRejection()
+            .suspend(user.getUsername());
+
+    // then - the BPMN process ID to check the permission for is only known once the key is found
+    Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to resume process definition with key '%d', but no such process definition was found"
-                .formatted(process.getProcessDefinitionKey()));
+            "Expected to suspend process definition with key '%d', but no such process definition was found"
+                .formatted(unknownKey));
   }
 
   private ProcessMetadataValue deployProcess() {
