@@ -99,6 +99,7 @@ public final class MessageEventProcessors {
                 businessIdUniquenessEnabled,
                 bpmnBehaviors.variableBehavior(),
                 bpmnBehaviors.storageOrdinalProvider(),
+                bpmnBehaviors.caseBehavior(),
                 metrics))
         .onCommand(
             ValueType.MESSAGE_BATCH,
@@ -192,6 +193,7 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 keyGenerator,
                 bpmnBehaviors.storageOrdinalProvider(),
+                bpmnBehaviors.caseBehavior(),
                 clock,
                 businessIdUniquenessEnabled,
                 writers,

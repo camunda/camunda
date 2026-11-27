@@ -31,7 +31,10 @@ public enum CaseIntent implements Intent {
   COMPLETED(2),
 
   /** The process instance of the case terminated. */
-  TERMINATED(3);
+  TERMINATED(3),
+
+  /** The business id of the root process instance of the case was assigned after the creation. */
+  BUSINESS_ID_ASSIGNED(4);
 
   private final short value;
 
@@ -49,6 +52,8 @@ public enum CaseIntent implements Intent {
         return COMPLETED;
       case 3:
         return TERMINATED;
+      case 4:
+        return BUSINESS_ID_ASSIGNED;
       default:
         return UNKNOWN;
     }

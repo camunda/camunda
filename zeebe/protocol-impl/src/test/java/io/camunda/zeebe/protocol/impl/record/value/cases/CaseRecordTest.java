@@ -10,8 +10,9 @@ package io.camunda.zeebe.protocol.impl.record.value.cases;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
+import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue.CaseStageValue;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -25,8 +26,8 @@ final class CaseRecordTest {
             .setProcessInstanceKey(123L)
             .setProcessDefinitionKey(456L)
             .setBpmnProcessId("order-process")
-            .addStage("review", CaseStageStatus.ACTIVE)
-            .addStage("ship", CaseStageStatus.NOT_STARTED);
+            .addStage("review", "Review", CaseStageState.ACTIVE)
+            .addStage("ship", "Ship", CaseStageState.NOT_STARTED);
 
     // when
     final var buffer = new UnsafeBuffer(new byte[original.getLength()]);
@@ -36,8 +37,47 @@ final class CaseRecordTest {
 
     // then
     assertThat(copy.getStages())
-        .extracting(CaseStageValue::getElementId, CaseStageValue::getStatus)
+        .extracting(CaseStageValue::getElementId, CaseStageValue::getName, CaseStageValue::getState)
         .containsExactly(
-            tuple("review", CaseStageStatus.ACTIVE), tuple("ship", CaseStageStatus.NOT_STARTED));
+            tuple("review", "Review", CaseStageState.ACTIVE),
+            tuple("ship", "Ship", CaseStageState.NOT_STARTED));
+  }
+
+  @Test
+  void shouldDefaultStateToActive() {
+    // when
+    final var record = new CaseRecord();
+
+    // then
+    assertThat(record.getState()).isEqualTo(CaseLifecycleState.ACTIVE);
+    assertThat(record.getCaseKey()).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldCarryStageName() {
+    // given
+    final var record = new CaseRecord();
+
+    // when
+    record.addStage("stage-a", "Stage A", CaseStageState.NOT_STARTED);
+
+    // then
+    assertThat(record.getStages())
+        .singleElement()
+        .satisfies(
+            stage -> {
+              assertThat(stage.getElementId()).isEqualTo("stage-a");
+              assertThat(stage.getName()).isEqualTo("Stage A");
+              assertThat(stage.getState()).isEqualTo(CaseStageState.NOT_STARTED);
+            });
+  }
+
+  @Test
+  void shouldDefaultStageNameToEmpty() {
+    // when
+    final var stage = new CaseStageRecord().setElementId("stage-a");
+
+    // then
+    assertThat(stage.getName()).isEmpty();
   }
 }

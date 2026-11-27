@@ -121,4 +121,6 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   PolicyUpdateState getPolicyUpdateState();
 
   ProbeState getProbeState();
+
+  CaseState getCaseState();
 }

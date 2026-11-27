@@ -32,8 +32,17 @@ import org.immutables.value.Value;
 public interface CaseRecordValue extends RecordValue, ProcessInstanceRelated, TenantOwned {
 
   /**
-   * @return the key of the root process instance this case belongs to, which is also the key of the
-   *     case
+   * @return the key of the case, which is its own and not the key of its process instance
+   */
+  long getCaseKey();
+
+  /**
+   * @return the state of the case
+   */
+  CaseLifecycleState getState();
+
+  /**
+   * @return the key of the root process instance this case belongs to
    */
   long getProcessInstanceKey();
 
@@ -53,9 +62,8 @@ public interface CaseRecordValue extends RecordValue, ProcessInstanceRelated, Te
   String getTitle();
 
   /**
-   * Returns the stages of the case. A {@link CaseIntent#CREATED} event carries all stages of the
-   * case; a {@link CaseIntent#STAGE_UPDATED} event carries only the changed stage with its new
-   * status.
+   * Returns the stages of the case. Every case event carries the full case, including all of its
+   * stages with their current state.
    *
    * @return the stages, or an empty list if none
    */
@@ -72,8 +80,13 @@ public interface CaseRecordValue extends RecordValue, ProcessInstanceRelated, Te
     String getElementId();
 
     /**
-     * @return the status of the stage
+     * @return the name of the stage, or an empty string if it has none
      */
-    CaseStageStatus getStatus();
+    String getName();
+
+    /**
+     * @return the state of the stage
+     */
+    CaseStageState getState();
   }
 }

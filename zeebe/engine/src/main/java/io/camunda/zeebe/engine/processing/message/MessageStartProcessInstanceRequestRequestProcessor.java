@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.RequestOutcome;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.cases.CaseBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -125,6 +126,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
       final SubscriptionCommandSender commandSender,
       final KeyGenerator keyGenerator,
       final StorageOrdinalProvider storageOrdinalProvider,
+      final CaseBehavior caseBehavior,
       final InstantSource clock,
       final boolean businessIdUniquenessEnabled,
       final Writers writers,
@@ -148,7 +150,8 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
             processState,
             eventTriggerBehavior,
             stateBehavior,
-            storageOrdinalProvider);
+            storageOrdinalProvider,
+            caseBehavior);
   }
 
   @Override

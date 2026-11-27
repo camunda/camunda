@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.signal;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.cases.CaseBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
@@ -74,7 +75,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final VariableBehavior variableBehavior,
-      final StorageOrdinalProvider storageOrdinalProvider) {
+      final StorageOrdinalProvider storageOrdinalProvider,
+      final CaseBehavior caseBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -96,7 +98,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             processState,
             eventTriggerBehavior,
             stateBehavior,
-            storageOrdinalProvider);
+            storageOrdinalProvider,
+            caseBehavior);
   }
 
   @Override

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import static io.camunda.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.cases.CaseBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -44,6 +45,7 @@ public final class BpmnEventPublicationBehavior {
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
       final StorageOrdinalProvider storageOrdinalProvider,
+      final CaseBehavior caseBehavior,
       final Writers writers) {
     elementInstanceState = processingState.getElementInstanceState();
     eventHandle =
@@ -54,7 +56,8 @@ public final class BpmnEventPublicationBehavior {
             processingState.getProcessState(),
             eventTriggerBehavior,
             stateBehavior,
-            storageOrdinalProvider);
+            storageOrdinalProvider,
+            caseBehavior);
     catchEventAnalyzer =
         new CatchEventAnalyzer(processingState.getProcessState(), elementInstanceState);
     stateWriter = writers.state();

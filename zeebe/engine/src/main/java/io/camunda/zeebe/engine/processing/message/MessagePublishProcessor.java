@@ -13,6 +13,7 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.cases.CaseBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
@@ -82,6 +83,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final boolean businessIdUniquenessEnabled,
       final VariableBehavior variableBehavior,
       final StorageOrdinalProvider storageOrdinalProvider,
+      final CaseBehavior caseBehavior,
       final MessageCorrelationMetrics metrics) {
     this.partitionId = partitionId;
     this.messageState = messageState;
@@ -101,7 +103,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             processState,
             eventTriggerBehavior,
             stateBehavior,
-            storageOrdinalProvider);
+            storageOrdinalProvider,
+            caseBehavior);
     correlateBehavior =
         new MessageCorrelateBehavior(
             startEventSubscriptionState,

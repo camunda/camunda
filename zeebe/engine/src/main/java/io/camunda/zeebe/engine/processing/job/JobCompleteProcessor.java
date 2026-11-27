@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessUtils;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
+import io.camunda.zeebe.engine.processing.cases.CaseBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
@@ -157,6 +158,7 @@ public final class JobCompleteProcessor
       final CslTenantCheck tenantCheck,
       final AgentDefinitionBehavior agentDefinitionBehavior,
       final VariableBehavior variableBehavior,
+      final CaseBehavior caseBehavior,
       final boolean includeVariablesInJobCompletedEvent,
       final boolean businessIdUniquenessEnabled) {
     processState = state;
@@ -170,7 +172,7 @@ public final class JobCompleteProcessor
     this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
     businessIdAssignmentBehavior =
         new ProcessInstanceBusinessIdAssignmentBehavior(
-            writers.state(), businessIdUniquenessEnabled);
+            writers.state(), caseBehavior, businessIdUniquenessEnabled);
     preconditionChecker =
         new JobCommandPreconditionValidator(
             state.getJobState(),

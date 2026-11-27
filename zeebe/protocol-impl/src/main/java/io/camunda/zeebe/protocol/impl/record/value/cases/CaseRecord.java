@@ -15,19 +15,25 @@ import static io.camunda.zeebe.protocol.impl.record.value.processinstance.Proces
 import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.TENANT_ID_KEY;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.CaseLifecycleState;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public final class CaseRecord extends UnifiedRecordValue implements CaseRecordValue {
+  private final LongProperty caseKeyProp = new LongProperty("caseKey", -1L);
+  private final EnumProperty<CaseLifecycleState> stateProp =
+      new EnumProperty<>("state", CaseLifecycleState.class, CaseLifecycleState.ACTIVE);
   private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY);
@@ -41,8 +47,10 @@ public final class CaseRecord extends UnifiedRecordValue implements CaseRecordVa
   private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
 
   public CaseRecord() {
-    super(8);
-    declareProperty(processInstanceKeyProp)
+    super(10);
+    declareProperty(caseKeyProp)
+        .declareProperty(stateProp)
+        .declareProperty(processInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(tenantIdProp)
@@ -50,6 +58,26 @@ public final class CaseRecord extends UnifiedRecordValue implements CaseRecordVa
         .declareProperty(titleProp)
         .declareProperty(stagesProp)
         .declareProperty(storageOrdinalProp);
+  }
+
+  @Override
+  public long getCaseKey() {
+    return caseKeyProp.getValue();
+  }
+
+  public CaseRecord setCaseKey(final long caseKey) {
+    caseKeyProp.setValue(caseKey);
+    return this;
+  }
+
+  @Override
+  public CaseLifecycleState getState() {
+    return Objects.requireNonNull(stateProp.getValue());
+  }
+
+  public CaseRecord setState(final CaseLifecycleState state) {
+    stateProp.setValue(state);
+    return this;
   }
 
   @Override
@@ -117,8 +145,9 @@ public final class CaseRecord extends UnifiedRecordValue implements CaseRecordVa
     return stagesProp.stream().map(CaseStageValue.class::cast).toList();
   }
 
-  public CaseRecord addStage(final String elementId, final CaseStageStatus status) {
-    stagesProp.add().setElementId(elementId).setStatus(status);
+  public CaseRecord addStage(
+      final String elementId, final String name, final CaseStageState state) {
+    stagesProp.add().setElementId(elementId).setName(name).setState(state);
     return this;
   }
 

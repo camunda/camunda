@@ -14,7 +14,7 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.CaseRecordValue.CaseStageValue;
-import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageState;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
@@ -28,12 +28,13 @@ import org.jspecify.annotations.NullMarked;
 public final class CaseStageRecord extends ObjectValue implements CaseStageValue {
 
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY);
-  private final EnumProperty<CaseStageStatus> statusProp =
-      new EnumProperty<>("status", CaseStageStatus.class, CaseStageStatus.NOT_STARTED);
+  private final StringProperty nameProp = new StringProperty("name", "");
+  private final EnumProperty<CaseStageState> stateProp =
+      new EnumProperty<>("state", CaseStageState.class, CaseStageState.NOT_STARTED);
 
   public CaseStageRecord() {
-    super(2);
-    declareProperty(elementIdProp).declareProperty(statusProp);
+    super(3);
+    declareProperty(elementIdProp).declareProperty(nameProp).declareProperty(stateProp);
   }
 
   @Override
@@ -47,12 +48,22 @@ public final class CaseStageRecord extends ObjectValue implements CaseStageValue
   }
 
   @Override
-  public CaseStageStatus getStatus() {
-    return Objects.requireNonNull(statusProp.getValue());
+  public String getName() {
+    return BufferUtil.bufferAsString(nameProp.getValue());
   }
 
-  public CaseStageRecord setStatus(final CaseStageStatus status) {
-    statusProp.setValue(status);
+  public CaseStageRecord setName(final String name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
+  @Override
+  public CaseStageState getState() {
+    return Objects.requireNonNull(stateProp.getValue());
+  }
+
+  public CaseStageRecord setState(final CaseStageState state) {
+    stateProp.setValue(state);
     return this;
   }
 }

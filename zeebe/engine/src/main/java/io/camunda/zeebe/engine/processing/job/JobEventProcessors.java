@@ -55,7 +55,8 @@ public final class JobEventProcessors {
             processingState.getProcessState(),
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior(),
-            bpmnBehaviors.storageOrdinalProvider());
+            bpmnBehaviors.storageOrdinalProvider(),
+            bpmnBehaviors.caseBehavior());
 
     final var jobBackoffChecker =
         new JobBackoffCheckScheduler(clock, scheduledTaskStateFactory.get().getJobState());
@@ -72,6 +73,7 @@ public final class JobEventProcessors {
                 tenantCheck,
                 bpmnBehaviors.agentDefinitionBehavior(),
                 bpmnBehaviors.variableBehavior(),
+                bpmnBehaviors.caseBehavior(),
                 config.isIncludeVariablesInJobCompletedEvent(),
                 config.isBusinessIdUniquenessEnabled()))
         .onCommand(

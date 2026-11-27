@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.authorization.DbMappingRuleState;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState;
 import io.camunda.zeebe.engine.state.authorization.DbRoleState;
 import io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState;
+import io.camunda.zeebe.engine.state.cases.DbCaseState;
 import io.camunda.zeebe.engine.state.clock.DbClockState;
 import io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableState;
 import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
@@ -66,6 +67,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableAsyncRequestState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
+import io.camunda.zeebe.engine.state.mutable.MutableCaseState;
 import io.camunda.zeebe.engine.state.mutable.MutableClockState;
 import io.camunda.zeebe.engine.state.mutable.MutableClusterVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
@@ -180,6 +182,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableSecretReferenceState secretReferenceState;
   private final MutablePolicyUpdateState policyUpdateState;
   private final MutableProbeState probeState;
+  private final MutableCaseState caseState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -261,6 +264,7 @@ public class ProcessingDbState implements MutableProcessingState {
     secretReferenceState = new DbSecretReferenceState(zeebeDb, transactionContext);
     policyUpdateState = new DbPolicyUpdateState(zeebeDb, transactionContext);
     probeState = new DbProbeState(zeebeDb, transactionContext);
+    caseState = new DbCaseState(zeebeDb, transactionContext);
     if (config.isJobMetricsExportEnabled()) {
       jobMetricsState = new DbJobMetricsState(zeebeDb, transactionContext, clock, config);
     } else {
@@ -519,6 +523,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableProbeState getProbeState() {
     return probeState;
+  }
+
+  @Override
+  public MutableCaseState getCaseState() {
+    return caseState;
   }
 
   @Override

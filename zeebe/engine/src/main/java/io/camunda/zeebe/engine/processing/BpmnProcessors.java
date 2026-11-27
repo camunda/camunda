@@ -175,7 +175,7 @@ public final class BpmnProcessors {
         cslCheck,
         keyGenerator);
     addProcessInstanceBusinessIdStreamProcessors(
-        typedRecordProcessors, processingState, writers, cslCheck, config);
+        typedRecordProcessors, processingState, writers, bpmnBehaviors, cslCheck, config);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
     addAdHocSubProcessActivityStreamProcessors(
         typedRecordProcessors, processingState, writers, cslCheck, bpmnBehaviors);
@@ -409,7 +409,11 @@ public final class BpmnProcessors {
             config.isBusinessIdUniquenessEnabled());
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
-            keyGenerator, writers, metrics, processInstanceCreationHelper);
+            keyGenerator,
+            writers,
+            metrics,
+            processInstanceCreationHelper,
+            bpmnBehaviors.caseBehavior());
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 
@@ -417,7 +421,12 @@ public final class BpmnProcessors {
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
         new ProcessInstanceCreationCreateWithAwaitingResultProcessor(
-            keyGenerator, writers, metrics, processInstanceCreationHelper, elementInstanceState));
+            keyGenerator,
+            writers,
+            metrics,
+            processInstanceCreationHelper,
+            bpmnBehaviors.caseBehavior(),
+            elementInstanceState));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(
@@ -468,13 +477,18 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final Writers writers,
+      final BpmnBehaviors bpmnBehaviors,
       final CslAuthorizationCheck cslCheck,
       final EngineConfiguration config) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_BUSINESS_ID,
         ProcessInstanceBusinessIdIntent.ASSIGN,
         new ProcessInstanceBusinessIdAssignProcessor(
-            writers, processingState, cslCheck, config.isBusinessIdUniquenessEnabled()));
+            writers,
+            processingState,
+            bpmnBehaviors.caseBehavior(),
+            cslCheck,
+            config.isBusinessIdUniquenessEnabled()));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(

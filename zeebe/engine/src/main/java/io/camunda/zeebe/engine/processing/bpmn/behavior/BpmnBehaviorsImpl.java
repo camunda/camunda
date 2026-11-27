@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
+import io.camunda.zeebe.engine.processing.cases.CaseBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
@@ -81,6 +82,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final AgentInstanceBehavior agentInstanceBehavior;
   private final AgentDefinitionBehavior agentDefinitionBehavior;
   private final StorageOrdinalProvider storageOrdinalProvider;
+  private final CaseBehavior caseBehavior;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -203,6 +205,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnIncidentBehavior(
             processingState, processingState.getKeyGenerator(), writers.state(), incidentMetrics);
 
+    caseBehavior =
+        new CaseBehavior(
+            writers.state(), processingState.getKeyGenerator(), processingState.getCaseState());
+
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(
             processingState,
@@ -210,6 +216,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             eventTriggerBehavior,
             stateBehavior,
             storageOrdinalProvider,
+            caseBehavior,
             writers);
 
     processResultSenderBehavior =
@@ -222,6 +229,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             eventTriggerBehavior,
             stateBehavior,
             storageOrdinalProvider,
+            caseBehavior,
             writers,
             subscriptionCommandSender,
             routingInfo,
@@ -502,6 +510,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public StorageOrdinalProvider storageOrdinalProvider() {
     return storageOrdinalProvider;
+  }
+
+  @Override
+  public CaseBehavior caseBehavior() {
+    return caseBehavior;
   }
 
   public ExpressionBehavior expressionBehavior() {

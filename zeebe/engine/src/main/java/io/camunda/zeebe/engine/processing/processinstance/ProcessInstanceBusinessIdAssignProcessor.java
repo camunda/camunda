@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.cases.CaseBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -54,6 +55,7 @@ public class ProcessInstanceBusinessIdAssignProcessor
   public ProcessInstanceBusinessIdAssignProcessor(
       final Writers writers,
       final ProcessingState processingState,
+      final CaseBehavior caseBehavior,
       final CslAuthorizationCheck cslCheck,
       final boolean businessIdUniquenessEnabled) {
     responseWriter = writers.response();
@@ -62,7 +64,7 @@ public class ProcessInstanceBusinessIdAssignProcessor
     this.cslCheck = cslCheck;
     assignmentBehavior =
         new ProcessInstanceBusinessIdAssignmentBehavior(
-            writers.state(), businessIdUniquenessEnabled);
+            writers.state(), caseBehavior, businessIdUniquenessEnabled);
   }
 
   @Override
