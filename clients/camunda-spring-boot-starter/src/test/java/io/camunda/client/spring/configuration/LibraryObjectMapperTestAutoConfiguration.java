@@ -15,6 +15,7 @@
  */
 package io.camunda.client.spring.configuration;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -49,5 +50,40 @@ public class LibraryObjectMapperTestAutoConfiguration {
   @ConditionalOnProperty("test.primary-library-object-mapper")
   public ObjectMapper primaryLibraryObjectMapper() {
     return new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+  }
+
+  @Bean
+  @Primary
+  @ConditionalOnProperty("test.second-primary-library-object-mapper")
+  public ObjectMapper secondPrimaryLibraryObjectMapper() {
+    return new ObjectMapper();
+  }
+
+  @Bean
+  @ConditionalOnProperty("test.library-non-json-mapper")
+  public ObjectMapper libraryNonJsonMapper() {
+    return new ObjectMapper(new NonJsonFactory())
+        .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+  }
+
+  @Bean
+  @ConditionalOnProperty("test.library-non-copyable-object-mapper")
+  public ObjectMapper libraryNonCopyableObjectMapper() {
+    // copy() throws for subclasses that do not override it
+    return new ObjectMapper() {};
+  }
+
+  /** Stands in for factories of other formats, like YAMLFactory, which extend JsonFactory. */
+  static class NonJsonFactory extends JsonFactory {
+
+    @Override
+    public JsonFactory copy() {
+      return new NonJsonFactory();
+    }
+
+    @Override
+    public String getFormatName() {
+      return "non-JSON";
+    }
   }
 }
