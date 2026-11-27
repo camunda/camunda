@@ -32,7 +32,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.oauth2.jwt.JwtDecoderInitializationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -112,10 +111,8 @@ public class OidcUnreachableIssuerStartupTest {
     // when a bearer token is presented while the provider cannot be reached
     final var result = callApiWithToken();
 
-    // then that request fails as an outage rather than as a rejected credential: the decoder
-    // cannot be built without the provider, and that failure escapes the chain instead of reaching
-    // the bearer entry point, which a servlet container renders as a 500
-    assertThat(result).hasFailed().failure().isInstanceOf(JwtDecoderInitializationException.class);
+    // then the request fails as an outage, not as a rejected credential
+    assertThat(result).hasStatus(HttpStatus.SERVICE_UNAVAILABLE);
 
     // when the provider answers again
     stubFor(get(urlEqualTo(DISCOVERY_ENDPOINT)).willReturn(okJson(discoveryDocument())));

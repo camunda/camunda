@@ -111,6 +111,7 @@ security.authentication.catch-all-unhandled-paths-enabled
 security.authentication.method
 security.authentication.unprotected-api
 security.authentication.webapp-enabled
+security.client
 security.cluster-admin.basic.users
 security.cluster-admin.oidc.claims
 security.cluster-admin.oidc.clients

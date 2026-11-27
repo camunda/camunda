@@ -17,10 +17,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtException;
-import org.springframework.security.oauth2.jwt.JwtValidationException;
 
 final class SaasTokenValidatorsTest {
 
@@ -30,85 +29,72 @@ final class SaasTokenValidatorsTest {
   @Test
   void shouldRejectTokenOfAnotherCluster() {
     // given
-    final var decoder =
-        SaasTokenValidators.withSaasValidation(
-            decoderReturning(Map.of(CLUSTER_CLAIM_KEY, "other-cluster")), saas());
+    final var validator = new DelegatingOAuth2TokenValidator<>(SaasTokenValidators.of(saas()));
 
-    // when / then
-    assertThatThrownBy(() -> decoder.decode("token"))
-        .isInstanceOf(JwtValidationException.class)
-        .hasMessage("Token claims cluster id other-cluster, expected own-cluster");
+    // when
+    final var result = validator.validate(jwt(Map.of(CLUSTER_CLAIM_KEY, "other-cluster")));
+
+    // then
+    assertThat(result.getErrors())
+        .extracting(OAuth2Error::getDescription)
+        .containsExactly("Token claims cluster id other-cluster, expected own-cluster");
   }
 
   @Test
   void shouldRejectTokenOfAnotherOrganization() {
     // given
-    final var decoder =
-        SaasTokenValidators.withSaasValidation(
-            decoderReturning(Map.of(ORGANIZATION_CLAIM_KEY, List.of(Map.of("id", "other-org")))),
-            saas());
+    final var validator = new DelegatingOAuth2TokenValidator<>(SaasTokenValidators.of(saas()));
 
-    // when / then
-    assertThatThrownBy(() -> decoder.decode("token"))
-        .isInstanceOf(JwtValidationException.class)
-        .hasMessageStartingWith("Token claims organizations");
+    // when
+    final var result =
+        validator.validate(jwt(Map.of(ORGANIZATION_CLAIM_KEY, List.of(Map.of("id", "other-org")))));
+
+    // then
+    assertThat(result.getErrors())
+        .extracting(OAuth2Error::getDescription)
+        .singleElement()
+        .asString()
+        .startsWith("Token claims organizations");
   }
 
   @Test
   void shouldAcceptTokenOfOwnOrganizationAndCluster() {
     // given
-    final var claims =
-        Map.<String, Object>of(
-            CLUSTER_CLAIM_KEY,
-            CLUSTER_ID,
-            ORGANIZATION_CLAIM_KEY,
-            List.of(Map.of("id", ORGANIZATION_ID)));
-    final var decoder = SaasTokenValidators.withSaasValidation(decoderReturning(claims), saas());
+    final var validator = new DelegatingOAuth2TokenValidator<>(SaasTokenValidators.of(saas()));
 
     // when
-    final var jwt = decoder.decode("token");
+    final var result =
+        validator.validate(
+            jwt(
+                Map.of(
+                    CLUSTER_CLAIM_KEY,
+                    CLUSTER_ID,
+                    ORGANIZATION_CLAIM_KEY,
+                    List.of(Map.of("id", ORGANIZATION_ID)))));
 
     // then
-    assertThat(jwt.getClaims()).containsAllEntriesOf(claims);
+    assertThat(result.hasErrors()).isFalse();
   }
 
   @Test
   void shouldAcceptTokenWithoutOrganizationAndClusterClaims() {
     // given
-    final var decoder = SaasTokenValidators.withSaasValidation(decoderReturning(Map.of()), saas());
+    final var validator = new DelegatingOAuth2TokenValidator<>(SaasTokenValidators.of(saas()));
 
     // when
-    final var jwt = decoder.decode("token");
+    final var result = validator.validate(jwt(Map.of()));
 
     // then
-    assertThat(jwt.getClaims())
-        .doesNotContainKeys(CLUSTER_CLAIM_KEY, ORGANIZATION_CLAIM_KEY)
-        .containsEntry("sub", "client");
+    assertThat(result.hasErrors()).isFalse();
   }
 
   @Test
-  void shouldPropagateDecoderFailure() {
-    // given
-    final JwtDecoder failing =
-        token -> {
-          throw new JwtException("bad signature");
-        };
-    final var decoder = SaasTokenValidators.withSaasValidation(failing, saas());
-
-    // when / then
-    assertThatThrownBy(() -> decoder.decode("token")).hasMessage("bad signature");
-  }
-
-  @Test
-  void shouldReturnSameDecoderWhenSaasIsNotConfigured() {
-    // given
-    final var delegate = decoderReturning(Map.of(CLUSTER_CLAIM_KEY, "other-cluster"));
-
+  void shouldReturnNoValidatorsWhenSaasIsNotConfigured() {
     // when
-    final var decoder = SaasTokenValidators.withSaasValidation(delegate, new SaasConfiguration());
+    final var validators = SaasTokenValidators.of(new SaasConfiguration());
 
     // then
-    assertThat(decoder).isSameAs(delegate);
+    assertThat(validators).isEmpty();
   }
 
   @Test
@@ -118,7 +104,7 @@ final class SaasTokenValidatorsTest {
     saas.setClusterId(CLUSTER_ID);
 
     // when / then
-    assertThatThrownBy(() -> SaasTokenValidators.withSaasValidation(token -> null, saas))
+    assertThatThrownBy(() -> SaasTokenValidators.of(saas))
         .isInstanceOf(IllegalStateException.class);
   }
 
@@ -129,14 +115,13 @@ final class SaasTokenValidatorsTest {
     return saas;
   }
 
-  private static JwtDecoder decoderReturning(final Map<String, Object> claims) {
-    return token ->
-        Jwt.withTokenValue(token)
-            .header("alg", "RS256")
-            .claim("sub", "client")
-            .claims(c -> c.putAll(claims))
-            .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plusSeconds(60))
-            .build();
+  private static Jwt jwt(final Map<String, Object> claims) {
+    return Jwt.withTokenValue("token")
+        .header("alg", "RS256")
+        .claim("sub", "client")
+        .claims(c -> c.putAll(claims))
+        .issuedAt(Instant.now())
+        .expiresAt(Instant.now().plusSeconds(60))
+        .build();
   }
 }

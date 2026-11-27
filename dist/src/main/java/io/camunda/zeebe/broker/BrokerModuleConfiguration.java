@@ -18,7 +18,6 @@ import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
@@ -79,7 +78,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final ServiceRegistry serviceRegistry;
   private final PasswordEncoder passwordEncoder;
   private final ScopedJwtDecoderFactory scopedJwtDecoderFactory;
-  private final CamundaSecurityLibraryProperties securityProperties;
   private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
   private final Map<String, IntFunction<Long>> rdbmsExportedPositionSuppliers;
@@ -107,7 +105,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final ServiceRegistry serviceRegistry,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final ScopedJwtDecoderFactory scopedJwtDecoderFactory,
-      @Autowired(required = false) final CamundaSecurityLibraryProperties securityProperties,
       @Autowired(required = false)
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
@@ -130,7 +127,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.serviceRegistry = serviceRegistry;
     this.passwordEncoder = passwordEncoder;
     this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
-    this.securityProperties = securityProperties;
     this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
     rdbmsExportedPositionSuppliers = exportedPositionSuppliers(rdbmsMapperBundles);
@@ -147,7 +143,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     final Function<String, UserServices> userServicesForTenant =
         physicalTenantId -> serviceRegistry.userServices(physicalTenantId);
     final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
-        GatewayFactory.jwtDecoderFactory(scopedJwtDecoderFactory, securityProperties);
+        GatewayFactory.jwtDecoderFactory(scopedJwtDecoderFactory);
     final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
         authentication -> scopedOidcClaimsProviderFactory.buildClaimsProvider(authentication);
 

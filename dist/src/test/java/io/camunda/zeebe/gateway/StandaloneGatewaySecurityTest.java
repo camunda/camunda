@@ -339,7 +339,6 @@ final class StandaloneGatewaySecurityTest {
             null,
             null,
             null,
-            null,
             new SimpleMeterRegistry(),
             gatewayRestConfiguration,
             null);
