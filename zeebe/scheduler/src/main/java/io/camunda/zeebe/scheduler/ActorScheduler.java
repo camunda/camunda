@@ -271,7 +271,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
 
   public static final class DefaultActorThreadFactory implements ActorThreadFactory {
     private final String threadNamePrefix;
-    private final java.lang.ThreadGroup javaThreadGroup;
+    private final ThreadGroup javaThreadGroup;
 
     public DefaultActorThreadFactory() {
       this("");
@@ -283,11 +283,11 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
 
     /**
-     * Creates threads in the given {@link java.lang.ThreadGroup}, so that the threads they start
-     * inherit it. A {@code null} group uses the group of the creating thread.
+     * Creates threads in the given {@link ThreadGroup}, so that the threads they start inherit it.
+     * A {@code null} group uses the group of the creating thread.
      */
     public DefaultActorThreadFactory(
-        final String threadNamePrefix, final java.lang.ThreadGroup javaThreadGroup) {
+        final String threadNamePrefix, final ThreadGroup javaThreadGroup) {
       this.threadNamePrefix = threadNamePrefix;
       this.javaThreadGroup = javaThreadGroup;
     }

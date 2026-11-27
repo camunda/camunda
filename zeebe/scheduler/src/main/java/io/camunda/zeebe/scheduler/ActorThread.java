@@ -84,11 +84,11 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   /**
-   * @param javaThreadGroup the {@link java.lang.ThreadGroup} to create the thread in, which threads
-   *     started by this thread inherit; {@code null} uses the group of the creating thread
+   * @param javaThreadGroup the {@link ThreadGroup} to create the thread in, which threads started
+   *     by this thread inherit; {@code null} uses the group of the creating thread
    */
   public ActorThread(
-      final java.lang.ThreadGroup javaThreadGroup,
+      final ThreadGroup javaThreadGroup,
       final String name,
       final int id,
       final ActorThreadGroup threadGroup,

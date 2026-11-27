@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.sun.management.ThreadMXBean;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -314,7 +315,7 @@ final class ThreadGroupCpuSamplerTest {
   @Test
   void shouldRejectCpuTimeSourceWhenMeasurementIsDisabled() {
     // given
-    final var bean = mock(com.sun.management.ThreadMXBean.class);
+    final var bean = mock(ThreadMXBean.class);
     when(bean.isThreadCpuTimeSupported()).thenReturn(true);
     when(bean.isThreadCpuTimeEnabled()).thenReturn(false);
 

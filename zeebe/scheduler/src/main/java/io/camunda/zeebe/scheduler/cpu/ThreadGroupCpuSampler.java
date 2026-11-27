@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler.cpu;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import com.sun.management.ThreadMXBean;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.lang.management.ManagementFactory;
@@ -77,7 +78,7 @@ public final class ThreadGroupCpuSampler implements AutoCloseable {
   public ThreadGroupCpuSampler(final Duration period) {
     this(
         period,
-        cpuTimeSourceOf((com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean()),
+        cpuTimeSourceOf((ThreadMXBean) ManagementFactory.getThreadMXBean()),
         INITIAL_THREAD_CAPACITY,
         System::nanoTime);
   }
@@ -295,7 +296,7 @@ public final class ThreadGroupCpuSampler implements AutoCloseable {
   }
 
   @VisibleForTesting
-  static UnaryOperator<long[]> cpuTimeSourceOf(final com.sun.management.ThreadMXBean bean) {
+  static UnaryOperator<long[]> cpuTimeSourceOf(final ThreadMXBean bean) {
     if (!bean.isThreadCpuTimeSupported() || !bean.isThreadCpuTimeEnabled()) {
       throw new IllegalStateException(
           "Cannot sample the CPU time of thread groups: thread CPU time is not supported or disabled");
