@@ -23,6 +23,7 @@ import {
   createComponentAuthorization,
   createInstanceOnceDeployed,
   createUser,
+  createUserWithProcessDefinitionGrant,
   deployUserTaskProcess,
   grantUserResourceAuthorization,
   resumeProcessDefinitions,
@@ -460,38 +461,22 @@ test.describe('Process Definition Permission API - Suspension', () => {
   let userWithInstanceSuspensionOnly: TestUser;
   let userWithInstanceSuspensionOnlyToken: string;
 
-  async function createUserWithGrant(
-    request: APIRequestContext,
-    resourceId: string,
-    permissionTypes: string[],
-  ): Promise<[TestUser, string]> {
-    const user = await createUser(request);
-    if (permissionTypes.length > 0) {
-      await createComponentAuthorization(request, {
-        ownerId: user.username,
-        ownerType: 'USER',
-        resourceId,
-        resourceType: 'PROCESS_DEFINITION',
-        permissionTypes,
-      });
-    }
-    return [user, encode(`${user.username}:${user.password}`)];
-  }
-
   test.beforeAll(async ({request}) => {
     await deployUserTaskProcess(grantedProcessId);
     await deployUserTaskProcess(otherProcessId);
 
     [userWithoutPermissions, userWithoutPermissionsToken] =
-      await createUserWithGrant(request, '*', []);
+      await createUserWithProcessDefinitionGrant(request, '*', []);
     [userWithSuspendPermission, userWithSuspendPermissionToken] =
-      await createUserWithGrant(request, grantedProcessId, [
+      await createUserWithProcessDefinitionGrant(request, grantedProcessId, [
         'SUSPEND_PROCESS_DEFINITION',
       ]);
     [userWithWildcardPermission, userWithWildcardPermissionToken] =
-      await createUserWithGrant(request, '*', ['SUSPEND_PROCESS_DEFINITION']);
+      await createUserWithProcessDefinitionGrant(request, '*', [
+        'SUSPEND_PROCESS_DEFINITION',
+      ]);
     [userWithInstanceSuspensionOnly, userWithInstanceSuspensionOnlyToken] =
-      await createUserWithGrant(request, otherProcessId, [
+      await createUserWithProcessDefinitionGrant(request, otherProcessId, [
         'SUSPEND_PROCESS_INSTANCE',
       ]);
   });
@@ -508,11 +493,9 @@ test.describe('Process Definition Permission API - Suspension', () => {
   test('Suspend and resume by id - forbidden without SUSPEND_PROCESS_DEFINITION, the same for an existing and an unknown id', async ({
     request,
   }) => {
-    // given
     const unknownProcessId = `pd-perm-suspend-unknown-${suffix}`;
 
     await expect(async () => {
-      // when
       const existing = await suspendProcessDefinitions(
         request,
         {processDefinitionId: otherProcessId},
@@ -529,7 +512,6 @@ test.describe('Process Definition Permission API - Suspension', () => {
         userWithoutPermissionsToken,
       );
 
-      // then
       // The permission is checked before the id is resolved, so a caller without
       // it cannot tell whether the process definition exists.
       await assertForbiddenRequest(existing, SUSPEND_FORBIDDEN_DETAIL);
@@ -542,7 +524,6 @@ test.describe('Process Definition Permission API - Suspension', () => {
     request,
   }) => {
     await expect(async () => {
-      // when
       const suspendGranted = await suspendProcessDefinitions(
         request,
         {processDefinitionId: grantedProcessId},
@@ -559,7 +540,6 @@ test.describe('Process Definition Permission API - Suspension', () => {
         userWithSuspendPermissionToken,
       );
 
-      // then
       expect(
         (
           await suspensionOutcomes(
@@ -584,7 +564,6 @@ test.describe('Process Definition Permission API - Suspension', () => {
     request,
   }) => {
     await expect(async () => {
-      // when
       const suspend = await suspendProcessDefinitions(
         request,
         {processDefinitionId: otherProcessId},
@@ -596,7 +575,6 @@ test.describe('Process Definition Permission API - Suspension', () => {
         userWithWildcardPermissionToken,
       );
 
-      // then
       await assertStatusCode(suspend, 200);
       await assertStatusCode(resume, 200);
     }).toPass(defaultAssertionOptions);
@@ -606,14 +584,12 @@ test.describe('Process Definition Permission API - Suspension', () => {
     request,
   }) => {
     await expect(async () => {
-      // when
       const res = await suspendProcessDefinitions(
         request,
         {processDefinitionId: otherProcessId},
         userWithInstanceSuspensionOnlyToken,
       );
 
-      // then
       await assertForbiddenRequest(res, SUSPEND_FORBIDDEN_DETAIL);
     }).toPass(defaultAssertionOptions);
   });

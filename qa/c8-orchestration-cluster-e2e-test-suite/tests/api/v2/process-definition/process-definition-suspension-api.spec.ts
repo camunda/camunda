@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect, test, type APIRequestContext} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 import {cancelProcessInstance} from '../../../../utils/zeebeClient';
 import {assertNotFoundRequest, assertStatusCode} from '../../../../utils/http';
 import {
@@ -18,9 +18,11 @@ import {
   deleteProcessDefinition,
   deployServiceTaskProcess,
   deployUserTaskProcess,
+  deployUserTaskProcessVersions,
   drainProcessDefinition,
   expectCreationRejectedAsSuspended,
   expectProcessDefinitionDeleted,
+  expectProcessDefinitionKeys,
   expectProcessDefinitionState,
   expectProcessInstanceCount,
   expectProcessState,
@@ -36,39 +38,12 @@ import {
   suspendProcessDefinitions,
 } from '@requestHelpers';
 import {
-  defaultAssertionOptions,
   extendedAssertionOptions,
   uniquePrefixedId,
 } from '../../../../utils/constants';
 
 const USER_TASK_ELEMENT_ID = 'Activity_1xqonra';
 const UNKNOWN_KEY = '2251799813999999';
-
-async function deployVersions(processDefinitionId: string, count: number) {
-  const versions = [];
-  for (let version = 1; version <= count; version++) {
-    versions.push(
-      await deployUserTaskProcess(
-        processDefinitionId,
-        version === 1 ? '' : `-v${version}`,
-      ),
-    );
-  }
-  return versions;
-}
-
-async function expectDefinitionKeysForState(
-  request: APIRequestContext,
-  filter: Record<string, unknown>,
-  expectedKeys: string[],
-) {
-  await expect(async () => {
-    const items = await searchProcessDefinitionItems(request, {filter});
-    expect(items.map((item) => item.processDefinitionKey).sort()).toEqual(
-      [...expectedKeys].sort(),
-    );
-  }).toPass(defaultAssertionOptions);
-}
 
 test.describe('Process Definition Suspension API', () => {
   let instancesToCancel: string[] = [];
@@ -84,11 +59,9 @@ test.describe('Process Definition Suspension API', () => {
   });
 
   test('Suspends and resumes a single version by key', async ({request}) => {
-    // given
     const processDefinitionId = uniquePrefixedId('pd-suspend-key');
-    const [v1] = await deployVersions(processDefinitionId, 1);
+    const [v1] = await deployUserTaskProcessVersions(processDefinitionId, 1);
 
-    // when
     const suspended = await suspendAndListOutcomes(request, {
       processDefinitionKey: v1!.processDefinitionKey,
     });
@@ -96,7 +69,6 @@ test.describe('Process Definition Suspension API', () => {
       processDefinitionKey: v1!.processDefinitionKey,
     });
 
-    // then
     expect(suspended).toEqual([[1, 'SUSPENDED']]);
     expect(resumed).toEqual([[1, 'RESUMED']]);
   });
@@ -104,17 +76,14 @@ test.describe('Process Definition Suspension API', () => {
   test('Suspends one version by id and version and leaves the other versions active', async ({
     request,
   }) => {
-    // given
     const processDefinitionId = uniquePrefixedId('pd-suspend-id-version');
-    const [v1] = await deployVersions(processDefinitionId, 2);
+    const [v1] = await deployUserTaskProcessVersions(processDefinitionId, 2);
 
-    // when
     const outcomes = await suspendAndListOutcomes(request, {
       processDefinitionId,
       processDefinitionVersion: 2,
     });
 
-    // then
     expect(outcomes).toEqual([[2, 'SUSPENDED']]);
     const res = await createProcessInstanceRequest(request, {
       processDefinitionKey: v1!.processDefinitionKey,
@@ -126,14 +95,12 @@ test.describe('Process Definition Suspension API', () => {
   test('Suspends and resumes every version by id and reports an outcome per version', async ({
     request,
   }) => {
-    // given
     const processDefinitionId = uniquePrefixedId('pd-suspend-all');
-    const [v1] = await deployVersions(processDefinitionId, 3);
+    const [v1] = await deployUserTaskProcessVersions(processDefinitionId, 3);
     await suspendAndListOutcomes(request, {
       processDefinitionKey: v1!.processDefinitionKey,
     });
 
-    // when
     const suspended = await suspendAndListOutcomes(request, {
       processDefinitionId,
     });
@@ -145,7 +112,6 @@ test.describe('Process Definition Suspension API', () => {
       processDefinitionId,
     });
 
-    // then
     expect(suspended).toEqual([
       [1, 'ALREADY_SUSPENDED'],
       [2, 'SUSPENDED'],
@@ -162,12 +128,10 @@ test.describe('Process Definition Suspension API', () => {
   test('Repeated suspend and resume requests report ALREADY_SUSPENDED and ALREADY_RESUMED', async ({
     request,
   }) => {
-    // given
     const processDefinitionId = uniquePrefixedId('pd-suspend-repeat');
-    const [v1] = await deployVersions(processDefinitionId, 1);
+    const [v1] = await deployUserTaskProcessVersions(processDefinitionId, 1);
     const selector = {processDefinitionKey: v1!.processDefinitionKey};
 
-    // when
     const outcomes = [
       await resumeAndListOutcomes(request, selector),
       await suspendAndListOutcomes(request, selector),
@@ -176,7 +140,6 @@ test.describe('Process Definition Suspension API', () => {
       await resumeAndListOutcomes(request, selector),
     ];
 
-    // then
     expect(outcomes.map((o) => o[0]![1])).toEqual([
       'ALREADY_RESUMED',
       'SUSPENDED',
@@ -190,15 +153,12 @@ test.describe('Process Definition Suspension API', () => {
   test('A version deployed after a suspension by id starts active', async ({
     request,
   }) => {
-    // given
     const processDefinitionId = uniquePrefixedId('pd-suspend-new-version');
-    await deployVersions(processDefinitionId, 2);
+    await deployUserTaskProcessVersions(processDefinitionId, 2);
     await suspendAndListOutcomes(request, {processDefinitionId});
 
-    // when
     const v3 = await deployUserTaskProcess(processDefinitionId, '-v3');
 
-    // then
     await expectProcessDefinitionState(
       request,
       v3.processDefinitionKey,
@@ -215,11 +175,9 @@ test.describe('Process Definition Suspension API', () => {
   test('Unknown keys, ids and versions are rejected with 404', async ({
     request,
   }) => {
-    // given
     const processDefinitionId = uniquePrefixedId('pd-suspend-unknown');
-    await deployVersions(processDefinitionId, 1);
+    await deployUserTaskProcessVersions(processDefinitionId, 1);
 
-    // when
     const unknownKey = await suspendProcessDefinitions(request, {
       processDefinitionKey: UNKNOWN_KEY,
     });
@@ -234,7 +192,6 @@ test.describe('Process Definition Suspension API', () => {
       processDefinitionVersion: 9,
     });
 
-    // then
     await assertNotFoundRequest(unknownKey, `with key '${UNKNOWN_KEY}'`);
     await assertNotFoundRequest(unknownKeyResume, `with key '${UNKNOWN_KEY}'`);
     await assertNotFoundRequest(unknownId, 'no such process definition');
@@ -246,13 +203,11 @@ test.describe('Process Definition Suspension API', () => {
     test('Creation of a suspended version is rejected by key, by id and version, with awaitCompletion and with start instructions', async ({
       request,
     }) => {
-      // given
       const processDefinitionId = uniquePrefixedId('pd-suspend-create');
-      const [v1] = await deployVersions(processDefinitionId, 1);
+      const [v1] = await deployUserTaskProcessVersions(processDefinitionId, 1);
       const processDefinitionKey = v1!.processDefinitionKey;
       await suspendDefinitionAndWait(request, processDefinitionKey);
 
-      // when
       const attempts = [
         {processDefinitionKey},
         {processDefinitionId, processDefinitionVersion: 1},
@@ -263,7 +218,6 @@ test.describe('Process Definition Suspension API', () => {
         },
       ];
 
-      // then
       for (const data of attempts) {
         await expectCreationRejectedAsSuspended(
           await createProcessInstanceRequest(request, data),
@@ -277,12 +231,13 @@ test.describe('Process Definition Suspension API', () => {
     test('Creation by id only starts the latest active version and is rejected once every version is suspended', async ({
       request,
     }) => {
-      // given
       const processDefinitionId = uniquePrefixedId('pd-suspend-latest-active');
-      const [v1, v2] = await deployVersions(processDefinitionId, 2);
+      const [v1, v2] = await deployUserTaskProcessVersions(
+        processDefinitionId,
+        2,
+      );
       await suspendDefinitionAndWait(request, v2!.processDefinitionKey);
 
-      // when
       const onLatestActive = await createProcessInstanceRequest(request, {
         processDefinitionId,
       });
@@ -291,7 +246,6 @@ test.describe('Process Definition Suspension API', () => {
         processDefinitionId,
       });
 
-      // then
       await assertStatusCode(onLatestActive, 200);
       const instance = await onLatestActive.json();
       instancesToCancel.push(instance.processInstanceKey);
@@ -307,9 +261,11 @@ test.describe('Process Definition Suspension API', () => {
     test('Creation works again after resume and rejected creations are not replayed', async ({
       request,
     }) => {
-      // given
       const processDefinitionId = uniquePrefixedId('pd-suspend-resume-create');
-      const [v1, v2] = await deployVersions(processDefinitionId, 2);
+      const [v1, v2] = await deployUserTaskProcessVersions(
+        processDefinitionId,
+        2,
+      );
       await suspendAndListOutcomes(request, {processDefinitionId});
       await expectProcessDefinitionState(
         request,
@@ -326,7 +282,6 @@ test.describe('Process Definition Suspension API', () => {
         );
       }
 
-      // when
       await resumeAndListOutcomes(request, {processDefinitionId});
       await expectProcessDefinitionState(
         request,
@@ -340,7 +295,6 @@ test.describe('Process Definition Suspension API', () => {
         processDefinitionId,
       });
 
-      // then
       await assertStatusCode(byKey, 200);
       await assertStatusCode(byIdOnly, 200);
       const created = [await byKey.json(), await byIdOnly.json()];
@@ -352,7 +306,6 @@ test.describe('Process Definition Suspension API', () => {
     test('A running instance of a suspended version stays active and runs to completion', async ({
       request,
     }) => {
-      // given
       const processDefinitionId = uniquePrefixedId('pd-suspend-running');
       const jobType = uniquePrefixedId('pd-suspend-running-job');
       const {processDefinitionKey} = await deployServiceTaskProcess(
@@ -362,10 +315,8 @@ test.describe('Process Definition Suspension API', () => {
       const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
       instancesToCancel.push(instance.processInstanceKey);
 
-      // when
       await suspendDefinitionAndWait(request, processDefinitionKey);
 
-      // then
       await expectProcessState(request, instance.processInstanceKey, 'ACTIVE');
       await completeServiceTaskInstance(
         request,
@@ -380,31 +331,29 @@ test.describe('Process Definition Suspension API', () => {
     test('Get and search report SUSPENDED for the suspended version only, and ACTIVE again after resume', async ({
       request,
     }) => {
-      // given
       const processDefinitionId = uniquePrefixedId('pd-suspend-search');
-      const [v1, v2, v3] = await deployVersions(processDefinitionId, 3);
+      const [v1, v2, v3] = await deployUserTaskProcessVersions(
+        processDefinitionId,
+        3,
+      );
       const keys = [v1!, v2!, v3!].map((v) => v.processDefinitionKey);
 
-      // when
       await suspendDefinitionAndWait(request, keys[1]!);
 
-      // then
-      await expectDefinitionKeysForState(
+      await expectProcessDefinitionKeys(
         request,
         {processDefinitionId, state: 'SUSPENDED'},
         [keys[1]!],
       );
-      await expectDefinitionKeysForState(
+      await expectProcessDefinitionKeys(
         request,
         {processDefinitionId, state: 'ACTIVE'},
         [keys[0]!, keys[2]!],
       );
 
-      // when
       await resumeDefinitionAndWait(request, keys[1]!);
 
-      // then
-      await expectDefinitionKeysForState(
+      await expectProcessDefinitionKeys(
         request,
         {processDefinitionId, state: 'SUSPENDED'},
         [],
@@ -414,15 +363,15 @@ test.describe('Process Definition Suspension API', () => {
     test('isLatestVersion with state ACTIVE returns the latest version that is not suspended', async ({
       request,
     }) => {
-      // given
       const processDefinitionId = uniquePrefixedId('pd-suspend-latest');
-      const [v1, v2] = await deployVersions(processDefinitionId, 2);
+      const [v1, v2] = await deployUserTaskProcessVersions(
+        processDefinitionId,
+        2,
+      );
 
-      // when
       await suspendDefinitionAndWait(request, v2!.processDefinitionKey);
 
-      // then
-      await expectDefinitionKeysForState(
+      await expectProcessDefinitionKeys(
         request,
         {processDefinitionId, isLatestVersion: true, state: 'ACTIVE'},
         [v1!.processDefinitionKey],
@@ -440,17 +389,14 @@ test.describe('Process Definition Suspension API', () => {
     test('Deploying while the latest version is suspended creates a new active version, also for an identical resource', async ({
       request,
     }) => {
-      // given
       const processDefinitionId = uniquePrefixedId('pd-suspend-redeploy');
-      const [v1] = await deployVersions(processDefinitionId, 1);
+      const [v1] = await deployUserTaskProcessVersions(processDefinitionId, 1);
       const duplicate = await deployUserTaskProcess(processDefinitionId);
       expect(duplicate.processDefinitionKey).toBe(v1!.processDefinitionKey);
       await suspendDefinitionAndWait(request, v1!.processDefinitionKey);
 
-      // when
       const identical = await deployUserTaskProcess(processDefinitionId);
 
-      // then
       expect(identical.processDefinitionVersion).toBe(2);
       await expectProcessDefinitionState(
         request,
@@ -469,9 +415,8 @@ test.describe('Process Definition Suspension API', () => {
     test('Deleting a suspended version with a running instance moves it to DRAINING and it can no longer be suspended or resumed', async ({
       request,
     }) => {
-      // given
       const processDefinitionId = uniquePrefixedId('pd-suspend-drain');
-      const [v1] = await deployVersions(processDefinitionId, 1);
+      const [v1] = await deployUserTaskProcessVersions(processDefinitionId, 1);
       const processDefinitionKey = v1!.processDefinitionKey;
       // Suspend and resume resolve the version on partition 1; only an instance
       // there keeps the version DRAINING for them instead of NOT_FOUND.
@@ -490,7 +435,6 @@ test.describe('Process Definition Suspension API', () => {
       );
       await suspendDefinitionAndWait(request, processDefinitionKey);
 
-      // when
       await drainProcessDefinition(request, processDefinitionKey);
       const resumeByKey = await resumeProcessDefinitions(request, {
         processDefinitionKey,
@@ -503,24 +447,21 @@ test.describe('Process Definition Suspension API', () => {
         processDefinitionVersion: 1,
       });
 
-      // then
       for (const res of [resumeByKey, suspendByKey, suspendByVersion]) {
         await assertStatusCode(res, 409);
         expect((await res.json()).detail).toContain('it is being deleted');
       }
-      await expectDefinitionKeysForState(
+      await expectProcessDefinitionKeys(
         request,
         {processDefinitionId, state: 'SUSPENDED'},
         [],
       );
 
-      // when
       const v2 = await deployUserTaskProcess(processDefinitionId, '-v2');
       const outcomes = await suspendAndListOutcomes(request, {
         processDefinitionId,
       });
 
-      // then
       expect(outcomes).toEqual([
         [1, 'DRAINING'],
         [2, 'SUSPENDED'],
@@ -536,18 +477,15 @@ test.describe('Process Definition Suspension API', () => {
     test('Deleting a suspended version without instances deletes it', async ({
       request,
     }) => {
-      // given
       const processDefinitionId = uniquePrefixedId('pd-suspend-delete');
-      const [v1] = await deployVersions(processDefinitionId, 1);
+      const [v1] = await deployUserTaskProcessVersions(processDefinitionId, 1);
       await suspendDefinitionAndWait(request, v1!.processDefinitionKey);
 
-      // when
       await assertStatusCode(
         await deleteProcessDefinition(request, v1!.processDefinitionKey),
         200,
       );
 
-      // then
       await expectProcessDefinitionDeleted(request, v1!.processDefinitionKey);
       await assertNotFoundRequest(
         await suspendProcessDefinitions(request, {
@@ -562,17 +500,14 @@ test.describe('Process Definition Suspension API', () => {
     test('Creation is rejected on every partition after suspend and allowed on every partition after resume', async ({
       request,
     }) => {
-      // given
       const partitions = await partitionsCount(request);
       const processDefinitionId = uniquePrefixedId('pd-suspend-partitions');
-      const [v1] = await deployVersions(processDefinitionId, 1);
+      const [v1] = await deployUserTaskProcessVersions(processDefinitionId, 1);
       const processDefinitionKey = v1!.processDefinitionKey;
       const attempts = partitions * 10;
 
-      // when
       await suspendDefinitionAndWait(request, processDefinitionKey);
 
-      // then
       for (let attempt = 0; attempt < attempts; attempt++) {
         await expectCreationRejectedAsSuspended(
           await createProcessInstanceRequest(request, {processDefinitionKey}),
@@ -581,10 +516,8 @@ test.describe('Process Definition Suspension API', () => {
         );
       }
 
-      // when
       await resumeDefinitionAndWait(request, processDefinitionKey);
 
-      // then
       const created = await createInstancesUntilEveryPartition(
         request,
         processDefinitionKey,
@@ -599,16 +532,13 @@ test.describe('Process Definition Suspension API', () => {
     test('Suspend directly followed by resume leaves the version active on every partition', async ({
       request,
     }) => {
-      // given
       const processDefinitionId = uniquePrefixedId('pd-suspend-back-to-back');
-      const [v1] = await deployVersions(processDefinitionId, 1);
+      const [v1] = await deployUserTaskProcessVersions(processDefinitionId, 1);
       const processDefinitionKey = v1!.processDefinitionKey;
 
-      // when
       await suspendAndListOutcomes(request, {processDefinitionKey});
       await resumeAndListOutcomes(request, {processDefinitionKey});
 
-      // then
       await expectProcessDefinitionState(
         request,
         processDefinitionKey,

@@ -265,6 +265,37 @@ export async function deployUserTaskProcess(
   return deployment.processes[0];
 }
 
+/** Deploys `count` versions of the user-task model under one process id. */
+export async function deployUserTaskProcessVersions(
+  processDefinitionId: string,
+  count: number,
+) {
+  const versions = [];
+  for (let version = 1; version <= count; version++) {
+    versions.push(
+      await deployUserTaskProcess(
+        processDefinitionId,
+        version === 1 ? '' : `-v${version}`,
+      ),
+    );
+  }
+  return versions;
+}
+
+/** Polls until the search `filter` returns exactly `expectedKeys`, in any order. */
+export async function expectProcessDefinitionKeys(
+  request: APIRequestContext,
+  filter: Record<string, unknown>,
+  expectedKeys: string[],
+): Promise<void> {
+  await expect(async () => {
+    const items = await searchProcessDefinitionItems(request, {filter});
+    expect(items.map((item) => item.processDefinitionKey).sort()).toEqual(
+      [...expectedKeys].sort(),
+    );
+  }).toPass(defaultAssertionOptions);
+}
+
 /**
  * Deploys a single-service-task definition under a unique id and starts one
  * instance of it. Process id and job type are unique per call, so a worker in

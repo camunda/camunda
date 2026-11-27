@@ -48,6 +48,7 @@ export {assignRoleToUsers} from './user-requestHelpers';
 export {createUsersAndStoreResponseFields} from './user-requestHelpers';
 export {
   createComponentAuthorization,
+  createUserWithProcessDefinitionGrant,
   grantUserResourceAuthorization,
   grantUserTaskAuthorization,
   cleanupAuthorizations,
