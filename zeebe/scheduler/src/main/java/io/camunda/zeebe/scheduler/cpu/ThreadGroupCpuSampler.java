@@ -36,9 +36,10 @@ import org.slf4j.LoggerFactory;
  * physical tenant; registered groups must not be nested.
  *
  * <p>The budget of a sample is the time since the last sample times the quota of the group. CPU
- * time above the budget is kept as debt; unused budget is not saved. Only CPU time used after
- * registration is charged. A thread whose CPU time cannot be read is charged nothing until it can
- * be read again, from that read on.
+ * time above the budget is kept as debt, up to what the group repays at its quota within the
+ * maximum repay time; unused budget is not saved. Only CPU time used after registration is charged.
+ * A thread whose CPU time cannot be read is charged nothing until it can be read again, from that
+ * read on.
  */
 public final class ThreadGroupCpuSampler implements AutoCloseable {
 
@@ -49,6 +50,7 @@ public final class ThreadGroupCpuSampler implements AutoCloseable {
   private static final int INITIAL_THREAD_CAPACITY = 64;
 
   private final Duration period;
+  private final long maxRepayNanos;
   private final UnaryOperator<long[]> threadCpuNanos;
   private final LongSupplier nanoClock;
   private final ThreadGroup rootGroup = rootGroup();
@@ -73,11 +75,14 @@ public final class ThreadGroupCpuSampler implements AutoCloseable {
   private @Nullable ScheduledExecutorService executor;
 
   /**
+   * @param maxRepayTime bounds the debt of a group, so that the group repays it within this time at
+   *     its quota
    * @throws IllegalStateException if the JVM does not support or measure thread CPU time
    */
-  public ThreadGroupCpuSampler(final Duration period) {
+  public ThreadGroupCpuSampler(final Duration period, final Duration maxRepayTime) {
     this(
         period,
+        maxRepayTime,
         cpuTimeSourceOf((ThreadMXBean) ManagementFactory.getThreadMXBean()),
         INITIAL_THREAD_CAPACITY,
         System::nanoTime);
@@ -91,10 +96,12 @@ public final class ThreadGroupCpuSampler implements AutoCloseable {
   @VisibleForTesting
   ThreadGroupCpuSampler(
       final Duration period,
+      final Duration maxRepayTime,
       final UnaryOperator<long[]> threadCpuNanos,
       final int initialThreadCapacity,
       final LongSupplier nanoClock) {
     this.period = period;
+    maxRepayNanos = maxRepayTime.toNanos();
     this.threadCpuNanos = threadCpuNanos;
     this.nanoClock = nanoClock;
     threads = new Thread[initialThreadCapacity];
@@ -378,7 +385,8 @@ public final class ThreadGroupCpuSampler implements AutoCloseable {
     private void sample(final long readNanos) {
       synchronized (ThreadGroupCpuSampler.this) {
         final var budget = (long) ((readNanos - lastReadNanos) * cpus);
-        debtNanos = Math.max(0, debtNanos + usedNanos - budget);
+        final var maxDebt = (long) (maxRepayNanos * cpus);
+        debtNanos = Math.clamp(debtNanos + usedNanos - budget, 0, maxDebt);
         usage = new CpuUsage(usedNanos, budget, debtNanos);
         startFrom(readNanos);
       }

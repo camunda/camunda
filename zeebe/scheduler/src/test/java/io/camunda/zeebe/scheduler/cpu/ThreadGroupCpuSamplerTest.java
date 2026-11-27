@@ -34,6 +34,7 @@ final class ThreadGroupCpuSamplerTest {
 
   private static final String GROUP_ID = "group-a";
   private static final Duration PERIOD = Duration.ofMillis(100);
+  private static final Duration MAX_REPAY_TIME = Duration.ofSeconds(1);
 
   private final Map<Long, Long> fakeCpuNanos = new ConcurrentHashMap<>();
   private final CountDownLatch release = new CountDownLatch(1);
@@ -41,7 +42,7 @@ final class ThreadGroupCpuSamplerTest {
   private long nowNanos;
   private boolean failReads;
   private final ThreadGroupCpuSampler sampler =
-      new ThreadGroupCpuSampler(PERIOD, this::fakeCpuNanosOf, 64, () -> nowNanos);
+      new ThreadGroupCpuSampler(PERIOD, MAX_REPAY_TIME, this::fakeCpuNanosOf, 64, () -> nowNanos);
 
   @AfterEach
   void tearDown() throws InterruptedException {
@@ -54,7 +55,7 @@ final class ThreadGroupCpuSamplerTest {
 
   @Test
   void shouldChargeRealCpuTimeOfAllThreadsOfGroup() throws Exception {
-    try (final var realSampler = new ThreadGroupCpuSampler(PERIOD)) {
+    try (final var realSampler = new ThreadGroupCpuSampler(PERIOD, MAX_REPAY_TIME)) {
       // given
       final var group = new ThreadGroup(GROUP_ID);
       final var burn = Duration.ofMillis(200);
@@ -89,7 +90,8 @@ final class ThreadGroupCpuSamplerTest {
   void shouldChargeAllThreadsWhenTheThreadBufferMustGrow() {
     // given
     try (final var tiny =
-        new ThreadGroupCpuSampler(PERIOD, this::fakeCpuNanosOf, 1, () -> nowNanos)) {
+        new ThreadGroupCpuSampler(
+            PERIOD, MAX_REPAY_TIME, this::fakeCpuNanosOf, 1, () -> nowNanos)) {
       final var group = new ThreadGroup(GROUP_ID);
       final var first = startParkedThread(group);
       final var second = startParkedThread(group);
@@ -206,6 +208,25 @@ final class ThreadGroupCpuSamplerTest {
     assertThat(afterOvershoot.debtNanos()).isEqualTo(millis(50));
     assertThat(afterExactBudget.debtNanos()).isEqualTo(millis(50));
     assertThat(afterUndershoot.debtNanos()).isZero();
+  }
+
+  @Test
+  void shouldCapDebtAtWhatTheGroupRepaysWithinTheMaxRepayTime() {
+    // given
+    final var group = new ThreadGroup(GROUP_ID);
+    final var thread = startParkedThread(group);
+    sampler.register(GROUP_ID, group, 0.5);
+
+    // when
+    setCpu(thread, millis(5_000));
+    sampleAfter(PERIOD);
+    final var afterOvershoot = sampler.usage(GROUP_ID).orElseThrow();
+    sampleAfter(MAX_REPAY_TIME);
+    final var afterMaxRepayTime = sampler.usage(GROUP_ID).orElseThrow();
+
+    // then - 1 s of repay time at a quota of 0.5 CPUs
+    assertThat(afterOvershoot.debtNanos()).isEqualTo(millis(500));
+    assertThat(afterMaxRepayTime.debtNanos()).isZero();
   }
 
   @Test
@@ -387,7 +408,8 @@ final class ThreadGroupCpuSamplerTest {
   }
 
   private static ThreadGroupCpuSampler startedSampler(final UnaryOperator<long[]> source) {
-    return new ThreadGroupCpuSampler(Duration.ofMillis(10), source, 64, System::nanoTime);
+    return new ThreadGroupCpuSampler(
+        Duration.ofMillis(10), MAX_REPAY_TIME, source, 64, System::nanoTime);
   }
 
   private void sampleAfter(final Duration elapsed) {

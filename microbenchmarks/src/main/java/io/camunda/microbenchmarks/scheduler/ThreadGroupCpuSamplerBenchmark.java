@@ -57,7 +57,7 @@ public class ThreadGroupCpuSamplerBenchmark {
 
   @Setup
   public void setup() {
-    sampler = new ThreadGroupCpuSampler(Duration.ofSeconds(1));
+    sampler = new ThreadGroupCpuSampler(Duration.ofSeconds(1), Duration.ofSeconds(10));
     for (int i = 0; i < otherThreads; i++) {
       startParked(null);
     }
