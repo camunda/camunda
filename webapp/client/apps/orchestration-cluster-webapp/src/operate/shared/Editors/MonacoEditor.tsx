@@ -124,6 +124,7 @@ const MonacoEditor = observer(
 					tabSize: 2,
 					wordWrap: 'on',
 					scrollBeyondLastLine: false,
+					disableMonospaceOptimizations: true,
 					ariaLabel: t('operate.shared.editors.value'),
 					...options,
 					readOnly,
