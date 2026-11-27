@@ -492,6 +492,10 @@ jobs:
         uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -PskipFrontendBuild
+          # Retry a transient dependency-resolution failure (e.g. a 500 from the
+          # google-maven-central mirror); slowest build ~5min, two attempts fit the 30min job timeout.
+          retry-max-attempts: 2
+          retry-timeout-minutes: 7
 
       - name: Build and push Docker image to Harbor
         id: build-docker
