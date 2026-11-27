@@ -50,7 +50,7 @@
     <failsafe.runOrder.statisticsFile.checksum>it</failsafe.runOrder.statisticsFile.checksum>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>2.7.1</version.agrona>
+    <version.agrona>2.7.2</version.agrona>
     <version.animal-sniffer>1.29.1</version.animal-sniffer>
     <version.assertj>3.27.7</version.assertj>
     <version.assertj-assertions-generator>2.2.0</version.assertj-assertions-generator>
